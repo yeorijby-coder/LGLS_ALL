@@ -1,0 +1,646 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>ScSim</ProjectName>
+    <SccProjectName />
+    <SccLocalPath />
+    <Keyword>MFCProj</Keyword>
+    <ProjectGuid>{5F3D994E-B87B-E297-28FC-79B6C253D692}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>..\Bin\Debug\</OutDir>
+    <IntDir>..\Bin\Debug\CvSim\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\../../Bin/Release\</OutDir>
+    <IntDir>.\../../Bin/Release/EcsSv\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <MinimalRebuild>true</MinimalRebuild>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <AdditionalIncludeDirectories>../Lib/EcsLib/ButtonST;../Lib/EcsLib;../Lib/XmlLib;../Lib/DciLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\../Bin/Debug/CvSim\</AssemblerListingLocation>
+      <BrowseInformation>true</BrowseInformation>
+      <PrecompiledHeaderOutputFile>.\../Bin/Debug/CvSim\CvSim.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <ObjectFileName>.\../Bin/Debug/CvSim\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../Bin/Debug/CvSim\</ProgramDataBaseFileName>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerOutput>All</AssemblerOutput>
+      <DisableSpecificWarnings>4005;4146;4002;</DisableSpecificWarnings>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\../../Bin/Debug\CvSim.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>../Bin/Debug\CvSim.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(TargetDir)$(TargetFileName)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>../Bin/Debug/XmlLib.lib;../Bin/Debug/DciLib.lib;../Bin/Debug/EcsLib.lib;../Bin/Debug/Spr32d70.lib</AdditionalDependencies>
+      <GenerateMapFile>false</GenerateMapFile>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>../Lib/EcsLib/ButtonST;../Lib/EcsLib;../Lib/XmlLib;../Lib/DciLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\../Bin/Debug/CvSim\</AssemblerListingLocation>
+      <BrowseInformation>true</BrowseInformation>
+      <PrecompiledHeaderOutputFile>.\../Bin/Debug/CvSim\CvSim.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <ObjectFileName>.\../Bin/Debug/CvSim\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../Bin/Debug/CvSim\</ProgramDataBaseFileName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerOutput>All</AssemblerOutput>
+      <DisableSpecificWarnings>4005;4146;4002;</DisableSpecificWarnings>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\../../Bin/Debug\CvSim.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>../Bin/Debug\CvSim.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(TargetDir)$(TargetFileName)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>../Bin/Debug/XmlLib.lib;../Bin/Debug/DciLib.lib;../Bin/Debug/EcsLib.lib;../Bin/Debug/Spr32d70.lib</AdditionalDependencies>
+      <GenerateMapFile>false</GenerateMapFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>../EcsLib;../EcsLib/ButtonST;../Lib/XmlLib;../Lib/DciLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\../Bin/Release/CvSim\</AssemblerListingLocation>
+      <BrowseInformation>true</BrowseInformation>
+      <PrecompiledHeaderOutputFile>.\../Bin/Release/CvSim\CvSim.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <ObjectFileName>.\../Bin/Release/CvSim\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../Bin/Release/CvSim\</ProgramDataBaseFileName>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\../../Bin/Release\CvSim.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\../Bin/Release\CvSim.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>.\../Bin/Release\CvSim.exe</OutputFile>
+      <AdditionalDependencies>.\../Bin/Release/XmlLib.lib;.\../Bin/Release/DciLib.lib;.\../Bin/Release/EcsLib.lib;.\../Bin/Release/Spr32d70.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>false</GenerateMapFile>
+    </Link>
+    <PostBuildEvent>
+      <Command>@echo off
+set DirName=%date:~,4%%date:~5,2%%date:~8,2%%time:~,2%%time:~3,2%%time:~6,2%
+mkdir "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\EcsSv\*.map" "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\EcsSv\*.cod" "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\*.exe" "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\*.pdb" "$(OutDir)\mapfile\%DirName%"
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>../EcsLib;../EcsLib/ButtonST;../Lib/XmlLib;../Lib/DciLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\../Bin/Release/CvSim\</AssemblerListingLocation>
+      <BrowseInformation>true</BrowseInformation>
+      <PrecompiledHeaderOutputFile>.\../Bin/Release/CvSim\CvSim.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <ObjectFileName>.\../Bin/Release/CvSim\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../Bin/Release/CvSim\</ProgramDataBaseFileName>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\../../Bin/Release\CvSim.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\../Bin/Release\CvSim.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>.\../Bin/Release\CvSim.exe</OutputFile>
+      <AdditionalDependencies>.\../Bin/Release/XmlLib.lib;.\../Bin/Release/DciLib.lib;.\../Bin/Release/EcsLib.lib;.\../Bin/Release/Spr32d70.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>false</GenerateMapFile>
+    </Link>
+    <PostBuildEvent>
+      <Command>@echo off
+set DirName=%date:~,4%%date:~5,2%%date:~8,2%%time:~,2%%time:~3,2%%time:~6,2%
+mkdir "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\EcsSv\*.map" "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\EcsSv\*.cod" "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\*.exe" "$(OutDir)\mapfile\%DirName%"
+copy "%PathName%\*.pdb" "$(OutDir)\mapfile\%DirName%"
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="AsyncSocketEx.cpp" />
+    <ClCompile Include="ByteArrayEx.cpp" />
+    <ClCompile Include="CmdMsg.cpp" />
+    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="ConfigPptSheet.cpp" />
+    <ClCompile Include="ConfigStdPage.cpp" />
+    <ClCompile Include="ConfigSub1Page.cpp" />
+    <ClCompile Include="ConfigSub2Page.cpp" />
+    <ClCompile Include="ConfigSub3Page.cpp" />
+    <ClCompile Include="Cv.cpp" />
+    <ClCompile Include="CvDlg.cpp" />
+    <ClCompile Include="CvInfo.cpp" />
+    <ClCompile Include="DataSettingDlg.cpp" />
+    <ClCompile Include="Debuger.cpp" />
+    <ClCompile Include="Ecs.cpp" />
+    <ClCompile Include="EcsControl.cpp" />
+    <ClCompile Include="EcsDefine.cpp" />
+    <ClCompile Include="EcsDoc.cpp" />
+    <ClCompile Include="EcsLayout.cpp" />
+    <ClCompile Include="EcsView.cpp" />
+    <ClCompile Include="Equipment.cpp" />
+    <ClCompile Include="font.cpp" />
+    <ClCompile Include="Info.cpp" />
+    <ClCompile Include="InterfaceSk.cpp" />
+    <ClCompile Include="Job.cpp" />
+    <ClCompile Include="JobDlg.cpp" />
+    <ClCompile Include="JobItem.cpp" />
+    <ClCompile Include="Lib.cpp" />
+    <ClCompile Include="ListenerSk.cpp" />
+    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="LogDlg.cpp" />
+    <ClCompile Include="Login.cpp" />
+    <ClCompile Include="LogPlayback.cpp" />
+    <ClCompile Include="MainFrm.cpp" />
+    <ClCompile Include="MelsecEthernetSk.cpp" />
+    <ClCompile Include="MelsecSerial.cpp" />
+    <ClCompile Include="MelsecSerialSk.cpp" />
+    <ClCompile Include="MyTabCtrl.cpp" />
+    <ClCompile Include="picture.cpp" />
+    <ClCompile Include="PortEthernetDlg.cpp" />
+    <ClCompile Include="PortObject.cpp" />
+    <ClCompile Include="PortSerialDlg.cpp" />
+    <ClCompile Include="Sc.cpp" />
+    <ClCompile Include="ScDlg.cpp" />
+    <ClCompile Include="ScInfo.cpp" />
+    <ClCompile Include="ScManualDlg.cpp" />
+    <ClCompile Include="ScPair.cpp" />
+    <ClCompile Include="ScPairDlg.cpp" />
+    <ClCompile Include="ScRelocationDlg.cpp" />
+    <ClCompile Include="ScSocket.cpp" />
+    <ClCompile Include="Serial.cpp" />
+    <ClCompile Include="Splash.cpp" />
+    <ClCompile Include="spreadsheet.cpp" />
+    <ClCompile Include="StartupTip.cpp" />
+    <ClCompile Include="StationInfo.cpp" />
+    <ClCompile Include="StdAfx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdafx.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="TrackHS.cpp" />
+    <ClCompile Include="TrackInfo.cpp" />
+    <ClCompile Include="WarningDlg.cpp" />
+    <ClCompile Include="ReportCtrl.cpp" />
+    <ClCompile Include="ReportHeader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Ecs.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AsyncSocketEx.h" />
+    <ClInclude Include="ByteArrayEx.h" />
+    <ClInclude Include="CmdMsg.h" />
+    <ClInclude Include="Color.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="ConfigPptSheet.h" />
+    <ClInclude Include="ConfigStdPage.h" />
+    <ClInclude Include="ConfigSub1Page.h" />
+    <ClInclude Include="ConfigSub2Page.h" />
+    <ClInclude Include="ConfigSub3Page.h" />
+    <ClInclude Include="Cv.h" />
+    <ClInclude Include="CvDlg.h" />
+    <ClInclude Include="CvInfo.h" />
+    <ClInclude Include="DataSettingDlg.h" />
+    <ClInclude Include="DataTable.h" />
+    <ClInclude Include="Debuger.h" />
+    <ClInclude Include="Ecs.h" />
+    <ClInclude Include="EcsControl.h" />
+    <ClInclude Include="EcsDef.h" />
+    <ClInclude Include="EcsDefine.h" />
+    <ClInclude Include="EcsDoc.h" />
+    <ClInclude Include="EcsEnv.h" />
+    <ClInclude Include="EcsLayout.h" />
+    <ClInclude Include="EcsView.h" />
+    <ClInclude Include="Equipment.h" />
+    <ClInclude Include="font.h" />
+    <ClInclude Include="Host.h" />
+    <ClInclude Include="Info.h" />
+    <ClInclude Include="InterfaceSk.h" />
+    <ClInclude Include="Job.h" />
+    <ClInclude Include="JobDlg.h" />
+    <ClInclude Include="JobItem.h" />
+    <ClInclude Include="JobItemDlg.h" />
+    <ClInclude Include="JobOfflineDlg.h" />
+    <ClInclude Include="JobTestDlg.h" />
+    <ClInclude Include="Lib.h" />
+    <ClInclude Include="ListenerSk.h" />
+    <ClInclude Include="Log.h" />
+    <ClInclude Include="LogDlg.h" />
+    <ClInclude Include="Login.h" />
+    <ClInclude Include="LogPlayback.h" />
+    <ClInclude Include="MainFrm.h" />
+    <ClInclude Include="MelsecEthernetSk.h" />
+    <ClInclude Include="MelsecSerial.h" />
+    <ClInclude Include="MelsecSerialSk.h" />
+    <ClInclude Include="MonitorListener.h" />
+    <ClInclude Include="MonitorServer.h" />
+    <ClInclude Include="picture.h" />
+    <ClInclude Include="PortEthernetDlg.h" />
+    <ClInclude Include="PortObject.h" />
+    <ClInclude Include="PortSerialDlg.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="Sc.h" />
+    <ClInclude Include="ScDlg.h" />
+    <ClInclude Include="ScInfo.h" />
+    <ClInclude Include="ScManualDlg.h" />
+    <ClInclude Include="ScPair.h" />
+    <ClInclude Include="ScPairDlg.h" />
+    <ClInclude Include="ScRelocationDlg.h" />
+    <ClInclude Include="ScSocket.h" />
+    <ClInclude Include="Serial.h" />
+    <ClInclude Include="Splash.h" />
+    <ClInclude Include="spreadsheet.h" />
+    <ClInclude Include="StartupTip.h" />
+    <ClInclude Include="StationInfo.h" />
+    <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="TrackHS.h" />
+    <ClInclude Include="TrackInfo.h" />
+    <ClInclude Include="WarningDlg.h" />
+    <ClInclude Include="ReportCtrl.h" />
+    <ClInclude Include="ReportHeader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="res\About.ico" />
+    <CustomBuild Include="res\add01.ico" />
+    <CustomBuild Include="res\Baloon.ico" />
+    <CustomBuild Include="res\bitmap1.bmp" />
+    <CustomBuild Include="res\bitmap3.bmp" />
+    <CustomBuild Include="res\아이콘\blob.ico" />
+    <CustomBuild Include="res\bmp00001.bmp" />
+    <CustomBuild Include="res\bmp00002.bmp" />
+    <CustomBuild Include="res\아이콘\Box_2.ico" />
+    <CustomBuild Include="res\Butterfly.ico" />
+    <CustomBuild Include="res\Cancel.ico" />
+    <CustomBuild Include="res\Cancel1_32x32x16.ico" />
+    <CustomBuild Include="res\Cancel3_32x32x256.ico" />
+    <CustomBuild Include="res\Cancel4_32x32x2.ico" />
+    <CustomBuild Include="res\CDRom.ico" />
+    <CustomBuild Include="res\Classes1_32x32x16.ico" />
+    <CustomBuild Include="res\classes2.ico" />
+    <CustomBuild Include="res\classes3.ico" />
+    <CustomBuild Include="res\classes4.ico" />
+    <CustomBuild Include="res\classes5.ico" />
+    <CustomBuild Include="res\classes6.ico" />
+    <CustomBuild Include="res\close(32x32).ico" />
+    <CustomBuild Include="res\아이콘\close.ico" />
+    <CustomBuild Include="res\config01.ico" />
+    <CustomBuild Include="res\config2.ico" />
+    <CustomBuild Include="res\CONTACTL.ICO" />
+    <CustomBuild Include="res\버튼리소스\COPY.BMP" />
+    <CustomBuild Include="res\cursor1.cur" />
+    <CustomBuild Include="res\cursor2.cur" />
+    <CustomBuild Include="res\버튼리소스\CUT.BMP" />
+    <CustomBuild Include="res\del01.ico" />
+    <CustomBuild Include="res\DISTLSTL.ICO" />
+    <CustomBuild Include="res\Ecs.ico" />
+    <CustomBuild Include="res\Ecs.rc2">
+      <FileType>RC</FileType>
+    </CustomBuild>
+    <CustomBuild Include="res\EcsCv.bmp" />
+    <CustomBuild Include="res\EcsDoc.ico" />
+    <CustomBuild Include="res\EcsEquip.bmp" />
+    <CustomBuild Include="res\EcsLogo2.bmp" />
+    <CustomBuild Include="res\EcsRgv.bmp" />
+    <CustomBuild Include="res\eject.ico" />
+    <CustomBuild Include="res\EOapp.ico" />
+    <CustomBuild Include="res\Exit.ico" />
+    <CustomBuild Include="res\Explorer.ico" />
+    <CustomBuild Include="res\Frog1.ICO" />
+    <CustomBuild Include="res\Frog2.ICO" />
+    <CustomBuild Include="res\Frog3.ICO" />
+    <CustomBuild Include="res\Frog4.ICO" />
+    <CustomBuild Include="res\Halloween1.ico" />
+    <CustomBuild Include="res\Halloween2.ico" />
+    <CustomBuild Include="res\Help.ico" />
+    <CustomBuild Include="res\Help2_32x32x256.ico" />
+    <CustomBuild Include="res\ico00001.ico" />
+    <CustomBuild Include="res\ico00002.ico" />
+    <CustomBuild Include="res\ico00003.ico" />
+    <CustomBuild Include="res\ico00004.ico" />
+    <CustomBuild Include="res\ico00005.ico" />
+    <CustomBuild Include="res\ico00006.ico" />
+    <CustomBuild Include="res\ico00007.ico" />
+    <CustomBuild Include="res\ico00008.ico" />
+    <CustomBuild Include="res\ico00009.ico" />
+    <CustomBuild Include="res\ico00010.ico" />
+    <CustomBuild Include="res\ico00011.ico" />
+    <CustomBuild Include="res\ico00012.ico" />
+    <CustomBuild Include="res\ico00013.ico" />
+    <CustomBuild Include="res\ico00014.ico" />
+    <CustomBuild Include="res\ico00015.ico" />
+    <CustomBuild Include="res\ico00016.ico" />
+    <CustomBuild Include="res\ico00017.ico" />
+    <CustomBuild Include="res\ico00018.ico" />
+    <CustomBuild Include="res\ico00019.ico" />
+    <CustomBuild Include="res\ico00020.ico" />
+    <CustomBuild Include="res\ico00021.ico" />
+    <CustomBuild Include="res\ico00022.ico" />
+    <CustomBuild Include="res\ico00023.ico" />
+    <CustomBuild Include="res\ico00024.ico" />
+    <CustomBuild Include="res\ico00025.ico" />
+    <CustomBuild Include="res\ico00026.ico" />
+    <CustomBuild Include="res\ico00027.ico" />
+    <CustomBuild Include="res\ico00028.ico" />
+    <CustomBuild Include="res\ico00029.ico" />
+    <CustomBuild Include="res\ico00030.ico" />
+    <CustomBuild Include="res\ico00031.ico" />
+    <CustomBuild Include="res\ico00032.ico" />
+    <CustomBuild Include="res\ico00033.ico" />
+    <CustomBuild Include="res\ico00034.ico" />
+    <CustomBuild Include="res\ico00035.ico" />
+    <CustomBuild Include="res\ico00036.ico" />
+    <CustomBuild Include="res\ico00037.ico" />
+    <CustomBuild Include="res\ico00038.ico" />
+    <CustomBuild Include="res\ico00039.ico" />
+    <CustomBuild Include="res\ico211.ico" />
+    <CustomBuild Include="res\icon1.ico" />
+    <CustomBuild Include="res\icon2.ico" />
+    <CustomBuild Include="res\icon3.ico" />
+    <CustomBuild Include="res\icon4.ico" />
+    <CustomBuild Include="res\icon5.ico" />
+    <CustomBuild Include="res\icon6.ico" />
+    <CustomBuild Include="res\icon_.ico" />
+    <CustomBuild Include="res\Icon_Bulb.ico" />
+    <CustomBuild Include="res\Icon_Complete.ico" />
+    <CustomBuild Include="res\Icon_home.ico" />
+    <CustomBuild Include="res\Icon_Manual.ico" />
+    <CustomBuild Include="res\Icon_Physics3A_temperature.ico" />
+    <CustomBuild Include="res\icon_ret.ico" />
+    <CustomBuild Include="res\IEDocument_48x48x256.ico" />
+    <CustomBuild Include="res\job_all1.ico" />
+    <CustomBuild Include="res\job_comp.ico" />
+    <CustomBuild Include="res\JPEG Image.ico" />
+    <CustomBuild Include="res\Key manager.ico" />
+    <CustomBuild Include="res\key.ico" />
+    <CustomBuild Include="res\Lamp1.ico" />
+    <CustomBuild Include="res\lb_fullpack.ico" />
+    <CustomBuild Include="res\LedOff.ico" />
+    <CustomBuild Include="res\버튼리소스\LedOff.ico" />
+    <CustomBuild Include="res\아이콘\LedOff.ico" />
+    <CustomBuild Include="res\LedOn.ico" />
+    <CustomBuild Include="res\버튼리소스\LedOn.ico" />
+    <CustomBuild Include="res\아이콘\LedOn.ico" />
+    <CustomBuild Include="res\left6.ico" />
+    <CustomBuild Include="res\Left6_32x32x256.ico" />
+    <CustomBuild Include="res\line.ico" />
+    <CustomBuild Include="res\아이콘\Log.ico" />
+    <CustomBuild Include="res\log_alar.ico" />
+    <CustomBuild Include="res\log_all1.ico" />
+    <CustomBuild Include="res\log_erro.ico" />
+    <CustomBuild Include="res\login.bmp" />
+    <CustomBuild Include="res\login01(32x32).ico" />
+    <CustomBuild Include="res\LogOff.ico" />
+    <CustomBuild Include="res\LogoMaker.bmp" />
+    <CustomBuild Include="res\NETHOOD.ICO" />
+    <CustomBuild Include="res\network.ico" />
+    <CustomBuild Include="res\network3.ico" />
+    <CustomBuild Include="res\No3_32x32x256.ico" />
+    <CustomBuild Include="res\Ok.ico" />
+    <CustomBuild Include="res\Ok3_32x32x256.ico" />
+    <CustomBuild Include="res\Open.ico" />
+    <CustomBuild Include="res\OPEN01.ico" />
+    <CustomBuild Include="res\버튼리소스\PASTE.BMP" />
+    <CustomBuild Include="res\PLC01.ico" />
+    <CustomBuild Include="res\버튼리소스\PREVIEW.BMP" />
+    <CustomBuild Include="res\버튼리소스\PRINT.BMP" />
+    <CustomBuild Include="res\print01.ico" />
+    <CustomBuild Include="res\printer01.ico" />
+    <CustomBuild Include="res\product.ico" />
+    <CustomBuild Include="res\product01(24x24).ico" />
+    <CustomBuild Include="res\product01.ico" />
+    <CustomBuild Include="res\product02.ico" />
+    <CustomBuild Include="res\Razor_32x32x256.ico" />
+    <CustomBuild Include="res\rect_both.ico" />
+    <CustomBuild Include="res\report.ico" />
+    <CustomBuild Include="res\report01.ico" />
+    <CustomBuild Include="res\Reset.ico" />
+    <CustomBuild Include="res\Return.ico" />
+    <CustomBuild Include="res\right6.ico" />
+    <CustomBuild Include="res\Right6_32x32x256.ico" />
+    <CustomBuild Include="res\Run.ico" />
+    <CustomBuild Include="res\Search.bmp" />
+    <CustomBuild Include="res\Search1.ico" />
+    <CustomBuild Include="res\sendfile.ico" />
+    <CustomBuild Include="res\버튼리소스\sendfile.ico" />
+    <CustomBuild Include="res\Sound.ico" />
+    <CustomBuild Include="res\temperature.ico" />
+    <CustomBuild Include="res\Thermometer.ico" />
+    <CustomBuild Include="res\Toolbar.bmp" />
+    <CustomBuild Include="res\toolbar0.bmp" />
+    <CustomBuild Include="res\toolbar1.bmp" />
+    <CustomBuild Include="res\toolbar2.bmp" />
+    <CustomBuild Include="res\toolbar3.bmp" />
+    <CustomBuild Include="res\toolbar5.bmp" />
+    <CustomBuild Include="res\Toolbar_Log.bmp" />
+    <CustomBuild Include="res\Tools4.ico" />
+    <CustomBuild Include="res\user.ico" />
+    <CustomBuild Include="res\아이콘\User.ico" />
+    <CustomBuild Include="res\user1.bmp" />
+    <CustomBuild Include="res\user1.ico" />
+    <CustomBuild Include="res\user2.ico" />
+    <CustomBuild Include="res\usercard.ico" />
+    <CustomBuild Include="res\userH.ico" />
+    <CustomBuild Include="res\Log\W95MBX01.ICO" />
+    <CustomBuild Include="res\Log\W95MBX02.ICO" />
+    <CustomBuild Include="res\Log\W95MBX03.ICO" />
+    <CustomBuild Include="res\Log\W95MBX04.ICO" />
+    <CustomBuild Include="res\Web2.ico" />
+    <CustomBuild Include="res\Winzip1.ico" />
+    <CustomBuild Include="res\Workgroup.ico" />
+    <CustomBuild Include="res\나가기.ico" />
+    <CustomBuild Include="res\저장.ico" />
+    <CustomBuild Include="ReadMe.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="Ecs.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

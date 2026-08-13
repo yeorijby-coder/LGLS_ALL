@@ -1,0 +1,339 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{20C39D50-9546-45F7-8984-0A946C4EA706}</ProjectGuid>
+    <RootNamespace>EcsLib</RootNamespace>
+    <Keyword>MFCDLLProj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>.\../../Bin/Debug\</OutDir>
+    <IntDir>.\../../Bin/Debug/EcsLib\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>.\../../Bin/Debug\</OutDir>
+    <IntDir>.\../../Bin/Debug/EcsLib\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>.\../../Bin/Release\</OutDir>
+    <IntDir>.\../../Bin/Release/EcsLib\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>.\../../Bin/Release\</OutDir>
+    <IntDir>.\../../Bin/Release/EcsLib\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_AFXEXT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\../../Bin/Debug/EcsLib\EcsLib.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../../Bin/Debug/EcsLib\</AssemblerListingLocation>
+      <ObjectFileName>.\../../Bin/Debug/EcsLib\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../../Bin/Debug/EcsLib\</ProgramDataBaseFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>.\EcsLib.def</ModuleDefinitionFile>
+      <OutputFile>.\../../Bin/Debug/EcsLib.dll</OutputFile>
+      <ImportLibrary>.\../../Bin/Debug\EcsLib.lib</ImportLibrary>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <OutputFile>.\../../Bin/Debug\EcsLib.bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_AFXEXT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\../../Bin/Debug/EcsLib\EcsLib.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../../Bin/Debug/EcsLib\</AssemblerListingLocation>
+      <ObjectFileName>.\../../Bin/Debug/EcsLib\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../../Bin/Debug/EcsLib\</ProgramDataBaseFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>.\EcsLib.def</ModuleDefinitionFile>
+      <OutputFile>.\../../Bin/Debug/EcsLib.dll</OutputFile>
+      <ImportLibrary>.\../../Bin/Debug\EcsLib.lib</ImportLibrary>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <OutputFile>.\../../Bin/Debug\EcsLib.bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_WINDLL;_AFXEXT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <PrecompiledHeaderOutputFile>.\../../Bin/Release/EcsLib\EcsLib.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../../Bin/Release/EcsLib\</AssemblerListingLocation>
+      <ObjectFileName>.\../../Bin/Release/EcsLib\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../../Bin/Release/EcsLib\</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>.\EcsLib.def</ModuleDefinitionFile>
+      <OutputFile>.\../../Bin/Release\EcsLib.dll</OutputFile>
+      <ImportLibrary>.\../../Bin/Release\EcsLib.lib</ImportLibrary>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <OutputFile>.\../../Bin/Release\EcsLib.bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_WINDLL;_AFXEXT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <PrecompiledHeaderOutputFile>.\../../Bin/Release/EcsLib\EcsLib.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../../Bin/Release/EcsLib\</AssemblerListingLocation>
+      <ObjectFileName>.\../../Bin/Release/EcsLib\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../../Bin/Release/EcsLib\</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>.\EcsLib.def</ModuleDefinitionFile>
+      <OutputFile>.\../../Bin/Release\EcsLib.dll</OutputFile>
+      <ImportLibrary>.\../../Bin/Release\EcsLib.lib</ImportLibrary>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <OutputFile>.\../../Bin/Release\EcsLib.bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="EcsLib.def" />
+    <None Include="ReadMe.txt" />
+    <None Include="res\cursor1.cur" />
+    <None Include="res\EcsLib.rc2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ButtonST\BCMenu.cpp" />
+    <ClCompile Include="ButtonST\BtnST.cpp" />
+    <ClCompile Include="ButtonST\CeXDib.cpp" />
+    <ClCompile Include="ButtonST\ShadeButtonST.cpp" />
+    <ClCompile Include="ButtonST\WinXPButtonST.cpp" />
+    <ClCompile Include="ColorPicker.cpp" />
+    <ClCompile Include="DialogResize.cpp" />
+    <ClCompile Include="Dib.cpp" />
+    <ClCompile Include="dllmain.cpp">
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </PrecompiledHeader>
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</CompileAsManaged>
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="DrawGradationRect.cpp" />
+    <ClCompile Include="EcsLib.cpp" />
+    <ClCompile Include="EditEx.cpp" />
+    <ClCompile Include="excom.cpp" />
+    <ClCompile Include="ExtLabel.cpp" />
+    <ClCompile Include="FooButton.cpp" />
+    <ClCompile Include="HyperLink.cpp" />
+    <ClCompile Include="Label.cpp" />
+    <ClCompile Include="LogoBandWnd.cpp" />
+    <ClCompile Include="MenuXP\KeyHelper.cpp" />
+    <ClCompile Include="MenuXP\MenuXP.cpp" />
+    <ClCompile Include="MinButton.cpp" />
+    <ClCompile Include="MultiCastSk.cpp" />
+    <ClCompile Include="SizingControlBar.cpp" />
+    <ClCompile Include="StatusBarEx.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="SxButton.cpp" />
+    <ClCompile Include="ToolBarEx.cpp" />
+    <ClCompile Include="XColorPickerXP.cpp" />
+    <ClCompile Include="XColorPopupXP.cpp" />
+    <ClCompile Include="XmlParser.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ButtonST\BCMenu.h" />
+    <ClInclude Include="ButtonST\BtnST.h" />
+    <ClInclude Include="ButtonST\CeXDib.h" />
+    <ClInclude Include="ButtonST\ShadeButtonST.h" />
+    <ClInclude Include="ButtonST\WinXPButtonST.h" />
+    <ClInclude Include="ColorPicker.h" />
+    <ClInclude Include="DialogResize.h" />
+    <ClInclude Include="Dib.h" />
+    <ClInclude Include="DrawGradationRect.h" />
+    <ClInclude Include="EditEx.h" />
+    <ClInclude Include="excom.h" />
+    <ClInclude Include="ExtLabel.h" />
+    <ClInclude Include="FooButton.h" />
+    <ClInclude Include="HyperLink.h" />
+    <ClInclude Include="Label.h" />
+    <ClInclude Include="LogoBandWnd.h" />
+    <ClInclude Include="MenuXP\KeyHelper.h" />
+    <ClInclude Include="MenuXP\MenuXP.h" />
+    <ClInclude Include="MinButton.h" />
+    <ClInclude Include="MultiCastSk.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="SizingControlBar.h" />
+    <ClInclude Include="StatusBarEx.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SxButton.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="ToolBarEx.h" />
+    <ClInclude Include="XColorPickerXP.h" />
+    <ClInclude Include="XColorPopupXP.h" />
+    <ClInclude Include="XmlParser.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="EcsLib.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="EcsLib.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

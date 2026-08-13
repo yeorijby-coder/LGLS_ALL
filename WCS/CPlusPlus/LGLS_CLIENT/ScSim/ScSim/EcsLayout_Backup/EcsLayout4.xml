@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<Builder id="1" l="0" b="0" r="36" t="18" text="롯데정밀화학 SC#4" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" selcolor="808080">
+	<Group gname="LAYOUT" gid="" show="1">
+		<CDciControl>
+			<Control id="01100000" l="29" b="0" r="36" t="16" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1"/>
+			<Control id="01100000" l="25" b="2" r="28" t="8" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1"/>
+			<Control id="01100000" l="22" b="2" r="25" t="8" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1"/>
+			<Control id="01100000" l="19" b="2" r="22" t="8" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1"/>
+		</CDciControl>
+	</Group>
+	<Group gname="LABEL" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="" l="29" b="16" r="36" t="17" text="롯데정밀화학 SC#4" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="20" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="8" r="28" t="9" text="1F 파쇄기 라인" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="20" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="22" b="8" r="25" t="9" text="2F 파쇄기 라인" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="20" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="19" b="8" r="22" t="9" text="3F 파쇄기 라인" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="20" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RACK" gid="" show="1">
+		<CDciRackCtrl>
+			<Control id="" l="31" b="3" r="32" t="13" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="0" type="3" len="1"/>
+			<Control id="" l="33" b="3" r="34" t="13" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="0" type="3" len="1"/>
+		</CDciRackCtrl>
+	</Group>
+	<Group gname="SC" gid="1112000000" show="1">
+		<CDciRvCtrl>
+			<Control id="1112029004" l="32" b="1" r="33" t="15" text="29004" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="3" forkpos="1" forkcolor="d8e9ec" wingcolor="d8e9ec" railcolor="000000" fontsize="1"/>
+		</CDciRvCtrl>
+	</Group>
+	<Group gname="RTV" gid="1003000000" show="1"/>
+	<Group gname="SFAE-FENCE" gid="1001200000" show="1"/>
+	<Group gname="CV01_W1_1F" gid="1111000000" show="1">
+		<CDciTrackCtrl>
+			<Control id="1111000160" l="31" b="2" r="32" t="3" text="60" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000136" l="33" b="2" r="34" t="3" text="36" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="2">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000171" l="26" b="3" r="27" t="4" text="71" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000173" l="26" b="4" r="27" t="5" text="73" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000175" l="26" b="5" r="27" t="6" text="75" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000177" l="26" b="6" r="27" t="7" text="77" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000181" l="23" b="3" r="24" t="4" text="81" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000183" l="23" b="4" r="24" t="5" text="83" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000185" l="23" b="5" r="24" t="6" text="85" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000187" l="23" b="6" r="24" t="7" text="87" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000191" l="20" b="3" r="21" t="4" text="91" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000193" l="20" b="4" r="21" t="5" text="93" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000195" l="20" b="5" r="21" t="6" text="95" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="1111000197" l="20" b="6" r="21" t="7" text="97" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV02_W1_2F" gid="1411000000" show="1"/>
+	<Group gname="CV03_W1_3F" gid="1511010000" show="1"/>
+</Builder>

@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>	
+	<CV TYPE="0" class="CCv" number="1" device="CV01" cid="1111000100" desc="cid는 자리수가 맞아야 함!-3자리일경우 아래와 여기처럼 표현되어야함!-부득불 3자리 이므로 소스에서 수정이 되어야 함! pTrack->m_nNumber = (PLC_NO * 100) + _ttoi(트랙번호)">
+		<Tracks cid="1111000100" desc="트랙번호의 자리수에 맞게 표현되어야 함!-트랙이 3자리일 경우 Track Number=00으로 표현되어야함!">
+			<Track number="01"/>
+			<Track number="02"/>
+      <Track number="03"/>
+      <Track number="04"/>
+      <Track number="05"/>
+      <Track number="06"/>
+      <Track number="07"/>
+			<Track number="08"/>
+			<Track number="09"/>
+			<Track number="10"/>
+			<Track number="11"/>
+      <Track number="12">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track number="13">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="14"/>
+      <Track number="15"/>
+      <Track number="16">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track number="17">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+			<Track number="18"/>
+			<Track number="19"/>
+			<Track number="20"/>
+			<Track number="21"/>
+      <Track number="22"/>
+      <Track number="23"/>
+      <Track number="24"/>
+      <Track number="25"/>
+      <Track number="26"/>
+      <Track number="27"/>
+			<Track number="28"/>
+			<Track number="29"/>
+			<Track number="30"/>
+      <Track number="31">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+			<Track number="32"/>
+			<Track number="33"/>
+      <Track number="34">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+			<Track number="35"/>
+      <Track number="36">
+        <Status>
+          <ScStoHS/>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="37"/>
+			<Track number="38"/>
+			<Track number="39"/>
+			<Track number="40"/>
+			<Track number="41"/>
+			<Track number="42"/>
+			<Track number="43"/>
+			<Track number="44"/>
+      <Track number="45"/>
+      <Track number="46"/>
+      <Track number="47"/>
+			<Track number="48"/>
+			<Track number="49"/>
+			<Track number="50"/>
+			<Track number="51"/>
+			<Track number="52"/>
+			<Track number="53"/>
+			<Track number="54"/>
+      <Track number="55"/>
+      <Track number="56"/>
+      <Track number="57"/>
+			<Track number="58"/>
+			<Track number="59"/>
+      <Track number="60">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track number="61"/>
+      <Track number="62"/>
+      <Track number="63"/>
+      <Track number="64"/>
+      <Track number="65"/>
+      <Track number="66"/>
+      <Track number="67"/>
+      <Track number="68"/>
+      <Track number="69"/>
+      <Track number="70"/>
+      <Track number="71">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="72"/>
+      <Track number="73">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="74"/>
+      <Track number="75">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="76"/>
+      <Track number="77">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="78"/>
+      <Track number="79"/>
+      <Track number="80"/>
+      <Track number="81">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="82"/>
+      <Track number="83">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="84"/>
+      <Track number="85">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="86"/>
+      <Track number="87">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="88"/>
+      <Track number="89"/>
+      <Track number="90"/>
+      <Track number="91">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="92"/>
+      <Track number="93">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="94"/>
+      <Track number="95">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="96"/>
+      <Track number="97">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track number="98"/>
+      <Track number="99"/>
+    </Tracks>
+	</CV>
+	<CV TYPE="0" class="CCv" number="3" device="CV03" cid="1111000300" desc="cid는 자리수가 맞아야 함!-3자리일경우 아래와 여기처럼 표현되어야함!-부득불 3자리 이므로 소스에서 수정이 되어야 함! pTrack->m_nNumber = (PLC_NO * 100) + _ttoi(트랙번호)">
+		<Tracks cid="1111000300" desc="트랙번호의 자리수에 맞게 표현되어야 함!-트랙이 3자리일 경우 Track Number=00으로 표현되어야함!">
+			<Track number="51"/>
+			<Track number="52"/>
+		  <Track number="53">
+			<Status>
+			  <ScStoHS/>
+			</Status>
+		  </Track>
+		  <Track number="54">
+		   <Status>
+			  <ScRetHS/>
+			</Status>
+		  </Track>
+		  <Track number="55"/>
+		  <Track number="56"/>		
+		</Tracks>
+	</CV>
+
+  
+  
+  
+<SC TYPE="0" class="CSc" number="1" device="SC_E01" cid="1112029001" desc="Number는 순차적이어야 함-레지스트리를 이값에 인덱스로 사용함!-CID를 맞춰서 가져가야함!">
+	<HS_GROUP>
+		<STO_HS>
+			<HS NO="1" TID="12" CV_PLC_NO="1" PAIR="0" BANK="1" BAY="0" LEVEL="1"/> <<참고하면됨
+			<HS NO="3" TID="18" CV_PLC_NO="1" PAIR="0" BANK="1" BAY="36" LEVEL="5"/>
+		</STO_HS>
+		<RET_HS>
+			<HS NO="2" TID="13" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="1"/>
+			<HS NO="4" TID="18" CV_PLC_NO="1" PAIR="0" BANK="1" BAY="36" LEVEL="5"/>
+		</RET_HS>
+	</HS_GROUP>
+	<RACK_INFO LEVEL_START="11" LEVEL_END="20"/>
+</SC>
+	<SC TYPE="0" class="CSc" number="2" device="SC_E02" cid="1112029002" desc="Number는 순차적이어야 함-레지스트리를 이값에 인덱스로 사용함!-CID를 맞춰서 가져가야함!">
+		<HS_GROUP>
+			<STO_HS>
+				<HS NO="1" TID="16" CV_PLC_NO="1" PAIR="0" BANK="1" BAY="0" LEVEL="0"/>
+      </STO_HS>
+			<RET_HS>
+				<HS NO="2" TID="17" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+      </RET_HS>
+		</HS_GROUP>
+    <RACK_INFO LEVEL_START="11" LEVEL_END="20"/>
+  </SC>
+	<SC TYPE="0" class="CSc" number="3" device="SC_E03" cid="1112029003" desc="Number는 순차적이어야 함-레지스트리를 이값에 인덱스로 사용함!-CID를 맞춰서 가져가야함!">
+		<HS_GROUP>
+			<STO_HS>
+				<HS NO="1" TID="34" CV_PLC_NO="1" PAIR="0" BANK="1" BAY="0" LEVEL="0"/>
+      </STO_HS>
+			<RET_HS>
+				<HS NO="2" TID="31" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+      </RET_HS>
+		</HS_GROUP>
+    <RACK_INFO LEVEL_START="11" LEVEL_END="20"/>
+  </SC> 
+  <SC TYPE="0" class="CSc" number="4" device="SC_E04" cid="1112029004" desc="Number는 순차적이어야 함-레지스트리를 이값에 인덱스로 사용함!-CID를 맞춰서 가져가야함!">
+    <HS_GROUP>
+      <STO_HS>
+        <HS NO="1" TID="36" CV_PLC_NO="1" PAIR="0" BANK="1" BAY="0" LEVEL="0"/>
+        <HS NO="3" TID="60" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+      </STO_HS>
+      <RET_HS>
+        <HS NO="2" TID="36" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="4" TID="71" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="5" TID="73" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="6" TID="75" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="7" TID="77" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="8" TID="81" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="9" TID="83" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="10" TID="85" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="11" TID="87" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="12" TID="91" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="13" TID="93" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="14" TID="95" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="15" TID="97" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+      </RET_HS>
+    </HS_GROUP>
+    <RACK_INFO LEVEL_START="11" LEVEL_END="20"/>
+  </SC>
+  <SC TYPE="0" class="CSc" number="5" device="SC_E05" cid="1112029005" desc="Number는 순차적이어야 함-레지스트리를 이값에 인덱스로 사용함!-CID를 맞춰서 가져가야함!">
+    <HS_GROUP>
+      <STO_HS>
+        <HS NO="1" TID="36" CV_PLC_NO="1" PAIR="0" BANK="1" BAY="0" LEVEL="0"/>
+        <HS NO="3" TID="60" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+      </STO_HS>
+      <RET_HS>
+        <HS NO="2" TID="36" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="4" TID="71" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="5" TID="73" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="6" TID="75" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="7" TID="77" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="8" TID="81" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="9" TID="83" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="10" TID="85" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="11" TID="87" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="12" TID="91" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="13" TID="93" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="14" TID="95" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+        <HS NO="15" TID="97" CV_PLC_NO="1" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+      </RET_HS>
+    </HS_GROUP>
+    <RACK_INFO LEVEL_START="11" LEVEL_END="20"/>
+  </SC>
+  <SC TYPE="0" class="CSc" number="6" device="SC_E06" cid="1112029006" desc="Number는 순차적이어야 함-레지스트리를 이값에 인덱스로 사용함!-CID를 맞춰서 가져가야함!">
+    <HS_GROUP>
+      <STO_HS>
+        <HS NO="1" TID="53" CV_PLC_NO="3" PAIR="0" BANK="1" BAY="0" LEVEL="0"/>
+      </STO_HS>
+      <RET_HS>
+        <HS NO="2" TID="54" CV_PLC_NO="3" PAIR="0" BANK="2" BAY="0" LEVEL="0"/>
+      </RET_HS>
+    </HS_GROUP>
+    <RACK_INFO LEVEL_START="11" LEVEL_END="20"/>
+  </SC>
+
+</ECS>

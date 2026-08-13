@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>
+	<Equipment class="CCv" number="1" device="CV_E01" name="1GR 1 Group" cid="1111001000">
+    <FirstTrack>1001</FirstTrack>
+		<Tracks cid="1111001000">
+			<Track	number="01001"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01002"	tabnumber="1"/>
+			<Track	number="01003"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01004"	tabnumber="1">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="01005"	tabnumber="1"/>
+			<Track	number="01006"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01007"	tabnumber="1"/>	
+			<Track	number="01008"	tabnumber="1"/>	
+			<Track	number="01009"	tabnumber="1"/>	
+			<Track	number="01010"	tabnumber="1"/>
+      <Track	number="01011"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01012"	tabnumber="1"/>
+      <Track	number="01013"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01014"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01015"	tabnumber="1"/>
+      <Track	number="01016"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>			
+      <Track	number="01017"	tabnumber="1"/>	
+			<Track	number="01018"	tabnumber="1"/>	
+			<Track	number="01019"	tabnumber="1"/>	
+			<Track	number="01020"	tabnumber="1"/>
+      <Track	number="01021"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01022"	tabnumber="1"/>
+      <Track	number="01023"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01024"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01025"	tabnumber="1"/>
+      <Track	number="01026"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>			
+      <Track	number="01027"	tabnumber="1"/>	
+			<Track	number="01028"	tabnumber="1"/>	
+			<Track	number="01029"	tabnumber="1"/>	
+			<Track	number="01030"	tabnumber="1"/>
+      <Track	number="01031"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01032"	tabnumber="1"/>
+      <Track	number="01033"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01034"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01035"	tabnumber="1"/>
+      <Track	number="01036"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>      
+			<Track	number="01037"	tabnumber="1"/>	
+			<Track	number="01038"	tabnumber="1"/>	
+			<Track	number="01039"	tabnumber="1"/>	
+			<Track	number="01040"	tabnumber="1"/>
+      <Track	number="01041"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01042"	tabnumber="1"/>
+      <Track	number="01043"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01044"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01045"	tabnumber="1"/>
+      <Track	number="01046"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01047"	tabnumber="1"/>	
+			<Track	number="01048"	tabnumber="1"/>	
+			<Track	number="01049"	tabnumber="1"/>	
+			<Track	number="01050"	tabnumber="1"/>	
+			<Track	number="01051"	tabnumber="1">
+        <Status>
+          <StoStation name="전면 입고대 #1"/>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01052"	tabnumber="1">
+        <Status>
+          <StoStation name="전면 입고대 #2"/>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01053"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+          <ArvStation name="전면 입출고대"/>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01054"	tabnumber="1"/>	
+			<Track	number="01055"	tabnumber="1"/>	
+			<Track	number="01056"	tabnumber="1"/>	
+			<Track	number="01057"	tabnumber="1"/>	
+			<Track	number="01058"	tabnumber="1"/>	
+			<Track	number="01059"	tabnumber="1"/>	
+			<Track	number="01060"	tabnumber="1"/>	
+			<Track	number="01061"	tabnumber="1"/>	
+			<Track	number="01062"	tabnumber="1"/>	
+			<Track	number="01063"	tabnumber="1"/>	
+			<Track	number="01064"	tabnumber="1"/>	
+			<Track	number="01065"	tabnumber="1"/>	
+			<Track	number="01066"	tabnumber="1"/>	
+			<Track	number="01067"	tabnumber="1"/>	
+			<Track	number="01068"	tabnumber="1"/>	
+			<Track	number="01069"	tabnumber="1"/>	
+			<Track	number="01070"	tabnumber="1"/>	
+			<Track	number="01071"	tabnumber="1"/>	
+			<Track	number="01072"	tabnumber="1"/>	
+			<Track	number="01073"	tabnumber="1"/>	
+			<Track	number="01074"	tabnumber="1"/>	
+			<Track	number="01075"	tabnumber="1"/>	
+			<Track	number="01076"	tabnumber="1"/>	
+			<Track	number="01077"	tabnumber="1"/>	
+			<Track	number="01078"	tabnumber="1"/>	
+			<Track	number="01079"	tabnumber="1"/>	
+			<Track	number="01080"	tabnumber="1"/>	
+			<Track	number="01081"	tabnumber="1"/>	
+			<Track	number="01082"	tabnumber="1"/>	
+			<Track	number="01083"	tabnumber="1"/>	
+			<Track	number="01084"	tabnumber="1"/>	
+			<Track	number="01085"	tabnumber="1"/>	
+			<Track	number="01086"	tabnumber="1"/>	
+			<Track	number="01087"	tabnumber="1"/>	
+			<Track	number="01088"	tabnumber="1"/>	
+			<Track	number="01089"	tabnumber="1"/>	
+			<Track	number="01090"	tabnumber="1"/>	
+			<Track	number="01091"	tabnumber="1"/>	
+			<Track	number="01092"	tabnumber="1"/>	
+			<Track	number="01093"	tabnumber="1"/>	
+			<Track	number="01094"	tabnumber="1"/>	
+			<Track	number="01095"	tabnumber="1"/>	
+			<Track	number="01096"	tabnumber="1"/>	
+			<Track	number="01097"	tabnumber="1"/>	
+			<Track	number="01098"	tabnumber="1"/>	
+			<Track	number="01099"	tabnumber="1"/>	
+			<Track	number="01100"	tabnumber="1"/>
+      <Track	number="01101"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01102"	tabnumber="1"/>
+      <Track	number="01103"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01104"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01105"	tabnumber="1"/>
+      <Track	number="01106"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01107"	tabnumber="1"/>
+      <Track	number="01108"	tabnumber="1"/>
+      <Track	number="01109"	tabnumber="1"/>
+      <Track	number="01110"	tabnumber="1"/>
+      <Track	number="01111"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01112"	tabnumber="1"/>
+      <Track	number="01113"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01114"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01115"	tabnumber="1"/>
+      <Track	number="01116"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01117"	tabnumber="1"/>
+      <Track	number="01118"	tabnumber="1"/>
+      <Track	number="01119"	tabnumber="1"/>
+      <Track	number="01120"	tabnumber="1"/>
+      <Track	number="01121"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01122"	tabnumber="1"/>
+      <Track	number="01123"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01124"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01125"	tabnumber="1"/>
+      <Track	number="01126"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01127"	tabnumber="1"/>
+      <Track	number="01128"	tabnumber="1"/>
+      <Track	number="01129"	tabnumber="1"/>
+      <Track	number="01130"	tabnumber="1"/>
+      <Track	number="01131"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01132"	tabnumber="1"/>
+      <Track	number="01133"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01134"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01135"	tabnumber="1"/>
+      <Track	number="01136"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01137"	tabnumber="1"/>
+      <Track	number="01138"	tabnumber="1"/>
+      <Track	number="01139"	tabnumber="1"/>
+      <Track	number="01140"	tabnumber="1"/>
+      <Track	number="01141"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01142"	tabnumber="1"/>
+      <Track	number="01143"	tabnumber="1">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01144"	tabnumber="1">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01145"	tabnumber="1"/>
+      <Track	number="01146"	tabnumber="1">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="01147"	tabnumber="1"/>
+      <Track	number="01148"	tabnumber="1"/>
+      <Track	number="01149"	tabnumber="1"/>
+      <Track	number="01150"	tabnumber="1"/>
+      <Track	number="01151"	tabnumber="1">
+        <Status>
+          <RetStation name="후면 출고대 #1"/>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01152"	tabnumber="1">
+        <Status>
+          <RetStation name="후면 출고대 #2"/>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="01153"	tabnumber="1">
+        <Status>
+          <RtvArriveHS/>
+          <ArvStation name="후면 입출고대"/>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+    </Tracks>
+	</Equipment>
+
+	<Equipment class="CSc" number="29001" device="SC_E29001" name="원자재 1호기" forktype="0" floorcount="1" cid="1112029001">
+		<ScStation id="29001" name="원자재 S/C#1" bankpos="3" bank="2" bay="25" level="10"/>
+		<StoHS>
+			<HS pos="1" tid="1003" PassTr="0" pair="0" stair="1"/>
+			<HS pos="3" tid="1103" PassTr="0" pair="0" stair="1"/>
+		</StoHS>
+		<RetHS>
+			<HS pos="2" tid="1004" deadlock="0" pair="0" stair="1">
+				<DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+			</HS>
+			<HS pos="4" tid="1104" deadlock="0" pair="0" stair="1">
+				<DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+			</HS>
+		</RetHS>
+	</Equipment>
+  <Equipment class="CSc" number="29002" device="SC_E29002" name="원자재 2호기" forktype="0" floorcount="1" cid="1112029002">
+    <ScStation id="29002" name="원자재 S/C#2" bankpos="3" bank="2" bay="25" level="10"/>
+    <StoHS>
+      <HS pos="1" tid="1013" PassTr="0" pair="0" stair="1"/>
+      <HS pos="3" tid="1113" PassTr="0" pair="0" stair="1"/>
+    </StoHS>
+    <RetHS>
+      <HS pos="2" tid="1014" deadlock="0" pair="0" stair="1">
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos="4" tid="1114" deadlock="0" pair="0" stair="1">
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+    </RetHS>
+  </Equipment>
+  <Equipment class="CSc" number="29003" device="SC_E29003" name="원자재 3호기" forktype="0" floorcount="1" cid="1112029003">
+    <ScStation id="29003" name="원자재 S/C#3" bankpos="3" bank="2" bay="25" level="10"/>
+    <StoHS>
+      <HS pos="1" tid="1023" PassTr="0" pair="0" stair="1"/>
+      <HS pos="3" tid="1123" PassTr="0" pair="0" stair="1"/>
+    </StoHS>
+    <RetHS>
+      <HS pos="2" tid="1024" deadlock="0" pair="0" stair="1">
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos="4" tid="1124" deadlock="0" pair="0" stair="1">
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+    </RetHS>
+  </Equipment>
+  <Equipment class="CSc" number="29004" device="SC_E29004" name="원자재 4호기" forktype="0" floorcount="1" cid="1112029004">
+    <ScStation id="29004" name="원자재 S/C#4" bankpos="3" bank="2" bay="25" level="10"/>
+    <StoHS>
+      <HS pos="1" tid="1033" PassTr="0" pair="0" stair="1"/>
+      <HS pos="3" tid="1133" PassTr="0" pair="0" stair="1"/>
+    </StoHS>
+    <RetHS>
+      <HS pos="2" tid="1034" deadlock="0" pair="0" stair="1">
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos="4" tid="1134" deadlock="0" pair="0" stair="1">
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+    </RetHS>
+  </Equipment>
+  <Equipment class="CSc" number="29005" device="SC_E29005" name="원자재 5호기" forktype="0" floorcount="1" cid="1112029005">
+    <ScStation id="29005" name="원자재 S/C#5" bankpos="3" bank="2" bay="25" level="10"/>
+    <StoHS>
+      <HS pos="1" tid="1043" PassTr="0" pair="0" stair="1"/>
+      <HS pos="3" tid="1143" PassTr="0" pair="0" stair="1"/>
+    </StoHS>
+    <RetHS>
+      <HS pos="2" tid="1044" deadlock="0" pair="0" stair="1">
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos="4" tid="1144" deadlock="0" pair="0" stair="1">
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+    </RetHS>
+  </Equipment>
+
+  <Equipment class="CRtv" number="1" device="RTV_E01" name="RTV 1호기" cid="1113000001">
+    <DepartHS>
+      <HS pos=  "1" tid="1053" reject="0" main="0"/>
+      <HS pos=  "2" tid="1052" reject="0" main="0"/>
+      <HS pos=  "3" tid="1051" reject="0" main="0"/>
+      <HS pos=  "4" tid="1006" reject="0" main="0"/>
+      <HS pos=  "6" tid="1016" reject="0" main="0"/>
+      <HS pos=  "8" tid="1026" reject="0" main="0"/>
+      <HS pos=  "10" tid="1036" reject="0" main="0"/>
+      <HS pos=  "12" tid="1046" reject="0" main="0"/>
+    </DepartHS>
+    <ArriveHS>
+      <HS pos=  "1" tid="1053" reject="0" main="0">
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "5" tid="1001" reject="0" main="0">
+        <DestST from="29001" to="29001" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      
+      <HS pos=  "7" tid="1011" reject="0" main="0">
+        <DestST from="29002" to="29002" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)2"/>
+      </HS>
+      <HS pos=  "9" tid="1021" reject="0" main="0">
+        <DestST from="29003" to="29003" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "11" tid="1031" reject="0" main="0">
+        <DestST from="29004" to="29004" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "13" tid="1041" reject="0" main="0">
+        <DestST from="29005" to="29005" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01151" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+    </ArriveHS>
+    <Position>
+      <!--추후 현장에서 수정필요-->
+      <Dug pos="0"  EcsRailPos="0"/>
+      <Dug pos="1"  EcsRailPos="1"/>
+      <Dug pos="2"  EcsRailPos="2"/>
+      <Dug pos="3"  EcsRailPos="3"/>
+      <Dug pos="4"  EcsRailPos="4"/>
+      <Dug pos="5"  EcsRailPos="5"/>
+      <Dug pos="6"  EcsRailPos="6"/>
+      <Dug pos="7"  EcsRailPos="7"/>
+      <Dug pos="8"  EcsRailPos="8"/>
+    </Position>
+  </Equipment>
+  <Equipment class="CRtv" number="2" device="RTV_E02" name="RTV 2호기" cid="1113000002">
+    <DepartHS>
+      <HS pos=  "2" tid="1146" reject="0" main="0"/>
+      <HS pos=  "4" tid="1136" reject="0" main="0"/>
+      <HS pos=  "6" tid="1126" reject="0" main="0"/>
+      <HS pos=  "8" tid="1116" reject="0" main="0"/>
+      <HS pos=  "10" tid="1106" reject="0" main="0"/>
+      <HS pos=  "13" tid="1153" reject="0" main="0"/>
+    </DepartHS>
+    <ArriveHS>
+      <HS pos=  "1" tid="1141" reject="0" main="0">
+        <DestST from="29005" to="29005" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "3" tid="1131" reject="0" main="0">
+        <DestST from="29004" to="29004" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "5" tid="1121" reject="0" main="0">
+        <DestST from="29003" to="29003" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "7" tid="1111" reject="0" main="0">
+        <DestST from="29002" to="29002" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "9" tid="1101" reject="0" main="0">
+        <DestST from="29001" to="29001" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+        <DestST from="01053" to="01053" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "11" tid="1151" reject="0" main="0">
+        <DestST from="01151" to="01151" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "12" tid="1152" reject="0" main="0">
+        <DestST from="01152" to="01152" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+      <HS pos=  "13" tid="1153" reject="0" main="0">
+        <DestST from="01153" to="01153" desc="여기서는 5자리로 맞출것 IsValidID(enLengthID 길이만큼만 받음!)"/>
+      </HS>
+    </ArriveHS>
+    <Position>
+      <!--추후 현장에서 수정필요-->
+      <Dug pos="0"  EcsRailPos="0"/>
+      <Dug pos="1"  EcsRailPos="1"/>
+      <Dug pos="2"  EcsRailPos="2"/>
+      <Dug pos="3"  EcsRailPos="3"/>
+      <Dug pos="4"  EcsRailPos="4"/>
+      <Dug pos="5"  EcsRailPos="5"/>
+      <Dug pos="6"  EcsRailPos="6"/>
+      <Dug pos="7"  EcsRailPos="7"/>
+      <Dug pos="8"  EcsRailPos="8"/>
+    </Position>
+  </Equipment>
+
+  <Equipment class="CBcr" number="1" device="BCR_E1" name="Raw Material BCR #1" cid="1117000001" type="S" tabnumber="1" >
+		<BcrTrack tid="1051"/>									 	         
+	</Equipment>									  
+	<Equipment class="CBcr" number="2" device="BCR_E2" name="Raw Material BCR #2" cid="1117000002" type="S" tabnumber="1" >
+		<BcrTrack tid="1052"/>									 	         
+	</Equipment>												 	         
+	<Equipment class="CBcr" number="3" device="BCR_E3" name="Raw Material BCR #3" cid="1117000003" type="S" tabnumber="1" >
+		<BcrTrack tid="1053"/>									 	         
+	</Equipment>
+  <Equipment class="CBcr" number="4" device="BCR_E4" name="Raw Material BCR #4" cid="1117000004" type="S" tabnumber="1" >
+    <BcrTrack tid="1151"/>
+  </Equipment>
+  <Equipment class="CBcr" number="5" device="BCR_E5" name="Raw Material BCR #5" cid="1117000005" type="S" tabnumber="1" >
+    <BcrTrack tid="1152"/>
+  </Equipment>
+  <Equipment class="CBcr" number="6" device="BCR_E6" name="Raw Material BCR #6" cid="1117000006" type="S" tabnumber="1" >
+    <BcrTrack tid="1153"/>
+  </Equipment>
+</ECS>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<Builder id="1" l="0" b="0" r="36" t="20" text="유유제약 RTV#1" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="10" selcolor="808080">
+	<Group gname="LAYOUT" gid="" show="1"/>
+	<Group gname="LABEL" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="" l="29" b="17" r="36" t="18" text="1F" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="0" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="29" b="0" r="36" t="17" text="" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="0" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="22" b="17" r="29" t="18" text="3F" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="0" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="22" b="0" r="29" t="17" text="" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="0" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="21" b="18" r="35" t="20" text="KET PLC SC #1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="0" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RACK" gid="" show="1">
+		<CDciRackCtrl>
+			<Control id="" l="24" b="3" r="25" t="15" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" fontsize="14" start="0" type="3" len="1"/>
+			<Control id="" l="26" b="3" r="27" t="15" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" fontsize="14" start="0" type="3" len="1"/>
+			<Control id="" l="31" b="3" r="32" t="15" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" fontsize="14" start="0" type="3" len="1"/>
+			<Control id="" l="33" b="3" r="34" t="15" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" fontsize="14" start="0" type="3" len="1"/>
+		</CDciRackCtrl>
+	</Group>
+	<Group gname="SC" gid="1112000000" show="1">
+		<CDciRvCtrl>
+			<Control id="11120901" l="32" b="1" r="33" t="16" text="1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" forktype="0" type="3" forkpos="1" forkcolor="d8e9ec" wingcolor="d8e9ec" railcolor="000000" Increase="1"/>
+			<Control id="11120901" l="25" b="1" r="26" t="16" text="1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" forktype="0" type="3" forkpos="1" forkcolor="d8e9ec" wingcolor="d8e9ec" railcolor="000000" Increase="1"/>
+		</CDciRvCtrl>
+	</Group>
+	<Group gname="CV01_W1_1F" gid="1111000000" show="1">
+		<CDciTrackCtrl>
+			<Control id="17210202" l="31" b="2" r="32" t="3" text="202" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="17210203" l="33" b="2" r="34" t="3" text="203" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="17310316" l="24" b="2" r="25" t="3" text="316" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="17310317" l="26" b="2" r="27" t="3" text="317" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="16" prod="0" prod2="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+</Builder>

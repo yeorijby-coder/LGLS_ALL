@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>	
+	<CV TYPE="0" class="CCv" number="1" device="CV01" cid="17210200" com="E" desc="cid는 자리수가 맞아야 함!-3자리일경우 아래와 여기처럼 표현되어야함!-부득불 3자리 이므로 소스에서 수정이 되어야 함! pTrack->m_nNumber = (PLC_NO * 100) + _ttoi(트랙번호)">
+		<Tracks cid="17210200" desc="트랙번호의 자리수에 맞게 표현되어야 함!-트랙이 3자리일 경우 Track Number=00으로 표현되어야함!">
+			<Track number="01"/>
+			<Track number="02">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="03">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="04"/>
+			<Track number="05"/>
+			<Track number="06">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="07">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="08"/>
+			<Track number="09"/>
+			<Track number="10">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="11">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="12">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="13">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="14">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="15">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="16">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="17">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="18">
+				<Status>
+					<ScStoHS/>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="19"/>
+			<Track number="20"/>
+			<Track number="21">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="22">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="23">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="24">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+
+		</Tracks>
+	</CV>
+	
+	<CV TYPE="0" class="CCv" number="2" device="CV02" cid="1111000100" com="E" desc="cid는 자리수가 맞아야 함!-3자리일경우 아래와 여기처럼 표현되어야함!-부득불 3자리 이므로 소스에서 수정이 되어야 함! pTrack->m_nNumber = (PLC_NO * 100) + _ttoi(트랙번호)">
+		<Tracks cid="1111000100" desc="트랙번호의 자리수에 맞게 표현되어야 함!-트랙이 3자리일 경우 Track Number=00으로 표현되어야함!">
+			<Track number="101"/>
+			<Track number="102">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="103">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="104">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="105">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="106"/>
+			<Track number="107"/>
+			<Track number="108">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="109">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="110">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="111">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="112"/>
+			<Track number="113"/>
+			<Track number="114"/>
+			<Track number="115"/>
+			<Track number="116"/>
+			<Track number="117"/>
+			<Track number="118"/>
+			<Track number="119"/>
+			<Track number="120"/>
+			<Track number="121">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="122"/>
+			<Track number="123"/>
+			<Track number="124">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="125">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="126"/>
+			<Track number="127"/>
+			<Track number="128"/>
+			<Track number="129"/>
+			<Track number="130"/>
+			<Track number="131"/>
+			<Track number="132">
+				<Status>
+					<ScStoHS/>
+					<ScRetHS/>
+				</Status>
+			</Track>
+		</Tracks>
+	</CV>
+	
+	<SC TYPE="0" class="CSc" number="1" device="SC_E01" cid="1112029001" com="E" desc="Number는 순차적이어야 함-레지스트리를 이값에 인덱스로 사용함!-CID를 맞춰서 가져가야함!">
+		<HS_GROUP>
+			<!--
+				입고 H/S <HS> : DEL_ADDR  = 입고(로딩) 완료후 지울 CV 트랙 데이터 시작주소(D)
+				                DEL_CNT   = 지울 워드 개수
+				                PROD_ADDR = 입고(로딩) 완료후 화물감지 워드 주소 (0 쓰기 = 삭제)
+				출고 H/S <HS> : PROD_ADDR = 출고(언로딩) 완료후 화물감지 워드 주소 (1 쓰기 = 감지)
+				PAIR 트랙     : DEL_ADDR2 / DEL_CNT2 / PROD_ADDR2 (포크#2)
+				속성이 없으면 기존 계산식으로 동작
+				CvSim 5워드맵 : 기본주소 = (트랙번호 - 첫트랙번호 + 1) * 5, 화물감지 = 기본주소 + 2
+			-->
+			<STO_HS>
+				<HS NO="1"  TID="6"   CV_PLC_NO="1" PAIR="0" BANK="2" BAY="12"  LEVEL="0" DEL_ADDR="30" DEL_CNT="5" PROD_ADDR="32"/>
+				<HS NO="3"  TID="2"   CV_PLC_NO="1" PAIR="0" BANK="2" BAY="15"  LEVEL="0" DEL_ADDR="10" DEL_CNT="5" PROD_ADDR="12"/>
+			</STO_HS>
+			<RET_HS>
+				<HS NO="2"  TID="7"   CV_PLC_NO="1" PAIR="0" BANK="2" BAY="10"  LEVEL="0" PROD_ADDR="37"/>
+				<HS NO="4"  TID="3"   CV_PLC_NO="1" PAIR="0" BANK="2" BAY="12"  LEVEL="0" PROD_ADDR="17"/>
+			</RET_HS>
+		</HS_GROUP>
+		<RACK_INFO LEVEL_START="11" LEVEL_END="20"/>
+	</SC>
+</ECS>

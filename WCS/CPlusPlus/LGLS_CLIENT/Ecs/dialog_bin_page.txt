@@ -1,0 +1,148 @@
+cpp 
+
+// SystemConfig.cpp : 구현 파일입니다.
+//
+
+#include "stdafx.h"
+#include "Ecs.h"
+#include "SystemConfig.h"
+#include "afxdialogex.h"
+
+
+// CSystemConfigDlg 대화 상자입니다.
+
+IMPLEMENT_DYNAMIC(CSystemConfigDlg, CSkinDialog)
+
+CSystemConfigDlg::CSystemConfigDlg(CWnd* pParent /*=NULL*/)
+	: CSkinDialog(CSystemConfigDlg::IDD, pParent)
+{
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bInitialized = FALSE;
+}
+
+CSystemConfigDlg::~CSystemConfigDlg()
+{
+}
+
+void CSystemConfigDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CSkinDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_SYSTEM_CONFIG_EDIT1, m_edit1);
+	DDX_Control(pDX, IDC_SYSTEM_CONFIG_BTN1, m_btn2);
+	DDX_Control(pDX, ID_SYSTEM_CONFIG_OK, m_btnOk);
+	DDX_Control(pDX, ID_SYSTEM_CONFIG_CANCEL, m_btnCancel);
+}
+
+BEGIN_MESSAGE_MAP(CSystemConfigDlg, CSkinDialog)
+	ON_WM_PAINT()
+	ON_WM_QUERYDRAGICON()
+	ON_WM_SIZE()
+END_MESSAGE_MAP()
+
+BOOL CSystemConfigDlg::OnInitDialog()
+{
+	CSkinDialog::OnInitDialog();
+	if( !m_bInitialized )
+	{
+		m_bInitialized = TRUE;
+
+		m_btnOk.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE), Global.GetRGB(IDX_RGB_MASK));
+		m_btnOk.SetIcon(Global.GetIcon(IDX_ICON_OK, ICON16), NULL, 5);
+
+		m_btnCancel.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE), Global.GetRGB(IDX_RGB_MASK));
+		m_btnCancel.SetIcon(Global.GetIcon(IDX_ICON_CANCEL, ICON16), NULL, 5);
+
+
+		//IDC_LOGIN_PICTUREBOX
+		HBITMAP hbitBg;
+		hbitBg = ::LoadBitmap(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDB_SPLASH_ECS));
+		//m_bgPic.SetBitmap(hbitBg);
+		RelocationControls();
+	}
+	Invalidate(TRUE);
+	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+
+void CSystemConfigDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CSkinDialog::OnSize(nType, cx, cy);
+
+	// TODO: Add your message handler code here
+
+	if( m_bInitialized )
+		RelocationControls();
+}
+
+
+HCURSOR CSystemConfigDlg::OnQueryDragIcon()
+{
+	return static_cast<HCURSOR>(m_hIcon);
+}
+
+void CSystemConfigDlg::OnPaint()
+{
+	CSkinDialog::OnPaint();
+}
+
+void CSystemConfigDlg::RelocationControls()
+{
+	CRect rc;
+	GetClientRect(&rc);
+
+	int x=0, y=0;
+
+	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
+
+	x = rc.Width() - 20 - size.cx;
+	y = rc.Height() - 10 - size.cy;
+	m_btnCancel.MoveWindow(x, y, size.cx, size.cy, TRUE);
+
+	x -= size.cx + 10;
+	m_btnOk.MoveWindow(x, y, size.cx, size.cy, TRUE);
+	m_btnOk.Invalidate();
+}
+
+
+
+//header
+#pragma once
+
+#include "SkinDialog.h"
+#include "SkinButton.h"
+#include "afxwin.h"
+#include "URMDBAccess.h"
+#include "EcsDoc.h"
+// CSystemConfigDlg 대화 상자입니다.
+
+class CSystemConfigDlg : public CSkinDialog
+{
+	DECLARE_DYNAMIC(CSystemConfigDlg)
+
+public:
+	CSystemConfigDlg(CWnd* pParent = NULL);   // 표준 생성자입니다..
+	CSystemConfigDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);
+	virtual ~CSystemConfigDlg();
+
+// 대화 상자 데이터입니다.
+	enum { IDD = IDD_SYSTEM_CONFIG };
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
+
+
+	HICON m_hIcon;
+	BOOL m_bInitialized;
+	void RelocationControls();
+
+	virtual BOOL OnInitDialog();
+	afx_msg void OnPaint();
+	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	DECLARE_MESSAGE_MAP()
+public:
+	CEdit m_edit1;
+	CSkinButton m_btn2;
+	CSkinButton m_btnOk;
+	CSkinButton m_btnCancel;
+};
+

@@ -1,0 +1,2700 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 중립 resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(949)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_KEYMANAGER          ICON                    "res\\Key manager.ico"
+
+IDI_JPEG                ICON                    "res\\JPEG Image.ico"
+
+IDI_IEDOCUMENT          ICON                    "res\\IEDocument_48x48x256.ico"
+
+IDI_HELP2               ICON                    "res\\Help2_32x32x256.ico"
+
+IDI_HELP                ICON                    "res\\Help.ico"
+
+IDI_HALLOWEEN2          ICON                    "res\\Halloween2.ico"
+
+IDI_HALLOWEEN1          ICON                    "res\\Halloween1.ico"
+
+IDI_EXPLORER            ICON                    "res\\Explorer.ico"
+
+IDI_EOAPP               ICON                    "res\\EOapp.ico"
+
+IDI_CLASSES1            ICON                    "res\\Classes1_32x32x16.ico"
+
+IDI_CDROM               ICON                    "res\\CDRom.ico"
+
+IDI_CANCEL4             ICON                    "res\\Cancel4_32x32x2.ico"
+
+IDI_CANCEL3             ICON                    "res\\Cancel3_32x32x256.ico"
+
+IDI_CANCEL1             ICON                    "res\\Cancel1_32x32x16.ico"
+
+IDI_BUTTERFLY           ICON                    "res\\Butterfly.ico"
+
+IDI_BALOON              ICON                    "res\\Baloon.ico"
+
+IDI_ABOUT               ICON                    "res\\About.ico"
+
+IDI_ZIP1                ICON                    "res\\Winzip1.ico"
+
+IDI_WORKGROUP           ICON                    "res\\Workgroup.ico"
+
+IDI_WEB2                ICON                    "res\\Web2.ico"
+
+IDI_SOUND               ICON                    "res\\Sound.ico"
+
+IDI_RAZOR               ICON                    "res\\Razor_32x32x256.ico"
+
+IDI_OPEN                ICON                    "res\\Open.ico"
+
+IDI_OK3                 ICON                    "res\\Ok3_32x32x256.ico"
+
+IDI_NO3                 ICON                    "res\\No3_32x32x256.ico"
+
+IDI_LOGOFF              ICON                    "res\\LogOff.ico"
+
+IDI_LEDON               ICON                    "res\\LedOn.ico"
+
+IDI_LEDOFF              ICON                    "res\\LedOff.ico"
+
+IDI_LAMP1               ICON                    "res\\Lamp1.ico"
+
+IDI_CLASSES2            ICON                    "res\\classes2.ico"
+
+IDI_CLASSES3            ICON                    "res\\classes3.ico"
+
+IDI_CLASSES4            ICON                    "res\\classes4.ico"
+
+IDI_CLASSES5            ICON                    "res\\classes5.ico"
+
+IDI_CLASSES6            ICON                    "res\\classes6.ico"
+
+#endif    // 중립 resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// 한국어(대한민국) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
+LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
+#pragma code_page(949)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\icon1.ico"
+
+IDR_ECSTYPE             ICON                    "res\\EcsDoc.ico"
+
+IDI_TO_LEFT             ICON                    "res\\Left6_32x32x256.ico"
+
+IDI_TO_RIGHT            ICON                    "res\\Right6_32x32x256.ico"
+
+IDI_TOOL                ICON                    "res\\Tools4.ico"
+
+IDI_OK                  ICON                    "res\\Ok.ico"
+
+IDI_RUN                 ICON                    "res\\Run.ico"
+
+IDI_SEARCH              ICON                    "res\\Search1.ico"
+
+IDI_UPDATE              ICON                    "res\\Return.ico"
+
+IDI_USER1               ICON                    "res\\ico00001.ico"
+
+IDI_CANCEL              ICON                    "res\\Cancel.ico"
+
+IDI_PRODUCT1            ICON                    "res\\ico00002.ico"
+
+IDI_CLOSE1              ICON                    "res\\나가기.ico"
+
+IDI_EXIT                ICON                    "res\\Exit.ico"
+
+IDI_USER2               ICON                    "res\\user.ico"
+
+IDI_SAVE                ICON                    "res\\저장.ico"
+
+IDI_CLOSE               ICON                    "res\\ico00004.ico"
+
+IDI_PRODUCT2            ICON                    "res\\ico00005.ico"
+
+IDI_REPORT1             ICON                    "res\\ico00006.ico"
+
+IDI_USER3               ICON                    "res\\userH.ico"
+
+IDI_OPEN01              ICON                    "res\\OPEN01.ico"
+
+IDI_NETWORK1            ICON                    "res\\NETHOOD.ICO"
+
+IDI_PLC                 ICON                    "res\\ico00009.ico"
+
+IDI_LOG_ALL             ICON                    "res\\ico00010.ico"
+
+IDI_LOG_JOB             ICON                    "res\\icon2.ico"
+
+IDI_PRINT1              ICON                    "res\\icon3.ico"
+
+IDI_LOG_MODE            ICON                    "res\\ico00011.ico"
+
+IDI_LOG_EVENT           ICON                    "res\\icon4.ico"
+
+IDI_LOG_ERROR           ICON                    "res\\icon5.ico"
+
+IDI_LOG_DEBUG           ICON                    "res\\icon6.ico"
+
+IDI_FIND                ICON                    "res\\ico00007.ico"
+
+IDI_PRINT               ICON                    "res\\ico00008.ico"
+
+IDI_PC                  ICON                    "res\\network.ico"
+
+IDI_KEY                 ICON                    "res\\key.ico"
+
+IDI_PRODUCT             ICON                    "res\\lb_fullpack.ico"
+
+IDI_IDCARD              ICON                    "res\\usercard.ico"
+
+IDI_ICON_RETURN         ICON                    "res\\icon_ret.ico"
+
+IDI_ICON_LEDON          ICON                    "res\\아이콘\\LedOn.ico"
+
+IDI_ICON_LEDOFF         ICON                    "res\\아이콘\\LedOff.ico"
+
+IDI_ICON_HOME           ICON                    "res\\Icon_home.ico"
+
+IDI_ICON_MANUAL         ICON                    "res\\Icon_Manual.ico"
+
+IDI_ICON_ESTOP          ICON                    "res\\ico00012.ico"
+
+IDI_USER                ICON                    "res\\ico00013.ico"
+
+IDI_ICON_COMPLETE       ICON                    "res\\icon_.ico"
+
+IDI_BOARD               ICON                    "res\\ico00014.ico"
+
+IDI_ICON_CUT            ICON                    "res\\ico00017.ico"
+
+IDI_ICON_PASTE          ICON                    "res\\ico00018.ico"
+
+IDI_ICON_COPY           ICON                    "res\\ico00016.ico"
+
+IDI_LOG                 ICON                    "res\\report.ico"
+
+IDI_USER4               ICON                    "res\\user2.ico"
+
+IDI_PASTE               ICON                    "res\\ico00020.ico"
+
+IDI_EX_INFO             ICON                    "res\\ico00021.ico"
+
+IDI_EX_CAUTION          ICON                    "res\\ico00022.ico"
+
+IDI_EX_ERROR            ICON                    "res\\ico00023.ico"
+
+IDI_BOX1                ICON                    "res\\ico00024.ico"
+
+IDI_BOX2                ICON                    "res\\ico00025.ico"
+
+IDI_BOX3                ICON                    "res\\ico00026.ico"
+
+IDI_BOX4                ICON                    "res\\ico00027.ico"
+
+IDI_BOX5                ICON                    "res\\ico00028.ico"
+
+IDI_BOX6                ICON                    "res\\ico00029.ico"
+
+IDI_BOX7                ICON                    "res\\ico00030.ico"
+
+IDI_JOB_ALL             ICON                    "res\\log_all1.ico"
+
+IDI_JOB_ERROR           ICON                    "res\\log_erro.ico"
+
+IDI_JOB_NEW             ICON                    "res\\ico00031.ico"
+
+IDI_JOB_PROGRESS        ICON                    "res\\job_all1.ico"
+
+IDI_JOB_COMPLETE        ICON                    "res\\job_comp.ico"
+
+IDI_WORKER1             ICON                    "res\\ico00032.ico"
+
+IDI_WORKER2             ICON                    "res\\ico00033.ico"
+
+IDI_BASKET              ICON                    "res\\ico00034.ico"
+
+IDI_JOB_PLAN            ICON                    "res\\ico00035.ico"
+
+IDI_JOB_RESULT          ICON                    "res\\ico00036.ico"
+
+IDI_TO_EJECT            ICON                    "res\\eject.ico"
+
+IDI_TO_X                ICON                    "res\\아이콘\\close.ico"
+
+IDI_NETWORK2            ICON                    "res\\network3.ico"
+
+IDI_IO                  ICON                    "res\\아이콘\\blob.ico"
+
+IDI_BOX8                ICON                    "res\\아이콘\\Box_2.ico"
+
+IDI_DOC1                ICON                    "res\\config2.ico"
+
+IDI_ICON_MODIFY         ICON                    "res\\버튼리소스\\sendfile.ico"
+
+IDI_ICON_LOG_WARNING    ICON                    "res\\Log\\W95MBX03.ICO"
+
+IDI_ICON_LOG_QUESTION   ICON                    "res\\Log\\W95MBX02.ICO"
+
+IDI_ICON_LOG_INFO       ICON                    "res\\Log\\W95MBX04.ICO"
+
+IDI_ICON_LOG_ERROR      ICON                    "res\\Log\\W95MBX01.ICO"
+
+IDI_ICON_LIGHTBULB      ICON                    "res\\Icon_Bulb.ico"
+
+IDI_LOG_ALARM           ICON                    "res\\log_alar.ico"
+
+IDI_ICON3               ICON                    "res\\ico00003.ico"
+
+IDI_RESET               ICON                    "res\\Reset.ico"
+
+IDI_ICON4               ICON                    "res\\temperature.ico"
+
+IDI_ICON5               ICON                    "res\\Icon_Physics3A_temperature.ico"
+
+IDI_ICON6               ICON                    "res\\Thermometer.ico"
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 18, 1\r\n"
+    "#pragma code_page(949)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\Ecs.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""l.kor\\afxres.rc""          // Standard components\r\n"
+    "#include ""l.kor\\afxprint.rc""        // printing/print preview resources\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
+
+IDR_TOOLBAR0            BITMAP                  "res\\toolbar0.bmp"
+
+IDB_LOGIN               BITMAP                  "res\\login.bmp"
+
+IDB_ECS_LOGO            BITMAP                  "res\\EcsLogo2.bmp"
+
+IDB_ECS_CV              BITMAP                  "res\\EcsCv.bmp"
+
+IDR_LOGGINGBAR          BITMAP                  "res\\Toolbar_Log.bmp"
+
+IDB_SEARCH              BITMAP                  "res\\Search.bmp"
+
+IDB_ECS_RGV             BITMAP                  "res\\EcsRgv.bmp"
+
+IDB_BTN_REFRESH         BITMAP                  "res\\버튼리소스\\PREVIEW.BMP"
+
+IDB_BTN_PRINT           BITMAP                  "res\\버튼리소스\\PRINT.BMP"
+
+IDB_BTN_PASTE           BITMAP                  "res\\버튼리소스\\PASTE.BMP"
+
+IDB_BTN_CUT             BITMAP                  "res\\버튼리소스\\CUT.BMP"
+
+IDB_BTN_COPY            BITMAP                  "res\\버튼리소스\\COPY.BMP"
+
+IDB_ECS_EQUIP           BITMAP                  "res\\EcsEquip.bmp"
+
+IDB_BITMAP3             BITMAP                  "res\\bitmap3.bmp"
+
+IDR_TOOLBAR3            BITMAP                  "res\\toolbar3.bmp"
+
+IDR_TOOLBAR4            BITMAP                  "res\\toolbar5.bmp"
+
+IDR_TOOLBAR5            BITMAP                  "res\\bmp00001.bmp"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Toolbar
+//
+
+IDR_MAINFRAME TOOLBAR 16, 15
+BEGIN
+    BUTTON      ID_FILE_NEW
+    BUTTON      ID_FILE_OPEN
+    BUTTON      ID_FILE_SAVE
+    SEPARATOR
+    BUTTON      ID_EDIT_CUT
+    BUTTON      ID_EDIT_COPY
+    BUTTON      ID_EDIT_PASTE
+    SEPARATOR
+    BUTTON      ID_FILE_PRINT
+    SEPARATOR
+    BUTTON      ID_APP_ABOUT
+END
+
+IDR_TOOLBAR0 TOOLBAR 28, 28
+BEGIN
+    BUTTON      ID_MAKER_LOGO
+    SEPARATOR
+    BUTTON      ID_SYSTEM_CONFIG1
+    BUTTON      ID_SYSTEM_CONFIG2
+    BUTTON      ID_SYSTEM_CONFIG3
+    SEPARATOR
+    BUTTON      ID_JOB_MANAGER
+    BUTTON      ID_JOB_OFFLINE
+    SEPARATOR
+    BUTTON      ID_LOG_ALL
+    SEPARATOR
+    BUTTON      ID_TEMPERATURE
+    SEPARATOR
+    BUTTON      ID_APP_ABOUT
+    SEPARATOR
+    BUTTON      ID_APP_EXIT
+END
+
+IDR_LOGGINGBAR TOOLBAR 26, 26
+BEGIN
+    BUTTON      ID_LOG_FILE
+    BUTTON      ID_LOG_SAVEAS
+    SEPARATOR
+    BUTTON      ID_LOG_EXIT
+    SEPARATOR
+    BUTTON      ID_REFRESH_LOG
+END
+
+IDR_TOOLBAR3 TOOLBAR 28, 28
+BEGIN
+    BUTTON      ID_USER_LOGO
+    SEPARATOR
+    BUTTON      ID_COM_CV01_01
+    BUTTON      ID_COM_CV01_02
+    BUTTON      ID_COM_CV01_03
+    BUTTON      ID_COM_CV01_04
+    BUTTON      ID_COM_CV01_05
+    BUTTON      ID_COM_CV01_06
+    BUTTON      ID_COM_CV01_07
+    BUTTON      ID_COM_CV01_08
+    BUTTON      ID_COM_CV01_09
+    BUTTON      ID_COM_CV01_10
+    BUTTON      ID_COM_CV01_11
+    BUTTON      ID_COM_CV01_12
+    BUTTON      ID_COM_CV01_13
+    BUTTON      ID_COM_CV01_14
+    BUTTON      ID_COM_CV01_15
+    BUTTON      ID_COM_CV01_16
+    SEPARATOR
+    BUTTON      ID_COM_CV02_01
+    BUTTON      ID_COM_CV02_02
+    BUTTON      ID_COM_CV02_03
+    BUTTON      ID_COM_CV02_04
+    BUTTON      ID_COM_CV02_05
+    BUTTON      ID_COM_CV02_06
+    BUTTON      ID_COM_CV02_07
+    BUTTON      ID_COM_CV02_08
+    BUTTON      ID_COM_CV02_09
+    BUTTON      ID_COM_CV02_10
+    BUTTON      ID_COM_CV02_11
+    BUTTON      ID_COM_CV02_12
+    BUTTON      ID_COM_CV02_13
+    BUTTON      ID_COM_CV02_14
+    BUTTON      ID_COM_CV02_15
+    BUTTON      ID_COM_CV02_16
+    SEPARATOR
+    BUTTON      ID_APP_EXIT
+END
+
+IDR_TOOLBAR4 TOOLBAR 28, 28
+BEGIN
+    BUTTON      ID_USER_LOGO
+    SEPARATOR
+    BUTTON      ID_COM_CV03_01
+    BUTTON      ID_COM_CV03_02
+    BUTTON      ID_COM_CV03_03
+    BUTTON      ID_COM_CV03_04
+    BUTTON      ID_COM_CV03_05
+    BUTTON      ID_COM_CV03_06
+    BUTTON      ID_COM_CV03_07
+    BUTTON      ID_COM_CV03_08
+    BUTTON      ID_COM_CV03_09
+    BUTTON      ID_COM_CV03_10
+    BUTTON      ID_COM_CV03_11
+    BUTTON      ID_COM_CV03_12
+    BUTTON      ID_COM_CV03_13
+    BUTTON      ID_COM_CV03_14
+    BUTTON      ID_COM_CV03_15
+    BUTTON      ID_COM_CV03_16
+    SEPARATOR
+    BUTTON      ID_COM_CV04_01
+    BUTTON      ID_COM_CV04_02
+    BUTTON      ID_COM_CV04_03
+    BUTTON      ID_COM_CV04_04
+    BUTTON      ID_COM_CV04_05
+    BUTTON      ID_COM_CV04_06
+    BUTTON      ID_COM_CV04_07
+    BUTTON      ID_COM_CV04_08
+    BUTTON      ID_COM_CV04_09
+    BUTTON      ID_COM_CV04_10
+    BUTTON      ID_COM_CV04_11
+    BUTTON      ID_COM_CV04_12
+    BUTTON      ID_COM_CV04_13
+    BUTTON      ID_COM_CV04_14
+    BUTTON      ID_COM_CV04_15
+    BUTTON      ID_COM_CV04_16
+END
+
+IDR_TOOLBAR5 TOOLBAR 28, 28
+BEGIN
+    BUTTON      ID_USER_LOGO
+    SEPARATOR
+    BUTTON      ID_COM_CV05_01
+    BUTTON      ID_COM_CV05_02
+    BUTTON      ID_COM_CV05_03
+    BUTTON      ID_COM_CV05_04
+    BUTTON      ID_COM_CV05_05
+    BUTTON      ID_COM_CV05_06
+    BUTTON      ID_COM_CV05_07
+    BUTTON      ID_COM_CV05_08
+    BUTTON      ID_COM_CV05_09
+    BUTTON      ID_COM_CV05_10
+    BUTTON      ID_COM_CV05_11
+    BUTTON      ID_COM_CV05_12
+    BUTTON      ID_COM_CV05_13
+    BUTTON      ID_COM_CV05_14
+    BUTTON      ID_COM_CV05_15
+    BUTTON      ID_COM_CV05_16
+    SEPARATOR
+    BUTTON      ID_COM_CV06_01
+    BUTTON      ID_COM_CV06_02
+    BUTTON      ID_COM_CV06_03
+    BUTTON      ID_COM_CV06_04
+    BUTTON      ID_COM_CV06_05
+    BUTTON      ID_COM_CV06_06
+    BUTTON      ID_COM_CV06_07
+    BUTTON      ID_COM_CV06_08
+    BUTTON      ID_COM_CV06_09
+    BUTTON      ID_COM_CV06_10
+    BUTTON      ID_COM_CV06_11
+    BUTTON      ID_COM_CV06_12
+    BUTTON      ID_COM_CV06_13
+    BUTTON      ID_COM_CV06_14
+    BUTTON      ID_COM_CV06_15
+    BUTTON      ID_COM_CV06_16
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINFRAME MENU
+BEGIN
+    POPUP "시스템(&S)"
+    BEGIN
+        MENUITEM "환경 설정(&C)",                   ID_SYSTEM_CONFIG1
+        MENUITEM "사용자 관리(&U)",                  ID_SYS_USER_MANAGER
+        MENUITEM "ECS 제어창(&E)",                 ID_SYS_CONTROL
+        MENUITEM SEPARATOR
+        MENUITEM "종료(&E)",                      ID_APP_EXIT
+    END
+    POPUP "작업(&J)"
+    BEGIN
+        MENUITEM "작업정보 관리(&J)",                 ID_JOB_MANAGER
+        MENUITEM "반자동 작업(&O)",                  ID_JOB_OFFLINE
+    END
+    POPUP "로그(&L)"
+    BEGIN
+        MENUITEM "로그 관리(&L)",                   ID_LOG_ALL
+        MENUITEM "알람 관리(&A)",                   ID_WARNING
+    END
+    POPUP "보기(&V)"
+    BEGIN
+        MENUITEM "도구 모음(&T)",                   ID_VIEW_TOOLBAR
+        MENUITEM "상태 표시줄(&S)",                  ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        MENUITEM "LAYOUT 정보(&L)",               ID_VIEW_LAYOUT_INFO
+        MENUITEM SEPARATOR
+        MENUITEM "모든 설비 정지(&P)",                ID_SET_ALL_SUSPEND
+        MENUITEM "모든 설비 정지 해제(&A)",             ID_UNSET_ALL_SUSPEND
+    END
+    POPUP "도움말(&H)"
+    BEGIN
+        MENUITEM "Ecs 정보(&A)...",               ID_APP_ABOUT
+    END
+END
+
+IDR_LOGGING MENU
+BEGIN
+    POPUP "파일(&F)"
+    BEGIN
+        MENUITEM "열기(&O)...\tCtrl+O",           ID_LOG_FILE
+        MENUITEM "다른 이름으로 저장(&A)...",           ID_LOG_SAVEAS
+        MENUITEM SEPARATOR
+        MENUITEM "종료(&X)",                      ID_LOG_EXIT
+    END
+    MENUITEM "최신정보(&R)",                    ID_REFRESH_LOG
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS
+BEGIN
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
+    "P",            ID_FILE_PRINT,          VIRTKEY, CONTROL
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG 0, 0, 235, 55
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Ecs 정보"
+FONT 9, "굴림"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    LTEXT           "Ecs 버전 1.0",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2008",IDC_STATIC,40,25,119,8
+    DEFPUSHBUTTON   "확인",IDOK,178,7,50,14,WS_GROUP
+END
+
+IDD_CONFIG_SUB1_PAGE DIALOGEX 0, 0, 311, 273
+STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "경로 및 설비별 색상 정보"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    GROUPBOX        "색상정보",IDC_STATIC,3,6,303,142
+    GROUPBOX        "자동작업",IDC_STATIC,11,20,70,116
+    RTEXT           "입고",IDC_STATIC,17,34,29,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_AUTO_STO,51,34,23,15
+    RTEXT           "출고",IDC_STATIC,17,53,29,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_AUTO_RET,51,53,23,15
+    RTEXT           "이동",IDC_STATIC,17,72,29,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_AUTO_MOVE,51,72,23,15
+    RTEXT           "렉이동",IDC_STATIC,15,91,31,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_AUTO_RTR,51,91,23,15
+    RTEXT           "창고이동",IDC_STATIC,16,110,30,15,SS_CENTERIMAGE | NOT WS_VISIBLE
+    PUSHBUTTON      "",IDC_BTN_AUTO_WTW,51,110,23,15,NOT WS_VISIBLE
+    GROUPBOX        "반자동작업",IDC_STATIC,87,20,66,116
+    RTEXT           "입고",IDC_STATIC,94,34,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_SEMI_STO,123,34,23,15
+    RTEXT           "출고",IDC_STATIC,94,53,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_SEMI_RET,123,53,23,15
+    RTEXT           "이동",IDC_STATIC,94,72,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_SEMI_MOVE,123,72,23,15
+    RTEXT           "렉이동",IDC_STATIC,88,91,31,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_SEMI_RTR,123,91,23,15
+    RTEXT           "창고이동",IDC_STATIC,88,110,31,15,SS_CENTERIMAGE | NOT WS_VISIBLE
+    PUSHBUTTON      "",IDC_BTN_SEMI_WTW,123,110,23,15,NOT WS_VISIBLE
+    RTEXT           "수동",IDC_STATIC,239,71,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_MANUAL,267,71,23,15
+    RTEXT           "데드락",IDC_STATIC,239,90,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_ALARM,267,90,23,15
+    RTEXT           "에러",IDC_STATIC,239,109,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_ERROR,267,109,23,15
+    GROUPBOX        "경로 설정",IDC_STATIC,3,155,303,82
+    RTEXT           "작업정보 : ",IDC_STATIC,8,170,39,10
+    EDITTEXT        IDC_EDIT_JOB_PATH,47,167,193,15,ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    EDITTEXT        IDC_EDIT_JOB_FILE,240,167,43,15,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "",IDC_BUTTON_JOB_PATH,282,167,16,16
+    RTEXT           "로그정보 : ",IDC_STATIC,8,186,39,10
+    EDITTEXT        IDC_EDIT_LOG_PATH,47,183,193,15,ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    EDITTEXT        IDC_EDIT_LOG_FILE,240,183,43,15,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "",IDC_BUTTON_LOG_PATH,282,183,16,16
+    RTEXT           "통계정보 : ",IDC_STATIC,8,202,39,10
+    EDITTEXT        IDC_EDIT_STC_PATH,47,199,193,15,ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    EDITTEXT        IDC_EDIT_STC_FILE,240,199,43,15,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "",IDC_BUTTON_STC_PATH,282,199,16,16
+    RTEXT           "설비정보 : ",IDC_STATIC,8,218,39,10
+    EDITTEXT        IDC_EDIT_INFO_PATH,47,215,193,15,ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    EDITTEXT        IDC_EDIT_INFO_FILE,240,215,43,15,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "",IDC_BUTTON_INFO_PATH,282,215,16,16
+    GROUPBOX        "",IDC_STATIC,4,241,133,28
+    PUSHBUTTON      "색상 초기화",IDC_BUTTON_COLOR_RESET,7,249,65,17
+    PUSHBUTTON      "경로초기화",IDC_BUTTON_PATH_RESET,72,249,62,17
+    PUSHBUTTON      "전광판",IDC_BUTTON_DISPLAY,166,247,62,17,NOT WS_VISIBLE | WS_DISABLED
+    PUSHBUTTON      "저   장",ID_BUTTON_SAVE,251,246,55,20
+    RTEXT           "일시정지",IDC_STATIC,233,52,31,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_SUSPEND,267,52,23,15
+    GROUPBOX        "트랙상태",IDC_STATIC,158,19,66,116
+    RTEXT           "입고대",IDC_STATIC,166,33,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_TRACK_STO_ST,194,33,23,15
+    RTEXT           "출고대",IDC_STATIC,166,52,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_TRACK_RET_ST,194,52,23,15
+    RTEXT           "도착대",IDC_STATIC,166,71,25,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_TRACK_ARV_ST,194,71,23,15
+    RTEXT           "출발HS",IDC_STATIC,159,90,31,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_TRACK_DEPART_HS,194,90,23,15
+    RTEXT           "도착HS",IDC_STATIC,159,109,31,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_TRACK_ARRIVE_HS,194,109,23,15
+    GROUPBOX        "설비상태",IDC_STATIC,230,20,66,116
+    RTEXT           "통신두절",IDC_STATIC,233,33,31,15,SS_CENTERIMAGE
+    PUSHBUTTON      "",IDC_BTN_DISCONNECT,267,33,23,15
+END
+
+IDD_CONFIG_STD_PAGE DIALOGEX 0, 0, 315, 274
+STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "ECS 기본 정보"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "FMS 정보",IDC_STATIC,140,0,174,76,NOT WS_VISIBLE
+    ICON            IDI_NETWORK1,IDC_STATIC,149,19,18,23,NOT WS_VISIBLE
+    RTEXT           "IP 주소 : ",IDC_STATIC,176,14,35,8,NOT WS_VISIBLE
+    CONTROL         "",IDC_IPADDRESS,"SysIPAddress32",NOT WS_VISIBLE | WS_TABSTOP,211,10,99,15
+    RTEXT           "포트 : ",IDC_STATIC,176,32,35,8,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDT_PORT,211,29,26,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    RTEXT           "ECS포트 : ",IDC_STATIC,246,32,35,8,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDT_PORT_ECS,283,29,26,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    CONTROL         "ECS 시작시 접속",IDC_CHK_CONNECT,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,211,47,99,10
+    CONTROL         "자동 재접속",IDC_CHK_RETRY,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,211,60,99,10
+    GROUPBOX        "작업 기록 옵션",IDC_STATIC,7,9,128,64,NOT WS_VISIBLE
+    CONTROL         "작업기록(&J)",IDC_CHECK_JOB,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,192,28,64,15
+    CONTROL         "이벤트(&V)",IDC_CHECK_EVENT,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,192,43,64,15
+    CONTROL         "에러(&E)",IDC_CHECK_ERROR,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,192,58,52,15
+    CONTROL         "알람(&A)",IDC_CHECK_ALARM,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,256,28,52,15
+    CONTROL         "디버그(&D)",IDC_CHECK_DEBUG,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,256,43,52,15
+    CONTROL         "경고음(&W)",IDC_CHECK_BEEP,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,256,58,52,15
+    PUSHBUTTON      "저   장",IDC_BUTTON_SAVE,249,248,53,20
+    GROUPBOX        "통신포트 정보",IDC_STATIC,0,4,309,117
+    CONTROL         "",IDC_LIST_COMM1,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,7,21,296,90
+    GROUPBOX        "통신연결 정보",IDC_STATIC,0,128,309,117
+    CONTROL         "",IDC_LIST_EQUIPMENT,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,7,145,296,90
+END
+
+IDD_LOG DIALOGEX 0, 0, 480, 230
+STYLE DS_SETFONT | DS_3DLOOK | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "로그 관리"
+MENU IDR_LOGGING
+FONT 10, "System", 0, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKRECT,68,4,64,20
+    CONTROL         "List1",IDC_LIST_LOG,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,67,24,412,204,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_STATIC_EDGE,"Static",SS_ETCHEDHORZ,0,0,480,1
+    CONTROL         "List1",IDC_LIST_OUTLOOK,"SysListView32",LVS_SINGLESEL | WS_BORDER | WS_TABSTOP,2,3,65,224
+    EDITTEXT        IDC_EDIT_FROM,155,7,19,13,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_SPIN_FROM,"msctls_updown32",UDS_WRAP | UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,174,7,8,13
+    EDITTEXT        IDC_EDIT_TO,192,7,19,13,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_SPIN_TO,"msctls_updown32",UDS_WRAP | UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,211,7,8,13
+    COMBOBOX        IDC_COMBO_POSITION,71,8,57,139,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "작업 번호",IDC_CHECK_LUGG_ID,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,287,26,44,10
+    EDITTEXT        IDC_EDIT_CONTEXT,227,7,159,13,ES_AUTOHSCROLL | WS_DISABLED
+    RTEXT           "시각:",IDC_STATIC,135,10,20,8
+    CTEXT           "-",IDC_STATIC,183,10,8,8
+    CONTROL         "",IDC_STATIC_TOP,"Static",SS_BLACKRECT,68,3,410,3
+    CONTROL         "",IDC_STATIC_BOTTOM,"Static",SS_BLACKRECT,68,21,410,3
+    CONTROL         "",IDC_STATIC_RIGHT,"Static",SS_BLACKRECT,475,3,3,21
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKRECT,223,4,3,20
+    PUSHBUTTON      "검색",IDC_BUTTON_SORT,386,7,87,13
+END
+
+IDD_DATA_SETTING DIALOG 0, 0, 191, 28
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "데이터 설정"
+FONT 10, "System"
+BEGIN
+    EDITTEXT        IDC_EDIT_DATA,7,7,93,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "확  인",IDOK,100,7,42,14
+    PUSHBUTTON      "취  소",IDCANCEL,142,7,42,14
+END
+
+IDD_JOB DIALOG 10, 80, 283, 328
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "작업정보"
+FONT 10, "System"
+BEGIN
+    CONTROL         "List2",IDC_LIST_JOB,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,4,85,212,239
+    GROUPBOX        "",IDC_STATIC,4,19,212,61,BS_FLAT
+    LTEXT           "설정트랙 : ",IDC_STATIC,7,9,36,8
+    PUSHBUTTON      "등록",IDC_BTN_ADD,166,28,46,14
+    DEFPUSHBUTTON   "닫   기",IDOK,224,306,46,18
+    EDITTEXT        IDC_EDT_SET_TRACK,45,8,40,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDT_NEXT_TRACK,55,28,27,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDT_DEST_POS,137,29,27,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "다음트랙:",IDC_CHECK_NEXT_CV,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,30,45,8
+    CONTROL         "목적지: ",IDC_CHECK_DEST_POS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,99,30,38,8
+    EDITTEXT        IDC_EDT_NEXT_TRACK2,55,62,27,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "다음트랙:",IDC_CHECK_NEXT_CV2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,64,45,8
+    LTEXT           "=>",IDC_STATIC,86,30,9,8
+    LTEXT           "=>",IDC_STATIC,86,64,9,8
+    LTEXT           "나머지 목적지",IDC_STATIC,99,64,62,8
+    PUSHBUTTON      "등록",IDC_BTN_ADD2,166,62,46,14
+    PUSHBUTTON      "저장",IDC_BTN_SAVE,227,62,46,14
+    CONTROL         "설비도착대",IDC_CHECK_CENTER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,224,96,51,8
+    CONTROL         "",IDC_CHECK_CENTER_NEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,224,108,8,8
+    CONTROL         "",IDC_CHECK_CENTER_DEST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,224,120,9,8
+    EDITTEXT        IDC_EDIT_CENTER_NEXT,233,106,27,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT_CENTER_DEST,233,119,27,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "",IDC_CHECK_CROSS_TRACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,224,150,9,8
+    EDITTEXT        IDC_EDIT_CROSS_TRACK,233,149,27,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "Checke",IDC_CHECK_CROSS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,224,139,41,8
+    PUSHBUTTON      "재설정",IDC_BTN_RETRY,227,28,46,14
+    COMBOBOX        IDC_COMBO_DEST_FLOOR,118,45,45,59,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "등록",IDC_BTN_ADD3,166,45,46,14
+    GROUPBOX        "",IDC_STATIC,221,19,58,61,BS_FLAT
+    GROUPBOX        "",IDC_STATIC,221,81,58,125,BS_FLAT
+    CONTROL         "",IDC_CHECK_CROSS_DEST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,224,162,9,8
+    EDITTEXT        IDC_EDIT_CROSS_DEST,233,161,27,12,ES_AUTOHSCROLL | ES_READONLY
+    COMBOBOX        IDC_COMBO_DEST_PLC,55,45,43,59,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "PLC별 : ",IDC_STATIC,27,47,27,8
+    LTEXT           "단 : ",IDC_STATIC,102,46,15,8
+    CONTROL         "TwinCheck",IDC_CHECK_TWIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,224,179,48,8
+    EDITTEXT        IDC_EDIT_HS_TRACK,234,188,26,12,ES_AUTOHSCROLL | ES_READONLY
+END
+
+IDD_PORT_ETHERNET DIALOGEX 0, 0, 164, 132
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Ethernet 통신포트 설정"
+FONT 10, "System", 0, 0, 0x0
+BEGIN
+    RTEXT           "Device Name : ",IDC_STATIC,7,7,52,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_NAME,59,7,98,12,ES_AUTOHSCROLL | ES_READONLY
+    RTEXT           "IP Address : ",IDC_STATIC,7,21,52,12,SS_CENTERIMAGE
+    CONTROL         "IPAddress1",IDC_IPADDRESS,"SysIPAddress32",WS_TABSTOP,59,21,98,12
+    RTEXT           "Port No1. : ",IDC_STATIC,7,35,52,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_PORT1,59,35,98,12,ES_AUTOHSCROLL
+    RTEXT           "Timeout : ",IDC_STATIC,7,61,52,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_RECV_TIMEOUT,59,61,98,12,ES_AUTOHSCROLL
+    CONTROL         "ECS 기동시 연결",IDC_CHK_CONNECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,59,75,98,8
+    CONTROL         "통신 재접속 시도",IDC_CHK_RETRY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,59,85,98,8
+    CONTROL         "통신로그 기록",IDC_CHK_WRITE_LOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,59,95,98,8
+    DEFPUSHBUTTON   "확      인",IDOK,7,111,71,14
+    PUSHBUTTON      "취      소",IDCANCEL,86,111,71,14
+    RTEXT           "Port No2. : ",IDC_STATIC,7,47,52,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_PORT2,59,47,98,12,ES_AUTOHSCROLL
+END
+
+IDD_PORT_SERIAL DIALOG 0, 0, 149, 135
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Serial 통신포트 설정"
+FONT 10, "System"
+BEGIN
+    RTEXT           "Device Name : ",IDC_STATIC,7,7,71,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_DEVICE,78,7,64,12,ES_AUTOHSCROLL
+    RTEXT           "Port Name : ",IDC_STATIC,7,22,71,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_COMNAME,78,22,64,12,ES_AUTOHSCROLL
+    RTEXT           "Baud Rate : ",IDC_STATIC,7,37,71,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_BAUD_RATE,78,37,64,12,ES_AUTOHSCROLL
+    RTEXT           "Parity : ",IDC_STATIC,7,52,71,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_PARITY,78,52,64,12,ES_AUTOHSCROLL
+    RTEXT           "Stop Bits : ",IDC_STATIC,7,67,71,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_STOP_BITS,78,67,64,12,ES_AUTOHSCROLL
+    RTEXT           "Bits Per Character : ",IDC_STATIC,7,82,71,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_BIT_PER_CHAR,78,82,64,12,ES_AUTOHSCROLL
+    RTEXT           "Read Timeout : ",IDC_STATIC,7,97,71,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDT_READ_TIMEOUT,78,97,64,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "확      인",IDOK,7,114,64,14
+    PUSHBUTTON      "취      소",IDCANCEL,78,114,64,14
+END
+
+IDD_ECS_FORM DIALOGEX 0, 0, 831, 452
+STYLE DS_SETFONT | WS_CHILD
+FONT 9, "굴림", 0, 0, 0x0
+BEGIN
+    CONTROL         "Fork #1",IDC_CHK_ERR_FORK1,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,213,195,37,10
+    CONTROL         "Fork #2",IDC_CHK_ERR_FORK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,195,37,10
+    CONTROL         "작업중",IDC_CHK_JOB_COMPLETE0,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,213,155,37,10
+    CONTROL         "Fork #1",IDC_CHK_JOB_COMPLETE1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,155,37,10
+    CONTROL         "Fork #2",IDC_CHK_JOB_COMPLETE2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,290,155,37,10
+    CONTROL         "Fork #1, #2",IDC_CHK_JOB_COMPLETE3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,327,153,50,10
+    CONTROL         "OffLine",IDC_CHK_RUN_MODE1,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,213,43,37,10
+    CONTROL         "OnLine",IDC_CHK_RUN_MODE2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,43,37,10
+    CONTROL         "Remote",IDC_CHK_RUN_MODE0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,290,43,37,10
+    CONTROL         "Auto",IDC_CHK_SC_MODE1,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,213,55,37,10
+    CONTROL         "Manual",IDC_CHK_SC_MODE0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,55,37,10
+    CONTROL         "없음",IDC_CHK_PROD0,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,213,69,37,10
+    CONTROL         "Fork #1",IDC_CHK_PROD1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,69,37,10
+    CONTROL         "Fork #2",IDC_CHK_PROD2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,290,69,37,10
+    CONTROL         "대기중",IDC_CHK_RUN_STATUS1,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,213,83,37,10
+    CONTROL         "동작중",IDC_CHK_RUN_STATUS2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,83,37,10
+    CONTROL         "이상",IDC_CHK_RUN_STATUS3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,290,83,37,10
+    CONTROL         "Stop",IDC_CHK_ACTIVE0,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,213,141,37,10
+    CONTROL         "Active",IDC_CHK_ACTIVE1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,141,37,10
+    PUSHBUTTON      "조회",IDC_BUTTON5,137,37,26,16
+    LTEXT           "PLC:",IDC_STATIC,7,41,19,8
+    EDITTEXT        IDC_HEXA,103,420,25,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_REG_NAME,10,350,34,12,ES_AUTOHSCROLL | ES_READONLY
+    COMBOBOX        IDC_COMBO_DEVICE,90,39,23,65,CBS_DROPDOWN | CBS_SORT | WS_DISABLED | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "",IDC_LAYOUT_TAB,"SysTabControl32",TCS_FIXEDWIDTH,0,8,160,16
+    CONTROL         "",IDC_LIST_REG_DATA,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,6,57,157,284
+    PUSHBUTTON      "Bit 적용",IDC_BUTTON12,47,348,29,16
+    CONTROL         "Bit00",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,403,27,10
+    CONTROL         "Bit01",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,391,27,10
+    CONTROL         "Bit02",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,379,27,10
+    CONTROL         "Bit03",IDC_CHECK4,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,367,27,10
+    CONTROL         "Bit04",IDC_CHECK5,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,97,403,27,10
+    CONTROL         "Bit05",IDC_CHECK6,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,97,391,27,10
+    CONTROL         "Bit06",IDC_CHECK49,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,97,379,27,10
+    CONTROL         "Bit07",IDC_CHECK50,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,97,367,27,10
+    CONTROL         "Bit08",IDC_CHECK51,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,55,404,27,10
+    CONTROL         "Bit09",IDC_CHECK52,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,55,392,27,10
+    CONTROL         "Bit10",IDC_CHECK53,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,55,380,27,10
+    CONTROL         "Bit11",IDC_CHECK54,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,55,368,27,10
+    CONTROL         "Bit12",IDC_CHECK15,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,404,27,10
+    CONTROL         "Bit13",IDC_CHECK16,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,392,27,10
+    CONTROL         "Bit14",IDC_CHECK55,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,380,27,10
+    CONTROL         "Bit15",IDC_CHECK18,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,368,27,10
+    PUSHBUTTON      "값 적용",IDC_BUTTON13,132,418,28,16
+    GROUPBOX        "Word 정보",IDC_STATIC,0,27,167,419
+    COMBOBOX        IDC_COMBO_PLC,26,39,28,148,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_DECIMAL,19,420,25,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "값 적용",IDC_BUTTON18,49,418,28,16
+    LTEXT           "8",IDC_STATIC,8,369,8,8
+    LTEXT           "4",IDC_STATIC,8,381,8,8
+    LTEXT           "2",IDC_STATIC,8,393,8,8
+    LTEXT           "1",IDC_STATIC,8,405,8,8
+    LTEXT           "8",IDC_STATIC,88,369,8,8
+    LTEXT           "4",IDC_STATIC,88,381,8,8
+    LTEXT           "2",IDC_STATIC,88,393,8,8
+    LTEXT           "1",IDC_STATIC,88,405,8,8
+    LTEXT           "D",IDC_STATIC,9,421,8,8
+    LTEXT           "X",IDC_STATIC,92,420,8,8
+    EDITTEXT        IDC_EDIT_REGNUM,112,39,23,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TRACK_NO2,55,39,28,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "",IDC_LIST_SC_STATUS,"SysListView32",LVS_REPORT | NOT WS_VISIBLE | WS_BORDER | WS_TABSTOP,65,168,54,108
+    LTEXT           "SC 상태정보",IDC_STATIC,73,154,43,8,NOT WS_VISIBLE
+    CONTROL         "",IDC_LIST_SC_RECEIVE,"SysListView32",LVS_REPORT | NOT WS_VISIBLE | WS_BORDER | WS_TABSTOP,10,167,52,109
+    LTEXT           "받은 데이터",IDC_STATIC,18,153,42,8,NOT WS_VISIBLE
+    GROUPBOX        "SRC 정보",IDC_STATIC,172,27,209,187
+    PUSHBUTTON      "동작모드",IDC_BTN_RUN_MODE,177,41,34,13
+    PUSHBUTTON      "S/C모드",IDC_BTN_SC_MODE,177,53,34,13
+    PUSHBUTTON      "화물유무",IDC_BTN_PROD,177,67,34,13
+    PUSHBUTTON      "동작상태",IDC_BTN_RUN_STATUS,177,81,34,13
+    PUSHBUTTON      "주행",IDC_BTN_HORIZONTAL,177,95,34,13
+    EDITTEXT        IDC_EDT_HORIZONTAL,214,95,26,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "승강",IDC_BTN_VIRTICAL,177,109,34,13
+    EDITTEXT        IDC_EDT_VIRTICAL,213,109,26,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "에러코드",IDC_BTN_ERR_CODE,177,125,34,13
+    EDITTEXT        IDC_EDT_ERROR_CODE,213,125,26,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "Active",IDC_BTN_ACTIVE,177,139,34,13
+    PUSHBUTTON      "작업완료",IDC_BTN_JOB_COMPLETE,177,153,34,13
+    PUSHBUTTON      "1포크위치",IDC_BTN_FORK1_POS,177,167,34,13
+    EDITTEXT        IDC_EDT_FORK1_POS,214,167,26,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "2포크위치",IDC_BTN_FORK2_POS,177,181,34,13
+    EDITTEXT        IDC_EDT_FORK2_POS,214,181,26,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "이중입고",IDC_BTN_DUAL_STORE,177,193,34,13
+    PUSHBUTTON      "공출고",IDC_BTN_EMPTY_RETIEVE,290,193,34,13
+    LTEXT           "00~99",IDC_STATIC,246,97,20,8
+    LTEXT           "00~99",IDC_STATIC,245,113,20,8
+    LTEXT           "000~999",IDC_STATIC,245,127,27,8
+    LTEXT           "1:좌출, 2:우출",IDC_STATIC,246,169,44,8
+    LTEXT           "1:좌출, 2:우출",IDC_STATIC,245,183,44,8
+    PUSHBUTTON      "강제완료",IDC_BTN_MANUAL_COMPLETE,341,191,34,13,NOT WS_VISIBLE | WS_DISABLED
+    PUSHBUTTON      "강제삭제",IDC_BTN_MANUAL_DELETE,341,177,34,13,NOT WS_VISIBLE | WS_DISABLED
+    GROUPBOX        "작업지시",IDC_STATIC,172,221,209,43
+    CONTROL         "다음작업시 FORK1 이중입고",IDC_CHK_NEXT_DUAL_STO,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,177,231,101,10
+    CONTROL         "다음작업시 FORK1 공출고 ",IDC_CHK_NEXT_EMPTY_RET,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,177,241,101,10
+    CONTROL         "다음작업시 오버사이즈",IDC_CHK_NEXT_OVER_SIZE,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP,177,251,101,10
+    CONTROL         "다음작업시 화물붕괴",IDC_CHK_NEXT_FALL_DOWN,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP,279,250,101,10
+    COMBOBOX        IDC_CMB_SC_TYPE,392,158,43,20,CBS_DROPDOWN | CBS_SORT | NOT WS_VISIBLE | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "SC 타입",IDC_BTN_SC_TYPE,439,156,34,13,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDT_SC_INFO,392,174,197,13,ES_AUTOHSCROLL | NOT WS_VISIBLE | WS_DISABLED
+    GROUPBOX        "SC 정보",IDC_STATIC,387,146,209,48,NOT WS_VISIBLE
+    GROUPBOX        "H/S 정보",IDC_STATIC,387,109,209,48,NOT WS_VISIBLE
+    GROUPBOX        "트랙 정보",IDC_STATIC,387,93,209,48,NOT WS_VISIBLE
+    LTEXT           "Layout 별도수정, 재시작해야 적용",IDC_STATIC,477,160,112,8,NOT WS_VISIBLE
+    PUSHBUTTON      "CV PLC 추가",IDC_BTN_CREATE_CV_GROUP,387,38,46,13,NOT WS_VISIBLE
+    CONTROL         "",IDC_LIST1,"SysListView32",LVS_SMALLICON | NOT WS_VISIBLE | WS_BORDER | WS_TABSTOP,387,51,47,129
+    CONTROL         "",IDC_LIST2,"SysListView32",LVS_SMALLICON | NOT WS_VISIBLE | WS_BORDER | WS_TABSTOP,435,51,149,78
+    PUSHBUTTON      "CV PLC 삭제",IDC_BTN_DELETE_CV_GROUP,387,180,48,13,NOT WS_VISIBLE
+    PUSHBUTTON      "CV 적용",IDC_BTN_CV_APPLY,551,38,33,13,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDIT2,387,26,48,12,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    CONTROL         "",IDC_LIST3,"SysListView32",LVS_SMALLICON | NOT WS_VISIBLE | WS_BORDER | WS_TABSTOP,435,129,149,51
+    PUSHBUTTON      "CV 적용",IDC_BTN_CV_ADD,460,38,33,13,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDIT3,435,39,27,12,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    EDITTEXT        IDC_EDIT4,516,39,48,12,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    CONTROL         "다음작업시 FORK2 이중입고",IDC_CHK_NEXT_DUAL_STO2,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,279,230,101,10
+    CONTROL         "다음작업시 FORK2 공출고 ",IDC_CHK_NEXT_EMPTY_RET2,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,279,240,101,10
+    PUSHBUTTON      "시리얼 접속 시도",IDC_BTN_SERIAL_CONNECT,173,269,208,22
+END
+
+IDD_SC_CTRL_01 DIALOGEX 0, 0, 240, 305
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "S/C 정보"
+FONT 10, "System", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "닫     기",IDOK,176,255,60,14
+    EDITTEXT        IDC_EDIT_DEVICE,4,4,232,13,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME
+    GROUPBOX        "스태커 크레인 작업 정보",IDC_STATIC,4,20,168,63,BS_FLAT
+    RTEXT           "작업번호 : ",IDC_STATIC_LUGG_NUM,8,33,42,8
+    EDITTEXT        IDC_EDIT_LUGG_NUM,50,31,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분 : ",IDC_STATIC_JOB_TYPE,8,45,42,8
+    EDITTEXT        IDC_EDIT_CMD_TYPE,50,43,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",IDC_STATIC_START_POS,8,56,42,8
+    EDITTEXT        IDC_EDIT_START_POS,50,55,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",IDC_STATIC_DEST_POS,8,68,42,8
+    EDITTEXT        IDC_EDIT_DEST_POS,50,67,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "스태커 상태 정보",IDC_STATIC,4,88,168,88,BS_FLAT
+    RTEXT           "지상반 : ",IDC_STATIC,8,101,42,8
+    EDITTEXT        IDC_EDIT_RC_MODE,50,99,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "기상반 : ",IDC_STATIC,8,113,42,8
+    EDITTEXT        IDC_EDIT_SC_MODE,50,111,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "포크위치 : ",IDC_STATIC,8,125,42,8
+    EDITTEXT        IDC_EDIT_FORK_POS,50,123,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "포크상태 : ",IDC_STATIC,8,136,42,8
+    EDITTEXT        IDC_EDIT_FORK_STATUS,50,135,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료번호 : ",IDC_STATIC,8,148,42,8
+    EDITTEXT        IDC_EDIT_COMPLETE_NUM,50,147,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "진행상태 : ",IDC_STATIC,8,160,42,8
+    EDITTEXT        IDC_EDIT_SC_JOB_STATUS,50,159,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "SRC상태 : ",IDC_STATIC,92,101,42,8
+    EDITTEXT        IDC_EDIT_RC_STATUS,134,99,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업개수 : ",IDC_STATIC,92,113,42,8
+    EDITTEXT        IDC_EDIT_JOB_COUNT,134,111,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "동작상태 : ",IDC_STATIC,92,125,42,8
+    EDITTEXT        IDC_EDIT_SC_STATUS,134,123,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "수평주행 : ",IDC_STATIC,92,136,42,8
+    EDITTEXT        IDC_EDIT_HORIZONTAL_POS,134,135,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "수직주행 : ",IDC_STATIC,92,148,42,8
+    EDITTEXT        IDC_EDIT_VERTICAL_POS,134,147,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "화물유무 : ",IDC_STATIC,92,160,42,8
+    EDITTEXT        IDC_EDIT_PROD_LOAD,134,159,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "세부 제품 정보",IDC_STATIC,4,181,168,88,BS_FLAT
+    RTEXT           "작업번호 : ",IDC_STATIC_INTERNAL_LUGG_NUM,8,194,42,8
+    EDITTEXT        IDC_EDIT_INTERNAL_LUGG_NUM,50,193,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분 : ",IDC_STATIC,8,206,42,8
+    EDITTEXT        IDC_EDIT_ECS_JOB_TYPE,50,205,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",IDC_STATIC,8,218,42,8
+    EDITTEXT        IDC_EDIT_JOB_START_POS,50,217,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",IDC_STATIC,8,230,42,8
+    EDITTEXT        IDC_EDIT_JOB_DEST_POS,50,229,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업상태 : ",IDC_STATIC,8,242,42,8
+    EDITTEXT        IDC_EDIT_JOB_STATUS,50,241,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "제품정보 : ",IDC_STATIC,8,254,42,8
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO,50,253,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "자기 진단",IDC_STATIC,4,273,232,28,BS_FLAT
+    EDITTEXT        IDC_EDIT_DIAGNOSIS,7,282,225,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
+    GROUPBOX        "작업 지시",IDC_STATIC,176,20,60,147,BS_FLAT
+    PUSHBUTTON      "강제완료",IDC_BUTTON_COMPLETE,179,30,54,15
+    PUSHBUTTON      "비상정지",IDC_BUTTON_EMERGENCY,179,45,54,15
+    PUSHBUTTON      "A C T I V E",IDC_BUTTON_ACTIVE,179,60,54,15
+    PUSHBUTTON      "정        지",IDC_BUTTON_ESTOP,179,75,54,15
+    PUSHBUTTON      "에러리셋",IDC_BUTTON_ERROR_RESET,179,90,54,15
+    PUSHBUTTON      "삭        제",IDC_BUTTON_CANCEL,179,105,54,15
+    PUSHBUTTON      "복귀명령",IDC_BUTTON_CALL_TO_HOME,179,120,54,15
+    PUSHBUTTON      "이중입고",IDC_BUTTON_DUAL_STORE,179,135,54,15
+    PUSHBUTTON      "수동지시",IDC_BUTTON_MANUAL,179,150,54,14
+    GROUPBOX        "일시 정지",IDC_STATIC,176,218,60,33,BS_FLAT
+    CONTROL         "입고 작업",IDC_CHECK_SUSPENT_STORE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,180,228,50,10
+    CONTROL         "출고 작업",IDC_CHECK_SUSPEND_RETRIEVE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,180,239,50,10
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO2,118,173,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO3,118,187,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+END
+
+IDD_SC_NEW_LOCATION DIALOG 0, 0, 225, 46
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "이중입고 재지정"
+FONT 10, "System"
+BEGIN
+    EDITTEXT        IDC_EDIT_LOCATION,82,22,75,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "확인",IDOK,177,10,46,14,WS_GROUP
+    PUSHBUTTON      "취소",IDCANCEL,177,27,46,14,WS_GROUP
+    RTEXT           "재지시 LOCATION :",IDC_STATIC,10,23,69,8
+    GROUPBOX        "해당 LOCATION에 입고 재지시 하시겠습니까?",IDC_STATIC,4,6,169,35
+END
+
+IDD_WARNING_DLG DIALOGEX 0, 0, 314, 178
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP
+FONT 10, "System", 0, 0, 0x1
+BEGIN
+    CONTROL         "List1",IDC_LIST_WARNING,"SysListView32",WS_BORDER | WS_TABSTOP,1,100,313,77
+    CONTROL         "",IDC_STATIC_PANE,"Static",SS_BLACKRECT,1,1,156,12,WS_EX_DLGMODALFRAME
+    PUSHBUTTON      "X",IDOK,300,1,14,12
+    PUSHBUTTON      ">>",IDC_BUTTON_NEXT,258,1,21,12
+    PUSHBUTTON      "<<",IDC_BUTTON_PREV,237,1,21,12
+    PUSHBUTTON      "삭제",IDC_BUTTON_DELETE,194,1,22,12
+    PUSHBUTTON      "||<",IDC_BUTTON_FIRST,216,1,21,12
+    PUSHBUTTON      ">||",IDC_BUTTON_LAST,279,1,21,12
+    PUSHBUTTON      "STOP",IDC_BUTTON_SHOW,157,1,37,12
+    LTEXT           "Static",IDC_STATIC_TIP,0,13,314,86,0,WS_EX_DLGMODALFRAME
+END
+
+IDD_SC_MANUAL DIALOG 0, 0, 234, 65
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "S/C 수동지시"
+FONT 10, "System"
+BEGIN
+    RTEXT           "출발지 : ",IDC_STATIC,12,24,32,12,SS_CENTERIMAGE
+    COMBOBOX        IDC_COMBO_DEPART,44,24,63,54,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_DEPART,107,24,60,12,ES_AUTOHSCROLL
+    RTEXT           "도착지 : ",IDC_STATIC,12,39,32,12,SS_CENTERIMAGE
+    COMBOBOX        IDC_COMBO_ARRIVE,44,39,63,46,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_ARRIVE,107,39,60,12,ES_AUTOHSCROLL
+    CONTROL         "Tab2",IDC_TAB_COMMAND,"SysTabControl32",0x0,6,7,168,51
+    DEFPUSHBUTTON   "확  인",IDOK,178,19,50,18
+    PUSHBUTTON      "취  소",IDCANCEL,178,40,50,18
+END
+
+IDD_CV_CTRL1 DIALOGEX 0, 0, 298, 319
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "C/V 정보"
+FONT 10, "System", 0, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_EDIT_TRACK_NUM,4,4,290,13,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME
+    GROUPBOX        "트랙정보",IDC_STATIC,4,21,220,51,BS_FLAT
+    RTEXT           "작업번호 :",IDC_STATIC,10,34,38,8
+    EDITTEXT        IDC_EDIT_LUGG_NUM,51,32,169,13,ES_AUTOHSCROLL
+    RTEXT           "작업종류 :",IDC_STATIC,10,47,38,8
+    COMBOBOX        IDC_COMBO_JOB_TYPE,51,45,169,256,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "완료위치 :",IDC_STATIC,10,60,38,8
+    EDITTEXT        IDC_EDIT_DEST_TRACK,51,57,25,12,ES_AUTOHSCROLL
+    COMBOBOX        IDC_COMBO_DEST_TRACK,77,57,143,250,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_GEN_CODE,227,174,21,232,CBS_DROPDOWNLIST | NOT WS_VISIBLE | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "상태정보",IDC_STATIC,4,76,220,26,BS_FLAT
+    RTEXT           "운영모드 :",IDC_STATIC,10,86,38,8
+    EDITTEXT        IDC_EDIT_TRACK_MODE,51,85,169,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "작업정보",IDC_STATIC,4,106,220,126,BS_FLAT
+    RTEXT           "시작위치 :",IDC_STATIC,10,117,38,8
+    EDITTEXT        IDC_EDIT_JOB_START_STN,51,116,169,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료위치 :",IDC_STATIC,10,129,38,8
+    EDITTEXT        IDC_EDIT_JOB_DEST_STN,51,128,169,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업상태 :",IDC_STATIC,10,141,38,8
+    EDITTEXT        IDC_EDIT_JOB_STATUS,51,140,169,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "TRAY ID :",IDC_STATIC,10,166,38,8
+    EDITTEXT        IDC_EDIT_JOB_PRODUCT,51,164,169,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "에러 정보",IDC_STATIC,4,238,291,36,BS_FLAT
+    EDITTEXT        IDC_EDIT_CV_STATUS,8,247,282,22,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,WS_EX_DLGMODALFRAME
+    GROUPBOX        "작업지시",IDC_STATIC,227,21,68,147,BS_FLAT
+    PUSHBUTTON      "쓰        기",IDC_BUTTON_WRITE,230,30,62,14
+    PUSHBUTTON      "복        사",IDC_BUTTON_COPY,230,44,62,14
+    PUSHBUTTON      "붙여넣기",IDC_BUTTON_PASTE,230,58,62,14
+    PUSHBUTTON      "잘라내기",IDC_BUTTON_CUT,230,72,62,14
+    PUSHBUTTON      "삭        제",IDC_BUTTON_DELETE,230,86,62,14
+    PUSHBUTTON      "최신정보",IDC_BUTTON_REFRESH,230,100,62,14
+    CONTROL         "작업 정지",IDC_CHECK_SUSPEND,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,239,198,48,10
+    DEFPUSHBUTTON   "닫       기",IDOK,227,216,68,16
+    GROUPBOX        "신호정보",IDC_STATIC,4,277,291,38,BS_FLAT
+    PUSHBUTTON      "화물감지",IDC_BUTTON_SENSOR_PRODUCT1,10,286,78,12,NOT WS_TABSTOP
+    PUSHBUTTON      "SC 인터락",IDC_BUTTON_SENSOR_SC_INTERLOCK,10,298,78,12,NOT WS_TABSTOP
+    PUSHBUTTON      "입고대 Ready",IDC_BUTTON_STATUS_STO_STATION,88,286,101,12,NOT WS_TABSTOP
+    PUSHBUTTON      "SC 입고HS Ready",IDC_BUTTON_STATUS_SC_STO_HS,88,298,101,12,NOT WS_TABSTOP
+    PUSHBUTTON      "출고대 Ready",IDC_BUTTON_STATUS_RET_STATION,189,286,101,12,NOT WS_TABSTOP
+    PUSHBUTTON      "SC 출고HS Ready",IDC_BUTTON_STATUS_SC_RET_HS,189,298,101,12,NOT WS_TABSTOP
+    GROUPBOX        "일시정지",IDC_STATIC,226,186,69,25,BS_FLAT
+    CONTROL         "Dead Lock",IDC_CHECK_DEADLOCK,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,238,175,48,10
+    RTEXT           "진행시간 :",IDC_STATIC,10,153,38,8
+    EDITTEXT        IDC_EDIT_JOB_WAIT_TIME,51,152,169,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "TRAY종류 : ",IDC_STATIC,10,178,38,8
+    EDITTEXT        IDC_EDIT_SIZE,51,176,169,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    PUSHBUTTON      "화재알람해제",IDC_BUTTON_RESET_FIRE_ALARM,230,115,62,14
+    PUSHBUTTON      "화재발생알람",IDC_BUTTON_FIRE_ALARM,227,232,68,14,NOT WS_VISIBLE
+    PUSHBUTTON      "CV 종류",IDC_BUTTON_REFRESH2,230,135,62,14
+    PUSHBUTTON      "목적지별 트랙설정",IDC_BUTTON_RESET_FIRE_ALARM2,230,150,62,14
+END
+
+IDD_SC_CTRL1 DIALOGEX 0, 0, 240, 304
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "S/C 정보"
+FONT 10, "System", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "닫     기",IDOK,176,242,60,14
+    EDITTEXT        IDC_EDIT_DEVICE,4,4,232,13,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME
+    GROUPBOX        "크레인 작업상태 정보",IDC_STATIC,4,20,168,63,BS_FLAT
+    RTEXT           "작업번호 : ",IDC_STATIC_LUGG_NUM,8,33,42,8
+    EDITTEXT        IDC_EDIT_LUGG_NUM,50,31,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업종류 : ",IDC_STATIC_JOB_TYPE,8,45,42,8
+    EDITTEXT        IDC_EDIT_CMD_TYPE,50,43,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "시작위치 : ",IDC_STATIC_START_POS,8,56,42,8
+    EDITTEXT        IDC_EDIT_START_POS,50,55,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료위치 : ",IDC_STATIC_DEST_POS,8,68,42,8
+    EDITTEXT        IDC_EDIT_DEST_POS,50,67,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "설비상태 정보",IDC_STATIC,4,88,168,76,BS_FLAT
+    RTEXT           "지상반 : ",IDC_STATIC,8,101,42,8
+    EDITTEXT        IDC_EDIT_RC_MODE,50,99,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "기상반 : ",IDC_STATIC,8,113,42,8
+    EDITTEXT        IDC_EDIT_SC_MODE,50,111,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "포크위치 : ",IDC_STATIC,8,125,42,8
+    EDITTEXT        IDC_EDIT_FORK_POS,50,123,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "포크상태 : ",IDC_STATIC,8,136,42,8
+    EDITTEXT        IDC_EDIT_FORK_STATUS,50,135,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료상태 : ",IDC_STATIC,8,148,42,8
+    EDITTEXT        IDC_EDIT_SC_JOB_STATUS,50,147,42,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "SRC상태 : ",IDC_STATIC,92,101,42,8
+    EDITTEXT        IDC_EDIT_RC_STATUS,134,99,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "동작상태 : ",IDC_STATIC,92,113,42,8
+    EDITTEXT        IDC_EDIT_SC_STATUS,134,111,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "수평주행 : ",IDC_STATIC,92,124,42,8
+    EDITTEXT        IDC_EDIT_HORIZONTAL_POS,134,123,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "수직주행 : ",IDC_STATIC,92,136,42,8
+    EDITTEXT        IDC_EDIT_VERTICAL_POS,134,135,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "화물유무 : ",IDC_STATIC,92,148,42,8
+    EDITTEXT        IDC_EDIT_PROD_LOAD,134,147,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "작업상태 정보",IDC_STATIC,4,168,168,88,BS_FLAT
+    RTEXT           "작업번호 : ",IDC_STATIC_INTERNAL_LUGG_NUM,8,181,42,8
+    EDITTEXT        IDC_EDIT_INTERNAL_LUGG_NUM,50,180,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업종류 : ",IDC_STATIC,8,193,42,8
+    EDITTEXT        IDC_EDIT_ECS_JOB_TYPE,50,192,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "시작위치 : ",IDC_STATIC,8,205,42,8
+    EDITTEXT        IDC_EDIT_JOB_START_POS,50,204,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료위치 : ",IDC_STATIC,8,217,42,8
+    EDITTEXT        IDC_EDIT_JOB_DEST_POS,50,216,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업상태 : ",IDC_STATIC,8,229,42,8
+    EDITTEXT        IDC_EDIT_JOB_STATUS,50,228,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "TRAY ID : ",IDC_STATIC,8,241,42,8
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO,50,240,118,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "에러 정보",IDC_STATIC,4,260,232,39,BS_FLAT
+    EDITTEXT        IDC_EDIT_DIAGNOSIS,8,271,223,23,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | NOT WS_BORDER,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
+    GROUPBOX        "작업 지시",IDC_STATIC,176,20,60,119,BS_FLAT
+    PUSHBUTTON      "강제완료",IDC_BUTTON_COMPLETE,179,30,54,15
+    PUSHBUTTON      "비상정지",IDC_BUTTON_EMERGENCY,179,45,54,15
+    PUSHBUTTON      "A C T I V E",IDC_BUTTON_ACTIVE,179,60,54,15
+    PUSHBUTTON      "정        지",IDC_BUTTON_ESTOP,179,75,54,15
+    PUSHBUTTON      "에러리셋",IDC_BUTTON_ERROR_RESET,179,90,54,15
+    PUSHBUTTON      "작업삭제",IDC_BUTTON_CANCEL,179,105,54,15
+    PUSHBUTTON      "홈복귀",IDC_BUTTON_CALL_TO_HOME,179,120,54,15
+    PUSHBUTTON      "이중입고",IDC_BUTTON_DUAL_STORE,179,156,54,15,NOT WS_VISIBLE
+    PUSHBUTTON      "수동지시",IDC_BUTTON_MANUAL,179,141,54,14,NOT WS_VISIBLE
+    GROUPBOX        "일시 정지",IDC_STATIC,176,205,60,33,BS_FLAT
+    CONTROL         "입고 작업",IDC_CHECK_SUSPENT_STORE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,180,215,50,10
+    CONTROL         "출고 작업",IDC_CHECK_SUSPEND_RETRIEVE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,180,226,50,10
+    PUSHBUTTON      "화재발생",IDC_BTN_FIRE_ALARM,176,188,60,14,NOT WS_VISIBLE
+    PUSHBUTTON      "화재발생 취소",IDC_BTN_FIREALARM_CANCEL,176,173,60,14,NOT WS_VISIBLE
+END
+
+IDD_LOGIN DIALOGEX 0, 0, 343, 281
+STYLE DS_SETFONT | WS_POPUP | WS_VISIBLE
+EXSTYLE WS_EX_APPWINDOW
+FONT 9, "굴림", 0, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_LOGIN_USER_ID,155,217,61,15,ES_UPPERCASE | ES_AUTOHSCROLL
+    EDITTEXT        IDC_LOGIN_PASSWORD,269,217,63,15,ES_UPPERCASE | ES_PASSWORD | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "확인",IDOK,219,239,55,20
+    PUSHBUTTON      "취소",IDCANCEL,277,239,55,20
+    LTEXT           "사용자 :",IDC_STATIC,126,217,26,15,SS_CENTERIMAGE
+    LTEXT           "비밀번호 :",IDC_STATIC,233,217,34,15,SS_CENTERIMAGE
+END
+
+IDD_SYS_USER_MANAGER DIALOGEX 0, 0, 496, 314
+STYLE DS_SETFONT | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "사용자 관리"
+FONT 10, "굴림", 0, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_USER_ID,45,35,50,13,ES_UPPERCASE | ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    EDITTEXT        IDC_USER_NAME,141,35,64,13,ES_UPPERCASE | ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    EDITTEXT        IDC_PASSWORD,273,35,50,13,ES_UPPERCASE | ES_PASSWORD | ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    EDITTEXT        IDC_PWD_CONFIRM,331,35,50,13,ES_UPPERCASE | ES_PASSWORD | ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_STATICEDGE
+    COMBOBOX        IDC_CBX_LEVEL,417,35,69,79,CBS_DROPDOWNLIST | WS_TABSTOP
+    PUSHBUTTON      "닫기",IDCANCEL,4,4,39,16
+    PUSHBUTTON      "조회",IDC_BTN_QUERY,44,4,39,16
+    PUSHBUTTON      "등록",IDC_BTN_INSERT,84,4,39,16
+    PUSHBUTTON      "수정",IDC_BTN_UPDATE,124,4,39,16
+    PUSHBUTTON      "삭제",IDC_BTN_DELETE,164,4,39,16
+    PUSHBUTTON      "엑셀",IDC_BTN_EXCEL,204,4,39,16
+    CONTROL         "",IDC_FPSPREAD1,"{7114683A-020D-4D16-80FD-6ACE384B66DF}",WS_TABSTOP,4,60,488,250
+    CTEXT           "/",IDC_STATIC,323,38,8,8,SS_CENTERIMAGE
+    GROUPBOX        "",IDC_GROUP,4,22,488,36
+    PUSHBUTTON      "저장",IDC_USER_SAVE,244,4,39,16,NOT WS_VISIBLE
+    LTEXT           "사용자 ID :",IDC_STATIC,10,38,33,8
+    LTEXT           "사용자명 :",IDC_STATIC,108,38,31,8
+    LTEXT           "비밀번호 / 확인 :",IDC_STATIC,220,38,51,8
+    LTEXT           "권한 :",IDC_STATIC,396,38,18,8
+END
+
+IDD_LOG_IF_TRANS DIALOG 0, 0, 567, 314
+STYLE DS_SETFONT | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "FMS 송수신 이력"
+FONT 10, "굴림"
+BEGIN
+    CONTROL         "",IDC_STATIC1,"{40B5CE81-C5A8-11D2-8183-00002440DFD8}",0x0,11,35,43,14
+    CONTROL         "DateTimePicker1",IDC_DATE,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,55,35,51,15
+    CONTROL         "DateTimePicker1",IDC_FROM_TIME,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP | 0x8,106,35,51,15
+    LTEXT           "-",IDC_STATIC,162,37,8,8
+    CONTROL         "DateTimePicker1",IDC_TO_TIME,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP | 0x8,170,35,51,15
+    PUSHBUTTON      "닫기",IDCANCEL,4,4,39,16
+    PUSHBUTTON      "조회",IDC_BTN_QUERY,44,4,39,16
+    PUSHBUTTON      "엑셀",IDC_BTN_EXCEL,84,4,39,16
+    CONTROL         "",IDC_FPSPREAD,"{7114683A-020D-4D16-80FD-6ACE384B66DF}",WS_TABSTOP,4,60,559,250
+    GROUPBOX        "",IDC_GROUP,4,22,559,36
+END
+
+IDD_LOG_QTY_PROC DIALOG 0, 0, 567, 314
+STYLE DS_SETFONT | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "목적지별 물량 처리 현황"
+FONT 10, "굴림"
+BEGIN
+    CONTROL         "",IDC_STATIC1,"{40B5CE81-C5A8-11D2-8183-00002440DFD8}",0x0,11,35,43,14
+    CONTROL         "DateTimePicker1",IDC_DATE,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,55,35,51,15
+    PUSHBUTTON      "닫기",IDCANCEL,4,4,39,16
+    PUSHBUTTON      "조회",IDC_BTN_QUERY,44,4,39,16
+    PUSHBUTTON      "엑셀",IDC_BTN_EXCEL,84,4,39,16
+    CONTROL         "",IDC_FPSPREAD,"{7114683A-020D-4D16-80FD-6ACE384B66DF}",WS_TABSTOP,4,60,559,250
+    GROUPBOX        "",IDC_GROUP,4,22,559,36
+    CONTROL         "",IDC_STATIC2,"{40B5CE81-C5A8-11D2-8183-00002440DFD8}",0x0,117,35,43,14
+    CONTROL         "일자별",IDC_RADIO_DATE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,164,35,36,14
+    CONTROL         "시간별",IDC_RADIO_TIME,"Button",BS_AUTORADIOBUTTON,200,35,36,14
+END
+
+IDD_CONFIG_SUB3_PAGE DIALOG 0, 0, 315, 273
+STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "기타"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "저   장",ID_BUTTON_SAVE,253,252,58,18
+    GROUPBOX        "충방전 온도정보",IDC_STATIC,4,4,152,45
+    EDITTEXT        IDC_EDIT_TEMP_MAX,32,20,30,16,ES_RIGHT
+    RTEXT           "상한 : ",IDC_STATIC,9,20,22,16,SS_CENTERIMAGE
+    LTEXT           "℃",IDC_STATIC,65,20,11,16,SS_CENTERIMAGE
+    GROUPBOX        "충방전 습도정보",IDC_STATIC,159,4,152,45
+    EDITTEXT        IDC_EDIT_TEMP_MIN,106,20,30,16,ES_RIGHT
+    RTEXT           "하한 : ",IDC_STATIC,83,20,22,16,SS_CENTERIMAGE
+    LTEXT           "℃",IDC_STATIC,139,20,11,16,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_HUM_MAX,188,21,30,16,ES_RIGHT
+    RTEXT           "상한 : ",IDC_STATIC,164,21,22,16,SS_CENTERIMAGE
+    LTEXT           "%",IDC_STATIC,221,21,11,16,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_HUM_MIN,262,21,30,16,ES_RIGHT
+    RTEXT           "하한 : ",IDC_STATIC,238,21,22,16,SS_CENTERIMAGE
+    LTEXT           "%",IDC_STATIC,295,21,11,16,SS_CENTERIMAGE
+    GROUPBOX        "출고 물류흐름 제어",IDC_STATIC,4,55,307,127
+    EDITTEXT        IDC_EDIT_LOOP_TRACK_COUNT,83,71,62,16,ES_RIGHT | WS_DISABLED
+    RTEXT           "메인 라인 트랙 수량 : ",IDC_STATIC,13,71,68,16,SS_CENTERIMAGE
+    LTEXT           "개",IDC_STATIC,148,71,11,16,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_CAPACITY,83,92,62,16,ES_RIGHT
+    RTEXT           "가동률 : ",IDC_STATIC,13,92,68,16,SS_CENTERIMAGE
+    LTEXT           "%",IDC_STATIC,148,92,11,16,SS_CENTERIMAGE
+    CONTROL         "상온 Aging 1호기 출고 포트",IDC_CHECK_AGING_01,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,188,71,97,10
+    CONTROL         "상온 Aging 2호기 출고 포트",IDC_CHECK_AGING_02,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,188,89,97,10
+    CONTROL         "상온 Aging 3호기 출고 포트",IDC_CHECK_AGING_03,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,188,107,97,10
+    CONTROL         "상온 Aging 4호기 출고 포트",IDC_CHECK_AGING_04,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,188,124,97,10
+    CONTROL         "상온 Aging 5호기 출고 포트",IDC_CHECK_AGING_05,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,188,143,97,10
+    CONTROL         "상온 Aging 6호기 출고 포트",IDC_CHECK_AGING_06,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,188,161,97,10
+    CONTROL         "자동",IDC_CHECK_MODE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,83,119,29,10
+    RTEXT           "모드구분 : ",IDC_STATIC,13,116,68,16,SS_CENTERIMAGE
+    GROUPBOX        "입고포트 이동제어",IDC_STATIC,4,188,307,58,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDIT_START_TIME,104,204,30,16,ES_RIGHT | NOT WS_VISIBLE
+    RTEXT           "입고포트 도착 후 출발시간 : ",IDC_STATIC,10,204,92,16,SS_CENTERIMAGE | NOT WS_VISIBLE
+    LTEXT           "초 후",IDC_STATIC,138,204,16,16,SS_CENTERIMAGE | NOT WS_VISIBLE
+    LTEXT           "( BCR#605, BCR#618, BCR#651 포트만 해당 )",IDC_STATIC,157,204,147,16,SS_CENTERIMAGE | NOT WS_VISIBLE
+    LTEXT           "※ 설정한 시간안에 FMS로 부터 반송지시를 수신하지 못한 경우 자동으로 이동명령 지시",IDC_STATIC,14,223,289,16,SS_CENTERIMAGE | NOT WS_VISIBLE
+    CONTROL         "충방전 1호기 출고 포트",IDC_CHECK_CDE_1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,83,143,83,10
+    CONTROL         "충방전 2호기 출고 포트",IDC_CHECK_CDE_2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,83,161,83,10
+END
+
+IDD_RTV_MANUAL DIALOG 0, 0, 222, 48
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "RTV 수동지시"
+FONT 10, "System"
+BEGIN
+    DEFPUSHBUTTON   "확   인",IDOK,168,6,50,15
+    PUSHBUTTON      "취   소",IDCANCEL,168,27,50,15
+    RTEXT           "출발위치 : ",IDC_STATIC,6,12,42,9
+    RTEXT           "도착위치 : ",IDC_STATIC,6,28,42,9
+    GROUPBOX        "",IDC_STATIC,4,2,160,41
+    COMBOBOX        IDC_COMBO_DEPART_POS,48,10,112,248,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_ARRIVE_POS,48,26,112,257,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "GEN정보 : ",IDC_STATIC,48,29,40,9,NOT WS_VISIBLE
+    COMBOBOX        1019,88,27,112,257,CBS_DROPDOWNLIST | NOT WS_VISIBLE | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_RTV_CTRL1 DIALOGEX 0, 0, 239, 285
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "RTV 정보"
+FONT 10, "System", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "닫      기",IDOK,176,235,60,16
+    EDITTEXT        1515,3,4,233,13,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME
+    GROUPBOX        "RTV 작업 정보",IDC_STATIC,3,21,170,62,BS_FLAT
+    RTEXT           "작업번호 : ",1669,7,32,43,8
+    EDITTEXT        IDC_EDIT_LUGG_NUM,50,31,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분 : ",1670,7,44,43,8
+    EDITTEXT        IDC_EDIT_JOB_TYPE,50,43,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",1671,7,56,43,8
+    EDITTEXT        IDC_EDIT_DEPART_POS,50,55,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",1672,7,68,43,8
+    EDITTEXT        IDC_EDIT_ARRIVE_POS,50,67,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "RTV 상태 정보",IDC_STATIC,3,87,170,62,BS_FLAT
+    RTEXT           "운영모드 : ",IDC_STATIC,7,98,43,8
+    EDITTEXT        IDC_EDIT_RGV_MODE,50,97,41,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료상태 : ",IDC_STATIC,7,110,43,8
+    EDITTEXT        IDC_EDIT_COMPLETE,50,109,41,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "화물유무 : ",IDC_STATIC,7,122,43,8
+    EDITTEXT        IDC_EDIT_PRODLOAD,50,121,41,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "RTV 상태 : ",IDC_STATIC_POS3,7,134,43,8
+    EDITTEXT        IDC_EDIT_STATUS,50,133,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "ACTIVE : ",IDC_STATIC,91,98,44,8
+    EDITTEXT        IDC_EDIT_RGV_ACTIVE,135,97,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "주행위치 : ",IDC_STATIC,91,110,44,8
+    EDITTEXT        1063,135,109,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "지상반 : ",IDC_STATIC,91,122,44,8,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDIT_JISANG_MODE,135,121,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "세부작업정보",IDC_STATIC,3,152,170,99,BS_FLAT
+    RTEXT           "내부번호 : ",IDC_STATIC,7,164,43,8
+    EDITTEXT        1045,50,162,119,13,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "내부구분 : ",IDC_STATIC,7,176,43,8
+    EDITTEXT        IDC_EDIT_INTERNAL_JOB_TYPE,50,175,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",IDC_STATIC,7,188,43,8
+    EDITTEXT        IDC_EDIT_JOB_START_ST,50,187,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",IDC_STATIC,7,200,43,8
+    EDITTEXT        IDC_EDIT_JOB_DEST_ST,50,199,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "진행상태 : ",IDC_STATIC,7,212,43,8
+    EDITTEXT        1066,50,211,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "적재용기 : ",IDC_STATIC,7,224,43,8
+    EDITTEXT        IDC_EDIT_PROD_INFO1,50,223,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "작업 지시",IDC_STATIC,176,21,60,126,BS_FLAT
+    PUSHBUTTON      "강제완료",1020,179,32,54,14
+    PUSHBUTTON      "비상정지",1068,179,46,54,14
+    PUSHBUTTON      "A C T I V E",1074,179,60,54,14
+    PUSHBUTTON      "정        지",IDC_BUTTON_STOP,179,74,54,14
+    PUSHBUTTON      "에러해제",IDC_BUTTON_RESET,179,88,54,14
+    PUSHBUTTON      "삭        제",IDC_BUTTON_CANCEL,179,102,54,14
+    PUSHBUTTON      "복귀명령",1072,179,116,54,14
+    PUSHBUTTON      "수동지시",IDC_BUTTON_MANUAL,179,130,54,14
+    GROUPBOX        "일시 정지",IDC_STATIC,176,206,60,25,BS_FLAT
+    CONTROL         "작업 정지",1070,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,182,217,49,10
+    GROUPBOX        "에러정보",IDC_STATIC,3,252,233,29,BS_FLAT
+    EDITTEXT        1048,7,261,225,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
+    RTEXT           "수         량 : ",IDC_STATIC,193,167,43,8,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDIT_PROD_INFO2,117,155,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "품목코드 : ",IDC_STATIC,7,236,43,8
+    EDITTEXT        IDC_EDIT_PROD_INFO3,50,235,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+END
+
+IDD_RTV_CTRL DIALOGEX 0, 0, 239, 276
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "RTV 정보"
+FONT 10, "System", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "닫      기",IDOK,176,223,60,16
+    EDITTEXT        1515,3,4,233,13,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME
+    GROUPBOX        "RTV 작업 정보",IDC_STATIC,3,21,170,62,BS_FLAT
+    RTEXT           "작업번호 : ",1669,7,32,43,8
+    EDITTEXT        IDC_EDIT_LUGG_NUM,50,31,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분 : ",1670,7,44,43,8
+    EDITTEXT        IDC_EDIT_JOB_TYPE,50,43,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",1671,7,56,43,8
+    EDITTEXT        IDC_EDIT_DEPART_POS,50,55,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",1672,7,68,43,8
+    EDITTEXT        IDC_EDIT_ARRIVE_POS,50,67,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "RTV 상태 정보",IDC_STATIC,3,87,170,61,BS_FLAT
+    RTEXT           "운영모드 : ",IDC_STATIC,7,98,43,8
+    EDITTEXT        IDC_EDIT_RGV_MODE,50,97,41,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료상태 : ",IDC_STATIC,7,110,43,8
+    EDITTEXT        IDC_EDIT_COMPLETE,50,109,41,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "화물유무 : ",IDC_STATIC,7,122,43,8
+    EDITTEXT        IDC_EDIT_PRODLOAD,50,121,41,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "RTV 상태 : ",IDC_STATIC_POS3,7,134,43,8
+    EDITTEXT        IDC_EDIT_STATUS,50,133,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "ACTIVE : ",IDC_STATIC,91,98,44,8
+    EDITTEXT        IDC_EDIT_RGV_ACTIVE,135,97,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "주행위치 : ",IDC_STATIC,91,110,44,8
+    EDITTEXT        1063,135,109,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "지상반 : ",IDC_STATIC,91,122,44,8,NOT WS_VISIBLE
+    EDITTEXT        IDC_EDIT_JISANG_MODE,135,121,34,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "세부작업정보",IDC_STATIC,3,153,170,86,BS_FLAT
+    RTEXT           "내부번호 : ",IDC_STATIC,7,164,43,8
+    EDITTEXT        1045,50,162,119,13,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "내부구분 : ",IDC_STATIC,7,176,43,8
+    EDITTEXT        IDC_EDIT_INTERNAL_JOB_TYPE,50,175,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",IDC_STATIC,7,188,43,8
+    EDITTEXT        IDC_EDIT_JOB_START_ST,50,187,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",IDC_STATIC,7,200,43,8
+    EDITTEXT        IDC_EDIT_JOB_DEST_ST,50,199,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "진행상태 : ",IDC_STATIC,7,212,43,8
+    EDITTEXT        1066,50,211,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "제품정보 : ",IDC_STATIC,7,224,43,8
+    EDITTEXT        IDC_EDIT_PROD_INFO1,50,223,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "작업 지시",IDC_STATIC,176,21,60,126,BS_FLAT
+    PUSHBUTTON      "강제완료",1020,179,32,54,14
+    PUSHBUTTON      "비상정지",1068,179,46,54,14
+    PUSHBUTTON      "A C T I V E",1074,179,60,54,14
+    PUSHBUTTON      "정        지",IDC_BUTTON_STOP,179,74,54,14
+    PUSHBUTTON      "에러해제",IDC_BUTTON_RESET,179,88,54,14
+    PUSHBUTTON      "삭        제",IDC_BUTTON_CANCEL,179,102,54,14
+    PUSHBUTTON      "복귀명령",1072,179,116,54,14
+    PUSHBUTTON      "수동지시",IDC_BUTTON_MANUAL,179,130,54,14
+    GROUPBOX        "일시 정지",IDC_STATIC,176,194,60,25,BS_FLAT
+    CONTROL         "작업 정지",1070,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,182,205,49,10
+    GROUPBOX        "에러정보",IDC_STATIC,3,243,233,29,BS_FLAT
+    EDITTEXT        1048,7,252,225,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
+    EDITTEXT        IDC_EDIT_PROD_INFO2,117,152,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    EDITTEXT        IDC_EDIT_PROD_INFO3,117,166,119,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+END
+
+IDD_ECS_CONTROL DIALOG 0, 0, 247, 456
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "맑은 고딕"
+BEGIN
+    PUSHBUTTON      "조회",IDC_BUTTON5,126,15,23,12
+    LTEXT           "PLC:",IDC_STATIC,12,18,17,8
+    EDITTEXT        IDC_HEXA,168,126,22,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_REG_NAME,160,15,30,12,ES_AUTOHSCROLL | ES_READONLY
+    COMBOBOX        IDC_COMBO_DEVICE,85,16,20,65,CBS_DROPDOWN | CBS_SORT | WS_DISABLED | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "List1",IDC_LIST_REG_DATA,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,11,30,138,108
+    PUSHBUTTON      "Bit 적용",IDC_BUTTON12,193,14,26,12
+    CONTROL         "Bit00",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,99,24,8
+    CONTROL         "Bit01",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,90,24,8
+    CONTROL         "Bit02",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,81,24,8
+    CONTROL         "Bit03",IDC_CHECK4,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,72,24,8
+    CONTROL         "Bit04",IDC_CHECK5,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,99,24,8
+    CONTROL         "Bit05",IDC_CHECK6,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,90,24,8
+    CONTROL         "Bit06",IDC_CHECK7,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,81,24,8
+    CONTROL         "Bit07",IDC_CHECK8,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,72,24,8
+    CONTROL         "Bit08",IDC_CHECK9,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,57,24,8
+    CONTROL         "Bit09",IDC_CHECK10,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,48,24,8
+    CONTROL         "Bit10",IDC_CHECK11,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,39,24,8
+    CONTROL         "Bit11",IDC_CHECK12,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,195,30,24,8
+    CONTROL         "Bit12",IDC_CHECK13,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,57,24,8
+    CONTROL         "Bit13",IDC_CHECK14,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,48,24,8
+    CONTROL         "Bit14",IDC_CHECK15,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,39,24,8
+    CONTROL         "Bit15",IDC_CHECK16,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,167,30,24,8
+    PUSHBUTTON      "값 적용",IDC_BUTTON13,194,124,25,12
+    RTEXT           "작업번호:",IDC_STATIC,14,200,32,8
+    RTEXT           "적재타입:",IDC_STATIC,14,262,32,8
+    RTEXT           "작업구분:",IDC_STATIC,14,242,32,8
+    RTEXT           "도착지:",IDC_STATIC,14,221,32,8
+    EDITTEXT        IDC_LUGG_NUM,47,199,30,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_JOB_TYPE,47,240,30,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TRAY_TYPE,47,261,30,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_DEST_POS,47,219,30,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "값 적용",IDC_BUTTON14,50,176,25,12
+    CONTROL         "Key SW",IDC_CHECK17,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,199,36,8
+    CONTROL         "입고대",IDC_CHECK18,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,208,33,8
+    CONTROL         "출고대",IDC_CHECK19,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,217,33,8
+    CONTROL         "입고H/S",IDC_CHECK20,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,226,35,8
+    CONTROL         "출고H/S",IDC_CHECK21,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,241,34,8
+    CONTROL         "RTV출발",IDC_CHECK22,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,250,38,8
+    CONTROL         "RTV도착",IDC_CHECK23,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,259,38,8
+    CONTROL         "Bit07",IDC_CHECK24,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,268,27,8
+    CONTROL         "FULL",IDC_CHECK25,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,282,29,8
+    CONTROL         "ㅎㅎ",IDC_CHECK26,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,291,35,8
+    CONTROL         "BCR리드",IDC_CHECK27,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,300,36,8
+    CONTROL         "입고요청",IDC_CHECK28,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,310,33,8
+    CONTROL         "Bit12",IDC_CHECK29,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,324,27,8
+    CONTROL         "Bit13",IDC_CHECK30,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,333,27,8
+    CONTROL         "Bit14",IDC_CHECK31,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,342,27,8
+    CONTROL         "Bit15",IDC_CHECK32,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,102,351,27,8
+    CONTROL         "화물감지1",IDC_CHECK33,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,199,40,8
+    CONTROL         "화물감지2",IDC_CHECK34,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,208,40,8
+    CONTROL         "저속",IDC_CHECK35,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,217,27,8
+    CONTROL         "전진 Over",IDC_CHECK36,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,226,40,8
+    CONTROL         "후진 Over",IDC_CHECK37,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,241,39,8
+    CONTROL         "Clear",IDC_CHECK38,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,250,29,8
+    CONTROL         "H/S Up",IDC_CHECK39,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,259,34,8
+    CONTROL         "H/S Down",IDC_CHECK40,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,268,40,8
+    CONTROL         "디버터 UP",IDC_CHECK41,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,282,38,8
+    CONTROL         "디버터 DN",IDC_CHECK42,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,291,40,8
+    CONTROL         "SC 인터락",IDC_CHECK43,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,300,40,8
+    CONTROL         "RTV인터락",IDC_CHECK44,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,310,41,8
+    CONTROL         "LGV인터락",IDC_CHECK45,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,324,41,8
+    CONTROL         "LF 인터락",IDC_CHECK46,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,333,39,8
+    CONTROL         "LGV모드",IDC_CHECK47,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,342,38,8
+    CONTROL         "입출고모드",IDC_CHECK48,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,351,40,8
+    PUSHBUTTON      "값 적용",IDC_BUTTON15,102,176,25,12
+    PUSHBUTTON      "값 적용",IDC_BUTTON16,144,176,25,12
+    GROUPBOX        "트랙정보",IDC_STATIC,7,145,224,303
+    EDITTEXT        IDC_TRACK_NO,43,157,29,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "이동",IDC_BUTTON17,73,156,18,12
+    LTEXT           "트랙번호:",IDC_STATIC,15,159,28,8
+    GROUPBOX        "Word 정보",IDC_STATIC,7,7,224,135
+    RTEXT           "MES요청:",IDC_STATIC,14,338,32,8
+    EDITTEXT        IDC_TRAY_ID_2,101,425,30,12,ES_AUTOHSCROLL | NOT WS_VISIBLE | WS_DISABLED
+    LTEXT           "D10n+7",IDC_STATIC,103,192,29,8
+    LTEXT           "D10n+8",IDC_STATIC,144,191,29,8
+    EDITTEXT        IDC_EDIT_SIZE,48,285,30,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TRAY_ID,48,336,30,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SUSPEND,48,374,30,12,ES_AUTOHSCROLL
+    LTEXT           "D10n+0",IDC_STATIC,47,192,29,8
+    LTEXT           "D10n+1 L 4BIT",IDC_STATIC,47,231,45,8
+    LTEXT           "D10n+1 H",IDC_STATIC,47,253,43,8
+    LTEXT           "D10n+1",IDC_STATIC,47,212,43,8
+    LTEXT           "D10n+4 8BIT",IDC_STATIC,47,325,43,8
+    RTEXT           "SIZE:",IDC_STATIC,14,286,32,8
+    LTEXT           "D10n+3 L",IDC_STATIC,47,277,29,8
+    RTEXT           "Suspend:",IDC_STATIC,14,375,32,8
+    LTEXT           "D10n+4 4 Bit",IDC_STATIC,47,363,43,8
+    RTEXT           "에러코드:",IDC_STATIC,14,400,32,8
+    EDITTEXT        IDC_ERR_CODE,48,398,30,12,ES_AUTOHSCROLL
+    LTEXT           "D10n+6",IDC_STATIC,48,387,43,8
+    LTEXT           "D10n+9",IDC_STATIC,48,411,38,8
+    COMBOBOX        IDC_COMBO_PLC,29,16,25,148,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_DECIMAL,168,111,22,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "값 적용",IDC_BUTTON18,194,110,25,12
+    LTEXT           "8",IDC_STATIC,159,31,8,8
+    LTEXT           "4",IDC_STATIC,159,40,8,8
+    LTEXT           "2",IDC_STATIC,159,49,8,8
+    LTEXT           "1",IDC_STATIC,159,58,8,8
+    LTEXT           "8",IDC_STATIC,159,73,8,8
+    LTEXT           "4",IDC_STATIC,159,82,8,8
+    LTEXT           "2",IDC_STATIC,159,91,8,8
+    LTEXT           "1",IDC_STATIC,159,100,8,8
+    LTEXT           "D",IDC_STATIC,159,112,8,8
+    LTEXT           "X",IDC_STATIC,159,126,8,8
+    EDITTEXT        IDC_EDIT_REGNUM,104,16,20,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "N설정",IDC_BUTTON19,180,156,21,12
+    PUSHBUTTON      "D설정",IDC_BUTTON20,202,156,21,12
+    GROUPBOX        "",IDC_STATIC,11,150,216,21
+    GROUPBOX        "",IDC_STATIC,12,171,81,270
+    GROUPBOX        "",IDC_STATIC,95,171,44,270
+    GROUPBOX        "",IDC_STATIC,142,171,44,270
+    COMBOBOX        IDC_COMBO_CV_KIND,95,156,46,148,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_TRACK_NO2,54,16,25,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT_NEXT_CV,150,157,29,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "",IDC_CHECK_NEXT_NOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,142,159,8,8
+    PUSHBUTTON      "OP자동",IDC_BUTTON22,189,327,25,12
+    EDITTEXT        IDC_EDIT_STATION,189,239,35,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT_HOME_ST,189,251,35,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "설비도착대",IDC_CHECK_CENTER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,189,175,41,8
+    CONTROL         "",IDC_CHECK_CENTER_NEXT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,189,186,8,8
+    CONTROL         "",IDC_CHECK_CENTER_DEST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,189,196,9,8
+    EDITTEXT        IDC_EDIT_CENTER_NEXT,198,184,20,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT_CENTER_DEST,198,195,20,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "",IDC_CHECK_CROSS_TRACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,189,226,9,8
+    EDITTEXT        IDC_EDIT_CROSS_TRACK,198,225,20,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "Check",IDC_CHECK_CROSS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,189,215,41,8
+    PUSHBUTTON      "OP수동",IDC_BUTTON23,189,342,25,12
+    PUSHBUTTON      "Save",IDC_BUTTON_SAVE,190,396,25,12
+    EDITTEXT        IDC_EDIT_LGV_AGREE,47,421,33,12,ES_AUTOHSCROLL
+    RTEXT           "LGV허가:",IDC_STATIC,15,423,32,8
+    EDITTEXT        IDC_EDIT_TURN,48,311,30,12,ES_AUTOHSCROLL
+    RTEXT           "턴 신호:",IDC_STATIC,14,311,32,8
+    LTEXT           "D10n+3 H",IDC_STATIC,47,300,29,8
+    PUSHBUTTON      "전체자동",IDC_BTN_ALLAUTO,189,357,27,12
+    PUSHBUTTON      "전체수동",IDC_BTN_ALLAUTO2,189,372,27,12
+    CONTROL         "Twin",IDC_CHECK_TWIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,189,272,41,8
+    EDITTEXT        IDC_EDIT_HS_TRACK,198,281,20,12,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "삭제",IDC_BTN_DELETE,189,305,25,12
+END
+
+IDD_DIALOG1 DIALOG 0, 0, 187, 96
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 10, "System"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,130,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,130,24,50,14
+END
+
+IDD_SC_PAIR_CTRL DIALOGEX 0, 0, 439, 355
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "닫     기",IDOK,347,293,85,17
+    EDITTEXT        IDC_EDIT_DEVICE,5,5,427,16,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME
+    GROUPBOX        "스태커 크레인 작업 정보",IDC_STATIC,5,25,335,78,BS_FLAT
+    RTEXT           "작업번호 : ",IDC_STATIC_LUGG_NUM,11,41,52,10
+    EDITTEXT        IDC_EDIT_LUGG_NUM,63,38,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분 : ",IDC_STATIC_JOB_TYPE,11,55,52,10
+    EDITTEXT        IDC_EDIT_CMD_TYPE,63,53,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",IDC_STATIC_START_POS,11,69,52,10
+    EDITTEXT        IDC_EDIT_START_POS,63,68,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",IDC_STATIC_DEST_POS,11,84,52,10
+    EDITTEXT        IDC_EDIT_DEST_POS,63,82,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "스태커 상태 정보",IDC_STATIC,5,106,335,78,BS_FLAT
+    RTEXT           "지상반 : ",IDC_STATIC,11,122,52,10
+    EDITTEXT        IDC_EDIT_RC_MODE,63,119,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "기상반 : ",IDC_STATIC,119,122,52,10
+    EDITTEXT        IDC_EDIT_SC_MODE,171,119,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "포크1위치 : ",IDC_STATIC,7,151,53,10
+    EDITTEXT        IDC_EDIT_FORK_POS,63,149,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "포크상태 : ",IDC_STATIC,119,150,52,10
+    EDITTEXT        IDC_EDIT_FORK_STATUS,171,149,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "완료상태 : ",IDC_STATIC,119,165,52,10
+    EDITTEXT        IDC_EDIT_SC_JOB_STATUS,171,164,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "SRC상태 : ",IDC_STATIC,227,122,52,10
+    EDITTEXT        IDC_EDIT_RC_STATUS,279,119,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "동작상태 : ",IDC_STATIC,227,137,52,10
+    EDITTEXT        IDC_EDIT_SC_STATUS,279,134,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "수평주행 : ",IDC_STATIC,11,137,52,10
+    EDITTEXT        IDC_EDIT_HORIZONTAL_POS,63,134,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "수직주행 : ",IDC_STATIC,119,137,52,10
+    EDITTEXT        IDC_EDIT_VERTICAL_POS,171,134,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "화물유무 : ",IDC_STATIC,227,165,52,10
+    EDITTEXT        IDC_EDIT_PROD_LOAD,279,164,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "세부 제품 정보",IDC_STATIC,5,186,335,124,BS_FLAT
+    RTEXT           "작업번호 : ",IDC_STATIC_INTERNAL_LUGG_NUM,11,201,52,10
+    EDITTEXT        IDC_EDIT_INTERNAL_LUGG_NUM,63,199,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분 : ",IDC_STATIC,11,215,52,10
+    EDITTEXT        IDC_EDIT_ECS_JOB_TYPE,63,214,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치 : ",IDC_STATIC,11,230,52,10
+    EDITTEXT        IDC_EDIT_JOB_START_POS,63,229,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치 : ",IDC_STATIC,11,245,52,10
+    EDITTEXT        IDC_EDIT_JOB_DEST_POS,63,244,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업상태 : ",IDC_STATIC,11,260,52,10
+    EDITTEXT        IDC_EDIT_JOB_STATUS,63,258,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "적재용기 : ",IDC_STATIC,11,274,52,10
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO,63,273,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    GROUPBOX        "자기 진단",IDC_STATIC,5,314,427,34,BS_FLAT
+    EDITTEXT        IDC_EDIT_DIAGNOSIS,13,324,413,18,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
+    GROUPBOX        "작업 지시",IDC_STATIC,347,25,85,182,BS_FLAT
+    PUSHBUTTON      "강제완료",IDC_BUTTON_COMPLETE,353,37,72,18,WS_DISABLED
+    PUSHBUTTON      "비상정지",IDC_BUTTON_EMERGENCY,353,55,72,18,WS_DISABLED
+    PUSHBUTTON      "A C T I V E",IDC_BUTTON_ACTIVE,353,74,72,18,WS_DISABLED
+    PUSHBUTTON      "정        지",IDC_BUTTON_ESTOP,353,92,72,18,WS_DISABLED
+    PUSHBUTTON      "에러리셋",IDC_BUTTON_ERROR_RESET,353,111,72,18,WS_DISABLED
+    PUSHBUTTON      "삭        제",IDC_BUTTON_CANCEL,353,129,72,18,WS_DISABLED
+    PUSHBUTTON      "복귀명령",IDC_BUTTON_CALL_TO_HOME,353,148,72,18,WS_DISABLED
+    PUSHBUTTON      "이중입고",IDC_BUTTON_DUAL_STORE,353,166,72,18,WS_DISABLED
+    PUSHBUTTON      "수동지시",IDC_BUTTON_MANUAL,353,185,72,17,WS_DISABLED
+    GROUPBOX        "일시 정지",IDC_STATIC,347,247,85,41,BS_FLAT
+    CONTROL         "입고 작업",IDC_CHECK_SUSPENT_STORE,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,359,257,67,12
+    CONTROL         "출고 작업",IDC_CHECK_SUSPEND_RETRIEVE,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,359,271,67,12
+    RTEXT           "품목코드 : ",IDC_STATIC,11,289,52,10
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO3,63,288,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업번호2 : ",IDC_STATIC_LUGG_NUM2,171,41,56,10
+    EDITTEXT        IDC_EDIT_LUGG_NUM2,227,38,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치2 : ",IDC_STATIC_START_POS2,171,69,56,10
+    EDITTEXT        IDC_EDIT_START_POS2,227,68,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치2 : ",IDC_STATIC_DEST_POS2,171,84,56,10
+    EDITTEXT        IDC_EDIT_DEST_POS2,227,82,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분2 : ",IDC_STATIC_JOB_TYPE2,171,55,56,10
+    EDITTEXT        IDC_EDIT_CMD_TYPE2,227,53,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업번호2 : ",IDC_STATIC_INTERNAL_LUGG_NUM2,171,201,56,10
+    EDITTEXT        IDC_EDIT_INTERNAL_LUGG_NUM2,227,199,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업구분2 : ",IDC_STATIC,171,215,56,10
+    EDITTEXT        IDC_EDIT_ECS_JOB_TYPE2,227,214,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "출발위치2 : ",IDC_STATIC,171,230,56,10
+    EDITTEXT        IDC_EDIT_JOB_START_POS2,227,229,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "도착위치2 : ",IDC_STATIC,171,245,56,10
+    EDITTEXT        IDC_EDIT_JOB_DEST_POS2,227,244,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "작업상태2 : ",IDC_STATIC,171,260,56,10
+    EDITTEXT        IDC_EDIT_JOB_STATUS2,227,258,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "적재용기2 : ",IDC_STATIC,171,274,56,10
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO4,227,273,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "품목코드2 : ",IDC_STATIC,171,289,56,10
+    EDITTEXT        IDC_EDIT_JOB_PROD_INFO5,227,288,108,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "이전상태 : ",IDC_STATIC,227,150,52,10
+    EDITTEXT        IDC_EDIT_PREV_STATUS,279,149,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+    RTEXT           "포크2위치 : ",IDC_STATIC,7,166,53,10
+    EDITTEXT        IDC_EDIT_FORK_POS2,63,164,56,15,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP,WS_EX_STATICEDGE
+END
+
+IDD_CONFIG_SUB2_PAGE DIALOGEX 0, 0, 371, 235
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "저   장",ID_BUTTON_SAVE,291,17,68,15
+    CONTROL         "",IDC_LIST_CLIENT,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,9,49,349,174
+    GROUPBOX        "ECS 클라이언트 정보",IDC_STATIC,3,4,361,224
+    ICON            IDI_ICON_MODIFY,IDC_STATIC,9,15,21,20
+    EDITTEXT        IDC_EDIT_PORT_MON,85,18,202,14,ES_AUTOHSCROLL
+    RTEXT           "통신포트 : ",IDC_STATIC,37,18,45,14,SS_CENTERIMAGE
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKRECT,9,38,349,7
+END
+
+IDD_CONFIG_STD_PAGE1 DIALOGEX 0, 0, 315, 260
+STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "ECS 기본 정보"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "작업 기록 옵션",IDC_STATIC,4,7,128,64
+    CONTROL         "작업기록(&J)",IDC_CHECK_JOB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,20,64,15
+    CONTROL         "이벤트(&V)",IDC_CHECK_EVENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,35,64,15
+    CONTROL         "에러(&E)",IDC_CHECK_ERROR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,50,52,15
+    CONTROL         "알람(&A)",IDC_CHECK_ALARM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,75,20,52,15
+    CONTROL         "디버그(&D)",IDC_CHECK_DEBUG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,75,35,52,15
+    CONTROL         "경고음(&W)",IDC_CHECK_BEEP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,75,50,52,15
+    GROUPBOX        "통신포트 정보",IDC_STATIC,4,75,306,181
+    CONTROL         "List1",IDC_LIST_COMM1,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,9,87,296,163
+    PUSHBUTTON      "저   장",IDC_BUTTON_SAVE,256,51,53,20
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041204b0"
+        BEGIN
+            VALUE "CompanyName", "(주)삼오물류정보"
+            VALUE "FileDescription", "Equipment Control System"
+            VALUE "FileVersion", "1, 0, 0, 1"
+            VALUE "InternalName", "ECS"
+            VALUE "LegalCopyright", "Copyright (C) 2005 - 2013"
+            VALUE "OriginalFilename", "Ecs.EXE"
+            VALUE "ProductName", "ECS 응용 프로그램"
+            VALUE "ProductVersion", "1, 0, 0, 1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x412, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 48
+    END
+
+    IDD_CONFIG_SUB1_PAGE, DIALOG
+    BEGIN
+        LEFTMARGIN, 3
+        RIGHTMARGIN, 306
+        VERTGUIDE, 8
+        VERTGUIDE, 47
+        VERTGUIDE, 240
+        VERTGUIDE, 283
+        VERTGUIDE, 299
+    END
+
+    IDD_CONFIG_STD_PAGE, DIALOG
+    BEGIN
+        VERTGUIDE, 40
+        VERTGUIDE, 75
+        VERTGUIDE, 174
+        VERTGUIDE, 253
+        BOTTOMMARGIN, 260
+    END
+
+    IDD_LOG, DIALOG
+    BEGIN
+        BOTTOMMARGIN, 229
+        HORZGUIDE, 24
+    END
+
+    IDD_DATA_SETTING, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 184
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 21
+    END
+
+    IDD_PORT_ETHERNET, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 157
+        VERTGUIDE, 59
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 125
+    END
+
+    IDD_PORT_SERIAL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 142
+        VERTGUIDE, 78
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 128
+    END
+
+    IDD_ECS_FORM, DIALOG
+    BEGIN
+        RIGHTMARGIN, 828
+        TOPMARGIN, 8
+        HORZGUIDE, 8
+    END
+
+    IDD_SC_CTRL_01, DIALOG
+    BEGIN
+        LEFTMARGIN, 4
+        RIGHTMARGIN, 236
+        VERTGUIDE, 8
+        VERTGUIDE, 50
+        VERTGUIDE, 92
+        VERTGUIDE, 134
+        VERTGUIDE, 168
+        VERTGUIDE, 176
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 301
+    END
+
+    IDD_SC_MANUAL, DIALOG
+    BEGIN
+        LEFTMARGIN, 6
+        RIGHTMARGIN, 228
+        VERTGUIDE, 12
+        VERTGUIDE, 44
+        VERTGUIDE, 107
+        VERTGUIDE, 167
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 58
+        HORZGUIDE, 24
+    END
+
+    IDD_CV_CTRL1, DIALOG
+    BEGIN
+        RIGHTMARGIN, 295
+        BOTTOMMARGIN, 315
+    END
+
+    IDD_SC_CTRL1, DIALOG
+    BEGIN
+        LEFTMARGIN, 4
+        RIGHTMARGIN, 236
+        VERTGUIDE, 8
+        VERTGUIDE, 50
+        VERTGUIDE, 92
+        VERTGUIDE, 134
+        VERTGUIDE, 168
+        VERTGUIDE, 176
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 300
+    END
+
+    IDD_LOGIN, DIALOG
+    BEGIN
+        BOTTOMMARGIN, 280
+    END
+
+    IDD_SYS_USER_MANAGER, DIALOG
+    BEGIN
+        LEFTMARGIN, 4
+        RIGHTMARGIN, 492
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 310
+    END
+
+    IDD_LOG_IF_TRANS, DIALOG
+    BEGIN
+        LEFTMARGIN, 4
+        RIGHTMARGIN, 563
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 310
+    END
+
+    IDD_LOG_QTY_PROC, DIALOG
+    BEGIN
+        LEFTMARGIN, 4
+        RIGHTMARGIN, 563
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 310
+    END
+
+    IDD_CONFIG_SUB3_PAGE, DIALOG
+    BEGIN
+        VERTGUIDE, 4
+        VERTGUIDE, 311
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 269
+    END
+
+    IDD_RTV_MANUAL, DIALOG
+    BEGIN
+        VERTGUIDE, 6
+        VERTGUIDE, 48
+        VERTGUIDE, 160
+        VERTGUIDE, 218
+        BOTTOMMARGIN, 43
+    END
+
+    IDD_RTV_CTRL1, DIALOG
+    BEGIN
+        VERTGUIDE, 3
+        VERTGUIDE, 7
+        VERTGUIDE, 50
+        VERTGUIDE, 91
+        VERTGUIDE, 135
+        VERTGUIDE, 169
+        VERTGUIDE, 173
+        VERTGUIDE, 176
+        VERTGUIDE, 236
+        BOTTOMMARGIN, 281
+    END
+
+    IDD_RTV_CTRL, DIALOG
+    BEGIN
+        VERTGUIDE, 3
+        VERTGUIDE, 7
+        VERTGUIDE, 50
+        VERTGUIDE, 91
+        VERTGUIDE, 135
+        VERTGUIDE, 169
+        VERTGUIDE, 173
+        VERTGUIDE, 176
+        VERTGUIDE, 236
+        BOTTOMMARGIN, 272
+    END
+
+    IDD_ECS_CONTROL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 240
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 449
+    END
+
+    IDD_DIALOG1, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 180
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 89
+    END
+
+    IDD_SC_PAIR_CTRL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 432
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 348
+    END
+
+    IDD_CONFIG_SUB2_PAGE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 364
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 228
+    END
+
+    IDD_CONFIG_STD_PAGE1, DIALOG
+    BEGIN
+        VERTGUIDE, 40
+        VERTGUIDE, 75
+        VERTGUIDE, 174
+        VERTGUIDE, 253
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursor
+//
+
+IDC_CURSOR1             CURSOR                  "res\\cursor1.cur"
+
+IDC_CURSOR2             CURSOR                  "res\\cursor2.cur"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_SYS_USER_MANAGER DLGINIT
+BEGIN
+    IDC_CBX_LEVEL, 0x403, 7, 0
+0xfcb0, 0xaeb8, 0xdac0, "\000" 
+    IDC_CBX_LEVEL, 0x403, 11, 0
+0xcfc0, 0xddb9, 0xe7bb, 0xebbf, 0xdac0, "\000" 
+    IDC_FPSPREAD1, 0x37a, 1295, 0
+0x001b, 0x0000, 0x0043, 0x006f, 0x0070, 0x0079, 0x0072, 0x0069, 0x0067, 
+0x0068, 0x0074, 0x0020, 0x0028, 0x0063, 0x0029, 0x0020, 0x0031, 0x0039, 
+0x0039, 0x0035, 0x0020, 0x0046, 0x0061, 0x0072, 0x0050, 0x006f, 0x0069, 
+0x006e, 0x0074, 0x0012, 0x0000, 0x0001, 0x0000, 0x000a, 0x0000, 0x0023, 
+0x0000, 0x0000, 0x0000, 0x0007, 0x64df, 0x0000, 0x29f6, 0x0000, 0x0040, 
+0x0000, 0x0001, 0x0000, 0x0000, 0x0101, 0x0000, 0x0100, 0x0000, 0x0200, 
+0x0000, 0x0000, 0x0100, 0x0101, 0x0201, 0x0100, 0x0101, 0x0000, 0x0000, 
+0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 0xb84b, 0x0151, 
+0x0000, 0x9000, 0x4401, 0x0142, 0x0d00, 0x534d, 0x5320, 0x6e61, 0x2073, 
+0x6553, 0x6972, 0x0166, 0xc0c0, 0x00c0, 0xc0c0, 0x00c0, 0x0101, 0x0501, 
+0x0000, 0x0100, 0x0000, 0x0100, 0x0000, 0x0002, 0x0000, 0x0100, 0x0001, 
+0x0100, 0x0001, 0x0000, 0x0000, 0x0100, 0x0003, 0x0f01, 0x0f00, 0x0000, 
+0x1080, 0x0000, 0x1280, 0x0000, 0xf280, 0x0003, 0x0100, 0xf204, 0x0003, 
+0x3f00, 0x3200, 0x0000, 0x0100, 0x3900, 0x0003, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x9000, 0x0001, 0x0000, 0x0000, 0x0001, 0x0000, 0x0e00, 0x0000, 
+0x4d00, 0x2053, 0x6153, 0x736e, 0x5320, 0x7265, 0x6669, 0x0b00, 0x0c00, 
+0x0000, 0x0000, 0x0000, 0x0101, 0x1600, 0x1100, 0x0000, 0x0000, 0x0001, 
+0xa9fc, 0xd2f1, 0x624d, 0x3f50, 0x0045, 0x0012, 0x0000, 0x0071, 0x0000, 
+0x0072, 0x0000, 0x0073, 0x0000, 0x0047, 0x0007, 0x0000, 0x5100, 0x3d00, 
+0x0000, 0x0000, 0x01f4, 0x0000, 0x0018, 0x8000, 0x0017, 0x8000, 0x0339, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0190, 0x0000, 0x0000, 0x0100, 
+0x0000, 0x0000, 0x000e, 0x0000, 0x534d, 0x5320, 0x6e61, 0x2073, 0x6553, 
+0x6972, 0x0066, 0x004a, 0x0007, 0x0000, 0x4f0f, 0x0e00, 0x0000, 0x8000, 
+0xffff, 0xff00, 0xffff, 0x50ff, 0x0800, 0x0000, 0x0b00, 0x5308, 0x0800, 
+0x0000, 0x0000, 0x5400, 0x0800, 0x0000, 0x0000, 0x5700, 0x0a00, 0x0000, 
+0x0000, 0x0000, 0x5800, 0x1200, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x6500, 0x0800, 0x0000, 0x0100, 0x6800, 0x1200, 0x0000, 
+0x0000, 0x3300, 0x3333, 0x3333, 0xe333, 0xff3f, 0x64ff, 0x0800, 0x0000, 
+0x0000, 0x1900, 0x0e00, 0x0000, 0x0500, 0x0000, 0x0100, 0x0000, 0x4200, 
+0x0800, 0x0000, 0x0000, 0x0500, 0x1600, 0x0000, 0xff00, 0xffff, 0xffff, 
+0xffff, 0xffff, 0xffff, 0x0000, 0x0000, 0x0600, 0x1200, 0x0000, 0xff00, 
+0xffff, 0x00ff, 0x0000, 0x0000, 0x3540, 0x0d40, 0x1000, 0x0000, 0xff00, 
+0xffff, 0xffff, 0xffff, 0x00ff, 0x1700, 0x0f00, 0x0000, 0xff00, 0xffff, 
+0xffff, 0xffff, 0x02ff, 0x001d, 0x0008, 0x0000, 0x0002, 0x0022, 0x0012, 
+0x0000, 0xffff, 0xffff, 0xcccd, 0xcccc, 0xcccc, 0x4030, 0x0025, 0x0016, 
+0x0000, 0x000f, 0x8000, 0x0012, 0x8000, 0x0010, 0x8000, 0x0014, 0x8000, 
+0x002a, 0x001a, 0x0000, 0xffff, 0xffff, 0xffff, 0xffff, 0x0080, 0x0000, 
+0x7d00, 0x0000, 0x0000, 0x0001, 0x0046, 0x0016, 0x0000, 0xffff, 0xffff, 
+0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0x0049, 0x0008, 0x0000, 
+0x0000, 0x0055, 0x0008, 0x0000, 0x0000, 0x0056, 0x000c, 0x0000, 0xffff, 
+0xffff, 0x0000, 0x0030, 0x0012, 0x0000, 0x0000, 0x0000, 0xffff, 0xffff, 
+0x00cc, 0x0000, 0x0006, 0x0012, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 
+0x4000, 0x4035, 0x0056, 0x000c, 0x0000, 0x0001, 0x0000, 0x0000, 0x002a, 
+0x001a, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0081, 0x0022, 0x7d00, 
+0x0000, 0x0000, 0x0001, 0x005b, 0x000b, 0x0000, 0x0001, 0x0000, 0x0600, 
+0x1200, 0x0000, 0x0200, 0x0000, 0x1f00, 0xeb85, 0xb851, 0x381e, 0x2a40, 
+0x1a00, 0x0000, 0x0200, 0x0000, 0xff00, 0xffff, 0x81ff, 0x2200, 0x0000, 
+0x007d, 0x0000, 0x0100, 0x0600, 0x1200, 0x0000, 0x0300, 0x0000, 0x1f00, 
+0xeb85, 0xb851, 0x379e, 0x5640, 0x0c00, 0x0000, 0x0300, 0x0000, 0x0000, 
+0x2a00, 0x1a00, 0x0000, 0x0300, 0x0000, 0xff00, 0xffff, 0xa1ff, 0x2200, 
+0x0000, 0x007d, 0x0000, 0x0100, 0x5b00, 0x0b00, 0x0000, 0x0300, 0x0000, 
+0x0000, 0x0006, 0x0012, 0x0000, 0x0004, 0x0000, 0x0a3e, 0xa3d7, 0x3d70, 
+0x402d, 0x0056, 0x000c, 0x0000, 0x0004, 0x0000, 0x0000, 0x002a, 0x001a, 
+0x0000, 0x0004, 0x0000, 0xffff, 0xffff, 0x0081, 0x0021, 0x7d00, 0x0000, 
+0x0000, 0x0001, 0x005b, 0x000b, 0x0000, 0x0004, 0x0000, 0x0600, 0x1200, 
+0x0000, 0x0500, 0x0000, 0x0000, 0x0000, 0x0000, 0x3e80, 0x5640, 0x0c00, 
+0x0000, 0x0500, 0x0000, 0x0000, 0x5b00, 0x0b00, 0x0000, 0x0500, 0x0000, 
+0x0000, 0x0022, 0x0012, 0x0000, 0x0000, 0x0000, 0x3333, 0x3333, 0x3333, 
+0x4032, 0x0030, 0x0012, 0x0000, 0xffff, 0xffff, 0x0000, 0x0000, 0x00cc, 
+0x0000, 0x0038, 0x0018, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0xe7bb, 
+0xebbf, 0xdac0, 0x4920, 0x0044, 0x0038, 0x001a, 0x0000, 0x0002, 0x0000, 
+0x0000, 0x0000, 0xe7bb, 0xebbf, 0xdac0, 0xc020, 0xb8cc, 0x00a7, 0x0038, 
+0x0017, 0x0000, 0x0003, 0x0000, 0x0000, 0x0000, 0xf1ba, 0xd0b9, 0xf8b9, 
+0xa3c8, 0x3800, 0x1300, 0x0000, 0x0400, 0x0000, 0x0000, 0x0000, 0xb100, 
+0xc7c7, 0x00d1, 0x0038, 0x001f, 0x0000, 0x0005, 0x0000, 0x0000, 0x0000, 
+0xeeb5, 0xcfb7, 0xb920, 0x20d7, 0xf6bc, 0xa4c1, 0xcfc0, 0xc3bd, 0x2a00, 
+0x1a00, 0x0000, 0x0400, 0x0000, 0x0100, 0x0000, 0x8100, 0x2200, 0x0000, 
+0x007d, 0x0000, 0x0100, 0x2a00, 0x1a00, 0x0000, 0x0500, 0x0000, 0x0100, 
+0x0000, 0x8100, 0x2200, 0x0000, 0x007d, 0x0000, 0x0100, 0x0100, 0x0000, 
+0x0100, 0x0000, 0x0100, 0x0300, 0xff00, 0xffff, 0x00ff, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x01f4, 0x0000, 0x0000, 0x000f, 0x0000, 0x0000, 0x0000, "\000" 
+    0
+END
+
+IDD_LOG_IF_TRANS DLGINIT
+BEGIN
+    IDC_STATIC1, 0x376, 783, 0
+0x0022, 0x0000, 0x0043, 0x006f, 0x0070, 0x0079, 0x0072, 0x0069, 0x0067, 
+0x0068, 0x0074, 0x0020, 0x0028, 0x0063, 0x0029, 0x0020, 0x0032, 0x0030, 
+0x0030, 0x0030, 0x0020, 0x004d, 0x0075, 0x006c, 0x0074, 0x0069, 0x004d, 
+0x0065, 0x0064, 0x0069, 0x0061, 0x0020, 0x0053, 0x006f, 0x0066, 0x0074, 
+0x000c, 0x0007, 0x08e3, 0x0000, 0x0261, 0x0000, 0x0042, 0x0000, 0xfeff, 
+0x04ff, 0xc870, 0xd68c, 0xc77c, 0xc2dc, 0x0001, 0x5203, 0x0be3, 0x8f91, 
+0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x02bc, 0x7cdc, 
+0x0001, 0x4105, 0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 
+0x00e3, 0x00aa, 0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 
+0x7241, 0x6169, 0x006c, 0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 0xaa00, 
+0x4b00, 0x51b8, 0x0001, 0x0000, 0x0190, 0x4244, 0x0001, 0x4105, 0x6972, 
+0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 0xb84b, 
+0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 0x6169, 0x006c, 
+0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 
+0x0000, 0x0190, 0x4244, 0x0001, 0xb104, 0xb8bc, 0x00b2, 0x5203, 0x0be3, 
+0x8f91, 0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x02bc, 
+0x7cdc, 0x0001, 0x4105, 0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 
+0x9d11, 0x00e3, 0x00aa, 0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 
+0x0500, 0x7241, 0x6169, 0x006c, 0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 
+0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x0190, 0x4244, 0x0001, 0x4105, 
+0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 
+0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 0x6169, 
+0x006c, 0x3c00, 0x0400, 0x0000, 0x0000, 0x8080, 0xff00, 0xfffe, 0xff00, 
+0xfffe, 0xff00, 0xfffe, 0xff00, 0xfffe, 0x0000, 0x0000, 0xff00, 0xfffe, 
+0xff00, 0xfffe, 0xff00, 0xfffe, 0xff00, 0xfffe, 0xff00, 0xfffe, 0x0000, 
+0x0100, 0x0100, 0xffff, 0xffff, 0x0101, 0xff00, 0xffff, 0xffff, 0xffff, 
+0x00ff, 0xfeff, 0x00ff, 0x0000, 0xff00, 0xfffe, 0x0100, 0x0000, 0x0000, 
+0x005a, 0x0060, 0x0000, 0x0000, 0x0000, 0xfeff, 0x00ff, 0x0001, 0x0028, 
+0xffff, 0xffff, 0x0032, 0x0004, 0x8080, 0x0080, 0x0004, 0x0000, 0x999a, 
+0x9999, 0x9999, 0x3fb9, 0x0000, 0x0000, 0x0000, 0x0000, 0x0050, 0x0000, 
+0x0004, 0x0000, 0xffff, 0x00ff, 0xffff, 0xffff, 0x0000, 0x0000, 0x0000, 
+0x0002, 0x0000, 0xffff, 0xffff, 0x00ff, 0x0001, 0x0000, 0x0000, 0x0000, 
+0xc0c0, 0x00c0, 0x0000, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0x00ff, 0xfeff, 0x04ff, 
+0xc870, 0xd68c, 0xc77c, 0xc2dc, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0x0003, 
+0x0000, 0x0003, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x0007, 0xfeff, 0x00ff, 0x0000, 0x0000, 0x0100, 0x0001, 
+0x0000, 0x0000, 0x0000, 0x0000, "\001" 
+    IDC_FPSPREAD, 0x37a, 1472, 0
+0x001b, 0x0000, 0x0043, 0x006f, 0x0070, 0x0079, 0x0072, 0x0069, 0x0067, 
+0x0068, 0x0074, 0x0020, 0x0028, 0x0063, 0x0029, 0x0020, 0x0031, 0x0039, 
+0x0039, 0x0035, 0x0020, 0x0046, 0x0061, 0x0072, 0x0050, 0x006f, 0x0069, 
+0x006e, 0x0074, 0x0012, 0x0000, 0x0001, 0x0000, 0x000a, 0x0000, 0x0023, 
+0x0000, 0x0000, 0x0000, 0x0007, 0x738c, 0x0000, 0x29f6, 0x0000, 0x0040, 
+0x0000, 0x0001, 0x0000, 0x0000, 0x0101, 0x0000, 0x0100, 0x0000, 0x0200, 
+0x0000, 0x0000, 0x0100, 0x0101, 0x0201, 0x0100, 0x0101, 0x0000, 0x0000, 
+0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 0xb84b, 0x0151, 
+0x0000, 0x9000, 0x4401, 0x0142, 0x0d00, 0x534d, 0x5320, 0x6e61, 0x2073, 
+0x6553, 0x6972, 0x0166, 0xc0c0, 0x00c0, 0xc0c0, 0x00c0, 0x0101, 0x0501, 
+0x0000, 0x0100, 0x0000, 0x0100, 0x0000, 0x0002, 0x0000, 0x0100, 0x0001, 
+0x0100, 0x0001, 0x0000, 0x0000, 0x0100, 0x0003, 0x0f01, 0x0f00, 0x0000, 
+0x1080, 0x0000, 0x1280, 0x0000, 0xa380, 0x0004, 0x0100, 0xa304, 0x0004, 
+0x3f00, 0x3200, 0x0000, 0x0100, 0x3900, 0x0003, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x9000, 0x0001, 0x0000, 0x0000, 0x0001, 0x0000, 0x0e00, 0x0000, 
+0x4d00, 0x2053, 0x6153, 0x736e, 0x5320, 0x7265, 0x6669, 0x0b00, 0x0c00, 
+0x0000, 0x0000, 0x0000, 0x0101, 0x1600, 0x1100, 0x0000, 0x0000, 0x0001, 
+0xa9fc, 0xd2f1, 0x624d, 0x3f50, 0x0045, 0x0012, 0x0000, 0x0071, 0x0000, 
+0x0072, 0x0000, 0x0073, 0x0000, 0x0047, 0x0007, 0x0000, 0x5100, 0x3d00, 
+0x0000, 0x0000, 0x01f4, 0x0000, 0x0018, 0x8000, 0x0017, 0x8000, 0x0339, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0190, 0x0000, 0x0000, 0x0100, 
+0x0000, 0x0000, 0x000e, 0x0000, 0x534d, 0x5320, 0x6e61, 0x2073, 0x6553, 
+0x6972, 0x0066, 0x004a, 0x0007, 0x0000, 0x4f0f, 0x0e00, 0x0000, 0x8000, 
+0xffff, 0xff00, 0xffff, 0x50ff, 0x0800, 0x0000, 0x0b00, 0x5308, 0x0800, 
+0x0000, 0x0000, 0x5400, 0x0800, 0x0000, 0x0000, 0x5700, 0x0a00, 0x0000, 
+0x0000, 0x0000, 0x5800, 0xf800, 0x0000, 0x1d00, 0x3900, 0x3000, 0x5600, 
+0x0300, 0x0700, 0x5300, 0x6e75, 0x4d09, 0x6e6f, 0x5409, 0x6575, 0x5709, 
+0x6465, 0x5409, 0x7568, 0x0972, 0x7246, 0x0969, 0x6153, 0x0074, 0x7553, 
+0x646e, 0x7961, 0x4d09, 0x6e6f, 0x6164, 0x0979, 0x7554, 0x7365, 0x6164, 
+0x0979, 0x6557, 0x6e64, 0x7365, 0x6164, 0x0979, 0x6854, 0x7275, 0x6473, 
+0x7961, 0x4609, 0x6972, 0x6164, 0x0979, 0x6153, 0x7574, 0x6472, 0x7961, 
+0x4a00, 0x6e61, 0x4609, 0x6265, 0x4d09, 0x7261, 0x4109, 0x7270, 0x4d09, 
+0x7961, 0x4a09, 0x6e75, 0x4a09, 0x6c75, 0x4109, 0x6775, 0x5309, 0x7065, 
+0x4f09, 0x7463, 0x4e09, 0x766f, 0x4409, 0x6365, 0x4a00, 0x6e61, 0x6175, 
+0x7972, 0x4609, 0x6265, 0x7572, 0x7261, 0x0979, 0x614d, 0x6372, 0x0968, 
+0x7041, 0x6972, 0x096c, 0x614d, 0x0979, 0x754a, 0x656e, 0x4a09, 0x6c75, 
+0x0979, 0x7541, 0x7567, 0x7473, 0x5309, 0x7065, 0x6574, 0x626d, 0x7265, 
+0x4f09, 0x7463, 0x626f, 0x7265, 0x4e09, 0x766f, 0x6d65, 0x6562, 0x0972, 
+0x6544, 0x6563, 0x626d, 0x7265, 0x4f00, 0x004b, 0x6143, 0x636e, 0x6c65, 
+0x6500, 0x0800, 0x0000, 0x0100, 0x6800, 0x1200, 0x0000, 0x0000, 0x3300, 
+0x3333, 0x3333, 0xe333, 0xff3f, 0x64ff, 0x0800, 0x0000, 0x0000, 0x1900, 
+0x0e00, 0x0000, 0x0500, 0x0000, 0x0100, 0x0000, 0x4200, 0x0800, 0x0000, 
+0x0000, 0x0500, 0x1600, 0x0000, 0xff00, 0xffff, 0xffff, 0xffff, 0xffff, 
+0xffff, 0x0000, 0x0000, 0x0600, 0x1200, 0x0000, 0xff00, 0xffff, 0x00ff, 
+0x0000, 0x0000, 0x3540, 0x0d40, 0x1000, 0x0000, 0xff00, 0xffff, 0xffff, 
+0xffff, 0x00ff, 0x1700, 0x0f00, 0x0000, 0xff00, 0xffff, 0xffff, 0xffff, 
+0x02ff, 0x001d, 0x0008, 0x0000, 0x0002, 0x0022, 0x0012, 0x0000, 0xffff, 
+0xffff, 0xcccd, 0xcccc, 0xcccc, 0x4030, 0x0025, 0x0016, 0x0000, 0x000f, 
+0x8000, 0x0012, 0x8000, 0x0010, 0x8000, 0x0014, 0x8000, 0x002a, 0x001a, 
+0x0000, 0xffff, 0xffff, 0xffff, 0xffff, 0x0080, 0x0000, 0x7d00, 0x0000, 
+0x0000, 0x0001, 0x0046, 0x0016, 0x0000, 0xffff, 0xffff, 0xffff, 0xffff, 
+0xffff, 0xffff, 0xffff, 0xffff, 0x0049, 0x0008, 0x0000, 0x0000, 0x0055, 
+0x0008, 0x0000, 0x0000, 0x0056, 0x000c, 0x0000, 0xffff, 0xffff, 0x0000, 
+0x0030, 0x0012, 0x0000, 0x0000, 0x0000, 0xffff, 0xffff, 0x00cc, 0x0000, 
+0x0006, 0x0012, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0xc000, 0x4031, 
+0x0056, 0x000c, 0x0000, 0x0001, 0x0000, 0x0000, 0x002a, 0x001a, 0x0000, 
+0x0001, 0x0000, 0xffff, 0xffff, 0x0081, 0x0022, 0x7d00, 0x0000, 0x0000, 
+0x0001, 0x005b, 0x000b, 0x0000, 0x0001, 0x0000, 0x0600, 0x1200, 0x0000, 
+0x0200, 0x0000, 0x3e00, 0xd70a, 0x70a3, 0x253d, 0x2a40, 0x1a00, 0x0000, 
+0x0200, 0x0000, 0xff00, 0xffff, 0x81ff, 0x2200, 0x0000, 0x007d, 0x0000, 
+0x0200, 0x0600, 0x1200, 0x0000, 0x0300, 0x0000, 0xb800, 0x851e, 0x51eb, 
+0x20b8, 0x5640, 0x0c00, 0x0000, 0x0300, 0x0000, 0x0000, 0x2a00, 0x1a00, 
+0x0000, 0x0300, 0x0000, 0xff00, 0xffff, 0x81ff, 0x2200, 0x0000, 0x007d, 
+0x0000, 0x0100, 0x5b00, 0x0b00, 0x0000, 0x0300, 0x0000, 0x0000, 0x0006, 
+0x0012, 0x0000, 0x0004, 0x0000, 0x0000, 0x0000, 0x0000, 0x4037, 0x0056, 
+0x000c, 0x0000, 0x0004, 0x0000, 0x0000, 0x002a, 0x001a, 0x0000, 0x0004, 
+0x0000, 0xffff, 0xffff, 0x0081, 0x0022, 0x7d00, 0x0000, 0x0000, 0x0001, 
+0x005b, 0x000b, 0x0000, 0x0004, 0x0000, 0x0600, 0x1200, 0x0000, 0x0500, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x5800, 0x2240, 0x1200, 0x0000, 0x0000, 
+0x0000, 0x3300, 0x3333, 0x3333, 0x3233, 0x3040, 0x1200, 0x0000, 0xff00, 
+0xffff, 0x00ff, 0x0000, 0xcc00, 0x0000, 0x3800, 0x1900, 0x0000, 0x0100, 
+0x0000, 0x0000, 0x0000, 0xbc00, 0xbcdb, 0xbdf6, 0xc0c5, 0xbdcf, 0x00c3, 
+0x0038, 0x0019, 0x0000, 0x0002, 0x0000, 0x0000, 0x0000, 0xdbbc, 0xf6bc, 
+0xc5bd, 0xb8b1, 0xd0ba, 0x3800, 0x1700, 0x0000, 0x0300, 0x0000, 0x0000, 
+0x0000, 0xb800, 0xb7ed, 0xc4c9, 0xb5da, 0x00e5, 0x0038, 0x0019, 0x0000, 
+0x0004, 0x0000, 0x0000, 0x0000, 0xedb8, 0xc9b7, 0xdac4, 0xe5b5, 0xedb8, 
+0x3800, 0x1500, 0x0000, 0x0500, 0x0000, 0x0000, 0x0000, 0xb500, 0xc0a5, 
+0xc5cc, 0x00cd, 0x002a, 0x001a, 0x0000, 0x0005, 0x0000, 0x0001, 0x0000, 
+0x0280, 0x0012, 0x7d00, 0x0000, 0x0000, 0x0001, 0x0001, 0x0000, 0x0001, 
+0x0000, 0x0001, 0x0003, 0xffff, 0xffff, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xf400, 
+0x0001, 0x0000, 0x0f00, 0x0000, 0x0000, 0x0000, 0x0000, 
+    0
+END
+
+IDD_LOG_QTY_PROC DLGINIT
+BEGIN
+    IDC_STATIC1, 0x376, 783, 0
+0x0022, 0x0000, 0x0043, 0x006f, 0x0070, 0x0079, 0x0072, 0x0069, 0x0067, 
+0x0068, 0x0074, 0x0020, 0x0028, 0x0063, 0x0029, 0x0020, 0x0032, 0x0030, 
+0x0030, 0x0030, 0x0020, 0x004d, 0x0075, 0x006c, 0x0074, 0x0069, 0x004d, 
+0x0065, 0x0064, 0x0069, 0x0061, 0x0020, 0x0053, 0x006f, 0x0066, 0x0074, 
+0x000c, 0x0007, 0x08e3, 0x0000, 0x0261, 0x0000, 0x0042, 0x0000, 0xfeff, 
+0x04ff, 0xc870, 0xd68c, 0xc77c, 0xc2dc, 0x0001, 0x5203, 0x0be3, 0x8f91, 
+0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x02bc, 0x7cdc, 
+0x0001, 0x4105, 0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 
+0x00e3, 0x00aa, 0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 
+0x7241, 0x6169, 0x006c, 0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 0xaa00, 
+0x4b00, 0x51b8, 0x0001, 0x0000, 0x0190, 0x4244, 0x0001, 0x4105, 0x6972, 
+0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 0xb84b, 
+0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 0x6169, 0x006c, 
+0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 
+0x0000, 0x0190, 0x4244, 0x0001, 0xb104, 0xb8bc, 0x00b2, 0x5203, 0x0be3, 
+0x8f91, 0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x02bc, 
+0x7cdc, 0x0001, 0x4105, 0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 
+0x9d11, 0x00e3, 0x00aa, 0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 
+0x0500, 0x7241, 0x6169, 0x006c, 0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 
+0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x0190, 0x4244, 0x0001, 0x4105, 
+0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 
+0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 0x6169, 
+0x006c, 0x3c00, 0x0400, 0x0000, 0x0000, 0x8080, 0xff00, 0xfffe, 0xff00, 
+0xfffe, 0xff00, 0xfffe, 0xff00, 0xfffe, 0x0000, 0x0000, 0xff00, 0xfffe, 
+0xff00, 0xfffe, 0xff00, 0xfffe, 0xff00, 0xfffe, 0xff00, 0xfffe, 0x0000, 
+0x0100, 0x0100, 0xffff, 0xffff, 0x0101, 0xff00, 0xffff, 0xffff, 0xffff, 
+0x00ff, 0xfeff, 0x00ff, 0x0000, 0xff00, 0xfffe, 0x0100, 0x0000, 0x0000, 
+0x005a, 0x0060, 0x0000, 0x0000, 0x0000, 0xfeff, 0x00ff, 0x0001, 0x0028, 
+0xffff, 0xffff, 0x0032, 0x0004, 0x8080, 0x0080, 0x0004, 0x0000, 0x999a, 
+0x9999, 0x9999, 0x3fb9, 0x0000, 0x0000, 0x0000, 0x0000, 0x0050, 0x0000, 
+0x0004, 0x0000, 0xffff, 0x00ff, 0xffff, 0xffff, 0x0000, 0x0000, 0x0000, 
+0x0002, 0x0000, 0xffff, 0xffff, 0x00ff, 0x0001, 0x0000, 0x0000, 0x0000, 
+0xc0c0, 0x00c0, 0x0000, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0x00ff, 0xfeff, 0x04ff, 
+0xc870, 0xd68c, 0xc77c, 0xc2dc, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0x0003, 
+0x0000, 0x0003, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x000e, 0x0000, 0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 
+0x0001, 0x0000, 0x0007, 0xfeff, 0x00ff, 0x0000, 0x0000, 0x0100, 0x0001, 
+0x0000, 0x0000, 0x0000, 0x0000, "\001" 
+    IDC_FPSPREAD, 0x37a, 2436, 0
+0x001b, 0x0000, 0x0043, 0x006f, 0x0070, 0x0079, 0x0072, 0x0069, 0x0067, 
+0x0068, 0x0074, 0x0020, 0x0028, 0x0063, 0x0029, 0x0020, 0x0031, 0x0039, 
+0x0039, 0x0035, 0x0020, 0x0046, 0x0061, 0x0072, 0x0050, 0x006f, 0x0069, 
+0x006e, 0x0074, 0x0012, 0x0000, 0x0001, 0x0000, 0x000a, 0x0000, 0x0023, 
+0x0000, 0x0000, 0x0000, 0x0007, 0x738c, 0x0000, 0x29f6, 0x0000, 0x0040, 
+0x0000, 0x0001, 0x0000, 0x0000, 0x0101, 0x0000, 0x0100, 0x0000, 0x0200, 
+0x0000, 0x0000, 0x0100, 0x0101, 0x0201, 0x0100, 0x0101, 0x0000, 0x0000, 
+0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 0xb84b, 0x0151, 
+0x0000, 0x9000, 0x4401, 0x0142, 0x0d00, 0x534d, 0x5320, 0x6e61, 0x2073, 
+0x6553, 0x6972, 0x0166, 0xc0c0, 0x00c0, 0xc0c0, 0x00c0, 0x0101, 0x2001, 
+0x0000, 0x0100, 0x0000, 0x0100, 0x0000, 0x0002, 0x0000, 0x0100, 0x0001, 
+0x0100, 0x0001, 0x0000, 0x0000, 0x0100, 0x0003, 0x0f01, 0x0f00, 0x0000, 
+0x1080, 0x0000, 0x1280, 0x0000, 0x6780, 0x0008, 0x0100, 0x6704, 0x0008, 
+0x3f00, 0x3200, 0x0000, 0x0100, 0x3900, 0x0003, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x9000, 0x0001, 0x0000, 0x0000, 0x0001, 0x0000, 0x0e00, 0x0000, 
+0x4d00, 0x2053, 0x6153, 0x736e, 0x5320, 0x7265, 0x6669, 0x0b00, 0x0c00, 
+0x0000, 0x0000, 0x0000, 0x0101, 0x1600, 0x1100, 0x0000, 0x0000, 0x0001, 
+0xa9fc, 0xd2f1, 0x624d, 0x3f50, 0x0045, 0x0012, 0x0000, 0x0071, 0x0000, 
+0x0072, 0x0000, 0x0073, 0x0000, 0x0047, 0x0007, 0x0000, 0x5100, 0x3d00, 
+0x0000, 0x0000, 0x01f4, 0x0000, 0x0018, 0x8000, 0x0017, 0x8000, 0x0339, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0190, 0x0000, 0x0000, 0x0100, 
+0x0000, 0x0000, 0x000e, 0x0000, 0x534d, 0x5320, 0x6e61, 0x2073, 0x6553, 
+0x6972, 0x0066, 0x004a, 0x0007, 0x0000, 0x4f0f, 0x0e00, 0x0000, 0x8000, 
+0xffff, 0xff00, 0xffff, 0x50ff, 0x0800, 0x0000, 0x0b00, 0x5308, 0x0800, 
+0x0000, 0x0000, 0x5400, 0x0800, 0x0000, 0x0000, 0x5700, 0x0a00, 0x0000, 
+0x0000, 0x0000, 0x5800, 0xf800, 0x0000, 0x1d00, 0x3900, 0x3000, 0x5600, 
+0x0300, 0x0700, 0x5300, 0x6e75, 0x4d09, 0x6e6f, 0x5409, 0x6575, 0x5709, 
+0x6465, 0x5409, 0x7568, 0x0972, 0x7246, 0x0969, 0x6153, 0x0074, 0x7553, 
+0x646e, 0x7961, 0x4d09, 0x6e6f, 0x6164, 0x0979, 0x7554, 0x7365, 0x6164, 
+0x0979, 0x6557, 0x6e64, 0x7365, 0x6164, 0x0979, 0x6854, 0x7275, 0x6473, 
+0x7961, 0x4609, 0x6972, 0x6164, 0x0979, 0x6153, 0x7574, 0x6472, 0x7961, 
+0x4a00, 0x6e61, 0x4609, 0x6265, 0x4d09, 0x7261, 0x4109, 0x7270, 0x4d09, 
+0x7961, 0x4a09, 0x6e75, 0x4a09, 0x6c75, 0x4109, 0x6775, 0x5309, 0x7065, 
+0x4f09, 0x7463, 0x4e09, 0x766f, 0x4409, 0x6365, 0x4a00, 0x6e61, 0x6175, 
+0x7972, 0x4609, 0x6265, 0x7572, 0x7261, 0x0979, 0x614d, 0x6372, 0x0968, 
+0x7041, 0x6972, 0x096c, 0x614d, 0x0979, 0x754a, 0x656e, 0x4a09, 0x6c75, 
+0x0979, 0x7541, 0x7567, 0x7473, 0x5309, 0x7065, 0x6574, 0x626d, 0x7265, 
+0x4f09, 0x7463, 0x626f, 0x7265, 0x4e09, 0x766f, 0x6d65, 0x6562, 0x0972, 
+0x6544, 0x6563, 0x626d, 0x7265, 0x4f00, 0x004b, 0x6143, 0x636e, 0x6c65, 
+0x6500, 0x0800, 0x0000, 0x0100, 0x6800, 0x1200, 0x0000, 0x0000, 0x3300, 
+0x3333, 0x3333, 0xe333, 0xff3f, 0x64ff, 0x0800, 0x0000, 0x0000, 0x1900, 
+0x0e00, 0x0000, 0x2000, 0x0000, 0x0100, 0x0000, 0x4200, 0x0800, 0x0000, 
+0x0000, 0x0500, 0x1600, 0x0000, 0xff00, 0xffff, 0xffff, 0xffff, 0xffff, 
+0xffff, 0x0000, 0x0000, 0x0600, 0x1200, 0x0000, 0xff00, 0xffff, 0x00ff, 
+0x0000, 0x0000, 0x3540, 0x0d40, 0x1000, 0x0000, 0xff00, 0xffff, 0xffff, 
+0xffff, 0x00ff, 0x1700, 0x0f00, 0x0000, 0xff00, 0xffff, 0xffff, 0xffff, 
+0x02ff, 0x001d, 0x0008, 0x0000, 0x0002, 0x0022, 0x0012, 0x0000, 0xffff, 
+0xffff, 0xcccd, 0xcccc, 0xcccc, 0x4030, 0x0025, 0x0016, 0x0000, 0x000f, 
+0x8000, 0x0012, 0x8000, 0x0010, 0x8000, 0x0014, 0x8000, 0x002a, 0x001a, 
+0x0000, 0xffff, 0xffff, 0xffff, 0xffff, 0x0080, 0x0000, 0x7d00, 0x0000, 
+0x0000, 0x0001, 0x0046, 0x0016, 0x0000, 0xffff, 0xffff, 0xffff, 0xffff, 
+0xffff, 0xffff, 0xffff, 0xffff, 0x0049, 0x0008, 0x0000, 0x0000, 0x0055, 
+0x0008, 0x0000, 0x0000, 0x0056, 0x000c, 0x0000, 0xffff, 0xffff, 0x0000, 
+0x0030, 0x0012, 0x0000, 0x0000, 0x0000, 0xffff, 0xffff, 0x00cc, 0x0000, 
+0x0006, 0x0012, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x4033, 
+0x0056, 0x000c, 0x0000, 0x0001, 0x0000, 0x0000, 0x002a, 0x001a, 0x0000, 
+0x0001, 0x0000, 0xffff, 0xffff, 0x0081, 0x0022, 0x7d00, 0x0000, 0x0000, 
+0x0001, 0x005b, 0x000b, 0x0000, 0x0001, 0x0000, 0x0600, 0x1200, 0x0000, 
+0x0200, 0x0000, 0x0000, 0x0000, 0x0000, 0x1d00, 0x2a40, 0x1a00, 0x0000, 
+0x0200, 0x0000, 0xff00, 0xffff, 0x81ff, 0x2200, 0x0000, 0x007d, 0x0000, 
+0x0200, 0x0600, 0x1200, 0x0000, 0x0300, 0x0000, 0x7b00, 0xae14, 0xe147, 
+0x1d7a, 0x5640, 0x0c00, 0x0000, 0x0300, 0x0000, 0x0000, 0x2a00, 0x1a00, 
+0x0000, 0x0300, 0x0000, 0xff00, 0xffff, 0x81ff, 0x2200, 0x0000, 0x007d, 
+0x0000, 0x0100, 0x5b00, 0x0b00, 0x0000, 0x0300, 0x0000, 0x0000, 0x0006, 
+0x0012, 0x0000, 0x0004, 0x0000, 0x0000, 0x0000, 0x0000, 0x401c, 0x0056, 
+0x000c, 0x0000, 0x0004, 0x0000, 0x0000, 0x002a, 0x001a, 0x0000, 0x0004, 
+0x0000, 0xffff, 0xffff, 0x0081, 0x0022, 0x7d00, 0x0000, 0x0000, 0x0001, 
+0x005b, 0x000b, 0x0000, 0x0004, 0x0000, 0x0600, 0x1200, 0x0000, 0x0500, 
+0x0000, 0x8500, 0x51eb, 0x1eb8, 0x1c85, 0x5640, 0x0c00, 0x0000, 0x0500, 
+0x0000, 0x0000, 0x5b00, 0x0b00, 0x0000, 0x0500, 0x0000, 0x0000, 0x0006, 
+0x0012, 0x0000, 0x0006, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x4019, 0x0006, 
+0x0012, 0x0000, 0x0007, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x4019, 0x0006, 
+0x0012, 0x0000, 0x0008, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401a, 0x0006, 
+0x0012, 0x0000, 0x0009, 0x0000, 0x0000, 0x0000, 0x0000, 0x401e, 0x0006, 
+0x0012, 0x0000, 0x000a, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401f, 0x0006, 
+0x0012, 0x0000, 0x000b, 0x0000, 0x0000, 0x0000, 0x0000, 0x401c, 0x0006, 
+0x0012, 0x0000, 0x000c, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401e, 0x0006, 
+0x0012, 0x0000, 0x000d, 0x0000, 0x0000, 0x0000, 0x0000, 0x401c, 0x0006, 
+0x0012, 0x0000, 0x000e, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401e, 0x0006, 
+0x0012, 0x0000, 0x000f, 0x0000, 0x0000, 0x0000, 0x0000, 0x401d, 0x0006, 
+0x0012, 0x0000, 0x0010, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401c, 0x0006, 
+0x0012, 0x0000, 0x0011, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401f, 0x0006, 
+0x0012, 0x0000, 0x0012, 0x0000, 0x0000, 0x0000, 0x0000, 0x4021, 0x0006, 
+0x0012, 0x0000, 0x0013, 0x0000, 0x1eb8, 0xeb85, 0x3851, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x0015, 0x0000, 0x1eb8, 0xeb85, 0xb851, 0x4021, 0x0006, 
+0x0012, 0x0000, 0x0016, 0x0000, 0x0000, 0x0000, 0x0000, 0x401d, 0x0006, 
+0x0012, 0x0000, 0x0017, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401d, 0x0006, 
+0x0012, 0x0000, 0x0018, 0x0000, 0x1eb8, 0xeb85, 0x3851, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x0019, 0x0000, 0x1eb8, 0xeb85, 0xb851, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x001a, 0x0000, 0x1eb8, 0xeb85, 0xb851, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x001b, 0x0000, 0x1eb8, 0xeb85, 0x3851, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x001c, 0x0000, 0x0000, 0x0000, 0x8000, 0x4021, 0x0006, 
+0x0012, 0x0000, 0x001d, 0x0000, 0x0000, 0x0000, 0x0000, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x001e, 0x0000, 0x0000, 0x0000, 0x0000, 0x401f, 0x0006, 
+0x0012, 0x0000, 0x001f, 0x0000, 0x0000, 0x0000, 0x8000, 0x4020, 0x0006, 
+0x0012, 0x0000, 0x0020, 0x0000, 0x147b, 0x47ae, 0x7ae1, 0x401f, 0x0022, 
+0x0012, 0x0000, 0x0000, 0x0000, 0x3333, 0x3333, 0x3333, 0x4032, 0x0030, 
+0x0012, 0x0000, 0xffff, 0xffff, 0x0000, 0x0000, 0x00cc, 0x0000, 0x0038, 
+0x0015, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0xf1b8, 0xfbc0, 0xf6c1, 
+0x3800, 0x1100, 0x0000, 0x0200, 0x0000, 0x0000, 0x0000, 0x3000, 0x0031, 
+0x0038, 0x0011, 0x0000, 0x0003, 0x0000, 0x0000, 0x0000, 0x3230, 0x3800, 
+0x1100, 0x0000, 0x0400, 0x0000, 0x0000, 0x0000, 0x3000, 0x0033, 0x0038, 
+0x0011, 0x0000, 0x0005, 0x0000, 0x0000, 0x0000, 0x3430, 0x3800, 0x1100, 
+0x0000, 0x0600, 0x0000, 0x0000, 0x0000, 0x3000, 0x0035, 0x0038, 0x0011, 
+0x0000, 0x0007, 0x0000, 0x0000, 0x0000, 0x3630, 0x3800, 0x1100, 0x0000, 
+0x0800, 0x0000, 0x0000, 0x0000, 0x3000, 0x0037, 0x0038, 0x0011, 0x0000, 
+0x0009, 0x0000, 0x0000, 0x0000, 0x3830, 0x3800, 0x1100, 0x0000, 0x0a00, 
+0x0000, 0x0000, 0x0000, 0x3000, 0x0039, 0x0038, 0x0011, 0x0000, 0x000b, 
+0x0000, 0x0000, 0x0000, 0x3031, 0x3800, 0x1100, 0x0000, 0x0c00, 0x0000, 
+0x0000, 0x0000, 0x3100, 0x0031, 0x0038, 0x0011, 0x0000, 0x000d, 0x0000, 
+0x0000, 0x0000, 0x3231, 0x3800, 0x1100, 0x0000, 0x0e00, 0x0000, 0x0000, 
+0x0000, 0x3100, 0x0033, 0x0038, 0x0011, 0x0000, 0x000f, 0x0000, 0x0000, 
+0x0000, 0x3431, 0x3800, 0x1100, 0x0000, 0x1000, 0x0000, 0x0000, 0x0000, 
+0x3100, 0x0035, 0x0038, 0x0011, 0x0000, 0x0011, 0x0000, 0x0000, 0x0000, 
+0x3631, 0x3800, 0x1100, 0x0000, 0x1200, 0x0000, 0x0000, 0x0000, 0x3100, 
+0x0037, 0x0038, 0x0011, 0x0000, 0x0013, 0x0000, 0x0000, 0x0000, 0x3831, 
+0x3800, 0x1100, 0x0000, 0x1400, 0x0000, 0x0000, 0x0000, 0x3100, 0x0039, 
+0x0038, 0x0011, 0x0000, 0x0015, 0x0000, 0x0000, 0x0000, 0x3032, 0x3800, 
+0x1100, 0x0000, 0x1600, 0x0000, 0x0000, 0x0000, 0x3200, 0x0031, 0x0038, 
+0x0011, 0x0000, 0x0017, 0x0000, 0x0000, 0x0000, 0x3232, 0x3800, 0x1100, 
+0x0000, 0x1800, 0x0000, 0x0000, 0x0000, 0x3200, 0x0033, 0x0038, 0x0011, 
+0x0000, 0x0019, 0x0000, 0x0000, 0x0000, 0x3432, 0x3800, 0x1100, 0x0000, 
+0x1a00, 0x0000, 0x0000, 0x0000, 0x3200, 0x0035, 0x0038, 0x0011, 0x0000, 
+0x001b, 0x0000, 0x0000, 0x0000, 0x3632, 0x3800, 0x1100, 0x0000, 0x1c00, 
+0x0000, 0x0000, 0x0000, 0x3200, 0x0037, 0x0038, 0x0011, 0x0000, 0x001d, 
+0x0000, 0x0000, 0x0000, 0x3832, 0x3800, 0x1100, 0x0000, 0x1e00, 0x0000, 
+0x0000, 0x0000, 0x3200, 0x0039, 0x0038, 0x0011, 0x0000, 0x001f, 0x0000, 
+0x0000, 0x0000, 0x3033, 0x3800, 0x1100, 0x0000, 0x2000, 0x0000, 0x0000, 
+0x0000, 0x3300, 0x0031, 0x002a, 0x001a, 0x0000, 0x0005, 0x0000, 0x0001, 
+0x0000, 0x0280, 0x0012, 0x7d00, 0x0000, 0x0000, 0x0001, 0x002a, 0x001a, 
+0x0000, 0x0006, 0x0000, 0x0001, 0x0000, 0x0081, 0x0022, 0x7d00, 0x0000, 
+0x0000, 0x0001, 0x0001, 0x0000, 0x0001, 0x0000, 0x0001, 0x0003, 0xffff, 
+0xffff, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x0000, 0x0000, 0xf400, 0x0001, 0x0000, 0x0f00, 0x0000, 
+0x0000, 0x0000, 0x0000, 
+    IDC_STATIC2, 0x376, 775, 0
+0x0022, 0x0000, 0x0043, 0x006f, 0x0070, 0x0079, 0x0072, 0x0069, 0x0067, 
+0x0068, 0x0074, 0x0020, 0x0028, 0x0063, 0x0029, 0x0020, 0x0032, 0x0030, 
+0x0030, 0x0030, 0x0020, 0x004d, 0x0075, 0x006c, 0x0074, 0x0069, 0x004d, 
+0x0065, 0x0064, 0x0069, 0x0061, 0x0020, 0x0053, 0x006f, 0x0066, 0x0074, 
+0x000c, 0x0007, 0x08e3, 0x0000, 0x0261, 0x0000, 0x0042, 0x0000, 0xfeff, 
+0x02ff, 0xad6c, 0xbd84, 0x0001, 0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 
+0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x02bc, 0x7cdc, 0x0001, 0x4105, 
+0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 
+0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 0x6169, 
+0x006c, 0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 
+0x0001, 0x0000, 0x0190, 0x4244, 0x0001, 0x4105, 0x6972, 0x6c61, 0x0300, 
+0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 0xb84b, 0x0151, 0x0000, 
+0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 0x6169, 0x006c, 0x5203, 0x0be3, 
+0x8f91, 0x11ce, 0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x0190, 
+0x4244, 0x0001, 0xb104, 0xb8bc, 0x00b2, 0x5203, 0x0be3, 0x8f91, 0x11ce, 
+0xe39d, 0xaa00, 0x4b00, 0x51b8, 0x0001, 0x0000, 0x02bc, 0x7cdc, 0x0001, 
+0x4105, 0x6972, 0x6c61, 0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 
+0x00aa, 0xb84b, 0x0151, 0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 
+0x6169, 0x006c, 0x5203, 0x0be3, 0x8f91, 0x11ce, 0xe39d, 0xaa00, 0x4b00, 
+0x51b8, 0x0001, 0x0000, 0x0190, 0x4244, 0x0001, 0x4105, 0x6972, 0x6c61, 
+0x0300, 0xe352, 0x910b, 0xce8f, 0x9d11, 0x00e3, 0x00aa, 0xb84b, 0x0151, 
+0x0000, 0x9000, 0x4401, 0x0142, 0x0500, 0x7241, 0x6169, 0x006c, 0x3c00, 
+0x0400, 0x0000, 0x0000, 0x8080, 0xff00, 0xfffe, 0xff00, 0xfffe, 0xff00, 
+0xfffe, 0xff00, 0xfffe, 0x0000, 0x0000, 0xff00, 0xfffe, 0xff00, 0xfffe, 
+0xff00, 0xfffe, 0xff00, 0xfffe, 0xff00, 0xfffe, 0x0000, 0x0100, 0x0100, 
+0xffff, 0xffff, 0x0101, 0xff00, 0xffff, 0xffff, 0xffff, 0x00ff, 0xfeff, 
+0x00ff, 0x0000, 0xff00, 0xfffe, 0x0100, 0x0000, 0x0000, 0x005a, 0x0060, 
+0x0000, 0x0000, 0x0000, 0xfeff, 0x00ff, 0x0001, 0x0028, 0xffff, 0xffff, 
+0x0032, 0x0004, 0x8080, 0x0080, 0x0004, 0x0000, 0x999a, 0x9999, 0x9999, 
+0x3fb9, 0x0000, 0x0000, 0x0000, 0x0000, 0x004c, 0x0000, 0x0002, 0x0000, 
+0xffff, 0x00ff, 0xffff, 0xffff, 0x0000, 0x0000, 0x0000, 0x0002, 0x0000, 
+0xffff, 0xffff, 0x00ff, 0x0001, 0x0000, 0x0000, 0x0000, 0xc0c0, 0x00c0, 
+0x0000, 0x0000, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffff, 
+0xffff, 0xffff, 0xffff, 0xffff, 0x00ff, 0xfeff, 0x02ff, 0xad6c, 0xbd84, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x000e, 0x0000, 
+0x0001, 0x0000, 0x0000, 0x0000, 0x0003, 0x0000, 0x0003, 0x000e, 0x0000, 
+0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 0x0001, 0x0000, 0x000e, 0x0000, 
+0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 0x0001, 0x0000, 0x000e, 0x0000, 
+0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 0x0001, 0x0000, 0x000e, 0x0000, 
+0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 0x0001, 0x0000, 0x000e, 0x0000, 
+0x0001, 0x0000, 0xffff, 0xffff, 0x0004, 0x0001, 0x0000, 0x0007, 0xfeff, 
+0x00ff, 0x0000, 0x0000, 0x0100, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 
+"\001" 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_ECS_FORM AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_PROPSHT_CAPTION     "Property Sheet"
+    IDP_SOCKETS_INIT_FAILED "Windows 소켓 초기화에 실패하였습니다."
+END
+
+STRINGTABLE
+BEGIN
+    IDR_MAINFRAME           "ECS\n\nEcs\n\n\nEcs.Document\nEcs Document"
+END
+
+STRINGTABLE
+BEGIN
+    AFX_IDS_APP_TITLE       "ECS"
+    AFX_IDS_IDLEMESSAGE     "준비"
+END
+
+STRINGTABLE
+BEGIN
+    ID_INDICATOR_EXT        "EXT"
+    ID_INDICATOR_CAPS       "CAP"
+    ID_INDICATOR_NUM        "NUM"
+    ID_INDICATOR_SCRL       "SCRL"
+    ID_INDICATOR_OVR        "OVR"
+    ID_INDICATOR_REC        "REC"
+END
+
+STRINGTABLE
+BEGIN
+    ID_FILE_NEW             "새 문서를 작성합니다\n새 파일"
+    ID_FILE_OPEN            "기존 문서를 엽니다\n열기"
+    ID_FILE_CLOSE           "현재 열린 문서를 닫습니다\n닫기"
+    ID_FILE_SAVE            "현재 열린 문서를 저장합니다\n저장"
+    ID_FILE_SAVE_AS         "현재 열린 문서를 다른 이름으로 저장합니다\n다른 이름으로 저장"
+    ID_FILE_PAGE_SETUP      "인쇄 옵션을 변경합니다\n쪽 설정"
+    ID_FILE_PRINT_SETUP     "프린터와 인쇄 옵션을 변경합니다\n인쇄 설정"
+    ID_FILE_PRINT           "현재 열린 문서를 인쇄합니다\n인쇄"
+    ID_FILE_PRINT_PREVIEW   "쪽 전체를 표시합니다\n인쇄 미리 보기"
+    ID_FILE_SEND_MAIL       "현재 열린 문서를 전자 메일로 보냅니다l\n메일 보내기"
+END
+
+STRINGTABLE
+BEGIN
+    ID_APP_ABOUT            "프로그램 정보와 버전 정보, 저작권 정보를 표시합니다\n정보"
+    ID_APP_EXIT             "응용 프로그램을 종료하기 위해 문서를 저장할 것인지 묻습니다\n종료"
+END
+
+STRINGTABLE
+BEGIN
+    ID_FILE_MRU_FILE1       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE2       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE3       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE4       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE5       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE6       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE7       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE8       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE9       "이 문서를 엽니다"
+    ID_FILE_MRU_FILE10      "이 문서를 엽니다"
+    ID_FILE_MRU_FILE11      "이 문서를 엽니다"
+    ID_FILE_MRU_FILE12      "이 문서를 엽니다"
+    ID_FILE_MRU_FILE13      "이 문서를 엽니다"
+    ID_FILE_MRU_FILE14      "이 문서를 엽니다"
+    ID_FILE_MRU_FILE15      "이 문서를 엽니다"
+    ID_FILE_MRU_FILE16      "이 문서를 엽니다"
+END
+
+STRINGTABLE
+BEGIN
+    ID_NEXT_PANE            "다음 창으로 전환합니다\n다음 창"
+    ID_PREV_PANE            "이전 창으로 전환합니다\n이전 창"
+END
+
+STRINGTABLE
+BEGIN
+    ID_WINDOW_SPLIT         "현재 열린 창을 나눕니다\n나누기"
+END
+
+STRINGTABLE
+BEGIN
+    ID_EDIT_CLEAR           "선택 부분을 지웁니다\n지우기"
+    ID_EDIT_CLEAR_ALL       "모든 것을 지웁니다\n모두 지우기"
+    ID_EDIT_COPY            "선택 부분을 복사하여 클립보드에 넣습니다\n복사"
+    ID_EDIT_CUT             "선택 부분을 잘라내어 클립보드에 넣습니다\n잘라내기"
+    ID_EDIT_FIND            "지정한 문자열을 찾습니다\n찾기"
+    ID_EDIT_PASTE           "클립보드의 내용을 붙여 넣습니다\n붙여넣기"
+    ID_EDIT_REPEAT          "마지막으로 실행한 동작을 반복합니다\n반복"
+    ID_EDIT_REPLACE         "지정한 문자열을 다른 문자열로 바꿉니다\n바꾸기"
+    ID_EDIT_SELECT_ALL      "문서 전체를 선택합니다\n전체 선택"
+    ID_EDIT_UNDO            "마지막으로 한 동작을 취소합니다\n실행 취소"
+    ID_EDIT_REDO            "이전에 취소한 동작을 다시 수행합니다\n다시 실행"
+END
+
+STRINGTABLE
+BEGIN
+    ID_VIEW_TOOLBAR         "도구 모음을 보이거나 감춥니다\n도구 모음 전환"
+    ID_VIEW_STATUS_BAR      "상태 표시줄을 표시하거나 감춥니다\n상태 표시줄 전환"
+END
+
+STRINGTABLE
+BEGIN
+    AFX_IDS_SCSIZE          "창의 크기를 변경합니다"
+    AFX_IDS_SCMOVE          "창의 위치를 변경합니다"
+    AFX_IDS_SCMINIMIZE      "창을 아이콘으로 줄여서 표시합니다"
+    AFX_IDS_SCMAXIMIZE      "창을 최대 크기로 확장합니다"
+    AFX_IDS_SCNEXTWINDOW    "다음 문서 창으로 전환합니다"
+    AFX_IDS_SCPREVWINDOW    "이전 문서 창으로 전환합니다"
+    AFX_IDS_SCCLOSE         "현재 열린 창을 닫고 문서를 저장할 것인지를 묻습니다"
+END
+
+STRINGTABLE
+BEGIN
+    AFX_IDS_SCRESTORE       "창을 원래 크기로 복원합니다"
+    AFX_IDS_SCTASKLIST      "작업 목록을 활성화합니다"
+END
+
+STRINGTABLE
+BEGIN
+    AFX_IDS_PREVIEW_CLOSE   "인쇄 미리 보기 모드를 닫습니다\n미리 보기 취소"
+END
+
+STRINGTABLE
+BEGIN
+    ID_COM_CV01_02          "CV#01_02 통신상태"
+END
+
+#endif    // 한국어(대한민국) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// 영어(미국) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+211                     ICON                    "res\\ico211.ico"
+
+#endif    // 영어(미국) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
+#ifdef _WIN32
+LANGUAGE 18, 1
+#pragma code_page(949)
+#endif //_WIN32
+#include "res\Ecs.rc2"  // non-Microsoft Visual C++ edited resources
+#include "l.kor\afxres.rc"          // Standard components
+#include "l.kor\afxprint.rc"        // printing/print preview resources
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
