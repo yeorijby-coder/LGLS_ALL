@@ -1,0 +1,1529 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{DD251429-FE9E-4FBC-820E-27D92839EB26}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HECS</RootNamespace>
+    <AssemblyName>HECS</AssemblyName>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
+    <ApplicationIcon>TitleIcon.ico</ApplicationIcon>
+    <ManifestCertificateThumbprint>0C1DB0488B8A3624D4075B9218177206FBAAEB69</ManifestCertificateThumbprint>
+    <ManifestKeyFile>Stocker_TemporaryKey.pfx</ManifestKeyFile>
+    <GenerateManifests>false</GenerateManifests>
+    <SignManifests>false</SignManifests>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetZone>LocalIntranet</TargetZone>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <ApplicationRevision>0</ApplicationRevision>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>
+    </DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <NoStdLib>false</NoStdLib>
+    <FileAlignment>8192</FileAlignment>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.ReportViewer.Common, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.ReportViewer.WinForms, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="SAP.Connector, Version=2.0.0.0, Culture=neutral, PublicKeyToken=50436dca5c7f7d23">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\HandokSAPBridge\SAP.Connector.dll</HintPath>
+    </Reference>
+    <Reference Include="SAP.Connector.Rfc, Version=2.0.0.0, Culture=neutral, PublicKeyToken=50436dca5c7f7d23">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\HandokSAPBridge\SAP.Connector.Rfc.dll</HintPath>
+    </Reference>
+    <Reference Include="SAPBridge, Version=1.0.3488.21837, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\HandokSAPBridge\SAPBridge.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Services, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\WINDOWS\assembly\GAC_MSIL\System.Web.Services\2.0.0.0__b03f5f7f11d50a3a\System.Web.Services.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ComX\Sockets\HECSClientSocket.cs" />
+    <Compile Include="ComX\Sockets\HECSPacket.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ComX\Sockets\HECSServerSocket.cs" />
+    <Compile Include="Device\AgvSEM.cs" />
+    <Compile Include="Device\ConveyorSEM.cs" />
+    <Compile Include="Device\Dispatcher\ECSDispatcher.cs" />
+    <Compile Include="Device\Dispatcher\TransferResult.cs" />
+    <Compile Include="Device\Dispatcher\TransferState.cs" />
+    <Compile Include="Device\ECS.cs" />
+    <Compile Include="Device\ECSDeviceManager.cs" />
+    <Compile Include="Device\LiftSEM.cs" />
+    <Compile Include="Device\RgvSEM.cs" />
+    <Compile Include="Device\Service\Carriers.cs" />
+    <Compile Include="Device\Service\EqpUnits.cs" />
+    <Compile Include="Device\Service\Transfers.cs" />
+    <Compile Include="Device\StockerSEMConfig.cs" />
+    <Compile Include="Device\TransportDevice.cs" />
+    <Compile Include="Device\Unit\AgvItinerary.cs" />
+    <Compile Include="Device\Unit\AGVPath.cs" />
+    <Compile Include="Device\Unit\MarkPlate.cs" />
+    <Compile Include="Device\Unit\VehicleAGV.cs" />
+    <Compile Include="Device\Unit\Conveyor.cs" />
+    <Compile Include="Device\Unit\ConveyorConfig.cs" />
+    <Compile Include="Device\Unit\Vehicle.cs" />
+    <Compile Include="Device\Unit\VehicleConfig.cs" />
+    <Compile Include="ECSMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ECSMainForm.Designer.cs">
+      <DependentUpon>ECSMainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Event\ECS\DriverStatusEvent.cs" />
+    <Compile Include="Event\ECS\MasterShelfEvent.cs" />
+    <Compile Include="FormTest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTest.Designer.cs">
+      <DependentUpon>FormTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Global\Interface\IECS.cs" />
+    <Compile Include="Global\Interface\IEquipment.cs" />
+    <Compile Include="Global\Permission.cs" />
+    <Compile Include="Gui\Jaeit\Buttons\ButtonInterlock.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonInterlock.Designer.cs">
+      <DependentUpon>ButtonInterlock.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Labels\LabelBorder.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Labels\LabelGradient.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Labels\LabelShadow.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Labels\LEDLabel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Chart\TrendGraph.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\ConfigurationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\ConfigurationForm.Designer.cs">
+      <DependentUpon>ConfigurationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\BaseControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\BaseControl.Designer.cs">
+      <DependentUpon>BaseControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\CommunicationStateControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\CommunicationStateControl.Designer.cs">
+      <DependentUpon>CommunicationStateControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\PortDirectionChange.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\PortDirectionChange.Designer.cs">
+      <DependentUpon>PortDirectionChange.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\SafetySensorUsedStateViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\SafetySensorUsedStateViewer.Designer.cs">
+      <DependentUpon>SafetySensorUsedStateViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\SCStateControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\SCStateControl.Designer.cs">
+      <DependentUpon>SCStateControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\DateTimeControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\DateTimeControl.Designer.cs">
+      <DependentUpon>DateTimeControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\StkSafetySensorUsedStateViewer.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\StkSafetySensorUsedStateViewer.Designer.cs">
+      <DependentUpon>StkSafetySensorUsedStateViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\StockerIDControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\StockerIDControl.Designer.cs">
+      <DependentUpon>StockerIDControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\MonitorAllEquipmentPanel01.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\MonitorAllEquipmentPanel01.Designer.cs">
+      <DependentUpon>MonitorAllEquipmentPanel01.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\RGVForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\RGVForm.Designer.cs">
+      <DependentUpon>RGVForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\LiftForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\LiftForm.Designer.cs">
+      <DependentUpon>LiftForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\AGVForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\AGVForm.Designer.cs">
+      <DependentUpon>AGVForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\DeleteCheckDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\DeleteCheckDialog.Designer.cs">
+      <DependentUpon>DeleteCheckDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\TransferDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\TransferDetailForm.Designer.cs">
+      <DependentUpon>TransferDetailForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\TransferCommandControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\TransferCommandControl.Designer.cs">
+      <DependentUpon>TransferCommandControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\FormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\FormBase.Designer.cs">
+      <DependentUpon>FormBase.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\HistoryMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\HistoryMainForm.Designer.cs">
+      <DependentUpon>HistoryMainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\LoginForm.Designer.cs">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\MonitorMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\MonitorMain.Designer.cs">
+      <DependentUpon>MonitorMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\MoveRequestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\MoveRequestForm.Designer.cs">
+      <DependentUpon>MoveRequestForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\StockMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\StockMainForm.Designer.cs">
+      <DependentUpon>StockMainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\SystemMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\SystemMain.Designer.cs">
+      <DependentUpon>SystemMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\HiRackStatusForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\HiRackStatusForm.Designer.cs">
+      <DependentUpon>HiRackStatusForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\ErrorHistoryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\ErrorHistoryForm.Designer.cs">
+      <DependentUpon>ErrorHistoryForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\SAPIFHistoryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\SAPIFHistoryForm.Designer.cs">
+      <DependentUpon>SAPIFHistoryForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\MovementRuleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\MovementRuleForm.Designer.cs">
+      <DependentUpon>MovementRuleForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\SystemInfoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Forms\SystemInfoForm.Designer.cs">
+      <DependentUpon>SystemInfoForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\InformEventHandler.cs" />
+    <Compile Include="Gui\Monitor\MaintEventHandler.cs" />
+    <Compile Include="Gui\Monitor\Panels\HiRackStatus\HiRackStatusInformPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\HiRackStatus\HiRackStatusInformPanel.Designer.cs">
+      <DependentUpon>HiRackStatusInformPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\HiRackStatus\HiRackStatusModifyPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\HiRackStatus\HiRackStatusModifyPanel.Designer.cs">
+      <DependentUpon>HiRackStatusModifyPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\LoginPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\LoginPanel.Designer.cs">
+      <DependentUpon>LoginPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorAGVMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorAGVMainPanel.Designer.cs">
+      <DependentUpon>MonitorAGVMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorConveyorMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorConveyorMainPanel.Designer.cs">
+      <DependentUpon>MonitorConveyorMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorHiRackMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorHiRackMainPanel.Designer.cs">
+      <DependentUpon>MonitorHiRackMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\AGVDetailPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\AGVDetailPanel.Designer.cs">
+      <DependentUpon>AGVDetailPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\AGVStatePanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\AGVStatePanel.Designer.cs">
+      <DependentUpon>AGVStatePanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackCellInform.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackCellInform.Designer.cs">
+      <DependentUpon>HiRackCellInform.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackDetailPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackDetailPanel.Designer.cs">
+      <DependentUpon>HiRackDetailPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackProcessLeftPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackProcessLeftPanel.Designer.cs">
+      <DependentUpon>HiRackProcessLeftPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackSearchPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackSearchPanel.Designer.cs">
+      <DependentUpon>HiRackSearchPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\MonitorAllEquipmentPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\MonitorAllEquipmentPanel.Designer.cs">
+      <DependentUpon>MonitorAllEquipmentPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackProcessRightPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\HiRackProcessRightPanel.Designer.cs">
+      <DependentUpon>HiRackProcessRightPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorMainPanel.Designer.cs">
+      <DependentUpon>MonitorMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\MonitorMainTransferListPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\Monitoring\MonitorMainTransferListPanel.Designer.cs">
+      <DependentUpon>MonitorMainTransferListPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorMaterialMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorMaterialMainPanel.Designer.cs">
+      <DependentUpon>MonitorMaterialMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorRGVMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorRGVMainPanel.Designer.cs">
+      <DependentUpon>MonitorRGVMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorTransferMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MonitorTransferMainPanel.Designer.cs">
+      <DependentUpon>MonitorTransferMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MovementRule\MovementRuleInfoInformPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MovementRule\MovementRuleInfoInformPanel.Designer.cs">
+      <DependentUpon>MovementRuleInfoInformPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MovementRule\MovementRuleInfoModifyPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MovementRule\MovementRuleInfoModifyPanel.Designer.cs">
+      <DependentUpon>MovementRuleInfoModifyPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MoveRequest\MoveRequestAddPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MoveRequest\MoveRequestAddPanel.Designer.cs">
+      <DependentUpon>MoveRequestAddPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SystemInfo\SystemInfoInformPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SystemInfo\SystemInfoInformPanel.Designer.cs">
+      <DependentUpon>SystemInfoInformPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SystemInfo\SystemInfoModifyPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SystemInfo\SystemInfoModifyPanel.Designer.cs">
+      <DependentUpon>SystemInfoModifyPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MoveRequestMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MoveRequestMainPanel.Designer.cs">
+      <DependentUpon>MoveRequestMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MoveRequest\MoveRequestInformPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MoveRequest\MoveRequestInformPanel.Designer.cs">
+      <DependentUpon>MoveRequestInformPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\HiRackStatusMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\HiRackStatusMainPanel.Designer.cs">
+      <DependentUpon>HiRackStatusMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SAPIFHistoryMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SAPIFHistoryMainPanel.Designer.cs">
+      <DependentUpon>SAPIFHistoryMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\ErrorHistoryMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\ErrorHistoryMainPanel.Designer.cs">
+      <DependentUpon>ErrorHistoryMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SystemInfoMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\SystemInfoMainPanel.Designer.cs">
+      <DependentUpon>SystemInfoMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MovementRuleInfoMainPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Panels\MovementRuleInfoMainPanel.Designer.cs">
+      <DependentUpon>MovementRuleInfoMainPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\ConveyorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\ConveyorForm.Designer.cs">
+      <DependentUpon>ConveyorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\DialogBaseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\DialogBaseForm.designer.cs">
+      <DependentUpon>DialogBaseForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\MessageDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\MessageDialog.Designer.cs">
+      <DependentUpon>MessageDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\TransferControlForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\TransferControlForm.Designer.cs">
+      <DependentUpon>TransferControlForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\FindPalletInfoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\FindPalletInfoForm.Designer.cs">
+      <DependentUpon>FindPalletInfoForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\StackerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Popups\StackerForm.Designer.cs">
+      <DependentUpon>StackerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Movement\MovementMonitoring.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Movement\MovementMonitoring.Designer.cs">
+      <DependentUpon>MovementMonitoring.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\AGVWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\AGVWidget.Designer.cs">
+      <DependentUpon>AGVWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\AGVNodeWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\AGVNodeWidget.Designer.cs">
+      <DependentUpon>AGVNodeWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\AlarmStatusWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\AlarmStatusWidget.Designer.cs">
+      <DependentUpon>AlarmStatusWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\EquipmentWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\EquipmentWidget.Designer.cs">
+      <DependentUpon>EquipmentWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\DoorWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\DoorWidget.Designer.cs">
+      <DependentUpon>DoorWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\HECSBaseWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\HECSBaseWidget.Designer.cs">
+      <DependentUpon>HECSBaseWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\HiRackCellWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\HiRackCellWidget.Designer.cs">
+      <DependentUpon>HiRackCellWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\HiRackWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\HiRackWidget.Designer.cs">
+      <DependentUpon>HiRackWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\MarkPlate.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\MarkPlate.Designer.cs">
+      <DependentUpon>MarkPlate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\RGVWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\RGVWidget.Designer.cs">
+      <DependentUpon>RGVWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\TransferStatusWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\TransferStatusWidget.Designer.cs">
+      <DependentUpon>TransferStatusWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\WorkTableWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\WorkTableWidget.Designer.cs">
+      <DependentUpon>WorkTableWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\LiftWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\LiftWidget.Designer.cs">
+      <DependentUpon>LiftWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\LoadStationWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\LoadStationWidget.Designer.cs">
+      <DependentUpon>LoadStationWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\LoadUnloadStationWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\LoadUnloadStationWidget.Designer.cs">
+      <DependentUpon>LoadUnloadStationWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\OperationBoxWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\OperationBoxWidget.Designer.cs">
+      <DependentUpon>OperationBoxWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\RailWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\RailWidget.designer.cs">
+      <DependentUpon>RailWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\ConveyorWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\ConveyorWidget.designer.cs">
+      <DependentUpon>ConveyorWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\StackerCraneWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\StackerCraneWidget.Designer.cs">
+      <DependentUpon>StackerCraneWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\UnloadStationWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\UnloadStationWidget.Designer.cs">
+      <DependentUpon>UnloadStationWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\TransferStatusWidget01.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\TransferStatusWidget01.Designer.cs">
+      <DependentUpon>TransferStatusWidget01.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Device\Dispatcher\TranferWorkItem.cs" />
+    <Compile Include="Device\StorageDevice.cs" />
+    <Compile Include="Device\Unit\Port.cs" />
+    <Compile Include="Device\Unit\Rack.cs" />
+    <Compile Include="Device\Unit\RackConfig.cs" />
+    <Compile Include="Device\StockerSEM.cs" />
+    <Compile Include="Splasher.cs" />
+    <Compile Include="SplashForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SplashForm.Designer.cs">
+      <DependentUpon>SplashForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Statistics\DebugStatisticsCollectorData.cs" />
+    <Compile Include="Statistics\ErrorStatisticsCollectorData.cs" />
+    <Compile Include="Statistics\OperationStatisticsCollectorData.cs" />
+    <Compile Include="Statistics\RunTimeExceptionStatisticsCollectorData.cs" />
+    <Compile Include="Statistics\ThreadLockMonitorStatisticsCollectorData.cs" />
+    <Compile Include="StockerMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockerMainForm.Designer.cs">
+      <DependentUpon>StockerMainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Util\LogFormat.cs" />
+    <Compile Include="Util\LogReader.cs" />
+    <Compile Include="Util\SimpleCache.cs" />
+    <Compile Include="Gui\Jaeit\Buttons\ButtonAqua.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonColor.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonGlass.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonGlass.designer.cs">
+      <DependentUpon>ButtonGlass.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonGlass2.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonGlass2.designer.cs">
+      <DependentUpon>ButtonGlass2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonRect.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Buttons\ButtonXP.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Panels\GroupBox\BaseContainer.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Panels\GroupBox\ColorScheme.cs" />
+    <Compile Include="Gui\Jaeit\Panels\GroupBox\GroupBoxChamfer.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Panels\GroupBox\GroupBoxRoundedRectToolBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Jaeit\Panels\GroupBox\GroupBoxRoundRect.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\ControlBase.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\ControlBase.designer.cs">
+      <DependentUpon>ControlBase.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\ControlEvent.cs" />
+    <Compile Include="Gui\Monitor\Controls\ControlOptionButton.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\ControlOptionButton.designer.cs">
+      <DependentUpon>ControlOptionButton.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\ControlStageSensor.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\ControlStageSensor.designer.cs">
+      <DependentUpon>ControlStageSensor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\LabelDualLine.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\LabelDualLine.designer.cs">
+      <DependentUpon>LabelDualLine.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\LabelSingleLine.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\LabelSingleLine.designer.cs">
+      <DependentUpon>LabelSingleLine.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\LampInform.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\LampInform.designer.cs">
+      <DependentUpon>LampInform.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\PanelPowerOnOff.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Monitor\Controls\PanelPowerOnOff.designer.cs">
+      <DependentUpon>PanelPowerOnOff.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\MonitorBuilder.cs" />
+    <Compile Include="Gui\Monitor\MonitorEventHandler.cs" />
+    <Compile Include="Gui\Widget\EqpTool.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="BootLoader.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="ECSMainForm.resx">
+      <DependentUpon>ECSMainForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTest.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FormTest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Buttons\ButtonInterlock.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ButtonInterlock.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Labels\LabelGradient.resx">
+      <DependentUpon>LabelGradient.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Labels\LabelShadow.resx">
+      <DependentUpon>LabelShadow.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\ConfigurationForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ConfigurationForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\PortDirectionChange.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>PortDirectionChange.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\SafetySensorUsedStateViewer.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>SafetySensorUsedStateViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\StkSafetySensorUsedStateViewer.resx">
+      <DependentUpon>StkSafetySensorUsedStateViewer.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\MonitorAllEquipmentPanel01.resx">
+      <DependentUpon>MonitorAllEquipmentPanel01.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\RGVForm.resx">
+      <DependentUpon>RGVForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\LiftForm.resx">
+      <DependentUpon>LiftForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\AGVForm.resx">
+      <DependentUpon>AGVForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\DeleteCheckDialog.resx">
+      <DependentUpon>DeleteCheckDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\TransferDetailForm.resx">
+      <DependentUpon>TransferDetailForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\TransferCommandControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TransferCommandControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\FormBase.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FormBase.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\LoginForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\MonitorMain.resx">
+      <DependentUpon>MonitorMain.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\MoveRequestForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MoveRequestForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\StockMainForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>StockMainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Buttons\ButtonAqua.resx">
+      <DependentUpon>ButtonAqua.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Buttons\ButtonColor.resx">
+      <DependentUpon>ButtonColor.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Buttons\ButtonRect.resx">
+      <DependentUpon>ButtonRect.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Buttons\ButtonXP.resx">
+      <DependentUpon>ButtonXP.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Panels\GroupBox\BaseContainer.resx">
+      <DependentUpon>BaseContainer.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Panels\GroupBox\GroupBoxChamfer.resx">
+      <DependentUpon>GroupBoxChamfer.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Panels\GroupBox\GroupBoxRoundedRectToolBar.resx">
+      <DependentUpon>GroupBoxRoundedRectToolBar.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Jaeit\Panels\GroupBox\GroupBoxRoundRect.resx">
+      <DependentUpon>GroupBoxRoundRect.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\ControlBase.resx">
+      <DependentUpon>ControlBase.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\ControlOptionButton.resx">
+      <DependentUpon>ControlOptionButton.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\ControlStageSensor.resx">
+      <DependentUpon>ControlStageSensor.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\LabelDualLine.resx">
+      <DependentUpon>LabelDualLine.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\LabelSingleLine.resx">
+      <DependentUpon>LabelSingleLine.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\LampInform.resx">
+      <DependentUpon>LampInform.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Controls\PanelPowerOnOff.resx">
+      <DependentUpon>PanelPowerOnOff.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\HiRackStatusForm.resx">
+      <DependentUpon>HiRackStatusForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\ErrorHistoryForm.resx">
+      <DependentUpon>ErrorHistoryForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\SAPIFHistoryForm.resx">
+      <DependentUpon>SAPIFHistoryForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\MovementRuleForm.resx">
+      <DependentUpon>MovementRuleForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Forms\SystemInfoForm.resx">
+      <DependentUpon>SystemInfoForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\HiRackStatus\HiRackStatusInformPanel.resx">
+      <DependentUpon>HiRackStatusInformPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\HiRackStatus\HiRackStatusModifyPanel.resx">
+      <DependentUpon>HiRackStatusModifyPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\LoginPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>LoginPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MonitorAGVMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorAGVMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MonitorConveyorMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorConveyorMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MonitorHiRackMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorHiRackMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\AGVDetailPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AGVDetailPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\AGVStatePanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AGVStatePanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\HiRackCellInform.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>HiRackCellInform.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\HiRackDetailPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>HiRackDetailPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\HiRackProcessLeftPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>HiRackProcessLeftPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\HiRackSearchPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>HiRackSearchPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\MonitorAllEquipmentPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorAllEquipmentPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\HiRackProcessRightPanel.resx">
+      <DependentUpon>HiRackProcessRightPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MonitorMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\Monitoring\MonitorMainTransferListPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorMainTransferListPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MonitorMaterialMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorMaterialMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MonitorRGVMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorRGVMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MonitorTransferMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MonitorTransferMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MovementRule\MovementRuleInfoInformPanel.resx">
+      <DependentUpon>MovementRuleInfoInformPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MovementRule\MovementRuleInfoModifyPanel.resx">
+      <DependentUpon>MovementRuleInfoModifyPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MoveRequest\MoveRequestAddPanel.resx">
+      <DependentUpon>MoveRequestAddPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\SystemInfo\SystemInfoInformPanel.resx">
+      <DependentUpon>SystemInfoInformPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\SystemInfo\SystemInfoModifyPanel.resx">
+      <DependentUpon>SystemInfoModifyPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MoveRequestMainPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MoveRequestMainPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MoveRequest\MoveRequestInformPanel.resx">
+      <DependentUpon>MoveRequestInformPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\HiRackStatusMainPanel.resx">
+      <DependentUpon>HiRackStatusMainPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\SAPIFHistoryMainPanel.resx">
+      <DependentUpon>SAPIFHistoryMainPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\ErrorHistoryMainPanel.resx">
+      <DependentUpon>ErrorHistoryMainPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\SystemInfoMainPanel.resx">
+      <DependentUpon>SystemInfoMainPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Panels\MovementRuleInfoMainPanel.resx">
+      <DependentUpon>MovementRuleInfoMainPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\ConveyorForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ConveyorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\DialogBaseForm.resx">
+      <DependentUpon>DialogBaseForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\MessageDialog.resx">
+      <DependentUpon>MessageDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\TransferControlForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TransferControlForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\FindPalletInfoForm.resx">
+      <DependentUpon>FindPalletInfoForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Monitor\Popups\StackerForm.resx">
+      <DependentUpon>StackerForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Movement\MovementMonitoring.resx">
+      <DependentUpon>MovementMonitoring.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\AGVNodeWidget.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AGVNodeWidget.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\HiRackCellWidget.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>HiRackCellWidget.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\HiRackWidget.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>HiRackWidget.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\MarkPlate.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MarkPlate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\RailWidget.resx">
+      <DependentUpon>RailWidget.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\ConveyorWidget.resx">
+      <DependentUpon>ConveyorWidget.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\TransferStatusWidget.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TransferStatusWidget.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\TransferStatusWidget01.resx">
+      <DependentUpon>TransferStatusWidget01.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SplashForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>SplashForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="StockerMainForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>StockerMainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ECSClientMainForm.resx">
+      <DependentUpon>ECSClientMainForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <None Include="App.config" />
+    <None Include="INI\CEID.ini" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="Resources\Thumbs.db" />
+    <None Include="INI\RPT.ini" />
+    <None Include="INI\VID.ini" />
+    <None Include="INI\VIDVAL.ini" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="Util\ThreadMonitor.cs" />
+    <Compile Include="Util\Util.cs" />
+    <Compile Include="Util\Win32API.cs" />
+    <Compile Include="ECSClientMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ECSClientMainForm.Designer.cs">
+      <DependentUpon>ECSClientMainForm.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\AbortComplete.ico" />
+    <Content Include="Resources\AbortFail.ico" />
+    <Content Include="Resources\Aborting.ico" />
+    <Content Include="Resources\AccessLog.gif" />
+    <Content Include="Resources\Alarm.gif" />
+    <Content Include="Resources\AlarmCount.gif" />
+    <Content Include="Resources\AlarmCount2.gif" />
+    <Content Include="Resources\ALLTransferRate.gif" />
+    <None Include="ClassDiagram2.cd" />
+    <None Include="Gui\Jaeit\Labels\vssver2.scc" />
+    <None Include="StockerClassDiagram2.cd" />
+    <None Include="INI\ECV.ini" />
+    <None Include="INI\SysInterlockInfo.ini" />
+    <None Include="Resources\Aqua - Play.png" />
+    <None Include="Resources\autoCreate.png" />
+    <None Include="Resources\bullet53303200.gif" />
+    <None Include="Resources\bullet53301400.gif" />
+    <None Include="Resources\bullet53301600.gif" />
+    <None Include="Resources\bullet53303000.gif" />
+    <None Include="Resources\bullet53326100.gif" />
+    <None Include="Resources\bullet53326500.gif" />
+    <None Include="Resources\bullet53324100.gif" />
+    <None Include="Resources\bullet53325100.gif" />
+    <None Include="Resources\bullet50016400.gif" />
+    <None Include="Resources\bullet50005300.gif" />
+    <None Include="Resources\bullet50006800.gif" />
+    <None Include="Resources\ArmAxis.JPG" />
+    <Content Include="Resources\Alt.ico" />
+    <Content Include="Resources\AltHandoff.ico" />
+    <None Include="Resources\ATJ_FRONT.jpg" />
+    <None Include="Resources\ATJ_SIDE.jpg" />
+    <None Include="Resources\ATJ_TOP.jpg" />
+    <None Include="Resources\ATJ_FRONT2.jpg" />
+    <None Include="Resources\AVACO_FRONT.jpg" />
+    <None Include="Resources\AVACO_FRONT_SIDE.jpg" />
+    <None Include="Resources\AVACO_SIDE.jpg" />
+    <None Include="Resources\AVACO_TOP.jpg" />
+    <None Include="Resources\auto.png" />
+    <None Include="Resources\bullet50043600.gif" />
+    <None Include="Resources\bullet50055600.gif" />
+    <None Include="Resources\bullet50010400.gif" />
+    <None Include="Resources\bullet50110100.gif" />
+    <None Include="Resources\bullet53309400.gif" />
+    <None Include="Resources\bullet53307700.gif" />
+    <None Include="Resources\bullet53308200.gif" />
+    <None Include="Resources\bullet53355500.gif" />
+    <None Include="Resources\bullet53308600.gif" />
+    <None Include="Resources\bullet53312300.gif" />
+    <None Include="Resources\bullet53348000.gif" />
+    <None Include="Resources\bullet53309300.gif" />
+    <None Include="Resources\bullet53308100.gif" />
+    <None Include="Resources\bullet50043300.gif" />
+    <None Include="Resources\bullet500436001.gif" />
+    <None Include="Resources\bullet50043900.gif" />
+    <None Include="Resources\bullet50044200.gif" />
+    <None Include="Resources\bullet50044500.gif" />
+    <None Include="Resources\bullet50044800.gif" />
+    <None Include="Resources\bullet50045100.gif" />
+    <None Include="Resources\bullet50045400.gif" />
+    <None Include="Resources\bullet50045700.gif" />
+    <None Include="Resources\bullet50046000.gif" />
+    <None Include="Resources\bullet50046300.gif" />
+    <None Include="Resources\bullet50046600.gif" />
+    <None Include="Resources\bullet50046900.gif" />
+    <None Include="Resources\bullet50053200.gif" />
+    <None Include="Resources\bullet50053500.gif" />
+    <None Include="Resources\bullet50053800.gif" />
+    <None Include="Resources\bullet50055000.gif" />
+    <None Include="Resources\bullet50055300.gif" />
+    <None Include="Resources\bullet500556001.gif" />
+    <None Include="Resources\bullet50055900.gif" />
+    <None Include="Resources\bullet50090600.gif" />
+    <None Include="Resources\bullet50093600.gif" />
+    <None Include="Resources\bullet50093900.gif" />
+    <None Include="Resources\bullet50094800.gif" />
+    <None Include="Resources\bullet50095700.gif" />
+    <None Include="Resources\bullet50096300.gif" />
+    <None Include="Resources\bullet50096600.gif" />
+    <None Include="Resources\bullet50096900.gif" />
+    <None Include="Resources\bullet50097800.gif" />
+    <None Include="Resources\bullet50202500.gif" />
+    <None Include="Resources\bullet50202700.gif" />
+    <None Include="Resources\bullet50250600.gif" />
+    <None Include="Resources\bullet50261700.gif" />
+    <None Include="Resources\bullet50262600.gif" />
+    <None Include="Resources\bullet50401100.gif" />
+    <None Include="Resources\bullet53300600.gif" />
+    <None Include="Resources\bullet53301200.gif" />
+    <None Include="Resources\bullet53310000.gif" />
+    <None Include="Resources\bullet53318400.gif" />
+    <None Include="Resources\bullet53381000.gif" />
+    <None Include="Resources\bullet53392500.gif" />
+    <None Include="Resources\bullet53418400.gif" />
+    <None Include="Resources\bullet53433100.gif" />
+    <None Include="Resources\bullet53460200.gif" />
+    <None Include="Resources\bullet53461600.gif" />
+    <None Include="Resources\bullet53461700.gif" />
+    <None Include="Resources\bullet53461800.gif" />
+    <None Include="Resources\bullet53462000.gif" />
+    <None Include="Resources\bullet53462100.gif" />
+    <None Include="Resources\bullet53462200.gif" />
+    <None Include="Resources\bullet53462300.gif" />
+    <None Include="Resources\bullet53463600.gif" />
+    <None Include="Resources\bullet53463700.gif" />
+    <None Include="Resources\bullet53464500.gif" />
+    <None Include="Resources\bullet53464700.gif" />
+    <None Include="Resources\bullet53464900.gif" />
+    <None Include="Resources\bullet53465100.gif" />
+    <None Include="Resources\bullet53465300.gif" />
+    <None Include="Resources\bullet53471200.gif" />
+    <None Include="Resources\bullet53473600.gif" />
+    <None Include="Resources\bullet53476600.gif" />
+    <None Include="Resources\bullet53478600.gif" />
+    <None Include="Resources\bullet53478800.gif" />
+    <None Include="Resources\bullet53479000.gif" />
+    <None Include="Resources\bullet53479200.gif" />
+    <None Include="Resources\bullet53479400.gif" />
+    <None Include="Resources\bullet53479600.gif" />
+    <None Include="Resources\bullet53480000.gif" />
+    <None Include="Resources\bullet53483300.gif" />
+    <None Include="Resources\bullet53483900.gif" />
+    <None Include="Resources\bullet53484100.gif" />
+    <None Include="Resources\bullet53484300.gif" />
+    <None Include="Resources\bullet53484500.gif" />
+    <None Include="Resources\bullet53485500.gif" />
+    <None Include="Resources\bullet53485700.gif" />
+    <None Include="Resources\bullet53487500.gif" />
+    <None Include="Resources\bullet53487700.gif" />
+    <None Include="Resources\bullet53501300.gif" />
+    <None Include="Resources\bullet53501700.gif" />
+    <None Include="Resources\bullet53501900.gif" />
+    <None Include="Resources\bullet53503100.gif" />
+    <None Include="Resources\bullet53505300.gif" />
+    <None Include="Resources\bullet53506900.gif" />
+    <None Include="Resources\bullet53507100.gif" />
+    <None Include="Resources\bullet53507500.gif" />
+    <None Include="Resources\bullet53510100.gif" />
+    <None Include="Resources\bullet53512500.gif" />
+    <None Include="Resources\bullet53512700.gif" />
+    <None Include="Resources\bullet53512900.gif" />
+    <None Include="Resources\bullet53513500.gif" />
+    <None Include="Resources\bullet53513700.gif" />
+    <None Include="Resources\bullet53513900.gif" />
+    <None Include="Resources\bullet53514100.gif" />
+    <None Include="Resources\bullet53514300.gif" />
+    <None Include="Resources\bullet53514700.gif" />
+    <None Include="Resources\bullet53515100.gif" />
+    <None Include="Resources\bullet53515300.gif" />
+    <Content Include="Resources\Cancel.gif" />
+    <Content Include="Resources\Cancel22.gif" />
+    <Content Include="Resources\Cancel4.gif" />
+    <Content Include="Resources\Canceling.ico" />
+    <Content Include="Resources\Complete.ico" />
+    <Content Include="Resources\Connect1.gif" />
+    <Content Include="Resources\Connect3.gif" />
+    <None Include="INI\config.ini" />
+    <None Include="Resources\LGDisplay.bmp" />
+    <None Include="Resources\LCD.bmp" />
+    <None Include="Resources\RedFlag.gif" />
+    <None Include="Resources\GreenFlag.gif" />
+    <None Include="Resources\RMAxis.JPG" />
+    <None Include="UpdateScript\ecp_update.bat" />
+    <None Include="UpdateScript\ecp_update.sql" />
+    <None Include="Resources\FRONT.jpg" />
+    <None Include="Resources\Handok.png" />
+    <None Include="Resources\logo.gif" />
+    <None Include="Resources\logo_han.jpg" />
+    <None Include="Resources\Handok_logo.bmp" />
+    <Content Include="Resources\LGLS.jpg" />
+    <Content Include="Resources\MoveRequest.ico" />
+    <Content Include="Resources\NONE.ico" />
+    <Content Include="Resources\NotReady.ico" />
+    <Content Include="Resources\Paused.ico" />
+    <None Include="Resources\processPort.png" />
+    <Content Include="Resources\Queued.ico" />
+    <None Include="Resources\rail.png" />
+    <None Include="Resources\Rackmaster.jpg" />
+    <Content Include="Resources\Ready.ico" />
+    <None Include="Resources\StkPort.png" />
+    <None Include="Resources\shelf.png" />
+    <None Include="Resources\rm.png" />
+    <Content Include="Resources\StockerPortDown.bmp" />
+    <Content Include="Resources\StockerPortNormal.bmp" />
+    <Content Include="Resources\StockerSkin.gif" />
+    <Content Include="Resources\DebugLog.gif" />
+    <Content Include="Resources\DeviceDB.gif" />
+    <Content Include="Resources\Disconnect2.gif" />
+    <Content Include="Resources\Diverter.gif" />
+    <Content Include="Resources\Diverter1.gif" />
+    <Content Include="Resources\Down.gif" />
+    <Content Include="Resources\Down.ico" />
+    <Content Include="Resources\Down2.gif" />
+    <Content Include="Resources\DOWN3.gif" />
+    <Content Include="Resources\ErrorLog.gif" />
+    <Content Include="Resources\Examination.gif" />
+    <Content Include="Resources\FFUStatus.gif" />
+    <Content Include="Resources\GlassDB.gif" />
+    <Content Include="Resources\GlassMaint.gif" />
+    <Content Include="Resources\GlassWithdraw.gif" />
+    <Content Include="Resources\Guage.gif" />
+    <Content Include="Resources\HostLog.gif" />
+    <Content Include="Resources\HSMSDriver.gif" />
+    <Content Include="Resources\HSMSMessage.gif" />
+    <Content Include="Resources\Inform.gif" />
+    <Content Include="Resources\Inform2.gif" />
+    <Content Include="Resources\Inform3.gif" />
+    <Content Include="Resources\KeyClosed.gif" />
+    <Content Include="Resources\KeyOpened.gif" />
+    <Content Include="Resources\Login5.gif" />
+    <Content Include="Resources\LogView.gif" />
+    <Content Include="Resources\LPL.bmp" />
+    <Content Include="Resources\Maint.gif" />
+    <Content Include="Resources\Maint3.gif" />
+    <Content Include="Resources\Maint6.gif" />
+    <Content Include="Resources\Offline.gif" />
+    <Content Include="Resources\Offline3.gif" />
+    <Content Include="Resources\OK4.gif" />
+    <Content Include="Resources\Online3.gif" />
+    <Content Include="Resources\Operation.gif" />
+    <Content Include="Resources\OperationLog.gif" />
+    <Content Include="Resources\OPRate.gif" />
+    <Content Include="Resources\Options.gif" />
+    <Content Include="Resources\Options2.gif" />
+    <Content Include="Resources\PLCAddress.gif" />
+    <Content Include="Resources\PLCDriver.gif" />
+    <Content Include="Resources\PLCLog.gif" />
+    <Content Include="Resources\Power.gif" />
+    <Content Include="Resources\Power2.gif" />
+    <Content Include="Resources\Refresh.gif" />
+    <Content Include="Resources\Resize.gif" />
+    <Content Include="Resources\Resize1.gif" />
+    <Content Include="Resources\RobotLCS.gif" />
+    <Content Include="Resources\Search.gif" />
+    <Content Include="Resources\Search3.gif" />
+    <Content Include="Resources\Setting.gif" />
+    <Content Include="Resources\StageRate.gif" />
+    <Content Include="Resources\StageSensor.gif" />
+    <None Include="Resources\system52158600.gif" />
+    <Content Include="Resources\SystemLog.gif" />
+    <None Include="Resources\TOP.jpg" />
+    <None Include="UpdateScript\Observables.ini" />
+    <None Include="UpdateScript\StockerBackupSchedule.bat" />
+    <None Include="ClientApp.config" />
+    <None Include="Resources\topLogo.gif" />
+    <Content Include="Resources\Transfer.ico" />
+    <Content Include="Resources\TransferDB.gif" />
+    <Content Include="Resources\TransferLog.gif" />
+    <Content Include="Resources\TransferState\AbortComplete.ico" />
+    <Content Include="Resources\TransferState\AbortFail.ico" />
+    <Content Include="Resources\TransferState\Aborting.ico" />
+    <Content Include="Resources\TransferState\Alternate.ico" />
+    <Content Include="Resources\TransferState\AltHandoff.ico" />
+    <Content Include="Resources\TransferState\base\Base_blue.ico" />
+    <Content Include="Resources\TransferState\base\Base_gray.ico" />
+    <Content Include="Resources\TransferState\base\Base_green.ico" />
+    <Content Include="Resources\TransferState\base\Base_red.ico" />
+    <Content Include="Resources\TransferState\base\Base_yellow.ico" />
+    <Content Include="Resources\TransferState\CancelComplete.ico" />
+    <Content Include="Resources\TransferState\CancelFail.ico" />
+    <Content Include="Resources\TransferState\Canceling.ico" />
+    <Content Include="Resources\TransferState\Complete.ico" />
+    <Content Include="Resources\TransferState\MoveRequest.ico" />
+    <Content Include="Resources\TransferState\NONE.ico" />
+    <Content Include="Resources\TransferState\NotReady.ico" />
+    <Content Include="Resources\TransferState\Paused.ico" />
+    <Content Include="Resources\TransferState\Queued.ico" />
+    <Content Include="Resources\TransferState\Ready.ico" />
+    <Content Include="Resources\TransferState\Transferring.ico" />
+    <Content Include="Resources\Turner.gif" />
+    <Content Include="Resources\TurnStage.gif" />
+    <Content Include="Resources\Up.gif" />
+    <Content Include="Resources\Up.ico" />
+    <Content Include="Resources\UP1.gif" />
+    <Content Include="Resources\Up2.gif" />
+    <Content Include="Resources\UP3.gif" />
+    <Content Include="Resources\User2.gif" />
+    <Content Include="Resources\User20.gif" />
+    <Content Include="Resources\User5.gif" />
+    <Content Include="Resources\User51.gif" />
+    <Content Include="Resources\User7.gif" />
+    <Content Include="RevisionHistory.txt" />
+    <Content Include="TitleIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="ShockwaveFlashObjects">
+      <Guid>{D27CDB6B-AE6D-11CF-96B8-444553540000}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ECP\ECP.csproj">
+      <Project>{1BDBD50B-59BE-400D-8807-59322E9FD622}</Project>
+      <Name>ECP</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Com\Secom\" />
+    <Folder Include="Device\Service\Alarm\" />
+    <Folder Include="Event\Device\Unit\" />
+    <Folder Include="Global\Device\" />
+    <Folder Include="Gui\Config\Dialogs\Property\" />
+    <Folder Include="Gui\History\" />
+    <Folder Include="Gui\Images\" />
+    <Folder Include="Gui\Inventory\" />
+    <Folder Include="Gui\Modeling\" />
+    <Folder Include="Gui\System\" />
+    <Folder Include="Properties\DataSources\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<!--ECS Configuration (SCP2)-->
+<Config>
+	<Kind>-1</Kind>
+	<NextPlcNum>-842150451</NextPlcNum>
+	<NextTrack>-842150451</NextTrack>
+	<Center>-842150451</Center>
+	<CenterNextPlcNum>-842150451</CenterNextPlcNum>
+	<CenterNext>-842150451</CenterNext>
+	<CenterDest>-842150451</CenterDest>
+	<Cross>-842150451</Cross>
+	<CrossTrack>-842150451</CrossTrack>
+	<CrossDest>0</CrossDest>
+	<CrossPlcNum>-842150451</CrossPlcNum>
+	<TwinCheck>-842150451</TwinCheck>
+	<HSTrack>0</HSTrack>
+	<Dests>
+		<Dest DestPos="1" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="2" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="3" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="4" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="5" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="6" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="7" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="8" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="9" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="10" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="11" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="217" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="224" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="206" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="212" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="204" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="208" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="216" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="218" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="220" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="225" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="232" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="249" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="259" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="506" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="512" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="518" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="524" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="0" NextPlcNum="0" NextTrack="0"/>
+	</Dests>
+</Config>

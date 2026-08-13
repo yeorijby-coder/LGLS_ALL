@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Font Name="굴림" Size="9" />
+  <Class Name="Stocker.Device.StockerSEM" Collapsed="true">
+    <Position X="14.25" Y="20.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\StockerSEM.cs</FileName>
+      <HashCode>3//v/fv//////2///v+9/9/53/9/e3+//7v3/+9f/v8=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.StorageDevice" Collapsed="true">
+    <Position X="14.25" Y="18.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\StorageDevice.cs</FileName>
+      <HashCode>JAKEgOBE0IQuIkAGAIGBIxAAwAGIrgAgEIYCRCgAggA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.Unit.CleanerPort" Collapsed="true">
+    <Position X="21" Y="20.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Unit\CleanerPort.cs</FileName>
+      <HashCode>iAYQyIQAAgAMgSgAEAyQASAIQIGMIAGEAAADBKIAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.Unit.LocationUnit" Collapsed="true">
+    <Position X="21" Y="17.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Unit\LocationUnit.cs</FileName>
+      <HashCode>AAIakIAACAAAgAQgAJFAIQoDRQEKKgAAAAACAAgAEhA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.Unit.Port" Collapsed="true">
+    <Position X="18.75" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Unit\Port.cs</FileName>
+      <HashCode>EAIAxJAAEAQAgAAAEICAAQgAAAEIIAAAGAQSAAgAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.Unit.ProcessPort" Collapsed="true">
+    <Position X="16.5" Y="20.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Unit\ProcessPort.cs</FileName>
+      <HashCode>CQYAiMYAAABEADEEhF6QQcBoQZFpMMDUGEACBAEEABA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.Unit.RackMaster" Collapsed="true">
+    <Position X="21.5" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Unit\RackMaster.cs</FileName>
+      <HashCode>///9//////1////3//f///n//v///v3//znr/+///78=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.Unit.Shelf" Collapsed="true">
+    <Position X="23.75" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Unit\Shelf.cs</FileName>
+      <HashCode>gAYAgIQAgAEEAJAAABqIAWAKJ4EMIACAAAACAEAEQAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Stocker.Device.Unit.StockerPort" Collapsed="true">
+    <Position X="18.75" Y="20.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Unit\StockerPort.cs</FileName>
+      <HashCode>vhJd57+3/6fM/amWvr//9//767Oevi/63R/6hcXYV+k=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Equipment" Collapsed="true">
+    <Position X="14.25" Y="17.5" Width="1.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="ECP.Device.AbstractModule" Collapsed="true">
+    <Position X="14.25" Y="16.25" Width="1.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="ECP.Device.AbstractSubSystem" Collapsed="true">
+    <Position X="18" Y="15" Width="1.5" />
+    <TypeIdentifier />
+    <InheritanceLine Type="ECP.Device.AbstractElement" ManuallyRouted="true" FixedFromPoint="true" FixedToPoint="true">
+      <Path>
+        <Point X="16.75" Y="14.75" />
+        <Point X="18.875" Y="14.75" />
+        <Point X="18.875" Y="15" />
+      </Path>
+    </InheritanceLine>
+  </Class>
+  <Class Name="ECP.Device.AbstractElement" Collapsed="true">
+    <Position X="15.25" Y="14.5" Width="1.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="ECP.Device.AbstractUDPElement" Collapsed="true">
+    <Position X="15.25" Y="13.5" Width="1.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="ECP.Db.Persistence" Collapsed="true">
+    <Position X="18.25" Y="13.5" Width="1.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="ECP.Global.ECPObject" Collapsed="true">
+    <Position X="18.25" Y="12.5" Width="1.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="ECP.Device.SubSystem" Collapsed="true">
+    <Position X="21" Y="16.5" Width="1.5" />
+    <TypeIdentifier />
+  </Class>
+</ClassDiagram>

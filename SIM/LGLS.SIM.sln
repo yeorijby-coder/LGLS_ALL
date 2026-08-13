@@ -1,0 +1,27 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28701.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HOST_SIM", "HOST_SIM\HOST_SIM.csproj", "{5A1D0C2E-9B77-4E5B-9C51-1B2F3A4D5E6F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EQP_SIM", "EQP_SIM\EQP_SIM.csproj", "{7C3E5F4A-2D18-4B6C-8E93-6A5B4C3D2E1F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5A1D0C2E-9B77-4E5B-9C51-1B2F3A4D5E6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A1D0C2E-9B77-4E5B-9C51-1B2F3A4D5E6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A1D0C2E-9B77-4E5B-9C51-1B2F3A4D5E6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A1D0C2E-9B77-4E5B-9C51-1B2F3A4D5E6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C3E5F4A-2D18-4B6C-8E93-6A5B4C3D2E1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C3E5F4A-2D18-4B6C-8E93-6A5B4C3D2E1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C3E5F4A-2D18-4B6C-8E93-6A5B4C3D2E1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C3E5F4A-2D18-4B6C-8E93-6A5B4C3D2E1F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

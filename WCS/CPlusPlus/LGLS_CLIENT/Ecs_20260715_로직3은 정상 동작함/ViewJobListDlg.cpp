@@ -1,0 +1,1465 @@
+// ViewJobListDlg.cpp : 구현 파일입니다.
+//
+
+#include "stdafx.h"
+#include "EcsDoc.h"
+#include "Ecs.h"
+#include "ViewJobListDlg.h"
+#include "afxdialogex.h"
+#include "RecordSetWrap.h"
+#include "JOB_MST.h"
+
+
+// CViewJobListDlg 대화 상자입니다.
+
+IMPLEMENT_DYNAMIC(CViewJobListDlg, CSkinDialog)
+
+CViewJobListDlg::CViewJobListDlg(CWnd* pParent /*=NULL*/)
+	: CSkinDialog(CViewJobListDlg::IDD, pParent)
+{
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bInitialized = FALSE;
+}
+
+CViewJobListDlg::CViewJobListDlg(CEcsDoc* pDoc, CWnd* pParent)
+	: CSkinDialog(CViewJobListDlg::IDD, pParent)
+{
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bInitialized = FALSE;
+	m_pDoc = pDoc;
+	m_nLang = m_pDoc->m_enLang;
+}
+
+
+CViewJobListDlg::~CViewJobListDlg()
+{
+	m_pDoc->m_pViewJobListDlg = NULL;
+	this->DestroyWindow();
+}
+
+
+BEGIN_MESSAGE_MAP(CViewJobListDlg, CSkinDialog)
+	ON_WM_PAINT()
+	ON_WM_QUERYDRAGICON()
+	ON_WM_SIZE()
+	ON_WM_CLOSE()
+	ON_COMMAND_RANGE(ID_JOB_INSERT, ID_JOB_UPDATE, &CViewJobListDlg::OnCommandRangeButtonEvent)
+	//ON_MESSAGE(WM_USER_REFRESH_COLLECT_JOBINFO, &CViewJobListDlg::OnUpdateSpread)
+ 	ON_BN_CLICKED(ID_JOB_DATA_CLEAR, &CViewJobListDlg::OnBnClickedJobDataClear)	
+	ON_MESSAGE(SSM_CLICK, &CViewJobListDlg::OnSpreadLClick)
+	ON_WM_ERASEBKGND()
+//	ON_BN_CLICKED(ID_JOB_UPDATE, &CViewJobListDlg::OnBnClickedJobUpdate)
+ON_WM_SYSCOMMAND()
+END_MESSAGE_MAP()
+
+BEGIN_EVENTSINK_MAP(CViewJobListDlg, CSkinDialog)
+	//ON_EVENT(CViewRackDlg, IDC_VIEW_JOB_LIST_SPD_MAIN, 2, CViewJobListDlg::BlockSelectedCellMst, VTS_I4 VTS_I4 VTS_I4 VTS_I4)
+//	ON_EVENT(CViewRackDlg, IDC_VIEW_JOB_LIST_SPD_MAIN, 5, CViewJobListDlg::ClickSpread, VTS_I4 VTS_I4)
+END_EVENTSINK_MAP()
+
+void CViewJobListDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CSkinDialog::DoDataExchange(pDX); 
+
+//	DDX_Control(pDX, IDC_VIEW_JOB_LIST_SPD_MAIN, m_pSpreadMain);
+	DDX_Control(pDX, IDC_LBL_SPD_MAIN_CNT, m_lblSpdMainCnt);
+	DDX_Control(pDX, IDC_LBL_JOB_MST_RESULT, m_lblSelectCnt);
+
+
+	DDX_Control(pDX, ID_JOB_DATA_CLEAR, m_btnJobDataClear);
+	DDX_Control(pDX, ID_JOB_DELETE, m_btnJobDelete);
+	DDX_Control(pDX, ID_JOB_SEARCH, m_btnJobSearch);
+	DDX_Control(pDX, ID_JOB_UPDATE, m_btnJobUpdate);
+
+	DDX_Control(pDX, IDC_LBL_WHTYPE, m_lblWhType);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_COMBO_WHTYPE,		 m_cmbWhTyp);
+	DDX_Control(pDX, IDC_LBL_LUGGNUM, m_lblLuggNum);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_LUGGNUM,		 m_edtLuggNum);
+	DDX_Control(pDX, IDC_LBL_STARTPOS, m_lblStartPos);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_COMBO_STARTPOS,	 m_cmbStartPos);
+	DDX_Control(pDX, IDC_LBL_DESTPOS, m_lblDestPos);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_COMBO_DESTPOS,	 m_cmbDestPos);
+	DDX_Control(pDX, IDC_LBL_JOBTYP, m_lblJobTyp);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_JOB_TYP,		 m_cmbJobTyp);
+	DDX_Control(pDX, IDC_LBL_JOB_STATUS, m_lblJobStatus);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_JOBSTATUS,	 m_cmbJobStatus);
+	DDX_Control(pDX, IDC_LBL_BCRCODE, m_lblBcrTop);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_BARCODE,		 m_edtBcrTop);
+	DDX_Control(pDX, IDC_LBL_BCRBOTTOM, m_lblBcrBottom);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_BAR_BOTTOM,	 m_edtBcrBottom);
+	DDX_Control(pDX, IDC_LBL_JOB_STATUS2, m_lblJobStatus2);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_JOBSTATUS2,	 m_cmbJobStatus2);
+	DDX_Control(pDX, IDC_LBL_BCRCODE2, m_lblBcrTop2);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_BARCODE2,		 m_edtBcrTop2);
+	DDX_Control(pDX, IDC_LBL_BCRBOTTOM2, m_lblBcrBottom2);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_BAR_BOTTOM2,	 m_edtBcrBottom2);
+
+	DDX_Control(pDX, IDC_GRP_SEARCH,	 m_grpSearch);
+	DDX_Control(pDX, IDC_GRP_SEARCH2,	 m_grpSearch2);
+	DDX_Control(pDX, IDC_GRP_UPDATE,	 m_grpEdit);
+	DDX_Control(pDX, IDC_LBL_JOB_PRIORITY, m_lblJobPriority);
+	DDX_Control(pDX, IDC_LBL_PRODUCT_SIZE, m_lblProductSize);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_JOB_PRIORITY, m_cbxJobPriority);
+	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_PRODUCT_SIZE, m_cbxProductSize);
+	DDX_Control(pDX, ID_JOB_COPY, m_btnJobCopy);
+	DDX_Control(pDX, ID_JOB_CV_COMPLETE, m_btnJobCvComplete);
+	DDX_Control(pDX, ID_JOB_SC_COMPLETE, m_btnJobScComplete);
+}
+
+LRESULT CViewJobListDlg::OnSpreadLClick(WPARAM wParam, LPARAM lParam)
+{
+	LPSS_CELLCOORD pCell = (LPSS_CELLCOORD)lParam;
+	if ( pCell->Col == 0 || pCell->Row == 0 )
+		return 0;
+
+	if ( m_SpreadSheet.IsCellType(pCell->Col, pCell->Row, SS_TYPE_CHECKBOX) )
+	{
+		BOOL bCheck = !m_SpreadSheet.GetValueINT(pCell->Col, pCell->Row);
+		m_SpreadSheet.SetValueINT(pCell->Col, pCell->Row, bCheck);
+
+		if ( m_SpreadSheet.IsCellType(pCell->Col, 0, SS_TYPE_CHECKBOX) && 
+			 m_SpreadSheet.IsCellType(pCell->Col, pCell->Row, SS_TYPE_CHECKBOX) )
+		{
+			if ( !bCheck )  // Uncheck 시
+				m_SpreadSheet.SetHeaderCellCheck(pCell->Col, false);
+		}
+		return 0;
+	}
+
+	//variant_t val;
+	if (pCell->Row > 0)
+	{
+		m_nActiveRow = pCell->Row;
+
+		//작업정보
+		CString strJobTyp = m_SpreadSheet.GetValueTXT(7, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+		strJobTyp.Trim();
+
+		//m_pSpreadMain.GetText(10, m_nActiveRow, &val);
+		CString strJobSta = m_SpreadSheet.GetValueTXT(8, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+		strJobSta.Trim();
+		m_cmbJobStatus2.SetCurSelTextEx(strJobSta);
+
+		//m_pSpreadMain.GetText(11, m_nActiveRow, &val);
+		CString strProductSize = m_SpreadSheet.GetValueTXT(9, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+		strProductSize.Trim();
+		m_cbxProductSize.SetCurSelTextEx(strProductSize);
+
+		//m_pSpreadMain.GetText(12, m_nActiveRow, &val);
+		CString strJobPriority = m_SpreadSheet.GetValueTXT(10, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+		strJobPriority.Trim();
+		m_cbxJobPriority.SetCurSelTextEx(strJobPriority);
+
+		//작업구분 가져오기 (CDX_CD, CCD_NM_KOR, CCD_CD 순서)
+		CLib::BindSpreadCommonCode(_T("JOB_TYP"), strJobTyp, m_strJOB_TYP, m_pDoc);
+	}
+
+	return 0;
+}
+
+void CViewJobListDlg::ClearInputData()
+{
+	CString strWhType;
+	CString strLuggNum;
+	CString strStartPos;
+	CString strDestPos;
+	CString strJobStauts;
+	CString strJobTyp;
+	CString strBcrTop;
+	CString strBcrBottom;
+
+	
+	strWhType.Trim();
+	strLuggNum.Trim();
+	strStartPos.Trim();
+	strDestPos.Trim();
+	strJobStauts.Trim();
+	strJobTyp.Trim();
+	strBcrTop.Trim();
+	strBcrBottom.Trim();
+
+	m_edtLuggNum.GetWindowText(strLuggNum);
+	m_edtBcrTop.GetWindowText(strBcrTop);
+	m_edtBcrBottom.GetWindowText(strBcrBottom);
+	m_cmbWhTyp.SetCurSel(0);
+	m_cmbJobStatus.SetCurSel(0);
+	m_cmbJobTyp.SetCurSel(0);
+	m_cmbStartPos.SetCurSel(0);
+	m_cmbDestPos.SetCurSel(0);
+
+	//m_cmbWhTyp.SetCurSelTextEx(0);
+	//m_cmbJobStatus.SetCurSelTextEx(0);
+	//m_cmbJobTyp.SetCurSelTextEx(0);
+	//m_cmbStartPos.SetCurSelTextEx(0);
+	//m_cmbDestPos.SetCurSelTextEx(0);
+	
+	//m_cmbStartPos.SetWindowText(strStartPos);
+	//m_cmbDestPos.SetWindowText(strDestPos);
+}
+
+
+
+BOOL CViewJobListDlg::OnInitDialog()
+{
+	CSkinDialog::OnInitDialog();
+	
+	EN_LANG pEn = (m_pDoc == NULL) ? EN_ENG : m_pDoc->m_enLang;
+	InitializeFontManager(this);
+	SetFontNation((int)pEn);	
+	CSkinDialog::SetFont(this->GetFont());
+	if( !m_bInitialized )
+	{		
+		m_bInitialized = TRUE;		
+	}
+//	m_pSpreadMain.SetFontName(Global.GetFontName(pEn));
+
+	RedrawImage();
+	RenameResource(pEn);
+	
+	CLib::BindCombo(m_cmbWhTyp, _T("WH_TYP"), m_pDoc, int(pEn), FALSE);
+	CLib::BindCombo(m_cmbJobTyp, _T("JOB_TYP"), m_pDoc, int(pEn), TRUE);
+	CLib::BindCombo(m_cmbJobStatus, _T("JOB_STATUS"), m_pDoc, int(pEn), TRUE);
+	CLib::BindCombo(m_cmbJobStatus2, _T("JOB_STATUS"), m_pDoc, int(pEn), FALSE);
+	CLib::BindCombo(m_cbxJobPriority, _T("JOB_PRIORITY"), m_pDoc, int(pEn), FALSE);
+	CLib::BindCombo(m_cbxProductSize, _T("PRODUCT_SIZE"), m_pDoc, int(pEn), FALSE);
+	CLib::SetBindCombo_DEST_POS_DEF(m_cmbStartPos, m_pDoc);
+	CLib::SetBindCombo_DEST_POS_DEF(m_cmbDestPos, m_pDoc);
+
+	InitializeControlLanguage();
+	
+	//SetItemReSize();				// 이거때문임
+	PreCreateWindow(cs);
+
+
+#pragma region 스프레드 초기화 
+	//IDC_CUSTOM1 라는 컨트롤에서 Rect 값을 가져와서 스프레드에 적용 
+	// 상대 좌표 구하기
+	CRect rect;							// 윈도우 기준 절대 좌표 
+	GetDlgItem(IDC_STATIC_SPREAD)->GetWindowRect(&rect);
+
+	CRect rectTemp = rect;				// 다이얼 로그 영역안의 컨트롤(rect)의 상대좌표 
+	ScreenToClient(&rectTemp);
+	 
+	CRect rtTemp;
+	::GetWindowRect(this->m_hWnd, &rtTemp);
+	
+	CRect rectMargin = CRect(rectTemp.left, rectTemp.top, rtTemp.right-rect.right, rtTemp.bottom - rect.bottom);
+
+//	m_SpreadSheet.m_rectWnd = rectTemp;//CRect(0, 0, 0, 0);
+	m_SpreadSheet.m_nSorting = SS_USERCOLACTION_DEFAULT;
+	m_SpreadSheet.m_bAutoResizeCol = true;
+	m_SpreadSheet.m_colorBaseBack = WHITE;
+	m_SpreadSheet.m_wGridType = SS_GRID_HORIZONTAL | SS_GRID_VERTICAL | SS_GRID_SOLID;
+
+	m_SpreadSheet.m_rectMargin = rectMargin;
+
+	HFONT hFontH = CreateFont(15,0,0,0,700,0,0,0,0,0,0,0,0,_T("System"));
+	HFONT hFontB = CreateFont(15,0,0,0,FW_BOLD,0,0,0,0,0,0,0,0,_T("System"));
+
+	m_SpreadSheet.AddSheet(_T(""), this, hFontH, hFontB);
+	//m_SpreadSheet.AddColHead(_T(" "), 10);
+	m_SpreadSheet.AddColHead(_T("창고 타입"), 8);
+	m_SpreadSheet.AddColHead(_T("작업 번호"), 8);
+	m_SpreadSheet.AddColHead(_T("출발지"), 6);
+	m_SpreadSheet.AddColHead(_T("출발 위치"), 9);
+	m_SpreadSheet.AddColHead(_T("도착지"), 6);
+	m_SpreadSheet.AddColHead(_T("도착 위치"), 9);
+	m_SpreadSheet.AddColHead(_T("작업 구분"), 11);
+	m_SpreadSheet.AddColHead(_T("작업 상태"), 15);
+	m_SpreadSheet.AddColHead(_T("PULP 단수"), 10);
+	m_SpreadSheet.AddColHead(_T("우선 순위"), 8);
+	m_SpreadSheet.AddColHead(_T("추가 시간"), 16);//16
+
+	BOOL bResult = m_SpreadSheet.Create();
+
+	if (bResult == FALSE)
+		AfxMessageBox(_T("생성못함!"));
+	//GetDlgItem(IDC_STATIC_TOP)->BringWindowToTop();
+//	m_SpreadSheet.m_Spread.BringWindowToTop();
+
+#pragma endregion
+
+	InitializeSpread(FALSE);
+
+	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+
+void CViewJobListDlg::OnCommandRangeButtonEvent(UINT nID)
+{
+	switch(nID)
+	{
+	case ID_JOB_INSERT:
+		{
+			break;
+		}
+	case ID_JOB_DELETE:
+		{
+			DeleteJob();
+			break;
+		}
+	case ID_JOB_DATA_CLEAR:
+		{
+			ClearInputData();
+			break;
+		}
+	case ID_JOB_SEARCH:
+		{
+			InitializeSpread(TRUE);
+			break;
+		}    
+	case ID_JOB_UPDATE:
+		{
+			UpdateJob();
+			break;
+		}
+	case ID_JOB_COPY:
+		{
+			CopyJob();
+			break;
+		}
+	case ID_JOB_CV_COMPLETE:
+		{
+			JobComplete(_T("19"));
+			break;
+		}
+	case ID_JOB_SC_COMPLETE:
+		{
+			JobComplete(_T("29"));
+			break;
+		}
+	default:
+		{
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("정의되지 않은 버튼 이벤트")) + CConvert::ToString((int)nID));
+		}
+	}
+}
+
+void CViewJobListDlg::UpdateJob()
+{
+	if (!m_pDoc->Permission(_T("CViewJobListDlg"), UPD_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+
+	variant_t val;
+	CString strSql;
+	CString strWH_TYP, strLUGG_NO, strBcrBottom, strBcrTop, strJobStatus, strProductSize, strJobPriority;
+
+	if (m_nActiveRow < 1)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("스프레드를 클릭하시오"))); 
+		return;
+	}
+	
+	//m_pSpreadMain.GetText(1, m_nActiveRow, &val);
+	strWH_TYP = m_SpreadSheet.GetValueTXT(1, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	//m_pSpreadMain.GetText(2, m_nActiveRow, &val);
+	strLUGG_NO = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	m_edtBcrBottom2.GetWindowText(strBcrBottom);
+	m_edtBcrTop2.GetWindowText(strBcrTop);
+	strJobStatus = m_cmbJobStatus2.GetItemKey(m_cmbJobStatus2.GetCurSel());
+	strProductSize = m_cbxProductSize.GetItemKey(m_cbxProductSize.GetCurSel());
+	strJobPriority = m_cbxJobPriority.GetItemKey(m_cbxJobPriority.GetCurSel());
+
+	strWH_TYP.Trim();
+	strLUGG_NO.Trim();
+	strBcrBottom.Trim();
+	strBcrTop.Trim();
+	strJobStatus.Trim();
+	strProductSize.Trim();
+	strJobPriority.Trim();
+
+
+	CString strSpace = _T(" ");
+	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("작업 상태를 수정 하시겠습니까?")) + strSpace + _T("[LUGG_NO : ") + strLUGG_NO + _T(" ]"), MB_YESNO) != IDYES) 
+		return;
+
+	UpdateData(TRUE);
+
+	long bTrans = m_pDoc->BeginTrans_DLG();
+
+	if (bTrans < 1)
+		return;
+
+	CString strLOG_LUGG_NO = strLUGG_NO;
+	if (strLOG_LUGG_NO == _T("")) { strLOG_LUGG_NO = _T("0");}
+	CString strLOG_MSG = _T("JOB_MST UPDATE : JOB_STA -> ") + strJobStatus;
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CViewJobListDlg"), strLOG_LUGG_NO, _T(""), _T(""), strLOG_MSG))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		return;
+	}
+
+	strWH_TYP = m_cmbWhTyp.GetItemCCD(strWH_TYP);
+	strSql=_T("");
+	strSql.Format(_T("UPDATE JOB_MST     ")
+		_T("	  SET JOB_STATUS = '%s'  ")
+		_T("	    , PRODUCT_SIZE = '%s'  ")
+		_T("	    , JOB_PRIORITY    = '%s'  ")
+		_T("    WHERE WH_TYP     = '%s'  ")
+		_T("      AND LUGG_NO    = '%s'  "), strJobStatus, strProductSize, strJobPriority, strWH_TYP, strLUGG_NO);
+
+	BOOL isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
+
+	if (isSuccess == FALSE)
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+	m_pDoc->CommitTrans_DLG();
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+	InitializeSpread(TRUE);
+}
+
+void CViewJobListDlg::JobComplete(CString strJOB_STATUS)
+{
+	if (!m_pDoc->Permission(_T("CViewJobListDlg"), UPD_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+
+	variant_t val;
+	CString strSql;
+	CString strWH_TYP, strLUGG_NO, strJOB_TYP;
+
+
+	if (m_nActiveRow < 1)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("스프레드를 클릭하시오"))); 
+		return;
+	}
+	
+	//m_pSpreadMain.GetText(1, m_nActiveRow, &val);
+	strWH_TYP = m_SpreadSheet.GetValueTXT(1, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	//m_pSpreadMain.GetText(2, m_nActiveRow, &val);
+	strLUGG_NO = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	strJOB_TYP = m_strJOB_TYP;
+
+	strWH_TYP.Trim();
+	strLUGG_NO.Trim();
+	strJOB_TYP.Trim();
+
+
+	CString strSpace = _T(" ");
+	CString strMessage = _T(" ");
+	
+	if(strJOB_STATUS == _T("19"))
+	{
+		if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("CV 도착보고를 하시겠습니까?")) + strSpace + _T("[LUGG_NO : ") + strLUGG_NO + _T(" ]"), MB_YESNO) != IDYES) 
+			return;
+
+		if(strJOB_TYP == _T("1") || strJOB_TYP == _T("4") || strJOB_TYP == _T("5")) //236
+		{
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("해당 작업구분은 CV 도착보고를 할 수 없습니다.")));
+			return;
+		}
+	}
+	else
+	{
+		if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("SC 구동완료 보고를 하시겠습니까?")) + strSpace + _T("[LUGG_NO : ") + strLUGG_NO + _T(" ]"), MB_YESNO) != IDYES) 
+			return;
+
+		if(strJOB_TYP == _T("2") || strJOB_TYP == _T("3") || strJOB_TYP == _T("6"))
+		{
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("해당 작업구분은 SC 구동완료 보고를 할 수 없습니다.")));
+			return;
+		}
+	}
+	
+
+	UpdateData(TRUE);
+
+	long bTrans = m_pDoc->BeginTrans_DLG();
+
+	if (bTrans < 1)
+		return;
+
+	CString strLOG_LUGG_NO = strLUGG_NO;
+	if (strLOG_LUGG_NO == _T("")) { strLOG_LUGG_NO = _T("0");}
+	CString strLOG_MSG = _T("JOB_MST UPDATE : JOB_STATUS -> ") + strJOB_STATUS;
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CViewJobListDlg"), strLOG_LUGG_NO, _T(""), _T(""), strLOG_MSG))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		return;
+	}
+
+	strWH_TYP = m_cmbWhTyp.GetItemCCD(strWH_TYP);
+	strSql=_T("");
+	strSql.Format(_T("UPDATE JOB_MST     ")
+		_T("	  SET JOB_STATUS = '%s'  ")
+		_T("    WHERE WH_TYP     = '%s'  ")
+		_T("      AND LUGG_NO    = '%s'  "), strJOB_STATUS, strWH_TYP, strLUGG_NO);
+
+	BOOL isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
+
+	if (isSuccess == FALSE)
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+	m_pDoc->CommitTrans_DLG();
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+	InitializeSpread(TRUE);
+}
+
+void CViewJobListDlg::InitializeControlLanguage()
+{
+	
+	m_lblBcrTop.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("상단바코드"), m_pDoc->m_enLang));
+	m_lblBcrBottom.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("하단바코드"), m_pDoc->m_enLang));
+	m_lblJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업종류"), m_pDoc->m_enLang));
+	m_lblJobStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), m_pDoc->m_enLang));
+	
+	m_lblLuggNum.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), m_pDoc->m_enLang));
+	m_lblStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발지"), m_pDoc->m_enLang));
+	m_lblDestPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착지"), m_pDoc->m_enLang));
+	m_lblWhType.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("창고구분"), m_pDoc->m_enLang));
+	m_lblSpdMainCnt.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("0"), m_pDoc->m_enLang));
+	
+}
+
+
+void CViewJobListDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CSkinDialog::OnSize(nType, cx, cy);
+
+	if( m_bInitialized )
+	{
+		m_bInitialized = TRUE;
+	}
+	Invalidate(TRUE);
+}
+
+HCURSOR CViewJobListDlg::OnQueryDragIcon()
+{
+	return static_cast<HCURSOR>(m_hIcon);
+}
+
+void CViewJobListDlg::OnPaint()
+{
+	CSkinDialog::OnPaint();
+}
+
+void CViewJobListDlg::RelocationControls()
+{
+// 	CRect rc;
+// 	GetClientRect(&rc);
+// 
+// 	int x=0, y=0;
+// 
+// 	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
+// 
+// 	x = rc.Width() - 20 - size.cx;
+// 	y = rc.Height() - 10 - size.cy;
+// 	m_btnCancel.MoveWindow(x, y, size.cx, size.cy, TRUE);
+// 
+// 	x -= size.cx + 10; 
+// 	m_btnOk.MoveWindow(x, y, size.cx, size.cy, TRUE);
+// 	m_btnOk.Invalidate();
+}
+
+
+void CViewJobListDlg::FillCopyJob(int nColIdx, int nRowIdx, CString &strValue)
+{
+	//variant_t val;
+	//m_pSpreadMain.GetText(nColIdx+1, nRowIdx, &val);
+	//strValue = val;
+	//strValue = strValue.Trim();
+}
+
+void CViewJobListDlg::OnBnClickedJobDelete()
+{
+	//DeleteJob();
+}
+
+void CViewJobListDlg::DeleteJob()
+{
+	if (!m_pDoc->Permission(_T("CViewJobListDlg"), DEL_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+	
+
+	variant_t val;
+//	int nActiveRow;
+	CString strLUGG_NO, strSTART_POS, strSTART_LOCATION, strDEST_POS, strDEST_LOCATION, strJOB_TYP, strJOB_STATUS, strPRODUCT_SIZE;
+	CString strSql;
+	CString strWH_TYP = m_pDoc->m_WH_TYP;
+	//nActiveRow = m_pSpreadMain.GetActiveRow();
+	//if (nActiveRow < 1)
+	//	return;
+
+	
+	//m_pSpreadMain.GetText(2, nActiveRow, &val);
+	strLUGG_NO = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	//m_pSpreadMain.GetText(3, nActiveRow, &val);
+	strSTART_POS = m_SpreadSheet.GetValueTXT(3, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	//m_pSpreadMain.GetText(4, nActiveRow, &val);
+	strSTART_LOCATION = m_SpreadSheet.GetValueTXT(4, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	//m_pSpreadMain.GetText(5, nActiveRow, &val);
+	strDEST_POS = m_SpreadSheet.GetValueTXT(5, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	//m_pSpreadMain.GetText(6, nActiveRow, &val);
+	strDEST_LOCATION = m_SpreadSheet.GetValueTXT(6, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	//m_pSpreadMain.GetText(8, nActiveRow, &val);
+	strJOB_TYP = m_SpreadSheet.GetValueTXT(7, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	//m_pSpreadMain.GetText(10, nActiveRow, &val);
+	strJOB_STATUS = m_SpreadSheet.GetValueTXT(8, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	//m_pSpreadMain.GetText(11, nActiveRow, &val);
+	strPRODUCT_SIZE = m_SpreadSheet.GetValueTXT(9, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+
+
+	strLUGG_NO.Trim();
+	strSTART_POS.Trim();
+	strSTART_LOCATION.Trim();
+	strDEST_POS.Trim();
+	strDEST_LOCATION.Trim();
+	strJOB_TYP.Trim();
+	strJOB_STATUS.Trim();
+	strPRODUCT_SIZE.Trim();
+
+	if(AfxMessageBox(m_pDoc->GetMsgLangDef(_T("삭제하시겠습니까? 작업번호 : ")) + strLUGG_NO, MB_YESNO) == IDNO) {	return;	}
+	
+	m_pDoc->BeginTrans_DLG();
+
+	CString strLOG_LUGG_NO = strLUGG_NO;
+	if (strLOG_LUGG_NO == _T("")) { strLOG_LUGG_NO = _T("0");}
+	CString strLOG_BOTTOM_TRAY = _T("");
+	CString strLOG_TOP_TRAY = _T("");
+	CString strLOG_MSG = _T("");
+	strLOG_MSG.Format(_T("작업삭제 : 출발지[%s], 출발위치[%s], 도착지[%s], 도착위치[%s], 작업구분[%s], 작업상태[%s], 단수[%s]"),strSTART_POS, strSTART_LOCATION, strDEST_POS, strDEST_LOCATION, strJOB_TYP, strJOB_STATUS, strPRODUCT_SIZE) ;
+
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CViewJobListDlg"), strLOG_LUGG_NO, _T(""), _T(""), strLOG_MSG))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		return;
+	}
+
+	//해당 작업번호가 공PLT 작업인지 체크
+	int nRowCnt = 0;
+	strSql = _T("");
+	CString strMessage = _T("");
+	
+	strSql.Format(_T("  SELECT *						")
+			      _T("	  FROM HOST_EMPTY_PLT			")
+			      _T("	 WHERE WH_TYP = '%s'			")
+			      _T("	   AND LUGG_NO = '%s'			")
+			      _T("	   AND STATUS = 'Q'				"), strWH_TYP, strLUGG_NO);
+
+	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	
+	pRsw->MoveFirst(); 
+	
+	delete pRsw;
+	
+	//조회건수가 있다 -> host_empty_plt에서도 삭제해주기
+	if(nRowCnt > 0)
+	{
+		strSql.Format(_T("DELETE FROM HOST_EMPTY_PLT	")
+					  _T("		WHERE WH_TYP = '%s'		")
+					  _T("		  AND LUGG_NO= '%s'		"), strWH_TYP, strLUGG_NO);
+
+		int isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
+		
+		if(isSuccess == FALSE)
+		{
+			m_pDoc->RollbackTrans_DLG();
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("공PLT 작업 삭제 중 실패")));
+			InitializeSpread(TRUE);
+			return;
+		}
+	}
+
+	strSql = _T("");
+	strSql.Format(_T("DELETE FROM JOB_MST				")
+			_T("				WHERE WH_TYP = '%s'			")
+			_T("				  AND LUGG_NO= '%s'		"), strWH_TYP, strLUGG_NO);
+
+	int isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
+	
+	if(isSuccess == TRUE)
+	{
+		m_pDoc->CommitTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+		InitializeSpread(TRUE);
+		return;
+	}
+
+	m_pDoc->RollbackTrans_DLG();
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+
+	return;	
+}
+
+void CViewJobListDlg::OnBnClickedJobDataClear()
+{
+	//ClearInputData();
+}
+
+void CViewJobListDlg::OnClose()
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	m_pDoc->m_pViewJobListDlg = NULL;
+	CSkinDialog::OnClose();
+}
+
+
+//void CViewJobListDlg::OnBnClickedCheckAll()
+//{
+//	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+//	if (m_chkCheckAll.GetCheck() == TRUE)
+//	{
+//		for(int nIdxRow = 1; nIdxRow < m_pSpreadMain.GetDataRowCnt() + 1; nIdxRow++)
+//		{
+//			m_pSpreadMain.SetText(1, nIdxRow, variant_t(_T("1")));
+//		}
+//	}
+//	else
+//	{
+//		for(int nIdxRow = 1; nIdxRow < m_pSpreadMain.GetDataRowCnt() + 1; nIdxRow++)
+//		{
+//			m_pSpreadMain.SetText(1, nIdxRow, variant_t(_T("0")));
+//		}
+//	}
+//}
+
+void CViewJobListDlg::OnBnClickedViewJoblistCancel()
+{
+	OnClose();
+}
+
+void CViewJobListDlg::RenameResource( EN_LANG m_enLang)
+{
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath = _T("");
+	strAppPath.Format(_T("%s"),chrFileName);
+	CString strExtension = _T(".ini");
+
+	CString strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	CString strValue = CLib::GetIniStringFromPath(strFullPath, _T("dlgname"), (int)m_enLang);
+	SetWindowText(strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("whtyp"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_WHTYPE, strValue);
+
+	
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobtyp"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_JOBTYP, strValue);
+
+	
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("luggno"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_LUGGNUM, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobsta"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_JOB_STATUS, strValue);
+
+	//ㅂ
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("startpos"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_STARTPOS, strValue);
+
+	
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("bcrtop"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_BCRCODE, strValue);
+
+	
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("destpos"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_DESTPOS, strValue);
+
+	
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("bcrbottom"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_BCRBOTTOM, strValue);
+
+	
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("bcrtop"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_BCRCODE2, strValue);
+
+	
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("bcrbottom"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_BCRBOTTOM2, strValue);
+
+	
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobsta"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_JOB_STATUS2, strValue);
+
+
+	
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("clear"), (int)m_enLang);
+	SetDlgItemText(ID_JOB_DATA_CLEAR, strValue);
+
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("update"), (int)m_enLang);
+	SetDlgItemText(ID_JOB_UPDATE, strValue);
+
+	
+		strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("delete"), (int)m_enLang);
+	SetDlgItemText(ID_JOB_DELETE, strValue);
+
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("copy"), (int)m_enLang);
+	SetDlgItemText(ID_JOB_COPY, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("search"), (int)m_enLang);
+	SetDlgItemText(ID_JOB_SEARCH, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("select"), (int)m_enLang);
+	SetDlgItemText(IDC_GRP_SEARCH, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("search"), (int)m_enLang);
+	SetDlgItemText(IDC_GRP_SEARCH2, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("update"), (int)m_enLang);
+	SetDlgItemText(IDC_GRP_UPDATE, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("selectresult"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_JOB_MST_RESULT, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("productsize"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_PRODUCT_SIZE, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\"), _T("dlg_jobinfo"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobpriority"), (int)m_enLang);
+	SetDlgItemText(IDC_LBL_JOB_PRIORITY, strValue);
+	
+}
+
+void CViewJobListDlg::RedrawImage()
+{
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath;
+	CString strAppPath2;
+	CString strExtension;
+	strAppPath.Format(_T("%s"),chrFileName);
+	strAppPath2.Format(_T("%s"),chrFileName);
+	
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\20x20\\");
+	strAppPath2 = strAppPath2.Left(strAppPath2.ReverseFind('\\')) + _T("\\rc_resource\\dlg_jobinfo\\16x16\\");
+	strExtension = _T(".png");
+
+	SIZE szLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
+	SIZE szSmall = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
+	RECT rc;
+
+	m_btnJobDelete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnJobDelete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("delete"), strExtension)), NULL, 5, 5);
+	m_btnJobDelete.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	m_btnJobDelete.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+
+	m_btnJobDataClear.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnJobDataClear.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("dateclear"), strExtension)), NULL, 5, 5);
+	m_btnJobDataClear.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	m_btnJobDataClear.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+
+	m_btnJobSearch.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnJobSearch.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("search"), strExtension)), NULL, 5, 5);
+	m_btnJobSearch.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	m_btnJobSearch.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+
+	m_btnJobUpdate.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnJobUpdate.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("search"), strExtension)), NULL, 5, 5);
+	m_btnJobUpdate.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	m_btnJobUpdate.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+	m_btnJobCopy.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnJobCopy.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("copy"), strExtension)), NULL, 5, 5);
+	m_btnJobCopy.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	m_btnJobCopy.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+
+	m_btnJobCvComplete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnJobCvComplete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("copy"), strExtension)), NULL, 5, 5);
+	m_btnJobCvComplete.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	m_btnJobCvComplete.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+
+	m_btnJobScComplete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnJobScComplete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("copy"), strExtension)), NULL, 5, 5);
+	m_btnJobScComplete.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	m_btnJobScComplete.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+}
+
+
+void CViewJobListDlg::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx)
+{
+	CStringList strList;
+	CString strSql;
+	CString strTRACK_NO, strREMARKS, strMC_NO;
+	int nRowCnt = 0, j=0;
+	CString strDEST_POS;
+	CString strMessage;
+	cbx.ResetContent();
+	strSql.Format(_T("  SELECT TRACK_NO						")
+				  _T("       , PRIORITY						") 
+				  _T("       , REMARKS						") 
+				  _T("       , GROUP_NO						")
+				  _T("       , MC_NO						")
+				  _T("	  FROM DEST_POS_DEF					")
+				  _T("ORDER BY GROUP_NO, MC_NO, PRIORITY	"));
+
+	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	
+	cbx.SetItemDataEx(0, _T("ALL"));
+	cbx.AddString(_T("ALL"));
+
+	pRsw->MoveFirst(); 
+	
+	for(int i = 1; i <= nRowCnt; i++)
+	{
+		strTRACK_NO = pRsw->GetItem(_T("MC_NO"));
+		strMC_NO = pRsw->GetItem(_T("MC_NO"));
+		cbx.SetItemDataEx(i, strTRACK_NO);
+		cbx.AddString(strMC_NO);
+
+		pRsw->MoveNext();
+	}
+	cbx.SetCurSel(0);
+	delete pRsw;
+}
+
+
+
+CString CViewJobListDlg::GetQrySelect_Main(BOOL bSearch)
+{
+ 	CString strSql = _T("");
+	CString strTemp = _T("");															
+	CString strLUGG_NO = _T("");
+	CString strBCR_TOP = _T("");
+	CString strBCR_BOTTOM = _T("");
+	CString strSTART_POS = _T("");
+	CString strDEST_POS = _T("");
+	CString strJOB_TYP = _T("");
+	CString strJOB_STATUS = _T("");
+
+	m_edtLuggNum.GetWindowText(strLUGG_NO);
+	m_edtBcrTop.GetWindowText(strBCR_TOP);
+	m_edtBcrBottom.GetWindowText(strBCR_BOTTOM);
+
+	int asd =m_cmbStartPos.GetCurSel();
+	strSTART_POS = m_cmbStartPos.GetItemKey(m_cmbStartPos.GetCurSel());
+	strDEST_POS = m_cmbDestPos.GetItemKey(m_cmbDestPos.GetCurSel());
+	strJOB_TYP = m_cmbJobTyp.GetItemKey(m_cmbJobTyp.GetCurSel());
+	strJOB_STATUS = m_cmbJobStatus.GetItemKey(m_cmbJobStatus.GetCurSel());
+	
+	strLUGG_NO.Trim();
+	strBCR_TOP.Trim();
+	strBCR_BOTTOM.Trim();
+	strSTART_POS.Trim();
+	strDEST_POS.Trim();
+	strJOB_TYP.Trim();
+	strJOB_STATUS.Trim();
+
+	
+	strSql.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(CCD_WH_TYP.CCD_NM_KOR, JM.WH_TYP) AS WH_TYP 								\n")	
+			  _T("		     ,") + m_pDoc->NVL + _T("(JM.LUGG_NO, ' ') AS LUGG_NO											\n")	
+			  _T("		     ,JM.START_POS AS START_POS																	\n")	
+			  _T("		     ,") + m_pDoc->NVL + _T("(JM.START_LOCATION, ' ') AS START_LOCATION										\n")	
+			  _T("		     ,JM.DEST_POS AS DEST_POS																	\n")	
+			  _T("		     ,") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, ' ') AS DEST_LOCATION											\n")	
+			  _T("		     ,") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR, JM.JOB_TYP) AS JOB_TYP											\n")	
+			  _T("		     ,") + m_pDoc->NVL + _T("(CC.CCD_NM_KOR, JM.JOB_STATUS) AS JOB_STATUS										\n")	
+			  _T("		     ,") + m_pDoc->NVL + _T("(CCD_PRODUCT_SIZE.CCD_NM_KOR, JM.PRODUCT_SIZE) AS PRODUCT_SIZE					\n")	
+			  _T("		     ,") + m_pDoc->NVL + _T("(JM.JOB_PRIORITY, ' ') AS JOB_PRIORITY											\n")		
+			  _T("		     ,JM.INS_DT AS INS_DT																		\n")	
+			  _T("       FROM JOB_MST JM LEFT OUTER JOIN COMMON_CODE CC													\n")	
+			  _T("				            ON CC.WH_TYP LIKE '%%%s%%'													\n")	
+			  _T("				           AND CC.CDX_CD = 'JOB_STATUS'													\n")	
+			  _T("				           AND JM.JOB_STATUS = CC.CCD_CD												\n")	
+			  _T("                   LEFT OUTER JOIN COMMON_CODE CCD_WH_TYP												\n")
+			  _T("								  ON CCD_WH_TYP.WH_TYP LIKE '%%%s%%'									\n")	
+			  _T("								 AND CCD_WH_TYP.CDX_CD = 'WH_TYP'										\n")	
+			  _T("								 AND JM.WH_TYP = CCD_WH_TYP.CCD_CD										\n")	
+			  _T("                   LEFT OUTER JOIN COMMON_CODE CCD_JOB_TYP											\n")
+			  _T("								  ON CCD_JOB_TYP.WH_TYP LIKE '%%%s%%'									\n")	
+			  _T("								 AND CCD_JOB_TYP.CDX_CD = 'JOB_TYP'										\n")	
+			  _T("								 AND JM.JOB_TYP = CCD_JOB_TYP.CCD_CD									\n")	
+			  _T("                   LEFT OUTER JOIN COMMON_CODE CCD_PRODUCT_SIZE										\n")
+			  _T("								  ON CCD_PRODUCT_SIZE.WH_TYP LIKE '%%%s%%'								\n")	
+			  _T("								 AND CCD_PRODUCT_SIZE.CDX_CD = 'PRODUCT_SIZE'							\n")	
+			  _T("								 AND JM.PRODUCT_SIZE = CCD_PRODUCT_SIZE.CCD_CD							\n")	
+			  _T("  WHERE JM.WH_TYP = '%s'											\n"), m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP);				    
+	
+	
+	if (strLUGG_NO != "")
+	{		
+		strSql += _T("AND JM.LUGG_NO LIKE '%") + strLUGG_NO + _T("%' \n");	
+	}
+	
+	if (strBCR_TOP != "")
+	{		
+		strSql += _T("AND JM.BCR_TOP =  '") + strBCR_TOP + _T("' \n");	
+	}
+	
+	//if (strBCR_BOTTOM != "")
+	//{		
+	//	strSql += _T("AND JM.BCR_BOTTOM =  '") + strBCR_BOTTOM + _T("' \n");	
+	//}
+	//
+	if ((strSTART_POS != "") && (strSTART_POS != _T("ALL")))
+	{	
+		strSql += _T("AND JM.START_POS ='") + strSTART_POS + _T("' \n");	
+	}
+	
+	if ((strDEST_POS != "") && (strDEST_POS != _T("ALL")))
+	{		
+		strSql += _T("AND JM.DEST_POS ='") + strDEST_POS + _T("' \n");	
+	}
+	
+	if ((strJOB_TYP != "") && (strJOB_TYP != _T("ALL")))
+	{	
+		strSql += _T("AND JM.JOB_TYP ='") + strJOB_TYP + _T("' \n");	
+	}
+	
+	if ((strJOB_STATUS != "") && (strJOB_STATUS != _T("ALL")))
+	{	
+		strSql += _T("AND JM.JOB_STATUS ='") + strJOB_STATUS + _T("' \n");	
+	}
+
+   	strSql += _T("   ORDER BY JM.INS_DT DESC, JM.LUGG_NO DESC \n");
+
+
+   return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
+}
+
+void CViewJobListDlg::ClickSpread(long Col, long Row) //셀클릭
+{
+	/*
+	variant_t val;
+	if (Row>0)
+	{
+		m_nActiveRow = Row;
+
+		m_pSpreadMain.GetText(10, m_nActiveRow, &val);
+		CString strJobSta = (LPCTSTR)(_bstr_t)val;
+		strJobSta.Trim();
+		m_cmbJobStatus2.SetCurSelTextEx(strJobSta);
+
+		m_pSpreadMain.GetText(11, m_nActiveRow, &val);
+		CString strProductSize = (LPCTSTR)(_bstr_t)val;
+		strProductSize.Trim();
+		m_cbxProductSize.SetCurSelTextEx(strProductSize);
+
+		m_pSpreadMain.GetText(12, m_nActiveRow, &val);
+		CString strJobPriority = (LPCTSTR)(_bstr_t)val;
+		strJobPriority.Trim();
+		m_cbxJobPriority.SetCurSelTextEx(strJobPriority);
+	}
+	*/
+}
+
+
+////////SPREAD 값채우기
+void CViewJobListDlg::InitializeSpread(BOOL bSearch = FALSE)
+{
+	
+	//정렬 가능
+	//m_pSpreadMain.SetUserColAction(1);
+
+	//m_pSpreadMain.ClearRange(1, 1, -1, -1, TRUE);
+	m_SpreadSheet.PrepareLoadSpread();
+
+	int nRowCnt = SetSpeadData(bSearch);
+	m_lblSpdMainCnt.SetWindowText(CConvert::ToString(nRowCnt));
+
+	m_SpreadSheet.FinishLoadSpread();
+
+}
+
+void CViewJobListDlg::SetMaxRows(int pRowCnt)
+{
+//	m_pSpreadMain.SetMaxRows(pRowCnt);
+}
+
+void CViewJobListDlg::SetColWidth(int pColCnt, int pColSize)
+{
+//	m_pSpreadMain.put_ColWidth(pColCnt+1,pColSize);
+}
+
+int CViewJobListDlg::SetHeadColumn(CStringArray& pStrArrColName, CStringArray& pStrArrColSize, int& nColIdx, CString pStrSql)
+{
+	CLib::GetColumnName(pStrArrColName, pStrSql);
+	nColIdx = pStrArrColName.GetCount();
+	int nStartCol = 0;
+	if (pStrArrColName[0].Right(5) == _T("_HIDE"))
+	{
+		nStartCol = - 1;
+	}
+
+	//SetMaxCols(nColIdx + nStartCol);
+
+	CString strTemp = _T("");
+	CStringArray arrColRename;
+	CLib::RenameColumn(pStrArrColName, m_pDoc->m_enLang, arrColRename);
+	//int nNewColIdx = 0;
+	for(int nIdxCol = 0; nIdxCol < nColIdx; nIdxCol++)
+	{
+		int nSize = arrColRename[nIdxCol].GetLength();
+
+		strTemp = arrColRename[nIdxCol];
+
+		if (strTemp.GetLength() > 5 && strTemp.Right(5) == _T("_HIDE"))
+		{
+			nSize = 0;
+			if (nIdxCol == 0)
+				nSize = 3;
+
+			continue;
+		}
+		//++nNewColIdx;
+		pStrArrColSize.Add(CConvert::ToString(nSize));
+	}
+
+	//nStartCol = 1;
+	for(int nIdxCol = 0; nIdxCol < nColIdx; nIdxCol++)
+	{
+		CString asd = arrColRename[nIdxCol];
+		
+		strTemp = arrColRename[nIdxCol];
+
+		if (strTemp.GetLength() > 5 && strTemp.Right(5) == _T("_HIDE"))
+			continue;
+
+		SetColumnText(nIdxCol + nStartCol, 0, arrColRename[nIdxCol]);
+		
+	}
+
+	return 0;
+}
+
+void CViewJobListDlg::SetColumnText(int nColIdx, int nRowIdx, CString strColumnName)
+{
+	CString strColValue = m_pDoc->m_pLang->GetLangValue(strColumnName, m_pDoc->m_enLang);
+	if (strColumnName == _T(""))
+		strColumnName = _T(" ");
+
+	//m_pSpreadMain.SetText( nColIdx + 1, nRowIdx, variant_t(strColValue));
+	m_SpreadSheet.SetData(nColIdx + 1, nRowIdx, strColValue);
+	//*/
+}
+
+int CViewJobListDlg::SetSpeadData(BOOL bSearch = FALSE)
+{
+	CStringList strList;
+	CStringArray arrColName;
+	CStringArray arrColSize;
+	int nLANG = m_pDoc->m_enLang;
+	int nColSize = -1;
+	int nRowCnt = -1;
+	CString strMessage = _T("");
+
+	CString strSql = GetQrySelect_Main(bSearch);
+
+	_RecordsetPtr pRsp = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsp); 
+
+	if(nRowCnt < 0)
+	{
+		if(pRsw != NULL)
+		{
+			delete pRsw;	
+		}
+	}
+	else
+	{	
+		// arrColName과 arrColSize의 갯수가 다름!! Hide되어있는 Column을 가져오느라 어쩔수 없음~
+		int nIdxStart = SetHeadColumn(arrColName, arrColSize, nColSize, strSql);
+
+		//SetMaxRows(nRowCnt);
+
+		pRsw->MoveFirst();
+
+		for( int nIdxRow = 1; nIdxRow <= nRowCnt; nIdxRow++ )
+		{
+			m_SpreadSheet.SetCurrentRow();
+			for (int nIdxCol = nIdxStart; nIdxCol < nColSize; nIdxCol++)		
+			{
+				CString strColValue = pRsw->GetItem(arrColName[nIdxCol]);
+
+				strColValue += _T("    ");
+				//if (strColValue.GetLength() < 6)
+				//	continue;
+
+				int nPreSize = CConvert::ToInt(arrColSize[nIdxCol]);
+
+				if ((strColValue.GetLength()*1.5 > nPreSize) && (nPreSize != 0))
+				{
+					int nSize = strColValue.GetLength()*1.5;
+					arrColSize[nIdxCol]= CConvert::ToString(nSize);
+				}
+				SetColumnText(nIdxCol, nIdxRow, strColValue);				// 번역됨
+				//m_SpreadSheet.SetData(nIdxCol, nIdxRow, strColValue);		// 번역안됨
+
+				// 짝수마다 색깔을 다르게 칠할것!
+				if (nIdxRow % 2 == 0)
+				{
+					m_SpreadSheet.SetColor(nIdxCol+1, nIdxRow, m_pDoc->m_pConfig->m_clrSPREAD_COLOR, BLACK);
+				}
+				else
+				{
+					m_SpreadSheet.SetColor(nIdxCol+1, nIdxRow, SPREAD_COLOR_NONE, BLACK);					
+				}
+
+			}
+			pRsw->MoveNext();
+		}
+
+		if (pRsw != NULL)
+		{
+			delete pRsw;
+		}
+
+		for (int nIdxCol = 0; nIdxCol < nColSize; nIdxCol++)
+		{
+			int nSize =CConvert::ToInt(arrColSize[nIdxCol]);
+
+			//SetColWidth(nIdxCol, nSize);
+			m_SpreadSheet.SetColWidth(nIdxCol + 1, nSize);
+		}
+	}
+	return nRowCnt;
+}
+
+void CViewJobListDlg::SetMaxCols(int pMaxCol)
+{
+//	m_pSpreadMain.SetMaxCols(pMaxCol);
+}
+
+BOOL CViewJobListDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: 여기에 특수화된 코드를 추가 및/또는 기본 클래스를 호출합니다.
+	if(pMsg->message == WM_KEYDOWN)  
+	{
+		int nID = GetFocus()->GetDlgCtrlID();
+
+		switch(pMsg->wParam)
+		{
+		case VK_RETURN:
+			{
+				break;
+			}
+		case VK_ESCAPE:
+			{
+				break;
+			}
+		}
+		if (pMsg->wParam == VK_LEFT || pMsg->wParam == VK_RIGHT || pMsg->wParam == VK_UP || pMsg->wParam == VK_DOWN)
+		{
+			switch(pMsg->wParam)
+			{
+			case 1768:
+				{
+					return true;
+					break;
+				}
+			case 1868:
+				{
+					return true;
+					break;
+				}
+			case 37://LEFT
+				{
+					return true;
+					break;
+				}
+			case 38://UP
+				{
+					return true;
+					break;
+				}
+			case 39://RIGHT
+				{
+					return true;
+					break;
+				}
+			case 40://DOWN
+				{
+					return true;
+					break;
+				}
+			}
+		}
+	}
+	return CSkinDialog::PreTranslateMessage(pMsg);
+}
+
+
+void CViewJobListDlg::SetItemReSize()
+{
+	CStringArray arrItemID;
+
+	GetItemID(arrItemID);
+
+	for(int i=0; i<arrItemID.GetCount(); i++)
+		ReSizing(CConvert::ToInt(arrItemID[i]));
+}
+
+void CViewJobListDlg::GetItemID(CStringArray& strArr)
+{
+	strArr.Add(CConvert::ToString(IDC_GRP_SEARCH));
+	strArr.Add(CConvert::ToString(IDC_GRP_SEARCH2));
+	strArr.Add(CConvert::ToString(IDC_GRP_UPDATE));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOB_LIST_SPD_MAIN));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOB_LIST_SPD_MAIN));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_SPD_MAIN_CNT));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_JOB_MST_RESULT));
+ 	strArr.Add(CConvert::ToString(ID_JOB_DATA_CLEAR));
+ 	strArr.Add(CConvert::ToString(ID_JOB_DELETE));
+ 	strArr.Add(CConvert::ToString(ID_JOB_SEARCH));
+ 	strArr.Add(CConvert::ToString(ID_JOB_UPDATE));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_WHTYPE));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_STARTPOS));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_COMBO_WHTYPE));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_LUGGNUM));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_LUGGNUM));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_COMBO_STARTPOS));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_DESTPOS));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_COMBO_DESTPOS));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_JOBTYP));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_JOB_TYP));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_JOB_STATUS));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_JOBSTATUS));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_BCRCODE));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_BARCODE));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_BCRBOTTOM));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_BAR_BOTTOM));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_JOB_STATUS2));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_JOBSTATUS2));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_BCRCODE2));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_BARCODE2));
+ 	strArr.Add(CConvert::ToString(IDC_LBL_BCRBOTTOM2));
+ 	strArr.Add(CConvert::ToString(IDC_VIEW_JOBLIST_EDIT_BAR_BOTTOM2));
+
+}
+
+void CViewJobListDlg::ReSizing(int nID)
+{
+	CWnd* pCtl = GetDlgItem(nID);
+	if (!pCtl) { return; }
+	CRect rectCtl;
+	pCtl->GetWindowRect(&rectCtl);
+	ScreenToClient(&rectCtl);
+
+	double dLeft, dTop, dWidth, dHeight, dMaxX, dMaxY;
+	dMaxX = m_pDoc->m_pMaxSizeX;
+	dMaxY = m_pDoc->m_pMaxSizeY;
+
+	dLeft = rectCtl.left * dMaxX;
+	dTop = rectCtl.top * dMaxY;
+	dWidth = rectCtl.Width() * dMaxX;
+	dHeight = rectCtl.Height() * dMaxY;
+	pCtl->MoveWindow(dLeft, dTop, dWidth, dHeight, TRUE);
+
+}
+
+void CViewJobListDlg::CopyJob()
+{
+	if (!m_pDoc->Permission(_T("CViewJobListDlg"), UPD_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+
+	variant_t val;
+	CString strSql;
+	CString strWH_TYP, strLUGG_NO, strJOB_TYP, strSTART_POS, strDEST_POS, strPRODUCT_SIZE;
+
+	if (m_nActiveRow < 1)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("스프레드를 클릭하시오"))); 
+		return;
+	}
+	
+	//m_pSpreadMain.GetText(1, m_nActiveRow, &val);
+	strWH_TYP = m_SpreadSheet.GetValueTXT(1, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	//m_pSpreadMain.GetText(2, m_nActiveRow, &val);
+	strLUGG_NO = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	//m_pSpreadMain.GetText(3, m_nActiveRow, &val);
+	strSTART_POS = m_SpreadSheet.GetValueTXT(3, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	//m_pSpreadMain.GetText(5, m_nActiveRow, &val);
+	strDEST_POS = m_SpreadSheet.GetValueTXT(5, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	//m_pSpreadMain.GetText(8, m_nActiveRow, &val);
+	strJOB_TYP = m_SpreadSheet.GetValueTXT(7, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	//m_pSpreadMain.GetText(11, m_nActiveRow, &val);
+	strPRODUCT_SIZE = m_SpreadSheet.GetValueTXT(9, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+
+	strWH_TYP.Trim();
+	strLUGG_NO.Trim();
+	strDEST_POS.Trim();
+	strJOB_TYP.Trim();
+	strPRODUCT_SIZE.Trim();
+	strSTART_POS.Trim();
+
+
+	CString strSpace = _T(" ");
+	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("해당 작업을 복사 하시겠습니까?")) + strSpace + _T("[LUGG_NO : ") + strLUGG_NO + _T(" ]"), MB_YESNO) != IDYES) 
+		return;
+
+	UpdateData(TRUE);
+
+	CString strLOG_LUGG_NO = strLUGG_NO;
+	if (strLOG_LUGG_NO == _T("")) { strLOG_LUGG_NO = _T("0");}
+	CString strLOG_MSG = _T("JOB_MST COPY");
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CViewJobListDlg"), strLOG_LUGG_NO, _T(""), _T(""), strLOG_MSG))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		return;
+	}
+
+
+	strWH_TYP = m_cmbWhTyp.GetItemCCD(strWH_TYP);
+	strJOB_TYP = m_cmbJobTyp.GetItemCCD(strJOB_TYP);
+	strPRODUCT_SIZE = m_cbxProductSize.GetItemCCD(strPRODUCT_SIZE);
+
+
+
+	CJOB_MST* pCopyJob = m_pDoc->m_pJob->GetCopyJob();
+	pCopyJob->WH_TYP = strWH_TYP;
+	pCopyJob->LUGG_NO = strLUGG_NO;
+	pCopyJob->DEST_POS = strDEST_POS;
+	pCopyJob->JOB_TYP = strJOB_TYP;
+	pCopyJob->PRODUCT_SIZE = strPRODUCT_SIZE;
+
+	pCopyJob->COPY_YN = true;
+	
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+	InitializeSpread(TRUE);
+}

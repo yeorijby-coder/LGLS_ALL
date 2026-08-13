@@ -1,0 +1,185 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{24FA33D7-EE8A-4F3F-8E50-613785C3050E}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HECS.ConveyorSimulator</RootNamespace>
+    <AssemblyName>HECS.ConveyorSimulator</AssemblyName>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Controls\AGVSEMControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\AGVSEMControl.Designer.cs">
+      <DependentUpon>AGVSEMControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\AgvVehicleControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\AgvVehicleControl.Designer.cs">
+      <DependentUpon>AgvVehicleControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ConveyorControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ConveyorControl.Designer.cs">
+      <DependentUpon>ConveyorControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\VehicleControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\VehicleControl.Designer.cs">
+      <DependentUpon>VehicleControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Devices\AgvItinerary.cs" />
+    <Compile Include="Devices\AGVPath.cs" />
+    <Compile Include="Devices\AGVSEM.cs" />
+    <Compile Include="Devices\Component.cs" />
+    <Compile Include="Devices\Conveyor.cs" />
+    <Compile Include="Devices\Device.cs" />
+    <Compile Include="Devices\DeviceManager.cs" />
+    <Compile Include="Devices\MarkPlate.cs" />
+    <Compile Include="FormMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMain.Designer.cs">
+      <DependentUpon>FormMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PLCScenario\AGVScenario.cs" />
+    <Compile Include="PLCScenario\ConveyorScenario.cs" />
+    <Compile Include="PLCScenario\ObserverMonitor.cs" />
+    <Compile Include="Devices\Rack.cs" />
+    <Compile Include="Devices\Shelf.cs" />
+    <Compile Include="Devices\Stocker.cs" />
+    <Compile Include="Devices\Lift.cs" />
+    <Compile Include="Devices\Port.cs" />
+    <Compile Include="Devices\Vehicle.cs" />
+    <Compile Include="FormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormBase.Designer.cs">
+      <DependentUpon>FormBase.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormControlMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormControlMain.Designer.cs">
+      <DependentUpon>FormControlMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Globals.cs" />
+    <Compile Include="Loader.cs" />
+    <Compile Include="PLCScenario\VehicleScenario.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Controls\AGVSEMControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AGVSEMControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\AgvVehicleControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AgvVehicleControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ConveyorControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ConveyorControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\VehicleControl.resx">
+      <DependentUpon>VehicleControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormBase.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FormBase.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormControlMain.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FormControlMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMain.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FormMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="App.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ECP\ECP.csproj">
+      <Project>{1BDBD50B-59BE-400D-8807-59322E9FD622}</Project>
+      <Name>ECP</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ECS\HECS.csproj">
+      <Project>{DD251429-FE9E-4FBC-820E-27D92839EB26}</Project>
+      <Name>HECS</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<!--ECS Configuration (SCP2)-->
+<Config>
+	<Kind>0</Kind>
+	<NextPlcNum>3</NextPlcNum>
+	<NextTrack>328</NextTrack>
+	<Center>0</Center>
+	<CenterNextPlcNum>0</CenterNextPlcNum>
+	<CenterNext>0</CenterNext>
+	<CenterDest>0</CenterDest>
+	<Cross>0</Cross>
+	<CrossTrack>0</CrossTrack>
+	<CrossDest>0</CrossDest>
+	<CrossPlcNum>0</CrossPlcNum>
+	<TwinCheck>0</TwinCheck>
+	<HSTrack>0</HSTrack>
+	<Dests>
+		<Dest DestPos="108" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="228" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="508" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="628" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="102" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="222" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="503" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="623" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="106" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="226" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="506" NextPlcNum="0" NextTrack="0"/>
+		<Dest DestPos="626" NextPlcNum="0" NextTrack="0"/>
+	</Dests>
+</Config>

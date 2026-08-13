@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>
+	<Equipment class="CCv" number="21" device="CV_E21" name="21GR" cid="1201010000">
+		<Tracks cid="1201010000">
+			<Track	number="21001"	tabnumber="1"/>	
+			<Track	number="21002"	tabnumber="1">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>		
+			<Track	number="21003"	tabnumber="1"/>	
+			<Track	number="21004"	tabnumber="1">
+				<Status>
+					<ScRetHS name="21G_SC#01_#01"/>
+				</Status>
+			</Track>
+			<Track	number="21005"	tabnumber="1">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>	
+			<Track	number="21006"	tabnumber="1"/>	
+			<Track	number="21007"	tabnumber="1"/>	
+			<Track	number="21008"	tabnumber="1"/>	
+			<Track	number="21009"	tabnumber="1"/>	
+			<Track	number="21010"	tabnumber="1"/>	
+			<Track	number="21011"	tabnumber="1"/>	
+			<Track	number="21012"	tabnumber="1">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>	
+			<Track	number="21013"	tabnumber="1"/>	
+			<Track	number="21014"	tabnumber="1">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="01015"	tabnumber="1">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>	
+			<Track	number="21016"	tabnumber="1"/>	
+			<Track	number="21017"	tabnumber="1"/>	
+			<Track	number="21018"	tabnumber="1"/>	
+			<Track	number="21019"	tabnumber="1"/>	
+			<Track	number="21020"	tabnumber="1"/>	
+			<Track	number="21021"	tabnumber="1"/>	
+			<Track	number="21022"	tabnumber="1">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>		
+			<Track	number="21023"	tabnumber="1"/>	
+			<Track	number="21024"	tabnumber="1">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="21025"	tabnumber="1">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track	number="21026"	tabnumber="1"/>	
+			<Track	number="21027"	tabnumber="1"/>	
+			<Track	number="21028"	tabnumber="1"/>	
+			<Track	number="21029"	tabnumber="1"/>	
+			<Track	number="21030"	tabnumber="1"/>	
+			<Track	number="21031"	tabnumber="1">
+				<Status>
+					<RtvDepartHS/>
+					<StoStation name="전면부 입고대"/>
+				</Status>
+			</Track>
+			<Track	number="21032"	tabnumber="1">
+				<Status>					
+					<RtvArriveHS/>
+					<RetStation name="전면부 출고대"/>
+				</Status>
+			</Track>	
+			<Track	number="21033"	tabnumber="1"/>	
+			<Track	number="21034"	tabnumber="1"/>	
+			<Track	number="21035"	tabnumber="1"/>	
+			<Track	number="21036"	tabnumber="1"/>	
+			<Track	number="21037"	tabnumber="1"/>	
+			<Track	number="21038"	tabnumber="1"/>	
+			<Track	number="21039"	tabnumber="1"/>	
+			<Track	number="21040"	tabnumber="1"/>	
+			<Track	number="21041"	tabnumber="1"/>	
+			<Track	number="21042"	tabnumber="1"/>	
+			<Track	number="21043"	tabnumber="1"/>	
+			<Track	number="21044"	tabnumber="1"/>	
+			<Track	number="21045"	tabnumber="1"/>	
+			<Track	number="21046"	tabnumber="1"/>	
+			<Track	number="21047"	tabnumber="1"/>	
+			<Track	number="21048"	tabnumber="1"/>	
+			<Track	number="21049"	tabnumber="1"/>	
+			<Track	number="21050"	tabnumber="1"/>	
+			<Track	number="21051"	tabnumber="1"/>	
+			<Track	number="21052"	tabnumber="1"/>	
+			<Track	number="21053"	tabnumber="1"/>	
+			<Track	number="21054"	tabnumber="1"/>	
+			<Track	number="21055"	tabnumber="1"/>	
+			<Track	number="21056"	tabnumber="1"/>	
+			<Track	number="21057"	tabnumber="1"/>	
+			<Track	number="21058"	tabnumber="1"/>	
+			<Track	number="21059"	tabnumber="1"/>	
+			<Track	number="21060"	tabnumber="1"/>	
+			<Track	number="21061"	tabnumber="1"/>	
+			<Track	number="21062"	tabnumber="1"/>	
+			<Track	number="21063"	tabnumber="1"/>	
+			<Track	number="21064"	tabnumber="1"/>	
+			<Track	number="21065"	tabnumber="1"/>	
+			<Track	number="21066"	tabnumber="1"/>	
+			<Track	number="21067"	tabnumber="1"/>	
+			<Track	number="21068"	tabnumber="1"/>	
+			<Track	number="21069"	tabnumber="1"/>	
+			<Track	number="21070"	tabnumber="1"/>	
+			<Track	number="21071"	tabnumber="1"/>	
+			<Track	number="21072"	tabnumber="1"/>	
+			<Track	number="21073"	tabnumber="1"/>	
+			<Track	number="21074"	tabnumber="1"/>	
+			<Track	number="21075"	tabnumber="1"/>	
+			<Track	number="21076"	tabnumber="1"/>	
+			<Track	number="21077"	tabnumber="1"/>	
+			<Track	number="21078"	tabnumber="1"/>	
+			<Track	number="21079"	tabnumber="1"/>	
+			<Track	number="21080"	tabnumber="1"/>	
+			<Track	number="21081"	tabnumber="1"/>	
+			<Track	number="21082"	tabnumber="1"/>	
+			<Track	number="21083"	tabnumber="1"/>	
+			<Track	number="21084"	tabnumber="1"/>	
+			<Track	number="21085"	tabnumber="1"/>	
+			<Track	number="21086"	tabnumber="1"/>	
+			<Track	number="21087"	tabnumber="1"/>	
+			<Track	number="21088"	tabnumber="1"/>	
+			<Track	number="21089"	tabnumber="1"/>	
+			<Track	number="21090"	tabnumber="1"/>	
+			<Track	number="21091"	tabnumber="1"/>	
+			<Track	number="21092"	tabnumber="1"/>	
+			<Track	number="21093"	tabnumber="1"/>	
+			<Track	number="21094"	tabnumber="1"/>	
+			<Track	number="21095"	tabnumber="1"/>	
+			<Track	number="21096"	tabnumber="1"/>	
+			<Track	number="21097"	tabnumber="1"/>	
+			<Track	number="21098"	tabnumber="1"/>	
+			<Track	number="21099"	tabnumber="1"/>	
+			<Track	number="21100"	tabnumber="1"/>	
+			<Track	number="21101"	tabnumber="1">	
+				<Status>					
+					<StoStation name="후면부 입고대 #1"/>
+				</Status>
+			</Track>	
+
+			<Track	number="21102"	tabnumber="1"/>	
+			<Track	number="21103"	tabnumber="1">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>	
+			<Track	number="21104"	tabnumber="1">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="21105"	tabnumber="1"/>	
+			<Track	number="21106"	tabnumber="1">	
+				<Status>					
+					<StoStation name="후면부 출고대 #1"/>
+				</Status>
+			</Track>	
+			<Track	number="21107"	tabnumber="1"/>	
+			<Track	number="21108"	tabnumber="1"/>	
+			<Track	number="21109"	tabnumber="1"/>	
+			<Track	number="21110"	tabnumber="1"/>	
+			<Track	number="21111"	tabnumber="1">	
+				<Status>					
+					<StoStation name="후면부 입고대 #2"/>
+				</Status>
+			</Track>	
+			<Track	number="21112"	tabnumber="1"/>	
+			<Track	number="21113"	tabnumber="1">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>		
+			<Track	number="21114"	tabnumber="1">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="21115"	tabnumber="1"/>	
+			<Track	number="21116"	tabnumber="1">	
+				<Status>					
+					<StoStation name="후면부 출고대 #2"/>
+				</Status>
+			</Track>	
+			<Track	number="21117"	tabnumber="1"/>	
+			<Track	number="21118"	tabnumber="1"/>	
+			<Track	number="21119"	tabnumber="1"/>	
+			<Track	number="21120"	tabnumber="1"/>	
+			<Track	number="21121"	tabnumber="1">	
+				<Status>					
+					<StoStation name="후면부 입고대 #2"/>
+				</Status>
+			</Track>	
+			<Track	number="21122"	tabnumber="1"/>	
+			<Track	number="21123"	tabnumber="1">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>	
+			<Track	number="21124"	tabnumber="1">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>	
+			<Track	number="21125"	tabnumber="1"/>	
+			<Track	number="21126"	tabnumber="1">	
+				<Status>					
+					<StoStation name="후면부 출고대 #3"/>
+				</Status>
+			</Track>	
+			<Track	number="21127"	tabnumber="1"/>	
+			<Track	number="21128"	tabnumber="1"/>	
+			<Track	number="21129"	tabnumber="1"/>	
+			<Track	number="21130"	tabnumber="1"/>	
+			<Track	number="21131"	tabnumber="1"/>	
+			<Track	number="21132"	tabnumber="1"/>	
+			<Track	number="21133"	tabnumber="1"/>	
+			<Track	number="21134"	tabnumber="1"/>	
+			<Track	number="21135"	tabnumber="1"/>	
+			<Track	number="21136"	tabnumber="1"/>	
+			<Track	number="21137"	tabnumber="1"/>	
+			<Track	number="21138"	tabnumber="1"/>	
+			<Track	number="21139"	tabnumber="1"/>	
+			<Track	number="21140"	tabnumber="1"/>	
+			<Track	number="21141"	tabnumber="1"/>	
+			<Track	number="21142"	tabnumber="1"/>	
+			<Track	number="21143"	tabnumber="1"/>	
+			<Track	number="21144"	tabnumber="1"/>	
+			<Track	number="21145"	tabnumber="1"/>	
+			<Track	number="21146"	tabnumber="1"/>	
+			<Track	number="21147"	tabnumber="1"/>	
+			<Track	number="21148"	tabnumber="1"/>	
+			<Track	number="21149"	tabnumber="1"/>	
+			<Track	number="21150"	tabnumber="1"/>	
+		</Tracks>
+	</Equipment>
+
+	<Equipment class="CSc" number="1" device="SC_E29601" name="완제품 1호기" forktype="0" floorcount="1" cid="1202029601">
+		<ScStation id="29601" name="완제품 S/C#1" bankpos="3" bank="0" bay="0" level="0"/>
+		<StoHS>
+			<HS pos="1" tid="21002" PassTr="0" pair="0" stair="1"/>
+			<HS pos="3" tid="21003" PassTr="0" pair="0" stair="1"/>
+		</StoHS>
+		<RetHS>
+			<HS pos="2" tid="21004" deadlock="0" pair="0" stair="1">
+				<DestST from="21031" to="12031" desc="By-Pass"/>
+			</HS>
+			<HS pos="4" tid="21104" deadlock="0" pair="0" stair="1">
+				<DestST from="21106" to="12106" desc="By-Pass"/>
+			</HS>
+		</RetHS>
+	</Equipment>
+
+	<Equipment class="CSc" number="2" device="SC_E29602" name="완제품 2호기" forktype="0" floorcount="1" cid="1202029602">
+		<ScStation id="29602" name="완제품 S/C#2" bankpos="3" bank="0" bay="0" level="0"/>
+		<StoHS>
+			<HS pos="1" tid="21012" PassTr="0" pair="0" stair="1"/>
+			<HS pos="3" tid="21113" PassTr="0" pair="0" stair="1"/>
+		</StoHS>
+		<RetHS>
+			<HS pos="2" tid="21014" deadlock="0" pair="0" stair="1">
+				<DestST from="21031" to="12031" desc="By-Pass"/>
+			</HS>
+			<HS pos="4" tid="21114" deadlock="0" pair="0" stair="1">
+				<DestST from="21116" to="12116" desc="By-Pass"/>
+			</HS>
+		</RetHS>
+	</Equipment>
+
+	<Equipment class="CSc" number="3" device="SC_E29603" name="완제품 3호기" forktype="0" floorcount="1" cid="1202029603">
+		<ScStation id="29603" name="완제품 S/C#3" bankpos="3" bank="0" bay="0" level="0"/>
+		<StoHS>
+			<HS pos="1" tid="21022" PassTr="0" pair="0" stair="1"/>
+			<HS pos="3" tid="21123" PassTr="0" pair="0" stair="1"/>
+		</StoHS>
+		<RetHS>
+			<HS pos="2" tid="21024" deadlock="0" pair="0" stair="1">
+				<DestST from="21031" to="12031" desc="By-Pass"/>
+			</HS>
+			<HS pos="4" tid="21124" deadlock="0" pair="0" stair="1">
+				<DestST from="21126" to="12126" desc="By-Pass"/>
+			</HS>
+		</RetHS>
+	</Equipment>
+
+
+
+  <Equipment class="CRtv" number="1" device="RTV_E01" name="RTV 1호기" cid="1203032001">
+    <RtvStation id="32001" name="완제품 RTV#1"/>
+    <DepartHS>
+      <HS pos=  "1" tid="21032" reject="0" main="0"/>
+      <HS pos=  "3" tid="21005" reject="0" main="0"/>
+      <HS pos=  "5" tid="21015" reject="0" main="0"/>
+      <HS pos=  "7" tid="21025" reject="0" main="0"/>
+    </DepartHS>
+    <ArriveHS>
+      <HS pos=  "2" tid="21031" reject="0" main="0">
+        <DestST from="21031" to="21031" desc="1"/>
+      </HS>
+      <HS pos=  "4" tid="21001" reject="0" main="0">
+        <DestST from="29601" to="29601" desc="2"/>
+        <DestST from="21106" to="21106" desc="2"/>
+      </HS>
+      <HS pos=  "6" tid="21011" reject="0" main="0">
+        <DestST from="29602" to="29602" desc="3"/>
+        <DestST from="21116" to="21116" desc="3"/>
+      </HS>
+      <HS pos=  "8" tid="21021" reject="0" main="0">
+        <DestST from="29603" to="29603" desc="4"/>
+        <DestST from="21126" to="21126" desc="4"/>
+      </HS>
+    <Position>
+      <Dug pos="0"  EcsRailPos="0"/>
+      <Dug pos="1"  EcsRailPos="1"/>
+      <Dug pos="2"  EcsRailPos="2"/>
+      <Dug pos="3"  EcsRailPos="3"/>
+      <Dug pos="4"  EcsRailPos="4"/>
+      <Dug pos="5"  EcsRailPos="5"/>
+      <Dug pos="6"  EcsRailPos="6"/>
+      <Dug pos="7"  EcsRailPos="7"/>
+      <Dug pos="8"  EcsRailPos="8"/>
+    </Position>
+	   </ArriveHS>
+  </Equipment>
+
+
+	<Equipment class="CBcr" number="1" device="BCR_E1" name="Complete Product BCR #1" cid="1207021001" type="S" tabnumber="1" >
+		<BcrTrack tid="21031"/>									 	         
+	</Equipment>									  
+	<Equipment class="CBcr" number="2" device="BCR_E2" name="Complete Product BCR #2" cid="1117021002" type="S" tabnumber="1" >
+		<BcrTrack tid="21121"/>									 	         
+	</Equipment>												 	         
+	<Equipment class="CBcr" number="3" device="BCR_E3" name="Complete Product BCR #3" cid="1117021003" type="S" tabnumber="1" >
+		<BcrTrack tid="21111"/>									 	         
+	</Equipment>												 	         
+	<Equipment class="CBcr" number="4" device="BCR_E4" name="Complete Product BCR #4" cid="1117021004" type="S" tabnumber="1" >
+		<BcrTrack tid="21004"/>									 	         
+	</Equipment>					
+</ECS>

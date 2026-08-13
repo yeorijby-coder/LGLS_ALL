@@ -1,0 +1,558 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: EcsLib - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x412 /fo"../../Bin/Debug/EcsLib/EcsLib.res" /d "_DEBUG" /d "_AFXDLL" "D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\EcsLib.rc"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP75D6.tmp" with contents
+[
+/nologo /MDd /W3 /GX /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_WINDLL" /D "_AFXDLL" /D "_MBCS" /D "_AFXEXT" /FR"../../Bin/Debug/EcsLib/" /Fp"../../Bin/Debug/EcsLib/EcsLib.pch" /Yu"stdafx.h" /Fo"../../Bin/Debug/EcsLib/" /Fd"../../Bin/Debug/EcsLib/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ColorPicker.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\DialogResize.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\Dib.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\EcsLib.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\EditEx.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\FooButton.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\Label.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\LogoBandWnd.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\MultiCastSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ResizableDialog.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ScrollDialog.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\SxButton.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ToolBarEx.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\XmlParser.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ButtonST\BCMenu.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ButtonST\BtnST.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ButtonST\CeXDib.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ButtonST\ShadeButtonST.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\ButtonST\WinXPButtonST.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\MenuXP\KeyHelper.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\MenuXP\MenuXP.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP75D6.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP75D7.tmp" with contents
+[
+/nologo /MDd /W3 /GX /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_WINDLL" /D "_AFXDLL" /D "_MBCS" /D "_AFXEXT" /FR"../../Bin/Debug/EcsLib/" /Fp"../../Bin/Debug/EcsLib/EcsLib.pch" /Yc"stdafx.h" /Fo"../../Bin/Debug/EcsLib/" /Fd"../../Bin/Debug/EcsLib/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsLib\StdAfx.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP75D7.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP75D8.tmp" with contents
+[
+/nologo /subsystem:windows /dll /incremental:yes /pdb:"../../Bin/Debug/EcsLib.pdb" /debug /machine:I386 /def:".\EcsLib.def" /out:"../../Bin/Debug/EcsLib.dll" /implib:"../../Bin/Debug/EcsLib.lib" /pdbtype:sept 
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\ColorPicker.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\DialogResize.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\Dib.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\EcsLib.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\EditEx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\FooButton.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\Label.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\LogoBandWnd.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\MultiCastSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\ResizableDialog.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\ScrollDialog.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\StdAfx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\SxButton.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\ToolBarEx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\XmlParser.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\BCMenu.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\BtnST.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\CeXDib.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\ShadeButtonST.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\WinXPButtonST.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\KeyHelper.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\MenuXP.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib\EcsLib.res
+]
+Creating command line "link.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP75D8.tmp""
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+ColorPicker.cpp
+DialogResize.cpp
+Dib.cpp
+EcsLib.cpp
+EditEx.cpp
+FooButton.cpp
+Label.cpp
+LogoBandWnd.cpp
+MultiCastSk.cpp
+ResizableDialog.cpp
+ScrollDialog.cpp
+SxButton.cpp
+ToolBarEx.cpp
+XmlParser.cpp
+BCMenu.cpp
+BtnST.cpp
+CeXDib.cpp
+ShadeButtonST.cpp
+WinXPButtonST.cpp
+KeyHelper.cpp
+Generating Code...
+Compiling...
+MenuXP.cpp
+Generating Code...
+Linking...
+   Creating library ../../Bin/Debug/EcsLib.lib and object ../../Bin/Debug/EcsLib.exp
+<h3>
+--------------------Configuration: XmlLib - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x412 /fo"../../Bin/Debug/XmlLib/XmlLib.res" /d "_DEBUG" /d "_AFXDLL" "D:\project\yuyu\Reference\HostSim\SOURCE\Lib\XmlLib\XmlLib.rc"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8430.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_WINDLL" /D "_AFXDLL" /D "_MBCS" /D "_AFXEXT" /Fp"../../Bin/Debug/XmlLib/XmlLib.pch" /Yu"stdafx.h" /Fo"../../Bin/Debug/XmlLib/" /Fd"../../Bin/Debug/XmlLib/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\XmlLib\Convert.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\XmlLib\Property.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\XmlLib\XmlDom.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\XmlLib\XmlLib.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8430.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8431.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_WINDLL" /D "_AFXDLL" /D "_MBCS" /D "_AFXEXT" /Fp"../../Bin/Debug/XmlLib/XmlLib.pch" /Yc"stdafx.h" /Fo"../../Bin/Debug/XmlLib/" /Fd"../../Bin/Debug/XmlLib/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\XmlLib\StdAfx.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8431.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8442.tmp" with contents
+[
+/nologo /subsystem:windows /dll /incremental:yes /pdb:"../../Bin/Debug/XmlLibD.pdb" /debug /machine:I386 /def:".\XmlLibD.def" /out:"../../Bin/Debug/XmlLibD.dll" /implib:"../../Bin/Debug/XmlLibD.lib" /pdbtype:sept 
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLib\Convert.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLib\Property.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLib\StdAfx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLib\XmlDom.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLib\XmlLib.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLib\XmlLib.res
+]
+Creating command line "link.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8442.tmp""
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+Convert.cpp
+Property.cpp
+XmlDom.cpp
+XmlLib.cpp
+Generating Code...
+Linking...
+   Creating library ../../Bin/Debug/XmlLibD.lib and object ../../Bin/Debug/XmlLibD.exp
+<h3>
+--------------------Configuration: DciLib - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x412 /fo"../../Bin/Debug/DciLib/DciLib.res" /d "_DEBUG" /d "_AFXDLL" "D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciLib.rc"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8DD8.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /I "../XmlLib" /I "../../XmlLib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_WINDLL" /D "_AFXDLL" /D "_MBCS" /D "_AFXEXT" /FR"../../Bin/Debug/DciLib/" /Fp"../../Bin/Debug/DciLib/DciLib.pch" /Yu"stdafx.h" /Fo"../../Bin/Debug/DciLib/" /Fd"../../Bin/Debug/DciLib/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\ControlGroup.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciButtonCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciControl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciGridCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciLib.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciMaster.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciOpboxCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciProperty.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciRackCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciRvCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciStaticCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciStatusCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\DciTrackCtrl.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8DD8.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8DD9.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /I "../XmlLib" /I "../../XmlLib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_WINDLL" /D "_AFXDLL" /D "_MBCS" /D "_AFXEXT" /FR"../../Bin/Debug/DciLib/" /Fp"../../Bin/Debug/DciLib/DciLib.pch" /Yc"stdafx.h" /Fo"../../Bin/Debug/DciLib/" /Fd"../../Bin/Debug/DciLib/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Lib\DciLib\StdAfx.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8DD9.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8DDA.tmp" with contents
+[
+/nologo /subsystem:windows /dll /incremental:yes /pdb:"../../Bin/Debug/DciLibD.pdb" /debug /machine:I386 /def:".\DciLibD.def" /out:"../../Bin/Debug/DciLibD.dll" /implib:"../../Bin/Debug/DciLibD.lib" /pdbtype:sept 
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\ControlGroup.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciButtonCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciControl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciGridCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciLib.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciMaster.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciOpboxCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciProperty.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciRackCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciRvCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciStaticCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciStatusCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciTrackCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\StdAfx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLib\DciLib.res
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLibD.lib
+]
+Creating command line "link.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP8DDA.tmp""
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+ControlGroup.cpp
+DciButtonCtrl.cpp
+DciControl.cpp
+DciGridCtrl.cpp
+DciLib.cpp
+DciMaster.cpp
+DciOpboxCtrl.cpp
+DciProperty.cpp
+DciRackCtrl.cpp
+DciRvCtrl.cpp
+DciStaticCtrl.cpp
+DciStatusCtrl.cpp
+DciTrackCtrl.cpp
+Generating Code...
+Linking...
+   Creating library ../../Bin/Debug/DciLibD.lib and object ../../Bin/Debug/DciLibD.exp
+<h3>
+--------------------Configuration: Ecs - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x412 /fo"../../Bin/Debug/EcsSv/Ecs.res" /d "_DEBUG" /d "_AFXDLL" "D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Ecs.rc"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE5.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /I "../EcsLib" /I "../EcsLib/ButtonST" /I "../../Lib/XmlLib" /I "../../Lib/DciLib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"../../Bin/Debug/EcsSv/" /Fp"../../Bin/Debug/EcsSv/Ecs.pch" /Yu"stdafx.h" /Fo"../../Bin/Debug/EcsSv/" /Fd"../../Bin/Debug/EcsSv/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\AsyncSocketEx.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ByteArrayEx.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ChangePasswordDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\CmdMsg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Config.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ConfigPptSheet.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ConfigStdPage.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ConfigSub1Page.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ConfigSub2Page.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ConfigSub3Page.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Cv.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\CvDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\CvFx.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\CvInfo.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\DataSettingDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Debuger.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Ecs.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\EcsDefine.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\EcsDoc.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\EcsLayout.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\EcsView.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Equipment.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Host.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Info.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\InterfaceSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\InterfaceThreadSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Job.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\JobDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\JobItem.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\JobItemDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\JobOfflineDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\JobTestDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Lgv.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\LgvcDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\LgvDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\LgvInfo.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\LgvManualDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\LgvVehicle.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Lib.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ListenerSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Log.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\LogDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Login.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MainFrm.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MelsecEthernetSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MelsecEthernetThreadSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MelsecFXEthernetSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MelsecSerialSk.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MessageDisplayDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MonitorListener.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\MonitorServer.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\PasswordDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\PortEthernetDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\PortObject.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\PortSerialDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ScDongJin.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ScDongJinDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ScDongJinManualDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ScInfo.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ScRelocationDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\Splash.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\spreadsheet.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\StartupTip.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\StationInfo.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\TrackHS.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\TrackInfo.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\UserManagerDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\WarningDlg.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ReportCtrl.cpp"
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\ReportHeader.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE5.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE6.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /I "../EcsLib" /I "../EcsLib/ButtonST" /I "../../Lib/XmlLib" /I "../../Lib/DciLib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"../../Bin/Debug/EcsSv/" /Fo"../../Bin/Debug/EcsSv/" /Fd"../../Bin/Debug/EcsSv/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\msjexhnd.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE6.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE7.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /I "../EcsLib" /I "../EcsLib/ButtonST" /I "../../Lib/XmlLib" /I "../../Lib/DciLib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"../../Bin/Debug/EcsSv/" /Fp"../../Bin/Debug/EcsSv/Ecs.pch" /Yc"stdafx.h" /Fo"../../Bin/Debug/EcsSv/" /Fd"../../Bin/Debug/EcsSv/" /FD /GZ /c 
+"D:\project\yuyu\Reference\HostSim\SOURCE\Source\EcsSv\StdAfx.cpp"
+]
+Creating command line "cl.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE7.tmp"" 
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE8.tmp" with contents
+[
+/nologo /subsystem:windows /incremental:yes /pdb:"../../Bin/Debug/Ecs.pdb" /debug /machine:I386 /out:"../../Bin/Debug/Ecs.exe" /pdbtype:sept 
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\AsyncSocketEx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ByteArrayEx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ChangePasswordDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CmdMsg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Config.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigPptSheet.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigStdPage.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigSub1Page.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigSub2Page.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigSub3Page.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Cv.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CvDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CvFx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CvInfo.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\DataSettingDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Debuger.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Ecs.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsDefine.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsDoc.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsLayout.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsView.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Equipment.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Host.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Info.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\InterfaceSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\InterfaceThreadSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Job.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobItem.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobItemDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobOfflineDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobTestDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Lgv.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvcDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvInfo.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvManualDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvVehicle.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Lib.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ListenerSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Log.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LogDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Login.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MainFrm.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecEthernetSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecEthernetThreadSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecFXEthernetSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecSerialSk.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MessageDisplayDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MonitorListener.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MonitorServer.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\msjexhnd.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PasswordDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PortEthernetDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PortObject.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PortSerialDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScDongJin.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScDongJinDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScDongJinManualDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScInfo.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScRelocationDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Splash.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\spreadsheet.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\StartupTip.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\StationInfo.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\StdAfx.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\TrackHS.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\TrackInfo.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\UserManagerDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\WarningDlg.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ReportCtrl.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ReportHeader.obj
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Ecs.res
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsLib.lib
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\DciLibD.lib
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\XmlLibD.lib
+]
+Creating command line "link.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSP9BE8.tmp""
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+AsyncSocketEx.cpp
+ByteArrayEx.cpp
+ChangePasswordDlg.cpp
+CmdMsg.cpp
+Config.cpp
+ConfigPptSheet.cpp
+ConfigStdPage.cpp
+ConfigSub1Page.cpp
+ConfigSub2Page.cpp
+ConfigSub3Page.cpp
+Cv.cpp
+CvDlg.cpp
+CvFx.cpp
+CvInfo.cpp
+DataSettingDlg.cpp
+Debuger.cpp
+Ecs.cpp
+EcsDefine.cpp
+EcsDoc.cpp
+EcsLayout.cpp
+Generating Code...
+Compiling...
+EcsView.cpp
+Equipment.cpp
+Host.cpp
+Info.cpp
+InterfaceSk.cpp
+InterfaceThreadSk.cpp
+Job.cpp
+JobDlg.cpp
+JobItem.cpp
+JobItemDlg.cpp
+JobOfflineDlg.cpp
+JobTestDlg.cpp
+Lgv.cpp
+LgvcDlg.cpp
+LgvDlg.cpp
+LgvInfo.cpp
+LgvManualDlg.cpp
+LgvVehicle.cpp
+Lib.cpp
+ListenerSk.cpp
+Generating Code...
+Compiling...
+Log.cpp
+LogDlg.cpp
+Login.cpp
+MainFrm.cpp
+MelsecEthernetSk.cpp
+MelsecEthernetThreadSk.cpp
+MelsecFXEthernetSk.cpp
+MelsecSerialSk.cpp
+MessageDisplayDlg.cpp
+MonitorListener.cpp
+MonitorServer.cpp
+PasswordDlg.cpp
+PortEthernetDlg.cpp
+PortObject.cpp
+PortSerialDlg.cpp
+ScDongJin.cpp
+ScDongJinDlg.cpp
+ScDongJinManualDlg.cpp
+ScInfo.cpp
+ScRelocationDlg.cpp
+Generating Code...
+Compiling...
+Splash.cpp
+spreadsheet.cpp
+StartupTip.cpp
+StationInfo.cpp
+TrackHS.cpp
+TrackInfo.cpp
+UserManagerDlg.cpp
+WarningDlg.cpp
+ReportCtrl.cpp
+ReportHeader.cpp
+Generating Code...
+Compiling...
+msjexhnd.cpp
+Linking...
+Creating temporary file "C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSPF3AE.tmp" with contents
+[
+/nologo /o"../../Bin/Debug/Ecs.bsc" 
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\StdAfx.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\AsyncSocketEx.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ByteArrayEx.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ChangePasswordDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CmdMsg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Config.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigPptSheet.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigStdPage.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigSub1Page.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigSub2Page.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ConfigSub3Page.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Cv.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CvDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CvFx.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\CvInfo.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\DataSettingDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Debuger.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Ecs.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsDefine.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsDoc.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsLayout.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\EcsView.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Equipment.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Host.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Info.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\InterfaceSk.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\InterfaceThreadSk.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Job.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobItem.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobItemDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobOfflineDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\JobTestDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Lgv.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvcDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvInfo.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvManualDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LgvVehicle.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Lib.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ListenerSk.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Log.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\LogDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Login.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MainFrm.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecEthernetSk.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecEthernetThreadSk.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecFXEthernetSk.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MelsecSerialSk.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MessageDisplayDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MonitorListener.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\MonitorServer.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\msjexhnd.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PasswordDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PortEthernetDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PortObject.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\PortSerialDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScDongJin.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScDongJinDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScDongJinManualDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScInfo.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ScRelocationDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\Splash.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\spreadsheet.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\StartupTip.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\StationInfo.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\TrackHS.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\TrackInfo.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\UserManagerDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\WarningDlg.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ReportCtrl.sbr
+\project\yuyu\Reference\HostSim\SOURCE\Bin\Debug\EcsSv\ReportHeader.sbr]
+Creating command line "bscmake.exe @"C:\Users\BOK-YE~1.JUN\AppData\Local\Temp\RSPF3AE.tmp""
+Creating browse info file...
+<h3>Output Window</h3>
+
+
+
+<h3>Results</h3>
+Ecs.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

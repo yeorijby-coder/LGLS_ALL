@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────
+# LGLS Renewal .gitignore
+#   원칙: 소스/설정/리소스(ini, tsv, xml, png, bmp, skin)는 유지하고
+#         재빌드 가능한 산출물과 대용량 중간파일만 제외한다.
+# ─────────────────────────────────────────────────────────────
+
+# Visual Studio 캐시/중간산출물
+.vs/
+ipch/
+*.obj
+*.pch
+*.ipch
+*.pdb
+*.idb
+*.ilk
+*.exp
+*.res
+*.sbr
+*.bsc
+*.cod
+*.tlog
+*.lastbuildstate
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.aps
+*.ncb
+*.suo
+*.user
+*.cache
+
+# C# 중간산출물 / NuGet
+obj/
+packages/
+
+# 실행파일 (재빌드 가능. dll/lib/ocx 는 의존성이라 유지)
+*.exe
+
+# 로그 / 런타임 상태
+*.log
+Log/
+LOG/
+eqp_state.txt
+
+# 수작업 백업 파일 (이제 git 이 이력을 관리)
+*bak
+*.bak
+*.orig
+
+# 임시 파일
+*.tmp
+~$*
+Thumbs.db
+
+# 압축 백업/재생성물
+*.zip
+*.7z
+*.rar
+*.map

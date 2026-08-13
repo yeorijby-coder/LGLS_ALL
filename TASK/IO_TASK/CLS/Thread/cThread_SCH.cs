@@ -1,0 +1,3308 @@
+﻿// 작성자   : LG생명과학 WCS Scheduler
+// 작성일   : 2026-06-23 (2026-06-27 기존 JOB_MST 스키마 통합)
+// 개요     : PPT 시나리오(ECS-분석-PLC사양및시나리오_LG생명과학_V0.9) 기반 자동 반송 Scheduler
+//
+//  ※ 이번 현장 구성 (단순 반송):
+//     - MES/CEID 통신 없음, CELL(로케이션) 관리 없음, 바코드/공파레트 없음
+//     - JOB(작업)은 외부/상위 시스템이 JOB_MST 에 직접 INSERT 하며,
+//       START_POS / DEST_POS 가 이미 채워져 들어온다. (스케줄러는 작업을 생성하지 않는다)
+//     - 따라서 본 스케줄러는 "JOB_MST 의 구동대기 작업 + 유휴 설비 → 설비 명령 발행
+//       + 완료 감지 + 상태 전이" 만 담당한다.
+//
+//  ※ DB : PostgreSQL (방언은 DbLang 사용). 파라미터는 :PARAM, 날짜는 DbLang.SYSDATE(NOW()).
+//  ※ 사용 테이블 : JOB_MST(작업), CV_DATA(컨베이어), SC_DATA_LGLS(스태커크레인), RTV_DATA_LGLS(RGV)
+//     - 설비 상태는 _RD(PLC→DB readback) 컬럼, 명령은 _OD(DB→PLC) 컬럼 + OD_RQ_YN 플래그로 핸드셰이크.
+//     - OD_RQ_YN='N' = 유휴(명령 수신 가능), 명령 발행 시 _OD 채우고 OD_RQ_YN='Y'.
+//       (PLC↔DB TASK프로그램가 명령 반영 후 OD_RQ_YN 을 'N'으로 되돌린다)
+//
+//  ※ 기존 설비 스레드 cThread_CV / cThread_SC / cThread_R 의 SQL 패턴을 인용하여 작성.
+//     (해당 스레드는 현장 구성에서 빌드 제외 - DB 구조 참고용으로만 보존)
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+using System.Data;
+using NpgsqlTypes;
+using Samoh_Lib;
+
+namespace TSK_COMM_IOSCH
+{
+    /// <summary>
+    /// LG생명과학 물류창고 자동 반송 Scheduler Thread (JOB_MST 스키마)
+    /// - [LGLS] 신규 접수 : WCS_TASK_HOST INSERT(JOB_STATUS='99') → 입고 '10' / 출고 '20' 라우팅
+    /// - C/V 구동 : 입고대/출고대 팔레트 + 구동대기 작업(JOB_STATUS='10') → CV 명령 발행
+    /// - S/C 반송 : 구동대기 작업(JOB_STATUS='20') + 유휴 S/C → 이송 명령 발행
+    ///              ([CNF] SC_AUTO_COMPLETE=1 이면 TASK프로그램 부재 시뮬레이션으로 자동완주)
+    /// - RGV 반송 : 구동대기 작업 + 유휴 RGV → 이송 명령 발행 (반송 체인 미연결 - 참고용)
+    /// - [LGLS] 2단계 처리 체인 : 입고 CV→SC(최종 '29'), 출고 SC→CV(최종 '19')
+    ///          (19/29 는 WCS_TASK_HOST 가 F(작업완료) 보고로 소비)
+    /// </summary>
+    public class cThread_SCH : IOSchDB
+    {
+        #region 변수 선언
+        private int      m_nId        = 0;
+        public  Thread   m_Thread;
+        public  SYS_MAIN m_Main;
+        private bool     m_Open;
+        public  bool     IsOpen       { get { return m_Open; } set { m_Open = value; } }
+        public  string   m_strLogName = "";
+
+        public PsMsgView callPsMsgView = null;
+
+        // 설비별 직전 발행 작업 추적 (동일 작업 중복 발행 방지)
+        private Dictionary<string, string> m_dicPrevCV  = new Dictionary<string, string>();
+        private Dictionary<string, string> m_dicPrevSC  = new Dictionary<string, string>();
+        private Dictionary<string, string> m_dicPrevRGV = new Dictionary<string, string>();
+        #endregion
+
+        #region 상수 정의
+        // 창고 구분 : cDefApp.eWHTYP.SKI_WH01 = 10
+        private static readonly string SCH_WH_TYP = ((int)cDefApp.eWHTYP.SKI_WH01).ToString();
+
+        // JOB_MST.JOB_STATUS 라이프사이클 (설비별 4단계: 대기 → 지시 → 중 → 완료)
+        //   CV : 대기 10 → 지시 11 → 중 15 → 완료 19
+        //   SC : 대기 20 → 지시 21 → 중 25 → 완료 29
+        //   RGV: 대기 30 → 지시 31 → 중 35 → 완료 39
+        //   (구동완료 후 다음 처리로 핸드오프하려면 Complete* 에서 다음 대기상태로 전이 - ★정책확인)
+        private const string ST_CV_WAIT = "10"; // CV 구동대기
+        private const string ST_CV_CMD  = "11"; // CV 구동지시
+        private const string ST_CV_RUN  = "15"; // CV 구동중
+        private const string ST_CV_DONE = "19"; // CV 구동완료
+
+        private const string ST_SC_WAIT = "20"; // SC 구동대기
+        private const string ST_SC_CMD  = "21"; // SC 구동지시
+        private const string ST_SC_RUN  = "25"; // SC 구동중
+        private const string ST_SC_DONE = "29"; // SC 구동완료
+
+        private const string ST_RGV_WAIT = "30"; // RGV 구동대기
+        private const string ST_RGV_CMD  = "31"; // RGV 구동지시
+        private const string ST_RGV_RUN  = "35"; // RGV 구동중
+        private const string ST_RGV_DONE = "39"; // RGV 구동완료
+
+        // [LGLS] 신규 작업 : WCS_TASK_HOST(WMS I/F)가 JOB_MST 에 INSERT 하는 초기 상태
+        private const string ST_JOB_NEW  = "99";
+
+        // [LGLS] 다단계(2단계 처리) 반송 체인 및 최종 완료 상태
+        //   입고(JOB_TYP='1') : CV(워크스테이션 1xx=START_POS) → SC(크레인 9xx=DEST_POS) → 최종 '29'
+        //   출고(JOB_TYP='2') : SC(크레인 9xx=START_POS) → CV(워크스테이션 1xx=DEST_POS) → 최종 '19'
+        //   ※ WCS_TASK_HOST.GetJobCompleteReport 는 JOB_STATUS 19/29 모두에서 F(작업완료) 보고를
+        //     송신하므로, 중간 처리는 19/29 를 거치지 않고 곧바로 다음 처리 대기상태로 전이한다.
+        //   처리별 설비위치 결정식 (CV_DATA.MC_NO / SC_DATA_LGLS.SC_NO 매칭용)
+        private const string CV_POS_EXPR = "(CASE WHEN JM.JOB_TYP IN ('2','12') THEN JM.DEST_POS ELSE JM.START_POS END)";
+        private const string SC_POS_EXPR = "(CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END)";
+
+        // 명령 발행 주체 표기
+        private const string OD_USER = "IOTASK";
+
+        // [LGLS] SC 자동완주(TASK프로그램 부재 시뮬레이션) 설정 - ENV_IOSCH.INI [CNF] SC_AUTO_COMPLETE
+        //   현 환경에는 SC/RGV PLC TASK프로그램이 없어 SC_DATA_LGLS.OD_RQ_YN='Y' 를 소비할 주체가 없다.
+        //   1(기본) : SC 처리(20→21→25→완료)를 타이머 기반으로 자동 전이하여 시나리오를 완주시킨다.
+        //   0       : 실제 SC TASK프로그램 사용 (DriveSC/RunSC/CompleteSC 핸드셰이크 경로)
+        private bool m_bScAutoComplete = true;
+        private const int SC_AUTO_ACCEPT_MS   = 3500;   // 지시(21) → 중(25) 지연 [LGLS] 라인CV 체류 확보(RTV→SC 인계 분리 가시화)
+        private const int SC_AUTO_COMPLETE_MS = 5000;   // 지시 후 완료까지 지연
+        private readonly Dictionary<string, DateTime> m_dicScIssueDt = new Dictionary<string, DateTime>();
+
+        // [LGLS] RGV 자동완주(TASK프로그램 부재 시뮬레이션) : 입고 CV→SC 사이 RGV 처리를 타이머 전이시켜
+        //   RTV_DATA_LGLS 관측치(위치/적재/색상)를 애니메이션한다. 30(대기)→31(지시)→35(중)→20(SC 인계)
+        private const int IN_DWELL_MS   = 2500;   // [LGLS] 입고대 22 등장 체류(이 시간 후 22→21 이송) — 22 등장이 보이게
+        private const int RGV_ACCEPT_MS = 4200;   // 지시(31) → 중(35) 지연 (22→21 이송·RTV 입고대 도착 후 픽업)
+        private const int RGV_DONE_MS   = 6500;   // 지시 후 드롭 완료까지 지연
+        private Dictionary<string, DateTime> m_dicRgvIssueDt = new Dictionary<string, DateTime>();
+        private readonly HashSet<string> m_setInShifted = new HashSet<string>();   // [LGLS] 입고대 22→21 이송 1회 처리 추적
+        private readonly Dictionary<string, DateTime> m_dicInFeedDt = new Dictionary<string, DateTime>();   // [LGLS] 입고대 파렛트 공급 시각(22 등장 dwell 계산)
+        private readonly Dictionary<string, DateTime> m_dicCvClear = new Dictionary<string, DateTime>();  // [LGLS] 라인CV 트랙 지연 정리
+        private class CvMovePend { public DateTime Due; public string Odd = ""; public string Lugg = ""; public string JobTyp = "2"; public bool NoClear = false; public string OutStn = "122"; }
+        private readonly Dictionary<string, CvMovePend> m_dicCvMove = new Dictionary<string, CvMovePend>();
+        private class OutStnState { public DateTime Due; public int Stage = 0; public string Lugg = ""; public string Odd = ""; public string OutStn = "122"; }
+        private readonly Dictionary<string, OutStnState> m_dicOutStn = new Dictionary<string, OutStnState>();  // [LGLS] RTV 출고대 반출 시퀀스(113→RTV→121→22)  // [LGLS] 출고 라인CV 짝수→홀수 지연 이동
+        // [LGLS] RTV 출고대 반출 대기열(FIFO): RTV 는 1대뿐이라 출고대 반출 경로는 동시에 1건만 돈다.
+        //   홀수(RGV 픽업)트랙에 도착한 출고 화물을 여기 쌓아두고, 출고대 반출 경로가 비면 선입선출로 하나씩 태운다.
+        //   (구코드는 SC 완료 시점에 `if (m_dicOutStn.Count == 0)` 로만 출고대 반출 경로를 만들어서, 선행 화물이
+        //    출고대 반출 경로를 점유 중이면 후속 화물이 출고대 반출 경로를 영영 못 받고 유실됐음.)
+        private class OutPend { public string Lugg = ""; public string Odd = ""; public string OutStn = "122"; }
+        private readonly List<OutPend> m_lstOutPend = new List<OutPend>();
+        // [LGLS 2026-07-30] 출고 반출(RTV) 반송 완료 시각. CompleteCV 가 출고대 실도착(SENSOR+트래킹 일치)을
+        //   폴링/미러 주기 사이에 놓친 채 설비가 배출·데이터클리어까지 끝내면 작업이 15에서 영구 정체(0008/0011/0013 사례)
+        //   → 반출 완료 후 GRACE 경과에도 출고대에서 해당 작업번호가 관측되지 않으면 완료로 인정하는 보강에 사용.
+        private readonly Dictionary<string, DateTime> m_dicOutDoneDt = new Dictionary<string, DateTime>();
+        private const int OUT_MISS_GRACE_MS = 20000;   // 반출완료→출고대 이송(최대 2홉)+배출+클리어+미러 지연을 넉넉히 상회
+        private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
+        private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
+        private readonly Dictionary<string, DateTime> m_dicCraneStepDt = new Dictionary<string, DateTime>();
+        private const int CRANE_STEP_MS = 600;   // [LGLS] 1칸 이동 간격(주행 가시화)
+        #endregion
+
+        #region 생성자
+        public cThread_SCH(int Id)
+        {
+            m_nId = Id;
+        }
+        #endregion
+
+        #region 메시지 출력 헬퍼
+        private void MakeMsg(string msg)
+        {
+            try { callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_NOR); }
+            catch { }
+        }
+        private void MakeMsg_Error(string msg)
+        {
+            try
+            {
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR);
+                if (cDefApp.m_LogQ[m_nId] != null)
+                    cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
+            }
+            catch { }
+        }
+        private void MakeMsg_Imp(string msg)
+        {
+            try
+            {
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_IMP);
+                if (cDefApp.m_LogQ[m_nId] != null)
+                    cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
+            }
+            catch { }
+        }
+
+        // [LGLS 2026-07-24] 계측 로그: WCS_LOG_PGR 에 직접 남겨 sqlcmd 로 관찰(반출 교착 진단용).
+        //   변경 감지 캐시로 같은 메시지 반복 폭증 방지.
+        private readonly Dictionary<string, string> m_dicDbgLast = new Dictionary<string, string>();
+        private void DbgLog(string key, string msg)
+        {
+            try
+            {
+                string prev; m_dicDbgLast.TryGetValue(key, out prev);
+                if (prev == msg) return;
+                m_dicDbgLast[key] = msg;
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.ExcuteNonQry(" INSERT INTO WCS_LOG_PGR (WH_TYP, INS_DT, LOG_SEQ, LUGG_NO, PGR_NM, LOG_KOR) " +
+                                   " VALUES ('" + SCH_WH_TYP + "', GETDATE(), '0', '', 'SCH_DBG', '" + (msg ?? "").Replace("'", "''") + "') ");
+            }
+            catch { }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // 메인 Thread 루프 (200ms 폴링)
+        // ─────────────────────────────────────────────────────────────────
+        #region Thread_Doing
+        public void Thread_Doing(object value)
+        {
+            // DB 연결이 성공할 때까지 재시도 (연결 전에 처리 메서드가 호출되지 않도록)
+            while (!IsDBOpen)
+            {
+                try
+                {
+                    if (DBOpen())
+                    {
+                        MakeMsg("[SCH] DB Open 완료 - LG생명과학 Scheduler 시작 (JOB_MST 스키마)");
+
+                        // [LGLS] SC 자동완주 설정 읽기 (ENV_IOSCH.INI [CNF] SC_AUTO_COMPLETE, 기본 1)
+                        m_bScAutoComplete = (cDefApi.GsReadInitProfileCnf("SC_AUTO_COMPLETE", 1) != 0);
+                        if (m_bScAutoComplete)
+                            MakeMsg_Imp("[SCH] SC 자동완주(TASK프로그램 부재 시뮬레이션) 모드 - [CNF] SC_AUTO_COMPLETE=1");
+                        else
+                            MakeMsg("[SCH] SC 실TASK프로그램 모드 - SC_DATA_LGLS OD_RQ_YN 핸드셰이크 사용");
+                        break;
+                    }
+                    else
+                    {
+                        MakeMsg_Error("[SCH] DB Open 실패 - 5초 후 재시도");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MakeMsg_Error("[SCH] DB Open 오류 - 5초 후 재시도: " + ex.Message);
+                }
+                Thread.Sleep(5000);
+            }
+
+            while (true)
+            {
+                Thread.Sleep(200);
+
+                // _pBdb null 안전 확인
+                if (_pBdb == null)
+                {
+                    try { IsDBOpen = false; DBOpen(); } catch { }
+                    continue;
+                }
+
+                try
+                {
+                    // [LGLS] ── 신규 작업 접수 : WCS_TASK_HOST INSERT('99') → 첫 처리 대기상태로 라우팅
+                    AcceptNewJob(); // 99 → 10(입고:CV먼저) / 20(출고:SC먼저)
+
+                    // [LGLS 2026-07-21] 물리 이관: SC_AUTO_COMPLETE=0(기본) 이면 물리 재현 없이
+                    //   실핸드셰이크만 수행한다 — 이동/하역/공급은 전부 EQP_SIM(설비)이 담당하고,
+                    //   IO_TASK 는 지시(_OD)와 상태 전이만. (자동완주=1 은 구 DB 재현 경로 보존용)
+                    if (m_bScAutoComplete)
+                        FeedInGate();   // [구 경로] 입고대 파렛트 공급/이송 재현 (실경로에선 EQP_SIM 투입)
+
+                    // ── 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 지시)
+                    DriveCV();      // 10 → 11
+                    if (!m_bScAutoComplete)
+                    {
+                        DriveSC();      // 20 → 21 (Vehicle 반송지시 기록)
+                        DriveRGV();     // 30 → 31 (Vehicle 반송지시 기록)
+                    }
+
+                    // ── 구동 중 : PLC 명령 수신(OD_RQ_YN='N') → (지시 → 중)
+                    RunCV();        // 11 → 15
+                    if (!m_bScAutoComplete)
+                    {
+                        RunSC();    // 21 → 25
+                        RunRGV();   // 31 → 35
+                    }
+
+                    // ── 구동 완료 : 설비 완료 신호(_RD) → (중 → 완료 또는 다음 처리 인계)
+                    CompleteCV();   // 15 → 19(출고 최종) / 20(입고 → SC 처리 인계)
+                    CheckLostInboundCargo();   // [LGLS 2026-07-31] 입고 15 화물 유실 감지 → 재발행(10) 복구
+                    if (!m_bScAutoComplete)
+                    {
+                        CompleteSC();       // 25 → 29(입고 최종) / 10(출고 → CV 처리 인계)
+                        CompleteRGVReal();  // 35 → 20 (RTV COMPLETE_RD 소비, SC 처리 인계)
+                    }
+                    else
+                    {
+                        AutoRunSC();    // [구 경로] SC 자동완주 : 20 → 21 → 25 → 29/10 (타이머 기반)
+                        AutoRunRGV();   // [구 경로] RGV 자동완주(입고 전용) : 30 → 31 → 35 → 20
+                        ProcessRvSeq();     // [구 경로] RV(SC/RTV) 적재·하역 4단계 시퀀스 재현
+                        ProcessCvClear();
+                        ProcessCvMove();    // [구 경로] 라인CV 지연 이동 재현
+                        RecoverOutOrphans();
+                        StepCranes();       // [구 경로] 크레인/RTV 주행 1칸 애니메이션
+                    }
+                    ProcessOutPend();   // 출고대 반출 대기열 → 반출 경로 비면 다음 화물 투입(FIFO)
+                    if (!m_bScAutoComplete)
+                        ProcessOutStnReal();  // [실경로] 반출 = RTV Vehicle 지시 1건 + 완료 대기 (이동·배출은 설비)
+                    else
+                        ProcessOutStn();      // [구 경로] RTV 반출 물리 시퀀스 재현
+
+                    // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
+                    MonitorAlarm();
+
+                    // [LGLS 2026-07-22] 표시용 작업구분 보강(실경로): 클라이언트는 CV_DATA/SC_DATA_LGLS 의
+                    //   JOB_TYP_RD 로 입고/출고 색을 칠하는데, 실경로의 설비 관측(CvThread/VehThread)은
+                    //   작업구분까지 알 수 없으므로 스케줄러가 작업 정보로 채운다. (표시 전용 — 제어 미사용)
+                    if (!m_bScAutoComplete) SyncDisplayTyp();
+
+                    // [LGLS] 한 사이클을 예외 없이 완주 → 스케줄러 정상 가동 하트비트
+                    Heartbeat(true);
+                }
+                catch (Exception ex)
+                {
+                    // [LGLS] 사이클이 깨짐 → 오류 상태를 즉시 알림(Client 상태표시줄 SCH 가 RED)
+                    Heartbeat(false);
+                    MakeMsg_Error("[SCH] 처리 오류: " + ex.Message);
+                    // DB 연결 끊김 가능성 → 재연결 시도
+                    try
+                    {
+                        if (_pConObj == null ||
+                            _pConObj.State != System.Data.ConnectionState.Open)
+                        {
+                            IsDBOpen = false;
+                            DBOpen();
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS] 신규 작업 접수 (99 → 첫 처리 대기상태)
+        //   WCS_TASK_HOST(WMS I/F)가 JOB_MST 에 JOB_STATUS='99' 로 INSERT 한 작업을
+        //   JOB_TYP 에 따라 첫 처리로 라우팅한다.
+        //     입고(JOB_TYP='1', START_POS=1xx 워크스테이션) → '10' (CV 구동대기)
+        //     출고(JOB_TYP='2', START_POS=9xx 크레인)       → '20' (SC 구동대기)
+        // ─────────────────────────────────────────────────────────────────
+        #region AcceptNewJob
+        private void AcceptNewJob()
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.START_POS, JM.DEST_POS       ";
+                strSql += CRLF + "   FROM JOB_MST JM                                              ";
+                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                                 ";
+                strSql += CRLF + "    AND JM.JOB_STATUS = :ST_NEW                                 ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_NEW", DbLang.VARCHAR).Value = ST_JOB_NEW;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string startPos = GetVal(dt.Rows[i], "START_POS");
+                    string destPos  = GetVal(dt.Rows[i], "DEST_POS");
+
+                    string stFirst;
+                    string strProc;
+                    string strJobData;
+                    switch (jobTyp)
+                    {
+                        case "1": { stFirst = ST_CV_WAIT; strJobData = "CV(입고"; } break;
+                        case "2": { stFirst = ST_SC_WAIT; strJobData = "SC(출고"; } break;
+                        case "3": { stFirst = ST_SC_WAIT; strJobData = "SC(피킹출고"; } break;
+                        case "4": { stFirst = ST_SC_WAIT; strJobData = "SC(랙투랙"; } break;
+                        case "5": { stFirst = ST_SC_WAIT; strJobData = "SC(호기간이동"; } break;
+                        case "6": { stFirst = ST_CV_WAIT; strJobData = "CV(이동"; } break;
+                        default:
+                        {
+                            // [LGLS 2026-07-19] 미지원 유형(반자동 10~15 등)은 작업당 1회만 로깅 (매 폴링 반복 스팸 방지)
+                            if (!m_setUnsupportedLogged.Contains(luggNo))
+                            {
+                                m_setUnsupportedLogged.Add(luggNo);
+                                MakeMsg_Error(string.Format("[SCH][NEW] 작업 {0} 접수 불가 - 미지원 JOB_TYP:{1} (START:{2} DEST:{3})",
+                                    luggNo, jobTyp, startPos, destPos));
+                            }
+                            continue;
+                        }
+                    }
+                    strProc = strJobData + "1차 처리";
+                    //if (jobTyp == "1")      { stFirst = ST_CV_WAIT; strProc = "CV(입고 1차 처리)"; }  // 워크스테이션 → 크레인
+                    //else if (jobTyp == "2") { stFirst = ST_SC_WAIT; strProc = "SC(출고 1차 처리)"; }  // 크레인 → 워크스테이션
+                    //else
+                    //{
+                    //    // [LGLS 2026-07-19] 미지원 유형(반자동 10~15 등)은 작업당 1회만 로깅 (매 폴링 반복 스팸 방지)
+                    //    if (!m_setUnsupportedLogged.Contains(luggNo))
+                    //    {
+                    //        m_setUnsupportedLogged.Add(luggNo);
+                    //        MakeMsg_Error(string.Format("[SCH][NEW] 작업 {0} 접수 불가 - 미지원 JOB_TYP:{1} (START:{2} DEST:{3})",
+                    //            luggNo, jobTyp, startPos, destPos));
+                    //    }
+                    //    continue;
+                    //}
+
+                    string rtn = "";
+                    if (UpdateJobStatus(stFirst, luggNo, ref rtn))
+                        MakeMsg_Imp(string.Format("[SCH][NEW] 신규 작업 {0} 접수 (TYP:{1} START:{2} DEST:{3}) → {4} 대기 상태 '{5}'",
+                            luggNo, jobTyp, startPos, destPos, strProc, stFirst));
+                    else
+                        MakeMsg_Error(string.Format("[SCH][NEW] 신규 작업 {0} 접수 실패: {1}", luggNo, rtn));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][NEW] AcceptNewJob 오류: " + ex.Message); }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // C/V 구동
+        //   기존 cThread_CV.CHECK_CV_RETREADY + UPDATE_CV_DATA + UPDATE_JOB_DATA 패턴.
+        //   조건 : CV_DATA(설비) 가 팔레트 적재/Ready/AUTO/유휴(OD_RQ_YN='N') 이고,
+        //          해당 위치(TRACK_NO=CV처리 설비위치)에 구동대기('10') 작업이 있으면
+        //          → CV 명령(_OD) 발행(OD_RQ_YN='Y') + JOB_STATUS '10'→'11'
+        //   [LGLS] CV 처리 설비위치 : 입고(1)=START_POS(1xx), 출고(2)=DEST_POS(1xx) - CV_POS_EXPR 참조
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS] 입고대 파렛트 공급(EQP_SIM AutoFeed 대체). C/V#11 입고대(122)가 비어있을 때 입고 대기(10) 작업의
+        //   파렛트(작업번호)를 IO_TASK 가 직접 올려 DriveCV 게이트(SENSOR0=1)를 충족. 단일 슬롯(122 점유 중이면 대기).
+        //   이후 AutoRunRGV 가 22→21 이송·RTV 픽업·클리어를 구동한다.
+        private void FeedInGate()
+        {
+            try
+            {
+                // [LGLS] 입고대 readback 갱신 — CV처리 READ_UPD_DT>WRITE_UPD_DT 게이트 충족(설비 readback 재현).
+                //   122(C/V#11)는 WCS 브리지가 담당하므로 READ_UPD_DT만. 126(C/V#13)은 IO_TASK 소유(비브리지)라
+                //   설비 accept(OD_RQ_YN/CMD_RQ_YN→'N')까지 재현해야 RunCV(11→15) 진행됨.
+                {
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    string strSqlRf1 = "";
+                    strSqlRf1 += CRLF + " UPDATE CV_DATA                          ";
+                    strSqlRf1 += CRLF + "    SET READ_UPD_DT      = " + DbLang.SYSDATE;
+                    strSqlRf1 += CRLF + "  WHERE WH_TYP           = :WH           ";
+                    strSqlRf1 += CRLF + "    AND MC_NO            = '122'         ";
+                    strSqlRf1 += CRLF + "    AND SENSOR0_DATA_RD  = '1'           ";
+                    _pBdb.ExcuteNonQry(strSqlRf1);
+                    // [LGLS] 비브리지 스테이션 126·130(입고대)·124·129(출고대): 설비 ready/accept 재현 — DriveCV(발행 OD_RQ_YN='N')·RunCV(11→15)·CompleteCV 게이트 충족.
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    string strSqlRf2 = "";
+                    strSqlRf2 += CRLF + " UPDATE CV_DATA                          ";
+                    strSqlRf2 += CRLF + "    SET READ_UPD_DT      = " + DbLang.SYSDATE + ",";
+                    strSqlRf2 += CRLF + "        OD_RQ_YN         = 'N',          ";
+                    strSqlRf2 += CRLF + "        CMD_RQ_YN        = 'N',          ";
+                    strSqlRf2 += CRLF + "        AUTO_MODE_RD     = '1'           ";
+                    strSqlRf2 += CRLF + "  WHERE WH_TYP           = :WH           ";
+                    strSqlRf2 += CRLF + "    AND MC_NO           IN ('124','126','129','130') ";
+                    _pBdb.ExcuteNonQry(strSqlRf2);
+                }
+                DateTime now = DateTime.Now;
+
+                // [LGLS] status-15(CV_RUN) 입고작업 입고대→픽업트랙 이송(입력 컨베이어). "등장" 후 IN_DWELL 경과 시. CompleteCV(15→30)가 입고대 lugg=0000 요구하므로 CV처리에서 이송. (122→121, 126→125, 130→131)
+                {
+                    string qs = "";
+                    qs += CRLF + " SELECT JM.LUGG_NO, JM.START_POS FROM JOB_MST JM ";
+                    qs += CRLF + "  WHERE JM.WH_TYP = :WH AND JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = :ST15 AND JM.START_POS IN ('122','126','130') ";
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    _pBdb.mComMain.Parameters.Add("ST15", DbLang.VARCHAR).Value = ST_CV_RUN;
+                    if (_pBdb.ExcuteQry(qs) > 0)
+                    {
+                        DataTable ds = _pBdb.mDtMain.Copy();
+                        for (int i = 0; i < ds.Rows.Count; i++)
+                        {
+                            string lg = GetVal(ds.Rows[i], "LUGG_NO");
+                            string sp = GetVal(ds.Rows[i], "START_POS");
+                            string pick = RgvPickupTrack(sp);
+                            if (IsCvPaused(sp)) continue;                      // [LGLS 2026-07-19] 입고대 일시정지 — 이송 보류
+                            if (IsTrackEmpty(sp)) continue;                    // 이미 이송됨
+                            if (!IsTrackEmpty(pick)) continue;                 // [LGLS] 픽업트랙에 선행 화물이 있으면 대기(덮어쓰기=유실 방지)
+                            DateTime fd; if (!m_dicInFeedDt.TryGetValue(lg, out fd)) fd = now.AddMilliseconds(-IN_DWELL_MS);
+                            if ((now - fd).TotalMilliseconds < IN_DWELL_MS) continue;   // 입고대 등장 체류(dwell) 확보
+                            WriteCvSensor(sp, "0", "0");
+                            WriteCvSensor(pick, "1", lg, "1");
+                            MakeMsg(string.Format("[SCH][CV] 입고대 {0}→{1} 이송 - 작업 {2}", sp, pick, lg));
+                        }
+                    }
+                }
+
+                // [LGLS] 출고 배출 진행 중이면 입고대 **신규 공급**만 보류(충돌·0000 플리커 방지).
+                //   위의 이송(22→21)은 오히려 출고대를 비워주므로 막으면 안 된다 —
+                //   막으면 입고 파렛트가 입고대에 갇히고 출고대 반출은 그 입고대가 비기를 기다려 **교착**한다.
+                if (m_dicOutStn.Count > 0) return;
+                // [LGLS] status-10 입고작업 공급 (입고대별 단일 슬롯)
+                string q = "";
+                q += CRLF + " SELECT JM.LUGG_NO, JM.START_POS FROM JOB_MST JM ";
+                q += CRLF + "  WHERE JM.WH_TYP = :WH_TYP AND JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = :ST ";
+                q += CRLF + "  ORDER BY JM.LUGG_NO ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST", DbLang.VARCHAR).Value = ST_CV_WAIT;
+                if (_pBdb.ExcuteQry(q) <= 0) return;
+                DataTable dt = _pBdb.mDtMain.Copy();
+                var fedSp = new HashSet<string>();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string lugg = GetVal(dt.Rows[i], "LUGG_NO");
+                    string sp   = GetVal(dt.Rows[i], "START_POS");
+                    if (sp != "122" && sp != "126" && sp != "130") continue;   // [LGLS] 로직3(122)·로직1(126)·로직2(130) 입고대만 IO_TASK 공급
+                    if (IsCvPaused(sp)) { fedSp.Add(sp); continue; }   // [LGLS 2026-07-19] 입고대 일시정지 — 공급 보류
+                    if (string.IsNullOrEmpty(lugg) || lugg == "0" || lugg == "0000") continue;   // 빈 작업번호(0000 팬텀) 방지
+                    if (fedSp.Contains(sp)) continue;           // 입고대별 틱당 1건
+                    string pick = RgvPickupTrack(sp);
+                    if (!IsTrackEmpty(sp) || !IsTrackEmpty(pick)) { fedSp.Add(sp); continue; }   // 입고대+픽업 비었을 때만(단일 슬롯)
+                    WriteCvSensor(sp, "1", lugg, "1");          // [LGLS] 입고대에 파렛트(작업번호) 등장
+                    m_dicInFeedDt[lugg] = now;                  // 피드 시각(등장 dwell 계산)
+                    fedSp.Add(sp);
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] FeedInGate 오류: " + ex.Message); }
+        }
+
+        #region DriveCV
+        private void DriveCV()
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " SELECT CD.WH_TYP, CD.PLC_NO, CD.MC_NO, CD.TRACK_NO,            ";
+                strSql += CRLF + "        JM.LUGG_NO, JM.JOB_TYP, JM.START_POS, JM.DEST_POS, JM.TURN, ";   // [LGLS 2026-07-21] START_POS: 출고 반출 대기열 등록용(출고 라인 홀수 트랙 계산)
+                strSql += CRLF + "        JM.PRODUCT_SIZE, JM.TRAY_LEV                            ";
+                strSql += CRLF + "   FROM CV_DATA CD, JOB_MST JM                                  ";
+                strSql += CRLF + "  WHERE CD.MC_NO           = " + CV_POS_EXPR + "                ";   // [LGLS] 입고=START_POS, 출고=DEST_POS (설비 키=MC_NO, TRACK_NO 는 '1'+MC_NO 형식)
+                strSql += CRLF + "    AND CD.WH_TYP          = JM.WH_TYP                          ";
+                strSql += CRLF + "    AND (JM.JOB_TYP IN ('2','12') OR CD.SENSOR0_DATA_RD = '1')          ";   // [LGLS] 화물 감지는 입고만 — 출고는 S/C 하역 전이라 파렛트가 없음(트래킹 기록 후 재현됨)
+                strSql += CRLF + "    AND CD.AUTO_MODE_RD    = '1'                                ";   // AUTO 모드
+                strSql += CRLF + "    AND CD.OD_RQ_YN        = 'N'                                ";   // 설비 유휴(명령 수신 가능)
+                strSql += CRLF + "    AND CD.READ_UPD_DT     > CD.WRITE_UPD_DT                    ";   // 최신 readback
+                strSql += CRLF + "    AND (CD.ERROR_CODE = '0' OR CD.ERROR_CODE = '0000')         ";
+                // [LGLS 2026-07-19] 입고대 일시정지(TR_PAUSE, 내부값) 시 입고 발행(PLC 기록) 금지
+                strSql += CRLF + "    AND NOT (JM.JOB_TYP IN ('1','11') AND (ISNULL(CD.TR_PAUSE_OD,'0') = '1' OR ISNULL(CD.TR_PAUSE_RD,'0') = '1')) ";
+                strSql += CRLF + "    AND CD.WH_TYP          = :WH_TYP                            ";
+                strSql += CRLF + "    AND JM.JOB_STATUS      = :ST_WAIT                           ";   // CV 구동대기
+                strSql += CRLF + "    AND JM.DEST_POS  Is not null                                ";
+                // [LGLS 2026-07-21] 트랙별 배타: 같은 트랙의 운반 중(11/15) 작업이 남아 있으면 신규 지시 금지
+                //   (겸용 C/V#11 에서 입고/출고 지시가 같은 트랙에 연속 발행되는 것 방지)
+                strSql += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST J2                    ";
+                strSql += CRLF + "                     WHERE J2.WH_TYP = JM.WH_TYP                ";
+                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('11','15')         ";
+                strSql += CRLF + "                       AND CD.MC_NO = (CASE WHEN J2.JOB_TYP IN ('2','12') THEN J2.DEST_POS ELSE J2.START_POS END)) ";
+                // [LGLS 2026-07-23] 겸용 입출고대(122) 교착 방지: 122 로 오는 출고 반출이 RTV 에 지시된 상태
+                //   (RTV_DATA_LGLS.JOB_TYP_OD='2' + LUGG_OD=해당 출고작업)면 122 입고 발행(트래킹 기록)을 보류한다.
+                strSql += CRLF + "    AND NOT ( JM.JOB_TYP IN ('1','11') AND " + CV_POS_EXPR + " = '122'   ";
+                strSql += CRLF + "              AND EXISTS (SELECT 1                              ";
+                strSql += CRLF + "                            FROM JOB_MST J6                     ";
+                strSql += CRLF + "                           INNER JOIN RTV_DATA_LGLS R6               ";
+                strSql += CRLF + "                              ON R6.WH_TYP     = J6.WH_TYP      ";
+                strSql += CRLF + "                             AND R6.RTV_NO     = '801'          ";
+                strSql += CRLF + "                             AND R6.LUGG_OD    = J6.LUGG_NO     ";
+                strSql += CRLF + "                             AND R6.JOB_TYP_OD = '2'            ";
+                strSql += CRLF + "                           WHERE J6.WH_TYP     = JM.WH_TYP      ";
+                strSql += CRLF + "                             AND J6.JOB_TYP   IN ('2','12')     ";
+                strSql += CRLF + "                             AND J6.DEST_POS   = '122'          ";
+                strSql += CRLF + "                             AND J6.JOB_STATUS = '15' ) )       ";
+                // [LGLS 2026-07-24] 122발 901행 입고는 SC1 출고 미종결 존재 시 발행 보류 — 입고 파렛트가
+                //   하역트랙(121)을 선점하면 "출고 CV 발행(121 비어야) ↔ 입고 RTV(SC1 출고 우선 특례)" 의
+                //   상호 대기 교착이 된다. 발행을 미루면 파렛트가 무지시 상태로 남아 작업자 회수가 가능해
+                //   출고 반출 길이 열린다 ([CV#2 교착 TEST] 검출 교착 고리 차단).
+                strSql += CRLF + "    AND NOT ( JM.JOB_TYP IN ('1','11') AND " + CV_POS_EXPR + " = '122'   ";
+                strSql += CRLF + "              AND JM.DEST_POS = '901'                           ";
+                strSql += CRLF + "              AND EXISTS (SELECT 1                              ";
+                strSql += CRLF + "                            FROM JOB_MST J8                     ";
+                strSql += CRLF + "                           WHERE J8.WH_TYP     = JM.WH_TYP      ";
+                strSql += CRLF + "                             AND J8.JOB_TYP   IN ('2','12')     ";
+                strSql += CRLF + "                             AND J8.START_POS  = '901'          ";
+                strSql += CRLF + "                             AND J8.JOB_STATUS NOT IN ('9','19','29') ) ) ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_CV_WAIT;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string plcNo    = GetVal(dt.Rows[i], "PLC_NO");
+                    string trackNo  = GetVal(dt.Rows[i], "MC_NO");   // [LGLS] 설비 키 = MC_NO (TRACK_NO 는 '1'+MC_NO 표시용)
+                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string destPos  = GetVal(dt.Rows[i], "DEST_POS");
+                    string isTurn   = GetVal(dt.Rows[i], "TURN");
+                    string trayTyp  = GetVal(dt.Rows[i], "PRODUCT_SIZE");
+                    string trayLev  = GetVal(dt.Rows[i], "TRAY_LEV");
+
+                    // 동일 작업 중복 발행 방지
+                    string key = "CV_" + trackNo;
+                    if (m_dicPrevCV.ContainsKey(key) && m_dicPrevCV[key] == luggNo) continue;
+
+                    // [LGLS 2026-07-21] 출고 CV 지시는 목적지(출고대 배출트랙)와 하역트랙이 빈 상태에서만 발행.
+                    //   (지시 즉시 CvThread 가 도착 예약 트래킹을 배출트랙에 선기록하므로, 겸용 입고대(C/V#11)에
+                    //    대기 중인 무지시 입고 파렛트가 예약 작업번호를 오배정받아 픽업트랙을 점유하고 교착한다
+                    //    — 구 ECS 디스패처의 "입고대 점유 시 C/V#11 출고 배차 금지" 가드와 같은 취지)
+                    if (jobTyp == "2" && (!IsTrackEmpty(trackNo) || !IsTrackEmpty(RgvPickupTrack(trackNo)))) continue;
+
+                    // [LGLS 2026-08-01] 입출고 겸용대(STN_KIND=3, 현장 22번=C/V#11) 방향 게이트.
+                    //   원본 ECS(1WH Backup ECSDispatcher.cs)의 두 가드를 그대로 이식한다.
+                    //   ② 겸용대에서 출발하는 입고 반송은 방향이 '입고'일 때만 발행
+                    //      (원본 578~584: fromPort==PORT:22 이고 CONVEYOR11_MODE != RGV_INGO 이면 return).
+                    //      → 출고 화물이 그 작업대로 향하는 동안 작업자가 올려둔 화물을 가져가지 않는다.
+                    //   ③ 겸용대로 도착하는 출고 반송은 '입고 모드 + 입고대 점유' 이면 보류
+                    //      (원본 1203~1216 / 1239~1249: DIRECTION_MODE=='0' 이고 PALLET_EXIST/트래킹 존재 시 return)
+                    //      + 그 작업대발 입고 반송이 진행 중이면 보류(원본 getCheckInTransferFromCNV11).
+                    if (IsDualStation(trackNo))
+                    {
+                        if (jobTyp == "1" && GetCvStockMode(trackNo) != "0")
+                        {
+                            DbgLog("DUAL_" + trackNo, "[겸용대] 입고 보류 - 방향이 출고 모드(작업 " + luggNo + ")");
+                            continue;
+                        }
+                        if (jobTyp == "2")
+                        {
+                            if (GetCvStockMode(trackNo) == "0" && (!IsTrackEmpty(trackNo) || !IsTrackLuggEmpty(trackNo)))
+                            {
+                                DbgLog("DUAL_" + trackNo, "[겸용대] 출고 보류 - 입고 모드에서 입고대 점유(작업 " + luggNo + ")");
+                                continue;
+                            }
+                            if (HasActiveInboundFrom(trackNo))
+                            {
+                                DbgLog("DUAL_" + trackNo, "[겸용대] 출고 보류 - 해당 작업대발 입고 반송 진행 중(작업 " + luggNo + ")");
+                                continue;
+                            }
+
+                            // [LGLS 2026-08-01] 출고 반송 발행 시 자동 방향 전환(원본 ECS ECSDispatcher 1303~1309 대응).
+                            //   원본은 C\V#2·#11 로 가는 반송 지시 직전에 DIRECTION_MODE 를 '1'(출고)로 바꾸고
+                            //   그 다음에 TRANSFER_REQUEST 를 세웠다. 현행도 같은 순서로, 방향 지시를 먼저 남기고
+                            //   CV 지시를 이어서 발행한다(설비 반영은 수 초 내, 화물 도착은 그보다 늦다).
+                            if (GetCvStockMode(trackNo) != "1" && RequestCvDirection(trackNo, "1"))
+                                MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 전환 지시 - 출고(1) (작업 {1})", trackNo, luggNo));
+                        }
+                    }
+
+                    MakeMsg_Imp(string.Format("[SCH][CV] CV TRACK:{0} 작업:{1}(TYP:{2}) → CV 명령 발행 (DEST:{3})",
+                        trackNo, luggNo, jobTyp, destPos));
+
+                    _pBdb.BeginTrans();
+
+                    string rtn = "";
+                    bool ok = UpdateCvData(jobTyp, destPos, luggNo, plcNo, trackNo, ref rtn)
+                              && UpdateJobStatus(ST_CV_CMD, luggNo, ref rtn);
+
+                    if (ok)
+                    {
+                        _pBdb.Commit();
+                        m_dicPrevCV[key] = luggNo;
+                        MakeMsg_Imp(string.Format("[SCH][CV] CV TRACK:{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", trackNo, luggNo, ST_CV_CMD));
+                        // [LGLS 2026-07-21] 실경로: 출고 CV 발행과 동시에 출고대 반출 대기열(FIFO) 등록.
+                        //   (구 경로에선 ProcessCvMove 가 홀수 트랙 도착 시 등록했으나, 실경로는 라인 이동을
+                        //    설비가 하므로 등록 지점이 없어 RTV 반출 지시가 영영 나가지 않았다)
+                        if (jobTyp == "2" && !OutSeqPending(luggNo))
+                        {
+                            // [LGLS 2026-07-21] RTV 픽업 위치는 홀수 트랙(하역트랙-1) — SC 가 짝수 하역트랙에 내려놓은
+                            //   화물을 설비(CV)가 홀수 트랙으로 옮겨 놓은 뒤 RTV 가 집는다. 짝수 트랙을 지정하면
+                            //   이동 타이밍에 따라 RTV 가 빈 트랙에서 영구 재시도(레이스)한다.
+                            string startPos = GetVal(dt.Rows[i], "START_POS");
+                            string outOdd = RgvPickupTrack(RgvOutDropTrack(startPos));
+                            m_lstOutPend.Add(new OutPend { Lugg = luggNo, Odd = outOdd, OutStn = trackNo });
+                            DbgLog("OUTREG_" + luggNo, "[OUT등록] " + luggNo + " 라인" + outOdd + "→출고대" + trackNo);
+                            MakeMsg_Imp(string.Format("[SCH][OUT] 출고대 반출 대기열 등록 - 작업 {0} (라인 {1} → 출고대 {2})",
+                                luggNo, outOdd, trackNo));
+                        }
+                    }
+                    else
+                    {
+                        _pBdb.Rollback();
+                        MakeMsg_Error(string.Format("[SCH][CV] CV TRACK:{0} 발행 실패: {1}", trackNo, rtn));
+                    }
+                }
+            }
+            catch (System.Data.Common.DbException nex)
+            {
+                MakeMsg_Error("[SCH][CV] DriveCV DB 오류: " + nex.Message);
+                try { _pBdb.Rollback(); } catch { }
+            }
+            catch (Exception ex)
+            {
+                MakeMsg_Error("[SCH][CV] DriveCV 오류: " + ex.Message);
+                try { _pBdb.Rollback(); } catch { }
+            }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // S/C 반송
+        //   기존 cThread_SC.CHECK_RACK_TO_RACK 의 "유휴 S/C 판정 블록"(IDLE block) 인용.
+        //   조건 : 구동대기 작업(JOB_STATUS='20') + 해당 S/C(SC_NO=START_POS) 유휴
+        //          → S/C 이송 명령(_OD) 발행(OD_RQ_YN='Y') + JOB_STATUS '20'→'21'
+        //
+        //   ※ CELL 관리가 없는 현장이므로 BANK/BAY/LEVEL 분해는 하지 않고
+        //     START_POS/DEST_POS(설비번호) + LUGG_NO 기반의 단순 이송으로 처리한다.
+        //     아래 _OD 명령 컬럼/값(USER_COMMAND_OD, WRITE_FLAG_OD, 위치 필드 등)은
+        //     실제 SC_DATA_LGLS DDL 및 PLC 명령 사양에 맞게 보완해야 한다. ★TODO(현장값 확인)
+        // ─────────────────────────────────────────────────────────────────
+        #region DriveSC
+        private void DriveSC()
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.START_POS, JM.DEST_POS,      ";
+                strSql += CRLF + "        JM.START_LOCATION, JM.DEST_LOCATION,                     ";   // [LGLS 2026-07-21] Vehicle 셀 좌표용
+                strSql += CRLF + "        SD.SC_NO, SD.SC_TYP                                      ";
+                strSql += CRLF + "   FROM JOB_MST JM                                               ";
+                strSql += CRLF + "  INNER JOIN SC_DATA_LGLS SD                                          ";
+                strSql += CRLF + "     ON JM.WH_TYP    = SD.WH_TYP                                 ";
+                strSql += CRLF + "    AND SD.SC_NO     = " + SC_POS_EXPR + "                       ";   // [LGLS] 입고=DEST_POS, 출고=START_POS
+                strSql += CRLF + "  WHERE JM.WH_TYP          = :WH_TYP                             ";
+                strSql += CRLF + "    AND JM.JOB_STATUS      = :ST_WAIT                            ";   // SC 구동대기
+                strSql += CRLF + "    AND SD.ONLINE_MODE_RD  = '1'                                 ";
+                strSql += CRLF + "    AND SD.AUTO_MODE_RD    = '1'                                 ";
+                strSql += CRLF + "    AND SD.ERR_CODE_RD     = '0000'                              ";
+                strSql += CRLF + "    AND SD.ACTIVE_MODE_RD  = '1'                                 ";
+                strSql += CRLF + "    AND SD.UCSTATUS_RD     = '1'                                 ";
+                strSql += CRLF + "    AND SD.ITN_LUGG_FK1    = '0'                                 ";   // 포크 비어있음
+                strSql += CRLF + "    AND SD.ITN_LUGG_FK2    = '0'                                 ";
+                strSql += CRLF + "    AND SD.OD_RQ_YN        = 'N'                                 ";   // 설비 유휴
+                // [LGLS 2026-07-24] (제거) COMPLETE_RD<>'1' 게이트 삭제 — 마지막 작업의 완료신호가 '1'로 잔류하면
+                //   이 게이트가 SC 에 신규 지시를 영구 차단하는 데드락(완료신호 리셋이 다음 지시 소비에 의존하는데
+                //   그 지시를 막음)이 된다. 완료신호 오소비 방지는 아래 21/25 배타 게이트가 이미 커버.
+                // [LGLS 2026-07-21] 크레인별 배타: 같은 크레인의 운반 중(21/25) 작업이 남아 있으면 신규 지시 금지
+                //   (리드백 지연 창 동안의 연속 지시 → LUGG_OD 덮어쓰기 → 완료 귀속 유실 방지)
+                strSql += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST J2                     ";
+                strSql += CRLF + "                     WHERE J2.WH_TYP = JM.WH_TYP                 ";
+                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('21','25')          ";
+                strSql += CRLF + "                       AND SD.SC_NO = (CASE WHEN J2.JOB_TYP IN ('1','11') THEN J2.DEST_POS ELSE J2.START_POS END)) ";
+                // [LGLS 2026-07-23] SC1/C\V#2 교착 방지: SC1 출고 지시는 ① C\V#2(103/104)에 입고 작업 화물이 없고
+                //   ② RTV 에 901행 입고 지시(RTV_DATA_LGLS.JOB_TYP_OD='1')가 없을 때만 발행한다.
+                strSql += CRLF + "    AND NOT ( SD.SC_NO = '901' AND JM.JOB_TYP IN ('2','12') AND (        ";
+                strSql += CRLF + "          EXISTS (SELECT 1 FROM CV_DATA C2                               ";
+                strSql += CRLF + "                   INNER JOIN JOB_MST J3 ON J3.WH_TYP  = C2.WH_TYP       ";
+                strSql += CRLF + "                                       AND J3.LUGG_NO = C2.LUGG_NO_RD    ";
+                strSql += CRLF + "                   WHERE C2.WH_TYP = SD.WH_TYP                           ";
+                strSql += CRLF + "                     AND C2.MC_NO IN ('103','104')                       ";
+                strSql += CRLF + "                     AND J3.JOB_TYP IN ('1','11')                        ";
+                strSql += CRLF + "                     AND J3.JOB_STATUS NOT IN ('9','19','29'))           ";
+                strSql += CRLF + "       OR EXISTS (SELECT 1 FROM RTV_DATA_LGLS R3                              ";
+                strSql += CRLF + "                   INNER JOIN JOB_MST J4 ON J4.WH_TYP  = R3.WH_TYP       ";
+                strSql += CRLF + "                                       AND J4.LUGG_NO = R3.LUGG_OD       ";
+                strSql += CRLF + "                   WHERE R3.WH_TYP = SD.WH_TYP                           ";
+                strSql += CRLF + "                     AND R3.RTV_NO = '801'                               ";
+                strSql += CRLF + "                     AND R3.JOB_TYP_OD = '1'                             ";
+                strSql += CRLF + "                     AND J4.JOB_TYP IN ('1','11')                        ";
+                strSql += CRLF + "                     AND J4.DEST_POS = '901'                             ";
+                strSql += CRLF + "                     AND J4.JOB_STATUS NOT IN ('9','19','29')) ) )       ";
+                // [LGLS 2026-07-24] 출고 직렬화: 같은 크레인의 선행 출고가 CV/반출 구간(10/11/15)에 남아 있으면
+                //   다음 출고 SC 지시를 보류한다 — 출고 화물이 라인(하역 2트랙)에 겹겹이 쌓여 겸용 라인이
+                //   막히는 것을 방지 ([CV#2 교착 TEST]에서 출고 3건이 C\V#2 를 가득 채워 교착하던 고리 차단).
+                strSql += CRLF + "    AND NOT ( JM.JOB_TYP IN ('2','12') AND EXISTS (SELECT 1              ";
+                strSql += CRLF + "                   FROM JOB_MST J7                                       ";
+                strSql += CRLF + "                  WHERE J7.WH_TYP = JM.WH_TYP                            ";
+                strSql += CRLF + "                    AND J7.JOB_TYP IN ('2','12')                         ";
+                strSql += CRLF + "                    AND J7.START_POS = SD.SC_NO                          ";
+                strSql += CRLF + "                    AND J7.JOB_STATUS IN ('10','11','15')) )             ";
+                // [LGLS 2026-07-19] suspend 방향별 게이트: 1=입고정지, 2=출고정지, 3=입출고정지
+                strSql += CRLF + "    AND NOT (JM.JOB_TYP IN ('1','11') AND SD.SUSPEND IN ('1','3'))      ";
+                strSql += CRLF + "    AND NOT (JM.JOB_TYP IN ('2','12') AND SD.SUSPEND IN ('2','3'))      ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_SC_WAIT;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string scNo    = GetVal(dt.Rows[i], "SC_NO");
+                    string luggNo  = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp  = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string startPos= GetVal(dt.Rows[i], "START_POS");
+                    string destPos = GetVal(dt.Rows[i], "DEST_POS");
+                    string startLoc= GetVal(dt.Rows[i], "START_LOCATION");
+                    string destLoc = GetVal(dt.Rows[i], "DEST_LOCATION");
+
+                    string key = "SC_" + scNo;
+                    if (m_dicPrevSC.ContainsKey(key) && m_dicPrevSC[key] == luggNo) continue;
+
+                    // [LGLS 2026-07-21] 실경로 게이트 (AutoRunSC 에서 이식):
+                    //   ① 작업대(라인 트랙) 일시정지, ② 출고 H/S 점유 시 지시 금지, ③ SC1 특례,
+                    //   ④ 입고는 화물이 라인 픽업트랙(짝수)에 도착한 뒤에만 지시
+                    {
+                        string _wT;
+                        if (jobTyp == "1") { string _d = RgvDropTrack(destPos); int _n; _wT = int.TryParse(_d, out _n) ? (_n + 1).ToString() : _d; }
+                        else _wT = RgvOutDropTrack(startPos);
+                        if (IsCvPaused(_wT)) continue;
+                        if (jobTyp == "2" && !IsTrackEmpty(_wT)) continue;
+                        if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv()) continue;
+                        if (jobTyp == "1" && IsTrackEmpty(_wT)) continue;
+                    }
+
+                    // [LGLS 2026-07-21] Vehicle 반송 좌표 인코딩:
+                    //   입고(1): From=라인 픽업트랙 포트, To=셀(DEST_LOCATION) / 출고(2): From=셀(START_LOCATION), To=출고 하역트랙 포트
+                    string f1, f2, f3, t1, t2, t3;
+                    if (jobTyp == "1")
+                    {
+                        string _d = RgvDropTrack(destPos); int _n; string pickT = int.TryParse(_d, out _n) ? (_n + 1).ToString() : _d;
+                        VehPortLoc(pickT, out f1, out f2, out f3);
+                        VehCellLoc(destLoc, out t1, out t2, out t3);
+                    }
+                    else
+                    {
+                        VehCellLoc(startLoc, out f1, out f2, out f3);
+                        VehPortLoc(RgvOutDropTrack(startPos), out t1, out t2, out t3);
+                    }
+
+                    MakeMsg_Imp(string.Format("[SCH][SC] S/C #{0} 작업:{1}(TYP:{2}) → 반송지시 (From:{3}/{4}/{5} To:{6}/{7}/{8})",
+                        scNo, luggNo, jobTyp, f1, f2, f3, t1, t2, t3));
+
+                    _pBdb.BeginTrans();
+
+                    string rtn = "";
+                    bool ok = UpdateScData(scNo, jobTyp, luggNo, f1, f2, f3, t1, t2, t3, ref rtn)
+                              && UpdateJobStatus(ST_SC_CMD, luggNo, ref rtn);
+
+                    if (ok)
+                    {
+                        _pBdb.Commit();
+                        m_dicPrevSC[key] = luggNo;
+                        MakeMsg_Imp(string.Format("[SCH][SC] S/C #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", scNo, luggNo, ST_SC_CMD));
+                    }
+                    else
+                    {
+                        _pBdb.Rollback();
+                        MakeMsg_Error(string.Format("[SCH][SC] S/C #{0} 발행 실패: {1}", scNo, rtn));
+                    }
+                }
+            }
+            catch (System.Data.Common.DbException nex)
+            {
+                MakeMsg_Error("[SCH][SC] DriveSC DB 오류: " + nex.Message);
+                try { _pBdb.Rollback(); } catch { }
+            }
+            catch (Exception ex)
+            {
+                MakeMsg_Error("[SCH][SC] DriveSC 오류: " + ex.Message);
+                try { _pBdb.Rollback(); } catch { }
+            }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // RGV 반송
+        //   조건 : 구동대기 작업(JOB_STATUS=ST_RGV_WAIT) + 유휴 RGV → 이송 명령 발행.
+        //   ※ RTV_DATA_LGLS 의 명령(_OD)/상태(_RD) 컬럼은 기존 코드에 정의가 거의 없어
+        //     SC_DATA_LGLS 핸드셰이크(OD_RQ_YN + _OD)를 모델로 작성. RGV가 1대인 현장.
+        //     실제 RTV_DATA_LGLS DDL 및 PLC 사양에 맞게 컬럼/값 보완 필요. ★TODO(현장값 확인)
+        //   RGV 미설치/미사용 현장이면 본 메서드는 0건으로 자연 통과한다.
+        // ─────────────────────────────────────────────────────────────────
+        #region DriveRGV
+        private void DriveRGV()
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.START_POS, JM.DEST_POS,      ";
+                strSql += CRLF + "        RD.RTV_NO                                                ";
+                strSql += CRLF + "   FROM JOB_MST JM                                               ";
+                strSql += CRLF + "  INNER JOIN RTV_DATA_LGLS RD                                         ";
+                strSql += CRLF + "     ON JM.WH_TYP    = RD.WH_TYP                                 ";
+                strSql += CRLF + "  WHERE JM.WH_TYP          = :WH_TYP                             ";
+                strSql += CRLF + "    AND JM.JOB_STATUS      = :ST_WAIT                            ";   // RGV 구동대기
+                strSql += CRLF + "    AND RD.AUTO_MODE_RD    = '1'                                 ";   // AUTO
+                strSql += CRLF + "    AND RD.OD_RQ_YN        = 'N'                                 ";   // 설비 유휴
+                strSql += CRLF + "    AND RD.SUBSYSTEM_STATUS_RD = '1'                             ";   // [LGLS 2026-07-21] IDLE 일 때만(물리 1대 — 반송 중 중복 지시 방지)
+                // [LGLS 2026-07-24] (제거) COMPLETE_RD<>'1' 게이트 삭제 — 완료신호 '1' 잔류가 RTV 신규 지시를
+                //   영구 차단하는 데드락 방지. 오소비 방지는 아래 31/35 배타 게이트가 커버.
+                // [LGLS 2026-07-21] RTV 는 물리 1대 — 운반 중(31/35) 작업이 남아 있으면 신규 지시 금지.
+                //   (설비 리드백 지연 ~1초 동안 OD_RQ_YN/STATUS 게이트가 통과되는 창이 있어, 연속 지시가
+                //    직전 지시의 LUGG_OD 를 덮어써 앞 작업의 완료 귀속이 유실된다 — DB 작업상태는 지연이 없다)
+                strSql += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST J2                     ";
+                strSql += CRLF + "                     WHERE J2.WH_TYP = JM.WH_TYP                 ";
+                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('31','35'))         ";
+                // [LGLS 2026-07-23] SC1/C\V#2 교착 방지: 901행 입고의 RTV 지시는 ① SC1 이 출고를 수령(21/25)하지 않았고
+                //   ② C\V#2(103/104)에 출고 작업 화물이 없을 때만 발행한다.
+                strSql += CRLF + "    AND NOT ( JM.JOB_TYP IN ('1','11') AND JM.DEST_POS = '901' AND (     ";
+                strSql += CRLF + "          EXISTS (SELECT 1 FROM JOB_MST J5                               ";
+                strSql += CRLF + "                   WHERE J5.WH_TYP = JM.WH_TYP                           ";
+                strSql += CRLF + "                     AND J5.JOB_TYP IN ('2','12')                        ";
+                strSql += CRLF + "                     AND J5.START_POS = '901'                            ";
+                strSql += CRLF + "                     AND J5.JOB_STATUS IN ('21','25'))                   ";
+                strSql += CRLF + "       OR EXISTS (SELECT 1 FROM CV_DATA C3                               ";
+                strSql += CRLF + "                   INNER JOIN JOB_MST J6 ON J6.WH_TYP  = C3.WH_TYP       ";
+                strSql += CRLF + "                                       AND J6.LUGG_NO = C3.LUGG_NO_RD    ";
+                strSql += CRLF + "                   WHERE C3.WH_TYP = JM.WH_TYP                           ";
+                strSql += CRLF + "                     AND C3.MC_NO IN ('103','104')                       ";
+                strSql += CRLF + "                     AND J6.JOB_TYP IN ('2','12')                        ";
+                strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN ('9','19','29')) ) )       ";
+                strSql += CRLF + "    AND (RD.ERR_CODE_RD = '0' OR RD.ERR_CODE_RD = '0000' OR RD.ERR_CODE_RD IS NULL)";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_RGV_WAIT;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string rtvNo   = GetVal(dt.Rows[i], "RTV_NO");
+                    string luggNo  = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp  = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string startPos= GetVal(dt.Rows[i], "START_POS");
+                    string destPos = GetVal(dt.Rows[i], "DEST_POS");
+
+                    string key = "RGV_" + rtvNo;
+                    if (m_dicPrevRGV.ContainsKey(key) && m_dicPrevRGV[key] == luggNo) continue;
+
+                    // [LGLS 2026-07-21] 실경로 게이트 (AutoRunRGV 에서 이식):
+                    string pickupTrack = RgvPickupTrack(startPos);
+                    string dropTrack   = RgvDropTrack(destPos);
+                    if (!CanEnterLine(dropTrack, luggNo)) continue;                    // 드롭 라인 선점/점유 시 대기
+                    if (RtvBusyByOutbound()) continue;                                 // 출고대 반출이 RTV 사용 중
+                    if (IsRtvSuspended()) continue;                                    // RTV 작업정지
+                    if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;    // 작업대 일시정지
+                    if (destPos == "901" && HasActiveSc1Outbound()) continue;          // SC1 특례(출고 우선)
+                    if (IsTrackEmpty(pickupTrack)) continue;                           // 화물이 픽업트랙 도착 후에만
+
+                    MakeMsg_Imp(string.Format("[SCH][RGV] RGV #{0} 작업:{1} → 반송지시 (픽업 {2} → 드롭 {3})",
+                        rtvNo, luggNo, pickupTrack, dropTrack));
+
+                    _pBdb.BeginTrans();
+
+                    string rtn = "";
+                    bool ok = UpdateRtvData(rtvNo, jobTyp, luggNo, pickupTrack, dropTrack, ref rtn)
+                              && UpdateJobStatus(ST_RGV_CMD, luggNo, ref rtn);
+                    if (ok) m_dicLineRsv[luggNo] = dropTrack;   // [LGLS] 드롭 라인 선점(완료 시 해제)
+
+                    if (ok)
+                    {
+                        _pBdb.Commit();
+                        m_dicPrevRGV[key] = luggNo;
+                        MakeMsg_Imp(string.Format("[SCH][RGV] RGV #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", rtvNo, luggNo, ST_RGV_CMD));
+                        break;   // [LGLS 2026-07-21] RTV 1대 — 한 폴링에 1건만 발행(같은 결과셋의 후속 후보가 덮어쓰지 않게)
+                    }
+                    else
+                    {
+                        _pBdb.Rollback();
+                        MakeMsg_Error(string.Format("[SCH][RGV] RGV #{0} 발행 실패: {1}", rtvNo, rtn));
+                    }
+                }
+            }
+            catch (System.Data.Common.DbException)
+            {
+                // RTV_DATA_LGLS 테이블 미존재(RGV 미사용 현장) 시 무시
+                try { _pBdb.Rollback(); } catch { }
+            }
+            catch (Exception ex)
+            {
+                MakeMsg_Error("[SCH][RGV] DriveRGV 오류: " + ex.Message);
+                try { _pBdb.Rollback(); } catch { }
+            }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // 구동 중 (지시 → 중)
+        //   설비가 명령을 수신(OD_RQ_YN 이 'Y'→'N' 으로 리셋)하면 "구동 중" 으로 전이.
+        // ─────────────────────────────────────────────────────────────────
+        #region RunCV / RunSC / RunRGV
+        // [LGLS] 설비 매칭을 처리별 설비위치식으로 변경 (입고/출고 2단계 처리 체인 대응)
+        private void RunCV()  { AdvanceOnAccept(ST_CV_CMD,  ST_CV_RUN,  "CV_DATA  CD", "CD.MC_NO = " + CV_POS_EXPR, "CV"); }
+        // [LGLS 2026-07-21] TRANSFER_REQUEST_OD='N'(브리지가 Vehicle 지시를 실제 소비) 조건 추가 — OD_RQ_YN 만으로는
+        //   직전 작업의 잔존값을 같은 폴링 창에서 볼 수 있음
+        private void RunSC()  { AdvanceOnAccept(ST_SC_CMD,  ST_SC_RUN,  "SC_DATA_LGLS  SD", "SD.SC_NO = " + SC_POS_EXPR + " AND SD.TRANSFER_REQUEST_OD = 'N'", "SC"); }
+        private void RunRGV() { AdvanceOnAccept(ST_RGV_CMD, ST_RGV_RUN, "RTV_DATA_LGLS RD", "RD.RTV_NO = '801' AND RD.TRANSFER_REQUEST_OD = 'N'", "RGV"); }
+
+        /// <summary>지시 상태 작업 중, 해당 설비가 명령 수신(OD_RQ_YN='N')하면 '중' 으로 전이</summary>
+        private void AdvanceOnAccept(string stFrom, string stTo, string eqTable, string joinCond, string kind)
+        {
+            try
+            {
+                string alias = eqTable.Trim().Split(' ')[eqTable.Trim().Split(' ').Length - 1];
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO                          ";
+                strSql += CRLF + "   FROM JOB_MST JM                          ";
+                strSql += CRLF + "  INNER JOIN " + eqTable + "                ";
+                strSql += CRLF + "     ON " + alias + ".WH_TYP = JM.WH_TYP AND " + joinCond + " ";
+                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP             ";
+                strSql += CRLF + "    AND JM.JOB_STATUS = :ST_FROM            ";
+                strSql += CRLF + "    AND " + alias + ".OD_RQ_YN = 'N'        ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_FROM", DbLang.VARCHAR).Value = stFrom;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
+                    string rtn = "";
+                    if (UpdateJobStatus(stTo, luggNo, ref rtn))
+                        MakeMsg(string.Format("[SCH][{0}] 작업 {1} 구동 중 → 상태 '{2}'", kind, luggNo, stTo));
+                    else
+                        MakeMsg_Error(string.Format("[SCH][{0}] 구동중 전이 실패({1}): {2}", kind, luggNo, rtn));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][" + kind + "] Run 오류: " + ex.Message); }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // 완료 감지
+        //   [LGLS] 2단계 처리 반송 체인 확정 (구 ★정책확인 반영):
+        //     입고(JOB_TYP='1') : CV 완료(15) → '20'(SC 처리 인계) / SC 완료(25) → '29'(최종)
+        //     출고(JOB_TYP='2') : SC 완료(25) → '10'(CV 처리 인계) / CV 완료(15) → '19'(최종)
+        //   ※ 최종 상태(19/29)는 WCS_TASK_HOST.GetJobCompleteReport 가 F(작업완료) 보고로
+        //     소비하는 값이다. 중간 처리가 19/29 를 거치면 조기 완료보고가 나가므로 금지.
+        // ─────────────────────────────────────────────────────────────────
+        #region CompleteCV
+        private void CompleteCV()
+        {
+            try
+            {
+                // 구동중(15) 작업 중, 명령을 발행한 CV(MC_NO=CV처리 설비위치)에서
+                // 명령이 소비되고(OD_RQ_YN='N') 팔레트가 소스에서 이탈(LUGG_NO_RD='0000')하면 완료.
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, CD.MC_NO,                    ";
+                strSql += CRLF + "        CD.SENSOR0_DATA_RD, CD.LUGG_NO_RD                    ";
+                strSql += CRLF + "   FROM JOB_MST JM                                           ";
+                strSql += CRLF + "  INNER JOIN CV_DATA CD                                      ";
+                strSql += CRLF + "     ON CD.WH_TYP = JM.WH_TYP AND CD.MC_NO = " + CV_POS_EXPR + " ";   // [LGLS]
+                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                              ";
+                strSql += CRLF + "    AND JM.JOB_STATUS = :ST_DONE                             ";
+                strSql += CRLF + "    AND CD.OD_RQ_YN   = 'N'                                  ";
+                // [LGLS 2026-07-21] 물리 이관: 빈트랙/도착 판정은 코드 분기로 이동
+                //   (입고=소스 이탈 확인, 출고=도착 관측 후 배출 확인 — CvThread 의 도착 예약 트래킹 기록을
+                //    도착으로 오인하던 조기 완료 방지)
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_DONE", DbLang.VARCHAR).Value = ST_CV_RUN;   // 중(15) 대상
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string mcNo   = GetVal(dt.Rows[i], "MC_NO");
+                    string cvSen  = GetVal(dt.Rows[i], "SENSOR0_DATA_RD");
+                    string cvLugg = GetVal(dt.Rows[i], "LUGG_NO_RD");
+                    string rtn = "";
+
+                    // [LGLS 2026-07-19] 출고대 일시정지(TR_PAUSE, 내부값) 시 도착완료 처리 보류 (해제되면 다음 폴링에 완료)
+                    if (jobTyp == "2" && IsCvPaused(mcNo)) continue;
+
+                    // [LGLS 2026-07-21] 완료 판정 (물리 이관):
+                    //   입고(1) : 픽업트랙(RGV 상차 대기 위치)에 실화물 도착(SENSOR=1 + 작업번호 일치)이면 완료.
+                    //             ("소스 빈 트랙" 판정은 입고대 자동 재투입이 이탈 직후 일어나면 빈 순간을
+                    //              관측할 수 없어 영구 대기한다 — 도착 관측은 재투입과 무관)
+                    //   출고(2) : 목적지(출고대)에서 실화물 도착(SENSOR=1 + 작업번호 일치)을 1회 관측한 뒤
+                    //             배출(빈 트랙)까지 확인되면 완료. (CvThread 의 출고 지시가 도착 예약 트래킹을
+                    //             미리 기록하므로 트래킹만으로 판정하면 조기 완료된다)
+                    bool bEmpty = (cvLugg == "" || cvLugg == "0" || cvLugg == "0000") && cvSen != "1";
+                    if (jobTyp == "1")
+                    {
+                        string pickup = RgvPickupTrack(mcNo);
+                        if (IsTrackEmpty(pickup) || TrackLugg(pickup) != luggNo) continue;
+                    }
+                    else
+                    {
+                        // [LGLS 2026-07-21] 반출(RTV) 시퀀스가 끝나기 전의 "도착"은 인정하지 않는다.
+                        //   (겸용 C/V#11 에선 예약 트래킹 + 무지시 입고 파렛트 조합이 SENSOR=1 + 작업번호 일치로
+                        //    보여 가짜 완료가 된다 — 실화물은 아직 라인 픽업트랙에 있다)
+                        if (OutSeqPending(luggNo)) continue;
+                        if (cvSen == "1" && cvLugg == luggNo)
+                        {
+                            if (!m_setOutArrived.Contains(luggNo))
+                            {
+                                m_setOutArrived.Add(luggNo);
+                                MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 실도착 관측 (배출 대기)", luggNo, mcNo));
+                            }
+                            continue;   // 배출까지 대기
+                        }
+                        if (!m_setOutArrived.Contains(luggNo))
+                        {
+                            // [LGLS 2026-07-30] 도착 관측 누락 보강: 도착~배출·데이터클리어가 폴링/미러 주기 사이에
+                            //   전부 지나가면 위의 실도착 관측이 영영 불가(SENSOR·트래킹 어느 시점에도 일치 안 함)
+                            //   → 15 영구 정체(0008/0011/0013 좀비 사례). 판정 기준은 "화물 트래킹이 전 트랙 어디에도
+                            //   없는 상태가 GRACE 동안 지속" — 설비가 이송 중이면 어느 트랙에든 트래킹이 남아 있으므로
+                            //   운반 중인 작업을 조기 완료하지 않는다. m_dicOutDoneDt 는 그 '무관측 시작 시각'.
+                            //   (IO_TASK 재기동으로 반출완료 시각을 잃은 고아 작업도 이 경로로 회수된다)
+                            if (LuggOnAnyTrack(luggNo))
+                            {
+                                m_dicOutDoneDt.Remove(luggNo);   // 트래킹 재출현 — 정상 관측 경로에 맡김
+                                continue;
+                            }
+                            DateTime dtOutDone;
+                            if (!m_dicOutDoneDt.TryGetValue(luggNo, out dtOutDone))
+                            {
+                                m_dicOutDoneDt[luggNo] = DateTime.Now;   // 무관측 시작
+                                continue;
+                            }
+                            if ((DateTime.Now - dtOutDone).TotalMilliseconds < OUT_MISS_GRACE_MS)
+                                continue;   // 아직 GRACE 미경과 — 관측 계속 대기
+                            MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 도착 관측 누락 — 화물 트래킹 {2}초 무관측, 배출 완료로 인정",
+                                luggNo, mcNo, OUT_MISS_GRACE_MS / 1000));
+                        }
+                        else
+                        {
+                            if (!bEmpty) continue;                          // 배출 진행 중
+                            m_setOutArrived.Remove(luggNo);
+                        }
+                        m_dicOutDoneDt.Remove(luggNo);
+                    }
+
+                    // [LGLS] 입고(1)는 RGV 처리로 인계(30), 출고(2)는 최종 완료(19 → HOST F보고)
+                    string stNext = (jobTyp == "1") ? ST_RGV_WAIT : ST_CV_DONE;
+
+                    if (UpdateJobStatus(stNext, luggNo, ref rtn))
+                    {
+                        ClearScOd(luggNo);	// [LGLS] SC 작업 완료 -> 해당 작업 od 클리어(잔류 방지)
+                        m_dicPrevCV.Remove("CV_" + mcNo);   // [LGLS] 발행 키(CV_+트랙번호)로 해제
+                        // [LGLS] 출고대 반출(21→22)는 SC 완료 시 m_dicOutStn(ProcessOutStn)에서 RTV 반송과 함께 시퀀스 처리
+                        if (jobTyp == "1")
+                            MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} CV 반송 완료 → RGV 처리 인계 (상태 '{1}')", luggNo, stNext));
+                        else
+                            MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} CV 반송 완료(출고 최종) → 상태 '{1}' (HOST 완료보고 대상)", luggNo, stNext));
+                    }
+                    else
+                        MakeMsg_Error(string.Format("[SCH][CV] 완료 전이 실패({0}): {1}", luggNo, rtn));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] CompleteCV 오류: " + ex.Message); }
+        }
+        #endregion
+
+        #region CheckLostInboundCargo
+        // [LGLS 2026-07-31] 입고 CV 구동중(15) 작업의 화물 유실 감지·복구.
+        //   사례(작업 0221): 겸용 입고대 122 의 미지정 파렛트를 EQP_SIM '작업자 회수'가 가져간 직후
+        //   상위 트래킹 기록이 도착 → 지시는 살아 있고 화물은 없는 상태. CompleteCV 는 픽업트랙 실도착을
+        //   요구하므로 작업이 영구히 15 에 머문다(어젯밤 출고 좀비와 달리 완료 처리하면 재고가 틀어짐).
+        //   → 화물 트래킹이 전 트랙 어디에도 없는 상태가 GRACE 지속되면 '유실'로 보고 10(구동대기)으로
+        //     되돌려 재발행시킨다. 다음 파렛트가 입고대에 오면 그 파렛트에 이 작업번호가 다시 부여된다.
+        private readonly Dictionary<string, DateTime> m_dicLostSince = new Dictionary<string, DateTime>();
+        private const int LOST_CARGO_GRACE_MS = 60000;   // 설비 이송·미러 지연을 넉넉히 상회
+
+        private void CheckLostInboundCargo()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT JM.LUGG_NO, JM.START_POS                    ";
+                q += CRLF + "   FROM JOB_MST JM                                  ";
+                q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                     ";
+                q += CRLF + "    AND JM.JOB_TYP   IN ('1','11')                  ";
+                q += CRLF + "    AND JM.JOB_STATUS = :ST_RUN                     ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_CV_RUN;
+                int nCnt = _pBdb.ExcuteQry(q);
+                if (nCnt <= 0) { m_dicLostSince.Clear(); return; }
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                List<string> lstAlive = new List<string>();
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
+                    string startPos = GetVal(dt.Rows[i], "START_POS");
+                    lstAlive.Add(luggNo);
+
+                    if (LuggOnAnyTrack(luggNo))          // 어딘가에 화물이 있으면 정상 진행 중
+                    {
+                        m_dicLostSince.Remove(luggNo);
+                        continue;
+                    }
+
+                    DateTime dtSince;
+                    if (!m_dicLostSince.TryGetValue(luggNo, out dtSince))
+                    {
+                        m_dicLostSince[luggNo] = DateTime.Now;   // 무관측 시작
+                        continue;
+                    }
+                    if ((DateTime.Now - dtSince).TotalMilliseconds < LOST_CARGO_GRACE_MS) continue;
+
+                    string rtn = "";
+                    if (UpdateJobStatus(ST_CV_WAIT, luggNo, ref rtn))
+                    {
+                        m_dicLostSince.Remove(luggNo);
+                        m_dicPrevCV.Remove("CV_" + startPos);   // 재발행 허용(DriveCV 중복 발행 방지 키 해제)
+                        MakeMsg_Error(string.Format(
+                            "[SCH][CV] 작업 {0} 화물 유실 감지 - 입고대 {1}·픽업트랙 포함 전 트랙에서 {2}초간 미관측 → 상태 '{3}'(재발행 대기)로 복구",
+                            luggNo, startPos, LOST_CARGO_GRACE_MS / 1000, ST_CV_WAIT));
+                    }
+                    else
+                        MakeMsg_Error(string.Format("[SCH][CV] 화물 유실 복구 전이 실패({0}): {1}", luggNo, rtn));
+                }
+
+                // 더 이상 15 가 아닌 작업의 관측기록 정리
+                List<string> lstDrop = new List<string>();
+                foreach (var kv in m_dicLostSince) if (!lstAlive.Contains(kv.Key)) lstDrop.Add(kv.Key);
+                for (int i = 0; i < lstDrop.Count; i++) m_dicLostSince.Remove(lstDrop[i]);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] CheckLostInboundCargo 오류: " + ex.Message); }
+        }
+        #endregion
+
+        #region CompleteSC
+        private void CompleteSC()
+        {
+            try
+            {
+                // 구동중(25) 작업 중, 해당 S/C(SC_NO=SC처리 설비위치)의 완료신호(COMPLETE_RD<>0)
+                // 이고 명령이 소비(OD_RQ_YN='N')되었으면 완료.  [슬라이드17 Transfer Complete]
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, SD.SC_NO                     ";
+                strSql += CRLF + "   FROM JOB_MST JM                                           ";
+                strSql += CRLF + "  INNER JOIN SC_DATA_LGLS SD                                       ";
+                strSql += CRLF + "     ON SD.WH_TYP = JM.WH_TYP AND SD.SC_NO = " + SC_POS_EXPR + " ";   // [LGLS]
+                strSql += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                             ";
+                strSql += CRLF + "    AND JM.JOB_STATUS  = :ST_RUN                             ";
+                strSql += CRLF + "    AND SD.OD_RQ_YN    = 'N'                                 ";
+                // [LGLS 2026-07-24] 완료 판정: 완료신호(COMPLETE_RD<>0) OR 지속완결(유휴+포크빔+스트로브 내려감+경과).
+                //   VehThread 의 COMPLETE_RD 는 UNLOAD_COMPLETE 단발이라, 포화 시 CompleteSC 폴링 창을 놓치면
+                //   신호가 소실돼 25 에 영구 정체한다. SC 가 유휴(UCSTATUS_RD='1')+포크 빔(ITN_LUGG_FK1 빔)+
+                //   지시 스트로브 내려감(TRANSFER_REQUEST_OD='N')이고 25 전이 후 3초 경과면 이송 완결로 인정(백업).
+                strSql += CRLF + "    AND ( ( SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ) ";
+                strSql += CRLF + "       OR ( SD.UCSTATUS_RD = '1'                              ";
+                strSql += CRLF + "            AND SD.TRANSFER_REQUEST_OD = 'N'                   ";
+                strSql += CRLF + "            AND ISNULL(SD.ITN_LUGG_FK1,'0') IN ('0','00','0000','') ";
+                strSql += CRLF + "            AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= 3 ) ) ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_SC_RUN;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string scNo   = GetVal(dt.Rows[i], "SC_NO");
+                    string rtn = "";
+
+                    // [LGLS] 출고(2)는 CV 처리로 인계, 입고(1)는 최종 완료(29 → HOST F보고)
+                    string stNext = (jobTyp == "2") ? ST_CV_WAIT : ST_SC_DONE;
+
+                    if (UpdateJobStatus(stNext, luggNo, ref rtn))
+                    {
+                        ClearScOd(luggNo);	// [LGLS] SC 작업 완료 -> 해당 작업 od 클리어(잔류 방지)
+                        m_dicPrevSC.Remove("SC_" + scNo);   // [LGLS] 발행 키(SC_+호기번호)로 해제
+                        // [LGLS 2026-07-21] 완료신호 소비 즉시 리셋 — 잔존 COMPLETE_RD 를 다음 작업이
+                        //   같은 폴링 창에서 보고 조기 완료되는 것 방지
+                        try
+                        {
+                            _pBdb.mComMain.CommandType = CommandType.Text;
+                            _pBdb.mComMain.Parameters.Clear();
+                            _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                            _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
+                            string strSqlCmpRst = "";
+                            strSqlCmpRst += CRLF + " UPDATE SC_DATA_LGLS                  ";
+                            strSqlCmpRst += CRLF + "    SET COMPLETE_RD  = '0'       ";
+                            strSqlCmpRst += CRLF + "  WHERE WH_TYP       = :WH_TYP   ";
+                            strSqlCmpRst += CRLF + "    AND SC_NO        = :SC_NO    ";
+                            _pBdb.ExcuteNonQry(strSqlCmpRst);
+                        }
+                        catch { }
+                        if (jobTyp == "2")
+                            MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료 → CV 처리 인계 (상태 '{1}')", luggNo, stNext));
+                        else
+                            MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료(입고 최종) → 상태 '{1}' (HOST 완료보고 대상)", luggNo, stNext));
+                    }
+                    else
+                        MakeMsg_Error(string.Format("[SCH][SC] 완료 전이 실패({0}): {1}", luggNo, rtn));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][SC] CompleteSC 오류: " + ex.Message); }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS] SC 자동완주 (TASK프로그램 부재 시뮬레이션)
+        //   현 환경에는 SC PLC TASK프로그램이 없어(WCS_TASK_CV 는 CV 전용)
+        //   SC_DATA_LGLS 핸드셰이크가 진행되지 않는다. [CNF] SC_AUTO_COMPLETE=1 이면
+        //   SC 처리를 JOB_MST 상태만으로 타이머 전이시켜 시나리오를 완주시킨다.
+        //     20(대기) → 21(지시, 즉시) → 25(중, 지시 후 1초) → 완료(지시 후 5초)
+        //     완료 시 : 입고(1) → '29'(최종, HOST F보고 대상) / 출고(2) → '10'(CV 처리 인계)
+        //   ※ SC_DATA_LGLS 의 _OD 컬럼은 기록하지 않는다 (소비 주체가 없어 OD_RQ_YN='Y' 로
+        //     잔류하면 후속 작업이 막히기 때문). 실제 SC TASK프로그램 도입 시
+        //     SC_AUTO_COMPLETE=0 으로 바꾸면 기존 DriveSC/RunSC/CompleteSC 경로가 동작한다.
+        // ─────────────────────────────────────────────────────────────────
+        #region AutoRunSC
+        private void AutoRunSC()
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.JOB_STATUS,                  ";
+                strSql += CRLF + "        JM.START_POS, JM.DEST_POS,                              ";
+                strSql += CRLF + "        JM.START_LOCATION, JM.DEST_LOCATION                     ";
+                strSql += CRLF + "   FROM JOB_MST JM                                              ";
+                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                                 ";
+                strSql += CRLF + "    AND JM.JOB_STATUS IN ('" + ST_SC_WAIT + "','" + ST_SC_CMD + "','" + ST_SC_RUN + "') ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                DateTime now = DateTime.Now;
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string status   = GetVal(dt.Rows[i], "JOB_STATUS");
+                    string startPos = GetVal(dt.Rows[i], "START_POS");
+                    string destPos  = GetVal(dt.Rows[i], "DEST_POS");
+                    string startLoc = GetVal(dt.Rows[i], "START_LOCATION");
+                    string destLoc  = GetVal(dt.Rows[i], "DEST_LOCATION");
+                    // [LGLS] 랙 저장 bay = LOCATION "BB-LLL-DD" 첫 2자리(입고=목적지, 출고=출발지). SC POS_H(레일위치)로 직접 사용.
+                    string rackLoc  = (jobTyp == "1") ? destLoc : startLoc;
+                    string rackBay  = (!string.IsNullOrEmpty(rackLoc) && rackLoc.Length >= 2) ? rackLoc.Substring(0, 2) : "0";
+                    string rtn = "";
+
+                    if (status == ST_SC_WAIT)
+                    {
+                        // [LGLS 2026-07-19] SC suspend 게이트(SC 대화상자): 1=입고정지, 2=출고정지, 3=입출고정지 — 해당 방향 지시 금지
+                        string _scNo = (jobTyp == "1") ? destPos : startPos;
+                        if (!ScSuspendAllows(_scNo, jobTyp)) continue;
+                        // [LGLS 2026-07-19] SC 작업대(라인 트랙) 일시정지 게이트: 입고=픽업트랙(짝수), 출고=하역트랙(짝수) — 정지 시 SC 지시 안 함
+                        {
+                            string _wT;
+                            if (jobTyp == "1") { string _d = RgvDropTrack(destPos); int _n; _wT = int.TryParse(_d, out _n) ? (_n + 1).ToString() : _d; }
+                            else _wT = RgvOutDropTrack(startPos);
+                            if (IsCvPaused(_wT)) continue;
+                            // [LGLS 2026-08-04] 출고: 출고 H/S 라인에 화물이 감지되면 전 크레인 공통으로 SC 출고 지시 금지.
+                            //   (지시해버리면 크레인이 화물을 싣고 H/S 앞에서 하역하지 못한 채 대기하게 됨)
+                            //   짝수(SC 하역)뿐 아니라 홀수(RTV 픽업)까지 본다 — 어느 쪽이든 비어야 내보낼 수 있다.
+                            if (jobTyp == "2" && IsOutHsOccupied(_wT)) continue;
+                            // [LGLS 2026-07-20] SC1 특례: SC1 은 입고 드롭과 출고 반출이 라인 트랙(C/V#2=103/104)을 공유한다.
+                            //   아래 중 하나라도 걸리면 SC1 출고 지시를 보류한다(동시 진행 시 정면 경합/교착).
+                            if (jobTyp == "2" && startPos == "901")
+                            {
+                                //  ① SC1행 입고 작업을 RTV 가 이미 받았다(대기 30 / 지시 31 / 운반 35)
+                                if (HasSc1InboundOnRtv()) continue;
+                                //  ② 공유 라인(트랙 103/104)에 진행 중인 입고 화물이 올라와 있다
+                                if (HasInboundCargoOnTracks("'103','104'")) continue;
+                            }
+                        }
+                        // [LGLS] 입고: 화물이 16(픽업트랙)에 도착한 뒤에만 SC 지시(15에서 조기지시 방지)
+                        if (jobTyp == "1") { string _dT = RgvDropTrack(destPos); int _pn2; string _pT = int.TryParse(_dT, out _pn2) ? (_pn2 + 1).ToString() : _dT; if (IsTrackEmpty(_pT)) continue; }
+                        // 대기(20) → 지시(21) : 즉시 발행 + 지시시각 기록
+                        if (UpdateJobStatus(ST_SC_CMD, luggNo, ref rtn))
+                        {
+                            m_dicScIssueDt[luggNo] = now;
+                            // [LGLS] 지시=RUN. 입고(1)는 빈 크레인이 먼저 H/S(입력 컨베이어 하단, POS_H_RD=0)로 이동
+                            //   (아직 픽업 전 → 팔레트 '0', 적재완료 '0', 목적지 인자 '0' 으로 POS_H_RD=0 강제).
+                            //   출고(2)는 기존 동작(크레인 위치=목적지 베이) 유지.
+                            if (jobTyp == "1")
+                                UpdateScVehicle(destPos, "2", "0", startPos, "0", "0", "0", "1", "1", "", "1");  // [LGLS] 빈차 H/S 이동(입고 작업색 유지)
+                            else
+                                UpdateScVehicle(startPos, "2", "0", startPos, "4", "0", "0", "1", "1", "", "2");
+                            MakeMsg_Imp(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 지시 - 작업 {0}(TYP:{1}) From:{2} To:{3} → 상태 '{4}'",
+                                luggNo, jobTyp, startPos, destPos, ST_SC_CMD));
+                        }
+                        else
+                            MakeMsg_Error(string.Format("[SCH][SC] SC 자동완주 지시 실패({0}): {1}", luggNo, rtn));
+                        continue;
+                    }
+
+                    // 지시시각 미보유(재기동 등) 시 현재시각으로 보정
+                    if (!m_dicScIssueDt.ContainsKey(luggNo))
+                        m_dicScIssueDt[luggNo] = now;
+
+                    double elapsedMs = (now - m_dicScIssueDt[luggNo]).TotalMilliseconds;
+
+                    if (status == ST_SC_CMD && elapsedMs >= SC_AUTO_ACCEPT_MS)
+                    {
+                        // [LGLS] 입고: 라인 픽업트랙(16)에서 **적재 4단계 시퀀스**로 집어올린 뒤 랙 bay 로 출발.
+                        //   (데이터만 표시된 채 H/S 대기 →2s→ SC 화물 표시 →2s→ 라인 화물·데이터 제거 →2s→ 출발)
+                        if (jobTyp == "1")
+                        {
+                            string dropT = RgvDropTrack(destPos); int pn; string pickT = int.TryParse(dropT, out pn) ? (pn + 1).ToString() : dropT;
+                            if (RvSeqFresh(luggNo + ":SL"))
+                                UpdateScVehicle(destPos, "2", luggNo, startPos, "0", "0", "0", "1", "1", "", "1");   // 데이터만(화물감지 X), H/S(0) 정지
+                            if (!RvSeqStep(luggNo + ":SL", true, "S", destPos, pickT, luggNo, "1")) continue;
+                            UpdateScVehicle(destPos, "2", luggNo, startPos, rackBay, "1", "0", "1", "1", "", "1");   // 화물 싣고 랙 bay 로
+                        }
+                        else UpdateScVehicle(startPos, "2", luggNo, "4", "0", "1", "0", "1", "1", "", "2"); // [LGLS] 출고=H/S(0)로 반출
+                        // 지시(21) → 중(25)
+                        if (UpdateJobStatus(ST_SC_RUN, luggNo, ref rtn))
+                            MakeMsg(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 구동 중 - 작업 {0} → 상태 '{1}'", luggNo, ST_SC_RUN));
+                        else
+                            MakeMsg_Error(string.Format("[SCH][SC] SC 자동완주 구동중 전이 실패({0}): {1}", luggNo, rtn));
+                    }
+                    // [LGLS] 출고는 크레인이 출고 H/S(bay0)에 도달했을 때만 완료(랙 중간 완료 방지)
+                    // [LGLS] 출고는 라인CV 하역트랙(짝수)이 비었을 때만 완료 — 선행 화물이 아직 있으면 H/S 에서 대기
+                    //   (그냥 쓰면 선행 화물을 덮어써서 유실됨)
+                    //   ※ CanEnterLine 은 **하역 시퀀스 시작 전에만** 검사한다. 시퀀스가 하역트랙에 화물을 올린 뒤에도
+                    //     검사하면 '자기가 놓은 화물' 때문에 이 else-if 조건이 깨져, 완료 처리(m_dicCvMove 등록 = 4→3 트래킹)에
+                    //     도달하지 못하고 화물이 하역트랙에 멈춰 선다.
+                    else if (status == ST_SC_RUN && elapsedMs >= SC_AUTO_COMPLETE_MS
+                        && (jobTyp != "2" || !m_dicCraneCur.ContainsKey("S" + startPos) || m_dicCraneCur["S" + startPos] <= 0)
+                        && (jobTyp != "2" || !RvSeqFresh(luggNo + ":SU") || CanEnterLine(RgvOutDropTrack(startPos), luggNo)))
+                    {
+                        // [LGLS] 출고: 라인CV 하역트랙에 **하역 4단계 시퀀스**를 완주한 뒤 상태 전이.
+                        //   (데이터+화물 실은 채 도착 →2s→ SC 화물 사라짐 →2s→ 라인에 화물만 →2s→ SC 데이터 사라지고 라인에 데이터)
+                        //   상태 전이 뒤에는 이 분기로 되돌아올 수 없으므로 반드시 전이 '전에' 완주시킨다.
+                        if (jobTyp == "2" && !RvSeqStep(luggNo + ":SU", false, "S", startPos, RgvOutDropTrack(startPos), luggNo, "2",
+                                                        (destPos == "126" ? "126" : (destPos == "124" || destPos == "122" || destPos == "129") ? destPos : "122")))
+                            continue;
+                        // 중(25) → 완료 : 입고(1)=최종 29, 출고(2)=CV 처리 인계 10
+                        string stNext = (jobTyp == "2") ? ST_CV_WAIT : ST_SC_DONE;
+                        if (UpdateJobStatus(stNext, luggNo, ref rtn))
+                        {
+                            m_dicScIssueDt.Remove(luggNo);
+                            UpdateScVehicle((jobTyp == "1") ? destPos : startPos, "1", "0", startPos, destPos, "1", "1", "0", "0", destPos, "0"); // [LGLS] 완료=하역완료,IDLE,작업색해제
+                            if (jobTyp == "1") { RvSeqReset(luggNo + ":SL"); RvSeqReset(luggNo + ":SU"); }  // [LGLS] 픽업트랙 클리어는 적재 시퀀스가 이미 수행 → 시퀀스 키만 정리
+                            // [LGLS] 출고: 라인CV 짝수(H/S 하역)→홀수(RGV 픽업측) 이동만 예약. RTV 출고대 반출은
+                            //   홀수 트랙에 실제 도착했을 때 ProcessCvMove 가 대기열(m_lstOutPend)에 넣고 ProcessOutPend 가 태운다.
+                            // [LGLS] 출고: 라인CV 짝수 트랙의 화물·데이터는 위 하역 시퀀스가 이미 기록함 → 여기선 짝수→홀수(RGV 픽업측) 이동만 예약.
+                            else if (jobTyp == "2") { string even = RgvOutDropTrack(startPos); int pn; string odd = int.TryParse(even, out pn) ? (pn - 1).ToString() : even; m_dicCvMove[even] = new CvMovePend { Due = now.AddMilliseconds(2500), Odd = odd, Lugg = luggNo, JobTyp = "2", NoClear = true, OutStn = (destPos == "126" ? "126" : (destPos == "124" || destPos == "122" || destPos == "129") ? destPos : "122") }; RvSeqReset(luggNo + ":SL"); RvSeqReset(luggNo + ":SU"); }  // OutStn=출고대(로직1=124/로직3=122)
+                            if (jobTyp == "2")
+                                MakeMsg_Imp(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 완료 - 작업 {0} → CV 처리 인계 (상태 '{1}')", luggNo, stNext));
+                            else
+                                MakeMsg_Imp(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 완료 - 작업 {0}(입고 최종) → 상태 '{1}' (HOST 완료보고 대상)", luggNo, stNext));
+                        }
+                        else
+                            MakeMsg_Error(string.Format("[SCH][SC] SC 자동완주 완료 전이 실패({0}): {1}", luggNo, rtn));
+                    }
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][SC] AutoRunSC 오류: " + ex.Message); }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS] RGV(RTV) 자동완주 (입고 전용, TASK프로그램 부재 시뮬레이션)
+        //   입고 CV 완료('30') → RGV 가 입력 컨베이어에서 팔레트를 픽업하여 크레인 하역대(드롭 트랙)
+        //   까지 물리적으로 이동하는 모습을 RTV_DATA_LGLS 관측치로 애니메이션한 뒤 SC 처리('20')로 인계.
+        //     30(대기) → 31(지시: 빈 RGV 픽업지점 이동, 즉시)
+        //              → 35(중: 픽업 후 드롭지점 이동, 지시 후 1.2초)
+        //              → 20(드롭완료: RGV 홈복귀 IDLE + SC 처리 인계, 지시 후 2.6초)
+        //   ※ RGV 는 1대(RTV_NO='801'). 레이아웃 토폴로지(픽업/드롭 트랙, 화면 셀)는 고정 매핑.
+        //     _OD 명령 컬럼은 소비 주체(PLC TASK프로그램)가 없어 기록하지 않고 _RD 관측치만 갱신한다.
+        // ─────────────────────────────────────────────────────────────────
+        #region AutoRunRGV
+        private void AutoRunRGV()
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.JOB_STATUS,                  ";
+                strSql += CRLF + "        JM.START_POS, JM.DEST_POS                               ";
+                strSql += CRLF + "   FROM JOB_MST JM                                              ";
+                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                                 ";
+                strSql += CRLF + "    AND JM.JOB_STATUS IN ('" + ST_RGV_WAIT + "','" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                DateTime now = DateTime.Now;
+
+                // [LGLS] RGV는 단일 유닛: 가장 진행된 작업 1건만 처리(35>31>30). 나머지는 대기 → 주행 스텝 안정화
+                int chosenIdx = 0;
+                for (int k = 1; k < dt.Rows.Count; k++)
+                    if (string.Compare(GetVal(dt.Rows[k], "JOB_STATUS"), GetVal(dt.Rows[chosenIdx], "JOB_STATUS")) > 0) chosenIdx = k;
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    if (i != chosenIdx) continue;   // [LGLS] 단일 RGV: 선택된 1건만
+                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
+                    string status   = GetVal(dt.Rows[i], "JOB_STATUS");
+                    string startPos = GetVal(dt.Rows[i], "START_POS");
+                    string destPos  = GetVal(dt.Rows[i], "DEST_POS");
+                    string rtn = "";
+
+                    // [LGLS] 고정 레이아웃 라우팅 : 픽업 트랙(입력 컨베이어) / 드롭 트랙(크레인 하역대)
+                    string pickupTrack = RgvPickupTrack(startPos);
+                    string dropTrack   = RgvDropTrack(destPos);
+
+                    if (status == ST_RGV_WAIT)
+                    {
+                        // [LGLS] 드롭 라인이 비고 예약도 없을 때만 RTV 를 커밋(교착 방지 — 위 m_dicLineRsv 주석 참조).
+                        //   막혀 있으면 지시하지 않고 대기 → RTV 가 자유로워져 그 라인의 출고 화물이 먼저 빠진다.
+                        if (!CanEnterLine(dropTrack, luggNo)) continue;
+                        // [LGLS 2026-07-19] RTV 상호배타: 출고대 반출 시퀀스가 RTV 사용 중(Stage 0~2)이면
+                        //   입고 지시를 보류한다 (RTV 는 1대 — 동시 점유 시 입고↔출고 색 깜빡임/동시 픽업·하역 발생).
+                        if (RtvBusyByOutbound()) continue;
+                        // [LGLS 2026-07-20] SC1 특례: SC1(901) 출고 작업이 미종결로 존재하면 SC1행 입고의 RTV 반송을 보류.
+                        //   화물은 픽업트랙(RTV 로딩 위치, 상태 30)까지는 진행하며, SC1 출고 완료 후 반송한다. (902~905행 입고는 무관)
+                        if (destPos == "901" && HasActiveSc1Outbound()) continue;
+                        // [LGLS 2026-07-19] RTV 작업정지(RTV 대화상자 suspend) — RTV 에 작업지시 안 함
+                        if (IsRtvSuspended()) continue;
+                        // [LGLS 2026-07-19] RTV 작업대(픽업/드롭 트랙) 일시정지 — RTV 지시 안 함
+                        if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;
+                        // 대기(30) → 지시(31) : [LGLS] 파렛트는 22(입고대)에 유지, 빈 RGV 가 입고대(RT#21=plc15)로 이동.
+                        //   22→21 이송은 IN_DWELL 경과 후(아래) — "22 등장"이 화면에 충분히 보이도록.
+                        if (UpdateJobStatus(ST_RGV_CMD, luggNo, ref rtn))
+                        {
+                            m_dicLineRsv[luggNo] = dropTrack;   // [LGLS] 드롭 라인 선점(드롭 완료 시 해제)
+                            m_dicRgvIssueDt[luggNo] = now;
+                            m_setInShifted.Remove(luggNo);
+                            // [LGLS] RTV 가 화물 없이 입고대 픽업트랙(RgvCell(pickupTrack))으로 이동(입고색). allowEmptyMove 로 빈차 접근 허용. (122→121=plc15, 126→125=plc4)
+                            //   화물감지는 아직 없고 **데이터(LUGG_OD)만** 실어 보낸다 — "실으러 오는 RV 는 데이터만 있어야 한다".
+                            UpdateRtvVehicle("801", "2", "0", RgvCell(pickupTrack), "1", "0", luggNo, pickupTrack, dropTrack, allowEmptyMove: true);
+                            MakeMsg_Imp(string.Format("[SCH][RGV] RGV 지시 - 작업 {0} 입고대 등장 유지 + RTV 입고대 이동 → 상태 '{1}'",
+                                luggNo, ST_RGV_CMD));
+                        }
+                        else
+                            MakeMsg_Error(string.Format("[SCH][RGV] RGV 자동완주 지시 실패({0}): {1}", luggNo, rtn));
+                        continue;
+                    }
+
+                    // 지시시각 미보유(재기동 등) 시 현재시각으로 보정
+                    if (!m_dicRgvIssueDt.ContainsKey(luggNo))
+                        m_dicRgvIssueDt[luggNo] = now;
+
+                    double elapsedMs = (now - m_dicRgvIssueDt[luggNo]).TotalMilliseconds;
+
+                    // [LGLS] 22→21 이송은 CV처리(FeedInGate)에서 이미 완료 → 여기(RGV처리)선 RTV 픽업만.
+                    if (status == ST_RGV_CMD && elapsedMs >= RGV_ACCEPT_MS)
+                    {
+                        // 지시(31) → 중(35) : [LGLS] RTV 입고대 도착 → **적재 4단계 시퀀스** 후 드롭 지점으로 이동
+                        m_setInShifted.Remove(luggNo);       // [LGLS] 이송 플래그 정리
+                        // [LGLS 2026-07-19] "도착 스냅"(순간이동) 제거 — StepCranes 주행이 실제 픽업 셀에 도착한 뒤에만 적재 시작.
+                        //   (스냅은 내부 위치만 목표로 맞춰 StepCranes 가 POS_H 를 더 이상 안 씀 → 화면 위치 불일치)
+                        { int _pc = 0; int.TryParse(RgvCell(pickupTrack), out _pc);
+                          int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
+                          if (RvSeqFresh(luggNo + ":L") && _cur != _pc) { m_dicCraneTgt["R801"] = _pc; continue; } }   // 도착까지 대기(주행은 StepCranes)
+                        // [LGLS] 도착 상태를 1회만 세팅: 데이터(LUGG_OD)만 있고 화물감지는 아직 없음. 픽업지점에 정지.
+                        if (RvSeqFresh(luggNo + ":L"))
+                            UpdateRtvVehicle("801", "2", "0", RgvCell(pickupTrack), "1", "0", luggNo, pickupTrack, dropTrack, allowEmptyMove: true);
+                        // 적재: →2s→ RTV 화물 표시 →2s→ 입고대 화물·데이터 제거 →2s→ 완료(아래에서 출발)
+                        if (!RvSeqStep(luggNo + ":L", true, "R", "801", pickupTrack, luggNo, "1")) continue;
+                        //   적재중(팔레트+센서 코너마커) + BLUE 운반레일(LUGG_OD). 화면 위치 = 드롭 트랙 셀.
+                        UpdateRtvVehicle("801", "2", luggNo, RgvCell(dropTrack), "1", "1", luggNo, pickupTrack, dropTrack);
+                        if (UpdateJobStatus(ST_RGV_RUN, luggNo, ref rtn))
+                            MakeMsg(string.Format("[SCH][RGV] RGV 자동완주(TASK프로그램 부재 시뮬레이션) 운반중 - 작업 {0} 드롭이동 Track:{1} → 상태 '{2}'",
+                                luggNo, dropTrack, ST_RGV_RUN));
+                        else
+                            MakeMsg_Error(string.Format("[SCH][RGV] RGV 자동완주 운반중 전이 실패({0}): {1}", luggNo, rtn));
+                    }
+                    else if (status == ST_RGV_RUN && elapsedMs >= RGV_DONE_MS)
+                    {
+                        // [LGLS] 라인 진입 가드는 **하역 시퀀스 시작 전에만** 검사한다.
+                        //   시퀀스 2단계가 바로 이 드롭트랙에 화물을 올리므로, 시작 후에도 계속 검사하면
+                        //   '자기가 놓은 화물' 때문에 CanEnterLine 이 false 가 되어 아래 완료 처리
+                        //   (m_dicCvMove 등록 = 15→16 트래킹)에 영영 도달하지 못하고 트랙에 멈춰 선다.
+                        if (RvSeqFresh(luggNo + ":U") && !CanEnterLine(dropTrack, luggNo)) continue;
+                        // 중(35) → 드롭완료 : [LGLS] RTV 드롭지점 도착 → **하역 4단계 시퀀스**
+                        //   (데이터+화물 실은 채 도착 →2s→ RTV 화물 사라짐 →2s→ 라인에 화물만 →2s→ RTV 데이터 사라지고 라인에 데이터)
+                        // [LGLS 2026-07-19] "드롭지점 도착 스냅"(순간이동) 제거 — 주행이 실제 드롭 셀에 도착해야 하역 시작.
+                        //   (기존엔 적재(~6s) 후 타이머(6.5s)가 이미 만료라 드롭이 즉시 발동, RTV 가 픽업/중간 위치에
+                        //    표시된 채 드롭 트랙(예: 로직2 7번)에 화물이 생기는 위치 불일치 발생)
+                        { int _dc = 0; int.TryParse(RgvCell(dropTrack), out _dc);
+                          int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
+                          if (RvSeqFresh(luggNo + ":U") && _cur != _dc) { m_dicCraneTgt["R801"] = _dc; continue; } }   // 도착까지 대기
+                        if (!RvSeqStep(luggNo + ":U", false, "R", "801", dropTrack, luggNo, "1")) continue;
+                        // 시퀀스가 라인 트랙에 화물+데이터를 이미 기록함 → RGV 홈복귀 IDLE 후 SC 처리('20') 인계
+                        UpdateRtvVehicle("801", "1", "0", "0", "0", "0", "0", "0", "0");
+                        { int _pn; string _pickT = int.TryParse(dropTrack, out _pn) ? (_pn + 1).ToString() : dropTrack; m_dicCvMove[dropTrack] = new CvMovePend { Due = DateTime.Now.AddMilliseconds(2500), Odd = _pickT, Lugg = luggNo, JobTyp = "1", NoClear = true }; }  // [LGLS] 입고: 15→16 자동 진행(NoClear=SC 픽업 시 클리어). SC 지시는 16 도착 후
+                        m_dicLineRsv.Remove(luggNo);   // [LGLS] 드롭 완료 → 라인 예약 해제
+                        RvSeqReset(luggNo + ":L"); RvSeqReset(luggNo + ":U");   // [LGLS] 시퀀스 키 정리(작업 재사용 대비)
+                        if (UpdateJobStatus(ST_SC_WAIT, luggNo, ref rtn))
+                        {
+                            m_dicRgvIssueDt.Remove(luggNo);
+                            MakeMsg_Imp(string.Format("[SCH][RGV] RGV 자동완주(TASK프로그램 부재 시뮬레이션) 드롭완료 - 작업 {0} → SC 처리 인계 (상태 '{1}')",
+                                luggNo, ST_SC_WAIT));
+                        }
+                        else
+                            MakeMsg_Error(string.Format("[SCH][RGV] RGV 자동완주 드롭완료 전이 실패({0}): {1}", luggNo, rtn));
+                    }
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] AutoRunRGV 오류: " + ex.Message); }
+        }
+
+        // [LGLS] RGV 라우팅 헬퍼 (고정 레이아웃 토폴로지 - 현장 배치도 기준 하드코딩)
+        //   픽업 트랙 : START_POS(입력 컨베이어 워크스테이션) 가 짝수면 -1 한 홀수 트랙, 홀수면 그대로.
+        //   예외 : 로직2 입고대 130(C/V#15=트랙 130/131/132, FirstTrack=130)만 RGV측이 **+1 한 131**(TR#31=plc10).
+        //          짝수-1 규칙을 그대로 쓰면 129 가 되는데, 129 는 C/V#14 의 출고대라 별개 설비다.
+        private static string RgvPickupTrack(string startPos)
+        {
+            if (startPos == "130") return "131";
+            // [LGLS 2026-07-19] 출고대 129(C/V#14=트랙 127/128/129)는 홀수라 "홀수면 그대로" 규칙을 타면
+            //   하역트랙=129(자기 자신)가 되어, RTV 하역 화물이 배출트랙을 스스로 점유 → Stage 3 영구 차단
+            //   → m_dicOutStn 미해제 → RTV 운반 전면 정지 + FeedInGate 공급 보류 교착.
+            //   실배치(RGV 하역=127 → 128 → 배출=129)대로 127 을 하역트랙으로 사용한다.
+            if (startPos == "129") return "127";
+            int n;
+            if (int.TryParse(startPos, out n))
+                return (n % 2 == 0) ? (n - 1).ToString() : startPos;
+            return startPos;
+        }
+        //   드롭 트랙 : DEST_POS(크레인 9xx) → 크레인 하역대 트랙.
+        private static readonly Dictionary<string, string> m_dicRgvDrop = new Dictionary<string, string>()
+        { { "901", "103" }, { "902", "107" }, { "903", "111" }, { "904", "115" }, { "905", "119" } };
+        private static string RgvDropTrack(string destPos)
+        {
+            return m_dicRgvDrop.ContainsKey(destPos) ? m_dicRgvDrop[destPos] : destPos;
+        }
+        //   [LGLS] 출고 라인 드롭 트랙(짝수) : 크레인 9xx → 출고 라인 짝수 트랙. SC 하역=짝수(14), RGV 픽업=홀수(13=짝수-1).
+        //   일반식은 SC k → 출고 C/V#(2k-1) 이지만 k=1 은 C/V#1 이 존재하지 않음(라인 C/V 는 #2~#10).
+        //   **S/C 1호기만 예외로 입고·출고 모두 C/V#2(트랙 103/104)** — 그래서 C/V#2 만 방향전환형(WorldModel HasDirection=(n==2)).
+        //   즉 SC1 출고: H/S 하역=104(SC측 짝수포트) → RGV 픽업=103(RGV측 홀수포트, RT#03→plc3).
+        //   (구값 "901","102" 는 트랙 101/102=존재하지 않는 C/V#1 을 가리켜 SC1 출고가 동작하지 않았음.)
+        private static readonly Dictionary<string, string> m_dicRgvOutDrop = new Dictionary<string, string>()
+        { { "901", "104" }, { "902", "106" }, { "903", "110" }, { "904", "114" }, { "905", "118" } };
+        private static string RgvOutDropTrack(string cranePos)
+        {
+            return m_dicRgvOutDrop.ContainsKey(cranePos) ? m_dicRgvOutDrop[cranePos] : cranePos;
+        }
+        //   화면 셀 : 트랙번호 → RTV_DATA_LGLS.POS_H_RD(=EcsDefine <Position> plc값). Client가 m_MapRtvPosition[plc]→view 로 재매핑하므로
+        //   트랙 N → RT#N → 해당 plc 를 써야 함(RT#03→3,05→5,07→6,09→8,11→9,13→11,15→12,17→13,19→14,21→15,23→2,31→10). 미매핑 트랙은 홈(0).
+        private static readonly Dictionary<string, string> m_dicRgvCell = new Dictionary<string, string>()
+        { { "121", "15" }, { "123", "2" }, { "130", "10" }, { "131", "10" },   // 131=130(C/V#15 입고대)의 RGV측 픽업트랙(TR#31=plc10)
+          { "103", "3" }, { "107", "6" }, { "111", "9" }, { "115", "12" }, { "119", "14" },      // 입고 홀수라인(RT#03,07,11,15,19)
+          { "101", "1" }, { "105", "5" }, { "109", "8" }, { "113", "11" }, { "117", "13" },      // 출고 홀수라인(RT#01,05,09,13,17) — RTV 픽업지점
+          { "125", "4" }, { "126", "4" }, { "124", "2" }, { "129", "7" }, { "127", "7" } };       // 스테이션: 126입고대(C/V#13)=RT#25=plc4, 124출고대(C/V#12)=RT#23=plc2, 129출고대(C/V#14)=RT#27=plc7, 127=129의 RGV 하역트랙(동일 plc7)
+        private static string RgvCell(string track)
+        {
+            return m_dicRgvCell.ContainsKey(track) ? m_dicRgvCell[track] : "0";
+        }
+
+        // [LGLS] 라인 진입 가드.
+        //   기본: 진입 트랙이 비었을 때만 진입(선행 화물 덮어쓰기=유실 방지).
+        //   예외: S/C 1호기 라인(C/V#2 = 트랙 103/104)만 입고·출고 겸용(WorldModel HasDirection=(n==2)).
+        //     실설비는 방향워드로 한 번에 한 방향만 쓰지만, 시뮬레이션에서 양방향 화물이 동시에 진입하면
+        //     입고 화물(103 에서 104 대기)과 출고 화물(104 에서 103 대기)이 서로를 기다려 **교착**한다.
+        //     → 겸용 라인은 두 트랙이 모두 비고 예약된 이동도 없을 때만 진입시켜 한 번에 한 방향만 쓰게 한다.
+        private static readonly string[] SHARED_LINE_CV2 = { "103", "104" };
+
+        // [LGLS] 라인 예약: 입고 RGV 처리가 화물을 싣기 전(30→31)에 드롭 라인을 선점한다.
+        //   RTV 는 1대뿐인데 입고 처리와 출고대 반출이 조율 없이 RTV 를 점유하면
+        //   "입고가 RTV 를 든 채 라인 비기를 대기 → 그 라인의 출고 화물은 RTV(출고대 반출)를 대기" 로 **교착**한다.
+        //   → 라인이 비고 예약도 없을 때만 RTV 를 커밋하고, 드롭 전까지 예약을 유지한다.
+        //     이러면 RTV 를 든 입고는 항상 드롭 가능(=RTV 반드시 해제)하므로 순환 대기가 성립하지 않는다.
+        private readonly Dictionary<string, string> m_dicLineRsv = new Dictionary<string, string>();   // lugg → 예약 드롭 트랙
+        private bool IsLineRsvd(string track, string exceptLugg)
+        {
+            foreach (var kv in m_dicLineRsv)
+                if (kv.Value == track && kv.Key != exceptLugg) return true;
+            return false;
+        }
+        /// <summary>트랙의 현재 작업번호(LUGG_NO_RD). 없으면 "".</summary>
+        private string TrackLugg(string track)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT LUGG_NO_RD          ";
+                q += CRLF + "   FROM CV_DATA             ";
+                q += CRLF + "  WHERE WH_TYP     = :WH    ";
+                q += CRLF + "    AND MC_NO      = :MC    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
+                if (_pBdb.ExcuteQry(q) <= 0) return "";
+                return GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO_RD");
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>
+        /// 트랙이 비었거나 **자기 화물**이 놓여 있으면 진입 가능.
+        /// 자기 화물을 충돌로 보면, 하역 시퀀스가 그 트랙에 올려놓은 화물 때문에 자기가 막혀
+        /// 완료 처리(다음 트랙 트래킹 등록)에 도달하지 못한다. 재기동 후 복구도 이 판정에 의존.
+        /// </summary>
+        private bool IsTrackFreeFor(string track, string lugg)
+        {
+            if (IsTrackEmpty(track)) return true;
+            if (string.IsNullOrEmpty(lugg)) return false;
+            return TrackLugg(track) == Cap(lugg, 4);
+        }
+
+        private bool CanEnterLine(string entryTrack) { return CanEnterLine(entryTrack, ""); }
+        private bool CanEnterLine(string entryTrack, string lugg)
+        {
+            if (Array.IndexOf(SHARED_LINE_CV2, entryTrack) < 0)
+                return IsTrackFreeFor(entryTrack, lugg) && !IsLineRsvd(entryTrack, lugg);
+            foreach (string t in SHARED_LINE_CV2)
+                if (!IsTrackFreeFor(t, lugg) || m_dicCvMove.ContainsKey(t) || IsLineRsvd(t, lugg)) return false;
+            return true;
+        }
+        #endregion
+
+        // [LGLS] RGV 드롭 시 해당 라인 컨베이어 트랙에 트래킹을 기록하여 EQP_SIM 이 파렛트를 재현하게 한다.
+        //   (LUGG_NO_OD + TRACKING_WRITE_YN='Y' → WCS_TASK_CV 가 PLC R영역에 기록 → EQP_SIM GetTracking → 입고 파렛트 재현)
+        // [LGLS] 해당 CV 트랙이 비어있는지(sensor0=0) 확인 — 출고대 반출 경합 가드
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-07-19] 설비 정지 게이트 (대화상자 지시값 기반)
+        //   SC  : SC_DATA_LGLS.SUSPEND   '1'=입고정지 '2'=출고정지 '3'=입출고정지 → 해당 방향 지시 금지
+        //   RTV : RTV_DATA_LGLS.SUSPEND  '0' 외 = 작업정지 → RTV 작업지시 금지
+        //   CV  : CV_DATA.TR_PAUSE_OD/RD '1' = 일시정지 — 원래는 PLC 비트 기록 용도지만
+        //         본 WCS 에서는 **내부값(DB)만** 사용한다. 트랙 성격별로:
+        //         RTV 작업대→RTV 지시 금지, SC 작업대→SC 지시 금지,
+        //         입고대→입고 발행(PLC 기록) 금지, 출고대→도착완료 처리 금지.
+        // ─────────────────────────────────────────────────────────────────
+        /// <summary>SC 대화상자 suspend 값 ('0'/'1'/'2'/'3'. 미조회 시 '0')</summary>
+        private string ScSuspend(string scNo)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT SUSPEND             ";
+                q += CRLF + "   FROM SC_DATA_LGLS             ";
+                q += CRLF + "  WHERE WH_TYP     = :WH    ";
+                q += CRLF + "    AND SC_NO      = :NO    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("NO", DbLang.VARCHAR).Value = scNo;
+                if (_pBdb.ExcuteQry(q) <= 0) return "0";
+                string s = GetVal(_pBdb.mDtMain.Rows[0], "SUSPEND");
+                return string.IsNullOrEmpty(s) ? "0" : s;
+            } catch { return "0"; }
+        }
+        /// <summary>SC 가 해당 작업유형의 지시를 받을 수 있는지 (suspend 게이트)</summary>
+        private bool ScSuspendAllows(string scNo, string jobTyp)
+        {
+            string s = ScSuspend(scNo);
+            if (jobTyp == "1") return s != "1" && s != "3";
+            if (jobTyp == "2") return s != "2" && s != "3";
+            return true;
+        }
+        /// <summary>RTV 대화상자 작업정지 여부 (RTV_DATA_LGLS.SUSPEND ≠ '0')</summary>
+        private bool IsRtvSuspended()
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT SUSPEND             ";
+                q += CRLF + "   FROM RTV_DATA_LGLS            ";
+                q += CRLF + "  WHERE WH_TYP     = :WH    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                string s = GetVal(_pBdb.mDtMain.Rows[0], "SUSPEND");
+                return !(string.IsNullOrEmpty(s) || s == "0");
+            } catch { return false; }
+        }
+        /// <summary>CV 트랙 일시정지 여부 (TR_PAUSE_OD/RD='1' — PLC 비트 대신 내부값만 사용)</summary>
+        private bool IsCvPaused(string track)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT TR_PAUSE_OD, TR_PAUSE_RD ";
+                q += CRLF + "   FROM CV_DATA             ";
+                q += CRLF + "  WHERE WH_TYP     = :WH    ";
+                q += CRLF + "    AND MC_NO      = :MC    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                return GetVal(_pBdb.mDtMain.Rows[0], "TR_PAUSE_OD") == "1" ||
+                       GetVal(_pBdb.mDtMain.Rows[0], "TR_PAUSE_RD") == "1";
+            } catch { return false; }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-07-19] RTV 상호배타 : RTV 는 물리 1대 — 입고 RGV 처리(AutoRunRGV)와
+        //   출고대 반출 시퀀스(ProcessOutStn)가 조율 없이 동시 점유하면 색(입고↔출고) 깜빡임,
+        //   동시 픽업/동시 하역이 화면에 나타난다. 한 번에 한 동작만 하도록 서로 시작을 보류한다.
+        // ─────────────────────────────────────────────────────────────────
+        /// <summary>출고대 반출 시퀀스가 RTV 를 점유 중인지 (Stage 0~2 = 빈차이동/적재/하역. Stage 3~4 는 컨베이어만)</summary>
+        private bool RtvBusyByOutbound()
+        {
+            foreach (var kv in m_dicOutStn) if (kv.Value.Stage <= 2) return true;
+            return false;
+        }
+        /// <summary>입고 RGV 처리가 RTV 를 점유 중인지 (지시 31 / 운반 35 상태의 입고 작업 존재)</summary>
+        private bool RtvBusyByInbound()
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                    ";
+                q += CRLF + "   FROM JOB_MST                            ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
+                q += CRLF + "    AND JOB_TYP    IN ('1','11')           ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        // [LGLS 2026-07-20] SC1 특례 상호배타 — SC1 은 입고 드롭 트랙과 출고 반출 트랙이 같은 라인을 공유하므로
+        //   ① SC1 출고 미종결 존재 시 SC1행 입고의 RTV 반송 보류(출고 우선), ② SC1행 입고가 RTV 지시/운반 중이면 SC1 출고 지시 보류.
+        /// <summary>SC1(901) 출고 작업(자동 2/반자동 12)이 미종결 상태로 존재하는지</summary>
+        private bool HasActiveSc1Outbound()
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                    ";
+                q += CRLF + "   FROM JOB_MST                            ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
+                q += CRLF + "    AND JOB_TYP    IN ('2','12')           ";
+                q += CRLF + "    AND START_POS   = '901'                ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        /// <summary>SC1행(DEST 901) 입고 작업(자동 1/반자동 11)이 RTV 에 지시/운반 중(31/35)인지</summary>
+        private bool HasSc1InboundOnRtv()
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                    ";
+                q += CRLF + "   FROM JOB_MST                            ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
+                q += CRLF + "    AND JOB_TYP    IN ('1','11')           ";
+                q += CRLF + "    AND DEST_POS    = '901'                ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_WAIT + "','" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";   // [LGLS 2026-08-04] '받았으면' = 구동대기(30)부터 포함
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+        /// <summary>
+        /// [LGLS 2026-08-04] 지정 트랙들에 '진행 중인 입고 작업'의 화물이 올라와 있는지.
+        ///   SC1 은 입고 드롭과 출고 반출이 같은 라인(C/V#2 = 103/104)을 쓰므로,
+        ///   그 라인에 입고 화물이 남아 있으면 출고를 내보내면 안 된다(정면 충돌).
+        /// </summary>
+        private bool HasInboundCargoOnTracks(string tracksCsvQuoted)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                                   ";
+                q += CRLF + "   FROM CV_DATA CD                                        ";
+                q += CRLF + "  INNER JOIN JOB_MST JM ON JM.WH_TYP  = CD.WH_TYP         ";
+                q += CRLF + "                       AND JM.LUGG_NO = CD.LUGG_NO_RD     ";
+                q += CRLF + "  WHERE CD.WH_TYP    = :WH_TYP                            ";
+                q += CRLF + "    AND CD.MC_NO    IN (" + tracksCsvQuoted + ")          ";
+                q += CRLF + "    AND JM.JOB_TYP  IN ('1','11')                         ";
+                q += CRLF + "    AND JM.JOB_STATUS NOT IN ('9','19','29')              ";
+                q += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')           ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-04] 출고 H/S 라인(짝수=SC 하역, 홀수=RTV 픽업) 중 어느 한쪽이라도 화물이 감지되는지.
+        ///   기존에는 짝수 트랙만 봐서, 홀수쪽에 선행 화물이 남아 있어도 SC 출고 지시가 나갔다.
+        /// </summary>
+        private bool IsOutHsOccupied(string evenTrack)
+        {
+            if (!IsTrackEmpty(evenTrack)) return true;
+            int n;
+            if (int.TryParse(evenTrack, out n) && n > 1)
+            {
+                string odd = (n - 1).ToString();
+                if (!IsTrackEmpty(odd)) return true;
+            }
+            return false;
+        }
+
+        // [LGLS 2026-07-19] 작업번호가 진행 중인 입고 작업인지 (좌초화물 복구의 오인 방지용)
+        private bool IsActiveInboundJob(string lugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                    ";
+                q += CRLF + "   FROM JOB_MST                            ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
+                q += CRLF + "    AND LUGG_NO     = :LG                  ";
+                q += CRLF + "    AND JOB_TYP    IN ('1','11')           ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        /// <summary>[LGLS 2026-07-30] 해당 작업번호의 화물 트래킹이 전 트랙(CV_DATA) 어디엔가 존재하는지.
+        ///   CompleteCV 출고 '도착 관측 누락' 보강의 안전장치 — 설비 이송 중이면 어느 트랙엔가 트래킹이 남으므로
+        ///   운반 중 작업의 조기 완료를 막는다. (RV 적재 시퀀스로 CV 데이터가 잠시 비는 구간은 GRACE 가 흡수)</summary>
+        private bool LuggOnAnyTrack(string lugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT     ";
+                q += CRLF + "   FROM CV_DATA             ";
+                q += CRLF + "  WHERE WH_TYP     = :WH_TYP ";
+                q += CRLF + "    AND LUGG_NO_RD = :LUGG   ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = Cap(lugg, 4);
+                if (_pBdb.ExcuteQry(q) <= 0) return true;   // 조회 실패 시엔 보수적으로 '존재'(완료 보류)
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return true; }
+        }
+
+        // [LGLS 2026-08-01] 입출고 겸용 작업대인지 (CV_DATA.STN_KIND 비트: 1=입고, 2=출고 → 3=겸용).
+        //   현장 22번(C/V#11)이 여기 해당. 특정 트랙번호를 하드코딩하지 않고 설비 정의로 판정한다.
+        private bool IsDualStation(string mcNo)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT STN_KIND            ";
+                q += CRLF + "   FROM CV_DATA             ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP    ";
+                q += CRLF + "    AND MC_NO  = :MC_NO     ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "STN_KIND"), out n);
+                return (n & 3) == 3;
+            } catch { return false; }
+        }
+
+        /// <summary>[LGLS 2026-08-01] 작업대 방향 모드: "0"=입고, "1"=출고.
+        ///   ※CV_DATA.STOCK_MODE 에는 WCS_TASK_CV(CvStatusScenario)가 PLC 방향 워드의 **원시 워드값**을 넣는다.
+        ///     그 워드에는 ASCII 문자가 실려 있어 실제 값이 48('0')/49('1')로 보인다 → 여기서 정규화한다.</summary>
+        private string GetCvStockMode(string mcNo)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT STOCK_MODE          ";
+                q += CRLF + "   FROM CV_DATA             ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP    ";
+                q += CRLF + "    AND MC_NO  = :MC_NO     ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
+                if (_pBdb.ExcuteQry(q) <= 0) return "0";
+                string v = (GetVal(_pBdb.mDtMain.Rows[0], "STOCK_MODE") ?? "").Trim();
+                if (v == "1" || v == "49") return "1";
+                return "0";
+            } catch { return "0"; }
+        }
+
+        /// <summary>[LGLS 2026-08-01] 해당 작업대에서 출발하는 입고 작업이 진행 중인지
+        ///   (원본 ECS TransferDetail.getCheckInTransferFromCNV11 대응).</summary>
+        private bool HasActiveInboundFrom(string station)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                    ";
+                q += CRLF + "   FROM JOB_MST                            ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
+                q += CRLF + "    AND JOB_TYP    IN ('1','11')           ";
+                q += CRLF + "    AND START_POS   = :STN                 ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = station;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        // [LGLS 2026-08-01] 겸용대 방향 전환 지시. CV_DATA 커맨드 채널에 남기면
+        //   WCS_TASK_CV(CvChg_CMD_RQ_YN, CMD_RQ_ID='DIR')가 설비 방향 워드에 기록한다(HOST M 전문과 동일 경로).
+        //   dir : "0"=입고, "1"=출고
+        private readonly Dictionary<string, DateTime> m_dicDirReqAt = new Dictionary<string, DateTime>();
+        private const int DIR_REQ_HOLD_MS = 15000;   // 설비 반영(미러 1주기)까지 재지시 억제
+
+        private bool RequestCvDirection(string mcNo, string dir)
+        {
+            try
+            {
+                DateTime last;
+                if (m_dicDirReqAt.TryGetValue(mcNo, out last) &&
+                    (DateTime.Now - last).TotalMilliseconds < DIR_REQ_HOLD_MS)
+                    return false;      // 직전 지시가 아직 반영 중 — 중복 지시 억제
+
+                string q = "";
+                q += CRLF + " UPDATE CV_DATA                              ";
+                q += CRLF + "    SET CMD_RQ_ID    = 'DIR'                 ";
+                q += CRLF + "      , CMD_RQ_PARM  = :DIR                  ";
+                q += CRLF + "      , CMD_RQ_YN    = 'Y'                   ";
+                q += CRLF + "      , WRITE_UPD_DT = " + DbLang.SYSDATE + " ";
+                q += CRLF + "  WHERE WH_TYP       = :WH_TYP               ";
+                q += CRLF + "    AND MC_NO        = :MC_NO                ";
+                // 다른 커맨드가 대기 중이면 덮어쓰지 않는다(방향 지시는 다음 폴링에 재시도)
+                q += CRLF + "    AND (CMD_RQ_YN <> 'Y' OR CMD_RQ_ID = 'DIR') ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("DIR",    DbLang.VARCHAR).Value = dir;
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
+                if (_pBdb.ExcuteNonQry(q) <= 0) return false;
+
+                m_dicDirReqAt[mcNo] = DateTime.Now;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MakeMsg_Error("[SCH][CV] RequestCvDirection 오류: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>[LGLS 2026-08-01] 트랙 트래킹(작업번호)이 비었는지 — 화물 센서와 별개로 예약/잔류 트래킹까지 본다.</summary>
+        private bool IsTrackLuggEmpty(string track)
+        {
+            string v = (TrackLugg(track) ?? "").Trim();
+            return v.Length == 0 || v == "0" || v == "0000";
+        }
+
+        private bool IsTrackEmpty(string track)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT SENSOR0_DATA_RD     ";
+                q += CRLF + "   FROM CV_DATA             ";
+                q += CRLF + "  WHERE WH_TYP     = :WH_TYP ";
+                q += CRLF + "    AND MC_NO      = :MC_NO  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = track;
+                if (_pBdb.ExcuteQry(q) <= 0) return true;
+                return GetVal(_pBdb.mDtMain.Rows[0], "SENSOR0_DATA_RD") != "1";
+            } catch { return false; }
+        }
+        #region [LGLS] RV(SC/RTV 공통) 적재·하역 4단계 시퀀스
+        // 사용자 요구 동작(각 단계 2초). RV = SC·RTV 통칭.
+        //  [적재] RV 도착(데이터만, 화물감지 X) →2s→ RV 에 화물 표시 →2s→ CV 의 화물·데이터 제거 →2s→ RV 출발
+        //  [하역] RV 도착(데이터+화물감지) →2s→ RV 화물 사라짐 →2s→ CV 에 화물만 생김(데이터 X)
+        //         →2s→ RV 데이터 사라지고 CV 에 데이터 생김 → 다음 트랙 이송
+        // 호출자는 RvSeqStep() 이 true 를 돌려줄 때까지 그 단계에 머문다(false 면 continue).
+        private const int RV_STEP_MS = 2000;
+        private class RvSeq
+        {
+            public DateTime Due; public int Phase; public bool IsLoad;
+            public string Kind = "R";   // "R"=RTV, "S"=SC
+            public string No = "";      // RTV_NO / SC_NO
+            public string Track = "";   // 상대 CV 트랙
+            public string Lugg = "";
+            public string JobTyp = "1";
+            public string Dest = "";    // [LGLS] 출고 화물의 도착지(출고대) — 트랙에 함께 기록해 재기동 복구 가능하게
+        }
+        private readonly Dictionary<string, RvSeq> m_dicRvSeq = new Dictionary<string, RvSeq>();
+        private readonly HashSet<string> m_setRvSeqDone = new HashSet<string>();
+
+        /// <summary>적재/하역 시퀀스 진행. 완료=true(호출자 진행), 진행중=false(호출자 대기).</summary>
+        private bool RvSeqStep(string key, bool isLoad, string kind, string no, string track, string lugg, string jobTyp, string dest = "")
+        {
+            if (m_setRvSeqDone.Contains(key)) return true;
+            if (!m_dicRvSeq.ContainsKey(key))
+                m_dicRvSeq[key] = new RvSeq { Due = DateTime.Now.AddMilliseconds(RV_STEP_MS), Phase = 0,
+                                              IsLoad = isLoad, Kind = kind, No = no, Track = track, Lugg = lugg, JobTyp = jobTyp, Dest = dest };
+            return false;
+        }
+        /// <summary>시퀀스가 아직 시작 전인지(= 도착 상태를 1회만 세팅하기 위한 판정).</summary>
+        private bool RvSeqFresh(string key) { return !m_dicRvSeq.ContainsKey(key) && !m_setRvSeqDone.Contains(key); }
+        private void RvSeqReset(string key) { m_dicRvSeq.Remove(key); m_setRvSeqDone.Remove(key); }
+
+        private void ProcessRvSeq()
+        {
+            if (m_dicRvSeq.Count == 0) return;
+            DateTime now = DateTime.Now;
+            foreach (string key in new List<string>(m_dicRvSeq.Keys))
+            {
+                RvSeq q = m_dicRvSeq[key];
+                if (now < q.Due) continue;
+                q.Phase++;
+                q.Due = now.AddMilliseconds(RV_STEP_MS);
+                if (q.IsLoad)
+                {
+                    if (q.Phase == 1) SetRvCargo(q.Kind, q.No, "1");            // RV 에 화물 표시(데이터는 이미 있음)
+                    else if (q.Phase == 2) WriteCvSensor(q.Track, "0", "0");    // 실어간 CV 의 화물·데이터 제거
+                    else { m_setRvSeqDone.Add(key); m_dicRvSeq.Remove(key); }   // 2초 더 대기 후 완료 → 호출자가 출발시킴
+                }
+                else
+                {
+                    if (q.Phase == 1) SetRvCargo(q.Kind, q.No, "0");            // RV 화물 사라짐(데이터는 유지)
+                    else if (q.Phase == 2) WriteCvCargoOnly(q.Track);           // 내린 CV 에 화물만(데이터 아직 X)
+                    else
+                    {
+                        WriteCvSensor(q.Track, "1", q.Lugg, q.JobTyp, q.Dest);  // CV 에 데이터(+출고 도착지) 생김
+                        ClearRvData(q.Kind, q.No);                              // RV 데이터 사라짐
+                        m_setRvSeqDone.Add(key); m_dicRvSeq.Remove(key);
+                    }
+                }
+            }
+        }
+
+        /// <summary>RV 화물감지만 토글. 데이터/위치/이동목표는 건드리지 않는다.</summary>
+        private void SetRvCargo(string kind, string no, string on)
+        {
+            try
+            {
+                string s = "";
+                if (kind == "R")
+                {
+                    s += CRLF + " UPDATE RTV_DATA_LGLS               ";
+                    s += CRLF + "    SET SENSOR_RTV_RD  = :S    ";
+                    s += CRLF + "  WHERE WH_TYP         = :WH   ";
+                    s += CRLF + "    AND RTV_NO         = :NO   ";
+                }
+                else
+                {
+                    s += CRLF + " UPDATE SC_DATA_LGLS                ";
+                    s += CRLF + "    SET SENSOR_FK_RD   = :S    ";
+                    s += CRLF + "  WHERE WH_TYP         = :WH   ";
+                    s += CRLF + "    AND SC_NO          = :NO   ";
+                }
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("S",  DbLang.VARCHAR).Value = on;
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("NO", DbLang.VARCHAR).Value = no;
+                _pBdb.ExcuteNonQry(s);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RV] SetRvCargo 오류: " + ex.Message); }
+        }
+
+        /// <summary>RV 데이터(작업번호/작업색)만 제거. 화물감지는 이미 0 인 상태.</summary>
+        private void ClearRvData(string kind, string no)
+        {
+            try
+            {
+                string s = "";
+                if (kind == "R")
+                {
+                    s += CRLF + " UPDATE RTV_DATA_LGLS                       ";
+                    s += CRLF + "    SET LUGG_OD              = '0',    ";
+                    s += CRLF + "        JOB_TYP_OD           = '0',    ";
+                    s += CRLF + "        PALLET_ON_VEHICLE_RD = '0'     ";
+                    s += CRLF + "  WHERE WH_TYP               = :WH     ";
+                    s += CRLF + "    AND RTV_NO               = :NO     ";
+                }
+                else
+                {
+                    s += CRLF + " UPDATE SC_DATA_LGLS                        ";
+                    s += CRLF + "    SET ITN_LUGG_FK1         = '0',    ";
+                    s += CRLF + "        JOB_TYP_RD           = '0',    ";
+                    s += CRLF + "        PALLET_ON_VEHICLE_RD = '0'     ";
+                    s += CRLF + "  WHERE WH_TYP               = :WH     ";
+                    s += CRLF + "    AND SC_NO                = :NO     ";
+                }
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("NO", DbLang.VARCHAR).Value = no;
+                _pBdb.ExcuteNonQry(s);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RV] ClearRvData 오류: " + ex.Message); }
+        }
+
+        /// <summary>CV 트랙에 '화물만' 표시(데이터 없음). 하역 3단계에서 잠깐 쓰는 과도상태.</summary>
+        private void WriteCvCargoOnly(string track)
+        {
+            try
+            {
+                string s = "";
+                s += CRLF + " UPDATE CV_DATA SET SENSOR0_DATA_RD = '1', LUGG_NO_RD = '0000', JOB_TYP_RD = '0' ";
+                s += CRLF + "      , AUTO_MODE_RD = '1', READ_UPD_DT = " + DbLang.SYSDATE;
+                s += CRLF + "  WHERE WH_TYP = :WH AND MC_NO = :MC ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
+                _pBdb.ExcuteNonQry(s);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RV] WriteCvCargoOnly 오류: " + ex.Message); }
+        }
+        #endregion
+
+        // [LGLS] SCH(IO_TASK) 헬스 하트비트 → EQP_MST(EQP_TYP='SCH', PLC_NO='01').
+        //   IO_TASK 는 원격지 서버에서 돌 수 있어 WCS Client 가 OS 프로세스를 직접 확인할 수 없다.
+        //   → 스케줄러가 한 사이클을 정상 완주할 때마다 UPD_DT/CONNECTED_YN='Y' 를 갱신하고,
+        //     예외가 나면 CONNECTED_YN='N' 을 즉시 기록한다.
+        //     Client(상태표시줄 SCH)는 이 행의 UPD_DT 신선도 + CONNECTED_YN 으로 판정하므로
+        //     **프로세스가 죽거나 멈추면 UPD_DT 가 낡아 자동으로 RED** 가 된다(별도 통보 불필요).
+        private DateTime m_dtLastHb = DateTime.MinValue;
+        private const int HB_INTERVAL_MS = 2000;
+        private void Heartbeat(bool healthy)
+        {
+            try
+            {
+                if (_pBdb == null) return;
+                DateTime now = DateTime.Now;
+                // 정상일 때만 주기 제한(200ms 루프마다 쓰면 낭비). 오류는 즉시 반영해 RED 가 빨리 뜨게 한다.
+                if (healthy && (now - m_dtLastHb).TotalMilliseconds < HB_INTERVAL_MS) return;
+                m_dtLastHb = now;
+
+                string s = "";
+                s += CRLF + " UPDATE EQP_MST SET CONNECTED_YN = :CY, UPD_DT = " + DbLang.SYSDATE;
+                s += CRLF + "  WHERE WH_TYP = :WH AND EQP_TYP = 'SCH' AND PLC_NO = '01' ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("CY", DbLang.VARCHAR).Value = healthy ? "Y" : "N";
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int n = _pBdb.ExcuteNonQry(s);
+                if (n == 0)
+                {
+                    // 행이 없으면 최초 1회 생성(시드 누락 대비)
+                    string ins = "";
+                    ins += CRLF + " INSERT INTO EQP_MST (WH_TYP, EQP_TYP, PLC_NO, CONNECTED_YN, UPD_DT, USE_YN, REMARKS) ";
+                    ins += CRLF + " VALUES (:WH, 'SCH', '01', :CY, " + DbLang.SYSDATE + ", 'Y', 'IO_TASK Scheduler') ";
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    _pBdb.mComMain.Parameters.Add("CY", DbLang.VARCHAR).Value = healthy ? "Y" : "N";
+                    _pBdb.ExcuteNonQry(ins);
+                }
+            }
+            catch { /* 하트비트 실패가 스케줄러를 죽이면 안 됨 */ }
+        }
+
+        // [LGLS] dest : 출고 화물의 **도착지(출고대)** 를 트랙에 기록한다(DEST_POS_OD).
+        //   출고 목적지가 IO_TASK 메모리(m_dicOutStn/m_lstOutPend)에만 있으면 **재기동 시 사라져서**
+        //   라인에 놓인 출고 화물을 아무도 가져가지 못하는 고아가 된다(도착지 0 으로 영구 정지).
+        //   DB 에 남겨두면 RecoverOutOrphans() 가 대기열을 재구성해 스스로 복구할 수 있다.
+        private void WriteCvSensor(string track, string sensor, string lugg, string jobTyp = "0", string dest = "")
+        {
+            try
+            {
+                // [LGLS 2026-07-19] 화물색 = 작업유형 배경색(입고=1 녹색 / 출고=2 파랑 / 클리어=0). GetCvColor가 색 결정.
+                //   (구코드는 11/12(반자동 코드)를 차용했으나, 반자동이 다크 색으로 분리되면서 자동 코드 1/2로 정정 —
+                //    클라이언트 GetCvColor의 AutoSto TRAY_LEV 분기 제거와 세트)
+                string jt = (sensor == "1") ? ((jobTyp == "2") ? "2" : "1") : "0";
+                // [LGLS] AUTO_MODE_RD 는 설비 운전모드이지 화물 유무 속성이 아님 → 클리어해도 '1' 유지.
+                //   (구코드 sensor=='0' 일 때 '0' 기록 → 출고대 122 가 auto=0 으로 뭉개지고, 브리지(WCS_TASK_CV)는
+                //    변화감지 게이트라 되돌리지 않아 DriveCV 의 AUTO_MODE_RD='1' 게이트가 영구 차단됨.)
+                string am = "1";
+                string s = "";
+                s += CRLF + " UPDATE CV_DATA SET SENSOR0_DATA_RD = :SEN, LUGG_NO_RD = :LUGG, JOB_TYP_RD = :JT, AUTO_MODE_RD = :AM ";
+                // [LGLS] 라인 트랙의 도착지 기록/정리. 클리어(sensor='0')면 '0' 으로 되돌린다.
+                //   dest 는 라인 트랙에만 넘긴다(스테이션 122/124/126 의 DEST_POS_OD 는 DriveCV 발행이 소유).
+                if (dest != "" || sensor == "0") s += CRLF + "      , DEST_POS_OD = :DEST         ";
+                s += CRLF + "      , READ_UPD_DT = " + DbLang.SYSDATE + "                          ";   // [LGLS] readback 갱신 → DriveCV 의 READ_UPD_DT>WRITE_UPD_DT 게이트 충족(입고대 IO_TASK 공급용)
+                s += CRLF + "  WHERE WH_TYP = :WH_TYP AND MC_NO = :MC_NO                          ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("SEN",    DbLang.VARCHAR).Value = sensor;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = (sensor == "1") ? Cap(lugg, 4) : "0000";   // [LGLS] 클리어는 '0000'(ECS 빈트랙 규약 + DriveCV/CompleteCV LUGG_NO_RD='0000' 게이트)
+                _pBdb.mComMain.Parameters.Add("JT",     DbLang.VARCHAR).Value = jt;
+                _pBdb.mComMain.Parameters.Add("AM",     DbLang.VARCHAR).Value = am;
+                if (dest != "" || sensor == "0") _pBdb.mComMain.Parameters.Add("DEST", DbLang.VARCHAR).Value = (sensor == "1") ? dest : "0";
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = track;
+                _pBdb.ExcuteNonQry(s);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] WriteCvSensor 오류: " + ex.Message); }
+        }
+
+        // [LGLS] 라인CV 트랙 지연 정리: 예약시각 도달 시 sensor0/lugg 클리어 (트랙간 이동 후 잔류 방지)
+        private void ProcessCvClear()
+        {
+            if (m_dicCvClear.Count == 0) return;
+            DateTime now = DateTime.Now;
+            foreach (var t in new List<string>(m_dicCvClear.Keys))
+            {
+                if (now >= m_dicCvClear[t]) { WriteCvSensor(t, "0", "0"); m_dicCvClear.Remove(t); }
+            }
+        }
+
+        // [LGLS] 출고 라인CV 지연 이동: 짝수(14,H/S 하역)→홀수(13,RGV 픽업측). 2.5s후 정리
+        private void ProcessCvMove()
+        {
+            if (m_dicCvMove.Count == 0) return;
+            DateTime now = DateTime.Now;
+            foreach (var even in new List<string>(m_dicCvMove.Keys))
+            {
+                CvMovePend mv = m_dicCvMove[even];
+                if (now < mv.Due) continue;
+                // [LGLS] 목표 트랙이 비었을 때만 이동. 선행 화물이 아직 픽업 안 됐으면 그대로 대기(덮어쓰기=화물 유실 방지).
+                //   구코드는 무조건 write 해서, 13번에 멈춰있던 선행 화물을 후속 화물이 덮어쓰고
+                //   RTV Loading 때 둘 다 사라지는 버그가 있었음.
+                if (!IsTrackEmpty(mv.Odd)) continue;
+                WriteCvSensor(even, "0", "0");
+                // [LGLS] 출고면 도착지(출고대)를 홀수 트랙에 함께 기록 → 재기동해도 RecoverOutOrphans 가 살려낸다.
+                WriteCvSensor(mv.Odd, "1", mv.Lugg, mv.JobTyp, (mv.JobTyp == "2") ? mv.OutStn : "");
+                if (!mv.NoClear) m_dicCvClear[mv.Odd] = now.AddMilliseconds(2500);
+                // [LGLS] 출고 화물이 RGV 픽업 트랙에 도착 → RTV 출고대 반출 대기열에 등록(FIFO)
+                if (mv.JobTyp == "2") m_lstOutPend.Add(new OutPend { Lugg = mv.Lugg, Odd = mv.Odd, OutStn = mv.OutStn });
+                m_dicCvMove.Remove(even);
+            }
+        }
+
+        // [LGLS] 출고 고아 화물 자동 복구.
+        //   출고 화물이 RGV 픽업 트랙(홀수)에 놓였는데 대기열/반출 시퀀스 어디에도 없으면 아무도 가져가지 않는다.
+        //   IO_TASK 재기동(=in-memory 대기열 소실)·비정상 종료 후 반드시 발생하며, 증상은
+        //   "03/13/21 트랙 출고 화물이 도착지 없이 영구 정지". 트랙에 기록해둔 DEST_POS_OD 로 대기열을 재구성한다.
+        private void RecoverOutOrphans()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT MC_NO, LUGG_NO_RD, DEST_POS_OD FROM CV_DATA ";
+                q += CRLF + "  WHERE WH_TYP = :WH AND SENSOR0_DATA_RD = '1' AND JOB_TYP_RD = '12' ";
+                q += CRLF + "    AND MC_NO IN ('101','103','105','109','113','117') ";   // 출고 RGV 픽업(홀수) 라인
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                // [LGLS 2026-07-19] 고아 0건이어도 return 금지 — 아래 짝수트랙/출고대 하역트랙 복구가 통째로 건너뛰어짐
+                DataTable dt = (_pBdb.ExcuteQry(q) > 0) ? _pBdb.mDtMain.Copy() : new DataTable();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string trk  = GetVal(dt.Rows[i], "MC_NO");
+                    string lg   = GetVal(dt.Rows[i], "LUGG_NO_RD");
+                    string dest = GetVal(dt.Rows[i], "DEST_POS_OD");
+                    if (string.IsNullOrEmpty(lg) || lg == "0" || lg == "0000") continue;
+                    if (m_dicOutStn.ContainsKey(lg)) continue;                       // 이미 반송 중
+                    if (m_lstOutPend.Exists(x => x.Lugg == lg)) continue;           // 이미 대기열
+                    bool movePending = false;                                       // 곧 이 트랙으로 이동 예정이면 그쪽이 등록함
+                    foreach (var kv in m_dicCvMove) if (kv.Value.Odd == trk) { movePending = true; break; }
+                    if (movePending) continue;
+                    if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = "122";   // 미기록 구화물 구제
+                    m_lstOutPend.Add(new OutPend { Lugg = lg, Odd = trk, OutStn = dest });
+                    MakeMsg_Imp(string.Format("[SCH][OUT] 고아 출고화물 복구 - 작업 {0} 트랙 {1} → 출고대 {2}", lg, trk, dest));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans 오류: " + ex.Message); }
+
+            // [LGLS 2026-07-19] SC 하역트랙(짝수 104/106/110/114/118)에 좌초한 출고 화물 복구.
+            //   출고 SC 완료 시 예약되는 짝수→홀수 이동(m_dicCvMove)이 재기동으로 소실되면 화물이 짝수 트랙에
+            //   영구 잔류하고, CanEnterLine(짝수) 가드 때문에 같은 크레인의 **후속 출고 완료(25→10)가 전부 차단**된다.
+            //   → 이동 예약을 재구성해 홀수(RGV 픽업측)로 흘려보낸다.
+            try
+            {
+                string[] evenTrk = { "104", "106", "110", "114", "118" };
+                for (int k = 0; k < evenTrk.Length; k++)
+                {
+                    if (m_dicCvMove.ContainsKey(evenTrk[k])) continue;          // 이미 이동 예약됨
+                    if (IsTrackEmpty(evenTrk[k])) continue;
+                    string lg = TrackLugg(evenTrk[k]);
+                    if (string.IsNullOrEmpty(lg) || lg == "0" || lg == "0000") continue;
+                    if (m_dicOutStn.ContainsKey(lg)) continue;
+                    if (m_lstOutPend.Exists(x => x.Lugg == lg)) continue;
+                    if (IsActiveInboundJob(lg)) continue;                       // 입고 화물(SC 픽업 대기)은 대상 아님
+                    bool inSeq = false;                                         // 하역/적재 시퀀스 진행 중이면 그쪽 소유
+                    foreach (var kv in m_dicRvSeq) if (kv.Value.Track == evenTrk[k]) { inSeq = true; break; }
+                    if (inSeq) continue;
+                    string dest = "";
+                    try {
+                        string qd = "";
+                        qd += CRLF + " SELECT DEST_POS_OD        ";
+                        qd += CRLF + "   FROM CV_DATA            ";
+                        qd += CRLF + "  WHERE WH_TYP    = :WH    ";
+                        qd += CRLF + "    AND MC_NO     = :MC    ";
+                        _pBdb.mComMain.CommandType = CommandType.Text;
+                        _pBdb.mComMain.Parameters.Clear();
+                        _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                        _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = evenTrk[k];
+                        if (_pBdb.ExcuteQry(qd) > 0) dest = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS_OD");
+                    } catch { }
+                    if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = "122";
+                    int en; string odd = int.TryParse(evenTrk[k], out en) ? (en - 1).ToString() : evenTrk[k];
+                    m_dicCvMove[evenTrk[k]] = new CvMovePend { Due = DateTime.Now.AddMilliseconds(2500), Odd = odd, Lugg = lg, JobTyp = "2", NoClear = true, OutStn = dest };
+                    MakeMsg_Imp(string.Format("[SCH][OUT] SC 하역트랙 좌초화물 복구 - 작업 {0} 트랙 {1} → {2} 이동 예약 (출고대 {3})", lg, evenTrk[k], odd, dest));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans(SC하역트랙) 오류: " + ex.Message); }
+
+            // [LGLS] 출고대 **하역트랙**(121→122, 123→124)에 좌초한 화물도 복구한다.
+            //   여기 막힌 화물은 ProcessOutPend 의 "출고대가 비어야 시작" 조건에 걸려 **대기열 전체를 막는 머리**가 된다.
+            //   반송은 이미 끝난 상태이므로 배출 단계(Stage 3)부터 재개시켜 내보내고 정리한다.
+            try
+            {
+                string[] pickTrk = { "121", "123", "127" };   // [LGLS 2026-07-19] 129(C/V#14) 하역트랙 127 추가
+                string[] stnTrk  = { "122", "124", "129" };
+                for (int k = 0; k < pickTrk.Length; k++)
+                {
+                    if (IsTrackEmpty(pickTrk[k])) continue;
+                    string lg = TrackLugg(pickTrk[k]);
+                    if (string.IsNullOrEmpty(lg) || lg == "0" || lg == "0000") continue;
+                    if (m_dicOutStn.ContainsKey(lg)) continue;               // 이미 출고대 반출이 처리 중
+                    bool inSeq = false;                                     // 하역 시퀀스 진행 중이면 그쪽이 소유
+                    foreach (var kv in m_dicRvSeq) if (kv.Value.Track == pickTrk[k]) { inSeq = true; break; }
+                    if (inSeq) continue;
+                    // [LGLS 2026-07-19] 입고 작업의 이송 화물(122→121 등, RGV 픽업 대기)을 출고 좌초로 오인 금지.
+                    //   해당 작업번호가 진행 중인 입고(JOB_TYP='1')면 AutoRunRGV 소유이므로 건너뛴다.
+                    if (IsActiveInboundJob(lg)) continue;
+                    m_dicOutStn[lg] = new OutStnState { Due = DateTime.Now, Stage = 3, Lugg = lg,
+                                                      Odd = RgvOutDropTrack("901"), OutStn = stnTrk[k] };
+                    MakeMsg_Imp(string.Format("[SCH][OUT] 출고대 하역트랙 좌초화물 복구 - 작업 {0} 트랙 {1} → 배출 {2}", lg, pickTrk[k], stnTrk[k]));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans(출고대) 오류: " + ex.Message); }
+        }
+
+        // [LGLS 2026-07-21] 해당 작업의 출고대 반출(RTV) 시퀀스가 대기/진행 중인지 (CompleteCV 도착 인정 게이트용)
+        private bool OutSeqPending(string lugg)
+        {
+            if (m_dicOutStn.ContainsKey(lugg)) return true;
+            for (int i = 0; i < m_lstOutPend.Count; i++)
+                if (m_lstOutPend[i].Lugg == lugg) return true;
+            return false;
+        }
+
+        // [LGLS] 출고대 반출 대기열 처리: RTV 는 1대뿐이므로 출고대 반출 경로가 비었을 때만 다음 화물을 태운다(FIFO).
+        private void ProcessOutPend()
+        {
+            if (m_lstOutPend.Count == 0) return;
+            if (m_dicOutStn.Count > 0)
+            {
+                DbgLog("OUTPEND", "[OUTPEND대기] 큐=" + string.Join(",", m_lstOutPend.ConvertAll(x => x.Lugg).ToArray())
+                       + " / dicOutStn점유=" + string.Join(",", new List<string>(m_dicOutStn.Keys).ToArray()));
+                return;
+            }
+            OutPend p = m_lstOutPend[0];
+            DbgLog("OUTPEND", "[OUTPEND승격시도] " + p.Lugg + " Odd=" + p.Odd + " OutStn=" + p.OutStn
+                   + " 픽업트랙(" + RgvPickupTrack(p.OutStn) + ")빔=" + IsTrackEmpty(RgvPickupTrack(p.OutStn))
+                   + " 출고대(" + p.OutStn + ")빔=" + IsTrackEmpty(p.OutStn));
+            // [LGLS] 출고대(하역/배출 트랙)가 입고 파렛트로 점유 중이면 시작 보류.
+            //   (실 ECS ECSDispatcher 의 "입고대에 파렛트 있으면 C/V#11 출고 배차 금지" 가드와 같은 취지.
+            //    시작해버리면 출고대 반출 경로가 출고대 비기를 기다리고, 입고는 공급 보류에 걸려 교착함.)
+            if (!IsTrackEmpty(RgvPickupTrack(p.OutStn)) || !IsTrackEmpty(p.OutStn)) return;
+            // [LGLS 2026-07-19] RTV 상호배타: 입고 RGV 처리가 운반 중(31/35)이면 출고 시퀀스 시작을 보류.
+            if (RtvBusyByInbound()) return;
+            // [LGLS 2026-07-19] RTV 작업정지 — RTV 에 작업지시 안 함(출고대 반출 시퀀스 시작 보류)
+            if (IsRtvSuspended()) return;
+            // [LGLS 2026-07-19] RTV 작업대/출고대 일시정지 — 출고 라인(홀수)·하역트랙·배출트랙 정지 시 시작 보류
+            //   (출고대 정지 = 도착완료 처리 금지와 짝을 이룸: 물리 배출 시퀀스도 시작하지 않는다)
+            if (IsCvPaused(p.Odd) || IsCvPaused(RgvPickupTrack(p.OutStn)) || IsCvPaused(p.OutStn)) return;
+            m_lstOutPend.RemoveAt(0);
+            m_dicOutStn[p.Lugg] = new OutStnState { Due = DateTime.Now.AddMilliseconds(1500), Stage = 0, Lugg = p.Lugg, Odd = p.Odd, OutStn = p.OutStn };
+        }
+
+        // [LGLS] RTV 출고대 반출 시퀀스: 113 픽업 → RTV 반송(파랑) → 121 하역 → 21→22 → 22 정리
+        private void ProcessOutStn()
+        {
+            if (m_dicOutStn.Count == 0) return;
+            DateTime now = DateTime.Now;
+            foreach (var lg in new List<string>(m_dicOutStn.Keys))
+            {
+                OutStnState st = m_dicOutStn[lg];
+                if (now < st.Due) continue;
+                // [LGLS] 출고대 일반화 : pickup=출고대 하역트랙(122→121, 124→123), discharge=출고대 배출트랙(122/124), outCell=출고대 RTV위치.
+                string pickup = RgvPickupTrack(st.OutStn);   // 121(로직3) / 123(로직1)
+                string discharge = st.OutStn;                // 122(로직3) / 124(로직1)
+                string outCell = RgvCell(pickup);            // plc15(로직3) / plc2(로직1)
+                // [LGLS] Stage 0 : RTV 가 출고 라인(Odd)으로 빈차 이동해 픽업 준비
+                if (st.Stage == 0) { UpdateRtvVehicle("801", "2", "0", RgvCell(st.Odd), "2", "0", "0", st.Odd, pickup, allowEmptyMove: true); st.Due = now.AddMilliseconds(2500); st.Stage = 1; }
+                // [LGLS] Stage 1 : RTV 라인 도착 → 픽업(라인 클리어) 후 출고대로 반송
+                else if (st.Stage == 1)
+                {
+                    if (!IsTrackEmpty(pickup) || !IsTrackEmpty(discharge)) continue;   // [LGLS] 출고대 비었을 때만(충돌 방지)
+                    // [LGLS 2026-07-19] "라인 도착 스냅"(순간이동) 제거 — 주행이 실제 라인 셀에 도착해야 적재 시작.
+                    int _op; int.TryParse(RgvCell(st.Odd), out _op);
+                    { int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
+                      if (RvSeqFresh(lg + ":L") && _cur != _op) { m_dicCraneTgt["R801"] = _op; continue; } }
+                    // [LGLS] 도착 상태 1회 세팅: 데이터만(LUGG_OD), 화물감지 없음. 라인에 정지.
+                    if (RvSeqFresh(lg + ":L"))
+                        UpdateRtvVehicle("801", "2", "0", RgvCell(st.Odd), "2", "0", st.Lugg, st.Odd, pickup, allowEmptyMove: true);
+                    // [LGLS] 적재 4단계 : →2s→ RTV 화물 표시 →2s→ 라인 화물·데이터 제거 →2s→ 완료
+                    if (!RvSeqStep(lg + ":L", true, "R", "801", st.Odd, st.Lugg, "2")) continue;
+                    UpdateRtvVehicle("801", "2", st.Lugg, outCell, "2", "1", st.Lugg);
+                    st.Due = now.AddMilliseconds(3500); st.Stage = 2;
+                }
+                // [LGLS] Stage 2 : 출고대 하역트랙에 **하역 4단계 시퀀스**로 하역
+                else if (st.Stage == 2)
+                {
+                    // [LGLS 2026-07-19] 빈 트랙 검사는 하역 시퀀스 "시작 전"에만.
+                    //   (시퀀스 중간(Phase2)에 하역트랙에 화물이 놓이면, 무조건 검사 시 자기 자신이 놓은 화물에
+                    //    막혀 영구 대기 → RTV RUN 고착 + m_dicOutStn 미해제 → FeedInGate 신규 공급 전면 보류 교착)
+                    if (RvSeqFresh(lg + ":U") && !IsTrackEmpty(pickup)) continue;
+                    // [LGLS 2026-07-19] "출고대 도착 스냅"(순간이동) 제거 — 주행이 실제 출고대 셀에 도착해야 하역 시작.
+                    int _oc; int.TryParse(outCell, out _oc);
+                    { int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
+                      if (RvSeqFresh(lg + ":U") && _cur != _oc) { m_dicCraneTgt["R801"] = _oc; continue; } }
+                    // (데이터+화물 실은 채 도착 →2s→ RTV 화물 사라짐 →2s→ 하역트랙에 화물만 →2s→ RTV 데이터 사라지고 데이터 생김)
+                    if (!RvSeqStep(lg + ":U", false, "R", "801", pickup, st.Lugg, "2")) continue;
+                    UpdateRtvVehicle("801", "1", "0", outCell, "0", "0", "0");
+                    st.Due = now.AddMilliseconds(2000); st.Stage = 3;
+                }
+                // [LGLS] Stage 3 : 하역트랙→배출트랙 이송(배출)
+                else if (st.Stage == 3) { if (!IsTrackEmpty(discharge)) continue; WriteCvSensor(pickup, "0", "0"); WriteCvSensor(discharge, "1", st.Lugg, "2"); st.Due = now.AddMilliseconds(2500); st.Stage = 4; }
+                // [LGLS] Stage 4 : 배출트랙 클리어(배출 완료)
+                else { WriteCvSensor(discharge, "0", "0"); m_dicOutStn.Remove(lg); RvSeqReset(lg + ":L"); RvSeqReset(lg + ":U"); }
+            }
+        }
+
+        // [LGLS] 크레인/RTV 주행 스텝: 목표 POS_H 로 1칸씩(600ms 간격) 이동시켜 화면에 주행이 보이게 한다.
+        private void StepCranes()
+        {
+            if (m_dicCraneTgt.Count == 0) return;
+            DateTime now = DateTime.Now;
+            foreach (var id in new List<string>(m_dicCraneTgt.Keys))
+            {
+                int tgt = m_dicCraneTgt[id];
+                int cur = m_dicCraneCur.ContainsKey(id) ? m_dicCraneCur[id] : 0;
+                if (cur == tgt) continue;
+                DateTime last = m_dicCraneStepDt.ContainsKey(id) ? m_dicCraneStepDt[id] : DateTime.MinValue;
+                if ((now - last).TotalMilliseconds < CRANE_STEP_MS) continue;
+                cur += (tgt > cur) ? 1 : -1;
+                m_dicCraneCur[id] = cur;
+                m_dicCraneStepDt[id] = now;
+                WriteCranePos(id, cur);
+            }
+        }
+        private void WriteCranePos(string id, int pos)
+        {
+            try
+            {
+                string tbl    = id[0] == 'R' ? "RTV_DATA_LGLS" : "SC_DATA_LGLS";
+                string keyCol = id[0] == 'R' ? "RTV_NO"  : "SC_NO";
+                string no     = id.Substring(1);
+                string s = "";
+                s += CRLF + " UPDATE " + tbl + "             ";
+                s += CRLF + "    SET POS_H_RD   = :POS       ";
+                s += CRLF + "  WHERE WH_TYP     = :WH_TYP    ";
+                s += CRLF + "    AND " + keyCol + " = :NO    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("POS",    DbLang.VARCHAR).Value = pos.ToString();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("NO",     DbLang.VARCHAR).Value = no;
+                _pBdb.ExcuteNonQry(s);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH] WriteCranePos 오류: " + ex.Message); }
+        }
+
+        #region CompleteRGV
+        private void CompleteRGV()
+        {
+            try
+            {
+                // 구동완료(39) 작업 중, RGV 명령 소비(OD_RQ_YN='N') + 대기복귀(WAITING_ORDER_RD) 시 완료.
+                string strSql = "";
+                strSql += CRLF + " SELECT JM.LUGG_NO                                          ";
+                strSql += CRLF + "   FROM JOB_MST JM                                           ";
+                strSql += CRLF + "  INNER JOIN RTV_DATA_LGLS RD ON RD.WH_TYP = JM.WH_TYP            ";
+                strSql += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                             ";
+                strSql += CRLF + "    AND JM.JOB_STATUS  = :ST_DONE                            ";
+                strSql += CRLF + "    AND RD.OD_RQ_YN    = 'N'                                 ";
+                strSql += CRLF + "    AND RD.SENSOR_FK1_RD = '0' AND RD.SENSOR_FK2_RD = '0'    ";   // 포크 비움 = 이송 완료
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_DONE", DbLang.VARCHAR).Value = ST_RGV_RUN;  // 중(35) 대상
+                int nCnt = _pBdb.ExcuteQry(strSql);
+                if (nCnt <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
+                    string rtn = "";
+                    if (UpdateJobStatus(ST_RGV_DONE, luggNo, ref rtn))
+                    {
+                        m_dicPrevRGV.Remove("RGV_" + luggNo);
+                        MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RGV 이송 완료 → 상태 '{1}'", luggNo, ST_RGV_DONE));
+                    }
+                    else
+                        MakeMsg_Error(string.Format("[SCH][RGV] 완료 전이 실패({0}): {1}", luggNo, rtn));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] CompleteRGV 오류: " + ex.Message); }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // 알람 감시 : 설비 에러코드 로깅
+        //   [슬라이드7] Alarm Set/Reset Report + Ack 의 Bit 핸드셰이크는 통신 Task 담당.
+        //   스케줄러는 _RD 에러코드를 감시하여 신규 알람만 1회 로깅한다.
+        // ─────────────────────────────────────────────────────────────────
+        #region MonitorAlarm
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-07-21] 물리 이관: RGV/출고 반출 실경로 (이동·하역은 설비, 여기는 지시·완료 판정만)
+        // ─────────────────────────────────────────────────────────────────
+        /// <summary>RTV 유휴(IDLE + 명령 소비 완료) 여부</summary>
+        private bool RtvIdle()
+        {
+            try {
+                // [LGLS 2026-07-21] 완료신호 미소비 시 보류
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                             ";
+                q += CRLF + "   FROM RTV_DATA_LGLS                                    ";
+                q += CRLF + "  WHERE WH_TYP              = :WH_TYP               ";
+                q += CRLF + "    AND RTV_NO              = '801'                 ";
+                q += CRLF + "    AND OD_RQ_YN            = 'N'                   ";
+                q += CRLF + "    AND SUBSYSTEM_STATUS_RD = '1'                   ";
+                q += CRLF + "    AND (COMPLETE_RD IS NULL OR COMPLETE_RD <> '1') ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        /// <summary>해당 작업의 RTV 반송 완료(COMPLETE_RD='1' + LUGG_OD 일치) 여부</summary>
+        private bool RtvCompleteFor(string lugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT             ";
+                q += CRLF + "   FROM RTV_DATA_LGLS                    ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP       ";
+                q += CRLF + "    AND RTV_NO      = '801'         ";
+                q += CRLF + "    AND COMPLETE_RD = '1'           ";
+                q += CRLF + "    AND LUGG_OD     = :LG           ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        private void RtvResetComplete()
+        {
+            try {
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                // [LGLS 2026-07-22] 완료 시 지시 흔적(JOB_TYP_OD/LUGG_OD)도 클리어 — Client 레일색의
+                //   m_bInvoke 의미(지시 성공=파랑, 완료/삭제=검정)를 구현 (Client 는 JOB_TYP_OD→JOB_TYP_RD 별칭 표시)
+                string strSqlRtvRst = "";
+                strSqlRtvRst += CRLF + " UPDATE RTV_DATA_LGLS                 ";
+                strSqlRtvRst += CRLF + "    SET COMPLETE_RD  = '0',      ";
+                strSqlRtvRst += CRLF + "        JOB_TYP_OD   = '0',      ";
+                strSqlRtvRst += CRLF + "        LUGG_OD      = '0'       ";
+                strSqlRtvRst += CRLF + "  WHERE WH_TYP       = :WH_TYP   ";
+                strSqlRtvRst += CRLF + "    AND RTV_NO       = '801'     ";
+                _pBdb.ExcuteNonQry(strSqlRtvRst);
+            } catch { }
+        }
+
+        /// <summary>[실경로] RGV 완료: 구동중(35) + RTV COMPLETE_RD='1'(해당 작업) → SC 처리 인계(20)</summary>
+        private void CompleteRGVReal()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT JM.LUGG_NO              ";
+                q += CRLF + "   FROM JOB_MST JM              ";
+                q += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP ";
+                q += CRLF + "    AND JM.JOB_STATUS  = :ST     ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST",     DbLang.VARCHAR).Value = ST_RGV_RUN;
+                if (_pBdb.ExcuteQry(q) <= 0) return;
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
+                    if (!RtvCompleteFor(luggNo)) continue;
+                    string rtn = "";
+                    if (UpdateJobStatus(ST_SC_WAIT, luggNo, ref rtn))
+                    {
+                        RtvResetComplete();
+                        m_dicLineRsv.Remove(luggNo);
+                        m_dicPrevRGV.Remove("RGV_801");
+                        MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RTV 반송 완료 → SC 처리 인계 (상태 '{1}')", luggNo, ST_SC_WAIT));
+                    }
+                    else
+                        MakeMsg_Error(string.Format("[SCH][RGV] 완료 전이 실패({0}): {1}", luggNo, rtn));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] CompleteRGVReal 오류: " + ex.Message); }
+        }
+
+        /// <summary>[실경로] 출고대 반출: RTV Vehicle 지시 1건(홀수 라인트랙 → 출고대 픽업트랙) + 완료 대기.
+        ///   이후 출고대 내 이동·배출은 설비(EQP_SIM)가 수행하고 도착 판정은 CompleteCV 가 한다.</summary>
+        private void ProcessOutStnReal()
+        {
+            try
+            {
+                if (m_dicOutStn.Count == 0) return;
+                foreach (string lg in new List<string>(m_dicOutStn.Keys))
+                {
+                    OutStnState st = m_dicOutStn[lg];
+                    if (st.Stage == 0)
+                    {
+                        string pickup = RgvPickupTrack(st.OutStn);
+                        if (IsRtvSuspended()) { DbgLog("OUT_" + lg, "[OUT보류] " + lg + " RTV정지"); continue; }
+                        if (IsCvPaused(st.Odd) || IsCvPaused(pickup) || IsCvPaused(st.OutStn)) { DbgLog("OUT_" + lg, "[OUT보류] " + lg + " CV정지(odd=" + st.Odd + "/pk=" + pickup + "/stn=" + st.OutStn + ")"); continue; }
+                        if (RtvBusyByInbound()) { DbgLog("OUT_" + lg, "[OUT보류] " + lg + " RTV입고점유"); continue; }
+                        if (!RtvIdle()) { DbgLog("OUT_" + lg, "[OUT보류] " + lg + " RTV비유휴"); continue; }
+                        // [LGLS 2026-08-04] 예외 제거 : 과거엔 SC1 픽업트랙(C/V#2=103)이 브리지에 없어 항상 '빈' 것으로 보였기에
+                        //   트랙 게이트를 건너뛰었으나, 브리지가 PLC01~15(트랙 101~132) 전체를 등록한 뒤로는 103/104 도 정상 반영된다.
+                        //   예외가 남아 있으면 SC 하역(104) 직후 화물이 103 으로 넘어가기도 전에 RTV 지시가 나가서
+                        //   ①RTV 가 104 에서 바로 로딩 ②104 화물감지가 늦게까지 안 꺼짐 현상이 생긴다. → 전 라인 동일 게이트 적용.
+                        {
+                            if (IsTrackEmpty(st.Odd)) continue;   // [LGLS 2026-07-21] 화물이 출고 라인(홀수 트랙)에 실도착한 후에만 지시
+                            // 자기 화물 확인: 픽업트랙 화물의 작업번호가 이 반출의 작업과 일치할 때만
+                            //   (지시가 화물 도착보다 앞서 나가면 RTV 가 '다음 출고의 화물'을 오픽업해 재라벨·배출 — 검출 사고).
+                            //   단, 트랙 작업번호가 비어 있으면(브리지 지연 등) 다른 게이트에 맡기고 통과.
+                            string odLugg = Cap(TrackLugg(st.Odd), 4);
+                            if (odLugg != "" && odLugg != "0000" && odLugg != "0" && odLugg != Cap(lg, 4)) continue;
+                        }
+                        string rtn = "";
+                        if (UpdateRtvData("801", "2", lg, st.Odd, pickup, ref rtn))
+                        {
+                            st.Stage = 1;
+                            DbgLog("OUT_" + lg, "[OUT지시] " + lg + " " + st.Odd + "→" + pickup);
+                            MakeMsg_Imp(string.Format("[SCH][OUT] 출고대 반출 반송지시 - 작업 {0} ({1} → {2})", lg, st.Odd, pickup));
+                        }
+                        else
+                        {
+                            DbgLog("OUT_" + lg, "[OUT지시실패] " + lg + " " + rtn);
+                            MakeMsg_Error(string.Format("[SCH][OUT] 반출 지시 실패({0}): {1}", lg, rtn));
+                        }
+                    }
+                    else
+                    {
+                        if (!RtvCompleteFor(lg)) continue;
+                        RtvResetComplete();
+                        m_dicOutStn.Remove(lg);
+                        m_dicOutDoneDt[lg] = DateTime.Now;   // [LGLS 2026-07-30] 반출 완료 시각 — CompleteCV 도착 관측 누락 보강용
+                        RvSeqReset(lg + ":L"); RvSeqReset(lg + ":U");
+                        MakeMsg_Imp(string.Format("[SCH][OUT] 출고대 반출 반송 완료 - 작업 {0} (이후 이동·배출은 설비)", lg));
+                    }
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][OUT] ProcessOutStnReal 오류: " + ex.Message); }
+        }
+
+        private readonly HashSet<string> m_setUnsupportedLogged = new HashSet<string>();   // [LGLS] 미지원 JOB_TYP 1회 로깅용
+        private readonly HashSet<string> m_setOutArrived = new HashSet<string>();          // [LGLS 2026-07-21] 출고 실도착 관측 플래그(배출 확인용)
+        // [LGLS 2026-07-22] 표시용 작업구분 동기화: 트랙 화물(LUGG_NO_RD)·크레인 진행 작업의 구분을
+        //   CV_DATA/SC_DATA_LGLS.JOB_TYP_RD 에 반영(입고=1, 출고=2, 없음=0). 변경 시에만 UPDATE — 표시 전용.
+        private void SyncDisplayTyp()
+        {
+            try
+            {
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                string strSqlDsp1 = "";
+                strSqlDsp1 += CRLF + " UPDATE CD                                                              ";
+                strSqlDsp1 += CRLF + "    SET JOB_TYP_RD = (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                strSqlDsp1 += CRLF + "   FROM CV_DATA CD                                                      ";
+                strSqlDsp1 += CRLF + "  INNER JOIN JOB_MST JM                                                 ";
+                strSqlDsp1 += CRLF + "     ON JM.WH_TYP   = CD.WH_TYP                                         ";
+                strSqlDsp1 += CRLF + "    AND JM.LUGG_NO  = CD.LUGG_NO_RD                                     ";
+                strSqlDsp1 += CRLF + "  WHERE CD.WH_TYP   = :WH_TYP                                           ";
+                strSqlDsp1 += CRLF + "    AND ISNULL(CD.JOB_TYP_RD,'0') <> (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                _pBdb.ExcuteNonQry(strSqlDsp1);
+
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                string strSqlDsp2 = "";
+                strSqlDsp2 += CRLF + " UPDATE CV_DATA                                             ";
+                strSqlDsp2 += CRLF + "    SET JOB_TYP_RD = '0'                                    ";
+                strSqlDsp2 += CRLF + "  WHERE WH_TYP     = :WH_TYP                                ";
+                strSqlDsp2 += CRLF + "    AND ISNULL(JOB_TYP_RD,'0') <> '0'                       ";
+                strSqlDsp2 += CRLF + "    AND (LUGG_NO_RD IS NULL OR LUGG_NO_RD IN ('','0','0000')) ";
+                _pBdb.ExcuteNonQry(strSqlDsp2);
+
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                // [LGLS] 지시(21)~완료 구간만 — 레일색 m_bInvoke 의미
+                string strSqlDsp3 = "";
+                strSqlDsp3 += CRLF + " UPDATE SD                                                              ";
+                strSqlDsp3 += CRLF + "    SET JOB_TYP_RD = (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                strSqlDsp3 += CRLF + "   FROM SC_DATA_LGLS SD                                                      ";
+                strSqlDsp3 += CRLF + "  INNER JOIN JOB_MST JM                                                 ";
+                strSqlDsp3 += CRLF + "     ON JM.WH_TYP   = SD.WH_TYP                                         ";
+                strSqlDsp3 += CRLF + "    AND SD.SC_NO    = (CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END) ";
+                strSqlDsp3 += CRLF + "  WHERE SD.WH_TYP   = :WH_TYP                                           ";
+                strSqlDsp3 += CRLF + "    AND JM.JOB_STATUS IN ('21','25')                                    ";
+                strSqlDsp3 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                _pBdb.ExcuteNonQry(strSqlDsp3);
+
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                string strSqlDsp4 = "";
+                strSqlDsp4 += CRLF + " UPDATE SD                                                              ";
+                strSqlDsp4 += CRLF + "    SET JOB_TYP_RD = '0'                                                ";
+                strSqlDsp4 += CRLF + "   FROM SC_DATA_LGLS SD                                                      ";
+                strSqlDsp4 += CRLF + "  WHERE SD.WH_TYP   = :WH_TYP                                           ";
+                strSqlDsp4 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> '0'                                ";
+                strSqlDsp4 += CRLF + "    AND NOT EXISTS (SELECT 1                                            ";
+                strSqlDsp4 += CRLF + "                      FROM JOB_MST JM                                   ";
+                strSqlDsp4 += CRLF + "                     WHERE JM.WH_TYP = SD.WH_TYP                        ";
+                strSqlDsp4 += CRLF + "                       AND JM.JOB_STATUS IN ('21','25')                 ";
+                strSqlDsp4 += CRLF + "                       AND SD.SC_NO = (CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END)) ";
+                _pBdb.ExcuteNonQry(strSqlDsp4);
+
+                SyncScForkPos();
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][DSP] SyncDisplayTyp 오류: " + ex.Message); }
+        }
+
+        private readonly Dictionary<string, string> m_dicAlarm = new Dictionary<string, string>();
+        private void MonitorAlarm()
+        {
+            try
+            {
+                string strSqlAlmCv = "";
+                strSqlAlmCv += CRLF + " SELECT MC_NO AS EQ, ERROR_CODE AS EC          ";
+                strSqlAlmCv += CRLF + "   FROM CV_DATA                                ";
+                strSqlAlmCv += CRLF + "  WHERE WH_TYP     = :WH_TYP                   ";
+                strSqlAlmCv += CRLF + "    AND ERROR_CODE IS NOT NULL                 ";
+                strSqlAlmCv += CRLF + "    AND ERROR_CODE NOT IN ('0','00','0000','') ";
+                CheckAlarm("CV", strSqlAlmCv);
+
+                string strSqlAlmSc = "";
+                strSqlAlmSc += CRLF + " SELECT SC_NO AS EQ, ERR_CODE_RD AS EC          ";
+                strSqlAlmSc += CRLF + "   FROM SC_DATA_LGLS                                 ";
+                strSqlAlmSc += CRLF + "  WHERE WH_TYP      = :WH_TYP                   ";
+                strSqlAlmSc += CRLF + "    AND ERR_CODE_RD IS NOT NULL                 ";
+                strSqlAlmSc += CRLF + "    AND ERR_CODE_RD NOT IN ('0','00','0000','') ";
+                CheckAlarm("SC", strSqlAlmSc);
+
+                string strSqlAlmRgv = "";
+                strSqlAlmRgv += CRLF + " SELECT RTV_NO AS EQ, ERR_CODE_RD AS EC         ";
+                strSqlAlmRgv += CRLF + "   FROM RTV_DATA_LGLS                                ";
+                strSqlAlmRgv += CRLF + "  WHERE WH_TYP      = :WH_TYP                   ";
+                strSqlAlmRgv += CRLF + "    AND ERR_CODE_RD IS NOT NULL                 ";
+                strSqlAlmRgv += CRLF + "    AND ERR_CODE_RD NOT IN ('0','00','0000','') ";
+                CheckAlarm("RGV", strSqlAlmRgv);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][ALM] MonitorAlarm 오류: " + ex.Message); }
+        }
+        private void CheckAlarm(string kind, string sql)
+        {
+            try
+            {
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int n = _pBdb.ExcuteQry(sql);
+                if (n <= 0) return;
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string eq = GetVal(dt.Rows[i], "EQ");
+                    string ec = GetVal(dt.Rows[i], "EC");
+                    string key = kind + "_" + eq;
+                    if (m_dicAlarm.ContainsKey(key) && m_dicAlarm[key] == ec) continue; // 신규만
+                    m_dicAlarm[key] = ec;
+                    MakeMsg_Error(string.Format("[SCH][ALM] {0} #{1} 알람 발생 (코드:{2})", kind, eq, ec));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][ALM] CheckAlarm(" + kind + ") 오류: " + ex.Message); }
+        }
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        // DB Helper
+        // ─────────────────────────────────────────────────────────────────
+        #region DB Helper
+
+        /// <summary>
+        /// JOB_MST.JOB_STATUS 상태 변경 (기존 cThread_*.UPDATE_JOB_DATA 의 핵심부)
+        /// </summary>
+        private bool UpdateJobStatus(string strStatus, string strLuggNo, ref string strRtn)
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " UPDATE JOB_MST                       ";
+                strSql += CRLF + "    SET JOB_STATUS  = :JOB_STATUS     ";
+                strSql += CRLF + "      , UPD_DT      = " + DbLang.SYSDATE + " ";
+                strSql += CRLF + "      , UPD_USER_ID = '" + OD_USER + "' ";
+                strSql += CRLF + "  WHERE WH_TYP      = :WH_TYP         ";
+                strSql += CRLF + "    AND LUGG_NO     = :LUGG_NO        ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("JOB_STATUS", DbLang.VARCHAR).Value = strStatus;
+                _pBdb.mComMain.Parameters.Add("WH_TYP",     DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG_NO",    DbLang.VARCHAR).Value = strLuggNo;
+                int n = _pBdb.ExcuteNonQry(strSql);
+                if (n < 0) { strRtn += "JOB_MST 상태변경 오류:" + _pBdb.ErrMsg; return false; }
+                if (n == 0) { strRtn += "변경할 JOB_MST 작업이 없음(LUGG_NO:" + strLuggNo + ")"; return false; }
+                return true;
+            }
+            catch (Exception ex) { strRtn += ex.Message; return false; }
+        }
+
+        /// <summary>[LGLS] SC 작업 완료 시 해당 작업번호의 SC od(LUGG_NO_FK1_OD) 잔류 클리어</summary>
+        private void ClearScOd(string strLuggNo)
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " UPDATE SC_DATA_LGLS SET LUGG_NO_FK1_OD = '0000' ";
+                strSql += CRLF + "  WHERE WH_TYP = :WH_TYP AND LUGG_NO_FK1_OD = :LUGG_NO ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = strLuggNo;
+                _pBdb.ExcuteNonQry(strSql);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// CV_DATA 명령 발행 (기존 cThread_CV.UPDATE_CV_DATA)
+        ///   _OD 컬럼 기록 + OD_RQ_YN='Y'. 유휴(OD_RQ_YN='N') + 무에러 행만 대상.
+        /// </summary>
+        private bool UpdateCvData(string strJobTyp, string strDestPos, string strLuggNo,
+                                  string strPlcNo, string strTrackNo,
+                                  ref string strRtn)
+        {
+            try
+            {
+                // 실제 CV_DATA 명령(_OD) 컬럼만 사용: JOB_TYP_OD, DEST_POS_OD, LUGG_NO_OD, OD_RQ_YN
+                //   방향(입고0/출고1, D0310)은 통신 Task가 JOB_TYP 기반으로 PLC에 기록.
+                string strSql = "";
+                strSql += CRLF + " UPDATE CV_DATA                                 ";
+                strSql += CRLF + "    SET JOB_TYP_OD  = :JOB_TYP_OD               ";
+                strSql += CRLF + "      , DEST_POS_OD = :DEST_POS_OD              ";
+                strSql += CRLF + "      , LUGG_NO_OD  = :LUGG_NO_OD               ";
+                strSql += CRLF + "      , TRACKING_WRITE_YN = 'Y'                 ";   // [LGLS] WCS_TASK_CV가 트래킹(JOB번호)을 PLC R영역에 기록하도록 지시
+                strSql += CRLF + "      , OD_RQ_YN    = 'Y'                       ";
+                strSql += CRLF + "      , OD_USER_ID  = '" + OD_USER + "'         ";
+                strSql += CRLF + "      , OD_UPD_DT   = " + DbLang.SYSDATE + "     ";
+                strSql += CRLF + "  WHERE WH_TYP      = :WH_TYP                   ";
+                strSql += CRLF + "    AND PLC_NO      = :PLC_NO                   ";
+                strSql += CRLF + "    AND MC_NO       = :TRACK_NO                 ";
+                strSql += CRLF + "    AND OD_RQ_YN    = 'N'                       ";
+                strSql += CRLF + "    AND (ERROR_CODE = '0' OR ERROR_CODE = '0000' OR ERROR_CODE IS NULL)";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("JOB_TYP_OD",  DbLang.VARCHAR).Value = strJobTyp;
+                _pBdb.mComMain.Parameters.Add("DEST_POS_OD", DbLang.VARCHAR).Value = strDestPos;
+                _pBdb.mComMain.Parameters.Add("LUGG_NO_OD",  DbLang.VARCHAR).Value = strLuggNo;
+                _pBdb.mComMain.Parameters.Add("WH_TYP",      DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("PLC_NO",      DbLang.VARCHAR).Value = strPlcNo;
+                _pBdb.mComMain.Parameters.Add("TRACK_NO",    DbLang.VARCHAR).Value = strTrackNo;
+                int n = _pBdb.ExcuteNonQry(strSql);
+                if (n < 0) { strRtn += "CV_DATA 명령 오류:" + _pBdb.ErrMsg; return false; }
+                if (n == 0) { strRtn += "발행할 CV_DATA 가 없음(TRACK_NO:" + strTrackNo + ")"; return false; }
+                return true;
+            }
+            catch (Exception ex) { strRtn += ex.Message; return false; }
+        }
+
+        // [LGLS] 컬럼 폭 초과 방지(문자열 잘림 오류 회피)
+        private static string Cap(string v, int n) { if (v == null) return ""; return v.Length > n ? v.Substring(0, n) : v; }
+
+        // [LGLS 2026-08-01] SC 포크 출입방향(FORKPOS_FK1_RD) 산출/반영.
+        //   원본 ECS 소스·백업 DB·PLC 사양서 어디에도 포크 위치 산출 로직이 없어(컬럼과 COMMON_CODE 'SC_FORKPOS'
+        //   정의만 존재) 여기서 직접 계산한다. 현행 체인에서 SC 관측치는 WCS_TASK_CV VehThread 가 미러하지만
+        //   FORKPOS_FK1_RD 는 아무도 쓰지 않으므로, 크레인 작업색(JOB_TYP_RD)과 동일한 집합 UPDATE 방식으로 유지한다.
+        //   기준(좌/우 판정은 한 가지 규칙): **크레인이 이때 포크를 뻗는 상대편의 라인번호**가 홀수면 좌출, 짝수면 우출.
+        //     - 랙에 할 때(입고 하역 / 출고 픽업) : 랙 셀의 뱅크번호. SC_DEF_INF.AREA 가 담당 뱅크쌍을
+        //       "홀수,짝수"(901=01,02 … 905=09,10)로 정의하고 레이아웃상 홀수 뱅크가 진행방향 좌측이다.
+        //     - 작업대(H/S)에 할 때(입고 픽업 / 출고 하역) : 그 H/S 가 붙어 있는 **라인 C/V 번호**.
+        //       레이아웃상 랙 n행과 C/V#n 이 같은 쪽이므로 뱅크와 동일한 홀짝 규칙이 그대로 성립한다.
+        //       입고 H/S = RgvDropTrack(SC)+1 → C/V#2,4,6,8,10(전부 짝수=우출)
+        //       출고 H/S = RgvOutDropTrack(SC) → C/V#2,3,5,7,9 (SC1 만 C/V#2 특례로 우출, 나머지 좌출)
+        //   단계 구분: 지시(21)=출발지에서 집는 단계, 구동중(25)=도착지에 내려놓는 단계.
+        //     입고 21=입고 H/S 픽업 / 25=랙 하역, 출고 21=랙 픽업 / 25=출고 H/S 하역.
+        //   값: 0=센터(대기/완료/판정불가), 1=좌출, 2=우출.
+        private void SyncScForkPos()
+        {
+            try
+            {
+                // 랙 셀 위치 = 입고면 도착지, 출고면 출발지. "BB-LLL-DD" 의 앞 2자리가 뱅크.
+                const string BANK = "LEFT(CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_LOCATION ELSE JM.START_LOCATION END, 2)";
+                const string RACKSIDE = "(CASE WHEN " + BANK + " BETWEEN '01' AND '15'"
+                                      + " THEN (CASE WHEN CAST(" + BANK + " AS int) % 2 = 1 THEN '1' ELSE '2' END) ELSE '0' END)";
+                const string SCNO = "(CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END)";
+
+                // H/S 라인 C/V 번호 = (트랙번호 - 100 + 1) / 2 (정수나눗셈). 크레인별 H/S 트랙은 C# 매핑에서 생성.
+                string caseIn = "(CASE";     // 입고 H/S (SC 가 화물을 집는 작업대)
+                string caseOut = "(CASE";    // 출고 H/S (SC 가 화물을 내려놓는 작업대)
+                foreach (KeyValuePair<string, string> kv in m_dicRgvDrop)
+                {
+                    int nDrop; if (!int.TryParse(kv.Value, out nDrop)) continue;
+                    caseIn += " WHEN " + SCNO + " = '" + kv.Key + "' THEN '" + LineSide(nDrop + 1) + "'";
+                }
+                foreach (KeyValuePair<string, string> kv in m_dicRgvOutDrop)
+                {
+                    int nOut; if (!int.TryParse(kv.Value, out nOut)) continue;
+                    caseOut += " WHEN " + SCNO + " = '" + kv.Key + "' THEN '" + LineSide(nOut) + "'";
+                }
+                caseIn += " ELSE '0' END)";
+                caseOut += " ELSE '0' END)";
+
+                //   입고(1/11) : 21=입고 H/S 픽업, 그 외(25)=랙 하역
+                //   출고(2/12) : 21=랙 픽업,       그 외(25)=출고 H/S 하역
+                string side = "(CASE WHEN JM.JOB_TYP IN ('1','11')"
+                            + " THEN (CASE WHEN JM.JOB_STATUS = '21' THEN " + caseIn + " ELSE " + RACKSIDE + " END)"
+                            + " ELSE (CASE WHEN JM.JOB_STATUS = '21' THEN " + RACKSIDE + " ELSE " + caseOut + " END) END)";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                string q1 = "";
+                q1 += CRLF + " UPDATE SD                                                  ";
+                q1 += CRLF + "    SET FORKPOS_FK1_RD = " + side;
+                q1 += CRLF + "   FROM SC_DATA_LGLS SD                                     ";
+                q1 += CRLF + "  INNER JOIN JOB_MST JM                                     ";
+                q1 += CRLF + "     ON JM.WH_TYP = SD.WH_TYP                               ";
+                q1 += CRLF + "    AND SD.SC_NO  = " + SCNO;
+                q1 += CRLF + "  WHERE SD.WH_TYP = :WH_TYP                                 ";
+                q1 += CRLF + "    AND JM.JOB_STATUS IN ('21','25')                        ";
+                q1 += CRLF + "    AND ISNULL(SD.FORKPOS_FK1_RD,'0') <> " + side;
+                _pBdb.ExcuteNonQry(q1);
+
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                string q2 = "";
+                q2 += CRLF + " UPDATE SD                                                  ";
+                q2 += CRLF + "    SET FORKPOS_FK1_RD = '0'                                ";
+                q2 += CRLF + "   FROM SC_DATA_LGLS SD                                     ";
+                q2 += CRLF + "  WHERE SD.WH_TYP = :WH_TYP                                 ";
+                q2 += CRLF + "    AND ISNULL(SD.FORKPOS_FK1_RD,'0') <> '0'                ";
+                q2 += CRLF + "    AND NOT EXISTS (SELECT 1                                ";
+                q2 += CRLF + "                      FROM JOB_MST JM                       ";
+                q2 += CRLF + "                     WHERE JM.WH_TYP = SD.WH_TYP            ";
+                q2 += CRLF + "                       AND JM.JOB_STATUS IN ('21','25')     ";
+                q2 += CRLF + "                       AND SD.SC_NO = " + SCNO + ") ";
+                _pBdb.ExcuteNonQry(q2);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][SC] SyncScForkPos 오류: " + ex.Message); }
+        }
+
+        // [LGLS] 라인 트랙번호 → 그 라인의 C/V 번호(=같은 쪽 랙 행번호) → 좌출(홀수)/우출(짝수).
+        //   트랙 101,102=C/V#1 … 119,120=C/V#10 이므로 C/V번호 = (트랙-100+1)/2.
+        private static string LineSide(int nTrack)
+        {
+            int nCv = (nTrack - 100 + 1) / 2;
+            if (nCv <= 0) return "0";
+            return (nCv % 2 == 1) ? "1" : "2";
+        }
+
+
+        // [LGLS] SC_DATA_LGLS Vehicle 컬럼 갱신(대화상자 표시용). 대체 체인에 SC PLC TASK프로그램이 없어
+        //        AutoRunSC 시뮬레이션이 원본 ECS Vehicle 관측치를 SC_DATA_LGLS 에 직접 반영한다.
+        //        status(1=IDLE,2=RUN), req/ack=transfer_request_od/transfer_ack_rd, completeLoc=완료위치.
+        private void UpdateScVehicle(string scNo, string status, string lugg, string fromPos, string toPos,
+                                     string loadComplete, string unloadComplete, string req, string ack, string completeLoc = "", string jobTyp = "0")
+        {
+            try
+            {
+                string s = "";
+                s += CRLF + " UPDATE SC_DATA_LGLS SET SUBSYSTEM_STATUS_RD = :ST                 ";
+                s += CRLF + "      , PALLET_ON_VEHICLE_RD = :LUGG                          ";
+                s += CRLF + "      , JOB_TYP_RD = :JOBTYP                                ";
+                s += CRLF + "      , SENSOR_FK_RD = :SEN                                 ";
+                s += CRLF + "      , ITN_LUGG_FK1 = :ITNL                                ";
+                s += CRLF + "      , FROM_01_OD = :FROM01, TO_01_OD = :TO01                ";
+                s += CRLF + "      , LOAD_COMPLETE_RD = :LC, LOAD_COMPLETE_ACK_OD = :LC    ";
+                s += CRLF + "      , UNLOAD_COMPLETE_RD = :UC, UNLOAD_COMPLETE_ACK_OD = :UC";
+                s += CRLF + "      , TRANSFER_REQUEST_OD = :REQ, TRANSFER_ACK_RD = :ACK    ";
+                s += CRLF + "      , TRANSFER_COMPLETE_LOCATION_01_RD = :CLOC              ";
+                s += CRLF + "      , LOCATION_01_RD = :LOC1, LOCATION_02_RD = :LOC2, LOCATION_03_RD = :LOC3 ";
+                s += CRLF + "      , READ_UPD_DT = " + DbLang.SYSDATE + "                  ";
+                s += CRLF + "  WHERE WH_TYP = :WH_TYP AND SC_NO = :SC_NO                   ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("ST",     DbLang.VARCHAR).Value = status;
+                _pBdb.mComMain.Parameters.Add("JOBTYP", DbLang.VARCHAR).Value = jobTyp;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = Cap(lugg, 4);
+                string senFk = (loadComplete == "1" && unloadComplete != "1") ? "1" : "0";  // [LGLS] 화물 코너마커
+                string itnLugg = (!string.IsNullOrEmpty(lugg) && lugg != "0") ? Cap(lugg, 4) : "0";  // [LGLS] BLUE 운반레일
+                _pBdb.mComMain.Parameters.Add("SEN",  DbLang.VARCHAR).Value = senFk;
+                _pBdb.mComMain.Parameters.Add("ITNL", DbLang.VARCHAR).Value = itnLugg;
+                _pBdb.mComMain.Parameters.Add("FROM01", DbLang.VARCHAR).Value = Cap(fromPos, 2);
+                _pBdb.mComMain.Parameters.Add("TO01",   DbLang.VARCHAR).Value = Cap(toPos, 2);
+                _pBdb.mComMain.Parameters.Add("LC",     DbLang.VARCHAR).Value = loadComplete;
+                _pBdb.mComMain.Parameters.Add("UC",     DbLang.VARCHAR).Value = unloadComplete;
+                _pBdb.mComMain.Parameters.Add("REQ",    DbLang.VARCHAR).Value = req;
+                _pBdb.mComMain.Parameters.Add("ACK",    DbLang.VARCHAR).Value = ack;
+                _pBdb.mComMain.Parameters.Add("CLOC",   DbLang.VARCHAR).Value = Cap(completeLoc, 2);
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                // [LGLS] 현재위치: toPos 를 bay/location 으로 사상 (크레인 위치 표현용)
+                string posBay = Cap(toPos, 2);
+                int nBay; int.TryParse(posBay, out nBay); if (nBay < 0) nBay = 0; else if (nBay > 15) nBay = 15;
+                _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
+                if (senFk == "1") { m_dicCraneTgt["S" + scNo] = (status == "1" ? 0 : nBay); }  // [LGLS] 화물 실음: 목적지로 스텝 이동
+                else { int _cur = m_dicCraneCur.ContainsKey("S" + scNo) ? m_dicCraneCur["S" + scNo] : 0; m_dicCraneTgt["S" + scNo] = _cur; }  // [LGLS] 빈차: 현재 위치 고정(데이터 없이 이동 금지) — 픽업은 현재 위치에서
+                _pBdb.mComMain.Parameters.Add("LOC1",   DbLang.VARCHAR).Value = Cap(toPos, 2);
+                _pBdb.mComMain.Parameters.Add("LOC2",   DbLang.VARCHAR).Value = nBay.ToString();
+                _pBdb.mComMain.Parameters.Add("LOC3",   DbLang.VARCHAR).Value = "0";
+                _pBdb.ExcuteNonQry(s);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][SC] UpdateScVehicle 오류: " + ex.Message); }
+        }
+
+        // [LGLS] RTV_DATA_LGLS(RGV) Vehicle 컬럼 갱신(모니터 애니메이션용). SC 와 마찬가지로 RGV PLC
+        //        TASK프로그램이 없어 AutoRunRGV 시뮬레이션이 원본 ECS 관측치를 RTV_DATA_LGLS 에 직접 반영한다.
+        //        모니터 표시 규칙 :
+        //          - 입고(STO) 색상 = JOB_TYP_OD='1' + AUTO_MODE_RD='1' + SUBSYSTEM_STATUS_RD='2'
+        //          - 화물 코너마커  = SENSOR_RTV_RD='1'
+        //          - BLUE 운반레일  = LUGG_OD != '0'
+        //          - 화면 위치      = POS_H_RD 셀(0-15)
+        //        status(1=IDLE, 2=RUN). RTV_DATA_LGLS 에는 READ_UPD_DT/OD_UPD_DT 갱신 컬럼을 두지 않는다.
+        private void UpdateRtvVehicle(string rtvNo, string status, string luggPallet, string posCell,
+                                     string jobTyp, string sensor, string luggOd,
+                                     string departTrack = "", string arriveTrack = "", bool allowEmptyMove = false)
+        {
+            try
+            {
+                string s = "";
+                s += CRLF + " UPDATE RTV_DATA_LGLS SET SUBSYSTEM_STATUS_RD = :ST              ";
+                s += CRLF + "      , PALLET_ON_VEHICLE_RD = :PALLET                      ";
+                s += CRLF + "      , SENSOR_RTV_RD        = :SENSOR                      ";
+                s += CRLF + "      , JOB_TYP_OD           = :JOBTYP                      ";
+                s += CRLF + "      , LUGG_OD              = :LUGGOD                       ";
+                s += CRLF + "      , AUTO_MODE_RD         = '1'                          ";
+                if (departTrack != "") s += CRLF + "      , DEPART_TRACK = :DEPART       ";
+                if (arriveTrack != "") s += CRLF + "      , ARRIVE_TRACK = :ARRIVE       ";
+                s += CRLF + "  WHERE WH_TYP = :WH_TYP AND RTV_NO = :RTV_NO               ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("ST",     DbLang.VARCHAR).Value = status;
+                if (sensor == "1" || allowEmptyMove) { int _rtvtgt = 0; int.TryParse(posCell, out _rtvtgt); m_dicCraneTgt["R" + rtvNo] = _rtvtgt; }  // [LGLS] 화물 실음(또는 입고대 접근 이동): 목적지로 스텝 이동
+                else { int _cur = m_dicCraneCur.ContainsKey("R" + rtvNo) ? m_dicCraneCur["R" + rtvNo] : 0; m_dicCraneTgt["R" + rtvNo] = _cur; }  // [LGLS] 빈차: 현재 위치 고정
+                _pBdb.mComMain.Parameters.Add("PALLET", DbLang.VARCHAR).Value = Cap(luggPallet, 4);
+                _pBdb.mComMain.Parameters.Add("SENSOR", DbLang.VARCHAR).Value = sensor;
+                _pBdb.mComMain.Parameters.Add("JOBTYP", DbLang.VARCHAR).Value = jobTyp;
+                _pBdb.mComMain.Parameters.Add("LUGGOD", DbLang.VARCHAR).Value = Cap(luggOd, 4);
+                if (departTrack != "") _pBdb.mComMain.Parameters.Add("DEPART", DbLang.VARCHAR).Value = Cap(departTrack, 4);
+                if (arriveTrack != "") _pBdb.mComMain.Parameters.Add("ARRIVE", DbLang.VARCHAR).Value = Cap(arriveTrack, 4);
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("RTV_NO", DbLang.VARCHAR).Value = rtvNo;
+                _pBdb.ExcuteNonQry(s);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] UpdateRtvVehicle 오류: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// SC_DATA_LGLS 이송 명령 발행 (단순 이송 - CELL 미사용 현장).
+        ///   ★TODO(현장값 확인): USER_COMMAND_OD / WRITE_FLAG_OD / 위치(BANK/BAY/LEVEL/HSPOS) 등
+        ///     실제 SC_DATA_LGLS DDL 및 PLC 명령 사양에 맞춰 _OD 컬럼을 보완할 것.
+        ///     현재는 확신 가능한 핸드셰이크 컬럼(JOB_TYP_OD, LUGG_NO_FK1_OD, OD_RQ_YN)만 기록.
+        /// </summary>
+        // [LGLS 2026-07-21] 물리 이관: Vehicle 반송지시 기록 — EQP_TASK VehThread 가 PLC 로 반영한다.
+        //   (From/To 는 2자리 3필드: 포트=00/00/pp, 셀=통로/Bay/Level)
+        private bool UpdateScData(string strScNo, string strJobTyp, string strLuggNo,
+                                  string f1, string f2, string f3, string t1, string t2, string t3, ref string strRtn)
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " UPDATE SC_DATA_LGLS                                 ";
+                strSql += CRLF + "    SET JOB_TYP_OD     = :JOB_TYP_OD            ";
+                strSql += CRLF + "      , LUGG_NO_FK1_OD = :LUGG_NO_FK1_OD        ";
+                strSql += CRLF + "      , USE_FK_OD      = '1'                    ";   // FK1 사용 (TWIN 미사용 가정)
+                strSql += CRLF + "      , PALLET_ID_OD   = :PALLET_ID_OD          ";   // Vehicle 반송 JOB
+                strSql += CRLF + "      , FROM_01_OD = :VEH_FROM_A, FROM_02_OD = :VEH_FROM_B, FROM_03_OD = :VEH_FROM_C ";
+                strSql += CRLF + "      , TO_01_OD   = :VEH_TO_A, TO_02_OD   = :VEH_TO_B, TO_03_OD   = :VEH_TO_C ";
+                strSql += CRLF + "      , TRANSFER_REQUEST_OD = 'Y'               ";
+                strSql += CRLF + "      , COMPLETE_RD    = '0'                    ";
+                strSql += CRLF + "      , OD_RQ_YN       = 'Y'                    ";
+                strSql += CRLF + "      , OD_USER_ID     = '" + OD_USER + "'      ";
+                strSql += CRLF + "      , OD_UPD_DT      = " + DbLang.SYSDATE + " ";
+                strSql += CRLF + "  WHERE WH_TYP         = :WH_TYP                ";
+                strSql += CRLF + "    AND SC_NO          = :SC_NO                 ";
+                strSql += CRLF + "    AND OD_RQ_YN       = 'N'                    ";
+                strSql += CRLF + "    AND ERR_CODE_RD    = '0000'                 ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("JOB_TYP_OD",     DbLang.VARCHAR).Value = strJobTyp;
+                _pBdb.mComMain.Parameters.Add("LUGG_NO_FK1_OD", DbLang.VARCHAR).Value = strLuggNo;
+                _pBdb.mComMain.Parameters.Add("PALLET_ID_OD",   DbLang.VARCHAR).Value = strLuggNo;
+                _pBdb.mComMain.Parameters.Add("VEH_FROM_A", DbLang.VARCHAR).Value = f1;
+                _pBdb.mComMain.Parameters.Add("VEH_FROM_B", DbLang.VARCHAR).Value = f2;
+                _pBdb.mComMain.Parameters.Add("VEH_FROM_C", DbLang.VARCHAR).Value = f3;
+                _pBdb.mComMain.Parameters.Add("VEH_TO_A", DbLang.VARCHAR).Value = t1;
+                _pBdb.mComMain.Parameters.Add("VEH_TO_B", DbLang.VARCHAR).Value = t2;
+                _pBdb.mComMain.Parameters.Add("VEH_TO_C", DbLang.VARCHAR).Value = t3;
+                _pBdb.mComMain.Parameters.Add("WH_TYP",         DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("SC_NO",          DbLang.VARCHAR).Value = strScNo;
+                int n = _pBdb.ExcuteNonQry(strSql);
+                if (n < 0) { strRtn += "SC_DATA_LGLS 명령 오류:" + _pBdb.ErrMsg; return false; }
+                if (n == 0) { strRtn += "발행할 SC_DATA_LGLS 가 없음(SC_NO:" + strScNo + ")"; return false; }
+                return true;
+            }
+            catch (Exception ex) { strRtn += ex.Message; return false; }
+        }
+
+        // [LGLS 2026-07-21] Vehicle 좌표 인코딩 헬퍼 (VehicleSim/구 ECS ECSDispatcher 규약)
+        /// <summary>포트 좌표: ("00","00",포트 2자리). 트랙 1xx → 포트 = 트랙-100.</summary>
+        private static void VehPortLoc(string track, out string a, out string b, out string c)
+        {
+            int t; int.TryParse(track, out t);
+            a = "00"; b = "00"; c = (t % 100).ToString("00");
+        }
+        /// <summary>셀 좌표: LOCATION "BB-bbb-LL" → (통로: 홀수뱅크=01/짝수뱅크=02, Bay 2자리, Level 2자리)</summary>
+        private static void VehCellLoc(string loc, out string a, out string b, out string c)
+        {
+            int bank = 0, bay = 0, lev = 0;
+            string[] p = (loc ?? "").Split('-');
+            if (p.Length >= 3) { int.TryParse(p[0], out bank); int.TryParse(p[1], out bay); int.TryParse(p[2], out lev); }
+            a = (bank % 2 == 1) ? "01" : "02";
+            b = (bay % 100).ToString("00");
+            c = (lev % 100).ToString("00");
+        }
+
+        /// <summary>
+        /// RTV_DATA_LGLS(RGV) 이송 명령 발행.
+        ///   ★TODO(현장값 확인): RTV_DATA_LGLS 의 _OD 명령 컬럼이 기존 코드에 정의가 없어
+        ///     SC_DATA_LGLS 패턴으로 작성. 실제 RTV_DATA_LGLS DDL/PLC 사양에 맞춰 보완할 것.
+        /// </summary>
+        private bool UpdateRtvData(string strRtvNo, string strJobTyp, string strLuggNo,
+                                   string strStartPos, string strDestPos, ref string strRtn)
+        {
+            try
+            {
+                // 실제 RTV_DATA_LGLS 명령(_OD) 컬럼: JOB_TYP_OD, LUGG_OD, RTV_PASSCV_OD(경유/출발 CV),
+                //   RTV_DEST_OD(목적지), DEPART_TRACK, ARRIVE_TRACK, OD_RQ_YN.  (OD_UPD_DT 컬럼 없음)
+                //   [슬라이드16-17] Transfer Command Data(From/To/JobNo) 매핑.
+                // [LGLS 2026-07-21] 물리 이관: Vehicle 반송지시 기록 — From/To 는 트랙→포트 좌표.
+                //   strStartPos/strDestPos 에는 호출부가 이미 픽업/드롭 "트랙"을 넣는다.
+                string f1, f2, f3, t1, t2, t3;
+                VehPortLoc(strStartPos, out f1, out f2, out f3);
+                VehPortLoc(strDestPos, out t1, out t2, out t3);
+
+                string strSql = "";
+                strSql += CRLF + " UPDATE RTV_DATA_LGLS                                ";
+                strSql += CRLF + "    SET JOB_TYP_OD    = :JOB_TYP_OD             ";
+                strSql += CRLF + "      , LUGG_OD       = :LUGG_OD                ";
+                strSql += CRLF + "      , RTV_PASSCV_OD = :FROM_POS               ";
+                strSql += CRLF + "      , RTV_DEST_OD   = :TO_POS                 ";
+                strSql += CRLF + "      , DEPART_TRACK  = :FROM_POS2              ";
+                strSql += CRLF + "      , ARRIVE_TRACK  = :TO_POS2                ";
+                strSql += CRLF + "      , PALLET_ID_OD  = :PALLET_ID_OD           ";
+                strSql += CRLF + "      , FROM_01_OD = :VEH_FROM_A, FROM_02_OD = :VEH_FROM_B, FROM_03_OD = :VEH_FROM_C ";
+                strSql += CRLF + "      , TO_01_OD   = :VEH_TO_A, TO_02_OD   = :VEH_TO_B, TO_03_OD   = :VEH_TO_C ";
+                strSql += CRLF + "      , TRANSFER_REQUEST_OD = 'Y'               ";
+                strSql += CRLF + "      , COMPLETE_RD   = '0'                     ";
+                strSql += CRLF + "      , OD_RQ_YN      = 'Y'                     ";
+                strSql += CRLF + "      , OD_USER_ID    = '" + OD_USER + "'       ";
+                strSql += CRLF + "  WHERE WH_TYP        = :WH_TYP                 ";
+                strSql += CRLF + "    AND RTV_NO        = :RTV_NO                 ";
+                strSql += CRLF + "    AND OD_RQ_YN      = 'N'                     ";
+
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("JOB_TYP_OD", DbLang.VARCHAR).Value = strJobTyp;
+                _pBdb.mComMain.Parameters.Add("LUGG_OD",    DbLang.VARCHAR).Value = strLuggNo;
+                _pBdb.mComMain.Parameters.Add("FROM_POS",   DbLang.VARCHAR).Value = strStartPos;
+                _pBdb.mComMain.Parameters.Add("TO_POS",     DbLang.VARCHAR).Value = strDestPos;
+                _pBdb.mComMain.Parameters.Add("FROM_POS2",  DbLang.VARCHAR).Value = strStartPos;
+                _pBdb.mComMain.Parameters.Add("TO_POS2",    DbLang.VARCHAR).Value = strDestPos;
+                _pBdb.mComMain.Parameters.Add("PALLET_ID_OD", DbLang.VARCHAR).Value = strLuggNo;
+                _pBdb.mComMain.Parameters.Add("VEH_FROM_A", DbLang.VARCHAR).Value = f1;
+                _pBdb.mComMain.Parameters.Add("VEH_FROM_B", DbLang.VARCHAR).Value = f2;
+                _pBdb.mComMain.Parameters.Add("VEH_FROM_C", DbLang.VARCHAR).Value = f3;
+                _pBdb.mComMain.Parameters.Add("VEH_TO_A", DbLang.VARCHAR).Value = t1;
+                _pBdb.mComMain.Parameters.Add("VEH_TO_B", DbLang.VARCHAR).Value = t2;
+                _pBdb.mComMain.Parameters.Add("VEH_TO_C", DbLang.VARCHAR).Value = t3;
+                _pBdb.mComMain.Parameters.Add("WH_TYP",     DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("RTV_NO",     DbLang.VARCHAR).Value = strRtvNo;
+                int n = _pBdb.ExcuteNonQry(strSql);
+                if (n < 0) { strRtn += "RTV_DATA_LGLS 명령 오류:" + _pBdb.ErrMsg; return false; }
+                if (n == 0) { strRtn += "발행할 RTV_DATA_LGLS 가 없음(RTV_NO:" + strRtvNo + ")"; return false; }
+                return true;
+            }
+            catch (Exception ex) { strRtn += ex.Message; return false; }
+        }
+
+        /// <summary>DataRow 값 추출 (null/공백 안전, Trim)</summary>
+        private string GetVal(DataRow row, string col)
+        {
+            if (row[col] == null || row[col] == DBNull.Value) return "";
+            return row[col].ToString().Trim();
+        }
+        #endregion
+    }
+}

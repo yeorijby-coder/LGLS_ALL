@@ -1,0 +1,299 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ECS>
+	<Equipment class="CCvXgt" thread="01" number="1" device="CV_E01">
+		<Tracks plcno="01" cid="17110100" FirstTrack="101">
+			<Track	number="101">
+        <Status>
+          <StoStation name="WC 입고대" id="101"/>
+		  <RetStation name="WC 출고대" id="101"/>
+        </Status>
+      </Track>
+      <Track	number="102"/>	
+      <Track	number="103">	
+        <Status>
+          <ArvStation name="SizeChecker" id="103"/>
+        </Status>
+      </Track>
+	    <Track	number="104">	
+        <Status>
+          <ArvStation name="WeightChecker" id="104"/>
+        </Status>
+      </Track>
+	    <Track	number="105"/>	
+	    <Track	number="106"/>
+      <Track	number="107">
+        <Status>
+          <StoStation name="DPMG �԰���" id="107"/>
+          <RetStation name="DPMG 출고대" id="107"/>
+        </Status>
+      </Track>
+      <Track	number="108">
+        <Status>
+          <StoStation name="�ܺ� �԰���" id="108"/>
+          <RetStation name="외부 출고대" id="108"/>
+        </Status>
+      </Track>
+      <Track	number="109"/>	
+			<Track	number="110"/>	
+			<Track	number="111"/>	
+			<Track	number="112">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="113">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="114"/>
+			<Track	number="115"/>	
+			<Track	number="116">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+			<Track	number="117">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+			<Track	number="118"/>	
+			<Track	number="119"/>	
+			<Track	number="120"/>	
+			<Track	number="121"/>	
+			<Track	number="122"/>	
+			<Track	number="123"/>	
+			<Track	number="124"/>	
+			<Track	number="125">
+        <Status>
+          <ArvStation name="SC #4 �߰� ������" id="125"/>
+        </Status>
+        <Destination tid="9004" desc="H/S관련 작업 공정 불가 (1036관련)"/>
+      </Track>
+		<Track	number="126"/>	
+		<Track	number="127"/>	
+		<Track	number="128"/>	
+		<Track	number="129"/>	
+		<Track	number="130"/>	
+		<Track	number="131">
+			<Status>
+				<ScRetHS/>
+			</Status>
+		</Track>
+			<Track	number="132"/>
+			<Track	number="133"/>	
+			<Track	number="134">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+			<Track	number="135"/>	
+			<Track	number="136">
+        <Status>
+          <ScStoHS/>
+          <ScRetHS/>
+        </Status>
+      </Track>
+			<Track	number="137"/>	
+			<Track	number="138"/>	
+			<Track	number="139"/>	
+			<Track	number="140"/>	
+			<Track	number="141"/>	
+			<Track	number="142"/>	
+			<Track	number="143"/>	
+			<Track	number="144"/>	
+			<Track	number="145"/>	
+			<Track	number="146"/>
+			<Track	number="147"/>	
+			<Track	number="148">
+				<Status>
+					<RetStation name="출고대" id="148"/>
+				</Status>
+			</Track>
+			<Track	number="149">
+				<Status>
+					<StoStation name="MGDP 입고대" id="149"/>
+				</Status>
+			</Track>
+			<Track	number="150"/>	
+			<Track	number="151">
+        <Status>
+          <RetStation name="������" id="151"/>
+        </Status>
+      </Track>
+      <Track	number="152"/>	
+			<Track	number="153"/>	
+			<Track	number="154">	
+				<Status>
+					<StoStation name="Roll �԰���" id="154"/>
+				</Status>
+			</Track>
+			<Track	number="155"/>	
+			<Track	number="156"/>
+			<Track	number="157"/>	
+			<Track	number="158"/>	
+			<Track	number="159"/>	
+			<Track	number="160">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track	number="161">	
+				<Status>
+					<RetStation name="���� �۾���" id="161"/>
+				</Status>
+			</Track>
+			<Track	number="162"/>
+			<Track	number="163"/>
+			<Track	number="164"/>
+			<Track	number="165"/>
+			<Track	number="166"/>
+			<Track	number="167"/>
+			<Track	number="168"/>
+			<Track	number="169"/>
+			<Track	number="170"/>
+			<Track	number="171">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="172">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#1-1" id="172"/>
+				</Status>
+			</Track>
+			<Track	number="173">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="174">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#1-2" id="174"/>
+				</Status>
+			</Track>
+			<Track	number="175">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="176">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#1-3" id="176"/>
+				</Status>
+			</Track>
+			<Track	number="177">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="178">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#1-4" id="178"/>
+				</Status>
+			</Track>
+			<Track	number="179"/>
+			<Track	number="180"/>
+			<Track	number="181">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="182">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#2-1" id="182"/>
+				</Status>
+			</Track>
+			<Track	number="183">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="184">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#2-2" id="184"/>
+				</Status>
+			</Track>
+			<Track	number="185">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="186">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#2-3" id="186"/>
+				</Status>
+			</Track>
+			<Track	number="187">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="188">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#2-4" id="188"/>
+				</Status>
+			</Track>
+			<Track	number="189"/>
+			<Track	number="190"/>
+			<Track	number="191">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="192">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#3-1" id="192"/>
+				</Status>
+			</Track>
+			<Track	number="193">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="194">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#3-2" id="194"/>
+				</Status>
+			</Track>
+			<Track	number="195">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="196">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#3-3" id="196"/>
+				</Status>
+			</Track>
+			<Track	number="197">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="198">
+				<Status>
+					<RetStation name="�Ѹ� �۾���#3-4" id="198"/>
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+
+	<Equipment class="CSc" thread="01" number="2" device="SC_E01">
+		<Scs>
+			<Sc plcno="01" number="901">
+				<ScStation name="S/C#1" bankpos="1" bank="2" bay="48" level="20"/>
+			</Sc>
+			<Sc plcno="02" number="902">
+				<ScStation name="S/C#2" bankpos="1" bank="2" bay="48" level="20"/>
+			</Sc>
+			<Sc plcno="03" number="903">
+				<ScStation name="S/C#3" bankpos="1" bank="2" bay="48" level="20"/>
+			</Sc>
+			<Sc plcno="04" number="904">
+				<ScStation name="S/C#4" bankpos="1" bank="2" bay="48" level="20"/>
+			</Sc>
+		</Scs>
+	</Equipment>
+</ECS>

@@ -1,0 +1,174 @@
+
+2008-11-13
+
+ <이종근>
+
+  1. 사용자 권한 관련 함수 및 DB TABLE 자료 추가.
+
+	-. Stocker.Global.StockerPermission 클래스 추가.
+	-. ECP.Util.Client.UserPermission.SetLogOut 함수 추가.
+	-. ECP.Util.Client.UserPermission.GetInstance 함수 수정.
+	-. 기존 if (stockerSem.IsUserPrivilege) -> StockerPermission.GetUserPermission(permissionKey)로 변경.
+	
+  2. 사용자 암호 변경 기능 추가.
+
+	-. 암호를 MASTER DB에 통합 관리하며, 암호 분실시에, 동일한 계정으로 "OPERATOR", "MAINTENANCE", "ADMINISTRATOR"로
+	   기존것을 DB(dbo.ECPUSER)에서 삭제하고, 신규 생성한다. 연결된 ROLL은 "OP_STKC", "MAINT_STKC", "ADMIN_STKC"이다.
+
+
+	   
+=============	Ver 0.1.6.0	=============
+
+2008-11-20 
+
+ <배병훈>
+
+  1. 비정상적 RM CST PRESECE ON 시 (down상황에서 ON 되었다던가, 반송명령 받지 않은 상황에서 )
+   UNK CST생성.
+   
+  2. PROCESS PORT 에서 ULD중 SOURCE EMPTY 발생 시 CST 정보 삭제 안되는 BUG 수정.
+
+  3. STOCKER PORT DOWN 시 반송 명령 수행 중인 WORK ITEM 완료처리 하던것 수정.
+   ( RM이 SOURCE PORT DOWN BIT ON 시 삭제 되도록...)
+   
+   
+   
+=============	Ver 0.1.7.0	=============
+
+2008-11-26
+
+ <김성원>
+
+  1. Stocker
+
+	-. Infom화면의 TransferHistoryListView의 하단 스크롤바 보이지 않는 문제 수정.
+
+  2. Stocker.Client
+
+	-. Device 창의 TreeView Icon 변경.
+	-. Layout의 Widget 크기 변경이 Ctrl누른 상태에서 마우스 움직임으로 size 변경 되는 문제 수정.
+
+ <김성준>
+
+  1. Stocker
+	
+	-. 15분 후 logout 시 문제 수정.
+	-. log 검색 시 대소문자 구분 안하게 수정, Enter입력으로 검색 가능.
+	-. RM Reporting Data 및 Overlap 시 Other RM Location Observable Log 제거.
+	-. FFU_STATE Observable Address 수정.
+
+  2. Stocker.Client
+
+	-. Observable Sync 메뉴 위치 수정.
+	-. Stocker 및 Device의 Observable Config source 생성 메뉴 추가.
+	   (Tool -> Observable Config 메뉴를 통해 생성 가능, D:\LOG\temp 폴더에 생성됨)
+
+2008-11-27
+
+ <배병훈>
+
+  1. PORT WAIT IN 시 alternateTimeoutCount 시작 부분 변경
+	기존 : 정상 입고시
+	수정 : 입고시 무조건.
+
+ <김성준>
+
+  1. Stocker.Client
+	
+	-. Next Location Set 관련 form 추가 (아직 구현안되어 있음)
+
+
+=============   Ver 0.1.8.0  이제부터 추가되는 History는 이 밑으로 남겨주세요~ (김성준)
+
+2008-12-10
+
+<김성준>
+
+  1. ECP.Util.GlobalMouseHook.cs 추가
+
+  2. Stocker를 사용하지 않은지 15분 후 로그아웃되게 수정
+
+
+2008-12-11
+
+<배병훈>
+1. RM 반송 재개 시 ZONE FULL 상황( ZoneManager.NearDestination Return false) 시 
+   옵션에 의해 포트로 반송 지시 로직 추가.
+2. UNLOAD INTERFACE ERROR 시 PAUSE 삭제.
+3. 반송명령 생성 실패 - 이미 반송명령이 있는 캐리어에 다시 반송 명령을 지시 <- 로그 발생 관련 수정.
+4. Reconcile시 RM CurLoaction Read
+5. Pause 된 JOB 우선 명령 하달.
+
+
+
+2009-01-07
+
+<송금현>
+1.Observable Log에 Array 형 Data들의 Log에 남을 수 있도록 수정
+파일 : ObservableStatisticsCollectionData.cs, StatisticsCollectorData,
+
+
+2009-01-29
+
+<송금현>
+1.Light Curtain Error 발생시 어느 호기 쪽에서 발생하였는지 RM Fault Text 뒤에 상세 정보 추가 하도록 수정
+2.Inline Interface Error 발생시 어느 호기 쪽에서 발생하였는지 RM Fault Text 뒤에 상세 정보 추가 하도록 수정
+파일 : HECSSEMLogicFunction.cs, RackMaster.cs
+
+<신승원>
+3. Host 통신 관련 날짜 포맷 변경 
+   기존 : yyyy-MM-dd hh:mm:ss.fff
+   변경 : yyyyMMddhhmmssfff 
+   
+4. S2F49, Host 통신 관련 
+   Source=Empty String 이고, 카세트의 위치가 Shelf가 아닌 경우 반송명령을 거부하도록 수정함.
+   
+5. 카세트 출고 & 이동 화면 수정
+   카세트 출고화면, 이동화면을 하나로 통합하였으며, 카세트 검색 및 정렬 기능을 추가함. 
+   
+6. S2F49, Host 통신 관련 
+   Source 및 Destination이 Unavailible 한 상태이면 반송명령을 거부.
+   Destination이 Shelf 인 경우 Zone Full 이면 반송명령 거부. 
+   
+   
+   
+2009-02-02
+   
+<송금현>
+1.Opiont에 체크 된것이 어떤 것인지 알 수 없다고 하여 옵션 버튼에 체크 추가
+
+2.Alarm에 ',' 넣으면 Send Host에서 Exception 발생 하는 문제 수정
+
+<김성원>
+3.T-Type C/V PORT ID 중복 현상 제거
+4.T-Type C/V의 각PORT의 현재 MODE, DIRECTION 표시
+5.RM ARM 회전.
+
+<신승원>
+6. Zone Full 상황에서 CST가 Manual 포트에서 무한 반송하는 현상 수정.
+
+7. Zone Full 상황에서 Manual 포트의 W.I 카세트가 C/V 포트로 출고되지 않도록 수정.
+
+
+2009-02-06
+<송금현>
+1.Shelf에 Stored 될때 Host로 Stored 보고 후 Transfer Complete 보고 되도록 수정
+2.Overlap 구간에서 반송이 많고 허가가 떨어 지지 않으면 다른 반송 수행 되지 않는 문제 수정
+3.화면 켑쳐 기능 추가
+
+<신승원>
+1. 출고화면에서 14자리 이상의 캐리어 아이디가 발번 되었을 경우, 반송지시가 되지 않던 문제점을 수정.
+2. 좌측 상단 StockerID, StockerVersion 표시 부분에서 Host기동전에 버전 및 StockerID가 Default 값으로 
+   출력되던 문제를 수정함. 
+
+<김성원>
+1.DispatcherOption의 반송 정렬기준 및 필터링 옵션 체크박스를 클릭 할 경우, 
+  이전 위치의 체크 상태가 해제되는 문제 수정
+  
+  
+2009-02-12
+<송금현>
+1.반송명령 창에 Rack master element -> hostid로 Display 되도록 수정
+
+<김성원>
+1.Dispatcher 사용 권한 변경 (Administrator만 가능)

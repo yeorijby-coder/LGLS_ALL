@@ -1,0 +1,48 @@
+# =====================================================================
+# EQP_SIM (XGT PLC 설비 시뮬레이터) 설정
+# =====================================================================
+
+[MODE]
+# TARGET=ECS : 구(원본) ECS 연동 — 원본 배치(C/V#12=입고, C/V#13=출고), 차량은 VehicleSim 실핸드셰이크, WCS 훅/미러 비활성
+# TARGET=WCS : 대체 WCS 체인 — CV12/13 스왑(EcsDefine 정렬), 재현/픽업 훅 + D영역 미러 활성
+TARGET=ECS
+
+[XGT]
+# ECS(FenetDriver)가 접속해 오는 수신 포트 (콤마 구분, 복수 가능)
+# 실PLC 표준 2004, ECS 개발설정(HECS.ini/App.config) 3001
+PORTS=2004,3001
+
+[TIMING]
+# 컨베이어 1구간 이동 시간
+MOVE_MS=2000
+# S/C · RGV 주행 시간
+TRAVEL_MS=2500
+# Wait-Out 포트 체류 시간 (ECS 판독주기보다 길게)
+WAITOUT_HOLD_MS=9000
+# 출고대 도착 후 작업자 반출까지 시간
+OUT_REMOVE_MS=1000
+OUT_TRACK_CLEAR_MS=1000
+# 입고대 자동 투입 간격
+FEED_MS=5000
+# 입출고 겸용 C/V(#11)에서 미지정(JOB 대기) 파렛트 회수 대기 시간
+# (ECS는 입고모드에서 입고대에 파렛트가 있으면 C/V#11로의 출고 반송을 금지하므로,
+#  이 시간 동안 입고 지시가 없으면 작업자가 회수했다가 나중에 재투입)
+UNSTAMPED_TIMEOUT_MS=30000
+
+[FEED]
+# 입고대 자동 투입 (작업자 역할 자동화)
+# [LGLS] C/V#11(121/122) 입고대는 IO_TASK(FeedInGate)가 직접 공급하므로 EQP_SIM AutoFeed 끔(팬텀 제거).
+AUTO=1
+CV11=1
+CV12=1
+CV15=1
+
+[WCS_MIRROR]
+# 대체 WCS(WCS_TASK_CV)의 D영역 트랙 상태 모델 미러 (CVnn=시작 트랙번호, 0=미사용)
+# 트랙 t = 시작트랙+(포트순번-1), D워드 t*10 : +0 LuggNum, +7 Status(AUTO/입출고대), +8 Sensor
+# WCS_DB.INI 의 COMMn PLC_NO / FR_TRACK 과 일치해야 함 (MC_NO='1'+TR 2자리)
+CV11=121
+CV12=123
+CV13=125
+CV14=127
+CV15=130

@@ -1,0 +1,817 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="StageRate" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\StageRate.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50095700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50095700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet500436001" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet500436001.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="GlassWithdraw" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\GlassWithdraw.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="KeyOpened" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\KeyOpened.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ArmAxis" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ArmAxis.JPG;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="AlarmCount" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AlarmCount.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Refresh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Refresh.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53484500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53484500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53471200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53471200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Operation" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Operation.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50046000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50046000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Search3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Search3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53300600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53300600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="system52158600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\system52158600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="GreenFlag" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\GreenFlag.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="PLCLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\PLCLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53513700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53513700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ATJ_FRONT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ATJ_FRONT.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53326100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53326100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53465300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53465300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="RobotLCS" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\RobotLCS.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50045100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50045100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50090600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50090600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Handok" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Handok.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53473600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53473600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50053200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50053200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="PLCAddress" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\PLCAddress.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50043600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50043600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50046300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50046300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53308600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53308600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50043300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50043300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53301600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53301600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="AVACO_FRONT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AVACO_FRONT.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FRONT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FRONT.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50045700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50045700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Log" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\LogView.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53514700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53514700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53479600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53479600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53461800" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53461800.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50046900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50046900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53515100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53515100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53310000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53310000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="shelf" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\shelf.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="TransferDB" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\TransferDB.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="KeyClosed" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\KeyClosed.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Option" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Setting.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="logo" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\logo.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="DeviceDB" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\DeviceDB.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Online3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Online3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Connect3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Connect3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="User2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\User2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50044800" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50044800.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="GlassDB" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\GlassDB.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="OPRate" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\OPRate.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Resize" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Resize.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53318400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53318400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53484300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53484300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50250600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50250600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Connect1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Connect1.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53513900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53513900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50094800" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50094800.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53301400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53301400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Maint" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Maint.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="TurnStage" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\TurnStage.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Disconnect2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Disconnect2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50006800" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50006800.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53487500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53487500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="rm" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\rm.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ATJ_FRONT2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ATJ_FRONT2.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53348000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53348000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53485700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53485700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53418400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53418400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53484100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53484100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53308100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53308100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50093600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50093600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="GlassMaint" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\GlassMaint.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="AVACO_FRONT_SIDE" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AVACO_FRONT_SIDE.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53483300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53483300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53462000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53462000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53487700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53487700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="User51" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\User51.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50055900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50055900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53510100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53510100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53460200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53460200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53464900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53464900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53478600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53478600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="StageSensor" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\StageSensor.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ATJ_SIDE" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ATJ_SIDE.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53507500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53507500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="HSMSMessage" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\HSMSMessage.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50055300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50055300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="StkPort" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\StkPort.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ALLTransferRate" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ALLTransferRate.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="User7" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\User7.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50043900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50043900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Down2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Down2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53465100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53465100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="RedFlag" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\RedFlag.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53515300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53515300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50046600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50046600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Down1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Down.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="AVACO_TOP" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AVACO_TOP.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50055000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50055000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ATJ_TOP" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ATJ_TOP.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53478800" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53478800.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50097800" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50097800.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="UP" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\UP1.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53501300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53501300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Resize1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Resize1.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53308200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53308200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="User20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\User20.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53476600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53476600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="TOP" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\TOP.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet500556001" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet500556001.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53483900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53483900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50045400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50045400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Inform2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Inform2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Power2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Power2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SystemLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\SystemLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53301200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53301200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Diverter1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Diverter1.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="RMAxis" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\RMAxis.JPG;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Cancel22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Cancel22.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="AlarmCount2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AlarmCount2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50005300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50005300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Diverter" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Diverter.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50055600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50055600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53479400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53479400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="DebugLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\DebugLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53326500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53326500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="processPort" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\processPort.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53462200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53462200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="logo_han" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\logo_han.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53325100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53325100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50096600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50096600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Power" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Power.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50202700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50202700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53479200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53479200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53392500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53392500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Maint6" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Maint6.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Down" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Down.ico;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua - Play" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Aqua - Play.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Up1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Up.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="OK4" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\OK4.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53505300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53505300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53312300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53312300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50053500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50053500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="topLogo2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\topLogo.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Up2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Up2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53324100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53324100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Handok_logo" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Handok_logo.bmp;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50096900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50096900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Alarm" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Alarm.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53514300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53514300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="topLogo1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\topLogo.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53381000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53381000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Offline3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Offline3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Search" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Search.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="rail" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\rail.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="HSMSDriver" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\HSMSDriver.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50262600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50262600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53512900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53512900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53461600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53461600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Cancel4" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Cancel4.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53303000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53303000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50044200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50044200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53307700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53307700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="TransferLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\TransferLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53355500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53355500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50202500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50202500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53514100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53514100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="AVACO_SIDE" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AVACO_SIDE.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Offline" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Offline.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Rackmaster" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Rackmaster.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50016400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50016400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Examination" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Examination.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="topLogo" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\topLogo.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53501900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53501900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ErrorLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ErrorLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Guage" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Guage.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LPL" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\LPL.bmp;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Cancel" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Cancel.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53506900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53506900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50053800" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50053800.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50093900" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50093900.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53512700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53512700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53503100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53503100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="UP3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\UP3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="auto" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\auto.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53462100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53462100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Login5" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Login5.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53462300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53462300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53463700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53463700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="DOWN3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\DOWN3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="HostLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\HostLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53485500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53485500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Options" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Options.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LCD" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\LCD.bmp;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53480000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53480000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53464500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53464500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Inform3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Inform3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="RMAxis1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\RMAxis.JPG;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53512500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53512500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50044500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50044500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Options2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Options2.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50010400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50010400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53463600" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53463600.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FFUStatus" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FFUStatus.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53309400" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53309400.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53507100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53507100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53464700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53464700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53461700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53461700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LGDisplay" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\LGDisplay.bmp;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Maint3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Maint3.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="AccessLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AccessLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Inform" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Inform.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="StockerSkin" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\StockerSkin.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53303200" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53303200.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53501700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53501700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="OperationLog" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\OperationLog.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53433100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53433100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53309300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53309300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="PLCDriver" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\PLCDriver.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50261700" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50261700.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53479000" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53479000.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="User5" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\User5.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet53513500" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet53513500.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50401100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50401100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50096300" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50096300.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bullet50110100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bullet50110100.gif;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LGLS" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\LGLS.jpg;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+</root>

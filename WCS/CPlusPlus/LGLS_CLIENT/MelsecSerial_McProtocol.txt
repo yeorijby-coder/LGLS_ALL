@@ -1,0 +1,5 @@
+READ	strBuffer.Format(_T("00FFWR0D%.4d%.2X"), nStartWord, nWordLen);
+WRITE	strBuffer.Format(_T("00FFWW0D%.4d%.2X"), nStartWord, nWordLen);
+
+   0123456 7890
+"\x00FFWR0D01000F40\r\n"

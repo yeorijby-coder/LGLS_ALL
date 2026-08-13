@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>
+	<Equipment class="CCv" thread="01" number="1" device="CV_E01">
+		<Tracks plcno="01" cid="17110100" FirstTrack="101">
+			<Track	number="101"/>
+			<Track	number="102"/>
+		</Tracks>
+		<Tracks plcno="02" cid="17110100" FirstTrack="103">
+			<Track	number="103"/>
+			<Track	number="104">
+				<Status>
+					<ScStoHS name="S/C#1 입고 H/S (TR#04)" id="104"/>
+					<ScRetHS name="S/C#1 출고 H/S (TR#04)" id="104"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="03" cid="17110100" FirstTrack="105">
+			<Track	number="105"/>
+			<Track	number="106">
+				<Status>
+					<ScRetHS name="S/C#2 출고 H/S (TR#06)" id="106"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="04" cid="17110100" FirstTrack="107">
+			<Track	number="107"/>
+			<Track	number="108">
+				<Status>
+					<ScStoHS name="S/C#2 입고 H/S (TR#08)" id="108"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="05" cid="17110100" FirstTrack="109">
+			<Track	number="109"/>
+			<Track	number="110">
+				<Status>
+					<ScRetHS name="S/C#3 출고 H/S (TR#10)" id="110"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="06" cid="17110100" FirstTrack="111">
+			<Track	number="111"/>
+			<Track	number="112">
+				<Status>
+					<ScStoHS name="S/C#3 입고 H/S (TR#12)" id="112"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="07" cid="17110100" FirstTrack="113">
+			<Track	number="113"/>
+			<Track	number="114">
+				<Status>
+					<ScRetHS name="S/C#4 출고 H/S (TR#14)" id="114"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="08" cid="17110100" FirstTrack="115">
+			<Track	number="115"/>
+			<Track	number="116">
+				<Status>
+					<ScStoHS name="S/C#4 입고 H/S (TR#16)" id="116"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="09" cid="17110100" FirstTrack="117">
+			<Track	number="117"/>
+			<Track	number="118">
+				<Status>
+					<ScRetHS name="S/C#5 출고 H/S (TR#18)" id="118"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="10" cid="17110100" FirstTrack="119">
+			<Track	number="119"/>
+			<Track	number="120">
+				<Status>
+					<ScStoHS name="S/C#5 입고 H/S (TR#20)" id="120"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="11" cid="17110100" FirstTrack="121">
+			<Track	number="121"/>
+			<Track	number="122">
+				<Status>
+					<StoStation name="입출고대 (TR#22)" id="122"/>
+					<RetStation name="입출고대 (TR#22)" id="122"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="12" cid="17110100" FirstTrack="123">
+			<Track	number="123"/>
+			<Track	number="124">
+				<Status>
+					<RetStation name="출고대 (TR#24)" id="124"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="13" cid="17110100" FirstTrack="125">
+			<Track	number="125"/>
+			<Track	number="126">
+				<Status>
+					<StoStation name="입고대 (TR#26)" id="126"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="14" cid="17110100" FirstTrack="127">
+			<Track	number="127"/>
+			<Track	number="128"/>
+			<Track	number="129">
+				<Status>
+					<RetStation name="출고대 (TR#29)" id="129"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="15" cid="17110100" FirstTrack="130">
+			<Track	number="130">
+				<Status>
+					<StoStation name="입고대 (TR#30)" id="130"/>
+				</Status>
+			</Track>
+			<Track	number="131"/>
+			<Track	number="132"/>
+		</Tracks>
+	</Equipment>
+	
+	<Equipment class="CSc" thread="01" number="2" device="SC_E01">
+		<Scs>
+			<Sc plcno="01" number="901">
+				<ScStation name="S/C#1" bankpos="1" bank="2" bay="10" level="5"/>
+			</Sc>
+			<Sc plcno="02" number="902">
+				<ScStation name="S/C#2" bankpos="1" bank="2" bay="10" level="5"/>
+			</Sc>
+			<Sc plcno="03" number="903">
+				<ScStation name="S/C#3" bankpos="1" bank="2" bay="10" level="5"/>
+			</Sc>
+			<Sc plcno="04" number="904">
+				<ScStation name="S/C#4" bankpos="1" bank="2" bay="10" level="5"/>
+			</Sc>
+			<Sc plcno="05" number="905">
+				<ScStation name="S/C#5" bankpos="1" bank="2" bay="10" level="5"/>
+			</Sc>
+		</Scs>
+	</Equipment>
+	<Equipment class="CRtv" thread="01" number="4" device="RTV_E01">
+		<Rtvs>
+			<Rtv plcno="01" number="801">
+				<Position>
+					<Pos plc="0" view="0" desc="Home"/>
+					<Pos plc="1" view="1" desc="TR# 01"/>
+					<Pos plc="2" view="2" desc="TR# 23"/>
+          <Pos plc="3" view="3" desc="TR# 03"/>
+          <Pos plc="4" view="3" desc="TR# 25"/>
+          <Pos plc="5" view="4" desc="TR# 05"/>
+          <Pos plc="6" view="6" desc="TR# 07"/>
+          <Pos plc="7" view="6" desc="TR# 27"/>
+          <Pos plc="8" view="7" desc="TR# 09"/>
+          <Pos plc="9" view="9" desc="TR# 11"/>
+					<Pos plc="10" view="9" desc="TR# 31"/>
+					<Pos plc="11" view="10" desc="TR# 13"/>
+          <Pos plc="12" view="12" desc="TR# 15"/>
+          <Pos plc="13" view="13" desc="TR# 17"/>
+          <Pos plc="14" view="15" desc="TR# 19"/>
+          <Pos plc="15" view="17" desc="TR# 21"/>
+				</Position>
+			</Rtv>
+		</Rtvs>
+	</Equipment>
+</ECS>

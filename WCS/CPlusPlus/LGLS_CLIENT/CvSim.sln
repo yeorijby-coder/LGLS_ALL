@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31321.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XmlLib", "Lib\XmlLib\XmlLib.vcxproj", "{7A98E04D-2F9F-4659-9D26-24150EF806AC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EcsLib", "Lib\EcsLib\EcsLib.vcxproj", "{20C39D50-9546-45F7-8984-0A946C4EA706}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CvSim", "CvSim\CvSim.vcxproj", "{90A43AE5-D7DD-C9F2-A909-52E37F1EF815}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7A98E04D-2F9F-4659-9D26-24150EF806AC} = {7A98E04D-2F9F-4659-9D26-24150EF806AC}
+		{20C39D50-9546-45F7-8984-0A946C4EA706} = {20C39D50-9546-45F7-8984-0A946C4EA706}
+		{077BF3DD-A44F-49F4-AFE1-00CAD52293E0} = {077BF3DD-A44F-49F4-AFE1-00CAD52293E0}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DciLib", "Lib\DciLib\DciLib.vcxproj", "{077BF3DD-A44F-49F4-AFE1-00CAD52293E0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7A98E04D-2F9F-4659-9D26-24150EF806AC} = {7A98E04D-2F9F-4659-9D26-24150EF806AC}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A98E04D-2F9F-4659-9D26-24150EF806AC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7A98E04D-2F9F-4659-9D26-24150EF806AC}.Debug|Win32.Build.0 = Debug|Win32
+		{7A98E04D-2F9F-4659-9D26-24150EF806AC}.Release|Win32.ActiveCfg = Release|Win32
+		{7A98E04D-2F9F-4659-9D26-24150EF806AC}.Release|Win32.Build.0 = Release|Win32
+		{20C39D50-9546-45F7-8984-0A946C4EA706}.Debug|Win32.ActiveCfg = Debug|Win32
+		{20C39D50-9546-45F7-8984-0A946C4EA706}.Debug|Win32.Build.0 = Debug|Win32
+		{20C39D50-9546-45F7-8984-0A946C4EA706}.Release|Win32.ActiveCfg = Release|Win32
+		{20C39D50-9546-45F7-8984-0A946C4EA706}.Release|Win32.Build.0 = Release|Win32
+		{90A43AE5-D7DD-C9F2-A909-52E37F1EF815}.Debug|Win32.ActiveCfg = Debug|Win32
+		{90A43AE5-D7DD-C9F2-A909-52E37F1EF815}.Debug|Win32.Build.0 = Debug|Win32
+		{90A43AE5-D7DD-C9F2-A909-52E37F1EF815}.Release|Win32.ActiveCfg = Release|Win32
+		{90A43AE5-D7DD-C9F2-A909-52E37F1EF815}.Release|Win32.Build.0 = Release|Win32
+		{077BF3DD-A44F-49F4-AFE1-00CAD52293E0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{077BF3DD-A44F-49F4-AFE1-00CAD52293E0}.Debug|Win32.Build.0 = Debug|Win32
+		{077BF3DD-A44F-49F4-AFE1-00CAD52293E0}.Release|Win32.ActiveCfg = Release|Win32
+		{077BF3DD-A44F-49F4-AFE1-00CAD52293E0}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FF6E8C8E-CFE7-44B9-90F5-34494E211EF9}
+	EndGlobalSection
+EndGlobal

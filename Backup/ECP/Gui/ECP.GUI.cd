@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Font Name="굴림" Size="9" />
+  <Class Name="ECP.Gui.Config.Dialogs.SubSystemWizardForm" Collapsed="true">
+    <Position X="4.75" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\SubSystemWizardForm.cs</FileName>
+      <HashCode>AAACAAABQiQAAAAAAACEAAACAAAAEACAAAAQAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Device.Oserve.ObservableSpyForm" Collapsed="true">
+    <Position X="4.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableSpyForm.cs</FileName>
+      <HashCode>AAAAAAAAACAAAAAAAACAAAACAAAAAAAEAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Device.Observe.ObservableViewControl" Collapsed="true">
+    <Position X="6.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableViewControl.cs</FileName>
+      <HashCode>BBDEiIAoQCICoAVESgSiAEKaABFQgAEAFFAwAQUiQEA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Monitor.MonitorWidgetVS" Collapsed="true">
+    <Position X="10" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Monitor\MonitorWidgetVS.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.EventViewerForm" Collapsed="true">
+    <Position X="6.5" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\EventViewerForm.cs</FileName>
+      <HashCode>AAAEIQEAkCEJAAAICACAggNCQAECAQQAAAACDQAAoFA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.FillColorFiter" Collapsed="true">
+    <Position X="8.25" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\FillColorImage.cs</FileName>
+      <HashCode>AAAACAAIABAAAAAEAAAACAAAAQAAAAAAAAAACAgAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.ARGB" Collapsed="true">
+    <Position X="4.75" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\FillColorImage.cs</FileName>
+      <HashCode>AAACAAAAAAAAAgAAAAAAAAAAAAAAABAAAAAAqBEAAQA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.Rubberbandline" Collapsed="true">
+    <Position X="8.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandLine.cs</FileName>
+      <HashCode>AAAAEAIAIAAAAAAkAAqEAAAgIAAIAAAACgAAAAAABAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.RubberbandRectangle" Collapsed="true">
+    <Position X="10" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandRects.cs</FileName>
+      <HashCode>AAAAgQIAAAAAAAAAAAoAAAIAAQAgAAAACgCEAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.Vector" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="6.5" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\Vector.cs</FileName>
+      <HashCode>gQIAQAABAAAAAAAE6AEDAABAQQAAAJAAAAIMAAAAYjE=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Gui.Widget.BaseWidget" Collapsed="true">
+    <Position X="1.75" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Widget\BaseWidget.cs</FileName>
+      <HashCode>AUCAAAABCCAAAAAAAiCggAIDRABAAAQEAAAEAgAQABI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Widget.LineWidget" Collapsed="true">
+    <Position X="0.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Widget\LineWidget.cs</FileName>
+      <HashCode>QECAIAAAAqAAAAAAAACIAAYjAAQABACQBSAAAABcAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Widget.LineWidgetWithArrow" Collapsed="true">
+    <Position X="0.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Widget\LineWidgetWithArrow.cs</FileName>
+      <HashCode>AAAAAAAAAiAAAAAAAACAAAADAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Widget.PictureWidget" Collapsed="true">
+    <Position X="2.75" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Widget\PictureWidget.cs</FileName>
+      <HashCode>QwCAAAAIgCAAAAAEAACAAAciUQAAAgIEABAACAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Enum Name="ECP.Gui.Device.Observe.ObservableViewAccessMode" Collapsed="true">
+    <Position X="6.5" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableViewControl.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAIA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Gui.Util.PenStyles_Line_Line" Collapsed="true">
+    <Position X="10" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandLine.cs</FileName>
+      <HashCode>QEAAEIAAQAAAIBAAEAAAAAEwBBAACAAAAAAYAYAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Gui.Util.drawingMode" Collapsed="true">
+    <Position X="4.75" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandLine.cs</FileName>
+      <HashCode>AAAAAAAAAAAAgAgABAgAJBABAQAADAEAAAAAAAAAACE=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Gui.Util.PenStyles" Collapsed="true">
+    <Position X="8.25" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandRects.cs</FileName>
+      <HashCode>AEAAAAAAAAAAABAAAAAAAAEQAAAAAAAAAAAQAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Delegate Name="ECP.Gui.Device.Observe.DelegateSelectedItemChanged" Collapsed="true">
+    <Position X="4.75" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableViewControl.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+</ClassDiagram>

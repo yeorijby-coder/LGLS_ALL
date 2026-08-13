@@ -1,0 +1,470 @@
+// EcsDoc.h : CEcsDoc 클래스의 인터페이스
+//
+
+//#import "CIM.Hsms.dll.tlb" no_namespace named_guids
+
+#pragma once
+
+#include "Config.h"
+
+//#include "Host.h"
+#include "EcsDefine.h"
+#include "EcsLayout.h"
+#include "StationInfo.h"
+#include "TrackInfo.h"
+
+#include "Equipment.h"
+#include "Cv.h"
+#include "Sc.h"
+#include "Bcr.h"
+#include "ScPair.h"
+#include "Rtv.h"
+#include "Wc.h"
+#include "ScManualRet.h"
+
+#include "AdoDB.h"
+#include "URMDBAccess.h"
+
+#include "Lang.h"
+#include "Permission.h"
+#include "MsgBoxLang.h"
+
+
+#include "ViewJobListDlg.h"
+#include "ViewHostEmptyPltDlg.h"
+#include "ViewRackDlg.h"
+#include "ViewSearchDlg.h"
+#include "EqpSuspendDlg.h"
+#include "UserUserDlg.h"
+
+
+#include "ManualRtv.h"
+#include "ManualSc.h"
+#include "ManualJob.h"
+#include "ManualEmpty.h"
+#include "ManualLogin.h"
+
+#include "CollectDataList.h"
+#include "JobCollection.h"
+
+#include "ErrorMst.h"
+#include "CollectDB.h"
+
+#include "EQP_ECD_MST.h"
+#include "FireParms.h"
+
+#include "MainFrm.h"
+#include "ConnectStatus.h"
+#include "ConfigStatus.h"
+#include "ConfigLogDelete.h"
+
+
+
+class CCriticalSectionEx : public CCriticalSection
+{
+public:
+	CCriticalSectionEx() {};
+	CCriticalSectionEx(const CCriticalSectionEx& cs)
+	{
+
+	};
+};
+typedef struct SJobInvokeInfo
+{
+	CString m_strStoStation;
+	CString m_strRetStation;
+
+	CString m_strLocation;
+
+	int		m_nWorkingLuggNum;	// 현재 작업중인 작업번호 
+	BOOL	m_bCompleteStore;	// 입고작업완료 
+	int		m_nPrevLuggNum;		// PRE 작업번호 
+	CString	m_strAlterLocation;	// (이중입고 에러시)재지정 할 Location;
+	CString	m_strFromPos;		// 기타 작업할 포지션 
+	CString	m_strToPos;			// 기타 작업할 포지션 
+
+} SJobInvokeInfo;
+
+typedef struct STCollectDataList_CellInfo_Request
+{
+	bool m_bRequest;	
+	CString m_strWH_TYP;		
+	CString m_strBANK;
+	CString m_strAGING_TYP;
+
+} STCollectDataList_CellInfo_Request;
+
+typedef struct STCollectDataList_JOB_MST_Request
+{
+	bool m_bRequest;	
+	CString m_strWH_TYP;	
+} STCollectDataList_JOB_MST_Request;
+
+typedef struct STFIRE_EQP_MESSAGE
+{
+	CString m_strKey;
+	BOOL m_bStop;
+	CString strWH_TYP;
+	CString strPLC_NO;
+	CString strTRACK_NO;
+	CString strLOCATION_NO;
+	CString strMESSAGE;
+	CString strLEVEL;
+
+} STFIRE_EQP_MESSAGE;
+
+
+// CEcsDoc
+//
+class CBcr;
+class CFireParms;
+class CSystemLoginDlg;
+class CViewUsageRackDlg;
+class CEcsDoc : public CDocument
+{
+protected: // serialization에서만 만들어집니다.
+	CEcsDoc();
+	DECLARE_DYNCREATE(CEcsDoc)
+
+public:
+
+
+public:
+	afx_msg void OnCommandRangeMainFrameCONFIGURATION(UINT nID);
+	afx_msg void OnCommandRangeMainFrameVIEW(UINT nID);
+	afx_msg void OnCommandRangeMainFrameMONITORING(UINT nID);
+	afx_msg void OnCommandRangeMainFrameNATION(UINT nID);
+	afx_msg void OnCommandRangeMainFrameMANUAL(UINT nID);
+	afx_msg void OnCommandRangeMainFrameLOG(UINT nID);
+	afx_msg void OnCommandRangeMainFrameUSER(UINT nID);
+	afx_msg void OnCommandRangeMainFrameSTATUS(UINT nID);
+	afx_msg void OnMenuClick_VIEW_RACK();
+
+	
+
+
+// 특성입니다.
+public:
+	double m_pMaxSizeX;
+	double m_pMaxSizeY;
+	CString		    m_PC_IP;
+	CString			m_WH_TYP;
+	CString		    m_strKioskNo;
+	CString			m_strSeachTrack;
+	CString			m_strSeachTemp;
+	CString			m_strDebug;
+
+	EN_LAYOUT		m_enSelectedLayout;
+
+	CEcsLayout		m_layoutHUN_GF;
+	CEcsLayout		m_layoutHUN_GFDECK;	
+	CEcsLayout		m_layoutHUN_1F;		
+	CEcsLayout		m_layoutHUN_1FDECK;
+	CEcsLayout		m_layoutHUN_ASSEMBLE;
+
+	CEcsLayout		m_layoutCHIN_1F;
+	CEcsLayout		m_layoutCHIN_2F;
+	CEcsLayout		m_layoutCHIN_ASSEMBLE;
+	CEcsLayout		m_layoutCHIN_COMMP;
+
+	CEcsLayout		m_layout;
+
+	CArray<CEcsLayout*, CEcsLayout*> m_pEcsLayOuts;
+
+	BOOL			m_bViewFirstLoad;
+
+	BOOL				m_bDebugMode;
+	BOOL				m_bDebugStart;
+
+	CString			m_strBypassChkYn;
+
+	BOOL			m_bMoveFlag; //1
+	CPoint			m_PrevPoint;
+	CTime			m_tChecktime;
+
+	int				m_nStTrNum[30];
+
+private:
+	CURMDBAccess*		m_pUrmDBAccess;
+	CURMDBAccess*		m_pDlgUrmDBAccess;
+	
+	BOOL				m_bTrans;
+
+public:
+	int GetSelectQryCnt(CString pStrSql);
+	int GetSelectQryCnt_DLG(CString pStrSql);
+	_RecordsetPtr GetSelectQryRecordsetPtr(CString pStrSql, int &pnRowCnt, CString &pStrMessage);
+	_RecordsetPtr GetSelectQryRecordsetPtr_DLG(CString pStrSql, int &pnRowCnt, CString &pStrMessage);
+
+public:
+	CString GetDlgUrmDBAccessErrorString() { return m_pDlgUrmDBAccess->m_pAdoDB->m_strErrMsg; }
+
+public: 
+	//CListenSk*			m_pHostListener;
+	//CHostSv*			m_pHostSv;
+	//CHostCl*			m_pHostCl;
+	CCollectDB* m_pCollectDB;
+
+public:
+	CJobCollection* m_pJob;					//사용되지 않음
+	CCollectDataList* m_pCollectRequest;    //사용되지 않음
+	STCollectDataList_CellInfo_Request m_CollectCellInfo; //사용되지 않음
+	STCollectDataList_JOB_MST_Request m_CollectJOB_MST;	//사용되지 않음
+
+public:
+	CErrorMst* m_pErrorMst;	
+
+public:
+	CMap<CString, LPCTSTR, CEquipment*, CEquipment*> m_MapEqps;
+	CTrackInfo* GetTrackInfoNew(CString strTrackNo);
+	CTrackInfo* GetTrackInfoNew(int nTrackNo);
+	CSC_DATA* GetSC_DATA(CString strSC_NO);
+	CSC_DATA* GetSC_DATA(int nSC_NO);
+	CRTV_DATA* GetRTV_DATA(CString strRTV_NO);
+	CRTV_DATA* GetRTV_DATA(int nRTV_NO);
+	CBCR_MST* GetBCR_MST(CString strBCR_NO);
+	CBCR_MST* GetBCR_MST(int nBCR_NO);
+	CWC_DATA* GetWC_DATA(CString strWC_MC_NO);
+	
+
+public:
+	CEquipmentArray		m_pEquipments;
+
+public:
+	CConfig* m_pConfig;
+	CLang* m_pLang;
+	CString m_strId;//login된 id
+	CString m_strSound;
+	EN_LANG m_enLang;
+	CMap<CString, LPCTSTR, CPermission*, CPermission*> m_pUserInfo;
+	//폼명				권한
+	CMap<CString, LPCTSTR, CMsgBoxLang*, CMsgBoxLang*> m_pMsgBoxLang;
+
+public:
+	bool m_bExit;
+
+public:
+	HWND			m_hWndView;
+	HWND            m_hWndViewRackDlg;
+	CTrackInfoArray		m_pTrackInfos;
+
+public:
+	CSystemLoginDlg* m_pLoginDlg;
+	CViewJobListDlg* m_pViewJobListDlg;
+	CViewHostEmptyPltDlg* m_pViewHostEmptyPltDlg;
+	CViewRackDlg* m_pViewRackDlg;
+	CViewUsageRackDlg* m_pViewUsageRackDlg;
+	CEqpSuspendDlg* m_pEqpSuspendDlg;
+
+	CManualRtv* m_pManualRtv;
+	CManualSc* m_pManualSc;
+	CScManualRet* m_pScManualRet;
+	CManualJob* m_pManualJob;
+	CManualEmpty* m_pManualEmpty;
+	CManualLogin* m_pManualLogin;
+
+	CDialog*			m_pConfigStatus;
+
+	CDialog*			m_pCvSkinDlg;
+	CDialog*			m_pRevSkinDlg;
+	CDialog*			m_pRollSkinDlg;
+	CDialog*			m_pScSkinDlg;
+	CDialog*			m_pRtvSkinDlg;
+	CDialog*			m_pBcrSkinDlg;
+	CDialog*			m_pWcSkinDlg;
+	
+	CDialog*			m_pLogBcrSkinDlg;
+	CDialog*			m_pLogIoSkinDlg;
+	CDialog*		    m_pLogEqpSkinDlg;
+	CDialog*		    m_pLogClientSkinDlg;
+	CDialog*		    m_pConfigLogDelete;
+	CDialog*		    m_pLogMesSkinDlg;
+	CDialog*			m_pLogWcsSkinDlg;
+	CDialog*			m_pLogEqpErrHis;
+	CDialog*			m_pLogJobHis;	
+	CDialog*			m_pViewSearchDlg;
+	CDialog* m_pUserUserDlg;
+
+
+public:
+	CDialog* m_pFireMessageDlg;
+	int m_nFireCollect;
+	CFireParms* CreateFireParm(CRecordSetWrap* pRsw);
+	CString GetQrySelectFIRE();
+// 작업입니다.
+
+public:
+	BOOL GetDBObject( CAdoDB** pDB, CURMDBAccess** pDbAccess );
+	BOOL InitializeDB();
+	BOOL IsConnectDB(CURMDBAccess* pDbAccess);
+	BOOL IsConnectDB();
+	BOOL IsConnectDB_DLG();
+
+public:
+	CString m_strStoStation;
+	CString m_strRetStation;
+
+	CString m_strLocation;
+
+//	CString m_strStoLocation;
+//	CString m_strRetLocation;
+	int		m_nMaxBank;
+	int		m_nMaxBay;
+	int		m_nMaxLevel;
+
+	int		m_nWorkingLuggNum1;	// 현재 작업중인 작업번호 
+	int		m_nWorkingLuggNum2;	// 현재 작업중인 작업번호 
+	BOOL	m_bCompleteStore1;	// 입고작업완료 
+	BOOL	m_bCompleteStore2;	// 입고작업완료 
+	int		m_nPrevLuggNum;		// PRE 작업번호 
+	int		m_nPrevLuggNum2;	// PRE 작업번호 
+	CString	m_strAlterLocation;	// (이중입고 에러시)재지정 할 Location;
+//	int		m_nAlterErrorCode;	// (이중입고 에러시)재지정 할 에러코드;
+	CString	m_strFromPos;		// 기타 작업할 포지션 
+	CString	m_strToPos;			// 기타 작업할 포지션 
+
+	SJobInvokeInfo m_JobInvokeInfo[STO_STN_CNT];
+	//////////////////////////////////
+	// 0 : 정상						//
+	// 1 : 출고작업 수행중			//
+	// 2 : 출고작업 수행 중			//
+	// 3 : Rack to Rack 수행 중		//
+	// 4 : Online 모드가 아닌 상태	//
+	// 5 : 에러발생 상태			//
+	// 6 : 입고중지 상태			//
+	// 7 : 출고중지 상태			//
+	// 8 : 입출고 중지상태			//
+	////////////////////////////////// 
+	int		m_nScStatus[SC_CNT];
+	BOOL	m_bStoStation[STO_STN_CNT];
+	CString m_strStoBcrData[STO_STN_CNT];
+	BOOL	m_bReportedBCD[STO_STN_CNT];
+
+	BOOL	m_bReceiveStatus;
+
+	BOOL	m_bBcrAutoUpdate1;
+	BOOL	m_bBcrAutoUpdate2;
+
+public:
+	BOOL IsPermissionDlg(CString pStr);
+
+public:
+	void InitilizeUserInfo(CString pStrId, int &pnRowCnt);
+	BOOL FreeUserInfo();
+	BOOL IsLogin();
+
+private:
+	BOOL Initialize();
+	void InitializeLang();
+
+public:
+	CString GetDefineXmlPATH();
+
+public:
+	void AddWindowFontRegistry();
+	void UpdateRibbonLang();
+
+
+public:
+	CEcsLayout* GetSelectedLayout();
+	CEcsLayout* GetLayout_PARM(EN_LAYOUT penLAYOUT);
+	CDciControl* GetDciControl_FindAllLayout(CString& strCID);
+	CDciControl* GetDciControl_FindAllLayout(CString& strCID, int& nLayoutNo);
+	void RefreshLayout();
+	void ReloadLayout();
+	void SetMsgLangDef();
+	CString GetMsgLangDef(CString pKey);
+	void InvokeControl();
+	void InvokeCenterEquipCtrl(CString strEQPID, int nSTATE);
+
+public:
+	static CCriticalSectionEx m_csLockSyncThread;
+	void EnterBlcokingSection();
+	void LeaveBlcokingSection();
+
+
+
+public:
+	CDciControl*	GetDciControl(CString& strCID) ;
+	CEquipment*		GetEquipment(int nEquipKind, int nEquipNum) { return m_pEquipments.GetEquipment(nEquipKind, nEquipNum); }
+	CEquipment*		GetEquipmentSC(int nEquipNum) { return m_pEquipments.GetEquipmentSC(CEquipment::enSC, nEquipNum); }
+	CEquipment*		GetEquipmentRTV(int nEquipNum) { return m_pEquipments.GetEquipmentRTV(CEquipment::enRTV, nEquipNum); }
+	CTrackInfo*		GetTrackInfo(int nTrackNum) { return m_pTrackInfos.GetTrackInfo(nTrackNum); }
+	
+public:
+	void GetViewHandle();
+	CView* GetViewObject();
+
+// 재정의입니다.
+public:
+	virtual BOOL OnNewDocument();
+	virtual BOOL CanCloseFrame(CFrameWnd* pFrame);
+	virtual void Serialize(CArchive& ar);
+#ifdef SHARED_HANDLERS
+	virtual void InitializeSearchContent();
+	virtual void OnDrawThumbnail(CDC& dc, LPRECT lprcBounds);
+#endif // SHARED_HANDLERS
+
+// 구현입니다.
+public:
+	virtual ~CEcsDoc();
+#ifdef _DEBUG
+	virtual void AssertValid() const;
+	virtual void Dump(CDumpContext& dc) const;
+#endif
+
+// 생성된 메시지 맵 함수
+protected:
+	//신규추가
+
+	DECLARE_MESSAGE_MAP()
+
+#ifdef SHARED_HANDLERS
+	// 검색 처리기에 대한 검색 콘텐츠를 설정하는 도우미 함수
+	void SetSearchContent(const CString& value);
+#endif // SHARED_HANDLERS	
+
+public:
+	BOOL IsAlliveCollectDB();
+	void AlliveCollectDB();
+	BOOL IsAlliveCollectRequest();
+	void AlliveCollectRequest();
+	void UpdateJOB_MST();
+	void InitializeErrorMst();
+	int GetFireMessage();
+
+	long BeginTrans();
+	long BeginTrans_DLG();
+	long RollbackTrans();
+	long RollbackTrans_DLG();
+	long CommitTrans();
+	long CommitTrans_DLG();
+
+public:
+	int ExcuteQueryString( CString pstrSql );	
+	int ExcuteQueryString_DLG( CString pstrSql );
+
+public:
+	BOOL Permission(CString pWID_ID, int pEN_PERM);
+	BOOL GetQueryInsertClientLog(CString pWIN_ID, CString pLUGG_NO, CString pBOTTOM_TRAY, CString pTOP_TRAY, CString pMESSAGE);
+	BOOL IsFireDlg();
+	void CreateFireMessageDlg();
+
+public:
+	void ConfigDbLang();
+	CString SYSDATE;
+	CString NVL;
+	CString CURRENT_DATE;
+	CString CURRENT_TIME;
+	CString CURRENT_DATE_NATURAL;
+	CString CURRENT_TIME_NATURAL;
+	virtual CString TO_NUMBER(CString pVALUE);
+	void OnCreateScManualRet(CString pScNo);
+	BOOL EquipStatusCheck();
+
+	CConnectStatus* m_pConnectStatus;
+	BOOL m_blConnectStatus;
+	BOOL m_blJobList;//작업정보 관련
+	BOOL m_blJobListDb;//작업정보 관련
+	BOOL m_blManualLogin;//매뉴얼 로그인 관련
+};

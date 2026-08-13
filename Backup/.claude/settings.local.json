@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/Users/USER/Downloads/일반비_LG생명과학\\(2011_04_13\\)\" && ls -la && echo \"---BACKUP---\" && ls \"Backup\" | head -50)"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>D:\인수인계\한국단자\ReNewal\CPlusPlus\KET_CLIENT\Bin\Debug\XmlLib.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\인수인계\한국단자\ReNewal\CPlusPlus\KET_CLIENT\Bin\Debug\EcsLib.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\인수인계\한국단자\ReNewal\CPlusPlus\KET_CLIENT\Bin\Debug\DciLib.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\인수인계\한국단자\ReNewal\CPlusPlus\KET_CLIENT\Bin\Debug\HostSim_DB.exe</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles />
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>

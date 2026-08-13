@@ -1,0 +1,44 @@
+<Window x:Class="EcsLog.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ECS Log Viewer" Width="1100" Height="700">
+    <DockPanel>
+        <DockPanel DockPanel.Dock="Top" Background="#FF003366" Height="34">
+            <TextBlock Text="ECS Log Viewer" Foreground="White" FontSize="13" FontWeight="Bold"
+                       FontFamily="Malgun Gothic" VerticalAlignment="Center" Margin="10,0"/>
+        </DockPanel>
+
+        <!-- 필터 바 -->
+        <DockPanel DockPanel.Dock="Top" Margin="4">
+            <Button Content="파일 열기" Click="BtnOpen_Click"/>
+            <Label Content="날짜:" Margin="8,0,0,0"/>
+            <DatePicker x:Name="DpDate" Width="120"/>
+            <Button Content="로딩" Click="BtnLoad_Click" Margin="4,0"/>
+            <Separator Width="8"/>
+            <Label Content="검색:"/>
+            <TextBox x:Name="TxtSearch" Width="200" TextChanged="TxtSearch_Changed"/>
+            <Button Content="검색" Click="BtnSearch_Click" Margin="4,0"/>
+            <Separator Width="8"/>
+            <Button Content="재생" Click="BtnPlayback_Click"/>
+            <Button Content="중지" Click="BtnStop_Click" Margin="4,0"/>
+        </DockPanel>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <TextBlock x:Name="TxtStatus" Text="준비"/>
+            <Separator/>
+            <TextBlock x:Name="TxtCount" Text="0 건"/>
+        </StatusBar>
+
+        <ListView x:Name="LogList" FontFamily="Consolas" FontSize="11">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="#"      Width="50"  DisplayMemberBinding="{Binding Index}"/>
+                    <GridViewColumn Header="시간"   Width="160" DisplayMemberBinding="{Binding Time}"/>
+                    <GridViewColumn Header="레벨"   Width="70"  DisplayMemberBinding="{Binding Level}"/>
+                    <GridViewColumn Header="카테고리" Width="90" DisplayMemberBinding="{Binding Category}"/>
+                    <GridViewColumn Header="메시지"  Width="700" DisplayMemberBinding="{Binding Message}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </DockPanel>
+</Window>

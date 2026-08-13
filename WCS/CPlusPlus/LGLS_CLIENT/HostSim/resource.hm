@@ -1,0 +1,4 @@
+// Microsoft Developer Studio generated Help ID include file.
+// Used by Ecs.rc
+//
+#define HIDC_STATIC                     0x8be9ffff    // IDD_LGVC_CTRL

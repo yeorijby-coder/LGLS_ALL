@@ -1,0 +1,794 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{1BDBD50B-59BE-400D-8807-59322E9FD622}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ECP</RootNamespace>
+    <AssemblyName>ECP</AssemblyName>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <DocumentationFile>
+    </DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="SAP.Connector, Version=2.0.0.0, Culture=neutral, PublicKeyToken=50436dca5c7f7d23">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\HandokSAPBridge\SAP.Connector.dll</HintPath>
+    </Reference>
+    <Reference Include="SAP.Connector.Rfc, Version=2.0.0.0, Culture=neutral, PublicKeyToken=50436dca5c7f7d23">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\HandokSAPBridge\SAP.Connector.Rfc.dll</HintPath>
+    </Reference>
+    <Reference Include="SAPBridge, Version=1.0.3509.4722, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\HandokSAPBridge\SAPBridge.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BizRule\CalculationMoveRule.cs" />
+    <Compile Include="BizRule\CheckPalletInfo.cs" />
+    <Compile Include="BizRule\CheckEquipmentStatus.cs" />
+    <Compile Include="BizRule\MakeErrorString.cs" />
+    <Compile Include="BizRule\MakeWmsIfString.cs" />
+    <Compile Include="BizRule\FindLocationData.cs" />
+    <Compile Include="BizRule\FindPalletData.cs" />
+    <Compile Include="BizRule\PositionData.cs" />
+    <Compile Include="BizRule\TransferScheduleTime.cs" />
+    <Compile Include="BizRule\TransferSummary.cs" />
+    <Compile Include="BizRule\TransferDetail.cs" />
+    <Compile Include="Boot\Launcher.cs" />
+    <Compile Include="ComX\Prj\SecsException.cs" />
+    <Compile Include="ComX\Prj\SecsMessageTransfer.cs" />
+    <Compile Include="ComX\Secs\Hsms\HsmsConnection.cs" />
+    <Compile Include="ComX\Secs\Hsms\HsmsHeader.cs" />
+    <Compile Include="ComX\Secs\Hsms\HsmsMessage.cs" />
+    <Compile Include="ComX\Secs\Secs1\Secs1Connection.cs" />
+    <Compile Include="ComX\Secs\Secs1\Secs1Header.cs" />
+    <Compile Include="ComX\Secs\Secs1\Secs1Message.cs" />
+    <Compile Include="ComX\Secs\Secs2\FormatException2.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\GemDate.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F1.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F13.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F17.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F18.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F2.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F3.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F4.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F15.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F16.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F31.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F32.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F33.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F34.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F35.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F36.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F37.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F38.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F41.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F42.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F49.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S2F50.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S5F1.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S5F3.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S5F4.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S6F11.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S6F12.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S9F3.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S9FX.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\SXF0.cs" />
+    <Compile Include="ComX\Secs\Secs2\Item.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemA.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemB.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemBOOLEAN.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemF4.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemF8.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemI1.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemI2.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemI4.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemI8.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemL.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemN.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemU1.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemU2.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemU4.cs" />
+    <Compile Include="ComX\Secs\Secs2\ItemU8.cs" />
+    <Compile Include="ComX\Secs\Secs2\Name.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S1F14.cs" />
+    <Compile Include="ComX\Secs\Secs2\Gem\S5F2.cs" />
+    <Compile Include="ComX\Secs\Secs2\Secs2Message.cs" />
+    <Compile Include="ComX\Secs\Secs2\SML.cs" />
+    <Compile Include="ComX\Secs\SecsEvent.cs" />
+    <Compile Include="ComX\Secs\SecsHeader.cs" />
+    <Compile Include="ComX\Secs\SecsLogger.cs" />
+    <Compile Include="ComX\Secs\SecsLoggingLevel.cs" />
+    <Compile Include="ComX\Secs\SecsMessage.cs" />
+    <Compile Include="ComX\Secs\SecsTransfer.cs" />
+    <Compile Include="ComX\Secs\Timer\Timer.cs" />
+    <Compile Include="ComX\Secs\Timer\TimerListener.cs" />
+    <Compile Include="ComX\Sockets\PersistentClientSocket.cs" />
+    <Compile Include="ComX\Sockets\PersistentPacket.cs" />
+    <Compile Include="ComX\Sockets\PersistentServerSocket.cs" />
+    <Compile Include="ComX\Sockets\PersistentSocket.cs" />
+    <Compile Include="ComX\Sockets\SocketEvent.cs" />
+    <Compile Include="ComX\Sockets\SocketListener.cs" />
+    <Compile Include="ComX\Test\Frame1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ComX\Test\Frame1.Designer.cs">
+      <DependentUpon>Frame1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ComX\Test\Logger.cs" />
+    <Compile Include="ComX\Test\SecsTest.cs" />
+    <Compile Include="ComX\Test\TestPersistenceSocketGui.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ComX\Test\TestPersistenceSocketGui.Designer.cs">
+      <DependentUpon>TestPersistenceSocketGui.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ComX\Test\TestPersistentSocket.cs" />
+    <Compile Include="Com\FieldBus\AbstractFieldBusDriver.cs" />
+    <Compile Include="Com\FieldBus\DriverConnectionString.cs" />
+    <Compile Include="Com\FieldBus\Fenet\FenetCommand.cs" />
+    <Compile Include="Com\FieldBus\Fenet\FenetConnection.cs" />
+    <Compile Include="Com\FieldBus\Fenet\FenetDriver.cs" />
+    <Compile Include="Com\FieldBus\Fenet\FenetMemory.cs" />
+    <Compile Include="Com\FieldBus\Mnet\CMelsecNetConnection.cs" />
+    <Compile Include="Com\FieldBus\Mnet\CMelsecNetDriver.cs" />
+    <Compile Include="Com\FieldBus\Mnet\CMelsecNetMemory.cs" />
+    <Compile Include="Com\FieldBus\GenericConnectionString.cs" />
+    <Compile Include="Com\Secs\AbstractSecsDriver.cs" />
+    <Compile Include="Com\Secs\ProperyChangeEventArgs.cs" />
+    <Compile Include="Com\Secs\SecsEventArgs.cs" />
+    <Compile Include="Com\Secs\SecsProperty.cs" />
+    <Compile Include="Com\Secs\SecsValue.cs" />
+    <Compile Include="Com\Tcp\TcpClient.cs" />
+    <Compile Include="Com\Tcp\TcpServer.cs" />
+    <Compile Include="Com\Tcp\WMSCom.cs" />
+    <Compile Include="Com\Tcp\WMSCommand.cs" />
+    <Compile Include="Com\Tcp\WMSSocketDriver.cs" />
+    <Compile Include="Db\DBConnection.cs">
+    </Compile>
+    <Compile Include="Db\DBControl.cs">
+    </Compile>
+    <Compile Include="Db\Entity\CodeMasterData.cs" />
+    <Compile Include="Db\Entity\LocationData.cs" />
+    <Compile Include="Db\Entity\SubSystemData.cs" />
+    <Compile Include="Db\Entity\FieldbusDriverData.cs" />
+    <Compile Include="Db\Entity\EntityEnumData.cs" />
+    <Compile Include="Db\Entity\ErrorHistData.cs" />
+    <Compile Include="Db\Entity\HirackData.cs" />
+    <Compile Include="Db\Entity\InternalIfData.cs" />
+    <Compile Include="Db\Entity\ItineraryData.cs" />
+    <Compile Include="Db\Entity\LeadTimeData.cs" />
+    <Compile Include="Db\Entity\MovementSapIfHistData.cs" />
+    <Compile Include="Db\Entity\PalletBlockingData.cs" />
+    <Compile Include="Db\Entity\PalletData.cs" />
+    <Compile Include="Db\Entity\TotalPathData.cs" />
+    <Compile Include="Db\Entity\TransferDetailData.cs" />
+    <Compile Include="Db\Entity\TransferDivisionData.cs" />
+    <Compile Include="Db\Entity\UDPropertyData.cs" />
+    <Compile Include="Db\Entity\HirackHistData.cs" />
+    <Compile Include="Db\Entity\PalletHistData.cs" />
+    <Compile Include="Db\Entity\TransferHistData.cs" />
+    <Compile Include="Db\Entity\TransferDetailHistData.cs" />
+    <Compile Include="Db\Entity\PalletBlockingHistData.cs" />
+    <Compile Include="Db\Entity\TransferDivisionHistData.cs" />
+    <Compile Include="Db\Entity\UserData.cs" />
+    <Compile Include="Db\Entity\UserHistData.cs" />
+    <Compile Include="Db\Entity\ProgramData.cs" />
+    <Compile Include="Db\Entity\ProgramHistData.cs" />
+    <Compile Include="Db\Entity\RoleData.cs" />
+    <Compile Include="Db\Entity\RoleHistData.cs" />
+    <Compile Include="Db\Entity\MaterialHistData.cs" />
+    <Compile Include="Db\Entity\BatchData.cs" />
+    <Compile Include="Db\Entity\BatchHistData.cs" />
+    <Compile Include="Db\Entity\EquipmentData.cs" />
+    <Compile Include="Db\Entity\EquipmentHistData.cs" />
+    <Compile Include="Db\Entity\CodeMasterHistData.cs" />
+    <Compile Include="Db\Entity\MoveRuleData.cs" />
+    <Compile Include="Db\Entity\MoveRuleHistData.cs" />
+    <Compile Include="Db\Entity\UserRoleData.cs" />
+    <Compile Include="Db\Entity\UserRoleHistData.cs" />
+    <Compile Include="Db\Entity\RoleProgramData.cs" />
+    <Compile Include="Db\Entity\RoleProgramHistData.cs" />
+    <Compile Include="Db\Entity\ItineraryAgvData.cs" />
+    <Compile Include="Db\Entity\ItineraryAgvHistData.cs" />
+    <Compile Include="Db\Entity\LogData.cs" />
+    <Compile Include="Db\Entity\LeadTimeHistData.cs" />
+    <Compile Include="Db\Persistence.cs">
+    </Compile>
+    <Compile Include="Db\PreparedSqlParameter.cs" />
+    <Compile Include="Device\AbstractElement.cs" />
+    <Compile Include="Device\AbstractModule.cs" />
+    <Compile Include="Device\AbstractSubSystem.cs" />
+    <Compile Include="Device\AbstractUDPElement.cs" />
+    <Compile Include="Device\Dispatcher\Dispatcher.cs" />
+    <Compile Include="Device\Equipment.cs" />
+    <Compile Include="Device\IODevice.cs" />
+    <Compile Include="Device\Location\CarrierLocation.cs" />
+    <Compile Include="Device\Location\MaterialLocation.cs" />
+    <Compile Include="Device\Location\SubStrateLocation.cs" />
+    <Compile Include="Device\Module.cs" />
+    <Compile Include="Device\Observe\Observable.cs" />
+    <Compile Include="Device\Observe\ObservableChangeEventWrapper.cs" />
+    <Compile Include="Device\Observe\ObservableStatisticsCollectorData.cs" />
+    <Compile Include="Device\Observe\ObservableUtil.cs" />
+    <Compile Include="Device\SubSystem.cs" />
+    <Compile Include="Device\Dispatcher\WorkItem.cs" />
+    <Compile Include="Device\Dispatcher\WorkState.cs" />
+    <Compile Include="Emulator\FieldBus\LauncherForSharedMemory.cs" />
+    <Compile Include="Emulator\FieldBus\ObservableSharedMemory.cs" />
+    <Compile Include="Emulator\FieldBus\SharedMemoryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Emulator\FieldBus\SharedMemoryForm.designer.cs">
+      <DependentUpon>SharedMemoryForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Event\Device\DeviceEvent.cs" />
+    <Compile Include="Event\Device\DeviceStateEvent.cs" />
+    <Compile Include="Event\Device\Equipment\EquipmentEvent.cs" />
+    <Compile Include="Event\Device\LocationEvent.cs" />
+    <Compile Include="Event\ECPEventAdapter.cs" />
+    <Compile Include="Global\Com\FBConnectionState.cs" />
+    <Compile Include="Global\Com\FieldBusDriverType.cs" />
+    <Compile Include="Global\DataType.cs" />
+    <Compile Include="Global\Device\AccessType.cs" />
+    <Compile Include="Global\Device\CarrierElevType.cs" />
+    <Compile Include="Global\Device\CarrierHold.cs" />
+    <Compile Include="Global\Device\CarrierProhibit.cs" />
+    <Compile Include="Global\Device\CarrierState.cs" />
+    <Compile Include="Global\Device\CarrierType.cs" />
+    <Compile Include="Global\Device\ElementType.cs" />
+    <Compile Include="Global\Device\EquipmentType.cs" />
+    <Compile Include="Global\Device\GlobalEnum.cs" />
+    <Compile Include="Global\Device\LifterCarrierState.cs" />
+    <Compile Include="Global\Device\LocationLogicalState.cs" />
+    <Compile Include="Global\Device\LocationState.cs" />
+    <Compile Include="Global\Device\LocationType.cs" />
+    <Compile Include="Global\Device\ModuleType.cs" />
+    <Compile Include="Global\Device\SubSystemType.cs" />
+    <Compile Include="Global\ECPObject.cs" />
+    <Compile Include="Global\ECPProperties.cs" />
+    <Compile Include="Db\Entity\MaterialData.cs" />
+    <Compile Include="Global\Exception\ECPException.cs" />
+    <Compile Include="Global\Exception\ECPExceptionType.cs" />
+    <Compile Include="Global\GlobalConstant.cs" />
+    <Compile Include="Global\Gui\TabData.cs" />
+    <Compile Include="Global\Gui\WidgetData.cs" />
+    <Compile Include="Global\PropertyInfo.cs" />
+    <Compile Include="Db\Entity\ExternalIfData.cs" />
+    <Compile Include="Db\Entity\MovementSapIfData.cs" />
+    <Compile Include="Global\Service\LogConstant.cs" />
+    <Compile Include="Global\ExecutionMode.cs" />
+    <Compile Include="Global\Service\PermissionData.cs" />
+    <Compile Include="Global\Service\RoleData.cs" />
+    <Compile Include="Global\Service\UserData.cs" />
+    <Compile Include="Global\Service\UserPermissionData.cs" />
+    <Compile Include="Db\Entity\TransferData.cs" />
+    <Compile Include="Global\UserDefinedPropertyData.cs" />
+    <Compile Include="Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditForm.Designer.cs">
+      <DependentUpon>AbstractFieldBusDriverCreateOrEditForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditPanel.Designer.cs">
+      <DependentUpon>AbstractFieldBusDriverCreateOrEditPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\AbstractFieldBusDriverWizardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\AbstractFieldBusDriverWizardForm.Designer.cs">
+      <DependentUpon>AbstractFieldBusDriverWizardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\FieldBusDriverSelectForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\FieldBusDriverSelectForm.Designer.cs">
+      <DependentUpon>FieldBusDriverSelectForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableCreateForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableCreateForm.Designer.cs">
+      <DependentUpon>MasterObservableCreateForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\GridSizeDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\GridSizeDialog.designer.cs">
+      <DependentUpon>GridSizeDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\ElementWizardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\ElementWizardForm.Designer.cs">
+      <DependentUpon>ElementWizardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\ElementSelectionOrCreateWizard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\ElementSelectionOrCreateWizard.Designer.cs">
+      <DependentUpon>ElementSelectionOrCreateWizard.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableCreatePanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableCreatePanel.designer.cs">
+      <DependentUpon>MasterObservableCreatePanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableFilterForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableFilterForm.Designer.cs">
+      <DependentUpon>MasterObservableFilterForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableWizardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\MasterObservableWizardForm.Designer.cs">
+      <DependentUpon>MasterObservableWizardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\ObservableWizardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\ObservableWizardForm.Designer.cs">
+      <DependentUpon>ObservableWizardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\SearchWidgetForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\SearchWidgetForm.Designer.cs">
+      <DependentUpon>SearchWidgetForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\WidgetListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\WidgetListForm.Designer.cs">
+      <DependentUpon>WidgetListForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\WidgetSizeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\WidgetSizeForm.Designer.cs">
+      <DependentUpon>WidgetSizeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\ECPConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\ECPConfigForm.designer.cs">
+      <DependentUpon>ECPConfigForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\ECPConfigPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Device\Oserve\ObservableSpyForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Device\Oserve\ObservableSpyForm.designer.cs">
+      <DependentUpon>ObservableSpyForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Device\Oserve\ObservableViewControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\Device\Oserve\ObservableViewControl.designer.cs">
+      <DependentUpon>ObservableViewControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\Property\BaseWidgetPropertyDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\Property\BaseWidgetPropertyDialog.Designer.cs">
+      <DependentUpon>BaseWidgetPropertyDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\Property\TextPropertyDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Config\Dialogs\Property\TextPropertyDialog.designer.cs">
+      <DependentUpon>TextPropertyDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\LogIn\LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\LogIn\LoginForm.designer.cs">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Monitor\MonitorWidgetVS.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Gui\User\AddOrModifyPrivilegeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\User\AddOrModifyPrivilegeForm.designer.cs">
+      <DependentUpon>AddOrModifyPrivilegeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\User\AddOrModifyRoleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\User\AddOrModifyRoleForm.designer.cs">
+      <DependentUpon>AddOrModifyRoleForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\User\AddOrModifyUserForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\User\AddOrModifyUserForm.designer.cs">
+      <DependentUpon>AddOrModifyUserForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\User\PrivilegeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\User\PrivilegeForm.designer.cs">
+      <DependentUpon>PrivilegeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\User\RoleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\User\RoleForm.designer.cs">
+      <DependentUpon>RoleForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\User\UserForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\User\UserForm.designer.cs">
+      <DependentUpon>UserForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Util\EventViewerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Gui\Util\EventViewerForm.designer.cs">
+      <DependentUpon>EventViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Util\FillColorImage.cs" />
+    <Compile Include="Gui\Util\RubberbandLine.cs" />
+    <Compile Include="Gui\Util\RubberbandRects.cs" />
+    <Compile Include="Gui\Util\Vector.cs" />
+    <Compile Include="Gui\Widget\BaseWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\BaseWidget.Designer.cs">
+      <DependentUpon>BaseWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\LineWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\LineWidget.designer.cs">
+      <DependentUpon>LineWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\LineWidgetWithArrow.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\LineWidgetWithArrow.designer.cs">
+      <DependentUpon>LineWidgetWithArrow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\PictureWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\PictureWidget.designer.cs">
+      <DependentUpon>PictureWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Gui\Widget\TextWidget.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gui\Widget\TextWidget.Designer.cs">
+      <DependentUpon>TextWidget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interfaces\Emulator\ISimulation.cs" />
+    <Compile Include="Interfaces\IValue.cs" />
+    <Compile Include="Interfaces\Service\EventBroker\IECPListener.cs" />
+    <Compile Include="Boot\Server.cs" />
+    <Compile Include="Interfaces\Unit\IHostUnit.cs" />
+    <Compile Include="Interfaces\Unit\IRepresentativeEquipment.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Service\AbstractObjectManager.cs" />
+    <Compile Include="Service\Alarm\EcpAlarm.cs" />
+    <Compile Include="Service\Alarm\SubSystemAlarm.cs" />
+    <Compile Include="Service\Alarm\AlarmManager.cs" />
+    <Compile Include="Service\DataManagement\DataManager.cs" />
+    <Compile Include="Service\Device\DeviceManager.cs" />
+    <Compile Include="Service\Gui\GUIManager.cs" />
+    <Compile Include="Service\Interface\ExternalIFManager.cs" />
+    <Compile Include="Service\Interface\InternalIFManager.cs" />
+    <Compile Include="Service\Material\Carrier.cs" />
+    <Compile Include="Service\Material\CarrierManager.cs" />
+    <Compile Include="Event\ECPEvent.cs" />
+    <Compile Include="Service\EventBroker\EventTestClient.cs" />
+    <Compile Include="Service\EventBroker\EventBrokerManager.cs" />
+    <Compile Include="Service\EventBroker\RemoteEvent.cs" />
+    <Compile Include="Service\EventBroker\WrapperRemoteEvent.cs" />
+    <Compile Include="Service\EventBroker\EventManagerTestClient.cs" />
+    <Compile Include="Service\Logger\LogData.cs" />
+    <Compile Include="Interfaces\Service\IManager.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service\AbstractManager.cs" />
+    <Compile Include="Service\Logger\Category.cs" />
+    <Compile Include="Service\Logger\GenericParser.cs" />
+    <Compile Include="Service\Logger\Log.cs" />
+    <Compile Include="Service\Logger\LogDataHandle.cs" />
+    <Compile Include="Service\Logger\LogManager.cs" />
+    <Compile Include="Service\Manager.cs" />
+    <Compile Include="Service\Material\AbstractMaterial.cs" />
+    <Compile Include="Service\Movement\MovementManager.cs" />
+    <Compile Include="Service\Route\Itineraray.cs" />
+    <Compile Include="Service\Route\Route.cs" />
+    <Compile Include="Service\Route\RouteManager.cs" />
+    <Compile Include="Service\Statistics\StatisticsCollector.cs" />
+    <Compile Include="Service\Statistics\StatisticsCollectorData.cs" />
+    <Compile Include="Service\Statistics\StatisticsManager.cs" />
+    <Compile Include="Service\Statistics\Trigger.cs" />
+    <Compile Include="Service\User\IPermission.cs" />
+    <Compile Include="Service\User\Permission.cs" />
+    <Compile Include="Service\User\PermissionTarget\PermissionTarget.cs" />
+    <Compile Include="Service\User\PermissionTarget\TargetTypeconstructor.cs" />
+    <Compile Include="Service\User\PermissionTarget\TargetType\ControlType.cs" />
+    <Compile Include="Service\User\PermissionTarget\TargetType\DefaultType.cs" />
+    <Compile Include="Service\User\PermissionTarget\TargetType\TargetType.cs" />
+    <Compile Include="Service\User\PermissionTarget\TargetType\ToolStripButtonType.cs" />
+    <Compile Include="Service\User\PermissionTarget\TargetType\ToolStripMenuItemType.cs" />
+    <Compile Include="Service\User\Person.cs" />
+    <Compile Include="Service\User\Role.cs" />
+    <Compile Include="Service\User\UserManager.cs" />
+    <Compile Include="Util\Cache\AbstractObjectManager.cs" />
+    <Compile Include="Util\Cache\CacheInfo.cs" />
+    <Compile Include="Util\Cache\CacheManger.cs" />
+    <Compile Include="Util\Cache\CacheObjectManger.cs" />
+    <Compile Include="Util\Cache\CacheSize.cs" />
+    <Compile Include="Util\Cache\LRUCache.cs" />
+    <Compile Include="Util\Cache\SmartCacheManger.cs" />
+    <Compile Include="Util\Cache\UsageMonitor.cs" />
+    <Compile Include="Util\Client\Naming.cs" />
+    <Compile Include="Util\Client\UserPermission.cs" />
+    <Compile Include="Util\CryptorEngine.cs" />
+    <Compile Include="Util\DBConnectionValue.cs" />
+    <Compile Include="Util\ExcelExport.cs" />
+    <Compile Include="Util\FIFOQueue.cs" />
+    <Compile Include="Util\GlobalKeyboardHook.cs" />
+    <Compile Include="Util\GlobalMouseHook.cs" />
+    <Compile Include="Util\Helper.cs" />
+    <Compile Include="Util\LocalLog.cs" />
+    <Compile Include="Util\MessageTransfer.cs" />
+    <Compile Include="Util\ObservableConfigGenerator.cs" />
+    <Compile Include="Util\OptionValues.cs" />
+    <Compile Include="Util\Server\Naming.cs" />
+    <Compile Include="Util\StatisticalLog.cs" />
+    <Compile Include="Util\StreamTokenizer.cs" />
+    <Compile Include="Util\StringTokenizer.cs" />
+    <Compile Include="Util\UDProperty\AbstractUserDefindManager.cs" />
+    <Compile Include="Util\UDProperty\UserDefinedProperty.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="ComX\Test\Frame1.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>Frame1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ComX\Test\TestPersistenceSocketGui.resx">
+      <DependentUpon>TestPersistenceSocketGui.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Emulator\FieldBus\SharedMemoryForm.resx">
+      <DependentUpon>SharedMemoryForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AbstractFieldBusDriverCreateOrEditForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AbstractFieldBusDriverCreateOrEditPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\AbstractFieldBusDriverWizardForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AbstractFieldBusDriverWizardForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\FieldBusDriverSelectForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FieldBusDriverSelectForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\GridSizeDialog.resx">
+      <DependentUpon>GridSizeDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\ElementWizardForm.resx">
+      <DependentUpon>ElementWizardForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\ElementSelectionOrCreateWizard.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ElementSelectionOrCreateWizard.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\MasterObservableCreateForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MasterObservableCreateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\MasterObservableCreatePanel.resx">
+      <DependentUpon>MasterObservableCreatePanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\MasterObservableFilterForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MasterObservableFilterForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\MasterObservableWizardForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MasterObservableWizardForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\ObservableWizardForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ObservableWizardForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\SearchWidgetForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>SearchWidgetForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\WidgetListForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>WidgetListForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\WidgetSizeForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>WidgetSizeForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\ECPConfigForm.resx">
+      <DependentUpon>ECPConfigForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\ECPConfigPanel.resx">
+      <DependentUpon>ECPConfigPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Device\Oserve\ObservableSpyForm.resx">
+      <DependentUpon>ObservableSpyForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Device\Oserve\ObservableViewControl.resx">
+      <DependentUpon>ObservableViewControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\Property\BaseWidgetPropertyDialog.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>BaseWidgetPropertyDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Config\Dialogs\Property\TextPropertyDialog.resx">
+      <DependentUpon>TextPropertyDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\LogIn\LoginForm.resx">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\User\AddOrModifyPrivilegeForm.resx">
+      <DependentUpon>AddOrModifyPrivilegeForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\User\AddOrModifyRoleForm.resx">
+      <DependentUpon>AddOrModifyRoleForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\User\AddOrModifyUserForm.resx">
+      <DependentUpon>AddOrModifyUserForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\User\PrivilegeForm.resx">
+      <DependentUpon>PrivilegeForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\User\RoleForm.resx">
+      <DependentUpon>RoleForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\User\UserForm.resx">
+      <DependentUpon>UserForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Util\EventViewerForm.resx">
+      <DependentUpon>EventViewerForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Gui\Widget\PictureWidget.resx">
+      <DependentUpon>PictureWidget.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="ECP_ClassDiagram.cd">
+      <SubType>
+      </SubType>
+    </None>
+    <None Include="Gui\ECP.GUI.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="Microsoft.Office.Core">
+      <Guid>{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>4</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.Excel">
+      <Guid>{00020813-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>6</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+    <COMReference Include="VBIDE">
+      <Guid>{0002E157-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>5</VersionMajor>
+      <VersionMinor>3</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="ComX\FieldBus\" />
+    <Folder Include="Event\Device\Location\" />
+    <Folder Include="Gui\Dialogs\" />
+    <Folder Include="Gui\Images\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

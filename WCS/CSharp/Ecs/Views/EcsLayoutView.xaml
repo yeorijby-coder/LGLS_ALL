@@ -1,0 +1,32 @@
+<UserControl x:Class="Ecs.Views.EcsLayoutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Black">
+    <Grid>
+        <!-- DCI 컨트롤 렌더링 캔버스 -->
+        <Canvas x:Name="DrawCanvas"
+                Background="#FFD4D0C8"
+                ClipToBounds="True"
+                MouseDown="DrawCanvas_MouseDown"
+                MouseUp="DrawCanvas_MouseUp"
+                SizeChanged="DrawCanvas_SizeChanged">
+            <!-- DrawingVisual은 code-behind에서 추가 -->
+            <Canvas.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="ZoomTransform" ScaleX="1" ScaleY="1"/>
+                    <TranslateTransform x:Name="PanTransform"/>
+                </TransformGroup>
+            </Canvas.RenderTransform>
+        </Canvas>
+
+        <!-- 줌 컨트롤 -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom" Margin="4">
+            <Button Content="+" Width="28" Height="28" Click="BtnZoomIn_Click" FontWeight="Bold"/>
+            <TextBlock x:Name="TxtZoom" Text="100%" VerticalAlignment="Center" Margin="4,0"
+                       Foreground="White" FontSize="11"/>
+            <Button Content="-" Width="28" Height="28" Click="BtnZoomOut_Click" FontWeight="Bold"/>
+            <Button Content="1:1" Width="36" Height="28" Click="BtnZoomReset_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

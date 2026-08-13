@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<Builder id="0" l="0" b="0" r="90" t="38" text="" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" selcolor="000000">
+	<Group gname="LAYOUT" gid="" show="1">
+		<CDciControl>
+			<Control id="01100000" l="4" b="0" r="69" t="38" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1"/>
+			<Control id="01100000" l="4" b="0" r="35" t="38" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1"/>
+			<Control id="01100000" l="69" b="0" r="86" t="38" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1"/>
+		</CDciControl>
+	</Group>
+	<Group gname="LABEL" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="" l="4" b="35" r="35" t="38" text="CV 범례" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="30" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="35" b="35" r="69" t="38" text="SC / RTV 범례" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="30" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="11" b="29" r="15" t="31" text="입고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="11" b="21" r="15" t="23" text="이동" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="11" b="25" r="15" t="27" text="출고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="24" b="29" r="33" t="31" text="반자동 입고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="24" b="25" r="33" t="27" text="반자동 출고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="24" b="21" r="33" t="23" text="반자동 이동" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="11" b="17" r="17" t="19" text="1단 화물감지" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="11" b="13" r="16" t="15" text="에러" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="11" b="9" r="16" t="11" text="수동" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="43" b="29" r="50" t="31" text="입고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="43" b="19" r="50" t="21" text="이동" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="43" b="24" r="50" t="26" text="출고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="29" r="68" t="31" text="반자동 입고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="24" r="68" t="26" text="반자동 출고" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="19" r="68" t="21" text="반자동 이동" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="43" b="14" r="51" t="16" text="화물감지" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="60" b="14" r="66" t="16" text="에러" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="44" b="9" r="50" t="11" text="수동" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="13" r="31" t="15" text="출고대" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="9" r="31" t="11" text="입고대" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="11" b="5" r="18" t="7" text="입고/출고 HS" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="5" r="32" t="7" text="MES 확인" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="69" b="35" r="86" t="38" text="전용설비 범례" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="30" border="4" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="76" b="29" r="83" t="31" text="OFF" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="76" b="25" r="83" t="27" text="Wait" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="76" b="21" r="83" t="23" text="AutoRun" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="76" b="17" r="84" t="19" text="AutoStop" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="76" b="13" r="84" t="15" text="Manual" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="76" b="9" r="84" t="11" text="Error" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="17" r="32" t="19" text="2단 화물감지" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="18" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RACK" gid="" show="1"/>
+	<Group gname="SELECT G" gid="" show="1"/>
+	<Group gname="CV" gid="" show="1">
+		<CDciTrackCtrl>
+			<Control id="100000001" l="7" b="29" r="9" t="31" text="" bgmode="2" fgmode="1" bgcolor="00ff00" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000002" l="7" b="25" r="9" t="27" text="" bgmode="2" fgmode="1" bgcolor="ff0000" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000003" l="7" b="21" r="9" t="23" text="" bgmode="2" fgmode="1" bgcolor="ffff00" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000008" l="21" b="29" r="23" t="31" text="" bgmode="2" fgmode="1" bgcolor="008000" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000009" l="21" b="25" r="23" t="27" text="" bgmode="2" fgmode="1" bgcolor="800000" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000010" l="21" b="21" r="23" t="23" text="" bgmode="2" fgmode="1" bgcolor="808000" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000004" l="7" b="17" r="9" t="19" text="" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="1" prod2="0" row="0" col="0"/>
+			<Control id="100000005" l="7" b="13" r="9" t="15" text="" bgmode="2" fgmode="1" bgcolor="0000ff" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000006" l="7" b="9" r="9" t="11" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000012" l="21" b="13" r="23" t="15" text="" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="1" col="1">
+				<Item shape="1" color="ff8000" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="100000013" l="21" b="9" r="23" t="11" text="" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="1" col="1">
+				<Item shape="1" color="ff00ff" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="100000007" l="7" b="5" r="9" t="7" text="" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="100000014" l="21" b="5" r="23" t="7" text="" bgmode="2" fgmode="1" bgcolor="c000c0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000008" l="73" b="29" r="75" t="31" text="" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000009" l="73" b="25" r="75" t="27" text="" bgmode="2" fgmode="1" bgcolor="50a0a0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000010" l="73" b="21" r="75" t="23" text="" bgmode="2" fgmode="1" bgcolor="78b478" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000011" l="73" b="17" r="75" t="19" text="" bgmode="2" fgmode="1" bgcolor="ff80ff" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000012" l="73" b="13" r="75" t="15" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000013" l="73" b="9" r="75" t="11" text="" bgmode="2" fgmode="1" bgcolor="3232ff" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="0" col="0"/>
+			<Control id="100000004" l="21" b="17" r="23" t="19" text="" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="1" prod2="1" row="0" col="0"/>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="SC" gid="" show="1">
+		<CDciRvCtrl>
+			<Control id="" l="37" b="29" r="43" t="31" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="00ff00" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="37" b="24" r="43" t="26" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="ff0000" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="37" b="19" r="43" t="21" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="ffff00" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="53" b="29" r="59" t="31" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="008000" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="53" b="24" r="59" t="26" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="800000" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="53" b="19" r="59" t="21" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="808000" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="37" b="9" r="43" t="11" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="808080" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="37" b="14" r="43" t="16" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="1" forktype="0" type="1" forkpos="1" forkcolor="d8e9ec" wingcolor="d8e9ec" railcolor="000000"/>
+			<Control id="" l="53" b="14" r="59" t="16" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="0000ff" wingcolor="d8e9ec" railcolor="000000"/>
+		</CDciRvCtrl>
+	</Group>
+</Builder>

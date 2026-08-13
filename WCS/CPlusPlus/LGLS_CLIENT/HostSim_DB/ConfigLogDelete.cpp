@@ -1,0 +1,484 @@
+// ConfigLogDelete.cpp : 구현 파일입니다.
+//
+
+#include "stdafx.h"
+#include "Ecs.h"
+#include "ConfigLogDelete.h"
+#include "afxdialogex.h"
+#include "RecordSetWrap.h"
+
+
+// CConfigLogDelete 대화 상자입니다.
+
+IMPLEMENT_DYNAMIC(CConfigLogDelete, CDialogEx)
+
+CConfigLogDelete::CConfigLogDelete(CWnd* pParent /*=NULL*/)
+	: CSkinDialog(CConfigLogDelete::IDD, pParent)
+{
+
+}
+
+CConfigLogDelete::CConfigLogDelete(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
+	: CSkinDialog(CConfigLogDelete::IDD, pParent)
+{
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bInitialized = FALSE;
+	m_pDoc = pDoc;
+	m_nLang = m_pDoc->m_enLang;
+}
+
+CConfigLogDelete::~CConfigLogDelete()
+{
+	m_pDoc->m_pConfigLogDelete = NULL;
+}
+
+void CConfigLogDelete::DoDataExchange(CDataExchange* pDX)
+{
+	CSkinDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_EDT_CONFIG_LOG_DELETE_DAY, m_edtConfigLogDeleteDay);
+	DDX_Control(pDX, IDC_GRP_CONFIG_LOG_DELETE, m_grpConfigLogDelete);
+	DDX_Control(pDX, IDC_LBL_CONFIG_LOG_DELETE_DAY, m_lblConfigLogDeleteDay);
+	DDX_Control(pDX, IDC_BTN_CONFIG_LOG_DELETE_UPDATE, m_btnConfigLogDeleteUpdate);
+	//DDX_Control(pDX, IDC_SPD_CONFIG_LOG_DELETE,	 m_pSpreadMain);
+}
+
+
+BEGIN_MESSAGE_MAP(CConfigLogDelete, CSkinDialog)
+	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_BTN_CONFIG_LOG_DELETE_UPDATE, &CConfigLogDelete::OnBnClickedBtnConfigLogDeleteUpdate)
+	ON_MESSAGE(SSM_CLICK, &CConfigLogDelete::OnSpreadLClick)
+
+END_MESSAGE_MAP()
+
+
+// CConfigLogDelete 메시지 처리기입니다.
+
+
+void CConfigLogDelete::OnClose()
+{
+	m_pDoc->m_pConfigLogDelete = NULL;
+	CSkinDialog::OnClose();
+}
+
+LRESULT CConfigLogDelete::OnSpreadLClick(WPARAM wParam, LPARAM lParam)
+{
+	LPSS_CELLCOORD pCell = (LPSS_CELLCOORD)lParam;
+	if ( pCell->Col == 0 || pCell->Row == 0 )
+		return 0;
+
+	if ( m_SpreadSheet.IsCellType(pCell->Col, pCell->Row, SS_TYPE_CHECKBOX) )
+	{
+		BOOL bCheck = !m_SpreadSheet.GetValueINT(pCell->Col, pCell->Row);
+		m_SpreadSheet.SetValueINT(pCell->Col, pCell->Row, bCheck);
+
+		if ( m_SpreadSheet.IsCellType(pCell->Col, 0, SS_TYPE_CHECKBOX) && 
+			 m_SpreadSheet.IsCellType(pCell->Col, pCell->Row, SS_TYPE_CHECKBOX) )
+		{
+			if ( !bCheck )  // Uncheck 시
+				m_SpreadSheet.SetHeaderCellCheck(pCell->Col, false);
+		}
+		return 0;
+	}
+
+	//variant_t val;
+	if (pCell->Row > 0)
+	{
+		m_nActiveRow = pCell->Row;
+
+		//m_pSpreadMain.GetText(10, m_nActiveRow, &val);
+		CString strTableName = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+		strTableName.Trim();
+
+		//로그명 가져오기 (CDX_CD, CCD_NM_KOR, CCD_CD 순서)
+		CLib::BindSpreadCommonCode(_T("LOG_PGR_NM"), strTableName, m_strTABLE_NAME, m_pDoc);
+	}
+
+	//CJobItem *pJobItem = GetSelectedJob(pCell->Row);
+	//if ( pJobItem == NULL )
+	//	return 0;
+
+	//if( ::IsWindowVisible(m_pDoc->m_hPanelInfo) )
+	//	::PostMessage(m_pDoc->m_hPanelInfo, WM_USER_DLG_REFRESH_NOTIFY, (WPARAM)pJobItem, 0);
+
+	return 0;
+}
+
+
+
+BOOL CConfigLogDelete::OnInitDialog()
+{
+	CSkinDialog::OnInitDialog();
+	EN_LANG pEn = (m_pDoc == NULL) ? EN_ENG : m_pDoc->m_enLang;
+	InitializeFontManager(this);
+	SetFontNation((int)pEn);
+	CSkinDialog::SetFont(this->GetFont());
+	if( !m_bInitialized )
+	{		
+		RelocationControls();
+		m_bInitialized = TRUE;		
+
+	}
+	InitializeResource(pEn);
+
+	m_edtConfigLogDeleteDay.SetWindowText(_T(""));
+
+	#pragma region 스프레드 초기화 
+	//IDC_CUSTOM1 라는 컨트롤에서 Rect 값을 가져와서 스프레드에 적용 
+	// 상대 좌표 구하기
+	CRect rect;							// 윈도우 기준 절대 좌표 
+	GetDlgItem(IDC_STATIC_SPREAD)->GetWindowRect(&rect);
+
+	CRect rectTemp = rect;				// 다이얼 로그 영역안의 컨트롤(rect)의 상대좌표 
+	ScreenToClient(&rectTemp);
+	 
+	CRect rtTemp;
+	::GetWindowRect(this->m_hWnd, &rtTemp);
+	
+	CRect rectMargin = CRect(rectTemp.left, rectTemp.top, rtTemp.right-rect.right, rtTemp.bottom - rect.bottom);
+
+//	m_SpreadSheet.m_rectWnd = rectTemp;//CRect(0, 0, 0, 0);
+	m_SpreadSheet.m_nSorting = SS_USERCOLACTION_DEFAULT;
+	m_SpreadSheet.m_bAutoResizeCol = true;
+	m_SpreadSheet.m_colorBaseBack = WHITE;
+	m_SpreadSheet.m_wGridType = SS_GRID_HORIZONTAL | SS_GRID_VERTICAL | SS_GRID_SOLID;
+
+	m_SpreadSheet.m_rectMargin = rectMargin;
+
+	HFONT hFontH = CreateFont(15,0,0,0,700,0,0,0,0,0,0,0,0,_T("System"));
+	HFONT hFontB = CreateFont(15,0,0,0,FW_BOLD,0,0,0,0,0,0,0,0,_T("System"));
+
+	m_SpreadSheet.AddSheet(_T(""), this, hFontH, hFontB);
+	//m_SpreadSheet.AddColHead(_T(" "), 10);
+	m_SpreadSheet.AddColHead(_T("창고 타입"), 10);
+	m_SpreadSheet.AddColHead(_T("로그명"), 15);
+	m_SpreadSheet.AddColHead(_T("주기"), 10);
+	m_SpreadSheet.AddColHead(_T("단위"), 15);
+
+	BOOL bResult = m_SpreadSheet.Create();
+
+	if (bResult == FALSE)
+		AfxMessageBox(_T("생성못함!"));
+
+#pragma endregion
+
+	InitializeSpread(0, TRUE);
+	return TRUE;  
+
+	return TRUE;
+}
+
+void CConfigLogDelete::RelocationControls()
+{
+	CRect rc;
+	GetClientRect(&rc);
+	
+	int x=0, y=0;
+	
+	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
+	SIZE sizeLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
+	SIZE sizeWideLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_WIDELARGE);
+	
+	CRect rc2;
+	m_btnConfigLogDeleteUpdate.GetWindowRect(&rc2);
+	ScreenToClient(&rc2);
+	m_btnConfigLogDeleteUpdate.MoveWindow(rc2.left, rc2.top, sizeWideLarge.cx, sizeWideLarge.cy);
+
+}
+void CConfigLogDelete::RedrawImage()
+{
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath;
+	CString strAppPath2;
+	CString strExtension;
+	strAppPath.Format(_T("%s"),chrFileName);
+	strAppPath2.Format(_T("%s"),chrFileName);
+	
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_clientlog\\20x20\\");
+	strAppPath2 = strAppPath2.Left(strAppPath2.ReverseFind('\\')) + _T("\\rc_resource\\dlg_clientlog\\128x16\\");
+	strExtension = _T(".png");
+	
+	m_btnConfigLogDeleteUpdate.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_WIDELARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnConfigLogDeleteUpdate.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("search"), strExtension)), NULL, 5, 5);
+}
+
+void CConfigLogDelete::InitializeResource(EN_LANG nEN_LANG)
+{	
+	RedrawImage();
+}
+
+void CConfigLogDelete::InitializeSpread(int nRowCheck, BOOL bSearch = FALSE)
+{
+	//정렬 가능
+	//m_pSpreadMain.SetUserColAction(1);
+
+	//m_pSpreadMain.ClearRange(1, 1, -1, -1, TRUE);
+
+	m_SpreadSheet.PrepareLoadSpread();
+	int nRowCnt = SetSpeadData(nRowCheck, bSearch);
+	m_SpreadSheet.FinishLoadSpread();
+
+	//m_lblSpdMainCnt.SetWindowText(CConvert::ToString(nRowCnt));
+
+}
+
+void CConfigLogDelete::SetMaxRows(int pRowCnt)
+{
+	//m_pSpreadMain.SetMaxRows(pRowCnt);
+}
+
+void CConfigLogDelete::SetColWidth(int pColCnt, int pColSize)
+{
+	//m_pSpreadMain.put_ColWidth(pColCnt+1,pColSize);
+}
+
+int CConfigLogDelete::SetHeadColumn(CStringArray& pStrArrColName, CStringArray& pStrArrColSize, int& nColIdx, CString pStrSql)
+{
+	CLib::GetColumnName(pStrArrColName, pStrSql);
+	nColIdx = pStrArrColName.GetCount();
+	int nStartCol = 0;
+	if (pStrArrColName[0].Right(5) == _T("_HIDE"))
+	{
+		nStartCol = - 1;
+	}
+
+	//SetMaxCols(nColIdx + nStartCol);
+
+	CString strTemp = _T("");
+	CStringArray arrColRename;
+	CLib::RenameColumn(pStrArrColName, m_pDoc->m_enLang, arrColRename);
+	//int nNewColIdx = 0;
+	for(int nIdxCol = 0; nIdxCol < nColIdx; nIdxCol++)
+	{
+		int nSize = arrColRename[nIdxCol].GetLength();
+
+		strTemp = arrColRename[nIdxCol];
+
+		if (strTemp.GetLength() > 5 && strTemp.Right(5) == _T("_HIDE"))
+		{
+			nSize = 0;
+			if (nIdxCol == 0)
+				nSize = 3;
+
+			continue;
+		}
+		//++nNewColIdx;
+		pStrArrColSize.Add(CConvert::ToString(nSize));
+	}
+
+	//nStartCol = 1;
+	for(int nIdxCol = 0; nIdxCol < nColIdx; nIdxCol++)
+	{
+		CString asd = arrColRename[nIdxCol];
+		
+		strTemp = arrColRename[nIdxCol];
+
+		if (strTemp.GetLength() > 5 && strTemp.Right(5) == _T("_HIDE"))
+			continue;
+
+		SetColumnText(nIdxCol + nStartCol, 0, arrColRename[nIdxCol]);
+		
+	}
+	//*/
+
+	//nColIdx = nNewColIdx;
+
+	return 0;
+}
+
+void CConfigLogDelete::SetColumnText(int nColIdx, int nRowIdx, CString strColumnName)
+{
+	CString strColValue = m_pDoc->m_pLang->GetLangValue(strColumnName, m_pDoc->m_enLang);
+	if (strColumnName == _T(""))
+		strColumnName = _T(" ");
+
+	//m_pSpreadMain.SetText( nColIdx + 1, nRowIdx, variant_t(strColValue));
+	m_SpreadSheet.SetData(nColIdx + 1, nRowIdx, strColValue);
+}
+
+int CConfigLogDelete::SetSpeadData(int nRowCheck, BOOL bSearch = FALSE)
+{
+	CStringList strList;
+	CStringArray arrColName;
+	CStringArray arrColSize;
+	int nLANG = m_pDoc->m_enLang;
+	int nColSize = -1;
+	int nRowCnt = -1;
+	CString strMessage = _T("");
+
+	CString strSql = GetQrySelect_Main(nRowCheck, bSearch);
+
+	_RecordsetPtr pRsp = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsp); 
+
+	if(nRowCnt < 0)
+	{
+		if(pRsw != NULL)
+		{
+			delete pRsw;	
+		}
+	}
+	else
+	{	
+		// arrColName과 arrColSize의 갯수가 다름!! Hide되어있는 Column을 가져오느라 어쩔수 없음~
+		int nIdxStart = SetHeadColumn(arrColName, arrColSize, nColSize, strSql);
+
+		//SetMaxRows(nRowCnt);
+
+		pRsw->MoveFirst();
+
+		for( int nIdxRow = 1; nIdxRow <= nRowCnt; nIdxRow++ )
+		{
+			m_SpreadSheet.SetCurrentRow();
+			for (int nIdxCol = nIdxStart; nIdxCol < nColSize; nIdxCol++)		
+			{
+				CString strColValue = pRsw->GetItem(arrColName[nIdxCol]);
+
+				strColValue += _T("    ");
+				//if (strColValue.GetLength() < 6)
+				//	continue;
+
+				int nPreSize = CConvert::ToInt(arrColSize[nIdxCol]);
+
+				if ((strColValue.GetLength()*1.5 > nPreSize) && (nPreSize != 0))
+				{
+					int nSize = strColValue.GetLength()*1.5;
+					arrColSize[nIdxCol]= CConvert::ToString(nSize);
+				}
+				SetColumnText(nIdxCol, nIdxRow, strColValue);				// 번역됨
+				//m_SpreadSheet.SetData(nIdxCol, nIdxRow, strColValue);		// 번역안됨
+
+				// 짝수마다 색깔을 다르게 칠할것!
+				if (nIdxRow % 2 == 0)
+				{
+					m_SpreadSheet.SetColor(nIdxCol+1, nIdxRow, m_pDoc->m_pConfig->m_clrSPREAD_COLOR, BLACK);
+				}
+				else
+				{
+					m_SpreadSheet.SetColor(nIdxCol+1, nIdxRow, SPREAD_COLOR_NONE, BLACK);					
+				}
+
+			}
+			pRsw->MoveNext();
+		}
+
+		if (pRsw != NULL)
+		{
+			delete pRsw;
+		}
+
+		for (int nIdxCol = 0; nIdxCol < nColSize; nIdxCol++)
+		{
+			int nSize =CConvert::ToInt(arrColSize[nIdxCol]);
+
+			//SetColWidth(nIdxCol, nSize);
+			m_SpreadSheet.SetColWidth(nIdxCol + 1, nSize);
+		}
+	}
+	return nRowCnt;
+}
+
+void CConfigLogDelete::SetMaxCols(int pMaxCol)
+{
+	//m_pSpreadMain.SetMaxCols(pMaxCol);
+}
+
+CString CConfigLogDelete::GetQrySelect_Main(int nRowCheck,BOOL bSearch)
+{
+	int nLANG = m_pDoc->m_enLang;
+	CString strSql = _T("");
+	CString CRLF = _T("\r\n");
+	
+	CString strCYCLE = _T("");
+
+	m_edtConfigLogDeleteDay.GetWindowText(strCYCLE);
+
+	strCYCLE.Trim();
+
+
+	CString strRowCnt;
+//	int nRowCnt;	
+//	int nRowSum;
+
+	strSql += CRLF + _T("SELECT ")+ m_pDoc->NVL + _T("(CD_WH_TYP.CCD_NM_KOR, DHS.WH_TYP) AS WH_TYP				 ");
+	strSql += CRLF + _T("		,")+ m_pDoc->NVL + _T("(CD_LOG_PGR_NM.CCD_NM_KOR, DHS.TABLE_NAME) AS TABLE_NAME  ");
+	strSql += CRLF + _T("		,CYCLE AS CYCLE																	 ");
+	strSql += CRLF + _T("		,UNIT AS UNIT																	 ");
+	strSql += CRLF + _T("  FROM DEL_HIS_SETTING DHS LEFT OUTER JOIN COMMON_CODE CD_LOG_PGR_NM			");
+	strSql += CRLF + _T("                                      ON CD_LOG_PGR_NM.CDX_CD = 'LOG_PGR_NM'   ");
+	strSql += CRLF + _T("                                     AND CD_LOG_PGR_NM.CCD_CD = DHS.TABLE_NAME ");
+	strSql += CRLF + _T("							LEFT OUTER JOIN COMMON_CODE CD_WH_TYP ");
+	strSql += CRLF + _T("                                      ON CD_WH_TYP.CDX_CD = 'WH_TYP' ");
+	strSql += CRLF + _T("                                     AND CD_WH_TYP.CCD_CD = DHS.WH_TYP ");
+	strSql += CRLF + _T(" WHERE DHS.WH_TYP =  ") + CLib::Quot(m_pDoc->m_WH_TYP);
+	strSql += CRLF + _T(" ORDER BY TABLE_NAME															");
+
+	return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
+}
+
+void CConfigLogDelete::OnBnClickedBtnConfigLogDeleteUpdate()
+{
+	variant_t val;
+//	int nActiveRow;
+	CString strTABLE_NAME, strCYCLE, strTABLE_NAME_HIDE;
+	CString strSql;
+	CString strWH_TYP = m_pDoc->m_WH_TYP;
+
+	if (m_nActiveRow < 1)
+		return;
+
+	m_edtConfigLogDeleteDay.GetWindowText(strCYCLE);
+	strTABLE_NAME = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);
+
+	strTABLE_NAME_HIDE = m_strTABLE_NAME;
+
+	strTABLE_NAME.Trim();
+	strTABLE_NAME_HIDE.Trim();
+
+	if(strCYCLE == _T("") || strCYCLE == _T("0"))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("공백이거나 0은 설정할 수 없습니다.")));
+		return;
+	}
+
+	if (strTABLE_NAME_HIDE == _T(""))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("그리드를 선택해주세요.")));
+		return;
+	}
+
+	if(AfxMessageBox(m_pDoc->GetMsgLangDef(_T("삭제 주기를 변경하시겠습니까? 로그명 : ")) + strTABLE_NAME, MB_YESNO) == IDNO) {	return;	}
+	
+	m_pDoc->BeginTrans_DLG();
+
+	CString strLOG_LUGG_NO = _T("");
+	CString strLOG_MSG = _T("");
+	strLOG_MSG.Format(_T("로그 삭제 주기 변경 : 로그명[%s], 주기[%s]"),strTABLE_NAME, strCYCLE) ;
+
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CConfigLogDelete"), strLOG_LUGG_NO, _T(""), _T(""), strLOG_MSG))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		return;
+	}
+
+	strSql.Format(_T("UPDATE DEL_HIS_SETTING				")
+			_T("		 SET CYCLE = '%s'			")
+			_T("	   WHERE WH_TYP = '%s'			")
+			_T("	     AND TABLE_NAME = '%s'			"),strCYCLE, strWH_TYP, strTABLE_NAME_HIDE);
+
+	int isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
+	
+	if(isSuccess == TRUE)
+	{
+		m_pDoc->CommitTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+		m_edtConfigLogDeleteDay.SetWindowText(_T(""));
+		InitializeSpread(TRUE);
+		return;
+	}
+
+	m_pDoc->RollbackTrans_DLG();
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+
+	return;	
+}

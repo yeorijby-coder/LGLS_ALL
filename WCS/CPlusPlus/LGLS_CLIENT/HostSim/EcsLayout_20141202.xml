@@ -1,0 +1,1014 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<Builder id="0" l="0" b="0" r="69" t="43" text="" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" selcolor="000000">
+	<Group gname="LAYOUT" gid="" show="1"/>
+	<Group gname="LABEL" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="" l="0" b="0" r="5" t="1" text="PET라인 입고대 #1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="4" b="9" r="10" t="10" text="대용유라인 입고대#2" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="36" b="15" r="41" t="16" text="By Pass 작업대" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="14" b="29" r="19" t="30" text="생산 지대 P/D #2" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="1" b="21" r="6" t="22" text="Tycon 입고대#2" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="1" b="27" r="6" t="28" text="Tycon 입고대#1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="13" b="25" r="18" t="26" text="생산 Tycon P/D" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="14" b="33" r="19" t="34" text="지대라인 입고대#1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="14" b="35" r="19" t="36" text="생산 지대 P/D #1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="14" b="21" r="19" t="22" text="지대라인 입고대#2" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="14" b="19" r="19" t="20" text="지대라인 입고대#3" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="65" b="32" r="69" t="33" text="손상차대#2" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="65" b="38" r="69" t="39" text="손상차대#1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="65" b="30" r="69" t="31" text="손상차대#3" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="65" b="24" r="69" t="25" text="손상차대#4" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="65" b="22" r="69" t="23" text="손상차대#5" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="65" b="16" r="69" t="17" text="손상차대#6" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="64" b="10" r="69" t="11" text="Tycon 좌대 출고대" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="64" b="2" r="69" t="3" text="좌대상차 출고대" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="64" b="4" r="68" t="5" text="이고 입고대" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="21" b="11" r="25" t="42" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="5" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="2" gr="0" gb="2"/>
+			<Control id="" l="55" b="1" r="59" t="42" text="" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="5" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="1" gr="0" gb="1"/>
+			<Control id="" l="14" b="7" r="21" t="8" text="RGV#01" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="21" b="7" r="28" t="8" text="RGV#02" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="28" b="7" r="35" t="8" text="RGV#03" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="35" b="7" r="42" t="8" text="RGV#04" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="42" b="7" r="49" t="8" text="RGV#05" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330101" l="14" b="6" r="21" t="7" text="Job No1" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330102" l="21" b="6" r="28" t="7" text="Job No2" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330103" l="28" b="6" r="35" t="7" text="Job No3" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330104" l="35" b="6" r="42" t="7" text="Job No4" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330105" l="42" b="6" r="49" t="7" text="Job No5" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340101" l="14" b="5" r="21" t="6" text="Src-Dest1" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340102" l="21" b="5" r="28" t="6" text="Src-Dest2" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340103" l="28" b="5" r="35" t="6" text="Src-Dest3" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340104" l="35" b="5" r="42" t="6" text="Src-Dest4" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340105" l="42" b="5" r="49" t="6" text="Src-Dest5" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="4" b="3" r="10" t="4" text="RGV#01" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="10" b="3" r="16" t="4" text="RGV#02" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="16" b="3" r="22" t="4" text="RGV#03" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="22" b="3" r="28" t="4" text="RGV#04" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="28" b="3" r="34" t="4" text="RGV#05" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="34" b="3" r="40" t="4" text="RGV#06" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="40" b="3" r="46" t="4" text="RGV#07" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="46" b="3" r="52" t="4" text="RGV#08" bgmode="2" fgmode="1" bgcolor="c08000" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330201" l="4" b="2" r="10" t="3" text="Job No1" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330202" l="10" b="2" r="16" t="3" text="Job No2" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330203" l="16" b="2" r="22" t="3" text="Job No3" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330204" l="22" b="2" r="28" t="3" text="Job No4" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330205" l="28" b="2" r="34" t="3" text="Job No5" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330206" l="34" b="2" r="40" t="3" text="Job No6" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330207" l="40" b="2" r="46" t="3" text="Job No7" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111330208" l="46" b="2" r="52" t="3" text="Job No8" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340201" l="4" b="1" r="10" t="2" text="Src-Dest1" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340202" l="10" b="1" r="16" t="2" text="Src-Dest2" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340203" l="16" b="1" r="22" t="2" text="Src-Dest3" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340204" l="22" b="1" r="28" t="2" text="Src-Dest4" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340205" l="28" b="1" r="34" t="2" text="Src-Dest5" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340206" l="34" b="1" r="40" t="2" text="Src-Dest6" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340207" l="40" b="1" r="46" t="2" text="Src-Dest7" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111340208" l="46" b="1" r="52" t="2" text="Src-Dest8" bgmode="2" fgmode="1" bgcolor="fff2e6" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="64" b="12" r="69" t="13" text="벌크 전환 출고대" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="404040" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="43" b="15" r="53" t="16" text="CCR LAMP" bgmode="2" fgmode="1" bgcolor="c08088" fgcolor="ffffff" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104101" l="43" b="9" r="44" t="14" text="SC #1#2" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104102" l="44" b="9" r="45" t="14" text="SC #3#4" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104103" l="45" b="9" r="46" t="14" text="SC #5#6" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104104" l="46" b="9" r="47" t="14" text="1G PLC" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104105" l="47" b="9" r="48" t="14" text="2G PLC" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104106" l="48" b="9" r="49" t="14" text="3G PLC" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104107" l="49" b="9" r="50" t="14" text="RGVC #1" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104108" l="50" b="9" r="51" t="14" text="RGVC #2" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104109" l="51" b="9" r="52" t="14" text="FENCE #1" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111104110" l="52" b="9" r="53" t="14" text="FENCE #2" bgmode="2" fgmode="1" bgcolor="ffc0c0" fgcolor="000000" enable="0" visible="1" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="30" b="39" r="52" t="42" text="Equipment Control System" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="36" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="13" b="5" r="14" t="8" text="RGVC1" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="3" b="1" r="4" t="4" text="RGVC2" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="49" b="5" r="50" t="8" text="RGVC1" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="52" b="1" r="53" t="4" text="RGVC2" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="1" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="43" b="14" r="44" t="15" text="1" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="44" b="14" r="45" t="15" text="2" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="45" b="14" r="46" t="15" text="3" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="46" b="14" r="47" t="15" text="4" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="47" b="14" r="48" t="15" text="5" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="48" b="14" r="49" t="15" text="6" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="49" b="14" r="50" t="15" text="7" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="50" b="14" r="51" t="15" text="8" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="51" b="14" r="52" t="15" text="9" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="52" b="14" r="53" t="15" text="10" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RTV1_HS_NO" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="" l="25" b="34" r="26" t="35" text="1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="33" r="26" t="34" text="2" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="30" r="26" t="31" text="3" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="27" r="26" t="28" text="4" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="25" r="26" t="26" text="5" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="24" r="26" t="25" text="6" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="22" r="26" t="23" text="7" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="21" r="26" t="22" text="8" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="19" r="26" t="20" text="9" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="25" b="17" r="26" t="18" text="10" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="14" r="21" t="15" text="11" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="18" r="21" t="19" text="12" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="20" r="21" t="21" text="13" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="22" r="21" t="23" text="14" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="24" r="21" t="25" text="15" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="26" r="21" t="27" text="16" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="28" r="21" t="29" text="17" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="32" r="21" t="33" text="18" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="20" b="34" r="21" t="35" text="19" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RTV2_HS_NO" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="" l="59" b="37" r="60" t="38" text="14" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="35" r="60" t="36" text="15" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="33" r="60" t="34" text="16" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="29" r="60" t="30" text="17" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="27" r="60" t="28" text="18" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="25" r="60" t="26" text="19" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="21" r="60" t="22" text="20" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="19" r="60" t="20" text="21" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="17" r="60" t="18" text="22" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="14" r="60" t="15" text="23" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="11" r="60" t="12" text="24" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="8" r="60" t="9" text="25" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="4" r="60" t="5" text="26" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="59" b="2" r="60" t="3" text="27" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="17" r="55" t="18" text="1" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="19" r="55" t="20" text="2" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="21" r="55" t="22" text="3" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="22" r="55" t="23" text="4" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="24" r="55" t="25" text="5" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="25" r="55" t="26" text="6" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="27" r="55" t="28" text="7" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="28" r="55" t="29" text="8" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="30" r="55" t="31" text="9" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="31" r="55" t="32" text="10" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="33" r="55" t="34" text="11" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="34" r="55" t="35" text="12" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="54" b="36" r="55" t="37" text="13" bgmode="1" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="14" border="0" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RTV1_HS_STATION" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="111350101" l="24" b="34" r="25" t="35" text="01" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350102" l="24" b="33" r="25" t="34" text="02" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350103" l="24" b="30" r="25" t="31" text="03" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350104" l="24" b="27" r="25" t="28" text="04" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350105" l="24" b="25" r="25" t="26" text="05" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350106" l="24" b="24" r="25" t="25" text="06" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350107" l="24" b="22" r="25" t="23" text="07" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350108" l="24" b="21" r="25" t="22" text="08" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350109" l="24" b="19" r="25" t="20" text="09" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350110" l="24" b="17" r="25" t="18" text="10" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350111" l="21" b="14" r="22" t="15" text="11" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350112" l="21" b="18" r="22" t="19" text="12" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350113" l="21" b="20" r="22" t="21" text="13" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350114" l="21" b="22" r="22" t="23" text="14" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350115" l="21" b="24" r="22" t="25" text="15" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350116" l="21" b="26" r="22" t="27" text="16" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350117" l="21" b="28" r="22" t="29" text="17" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350118" l="21" b="32" r="22" t="33" text="18" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350119" l="21" b="34" r="22" t="35" text="19" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350120" l="19" b="38" r="20" t="39" text="20" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350121" l="19" b="38" r="20" t="39" text="21" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350122" l="19" b="38" r="20" t="39" text="22" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350123" l="19" b="38" r="20" t="39" text="23" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350124" l="19" b="38" r="20" t="39" text="24" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350125" l="19" b="38" r="20" t="39" text="25" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350126" l="19" b="38" r="20" t="39" text="26" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350127" l="19" b="38" r="20" t="39" text="27" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350128" l="19" b="38" r="20" t="39" text="28" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350129" l="19" b="38" r="20" t="39" text="29" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350130" l="19" b="38" r="20" t="39" text="30" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350131" l="24" b="15" r="25" t="16" text="31" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350132" l="24" b="13" r="25" t="14" text="32" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350133" l="21" b="16" r="22" t="17" text="33" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350134" l="21" b="30" r="22" t="31" text="34" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RTV2_HS_STATION" gid="" show="1">
+		<CDciStaticCtrl>
+			<Control id="111350214" l="58" b="37" r="59" t="38" text="14" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350215" l="58" b="35" r="59" t="36" text="15" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350216" l="58" b="33" r="59" t="34" text="16" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350217" l="58" b="29" r="59" t="30" text="17" bgmode="2" fgmode="3" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350218" l="58" b="27" r="59" t="28" text="18" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350219" l="58" b="25" r="59" t="26" text="19" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350220" l="58" b="21" r="59" t="22" text="20" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350221" l="58" b="19" r="59" t="20" text="21" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350222" l="58" b="17" r="59" t="18" text="22" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350223" l="58" b="14" r="59" t="15" text="23" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350224" l="58" b="11" r="59" t="12" text="24" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350225" l="58" b="8" r="59" t="9" text="25" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350226" l="58" b="4" r="59" t="5" text="26" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350227" l="58" b="2" r="59" t="3" text="27" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350201" l="55" b="17" r="56" t="18" text="01" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350202" l="55" b="19" r="56" t="20" text="02" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350203" l="55" b="21" r="56" t="22" text="03" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350204" l="55" b="22" r="56" t="23" text="04" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350205" l="55" b="24" r="56" t="25" text="05" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350206" l="55" b="25" r="56" t="26" text="06" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350207" l="55" b="27" r="56" t="28" text="07" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350208" l="55" b="28" r="56" t="29" text="08" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350209" l="55" b="30" r="56" t="31" text="09" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350210" l="55" b="31" r="56" t="32" text="10" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350211" l="55" b="33" r="56" t="34" text="11" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350212" l="55" b="34" r="56" t="35" text="12" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350213" l="55" b="36" r="56" t="37" text="13" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350228" l="53" b="6" r="54" t="7" text="28" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350231" l="55" b="10" r="56" t="11" text="31" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350232" l="55" b="13" r="56" t="14" text="32" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350234" l="55" b="3" r="56" t="4" text="34" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350233" l="55" b="39" r="56" t="40" text="33" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350229" l="58" b="33" r="59" t="34" text="29" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="111350230" l="58" b="33" r="59" t="34" text="30" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="12" border="4" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="0"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="SAFE_FENCE" gid="111120000" show="1">
+		<CDciStaticCtrl>
+			<Control id="000000000" l="53" b="16" r="54" t="17" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="15" r="54" t="16" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="14" r="54" t="15" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="13" r="54" t="14" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="12" r="54" t="13" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="11" r="54" t="12" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="10" r="54" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="51" b="7" r="52" t="8" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="51" b="6" r="52" t="7" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="51" b="5" r="52" t="6" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="4" r="54" t="5" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="3" r="54" t="4" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="2" r="54" t="3" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="1" r="54" t="2" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="9" r="54" t="10" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="51" b="8" r="52" t="9" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="51" b="4" r="52" t="5" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="53" b="8" r="54" t="9" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="0" r="54" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="54" b="0" r="55" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="55" b="0" r="56" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="56" b="0" r="57" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="57" b="0" r="58" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="58" b="0" r="59" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="60" b="0" r="61" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="45"/>
+			<Control id="000000000" l="60" b="1" r="61" t="2" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="59" b="0" r="60" t="1" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="60" b="7" r="61" t="8" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="3" r="61" t="4" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="5" r="61" t="6" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="18" r="61" t="19" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="20" r="61" t="21" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="26" r="61" t="27" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="28" r="61" t="29" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="34" r="61" t="35" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="36" r="61" t="37" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="22" r="61" t="23" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="24" r="61" t="25" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="30" r="61" t="31" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="32" r="61" t="33" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="23" r="61" t="24" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="31" r="61" t="32" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="38" r="61" t="39" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="16" r="61" t="17" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="15" r="61" t="16" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="53" b="42" r="54" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="54" b="42" r="55" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="55" b="42" r="56" t="43" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="56" b="42" r="57" t="43" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="57" b="42" r="58" t="43" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="58" b="42" r="59" t="43" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="59" b="42" r="60" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="60" b="42" r="61" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="45" gb="0"/>
+			<Control id="111120022" l="60" b="40" r="61" t="41" text="F" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="53" b="41" r="54" t="42" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="40" r="54" t="41" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="39" r="54" t="40" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="38" r="54" t="39" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="37" r="54" t="38" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="45"/>
+			<Control id="111120021" l="60" b="6" r="61" t="7" text="F" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="111120023" l="52" b="4" r="54" t="5" text="F" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="29" gb="45"/>
+			<Control id="000000000" l="52" b="8" r="54" t="9" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="29" gb="0"/>
+			<Control id="000000000" l="20" b="10" r="21" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="21" b="10" r="22" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="22" b="10" r="23" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="23" b="10" r="24" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="24" b="10" r="25" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="25" b="10" r="26" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="26" b="10" r="27" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="45"/>
+			<Control id="111120012" l="26" b="11" r="27" t="13" text="F" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="18" r="27" t="19" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="26" b="16" r="27" t="17" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="53" b="18" r="54" t="19" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="10" r="20" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="19" b="13" r="20" t="14" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="0"/>
+			<Control id="000000000" l="53" b="20" r="54" t="21" text="D" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="53" b="23" r="54" t="24" text="D" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="53" b="26" r="54" t="27" text="D" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="53" b="29" r="54" t="30" text="D" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="53" b="32" r="54" t="33" text="D" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="53" b="35" r="54" t="36" text="D" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="27" b="42" r="28" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="45" gb="0"/>
+			<Control id="000000000" l="24" b="42" r="25" t="43" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="25" b="42" r="26" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="23" b="42" r="24" t="43" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="22" b="42" r="23" t="43" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="21" b="42" r="22" t="43" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="20" b="42" r="21" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="26" b="37" r="27" t="38" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="38" r="27" t="39" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="39" r="27" t="40" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="40" r="27" t="41" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="19" b="21" r="20" t="22" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="23" r="20" t="24" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="25" r="20" t="26" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="27" r="20" t="28" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="35" r="20" t="36" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="25"/>
+			<Control id="111120011" l="18" b="40" r="20" t="41" text="F" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="29" gb="0"/>
+			<Control id="000000000" l="19" b="42" r="20" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="19" b="41" r="20" t="42" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="111120001" l="17" b="40" r="18" t="41" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="17" b="39" r="18" t="40" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="17" b="38" r="18" t="39" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="17" b="36" r="18" t="37" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="18" b="36" r="20" t="37" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="29" gb="45"/>
+			<Control id="000000000" l="19" b="36" r="20" t="37" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="17" b="37" r="18" t="38" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="19" b="33" r="20" t="34" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="40" r="20" t="41" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="26" b="36" r="27" t="37" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="35" r="27" t="36" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="39" r="61" t="40" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="41" r="61" t="42" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="20" r="27" t="21" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="26" b="23" r="27" t="24" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="26" b="26" r="27" t="27" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="25"/>
+			<Control id="000000000" l="26" b="32" r="27" t="33" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="31" r="27" t="32" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="26" b="29" r="27" t="30" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="28" r="27" t="29" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="26" b="41" r="27" t="42" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="52" b="37" r="54" t="38" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="29" gb="45"/>
+			<Control id="000000000" l="51" b="37" r="52" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="50" b="37" r="51" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="49" b="37" r="50" t="38" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="48" b="37" r="49" t="38" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="27" b="37" r="28" t="38" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="43" b="37" r="44" t="38" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="44" b="37" r="45" t="38" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="46" b="37" r="47" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="45" b="37" r="46" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="47" b="37" r="48" t="38" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="38" b="37" r="39" t="38" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="39" b="37" r="40" t="38" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="41" b="37" r="42" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="40" b="37" r="41" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="42" b="37" r="43" t="38" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="33" b="37" r="34" t="38" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="34" b="37" r="35" t="38" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="36" b="37" r="37" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="35" b="37" r="36" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="37" b="37" r="38" t="38" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="28" b="37" r="29" t="38" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="29" b="37" r="30" t="38" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="31" b="37" r="32" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="30" b="37" r="31" t="38" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="32" b="37" r="33" t="38" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="27" b="41" r="28" t="42" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="27" b="40" r="28" t="41" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="27" b="39" r="28" t="40" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="27" b="38" r="28" t="39" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="28" b="16" r="29" t="17" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="29" b="16" r="30" t="17" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="30" b="16" r="31" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="31" b="16" r="32" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="32" b="16" r="33" t="17" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="33" b="16" r="34" t="17" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="34" b="16" r="35" t="17" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="35" b="16" r="36" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="36" b="16" r="37" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="41" b="16" r="42" t="17" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="42" b="16" r="43" t="17" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="43" b="16" r="44" t="17" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="44" b="16" r="45" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="45" b="16" r="46" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="46" b="16" r="47" t="17" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="47" b="16" r="48" t="17" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="48" b="16" r="49" t="17" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="49" b="16" r="50" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="50" b="16" r="51" t="17" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="27" b="16" r="28" t="17" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="51" b="16" r="52" t="17" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="26" b="42" r="27" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="27" b="42" r="28" t="43" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="45" gr="0" gb="0"/>
+			<Control id="000000000" l="40" b="16" r="41" t="17" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="52" b="16" r="53" t="17" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="0" gb="20"/>
+			<Control id="000000000" l="2" b="6" r="3" t="7" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="2" b="7" r="3" t="8" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="3" b="7" r="4" t="8" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="4" b="7" r="5" t="8" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="11" b="7" r="12" t="8" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="25" gt="0" gr="25" gb="45"/>
+			<Control id="000000000" l="19" b="30" r="20" t="31" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="27" b="18" r="28" t="19" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="28" b="18" r="29" t="19" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="29" b="18" r="30" t="19" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="30" b="18" r="31" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="31" b="18" r="32" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="32" b="18" r="33" t="19" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="33" b="18" r="34" t="19" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="34" b="18" r="35" t="19" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="35" b="18" r="36" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="36" b="18" r="37" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="37" b="18" r="38" t="19" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="38" b="18" r="39" t="19" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="39" b="18" r="40" t="19" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="40" b="18" r="41" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="41" b="18" r="42" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="42" b="18" r="43" t="19" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="44" b="18" r="45" t="19" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="43" b="18" r="44" t="19" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="45" b="18" r="46" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="46" b="18" r="47" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="47" b="18" r="48" t="19" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="48" b="18" r="49" t="19" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="49" b="18" r="50" t="19" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="50" b="18" r="51" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="51" b="18" r="52" t="19" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="52" b="18" r="53" t="19" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="7" b="7" r="8" t="8" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="25" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="9" b="7" r="10" t="8" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="25" gb="45"/>
+			<Control id="000000000" l="0" b="7" r="1" t="8" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="25" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="13" b="15" r="14" t="16" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="18" b="15" r="19" t="16" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="17" b="15" r="18" t="16" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="16" b="15" r="17" t="16" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="15" b="15" r="16" t="16" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="14" b="15" r="15" t="16" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="12" b="15" r="13" t="16" text="L" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="11" b="15" r="12" t="16" text="A" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="10" b="15" r="11" t="16" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="5" b="7" r="6" t="8" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="25" gb="45"/>
+			<Control id="000000000" l="19" b="16" r="20" t="17" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="19" b="11" r="20" t="12" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="26" b="15" r="27" t="16" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="14" r="27" t="15" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="26" b="13" r="27" t="14" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="0"/>
+			<Control id="000000000" l="8" b="7" r="9" t="8" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+			<Control id="000000000" l="19" b="15" r="20" t="16" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="17" r="20" t="18" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="0"/>
+			<Control id="000000000" l="19" b="31" r="20" t="32" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="0"/>
+			<Control id="000000000" l="19" b="29" r="20" t="30" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="19" r="20" t="20" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="25" gr="0" gb="25"/>
+			<Control id="000000000" l="19" b="12" r="20" t="13" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="45" gt="0" gr="0" gb="0"/>
+			<Control id="000000000" l="9" b="15" r="10" t="16" text="" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="25" gt="20" gr="0" gb="25"/>
+			<Control id="000000000" l="60" b="12" r="61" t="13" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="13" r="61" t="14" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="60" b="9" r="61" t="10" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="45" gb="25"/>
+			<Control id="000000000" l="60" b="10" r="61" t="11" text="" bgmode="2" fgmode="1" bgcolor="00ffff" fgcolor="000000" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="25" gr="45" gb="0"/>
+			<Control id="000000000" l="1" b="7" r="2" t="8" text="W" bgmode="2" fgmode="1" bgcolor="808080" fgcolor="ffffff" enable="1" visible="1" fontsize="12" border="1" pstyle="0" pwidth="1" pcolor="000000" virtical="0" gl="0" gt="0" gr="0" gb="45"/>
+		</CDciStaticCtrl>
+	</Group>
+	<Group gname="RACK" gid="" show="1">
+		<CDciRackCtrl>
+			<Control id="" l="29" b="19" r="51" t="20" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="21" r="51" t="22" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="22" r="51" t="23" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="24" r="51" t="25" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="25" r="51" t="26" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="27" r="51" t="28" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="28" b="28" r="51" t="29" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="30" r="51" t="31" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="28" b="31" r="51" t="32" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="33" r="51" t="34" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="29" b="34" r="51" t="35" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+			<Control id="" l="28" b="36" r="51" t="37" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" col="1" row="1" start="1" type="1" len="1"/>
+		</CDciRackCtrl>
+	</Group>
+	<Group gname="SC" gid="111200000" show="1">
+		<CDciRvCtrl>
+			<Control id="111200001" l="27" b="20" r="53" t="21" text="1" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000"/>
+			<Control id="111200002" l="27" b="23" r="53" t="24" text="2" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000"/>
+			<Control id="111200003" l="27" b="26" r="53" t="27" text="3" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000"/>
+			<Control id="111200004" l="27" b="29" r="53" t="30" text="4" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000"/>
+			<Control id="111200005" l="27" b="32" r="53" t="33" text="5" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000"/>
+			<Control id="111200006" l="27" b="35" r="53" t="36" text="6" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="1" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000"/>
+		</CDciRvCtrl>
+	</Group>
+	<Group gname="RTV" gid="111300000" show="1">
+		<CDciRvCtrl>
+			<Control id="111300101" l="24" b="34" r="25" t="35" text="1" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300102" l="24" b="33" r="25" t="34" text="2" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300103" l="24" b="30" r="25" t="31" text="3" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300104" l="24" b="27" r="25" t="28" text="4" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300105" l="24" b="25" r="25" t="26" text="5" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300201" l="58" b="37" r="59" t="38" text="1" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300202" l="58" b="35" r="59" t="36" text="2" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300203" l="58" b="33" r="59" t="34" text="3" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300204" l="58" b="29" r="59" t="30" text="4" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300205" l="58" b="27" r="59" t="28" text="5" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300206" l="58" b="25" r="59" t="26" text="6" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300207" l="58" b="21" r="59" t="22" text="7" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+			<Control id="111300208" l="58" b="19" r="59" t="20" text="8" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" prod="0" forktype="0" type="0" forkpos="0" forkcolor="f0f0f0" wingcolor="000000" railcolor="000000"/>
+		</CDciRvCtrl>
+	</Group>
+	<Group gname="RGVC" gid="111310000" show="1">
+		<CDciButtonCtrl>
+			<Control id="111310001" l="22" b="12" r="24" t="41" text="RGVC #1" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" shape="2" Virtical="1"/>
+			<Control id="111310002" l="56" b="2" r="58" t="41" text="RGVC #2" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" shape="2" Virtical="1"/>
+		</CDciButtonCtrl>
+	</Group>
+	<Group gname="CV01_PART01" gid="111101100" show="1">
+		<CDciTrackCtrl>
+			<Control id="111101102" l="1" b="1" r="2" t="3" text="1102" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111101103" l="1" b="3" r="2" t="5" text="1103" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101121" l="10" b="14" r="12" t="15" text="1121" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101105" l="1" b="5" r="2" t="7" text="1105" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101106" l="2" b="6" r="4" t="7" text="1106" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101107" l="4" b="6" r="6" t="7" text="1107" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101110" l="6" b="6" r="8" t="7" text="1110" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101111" l="8" b="6" r="10" t="7" text="1111" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101113" l="10" b="6" r="11" t="7" text="1113" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101114" l="10" b="7" r="11" t="8" text="1114" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101115" l="10" b="8" r="11" t="9" text="1115" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101116" l="10" b="9" r="11" t="10" text="1116" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101117" l="10" b="10" r="11" t="11" text="1117" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101118" l="10" b="11" r="11" t="12" text="1118" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101119" l="10" b="12" r="11" t="13" text="1119" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101120" l="10" b="13" r="11" t="14" text="1120" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101123" l="12" b="14" r="14" t="15" text="1123" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101124" l="14" b="14" r="16" t="15" text="1124" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101125" l="16" b="14" r="18" t="15" text="1125" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101126" l="18" b="14" r="20" t="15" text="1126" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111101109" l="6" b="7" r="7" t="9" text="1109" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="2" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="10"/>
+				<Item shape="1" color="808080" gl="20" gt="10" gr="20" gb="20"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV01_PART02" gid="111101200" show="1">
+		<CDciTrackCtrl>
+			<Control id="111101201" l="26" b="17" r="28" t="18" text="1201" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111101210" l="52" b="17" r="54" t="18" text="1210" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111101202" l="28" b="17" r="31" t="18" text="1202" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101203" l="31" b="17" r="34" t="18" text="1203" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101204" l="34" b="17" r="37" t="18" text="1204" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101205" l="37" b="17" r="40" t="18" text="1205" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111101206" l="40" b="17" r="43" t="18" text="1206" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101207" l="43" b="17" r="46" t="18" text="1207" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101208" l="46" b="17" r="49" t="18" text="1208" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111101209" l="49" b="17" r="52" t="18" text="1209" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV02_PART01" gid="111102100" show="1">
+		<CDciTrackCtrl>
+			<Control id="111102120" l="5" b="22" r="7" t="23" text="2120" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102108" l="5" b="24" r="7" t="25" text="2108" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102121" l="5" b="26" r="7" t="27" text="2121" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102130" l="16" b="22" r="18" t="23" text="2130" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102128" l="14" b="22" r="16" t="23" text="2128" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102132" l="18" b="22" r="20" t="23" text="2132" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102126" l="12" b="22" r="14" t="23" text="2126" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102124" l="9" b="22" r="11" t="23" text="2124" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102122" l="7" b="22" r="9" t="23" text="2122" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102118" l="3" b="22" r="5" t="23" text="2118" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111102116" l="2" b="22" r="3" t="23" text="2116" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102101" l="18" b="24" r="20" t="25" text="2101" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102102" l="16" b="24" r="18" t="25" text="2102" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102103" l="14" b="24" r="16" t="25" text="2103" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111102105" l="12" b="24" r="14" t="25" text="2105" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102106" l="9" b="24" r="11" t="25" text="2106" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102107" l="7" b="24" r="9" t="25" text="2107" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102109" l="3" b="24" r="5" t="25" text="2109" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102110" l="2" b="24" r="3" t="25" text="2110" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102133" l="18" b="26" r="20" t="27" text="2133" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102131" l="16" b="26" r="18" t="27" text="2131" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102129" l="14" b="26" r="16" t="27" text="2129" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102127" l="12" b="26" r="14" t="27" text="2127" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102125" l="9" b="26" r="11" t="27" text="2125" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102123" l="7" b="26" r="9" t="27" text="2123" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102119" l="3" b="26" r="5" t="27" text="2119" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111102117" l="2" b="26" r="3" t="27" text="2117" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102112" l="2" b="23" r="3" t="24" text="2112" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102113" l="2" b="25" r="3" t="26" text="2113" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV02_PART02" gid="111102200" show="1">
+		<CDciTrackCtrl>
+			<Control id="111102230" l="11" b="18" r="12" t="20" text="2230" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102236" l="18" b="18" r="20" t="19" text="2236" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="2">
+				<Item shape="1" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102229" l="18" b="20" r="20" t="21" text="2229" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="2">
+				<Item shape="1" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102235" l="16" b="18" r="17" t="19" text="2235" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102234" l="14" b="18" r="16" t="19" text="2234" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102233" l="12" b="18" r="14" t="19" text="2233" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102228" l="16" b="20" r="17" t="21" text="2228" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102227" l="14" b="20" r="16" t="21" text="2227" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102226" l="12" b="20" r="14" t="21" text="2226" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102223" l="11" b="20" r="12" t="22" text="2223" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102222" l="11" b="22" r="12" t="24" text="2222" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102221" l="11" b="25" r="12" t="28" text="2221" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102212" l="13" b="28" r="14" t="30" text="2212" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102211" l="13" b="30" r="14" t="32" text="2211" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102218" l="11" b="28" r="13" t="29" text="2218" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102214" l="14" b="28" r="16" t="29" text="2214" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111102216" l="16" b="28" r="18" t="29" text="2216" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102217" l="18" b="28" r="20" t="29" text="2217" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102207" l="13" b="32" r="14" t="34" text="2207" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102209" l="14" b="32" r="17" t="33" text="2209" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102206" l="13" b="34" r="14" t="35" text="2206" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102203" l="14" b="34" r="16" t="35" text="2203" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111102202" l="16" b="34" r="18" t="35" text="2202" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102201" l="18" b="34" r="20" t="35" text="2201" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102210" l="18" b="32" r="20" t="33" text="2210" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="2">
+				<Item shape="1" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV02_PART09" gid="111102900" show="1">
+		<CDciTrackCtrl>
+			<Control id="111102913" l="28" b="19" r="29" t="20" text="2913" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102912" l="27" b="19" r="28" t="20" text="2912" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102911" l="26" b="19" r="27" t="20" text="2911" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="5" gb="10"/>
+			</Control>
+			<Control id="111102914" l="26" b="21" r="27" t="22" text="2914" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="5" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102915" l="27" b="21" r="28" t="22" text="2915" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102916" l="28" b="21" r="29" t="22" text="2916" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102921" l="26" b="22" r="27" t="23" text="2921" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="5" gb="10"/>
+			</Control>
+			<Control id="111102922" l="27" b="22" r="28" t="23" text="2922" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102923" l="28" b="22" r="29" t="23" text="2923" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102924" l="26" b="24" r="27" t="25" text="2924" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="5" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102925" l="27" b="24" r="28" t="25" text="2925" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102926" l="28" b="24" r="29" t="25" text="2926" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102933" l="28" b="25" r="29" t="26" text="2933" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102932" l="27" b="25" r="28" t="26" text="2932" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102931" l="26" b="25" r="27" t="26" text="2931" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="5" gb="10"/>
+			</Control>
+			<Control id="111102934" l="26" b="27" r="27" t="28" text="2934" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="5" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102935" l="27" b="27" r="28" t="28" text="2935" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102936" l="28" b="27" r="29" t="28" text="2936" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102954" l="26" b="33" r="27" t="34" text="2954" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="5" gb="10"/>
+			</Control>
+			<Control id="111102955" l="27" b="33" r="28" t="34" text="2955" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102956" l="28" b="33" r="29" t="34" text="2956" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102963" l="28" b="34" r="29" t="35" text="2963" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111102962" l="27" b="34" r="28" t="35" text="2962" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102961" l="26" b="34" r="27" t="35" text="2961" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="5" gb="10"/>
+			</Control>
+			<Control id="111102944" l="26" b="30" r="27" t="31" text="2944" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="5" gb="10"/>
+			</Control>
+			<Control id="111102945" l="27" b="30" r="28" t="31" text="2945" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111102946" l="28" b="30" r="29" t="31" text="2946" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="5" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV03_PART01" gid="111103100" show="1">
+		<CDciTrackCtrl>
+			<Control id="111103101" l="60" b="37" r="61" t="38" text="3101" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103102" l="60" b="33" r="61" t="34" text="3102" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103104" l="61" b="33" r="63" t="34" text="3104" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103103" l="61" b="37" r="63" t="38" text="3103" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103106" l="63" b="32" r="65" t="34" text="L/F" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103105" l="63" b="37" r="65" t="39" text="L/F" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103116" l="63" b="34" r="64" t="35" text="3116" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103115" l="63" b="36" r="64" t="37" text="3115" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103119" l="65" b="35" r="66" t="36" text="P/M" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103121" l="60" b="35" r="61" t="36" text="3121" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103120" l="61" b="35" r="63" t="36" text="3120" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103112" l="65" b="33" r="67" t="34" text="3112" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103111" l="65" b="37" r="67" t="38" text="3111" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103109" l="61" b="38" r="63" t="39" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103107" l="64" b="36" r="65" t="37" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103110" l="61" b="32" r="63" t="33" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103108" l="64" b="34" r="65" t="35" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103117" l="63" b="35" r="65" t="36" text="W/C" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV03_PART02" gid="111103200" show="1">
+		<CDciTrackCtrl>
+			<Control id="111103217" l="63" b="27" r="65" t="28" text="W/C" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103212" l="65" b="25" r="67" t="26" text="3212" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103211" l="65" b="29" r="67" t="30" text="3211" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103202" l="60" b="25" r="61" t="26" text="3202" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103204" l="61" b="25" r="63" t="26" text="3204" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103206" l="63" b="24" r="65" t="26" text="L/F" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103216" l="63" b="26" r="64" t="27" text="3216" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103215" l="63" b="28" r="64" t="29" text="3215" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103219" l="65" b="27" r="66" t="28" text="P/M" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103205" l="63" b="29" r="65" t="31" text="L/F" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103203" l="61" b="29" r="63" t="30" text="3203" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103201" l="60" b="29" r="61" t="30" text="3201" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103221" l="60" b="27" r="61" t="28" text="3221" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103220" l="61" b="27" r="63" t="28" text="3220" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103208" l="64" b="26" r="65" t="27" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103207" l="64" b="28" r="65" t="29" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103209" l="61" b="30" r="63" t="31" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103210" l="61" b="24" r="63" t="25" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV03_PART03" gid="111103300" show="1">
+		<CDciTrackCtrl>
+			<Control id="111103317" l="63" b="19" r="65" t="20" text="W/C" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103312" l="65" b="17" r="67" t="18" text="3312" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103311" l="65" b="21" r="67" t="22" text="3311" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103302" l="60" b="17" r="61" t="18" text="3302" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103304" l="61" b="17" r="63" t="18" text="3304" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103306" l="63" b="16" r="65" t="18" text="L/F" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103316" l="63" b="18" r="64" t="19" text="3316" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103315" l="63" b="20" r="64" t="21" text="3315" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103319" l="65" b="19" r="66" t="20" text="P/M" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103305" l="63" b="21" r="65" t="23" text="L/F" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103303" l="61" b="21" r="63" t="22" text="3303" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103301" l="60" b="21" r="61" t="22" text="3301" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103321" l="60" b="19" r="61" t="20" text="3321" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103320" l="61" b="19" r="63" t="20" text="3320" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103309" l="61" b="22" r="63" t="23" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103310" l="61" b="16" r="63" t="17" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103307" l="64" b="20" r="65" t="21" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103308" l="64" b="18" r="65" t="19" text="2단" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV03_PART04" gid="111103400" show="1">
+		<CDciTrackCtrl>
+			<Control id="111103406" l="60" b="8" r="62" t="9" text="3406" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103407" l="62" b="8" r="64" t="9" text="3407" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103409" l="63" b="9" r="64" t="11" text="3409" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103404" l="63" b="12" r="64" t="14" text="3404" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103412" l="60" b="11" r="61" t="12" text="3412" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103402" l="62" b="14" r="64" t="15" text="3402" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103401" l="60" b="14" r="62" t="15" text="3401" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103411" l="61" b="11" r="63" t="12" text="P/M" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103405" l="63" b="11" r="64" t="12" text="3405" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV03_PART05" gid="111103500" show="1">
+		<CDciTrackCtrl>
+			<Control id="111103504" l="62" b="4" r="64" t="5" text="3504" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103503" l="60" b="4" r="62" t="5" text="3503" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="2">
+				<Item shape="2" color="808080" gl="10" gt="5" gr="5" gb="5"/>
+				<Item shape="1" color="808080" gl="5" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103502" l="62" b="2" r="64" t="3" text="3502" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+			</Control>
+			<Control id="111103501" l="60" b="2" r="62" t="3" text="3501" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+		</CDciTrackCtrl>
+	</Group>
+	<Group gname="CV03_PART09" gid="111103900" show="1">
+		<CDciTrackCtrl>
+			<Control id="111103911" l="53" b="19" r="54" t="20" text="3911" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103912" l="52" b="19" r="53" t="20" text="3912" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103913" l="51" b="19" r="52" t="20" text="3913" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103914" l="53" b="21" r="54" t="22" text="3914" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103915" l="52" b="21" r="53" t="22" text="3915" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103916" l="51" b="21" r="52" t="22" text="3916" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103923" l="51" b="22" r="52" t="23" text="3923" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103922" l="52" b="22" r="53" t="23" text="3922" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103921" l="53" b="22" r="54" t="23" text="3921" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103924" l="53" b="24" r="54" t="25" text="3924" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103925" l="52" b="24" r="53" t="25" text="3925" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103926" l="51" b="24" r="52" t="25" text="3926" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103933" l="51" b="25" r="52" t="26" text="3933" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103932" l="52" b="25" r="53" t="26" text="3932" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103931" l="53" b="25" r="54" t="26" text="3931" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103934" l="53" b="27" r="54" t="28" text="3934" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103935" l="52" b="27" r="53" t="28" text="3935" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103936" l="51" b="27" r="52" t="28" text="3936" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103941" l="53" b="28" r="54" t="29" text="3941" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103942" l="52" b="28" r="53" t="29" text="3942" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103943" l="51" b="28" r="52" t="29" text="3943" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103944" l="53" b="30" r="54" t="31" text="3944" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103945" l="52" b="30" r="53" t="31" text="3945" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103946" l="51" b="30" r="52" t="31" text="3946" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103953" l="51" b="31" r="52" t="32" text="3953" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103952" l="52" b="31" r="53" t="32" text="3952" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103951" l="53" b="31" r="54" t="32" text="3951" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103954" l="53" b="33" r="54" t="34" text="3954" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103955" l="52" b="33" r="53" t="34" text="3955" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103956" l="51" b="33" r="52" t="34" text="3956" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103963" l="51" b="34" r="52" t="35" text="3963" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103962" l="52" b="34" r="53" t="35" text="3962" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103961" l="53" b="34" r="54" t="35" text="3961" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="2" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103964" l="53" b="36" r="54" t="37" text="3964" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="3" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="111103965" l="52" b="36" r="53" t="37" text="3965" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="111103966" l="51" b="36" r="52" t="37" text="3966" bgmode="2" fgmode="1" bgcolor="d8e9ec" fgcolor="000000" enable="1" visible="1" prod="0" row="1" col="1">
+				<Item shape="4" color="808080" gl="10" gt="10" gr="10" gb="10"/>
+			</Control>
+			<Control id="" l="50" b="19" r="51" t="20" text="1" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="21" r="51" t="22" text="2" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="22" r="51" t="23" text="3" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="24" r="51" t="25" text="4" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="25" r="51" t="26" text="5" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="27" r="51" t="28" text="6" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="28" r="51" t="29" text="7" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="30" r="51" t="31" text="8" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="31" r="51" t="32" text="9" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="33" r="51" t="34" text="10" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="34" r="51" t="35" text="11" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="50" b="36" r="51" t="37" text="12" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="19" r="30" t="20" text="1" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="21" r="30" t="22" text="2" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="22" r="30" t="23" text="3" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="24" r="30" t="25" text="4" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="25" r="30" t="26" text="5" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="27" r="30" t="28" text="6" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="28" r="30" t="29" text="7" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="30" r="30" t="31" text="8" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="31" r="30" t="32" text="9" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="33" r="30" t="34" text="10" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="34" r="30" t="35" text="11" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+			<Control id="" l="29" b="36" r="30" t="37" text="12" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" prod="0" row="0" col="0"/>
+		</CDciTrackCtrl>
+	</Group>
+</Builder>

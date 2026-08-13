@@ -1,0 +1,43 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: BuilderLib - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\김성호\LOCALS~1\Temp\RSP7B.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /I "../XmlLib" /I "../DciLib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_WINDLL" /D "_AFXDLL" /D "_MBCS" /D "_AFXEXT" /Fp"../../Bin/Debug/BuilderLib/BuilderLib.pch" /Yu"stdafx.h" /Fo"../../Bin/Debug/BuilderLib/" /Fd"../../Bin/Debug/BuilderLib/" /FD /GZ /c 
+"E:\GHS\SCP2차\프로그램\ECS\Lib\BuilderLib\BuildManager.cpp"
+]
+Creating command line "cl.exe @"C:\DOCUME~1\김성호\LOCALS~1\Temp\RSP7B.tmp"" 
+Creating temporary file "C:\DOCUME~1\김성호\LOCALS~1\Temp\RSP7C.tmp" with contents
+[
+/nologo /subsystem:windows /dll /incremental:yes /pdb:"../../Bin/Debug/BuilderLibD.pdb" /debug /machine:I386 /def:".\BuilderLibD.def" /out:"../../Bin/Debug/BuilderLibD.dll" /implib:"../../Bin/Debug/BuilderLibD.lib" /pdbtype:sept 
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\BuilderLib.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\BuildManager.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\ControlManagerDlg.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\PropertyManagerDlg.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\StdAfx.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\font.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\picture.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\spreadsheet.obj"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\BuilderLib\BuilderLib.res"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\DciLibD.lib"
+"\GHS\SCP2차\프로그램\ECS\Bin\Debug\XmlLibD.lib"
+]
+Creating command line "link.exe @"C:\DOCUME~1\김성호\LOCALS~1\Temp\RSP7C.tmp""
+<h3>Output Window</h3>
+Compiling...
+BuildManager.cpp
+Linking...
+   Creating library ../../Bin/Debug/BuilderLibD.lib and object ../../Bin/Debug/BuilderLibD.exp
+
+
+
+<h3>Results</h3>
+BuilderLibD.dll - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

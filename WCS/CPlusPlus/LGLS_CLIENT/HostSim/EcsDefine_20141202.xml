@@ -1,0 +1,1065 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>
+	<Equipment class="CCv" number="1" device="CV01_PART01_PET_N_ETC" cid="111101100">
+		<Tracks cid="111101100">
+			<Track number="1101"/>
+			<Track number="1102">
+				<Status>
+					<StoStation id="106" name="생산 PET 입고대"/>
+				</Status>
+			</Track>
+			<Track number="1103"/>
+			<Track number="1104"/>
+			<Track number="1105"/>
+			<Track number="1106"/>
+			<Track number="1107"/>
+			<Track number="1108"/>
+			<Track number="1109">
+				<Status>
+					<StoStation id="107" name="생산 기타 입고대"/>
+					<RetStation id="112" name="생산 기타 출고대"/>
+				</Status>
+			</Track>
+			<Track number="1110"/>
+			<Track number="1111"/>
+			<Track number="1112"/>
+			<Track number="1113"/>
+			<Track number="1114"/>
+			<Track number="1115"/>
+			<Track number="1116"/>
+			<Track number="1117"/>
+			<Track number="1118"/>
+			<Track number="1119"/>
+			<Track number="1120"/>
+			<Track number="1121"/>
+			<Track number="1122"/>
+			<Track number="1123"/>
+			<Track number="1124"/>
+			<Track number="1125"/>
+			<Track number="1126">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+	<Equipment class="CCv" number="2" device="CV01_PART02_BYPASS" cid="111101200">
+		<Tracks cid="111101200">
+			<Track number="1201">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="1202"/>
+			<Track number="1203"/>
+			<Track number="1204"/>
+			<Track number="1205">
+				<Status>
+					<RetStation id="111" name="ByPass 작업대"/>
+				</Status>
+			</Track>				
+			<Track number="1206"/>
+			<Track number="1207"/>
+			<Track number="1208"/>
+			<Track number="1209"/>
+			<Track number="1210">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="1211"/>
+		</Tracks>
+	</Equipment>
+	<Equipment class="CCv" number="3" device="CV02_PART01_TYCON" cid="111102100">
+		<Tracks cid="111102100">
+			<Track number="2101">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2102"/>
+			<Track number="2103">
+				<Status>
+					<RetStation id="110" name="생산 Tycon P/D"/>
+				</Status>
+			</Track>				
+			<Track number="2104"/>
+			<Track number="2105"/>
+			<Track number="2106"/>
+			<Track number="2107"/>
+			<Track number="2108"/>
+			<Track number="2109"/>
+			<Track number="2110"/>
+			<Track number="2111"/>
+			<Track number="2112"/>
+			<Track number="2113"/>
+			<Track number="2114"/>
+			<Track number="2115"/>
+			<Track number="2116"/>
+			<Track number="2117"/>
+			<Track number="2118">
+				<Status>
+					<StoStation id="105" name="생산 Tycon입고대 #2"/>
+				</Status>
+			</Track>
+			<Track number="2119">
+				<Status>
+					<StoStation id="104" name="생산 Tycon입고대 #1"/>
+				</Status>
+			</Track>
+			<Track number="2120"/>
+			<Track number="2121"/>
+			<Track number="2122"/>
+			<Track number="2123"/>
+			<Track number="2124"/>
+			<Track number="2125"/>
+			<Track number="2126"/>
+			<Track number="2127"/>
+			<Track number="2128"/>
+			<Track number="2129"/>
+			<Track number="2130"/>
+			<Track number="2131"/>
+			<Track number="2132">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="2133">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+	<Equipment class="CCv" number="4" device="CV02_PART02_JIDAE" cid="111102200">
+		<Tracks cid="111102200">
+			<Track number="2201">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2202"/>
+			<Track number="2203">
+				<Status>
+					<RetStation id="108" name="생산 지대 P/D #1"/>
+				</Status>
+			</Track>				
+			<Track number="2204"/>
+			<Track number="2205"/>
+			<Track number="2206"/>
+			<Track number="2207"/>
+			<Track number="2208"/>
+			<Track number="2209"/>
+			<Track number="2210">
+				<Status>
+					<StoStation id="101" name="생산 지대 입고대 #1"/>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="2211"/>
+			<Track number="2212"/>
+			<Track number="2213"/>
+			<Track number="2214">
+				<Status>
+					<RetStation id="109" name="생산 지대 P/D #2"/>
+				</Status>
+			</Track>				
+			<Track number="2215"/>
+			<Track number="2216"/>
+			<Track number="2217">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2218"/>
+			<Track number="2219"/>
+			<Track number="2220"/>
+			<Track number="2221"/>
+			<Track number="2222"/>
+			<Track number="2223"/>
+			<Track number="2224"/>
+			<Track number="2225"/>
+			<Track number="2226"/>
+			<Track number="2227"/>
+			<Track number="2228"/>
+			<Track number="2229">
+				<Status>
+					<StoStation id="102" name="생산 지대 입고대 #2"/>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="2230"/>
+			<Track number="2231"/>
+			<Track number="2232"/>
+			<Track number="2233"/>
+			<Track number="2234"/>
+			<Track number="2235"/>
+			<Track number="2236">
+				<Status>
+					<StoStation id="103" name="생산 지대 입고대 #3"/>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Doors>
+			<Door cid="111120011"/>
+			<Door cid="111120012"/>
+		</Doors>
+	</Equipment>
+	<Equipment class="CCv" number="5" device="CV02_PART09_SC" cid="111102900">
+		<Tracks cid="111102900">
+			<Track number="2901"/>
+			<Track number="2902"/>
+			<Track number="2903"/>
+			<Track number="2904"/>
+			<Track number="2905"/>
+			<Track number="2906"/>
+			<Track number="2907"/>
+			<Track number="2908"/>
+			<Track number="2909"/>
+			<Track number="2910"/>
+
+			<Track number="2911">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="2912"/>
+			<Track number="2913">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="2914">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2915"/>
+			<Track number="2916">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="2917"/>
+			<Track number="2918"/>
+			<Track number="2919"/>
+			<Track number="2920"/>
+
+
+			<Track number="2921">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="2922"/>
+			<Track number="2923">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="2924">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2925"/>
+			<Track number="2926">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="2927"/>
+			<Track number="2928"/>
+			<Track number="2929"/>
+			<Track number="2930"/>
+
+
+			<Track number="2931">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="2932"/>
+			<Track number="2933">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="2934">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2935"/>
+			<Track number="2936">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="2937"/>
+			<Track number="2938"/>
+			<Track number="2939"/>
+			<Track number="2940"/>
+
+
+			<Track number="2941"/>
+			<Track number="2942"/>
+			<Track number="2943"/>
+			<Track number="2944">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2945"/>
+			<Track number="2946">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="2947"/>
+			<Track number="2948"/>
+			<Track number="2949"/>
+			<Track number="2950"/>
+
+
+			<Track number="2951"/>
+			<Track number="2952"/>
+			<Track number="2953"/>
+			<Track number="2954">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2955"/>
+			<Track number="2956">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="2957"/>
+			<Track number="2958"/>
+			<Track number="2959"/>
+			<Track number="2960"/>
+
+
+			<Track number="2961">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="2962"/>
+			<Track number="2963">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+
+
+
+	<Equipment class="CCv" number="6" device="CV03_PART01_HAND_LOAD_CAR1" cid="111103100">
+		<Tracks cid="111103100">
+			<Track number="3101">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3102">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3103"/>
+			<Track number="3104"/>
+			<Track number="3105"/>
+			<Track number="3106"/>
+			<Track number="3107">
+				<Status>
+					<ArvStation id="222" name="손상차 피킹대 #1 버퍼 #1"/>
+				</Status>
+			</Track>
+			<Track number="3108">
+				<Status>
+					<ArvStation id="223" name="손상차 피킹대 #2 버퍼 #1"/>
+				</Status>
+			</Track>
+			<Track number="3109">
+				<Status>
+					<ArvStation id="221" name="손상차 피킹대 #1 버퍼 #2"/>
+				</Status>
+			</Track>
+			<Track number="3110">
+				<Status>
+					<ArvStation id="224" name="손상차 피킹대 #2 버퍼 #2"/>
+				</Status>
+			</Track>
+			<Track number="3111">
+				<Status>
+					<ArvStation id="201" name="손상차 피킹대 #1"/>
+				</Status>
+			</Track>
+			<Track number="3112">
+				<Status>
+					<ArvStation id="202" name="손상차 피킹대 #2"/>
+				</Status>
+			</Track>
+			<Track number="3113"/>
+			<Track number="3114"/>
+			<Track number="3115"/>
+			<Track number="3116"/>
+			<Track number="3117">
+				<Status>
+					<ArvStation id="215" name="중량 체커 #1"/>
+				</Status>
+			</Track>
+			<Track number="3118"/>
+			<Track number="3119">
+				<Status>
+					<ArvStation id="210" name="손상차 P/M #1"/>
+				</Status>
+			</Track>
+			<Track number="3120"/>
+			<Track number="3121">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+	<Equipment class="CCv" number="7" device="CV03_PART02_HAND_LOAD_CAR2" cid="111103200">
+		<Tracks cid="111103200">
+			<Track number="3201">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3202">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3203"/>
+			<Track number="3204"/>
+			<Track number="3205"/>
+			<Track number="3206"/>
+			<Track number="3207">
+				<Status>
+					<ArvStation id="225" name="손상차 피킹대 #3 버퍼 #1"/>
+				</Status>
+			</Track>
+			<Track number="3208">
+				<Status>
+					<ArvStation id="227" name="손상차 피킹대 #4 버퍼 #1"/>
+				</Status>
+			</Track>
+			<Track number="3209">
+				<Status>
+					<ArvStation id="226" name="손상차 피킹대 #3 버퍼 #2"/>
+				</Status>
+			</Track>
+			<Track number="3210">
+				<Status>
+					<ArvStation id="228" name="손상차 피킹대 #4 버퍼 #2"/>
+				</Status>
+			</Track>
+
+			<Track number="3211">
+				<Status>
+					<ArvStation id="203" name="손상차 피킹대 #3"/>
+				</Status>
+			</Track>
+			<Track number="3212">
+				<Status>
+					<ArvStation id="204" name="손상차 피킹대 #4"/>
+				</Status>
+			</Track>
+			<Track number="3213"/>
+			<Track number="3214"/>
+			<Track number="3215"/>
+			<Track number="3216"/>
+			<Track number="3217">
+				<Status>
+					<ArvStation id="216" name="중량 체커 #2"/>
+				</Status>
+			</Track>
+			<Track number="3218"/>
+			<Track number="3219">
+				<Status>
+					<ArvStation id="211" name="손상차 P/M #2"/>
+				</Status>
+			</Track>
+			<Track number="3220"/>
+			<Track number="3221">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+
+	<Equipment class="CCv" number="8" device="CV03_PART03_HAND_LOAD_CAR3" cid="111103300">
+		<Tracks cid="111103300">
+			<Track number="3301">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3302">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3303"/>
+			<Track number="3304"/>
+			<Track number="3305"/>
+			<Track number="3306"/>
+			<Track number="3307">
+				<Status>
+					<ArvStation id="229" name="손상차 피킹대 #5 버퍼 #1"/>
+				</Status>
+			</Track>
+			<Track number="3308">
+				<Status>
+					<ArvStation id="231" name="손상차 피킹대 #6 버퍼 #1"/>
+				</Status>
+			</Track>
+			<Track number="3309">
+				<Status>
+					<ArvStation id="230" name="손상차 피킹대 #5 버퍼 #2"/>
+				</Status>
+			</Track>
+			<Track number="3310">
+				<Status>
+					<ArvStation id="232" name="손상차 피킹대 #6 버퍼 #2"/>
+				</Status>
+			</Track>
+
+			<Track number="3311">
+				<Status>
+					<ArvStation id="205" name="손상차 피킹대 #5"/>
+				</Status>
+			</Track>
+			<Track number="3312">
+				<Status>
+					<ArvStation id="206" name="손상차 피킹대 #6"/>
+				</Status>
+			</Track>
+			<Track number="3313"/>
+			<Track number="3314"/>
+			<Track number="3315"/>
+			<Track number="3316"/>
+			<Track number="3317">
+				<Status>
+					<ArvStation id="217" name="중량 체커 #3"/>
+				</Status>
+			</Track>
+			<Track number="3318"/>
+			<Track number="3319">
+				<Status>
+					<ArvStation id="212" name="손상차 P/M #3"/>
+				</Status>
+			</Track>
+			<Track number="3320"/>
+			<Track number="3321">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+
+	<Equipment class="CCv" number="9" device="CV03_PART04_BULK" cid="111103400">
+		<Tracks cid="111103400">
+			<Track number="3401">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3402"/>
+			<Track number="3403"/>
+
+			<Track number="3404">
+				<Status>
+					<ArvStation id="207" name="벌크 전환 출고대"/>
+				</Status>
+			</Track>
+			<Track number="3405"/>
+			<Track number="3406">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3407"/>
+			<Track number="3408"/>
+			<Track number="3409">
+				<Status>
+					<ArvStation id="208" name="Tycon 좌대 출고대"/>
+				</Status>
+			</Track>
+			<Track number="3410"/>
+			<Track number="3411">
+				<Status>
+					<ArvStation id="213" name="PLT 단위 P/M #4"/>
+				</Status>
+			</Track>
+			<Track number="3412">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="3413"/>
+		</Tracks>
+	</Equipment>
+
+
+
+	<Equipment class="CCv" number="10" device="CV03_PART05_ETC" cid="111103500">
+		<Tracks cid="111103500">
+			<Track number="3501">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3502">
+				<Status>
+					<RetStation id="209" name="좌대 상차 출고대"/>
+				</Status>
+			</Track>
+			<Track number="3503">
+				<Status>
+					<RtvDepartHS/>
+					<ArvStation id="236" name="이고 입고 SizeChecker"/>
+				</Status>
+			</Track>
+			<Track number="3504">
+				<Status>
+					<StoStation id="214" name="이고 입고대"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Doors>
+			<Door cid="111120021"/>
+			<Door cid="111120022"/>
+			<Door cid="111120023"/>
+		</Doors>
+	</Equipment>
+
+	<Equipment class="CCv" number="11" device="CV03_PART09_SC" cid="111103900">
+		<Tracks cid="111103900">
+			<Track number="3901"/>
+			<Track number="3902"/>
+			<Track number="3903"/>
+			<Track number="3904"/>
+			<Track number="3905"/>
+			<Track number="3906"/>
+			<Track number="3907"/>
+			<Track number="3908"/>
+			<Track number="3909"/>
+			<Track number="3910"/>
+			<Track number="3911">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3912"/>
+			<Track number="3913">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="3914">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="3915"/>
+			<Track number="3916">
+				<Status>
+					<ScRetHS/>					
+				</Status>
+			</Track>
+			<Track number="3917"/>
+			<Track number="3918"/>
+			<Track number="3919"/>
+			<Track number="3920"/>
+			<Track number="3921">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3922"/>
+			<Track number="3923">
+				<Status>
+					<ScStoHS/>		
+				</Status>
+			</Track>
+			<Track number="3924">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="3925"/>
+			<Track number="3926">
+				<Status>
+					<ScRetHS/>			
+				</Status>
+			</Track>
+			<Track number="3927"/>
+			<Track number="3928"/>
+			<Track number="3929"/>
+			<Track number="3930"/>
+			<Track number="3931">
+				<Status>
+					<RtvArriveHS/>					
+				</Status>
+			</Track>
+			<Track number="3932"/>
+			<Track number="3933">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="3934">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="3935"/>
+			<Track number="3936">
+				<Status>
+					<ScRetHS/>					
+				</Status>
+			</Track>
+			<Track number="3937"/>
+			<Track number="3938"/>
+			<Track number="3939"/>
+			<Track number="3940"/>
+			<Track number="3941">
+				<Status>
+					<RtvArriveHS/>
+				</Status>
+			</Track>
+			<Track number="3942"/>
+			<Track number="3943">
+				<Status>
+					<ScStoHS/>					
+				</Status>
+			</Track>
+			<Track number="3944">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="3945"/>
+			<Track number="3946">
+				<Status>
+					<ScRetHS/>					
+				</Status>
+			</Track>
+			<Track number="3947"/>
+			<Track number="3948"/>
+			<Track number="3949"/>
+			<Track number="3950"/>
+			<Track number="3951">
+				<Status>
+					<RtvArriveHS/>					
+				</Status>
+			</Track>
+			<Track number="3952"/>
+			<Track number="3953">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="3954">
+				<Status>
+					<RtvDepartHS/>					
+				</Status>
+			</Track>
+			<Track number="3955"/>
+			<Track number="3956">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track number="3957"/>
+			<Track number="3958"/>
+			<Track number="3959"/>
+			<Track number="3960"/>
+			<Track number="3961">
+				<Status>
+					<RtvArriveHS/>					
+				</Status>
+			</Track>
+			<Track number="3962"/>
+			<Track number="3963">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track number="3964">
+				<Status>
+					<RtvDepartHS/>
+				</Status>
+			</Track>
+			<Track number="3965"/>
+			<Track number="3966">
+				<Status>
+					<ScRetHS/>					
+				</Status>
+			</Track>
+		</Tracks>
+	</Equipment>
+	<Equipment class="CCvFx" number="12" device="CV04_ALARM_LAMP" cid="111104100">
+		<Lamps>
+			<Lamp cid="111104101" name="S/C #1_2"/>
+			<Lamp cid="111104102" name="S/C #3_4"/>
+			<Lamp cid="111104103" name="S/C #5_6"/>
+			<Lamp cid="111104104" name="1GROUP_PLC"/>
+			<Lamp cid="111104105" name="2GROUP_PLC"/>
+			<Lamp cid="111104106" name="3GROUP_PLC"/>
+			<Lamp cid="111104107" name="입고 RGVC"/>
+			<Lamp cid="111104108" name="출고 RGVC"/>
+			<Lamp cid="111104109" name="입하부 FENCE"/>
+			<Lamp cid="111104110" name="출하부 FENCE"/>
+		</Lamps>
+	</Equipment>
+
+	<Equipment class="CScDongJin" number="1" device="SCs1">
+		<Sc no="1" cid="111200001">
+			<ScStation id="901" name="S/C#1"/>
+			<StoHS>
+				<HS pos="3" tid="2916"/>
+				<HS pos="1" tid="3913"/>
+			</StoHS>
+			<RetHS>
+				<HS pos="4" tid="2913" deadlock="0">
+					<DestST from="101" to="199" desc="1F 전면부 Group"/>
+				</HS>
+				<HS pos="2" tid="3916" deadlock="0">
+					<DestST from="201" to="299" desc="1F 후면부 Group"/>
+					<DestST from="902" to="906" desc="SC Group"/>
+				</HS>
+			</RetHS>
+		</Sc>
+		<Sc no="2" cid="111200002">
+			<ScStation id="902" name="S/C#2"/>
+			<StoHS>
+				<HS pos="3" tid="2926"/>
+				<HS pos="1" tid="3923"/>
+			</StoHS>
+			<RetHS>
+				<HS pos="4" tid="2923" deadlock="0">
+					<DestST from="101" to="199" desc="1F 전면부 Group"/>
+				</HS>
+				<HS pos="2" tid="3926" deadlock="0">
+					<DestST from="201" to="299" desc="1F 후면부 Group"/>
+					<DestST from="901" to="901" desc="SC Group"/>
+					<DestST from="903" to="906" desc="SC Group"/>
+				</HS>
+			</RetHS>
+		</Sc>
+		<Sc no="3" cid="111200003">
+			<ScStation id="903" name="S/C#3"/>
+			<StoHS>
+				<HS pos="3" tid="2936"/>
+				<HS pos="1" tid="3933"/>
+			</StoHS>
+			<RetHS>
+				<HS pos="4" tid="2933" deadlock="0">
+					<DestST from="101" to="199" desc="1F 전면부 Group"/>
+				</HS>
+				<HS pos="2" tid="3936" deadlock="0">
+					<DestST from="201" to="299" desc="1F 후면부 Group"/>
+					<DestST from="901" to="902" desc="SC Group"/>
+					<DestST from="904" to="906" desc="SC Group"/>
+				</HS>
+			</RetHS>
+		</Sc>
+	</Equipment>
+
+	<Equipment class="CScDongJin" number="2" device="SCs2">
+		<Sc no="4" cid="111200004">
+			<ScStation id="904" name="S/C#4"/>
+			<StoHS>
+				<HS pos="3" tid="2946"/>
+				<HS pos="1" tid="3943"/>
+			</StoHS>
+			<RetHS>
+				<HS pos="2" tid="3946" deadlock="0">
+					<DestST from="201" to="299" desc="1F 후면부 Group"/>
+					<DestST from="901" to="903" desc="SC Group"/>
+					<DestST from="905" to="906" desc="SC Group"/>
+				</HS>
+			</RetHS>
+		</Sc>
+		<Sc no="5" cid="111200005">
+			<ScStation id="905" name="S/C#5"/>
+			<StoHS>
+				<HS pos="3" tid="2956"/>
+				<HS pos="1" tid="3953"/>
+			</StoHS>
+			<RetHS>
+				<HS pos="2" tid="3956" deadlock="0">
+					<DestST from="201" to="299" desc="1F 후면부 Group"/>
+					<DestST from="901" to="904" desc="SC Group"/>
+					<DestST from="906" to="906" desc="SC Group"/>
+				</HS>
+			</RetHS>
+		</Sc>
+		<Sc no="6" cid="111200006">
+			<ScStation id="906" name="S/C#6"/>
+			<StoHS>
+				<HS pos="3" tid="2963"/>
+				<HS pos="1" tid="3963"/>
+			</StoHS>
+			<RetHS>
+				<HS pos="2" tid="3966" deadlock="0">
+					<DestST from="201" to="299" desc="1F 후면부 Group"/>
+					<DestST from="901" to="905" desc="SC Group"/>
+				</HS>
+			</RetHS>
+		</Sc>
+	</Equipment>
+
+
+
+
+
+
+	<Equipment class="CLgv" number="1" device="RGVC1" cid="111310001">
+		<Cars>
+			<Rtv no= "1" cid="111300101" name="RTV  #1"/>
+			<Rtv no= "2" cid="111300102" name="RTV  #2"/>
+			<Rtv no= "3" cid="111300103" name="RTV  #3"/>
+			<Rtv no= "4" cid="111300104" name="RTV  #4"/>
+			<Rtv no= "5" cid="111300105" name="RTV  #5"/>
+		</Cars>
+		<DepartHS>
+			<HS pos= "5" tid="2931"/> 
+			<HS pos= "7" tid="2921"/>
+			<HS pos= "9" tid="2911"/>
+			<HS pos="11" tid="1126"/>
+			<HS pos="12" tid="2236"/>
+			<HS pos="13" tid="2229"/>
+			<HS pos="14" tid="2132"/>
+			<HS pos="16" tid="2133"/>
+			<HS pos="18" tid="2210"/>
+		</DepartHS>
+		<ArriveHS>
+			<HS pos= "1" tid="2961">
+				<DestST from="906" to="906" desc="S/C#6"/>
+			</HS>
+			<HS pos= "2" tid="2954">
+				<DestST from="905" to="905" desc="S/C#5"/>
+			</HS>
+			<HS pos= "3" tid="2944">
+				<DestST from="904" to="904" desc="S/C#4"/>
+			</HS>
+			<HS pos= "4" tid="2934">
+				<DestST from="903" to="903" desc="S/C#3"/>
+			</HS>
+			<HS pos= "6" tid="2924">
+				<DestST from="902" to="902" desc="S/C#2"/>
+			</HS>
+			<HS pos= "8" tid="2914">
+				<DestST from="901" to="901" desc="S/C#1"/>
+			</HS>
+			<HS pos="10" tid="1201">
+				<DestST from="111" to="111" desc="ByPass 작업대"/>
+				<DestST from="201" to="232" desc="1F 후면부 Group"/>
+			</HS>
+			<HS pos="15" tid="2101">
+				<DestST from="110" to="110" desc="생산 지대 P/D #2"/>
+			</HS>
+			<HS pos="17" tid="2217">
+				<DestST from="109" to="109" desc="생산 지대 P/D #1"/>
+			</HS>
+			<HS pos="19" tid="2201">
+				<DestST from="108" to="108" desc="생산 Tycon P/D"/>
+			</HS>
+		</ArriveHS>
+	</Equipment>
+
+	<Equipment class="CLgv" number="2" device="RGVC2" cid="111310002">
+		<Cars>
+			<Rtv no="1" cid="111300201" name="RTV #1"/>
+			<Rtv no="2" cid="111300202" name="RTV #2"/>
+			<Rtv no="3" cid="111300203" name="RTV #3"/>
+			<Rtv no="4" cid="111300204" name="RTV #4"/>
+			<Rtv no="5" cid="111300205" name="RTV #5"/>
+			<Rtv no="6" cid="111300206" name="RTV #6"/>
+			<Rtv no="7" cid="111300207" name="RTV #7"/>
+			<Rtv no="8" cid="111300208" name="RTV #8"/>
+		</Cars>
+		<DepartHS>
+			<HS pos="15" tid="3121"/>
+			<HS pos="18" tid="3221"/>
+			<HS pos="21" tid="3321"/>
+			<HS pos="24" tid="3412"/>
+			<HS pos="26" tid="3503"/>
+			<HS pos="1" tid="1210"/>
+			<HS pos="3" tid="3914"/>
+			<HS pos="5" tid="3924"/>
+			<HS pos="7" tid="3934"/>
+			<HS pos="9" tid="3944"/>
+			<HS pos="11" tid="3954"/>
+			<HS pos="13" tid="3964"/>
+		</DepartHS>
+		<ArriveHS>
+			<HS pos= "14" tid="3101">
+				<DestST from="201" to="201" desc="손상차 피킹대 #1"/>
+			</HS>
+			<HS pos= "16" tid="3102">
+				<DestST from="202" to="202" desc="손상차 피킹대 #2"/>
+			</HS>
+			<HS pos= "17" tid="3201">
+				<DestST from="203" to="203" desc="손상차 피킹대 #3"/>
+			</HS>
+			<HS pos= "19" tid="3202">
+				<DestST from="204" to="204" desc="손상차 피킹대 #4"/>
+			</HS>
+			<HS pos= "20" tid="3301">
+				<DestST from="205" to="205" desc="손상차 피킹대 #5"/>
+			</HS>
+			<HS pos= "22" tid="3302">
+				<DestST from="206" to="206" desc="손상차 피킹대 #6"/>
+			</HS>
+			<HS pos="23" tid="3401">
+				<DestST from="207" to="207" desc="벌크 전환 출고대"/>
+			</HS>
+			<HS pos="25" tid="3406">
+				<DestST from="208" to="208" desc="Tycon 좌대 출고대"/>
+			</HS>
+			<HS pos="27" tid="3501">
+				<DestST from="209" to="209" desc="좌대 상차 출고대"/>
+			</HS>
+			<HS pos="2" tid="3911">
+				<DestST from="901" to="901" desc="S/C#1"/>
+				<DestST from="101" to="112" desc="1F 전면부 Group"/>
+			</HS>
+			<HS pos="4" tid="3921">
+				<DestST from="902" to="902" desc="S/C#2"/>
+				<DestST from="101" to="112" desc="1F 전면부 Group"/>
+			</HS>
+			<HS pos="6" tid="3931">
+				<DestST from="903" to="903" desc="S/C#3"/>
+				<DestST from="101" to="112" desc="1F 전면부 Group"/>
+			</HS>
+			<HS pos="8" tid="3941">
+				<DestST from="904" to="904" desc="S/C#4"/>
+				<DestST from="101" to="112" desc="1F 전면부 Group"/>
+			</HS>
+			<HS pos="10" tid="3951">
+				<DestST from="905" to="905" desc="S/C#5"/>
+				<DestST from="101" to="112" desc="1F 전면부 Group"/>
+			</HS>
+			<HS pos="12" tid="3961">
+				<DestST from="906" to="906" desc="S/C#6"/>
+				<DestST from="101" to="112" desc="1F 전면부 Group"/>
+			</HS>
+		</ArriveHS>
+	</Equipment>
+</ECS>

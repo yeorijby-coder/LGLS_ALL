@@ -1,0 +1,325 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using EQP_SIM.Core;
+
+namespace EQP_SIM.Sim
+{
+    /// <summary>
+    /// 시나리오 엔진: 100ms 주기로 모든 컨베이어/차량 상태 머신을 구동하고,
+    /// 이벤트↔Ack 핸드셰이크(Event SET → ECS Ack SET → PLC가 둘 다 RESET, 슬라이드5)를 관리한다.
+    /// 상태는 파일(Data\)에 저장한다 — DB 미사용.
+    /// </summary>
+    public class ScenarioEngine : IDisposable
+    {
+        public readonly WorldModel World;
+        private readonly PlcIo io;
+
+        /// <summary>
+        /// [MODE] TARGET=WCS(기본) : 대체 WCS 체인 지원 — CV12/13 스왑 배치 + 재현/픽업 훅 + D영역 미러.
+        /// [MODE] TARGET=ECS : 구(원본) ECS 연동 — 원본 배치(C/V#12=입고, C/V#13=출고),
+        ///   차량 반송은 VehicleSim 의 실제 TRANSFER_REQUEST 핸드셰이크로만 진행(훅/미러 비활성).
+        /// </summary>
+        public bool WcsSupport { get; private set; }
+
+        /// <summary>
+        /// [MODE] LEGACY_HOOKS=1 : 구(§8~13) WCS 설계용 재현/픽업 훅 활성.
+        /// 현행 WCS 설계(2026-07-17: EQP_TASK 는 마스터 PLC COMM0 만 브리지, 스테이션·차량 애니메이션은
+        /// IO_TASK 가 DB 직접 구동 — FeedInGate/AutoRun*)에서는 훅이 IO_TASK 소유 상태를 오염시키므로 기본 OFF.
+        /// (예: 122 입고 트래킹 기록을 '출고 재현'으로 오인 → 파렛트 즉시 배출 → 입고 레그 교착)
+        /// </summary>
+        public bool LegacyWcsHooks { get; private set; }
+        private readonly Dictionary<string, ConveyorSim> conveyors = new Dictionary<string, ConveyorSim>();
+        private readonly Dictionary<string, VehicleSim> vehicles = new Dictionary<string, VehicleSim>();
+
+        // 진행 중 이벤트 핸드셰이크
+        private class PendingEvent
+        {
+            public string Owner, EventName, AckName;
+            public DateTime ExpireAt;   // Ack 미수신 시 자동 해제
+        }
+        private readonly List<PendingEvent> pendingEvents = new List<PendingEvent>();
+        private readonly object sync = new object();
+
+        private Thread tickThread;
+        private volatile bool running;
+        private string dataDir;
+        private DateTime nextSaveAt = DateTime.MinValue;
+        private StreamWriter logWriter;
+
+        // 타이밍 (ms) — ECS 판독주기(수 초)를 감안해 여유있게
+        public int MoveMs = 2000;
+        public int TravelMs = 2500;
+        public int WaitOutHoldMs = 9000;
+        public int OutRemoveMs = 6000;
+        public int OutTrackClearMs = 1000;   // [LGLS] 화물 배출 후 트래킹 제거까지 지연
+        public int FeedMs = 5000;
+        public int AckTimeoutMs = 60000;
+        public int UnstampedTimeoutMs = 30000;   // 입출고 겸용 C/V 미지정 파렛트 회수 대기
+
+        public event Action<string> LogAdded;
+        public event Action StateChanged;
+
+        // 랙 재고 (셀 BBbbLL → JOB)
+        public readonly Dictionary<string, string> Rack = new Dictionary<string, string>();
+        public int CompletedOutgoCount { get; private set; }
+
+        public ScenarioEngine(PlcIo io, SimConfig config)
+        {
+            this.io = io;
+            WcsSupport = !"ECS".Equals(config.Get("MODE", "TARGET", "WCS"), StringComparison.OrdinalIgnoreCase);
+            LegacyWcsHooks = WcsSupport && config.GetBool("MODE", "LEGACY_HOOKS", false);
+            World = new WorldModel(WcsSupport);
+            foreach (var def in World.Conveyors.Values)
+                conveyors[def.Id] = new ConveyorSim(def, io, this);
+            foreach (var def in World.Vehicles.Values)
+                vehicles[def.Id] = new VehicleSim(def, io, this);
+        }
+
+        public ConveyorSim Conveyor(string id) { return conveyors[id]; }
+        public IEnumerable<ConveyorSim> AllConveyors { get { return conveyors.Values; } }
+        public IEnumerable<VehicleSim> AllVehicles { get { return vehicles.Values; } }
+
+        public void Start(string dataDir, SimConfig config)
+        {
+            this.dataDir = dataDir;
+            Directory.CreateDirectory(dataDir);
+            logWriter = new StreamWriter(Path.Combine(dataDir,
+                "eqp_sim_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".log"), true, Encoding.UTF8) { AutoFlush = true };
+
+            MoveMs = config.GetInt("TIMING", "MOVE_MS", MoveMs);
+            TravelMs = config.GetInt("TIMING", "TRAVEL_MS", TravelMs);
+            WaitOutHoldMs = config.GetInt("TIMING", "WAITOUT_HOLD_MS", WaitOutHoldMs);
+            OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
+            OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);
+            FeedMs = config.GetInt("TIMING", "FEED_MS", FeedMs);
+            UnstampedTimeoutMs = config.GetInt("TIMING", "UNSTAMPED_TIMEOUT_MS", UnstampedTimeoutMs);
+
+            bool autoFeed = config.GetBool("FEED", "AUTO", true);
+            foreach (var cv in conveyors.Values)
+            {
+                if (cv.Def.IngoPath != null && cv.Def.No >= 11)
+                {
+                    cv.AutoFeedConfigured = config.GetBool("FEED", "CV" + cv.Def.No, true);
+                    cv.AutoFeed = autoFeed && cv.AutoFeedConfigured;
+                }
+                // [WCS 미러] 대체 WCS(WCS_TASK_CV)의 D영역 트랙 모델 매핑 (INI [WCS_MIRROR] CVnn=시작트랙)
+                cv.WcsTrackBase = config.GetInt("WCS_MIRROR", "CV" + cv.Def.No, 0);
+            }
+
+            LoadState();
+
+            foreach (var cv in conveyors.Values) cv.Initialize();
+            foreach (var v in vehicles.Values) v.Initialize();
+
+            running = true;
+            tickThread = new Thread(TickLoop) { IsBackground = true, Name = "ScenarioEngine" };
+            tickThread.Start();
+            Log("시나리오 엔진 시작 [" + (WcsSupport ? "WCS 모드" : "구 ECS 모드") +
+                "] (이동 " + MoveMs + "ms, 주행 " + TravelMs + "ms, WaitOut 체류 " + WaitOutHoldMs + "ms)");
+        }
+
+        private void TickLoop()
+        {
+            while (running)
+            {
+                try
+                {
+                    DateTime now = DateTime.Now;
+                    lock (sync)
+                    {
+                        ProcessHandshakes(now);
+                        foreach (var cv in conveyors.Values) cv.Tick(now);
+                        foreach (var v in vehicles.Values) v.Tick(now);
+                    }
+                    if (now >= nextSaveAt)
+                    {
+                        SaveState();
+                        nextSaveAt = now.AddSeconds(2);
+                    }
+                    var h = StateChanged;
+                    if (h != null) h();
+                }
+                catch (Exception ex)
+                {
+                    Log("엔진 오류: " + ex.Message);
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // 이벤트 ↔ Ack 핸드셰이크 (슬라이드 5: Reset By PLC When Event Reset)
+        // ------------------------------------------------------------------
+        public void RaiseEvent(string owner, string eventName, string ackName, int expireMs = 0)
+        {
+            io.SetBool(owner, eventName, true);
+            lock (sync)
+            {
+                pendingEvents.Add(new PendingEvent
+                {
+                    Owner = owner,
+                    EventName = eventName,
+                    AckName = ackName,
+                    ExpireAt = DateTime.Now.AddMilliseconds(expireMs > 0 ? expireMs : AckTimeoutMs)
+                });
+            }
+        }
+
+        /// <summary>이벤트 비트가 (Ack 완료로) 내려갔는지</summary>
+        public bool IsEventCleared(string owner, string eventName)
+        {
+            return !io.GetBool(owner, eventName);
+        }
+
+        private void ProcessHandshakes(DateTime now)
+        {
+            for (int i = pendingEvents.Count - 1; i >= 0; i--)
+            {
+                var pe = pendingEvents[i];
+                bool acked = pe.AckName != null && io.GetBool(pe.Owner, pe.AckName);
+                if (acked || now >= pe.ExpireAt)
+                {
+                    io.SetBool(pe.Owner, pe.EventName, false);
+                    if (pe.AckName != null) io.SetBool(pe.Owner, pe.AckName, false);
+                    pendingEvents.RemoveAt(i);
+                    if (!acked && pe.AckName != null)
+                        Log(pe.Owner + " " + pe.EventName + " Ack 타임아웃 — 자동 해제");
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // 랙 재고
+        // ------------------------------------------------------------------
+        public void StoreToRack(string cell, string palletId)
+        {
+            lock (sync) Rack[cell] = palletId ?? "";
+        }
+
+        public string TakeFromRack(string cell)
+        {
+            lock (sync)
+            {
+                string id;
+                if (Rack.TryGetValue(cell, out id)) { Rack.Remove(cell); return id; }
+                return null;
+            }
+        }
+
+        public void NotifyOutgoRemoved(string jobId)
+        {
+            CompletedOutgoCount++;
+        }
+
+        // ------------------------------------------------------------------
+        // 수동 조작 (UI)
+        // ------------------------------------------------------------------
+        public bool ManualInject(string conveyorId)
+        {
+            lock (sync)
+            {
+                ConveyorSim cv;
+                return conveyors.TryGetValue(conveyorId, out cv) && cv.InjectPallet();
+            }
+        }
+
+        public void ResetAll()
+        {
+            lock (sync)
+            {
+                pendingEvents.Clear();
+                Rack.Clear();
+                foreach (var cv in conveyors.Values) cv.Pallets.Clear();
+                io.Memory.Clear();
+                foreach (var cv in conveyors.Values) cv.Initialize();
+                foreach (var v in vehicles.Values) v.Initialize();
+                SaveState();
+            }
+            Log("전체 상태/메모리 초기화");
+        }
+
+        // ------------------------------------------------------------------
+        // 파일 저장/복원
+        // ------------------------------------------------------------------
+        private string StatePath { get { return Path.Combine(dataDir, "eqp_state.txt"); } }
+        private string MemoryPath { get { return Path.Combine(dataDir, "plc_memory.bin"); } }
+
+        private void SaveState()
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                lock (sync)
+                {
+                    foreach (var kv in Rack)
+                        sb.AppendLine("RACK," + kv.Key + "," + kv.Value);
+                    foreach (var cv in conveyors.Values)
+                        foreach (string line in cv.SaveLines())
+                            sb.AppendLine(line);
+                }
+                File.WriteAllText(StatePath, sb.ToString(), Encoding.UTF8);
+                io.Memory.Save(MemoryPath);
+            }
+            catch (Exception ex)
+            {
+                Log("상태 저장 실패: " + ex.Message);
+            }
+        }
+
+        private void LoadState()
+        {
+            try
+            {
+                if (!File.Exists(StatePath)) return;
+                foreach (string raw in File.ReadAllLines(StatePath))
+                {
+                    string[] p = raw.Split(',');
+                    if (p.Length >= 3 && p[0] == "RACK")
+                    {
+                        Rack[p[1]] = p.Length > 2 ? p[2] : "";
+                    }
+                    else if (p.Length >= 5 && p[0] == "CV")
+                    {
+                        ConveyorSim cv;
+                        int idx, dir;
+                        if (conveyors.TryGetValue(p[1], out cv) &&
+                            int.TryParse(p[2], out idx) && int.TryParse(p[4], out dir))
+                        {
+                            cv.RestorePallet(idx, p[3], (FlowDir)dir);
+                        }
+                    }
+                }
+                Log("저장 상태 복원: 랙 " + Rack.Count + "셀, 컨베이어 파렛트 " +
+                    conveyors.Values.Sum(c => c.Pallets.Count) + "개");
+            }
+            catch (Exception ex)
+            {
+                Log("상태 복원 실패: " + ex.Message);
+            }
+        }
+
+        public void Log(string msg)
+        {
+            try
+            {
+                if (logWriter != null)
+                    lock (logWriter)
+                        logWriter.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + msg);
+            }
+            catch { }
+            var h = LogAdded;
+            if (h != null) h(msg);
+        }
+
+        public void Dispose()
+        {
+            running = false;
+            try { SaveState(); } catch { }
+            try { if (logWriter != null) logWriter.Close(); } catch { }
+        }
+    }
+}

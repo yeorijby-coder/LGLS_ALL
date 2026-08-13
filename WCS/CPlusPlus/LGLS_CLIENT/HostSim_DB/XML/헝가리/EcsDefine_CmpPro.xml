@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>
+  <Equipment class="CCv" number="21" device="CV_E21" name="21GR" cid="1201021000">
+    <Tracks cid="1201021000">
+      <Track	number="21001"	NextTrack="0">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="21002"	NextTrack="0">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="21003"	NextTrack="0">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="21004"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="21005"	NextTrack="0"/>
+      <Track	number="21006"	NextTrack="0"/>
+      <Track	number="21007"	NextTrack="0"/>
+      <Track	number="21008"	NextTrack="0"/>
+      <Track	number="21009"	NextTrack="0"/>
+      <Track	number="21010"	NextTrack="0"/>
+      <Track	number="21011"	NextTrack="0">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="21012"	NextTrack="0">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="21013"	NextTrack="0">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="21014"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="21015"	NextTrack="0"/>
+      <Track	number="21016"	NextTrack="0"/>
+      <Track	number="21017"	NextTrack="0"/>
+      <Track	number="21018"	NextTrack="0"/>
+      <Track	number="21019"	NextTrack="0"/>
+      <Track	number="21020"	NextTrack="0"/>
+      <Track	number="21021"	NextTrack="0">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="21022"	NextTrack="0">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="21023"	NextTrack="0">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="21024"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="21025"	NextTrack="0"/>
+      <Track	number="21026"	NextTrack="0"/>
+      <Track	number="21027"	NextTrack="0"/>
+      <Track	number="21028"	NextTrack="0"/>
+      <Track	number="21029"	NextTrack="0"/>
+      <Track	number="21030"	NextTrack="0"/>
+      <Track	number="21031"	NextTrack="0"/>
+      <Track	number="21032"	NextTrack="0"/>
+      <Track	number="21033"	NextTrack="0"/>
+      <Track	number="21034"	NextTrack="0"/>
+      <Track	number="21035"	NextTrack="0"/>
+      <Track	number="21036"	NextTrack="0"/>
+      <Track	number="21037"	NextTrack="0"/>
+      <Track	number="21038"	NextTrack="0"/>
+      <Track	number="21039"	NextTrack="0"/>
+      <Track	number="21040"	NextTrack="0"/>
+      <Track	number="21041"	NextTrack="0"/>
+      <Track	number="21042"	NextTrack="0"/>
+      <Track	number="21043"	NextTrack="0"/>
+      <Track	number="21044"	NextTrack="0"/>
+      <Track	number="21045"	NextTrack="0"/>
+      <Track	number="21046"	NextTrack="0"/>
+      <Track	number="21047"	NextTrack="0"/>
+      <Track	number="21048"	NextTrack="0"/>
+      <Track	number="21049"	NextTrack="0"/>
+      <Track	number="21050"	NextTrack="0"/>
+      <Track	number="21051"	NextTrack="0">
+        <Status>
+          <StoStation name="Front StoStation #1"/>
+        </Status>
+      </Track>
+      <Track	number="21052"	NextTrack="0">
+        <Status>
+          <RetStation name="Front RetStation BCR"/>
+        </Status>
+      </Track>
+      <Track	number="21053"	NextTrack="0"/>
+      <Track	number="21054"	NextTrack="0"/>
+      <Track	number="21055"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="21056"	NextTrack="0"/>
+      <Track	number="21057"	NextTrack="0"/>
+      <Track	number="21058"	NextTrack="0">
+        <Status>
+          <StoStation name="Front StoStation #1"/>
+        </Status>
+      </Track>
+      <Track	number="21059"	NextTrack="0"/>
+      <Track	number="21060"	NextTrack="0"/>
+      <Track	number="21061"	NextTrack="0">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="21062"	NextTrack="0"/>
+      <Track	number="21063"	NextTrack="0"/>
+      <Track	number="21064"	NextTrack="0"/>
+      <Track	number="21065"	NextTrack="0">
+        <Status>
+          <RetStation name="Front RetStation"/>
+        </Status>
+      </Track>
+      <Track	number="21066"	NextTrack="0"/>
+      <Track	number="21067"	NextTrack="0"/>
+      <Track	number="21068"	NextTrack="0"/>
+      <Track	number="21069"	NextTrack="0"/>
+      <Track	number="21070"	NextTrack="0"/>
+      <Track	number="21071"	NextTrack="0"/>
+      <Track	number="21072"	NextTrack="0"/>
+      <Track	number="21073"	NextTrack="0"/>
+      <Track	number="21074"	NextTrack="0"/>
+      <Track	number="21075"	NextTrack="0"/>
+      <Track	number="21076"	NextTrack="0"/>
+      <Track	number="21077"	NextTrack="0"/>
+      <Track	number="21078"	NextTrack="0"/>
+      <Track	number="21079"	NextTrack="0"/>
+      <Track	number="21080"	NextTrack="0"/>
+      <Track	number="21081"	NextTrack="0"/>
+      <Track	number="21082"	NextTrack="0"/>
+      <Track	number="21083"	NextTrack="0"/>
+      <Track	number="21084"	NextTrack="0"/>
+      <Track	number="21085"	NextTrack="0"/>
+      <Track	number="21086"	NextTrack="0"/>
+      <Track	number="21087"	NextTrack="0"/>
+      <Track	number="21088"	NextTrack="0"/>
+      <Track	number="21089"	NextTrack="0"/>
+      <Track	number="21090"	NextTrack="0"/>
+      <Track	number="21091"	NextTrack="0"/>
+      <Track	number="21092"	NextTrack="0"/>
+      <Track	number="21093"	NextTrack="0"/>
+      <Track	number="21094"	NextTrack="0"/>
+      <Track	number="21095"	NextTrack="0"/>
+      <Track	number="21096"	NextTrack="0"/>
+      <Track	number="21097"	NextTrack="0"/>
+      <Track	number="21098"	NextTrack="0"/>
+      <Track	number="21099"	NextTrack="0"/>
+      <Track	number="21100"	NextTrack="0"/>
+      <Track	number="21101"	NextTrack="0">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="21102"	NextTrack="0">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="21103"	NextTrack="0">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="21104"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="21105"	NextTrack="0"/>
+      <Track	number="21106"	NextTrack="0"/>
+      <Track	number="21107"	NextTrack="0"/>
+      <Track	number="21108"	NextTrack="0"/>
+      <Track	number="21109"	NextTrack="0"/>
+      <Track	number="21110"	NextTrack="0"/>
+      <Track	number="21111"	NextTrack="0">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="21112"	NextTrack="0">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="21113"	NextTrack="0">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="21114"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="21115"	NextTrack="0"/>
+      <Track	number="21116"	NextTrack="0"/>
+      <Track	number="21117"	NextTrack="0"/>
+      <Track	number="21118"	NextTrack="0"/>
+      <Track	number="21119"	NextTrack="0"/>
+      <Track	number="21120"	NextTrack="0"/>
+      <Track	number="21121"	NextTrack="0">
+        <Status>
+          <RtvArriveHS/>
+        </Status>
+      </Track>
+      <Track	number="21122"	NextTrack="0">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="21123"	NextTrack="0">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="21124"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+        </Status>
+      </Track>
+      <Track	number="21125"	NextTrack="0"/>
+      <Track	number="21126"	NextTrack="0"/>
+      <Track	number="21127"	NextTrack="0"/>
+      <Track	number="21128"	NextTrack="0"/>
+      <Track	number="21129"	NextTrack="0"/>
+      <Track	number="21130"	NextTrack="0"/>
+      <Track	number="21131"	NextTrack="0"/>
+      <Track	number="21132"	NextTrack="0"/>
+      <Track	number="21133"	NextTrack="0"/>
+      <Track	number="21134"	NextTrack="0"/>
+      <Track	number="21135"	NextTrack="0"/>
+      <Track	number="21136"	NextTrack="0"/>
+      <Track	number="21137"	NextTrack="0"/>
+      <Track	number="21138"	NextTrack="0"/>
+      <Track	number="21139"	NextTrack="0"/>
+      <Track	number="21140"	NextTrack="0"/>
+      <Track	number="21141"	NextTrack="0"/>
+      <Track	number="21142"	NextTrack="0"/>
+      <Track	number="21143"	NextTrack="0"/>
+      <Track	number="21144"	NextTrack="0"/>
+      <Track	number="21145"	NextTrack="0"/>
+      <Track	number="21146"	NextTrack="0"/>
+      <Track	number="21147"	NextTrack="0"/>
+      <Track	number="21148"	NextTrack="0"/>
+      <Track	number="21149"	NextTrack="0"/>
+      <Track	number="21150"	NextTrack="0"/>
+      <Track	number="21151"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+          <RetStation name="Rear RetStation #1"/>
+        </Status>
+      </Track>
+      <Track	number="21152"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+          <RetStation name="Rear RetStation #2"/>
+        </Status>
+      </Track>
+      <Track	number="21153"	NextTrack="0">
+        <Status>
+          <RtvDepartHS/>
+          <StoStation name="Rear StoStation"/>
+        </Status>
+      </Track>
+    </Tracks>
+  </Equipment>
+
+
+  <Equipment class="CBcr" number="1" device="BCR_E01" name="Complete Product BCR #1" cid="1207000001" type="S" tabnumber="1" >
+    <BcrTrack tid="21052"/>
+  </Equipment>
+  <Equipment class="CBcr" number="2" device="BCR_E02" name="Complete Product BCR #2" cid="1207000002" type="S" tabnumber="1" >
+    <BcrTrack tid="21153"/>
+  </Equipment>
+
+
+  <Equipment class="CSc" number="1" device="SC_E29001" name="완제품 1호기" forktype="0" floorcount="1" cid="1202029001">
+    <ScStation id="29001" name="완제품 S/C#1" bankpos="3" bank="2" bay="32" level="10"/>
+    <StoHS>
+      <HS pos="1" tid="21002" PassTr="0" pair="0" stair="1"/>
+      <HS pos="3" tid="21102" PassTr="0" pair="0" stair="1"/>
+    </StoHS>
+    <RetHS>
+      <HS pos="2" tid="21003" deadlock="0" pair="0" stair="1">
+        <DestST from="21004" to="21004" desc="By-Pass"/>
+      </HS>
+      <HS pos="4" tid="21103" deadlock="0" pair="0" stair="1">
+        <DestST from="21104" to="21104" desc="By-Pass"/>
+      </HS>
+    </RetHS>
+  </Equipment>
+
+  <Equipment class="CSc" number="2" device="SC_E29002" name="완제품 2호기" forktype="0" floorcount="1" cid="1202029002">
+    <ScStation id="29002" name="완제품 S/C#2" bankpos="3" bank="2" bay="32" level="10"/>
+    <StoHS>
+      <HS pos="1" tid="21012" PassTr="0" pair="0" stair="1"/>
+      <HS pos="3" tid="21112" PassTr="0" pair="0" stair="1"/>
+    </StoHS>
+    <RetHS>
+      <HS pos="2" tid="21013" deadlock="0" pair="0" stair="1">
+        <DestST from="21014" to="21014" desc="By-Pass"/>
+      </HS>
+      <HS pos="4" tid="21113" deadlock="0" pair="0" stair="1">
+        <DestST from="21114" to="21114" desc="By-Pass"/>
+      </HS>
+    </RetHS>
+  </Equipment>
+
+  <Equipment class="CSc" number="3" device="SC_E29003" name="완제품 3호기" forktype="0" floorcount="1" cid="1202029003">
+    <ScStation id="29003" name="완제품 S/C#3" bankpos="3" bank="2" bay="32" level="10"/>
+    <StoHS>
+      <HS pos="1" tid="21022" PassTr="0" pair="0" stair="1"/>
+      <HS pos="3" tid="21122" PassTr="0" pair="0" stair="1"/>
+    </StoHS>
+    <RetHS>
+      <HS pos="2" tid="21023" deadlock="0" pair="0" stair="1">
+        <DestST from="21024" to="21024" desc="By-Pass"/>
+      </HS>
+      <HS pos="4" tid="21123" deadlock="0" pair="0" stair="1">
+        <DestST from="21124" to="21124" desc="By-Pass"/>
+      </HS>
+    </RetHS>
+  </Equipment>
+
+
+
+  <Equipment class="CRtv" number="1" device="RTV_E01" name="RTV 1호기" cid="1113032001">
+   <RtvStation id="32001" name="완제품 RTV#1" />
+    <DepartHS>
+      <HS pos=  "1" tid="21055" reject="0" main="0"/>
+      <HS pos=  "3" tid="21004" reject="0" main="0"/>
+      <HS pos=  "5" tid="21014" reject="0" main="0"/>
+      <HS pos=  "7" tid="21024" reject="0" main="0"/>
+    </DepartHS>
+    <ArriveHS>
+      <HS pos=  "2" tid="21064" reject="0" main="0">
+        <DestST from="21065" to="21065" desc=""/>
+      </HS>
+      <HS pos=  "4" tid="21001" reject="0" main="0">
+        <DestST from="29001" to="29001" desc=""/>
+        <DestST from="21151" to="21151" desc=""/>
+        <DestST from="21152" to="21152" desc=""/>
+      </HS>
+      <HS pos=  "6" tid="21011" reject="0" main="0">
+        <DestST from="29002" to="29002" desc=""/>
+        <DestST from="21151" to="21151" desc=""/>
+        <DestST from="21152" to="21152" desc=""/>
+      </HS>
+      <HS pos=  "8" tid="21021" reject="0" main="0">
+        <DestST from="29003" to="29003" desc=""/>
+        <DestST from="21151" to="21151" desc=""/>
+        <DestST from="21152" to="21152" desc=""/>
+      </HS>
+    </ArriveHS>
+    <Position>
+      <Dug pos="1"  EcsRailPos="1"/>
+      <Dug pos="2"  EcsRailPos="2"/>
+      <Dug pos="3"  EcsRailPos="3"/>
+      <Dug pos="4"  EcsRailPos="4"/>
+      <Dug pos="5"  EcsRailPos="5"/>
+      <Dug pos="6"  EcsRailPos="6"/>
+      <Dug pos="7"  EcsRailPos="7"/>
+      <Dug pos="8"  EcsRailPos="8"/>
+    </Position>
+  </Equipment>
+
+
+  <Equipment class="CRtv" number="2" device="RTV_E02" name="RTV 2호기" cid="1113032002">
+   <RtvStation id="32002" name="완제품 RTV#2" />
+    <DepartHS>
+      <HS pos=  "1" tid="21124" reject="0" main="0"/>
+      <HS pos=  "3" tid="21114" reject="0" main="0"/>
+      <HS pos=  "5" tid="21104" reject="0" main="0"/>
+      <HS pos=  "7" tid="21153" reject="0" main="0"/>
+    </DepartHS>
+    <ArriveHS>
+      <HS pos=  "2" tid="21121" reject="0" main="0">
+        <DestST from="29003" to="29003" desc=""/>
+        <DestST from="21065" to="21065" desc=""/>
+      </HS>
+      <HS pos=  "4" tid="21111" reject="0" main="0">
+        <DestST from="29002" to="29002" desc=""/>
+        <DestST from="21065" to="21065" desc=""/>
+      </HS>
+      <HS pos=  "6" tid="21101" reject="0" main="0">
+        <DestST from="29001" to="29001" desc=""/>
+        <DestST from="21065" to="21065" desc=""/>
+      </HS>
+      <HS pos=  "8" tid="21152" reject="0" main="0">
+        <DestST from="21152" to="21152" desc=""/>
+      </HS>
+      <HS pos=  "9" tid="21151" reject="0" main="0">
+        <DestST from="21152" to="21152" desc=""/>
+      </HS>
+    </ArriveHS>
+    <Position>
+      <Dug pos="1"  EcsRailPos="1"/>
+      <Dug pos="2"  EcsRailPos="2"/>
+      <Dug pos="3"  EcsRailPos="3"/>
+      <Dug pos="4"  EcsRailPos="4"/>
+      <Dug pos="5"  EcsRailPos="5"/>
+      <Dug pos="6"  EcsRailPos="6"/>
+      <Dug pos="7"  EcsRailPos="7"/>
+      <Dug pos="8"  EcsRailPos="8"/>
+      <Dug pos="9"  EcsRailPos="9"/>
+    </Position>
+  </Equipment>
+
+</ECS>

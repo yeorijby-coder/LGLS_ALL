@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>
+	<Equipment class="CCv" thread="01" number="1" device="CV_E01">
+		<Tracks plcno="01" cid="17110000" FirstTrack="001">
+			<Track	number="001">
+				<Status>
+					<StoStation name="1F 입고대" id="001"/>
+				</Status>
+			</Track>
+			<Track	number="002"/>
+			<Track	number="003"/>
+			<Track	number="004"/>
+			<Track	number="005"/>
+			<Track	number="006"/>
+			<Track	number="007"/>
+			<Track	number="008"/>
+			<Track	number="009">
+				<Status>
+					<RetStation name="1F 출고대" id="009"/>
+				</Status>
+			</Track>
+			<Track	number="010"/>
+			<Track	number="011">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track	number="012">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="013"/>
+			<Track	number="014"/>
+			<Track	number="015">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track	number="016">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="017"/>
+			<Track	number="018">
+				<Status>
+					<ScStoHS/>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="019">
+				<Status>
+					<StoStation name="2F 입출고대" id="019"/>
+					<RetStation name="2F 입출고대" id="019"/>
+				</Status>
+			</Track>
+			<Track	number="020"/>
+			<Track	number="021"/>
+			<Track	number="022">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track	number="023">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="024"/>
+		</Tracks>
+	</Equipment>
+	<Equipment class="CCv" thread="02" number="2" device="CV_E02">
+		<Tracks plcno="02" cid="17210100" FirstTrack="101">
+			<Track	number="101"/>	
+			<Track	number="102"/>
+			<Track	number="103">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track	number="104">	
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="105"/>
+			<Track	number="106"/>	
+			<Track	number="107"/>
+			<Track	number="108"/>	
+			<Track	number="109">
+				<Status>
+					<ScStoHS/>
+				</Status>
+			</Track>
+			<Track	number="110">
+				<Status>
+					<ScRetHS/>
+				</Status>
+			</Track>
+			<Track	number="111"/>
+			<Track	number="112"/>	
+			<Track	number="113"/>
+			<Track	number="114"/>	
+			<Track	number="115"/>
+			<Track	number="116"/>	
+			<Track	number="117"/>
+			<Track	number="118"/>	
+			<Track	number="119"/>
+			<Track	number="120"/>
+			<Track	number="121"/>
+			<Track	number="122"/>	
+			<Track	number="123"/>
+			<Track	number="124"/>
+			<Track	number="125"/>
+			<Track	number="126"/>
+			<Track	number="127">
+				<Status>
+					<RetStation name="1F 출고대(증설)" id="127"/>
+				</Status>
+			</Track>
+			<Track	number="128"/>
+			<Track	number="129"/>
+			<Track	number="130"/>
+			<Track	number="131">
+				<Status>
+					<StoStation name="1F 입출고대(증설)" id="131"/>
+					<RetStation name="1F 입출고대(증설)" id="131"/>
+				</Status>
+			</Track>
+			<Track	number="132"/>
+		</Tracks>
+	</Equipment>
+
+	<Equipment class="CSc" number="2" device="SC" thread="01">
+		<Scs>
+			<Sc plcno="01" number="901">
+				<ScStation name="S/C#1" bankpos="1" bank="2" bay="36" level="20"/>
+			</Sc>
+			<Sc plcno="02" number="902">
+				<ScStation name="S/C#2" bankpos="1" bank="2" bay="36" level="20"/>
+			</Sc>
+			<Sc plcno="03" number="903">
+				<ScStation name="S/C#3" bankpos="1" bank="2" bay="36" level="20"/>
+			</Sc>
+			<Sc plcno="04" number="904">
+				<ScStation name="S/C#4" bankpos="1" bank="2" bay="36" level="20"/>
+			</Sc>
+			<Sc plcno="05" number="905">
+				<ScStation name="S/C#5" bankpos="1" bank="2" bay="36" level="20"/>
+			</Sc>
+		</Scs>
+	</Equipment>
+</ECS>

@@ -1,0 +1,1533 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Font Name="굴림" Size="9" />
+  <Class Name="ECP.Com.FieldBus.AbstractFieldBusDriver" Collapsed="true">
+    <Position X="26.25" Y="7.25" Width="1.75" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\AbstractFieldBusDriver.cs</FileName>
+      <HashCode>ACoQgIEIAIAyYICEoCLCHgFoQgEaOA4EADDoRUGgCAE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="EzControl.Driver.MelsecNet.CMelsecNetDriver" Collapsed="true">
+    <Position X="26.25" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\Mnet\CMelsecNetDriver.cs</FileName>
+      <HashCode>AgAABWEIwqEAsJuCACAAAAhgEAkQIYEXQDCBIQWAACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="EzControl.Driver.MelsecNet.CMelsecNetMemory" Collapsed="true">
+    <Position X="90.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\Mnet\CMelsecNetMemory.cs</FileName>
+      <HashCode>IAIAEAEQQAAAgAEAABCgAAAAAAAIIYAIACAAAAAEAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="EzControl.Driver.MelsecNet.CMelsecNetMemoryCollection" Collapsed="true">
+    <Position X="92" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\Mnet\CMelsecNetMemory.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Com.Secs.AbstractSecsDriver" Collapsed="true">
+    <Position X="83.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>BQAAMAIAABAQIQJUEGAIYAIAACCEAAIkEQAIAACAAgA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Com.Secs.ProperyChangeEventArgs" Collapsed="true">
+    <Position X="81.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\ProperyChangeEventArgs.cs</FileName>
+      <HashCode>AAEAAAAAAAAAAAAAAAEgAAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Com.Secs.SecsEventArgs" Collapsed="true">
+    <Position X="79.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\SecsEventArgs.cs</FileName>
+      <HashCode>UAAAAAABAAAAIQAAAiAAAAIAAAgIAAAICAAEAFAABAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Com.Secs.SecsProperty" Collapsed="true">
+    <Position X="86.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\SecsProperty.cs</FileName>
+      <HashCode>QAwIIAIIIJCCAACBQZoBIQAAIYiAAAAJQJoAEEAEACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Com.Secs.SecsValue" Collapsed="true">
+    <Position X="90.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\SecsValue.cs</FileName>
+      <HashCode>AAEIAAAAIAAAAAACQQAAAAAAAAEgAAABABQAAABEEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Prj.SecsException" Collapsed="true">
+    <Position X="81.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Prj\SecsException.cs</FileName>
+      <HashCode>AAAAAAAAAAAEAAAIAAABAAAAgIABAAMAACAIAAAAEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.Hsms.HsmsConnection" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="86.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Hsms\HsmsConnection.cs</FileName>
+      <HashCode>LIQEBAgAkCCwCIFKYCjZMIKQAGgAEKAAAIESJoIEBlg=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.ComX.Secs.Secs1.Secs1Connection" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="76.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Secs1\Secs1Connection.cs</FileName>
+      <HashCode>IAUAFAqElDCREIFCMCDBQIZIhCBYECEAAYESFtIgAgw=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.ComX.Secs.Secs2.FormatException2" Collapsed="true">
+    <Position X="95.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Secs2\FormatException2.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.Secs2.Name" Collapsed="true">
+    <Position X="78" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Secs2\Name.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAEAAAAAAAAAgI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.Secs2.SML" Collapsed="true">
+    <Position X="95.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Secs2\SML.cs</FileName>
+      <HashCode>AAAAAAAAAAAQAAAGAAAAAAAACAAAAAAAAIAAAAAAIAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.Secs2.Gem.GemDate" Collapsed="true">
+    <Position X="78" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Secs2\Gem\GemDate.cs</FileName>
+      <HashCode>AAAAAAAAAAEAAAEAAAAAAAAAAAAAAAAABAAAAAAAIAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.SecsEvent" Collapsed="true">
+    <Position X="78" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\SecsEvent.cs</FileName>
+      <HashCode>ACAAAAAAAAAAAAAEAAABAAAAgIABAAMIACAIAAAAACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.SecsLogger" Collapsed="true">
+    <Position X="83.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\SecsLogger.cs</FileName>
+      <HashCode>AQCAIQACAgAAgIAAAABAAAAABAgAAAAAAAACCAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.SecsLoggingLevel" Collapsed="true">
+    <Position X="85" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\SecsLoggingLevel.cs</FileName>
+      <HashCode>AAICIAAIBhAAAAAAACAABAAAAAAAAAAEAAAgKEAEAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.Timer.Timer" Collapsed="true">
+    <Position X="79.75" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Timer\Timer.cs</FileName>
+      <HashCode>EQYAQgAAAAgAAAQEAAAABgAAAAAgAAAAAAAAAAIAggI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Secs.Timer.TimerData" Collapsed="true">
+    <Position X="81.5" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Timer\Timer.cs</FileName>
+      <HashCode>AAAgAAgAAAAQAAAAAAAAAgAgAAAAAAIAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Sockets.PersistentClientSocket" Collapsed="true">
+    <Position X="18.5" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\PersistentClientSocket.cs</FileName>
+      <HashCode>BAACgAgAAAAAAAAUAAAAAAAAABAAAAgAAAgAAAAAAAI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Sockets.PersistentServerSocket" Collapsed="true">
+    <Position X="20.75" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\PersistentServerSocket.cs</FileName>
+      <HashCode>BAQCgAgAAAAAAAAEAAAAAAAAAJAAAggAAAgAAAAAAAI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Sockets.PersistentSocket" Collapsed="true">
+    <Position X="19.75" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\PersistentSocket.cs</FileName>
+      <HashCode>BARiBAAAgQABUABAEAAAAIAAACAABAAAABAQgAEAIgI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Sockets.SocketInputStream" Collapsed="true">
+    <Position X="78" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\PersistentSocket.cs</FileName>
+      <HashCode>AAAAAAAAAAAAEAAAAAIAAAAgAAAAAAAAABAAAACAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Sockets.SocketOutputStream" Collapsed="true">
+    <Position X="79.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\PersistentSocket.cs</FileName>
+      <HashCode>AAAAAAAAAAAAEAAAAAIAAAAAAAAAAAAAABAAAAGAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Sockets.PersistentSocketState" Collapsed="true">
+    <Position X="95.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\PersistentSocket.cs</FileName>
+      <HashCode>gAQABAAAAAAAAAAAIAAAAAAEAAAAQAAAAAAAAgIAAQA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Sockets.SocketEvent" Collapsed="true">
+    <Position X="76.25" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\SocketEvent.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAEAAAAAAAAgIABAQIIAQEACAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.Frame1" Collapsed="true">
+    <Position X="76.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\Frame1.cs</FileName>
+      <HashCode>BCEIQAogACgcgXAiQACBEBQCAFnWQRkEJoQAAAIEACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.SecsTest" Collapsed="true">
+    <Position X="88.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\SecsTest.cs</FileName>
+      <HashCode>gADAUKAAAACIAOAAFASQAgQAABAIiAwDCFEgIUmBJAg=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.TestPersistentSocketGui" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="76.25" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\TestPersistenceSocketGui.cs</FileName>
+      <HashCode>ACCwAAAAACgAgJEQA4TAAAACQAUBAQAAAAEAASAAEIA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.ComX.Test.TestPersistentSocket" Collapsed="true">
+    <Position X="95.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\TestPersistentSocket.cs</FileName>
+      <HashCode>AAAAAIAAAAACAAECBCQBAABgAAAAAAAAGAAAAAIAIBA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.MessageData" Collapsed="true">
+    <Position X="92" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\TestPersistentSocket.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAEAAAABAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.Connection" Collapsed="true">
+    <Position X="93.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\TestPersistentSocket.cs</FileName>
+      <HashCode>ABAAAAAAACAAAAACAAAAAAAAAAAAAAAACAACAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.SendMessageThread" Collapsed="true">
+    <Position X="92" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\TestPersistentSocket.cs</FileName>
+      <HashCode>AAAAAAQAAAAAAAACAAAAAAAAAAgABAAAKAAAAAAAEAI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.MessageProcesser" Collapsed="true">
+    <Position X="93.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\TestPersistentSocket.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAiAAAAAAAAAAAABAgACAAAAAAAAAI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.ComX.Test.ExampleConnection" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="83.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\TestPersistentSocket.cs</FileName>
+      <HashCode>AAQABAAAgCCQAEBCACBBAIAAACAEEAAACAESJAAAAkg=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Db.Persistence" Collapsed="true">
+    <Position X="50.75" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Db\Persistence.cs</FileName>
+      <HashCode>AAIAgIAAAAAAAAAAAICAAAAAAAEABAAQAAAIgAAAEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Db.PreparedSqlParameter" Collapsed="true">
+    <Position X="76.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Db\PreparedSqlParameter.cs</FileName>
+      <HashCode>IIBAQJKABAAAAgCIAoIACAECIgABABMAAAAEgAEEACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.AbstractElement" Collapsed="true">
+    <Position X="56" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\AbstractElement.cs</FileName>
+      <HashCode>AIoABAAIEASgAJAEogCExAIABEAAAAAAQAAAAABEAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.AbstractModule" Collapsed="true">
+    <Position X="58.25" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\AbstractModule.cs</FileName>
+      <HashCode>AIAAAAAAgAAAAAAgABKAAIEAAADAAAAAAAAAAAEAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.AbstractSubSystem" Collapsed="true">
+    <Position X="57.25" Y="10" Width="1.75" />
+    <TypeIdentifier>
+      <FileName>Device\AbstractSubSystem.cs</FileName>
+      <HashCode>EABIAGAAAACIARBSAAKAAYICggCAIAAALQAKABgACCA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.AbstractUDPElement" Collapsed="true">
+    <Position X="56" Y="7.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\AbstractUDPElement.cs</FileName>
+      <HashCode>ABAAgABAAAAACAAAAACYEAQBAAACAAAAAAAAgAAAAEA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Equipment" Collapsed="true">
+    <Position X="57.25" Y="13" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Equipment.cs</FileName>
+      <HashCode>BQIEgJBAQgAAAAAAAAKAiRggQAEIIAAAIAEDAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.IODevice" Collapsed="true">
+    <Position X="52.75" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\IODevice.cs</FileName>
+      <HashCode>AQIAgIBAAAAAAAAAAAKAgAAAAAGIAAAAABACAAAEAgA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Module" Collapsed="true">
+    <Position X="59.5" Y="13" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Module.cs</FileName>
+      <HashCode>AQIAgIBAAAIAAAAAAAKAiQIAQAMIIAIEIAECAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.SubSystem" Collapsed="true">
+    <Position X="55" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\SubSystem.cs</FileName>
+      <HashCode>IQIAgIBAAAAAAAACAAKAgQgAQAEIIAAAIAECAABCAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Dispatch.Dispatcher" Collapsed="true">
+    <Position X="78" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Dispatcher\Dispatcher.cs</FileName>
+      <HashCode>BAABEAADACAAgAAIiAiIwQA4CAgAGBAAIAAABAIIhQI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Dispatch.WorkItem" Collapsed="true">
+    <Position X="85" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Dispatcher\WorkItem.cs</FileName>
+      <HashCode>ACAAAIABAARAAAAAAAAAAAAACAAABBCAAAAABIAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Dispatch.WorkItemComparer" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="86.75" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Dispatcher\WorkItem.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Device.Dispatch.WorkState" Collapsed="true">
+    <Position X="88.5" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Dispatcher\WorkState.cs</FileName>
+      <HashCode>IAAAAAAEAAAAwkAEgAAABAAAQQAAAQAQAAAgIAAEQAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Location.CarrierLocation" Collapsed="true">
+    <Position X="30.75" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Location\CarrierLocation.cs</FileName>
+      <HashCode>AAAAAIAAAAAAABAAAAKACAAAAgAAAAAAQAEAAEAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Location.MaterialLocation" Collapsed="true">
+    <Position X="31.75" Y="7.25" Width="2.25" />
+    <TypeIdentifier>
+      <FileName>Device\Location\MaterialLocation.cs</FileName>
+      <HashCode>AAoogIAAKAAECghAAAaIAAAMAAENAAAABAAIAAgAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Location.SubStrateLocation" Collapsed="true">
+    <Position X="33" Y="8.75" Width="2.5" />
+    <TypeIdentifier>
+      <FileName>Device\Location\SubStrateLocation.cs</FileName>
+      <HashCode>AAIAgIAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Observe.Observable" Collapsed="true">
+    <Position X="48.25" Y="7.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Observe\Observable.cs</FileName>
+      <HashCode>CQ5BssAKKpZwQthUeYfIrIjQwItItIEaThChQMIQwQo=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ECP.Device.Observe.ObservableCollection" Collapsed="true">
+    <Position X="81.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Observe\Observable.cs</FileName>
+      <HashCode>AAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Observe.ObservableChangeEventWrapper" Collapsed="true">
+    <Position X="79.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Observe\ObservableChangeEventWrapper.cs</FileName>
+      <HashCode>AAAAAAAAIAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Device.Observe.ObservableUtil" Collapsed="true">
+    <Position X="88.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Observe\ObservableUtil.cs</FileName>
+      <HashCode>AAAAEAAAAAAAAAMgAAAAAAAAAAAAAAAAAAAAAAAAAIA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Emulator.FieldBus.LauncherForSharedMemory" Collapsed="true">
+    <Position X="88.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Emulator\FieldBus\LauncherForSharedMemory.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAQAAAAAACAAAAAAAAABAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Emulator.FieldBus.ObservableSharedMemory" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="85" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Emulator\FieldBus\ObservableSharedMemory.cs</FileName>
+      <HashCode>AAAAAAAAIAAAAgAAAgAAAAIAgAAAAAAAAAACAAAAAAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Emulator.FieldBus.SharedMemoryForm" Collapsed="true">
+    <Position X="93.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Emulator\FieldBus\SharedMemoryForm.cs</FileName>
+      <HashCode>AAAAAAAAACAAAAAAAACAAAACAAAQAEBAAAACAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Event.ECPEventAdapter" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="85" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Event\ECPEventAdapter.cs</FileName>
+      <HashCode>AAAAAAAAAAAAABAAAAAAAAAAAAAiAAAAQAACCAAAAgA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Global.Com.FBConnectionState" Collapsed="true">
+    <Position X="86.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Com\FBConnectionState.cs</FileName>
+      <HashCode>oBAAEAAAAAAAAEAkgAEAAAQAgAAAQABAAAAgIIICEIA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Com.FieldBusDriverType" Collapsed="true">
+    <Position X="90.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Com\FieldBusDriverType.cs</FileName>
+      <HashCode>IBAAAAAAAAAAAGA0gASAAAAAAAAAAAAAAAUwZAIAEAg=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.DataType" Collapsed="true">
+    <Position X="76.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\DataType.cs</FileName>
+      <HashCode>IBAEACQCQAAAAEAkgAAQBgohiQIBCAABQAAgIAIYEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.ECPObject" Collapsed="true">
+    <Position X="31.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\ECPObject.cs</FileName>
+      <HashCode>AQAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.ECPProperties" Collapsed="true">
+    <Position X="90.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\ECPProperties.cs</FileName>
+      <HashCode>AkAAAECEAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAACAQA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.ExecutionMode" Collapsed="true">
+    <Position X="85" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\ExecutionMode.cs</FileName>
+      <HashCode>IBAAAAAAAAAAAEAkgAQAAAAAAAAEAAAAQAAgJAIAEAg=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.PropertyInfo" Collapsed="true">
+    <Position X="79.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\PropertyInfo.cs</FileName>
+      <HashCode>gAAAAAQAABAEAAAAAACAAAQAQABFAAAAQQAAAABAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.UserDefinedPropertyData" Collapsed="true">
+    <Position X="86.75" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\UserDefinedPropertyData.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAABAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.UserDefinedPropertyInfo" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="88.5" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\UserDefinedPropertyData.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEACAAAAAAAAAAABA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Global.Device.AccessType" Collapsed="true">
+    <Position X="86.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\AccessType.cs</FileName>
+      <HashCode>IBAAAAEAAAAAAEAkgAAAAAAAAAQIAAAAQQAgIAIEEAI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.CarrierElevType" Collapsed="true">
+    <Position X="79.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\CarrierElevType.cs</FileName>
+      <HashCode>IBAIAgAACCAAAEAkgAQAAAQAAAAAAAgAQAAgIAIAEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.CarrierHold" Collapsed="true">
+    <Position X="81.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\CarrierHold.cs</FileName>
+      <HashCode>IBAAAAAAAAAAAEAkgAAAEAAAQAAAAAAAQAAgIAIAECA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.CarrierProhibit" Collapsed="true">
+    <Position X="83.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\CarrierProhibit.cs</FileName>
+      <HashCode>IBAAAAAAAAAAAEAkgAAAEAAAQAAAAAAAQAAgIAIAECA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.CarrierState" Collapsed="true">
+    <Position X="85" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\CarrierState.cs</FileName>
+      <HashCode>IBCAAqAAAAAQAEAkgQAAAAEAgAACCAAAUAEgICIAEgQ=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.CarrierType" Collapsed="true">
+    <Position X="86.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\CarrierType.cs</FileName>
+      <HashCode>IBBAAIEAAAAAgEEkggAAABAgAAECAAAAQQAgqAYgEIE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.ElementType" Collapsed="true">
+    <Position X="93.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\ElementType.cs</FileName>
+      <HashCode>IDAAAAQAAAAAAEAkgAIAAAAAAAAAQAAAYAAgIAIAEAo=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.EquipmentType" Collapsed="true">
+    <Position X="76.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\EquipmentType.cs</FileName>
+      <HashCode>IFACAAAgAAAAAkCkgAoAAAAEAAADAAAIQQAgIAIAEIA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.LifterCarrierState" Collapsed="true">
+    <Position X="90.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\LifterCarrierState.cs</FileName>
+      <HashCode>IBAAAKAAAAAQAEAkgQAAAAEAgAAAAAAAQAAgIAIAEAQ=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.LocationLogicalState" Collapsed="true">
+    <Position X="95.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\LocationLogicalState.cs</FileName>
+      <HashCode>IBAAAAAAAAAAEEAkgAAAAABAAAAAAAAAQAAkIAIAUAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.LocationState" Collapsed="true">
+    <Position X="76.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\LocationState.cs</FileName>
+      <HashCode>IBAAAAAABAAAAEAkoEAAAABCAAAAAAAAQAAgIAJAEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.LocationType" Collapsed="true">
+    <Position X="78" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\LocationType.cs</FileName>
+      <HashCode>IBAAAAAAAAAAAEAkgAAAAAAAAAAAAgCAQBAgIAoAEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.ModuleType" Collapsed="true">
+    <Position X="95.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\ModuleType.cs</FileName>
+      <HashCode>IFACAAAgAAAAAkCkgAoAAAAEAAADAAAIQQAgIAIAEIA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Device.SubSystemType" Collapsed="true">
+    <Position X="92" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\SubSystemType.cs</FileName>
+      <HashCode>IBgOAgAAAAAAAEAkoESMAAAAAAAAAAABwAEgoAJAEFA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Exception.ECPException" Collapsed="true">
+    <Position X="86.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Exception\ECPException.cs</FileName>
+      <HashCode>AAAAAAAAAgAAAAAAAAAAAAAAAAABACAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Exception.ECPExceptionType" Collapsed="true">
+    <Position X="88.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Exception\ECPExceptionType.cs</FileName>
+      <HashCode>IBAAAIgAAAAAIEAkgAAAAAEAAAIACAAAAAAgIQIMEgA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Gui.TabData" Collapsed="true">
+    <Position X="93.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Gui\TabData.cs</FileName>
+      <HashCode>AAAAAAAACAAAAAAAAAAAAAAACAAAAAAAAAAAAEAAABA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Gui.WidgetData" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="79.75" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Gui\WidgetData.cs</FileName>
+      <HashCode>AAoAAAAAAAAAAAQAQAAEAAAEAAAAAAAAAABgAAAAIBA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Global.Service.PermissionData" Collapsed="true">
+    <Position X="93.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Service\PermissionData.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAABABAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Service.RoleData" Collapsed="true">
+    <Position X="88.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Service\RoleData.cs</FileName>
+      <HashCode>AAAAAAAAAAACAAAAAAAAACAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Service.UserData" Collapsed="true">
+    <Position X="85" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Service\UserData.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAhkCAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Global.Service.UserPermissionData" Collapsed="true">
+    <Position X="93.75" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Service\UserPermissionData.cs</FileName>
+      <HashCode>AAgAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAg=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.AbstractFieldBusDriverCreateOrEditForm" Collapsed="true">
+    <Position X="76.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditForm.cs</FileName>
+      <HashCode>AAAAAEAAACAIAAAAAACAAAACAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.AbstractFieldBusDriverCreateOrEditPanel" Collapsed="true">
+    <Position X="78" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\AbstractFieldBusDriverCreateOrEditPanel.cs</FileName>
+      <HashCode>ECQCAAEiwCAAAABsEACIIAICAAQAIIAAICQCkQQQgAI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.AbstractFieldBusDriverWizardForm" Collapsed="true">
+    <Position X="79.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\AbstractFieldBusDriverWizardForm.cs</FileName>
+      <HashCode>cAhAMAACACAAABFwEBDIBAACEcAABwAIAAAAAAEACCA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.ElementSelectionOrCreateWizard" Collapsed="true">
+    <Position X="92" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\ElementSelectionOrCreateWizard.cs</FileName>
+      <HashCode>AAAAAAAAACAAABBIAACEBAADEAAAAQAAAQAACAAAACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.ElementWizardForm" Collapsed="true">
+    <Position X="95.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\ElementWizardForm.cs</FileName>
+      <HashCode>AABCAAABQiQAAAAAAACEAAACAAAAEQAAAAAQAAAACAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.FieldBusDriverSelectForm" Collapsed="true">
+    <Position X="88.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\FieldBusDriverSelectForm.cs</FileName>
+      <HashCode>AAAAAAAAACAAABBAAACIBAACEIAAAAAIAAAAAQEACCA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.GridSizeDialog" Collapsed="true">
+    <Position X="83.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\GridSizeDialog.cs</FileName>
+      <HashCode>AAAAAAAAACABggAAAQCEBgACEAAAAAAIAAAAAQEAACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.MasterObservableCreateForm" Collapsed="true">
+    <Position X="88.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\MasterObservableCreateForm.cs</FileName>
+      <HashCode>AAABAAAAACAAAAAAAACAAAACAAAAAAAAAIAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.MasterObservableCreatePanel" Collapsed="true">
+    <Position X="90.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\MasterObservableCreatePanel.cs</FileName>
+      <HashCode>AAQCIMEgACCABACMEACJIQAGAQQAoAABICCE0QQAAAI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.SearchWidgetForm" Collapsed="true">
+    <Position X="95.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\SearchWidgetForm.cs</FileName>
+      <HashCode>AAAAIAAAACAAABBAAACoBAACEIAAAQAIAAAABQEAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.WidgetListForm" Collapsed="true">
+    <Position X="81.5" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\WidgetListForm.cs</FileName>
+      <HashCode>AABBAAAAACAAAABhAACAAAACAAAAAAQAAAAAAQAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.WidgetSizeForm" Collapsed="true">
+    <Position X="83.25" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\WidgetSizeForm.cs</FileName>
+      <HashCode>AABAAAAAACAAABAIAACIBAACEIAiAQAABQABAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.Property.BaseWidgetPropertyDialog" Collapsed="true">
+    <Position X="95.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\Property\BaseWidgetPropertyDialog.cs</FileName>
+      <HashCode>OGBBABAAQDhAiBAAASCMVAAKEAAMAQEIiAIiE6MRUgE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.Dialogs.Property.TextPropertyDialog" Collapsed="true">
+    <Position X="78" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\Dialogs\Property\TextPropertyDialog.cs</FileName>
+      <HashCode>CAACIgECACRgABQgIQCAAAEmAAAQEACAAAAQBCAgGAE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.ECPConfigForm" Collapsed="true">
+    <Position X="81.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\ECPConfigForm.cs</FileName>
+      <HashCode>KgoICKLAQOAAQRAjYCKA4I4HAIgZqACEICKECJggQQA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.ECPConfigPanel" Collapsed="true">
+    <Position X="83.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\ECPConfigPanel.cs</FileName>
+      <HashCode>ObKoN6/3csZ1ufPRaTPiE6IK9NrhYbD347VOFMdaCjE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Config.WidgetComparerByLocationX" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="78" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\ECPConfigPanel.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Gui.Config.RedoCommand" Collapsed="true">
+    <Position X="83.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Config\ECPConfigPanel.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Device.Oserve.ObservableSpyForm" Collapsed="true">
+    <Position X="86.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableSpyForm.cs</FileName>
+      <HashCode>AAAAAAAAACAAAAAAAACAAAACAAAAAAAEAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Device.Observe.ObservableViewControl" Collapsed="true">
+    <Position X="90.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableViewControl.cs</FileName>
+      <HashCode>BBDEiKAoQCICoAVESgSiAEKaABFQgAEAVFAwAQUiQEA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.LogIn.LoginForm" Collapsed="true">
+    <Position X="85" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\LogIn\LoginForm.cs</FileName>
+      <HashCode>AACCAAAgACAAABQAIIDEAAACAAAAkAICAQEgAQAAAAQ=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Monitor.MonitorWidgetVS" Collapsed="true">
+    <Position X="76.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Monitor\MonitorWidgetVS.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.User.AddOrModifyPrivilegeForm" Collapsed="true">
+    <Position X="88.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\User\AddOrModifyPrivilegeForm.cs</FileName>
+      <HashCode>AABCKAAAADQBgAQAAACEAgACAAAAEAAAAAAQAAAQAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.User.AddOrModifyRoleForm" Collapsed="true">
+    <Position X="90.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\User\AddOrModifyRoleForm.cs</FileName>
+      <HashCode>BAIGUABIALQAgTRIAACEQCAiAgAAEAAEABAQEAMACAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.User.AddOrModifyUserForm" Collapsed="true">
+    <Position X="92" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\User\AddOrModifyUserForm.cs</FileName>
+      <HashCode>BAgGEAAIILAQgDxQgACEAAAmCgACkAIECAIgEoMAAAE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.User.PrivilegeForm" Collapsed="true">
+    <Position X="78" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\User\PrivilegeForm.cs</FileName>
+      <HashCode>gAAAAAEQQCAAAAAAABCAAAACYgAQAAAAYAICBAAEACI=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.User.RoleForm" Collapsed="true">
+    <Position X="90.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\User\RoleForm.cs</FileName>
+      <HashCode>AAAAAAEQRCAAQAAAAACIAAACAgAQAAABYAKARAAAAAg=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.User.UserForm" Collapsed="true">
+    <Position X="90.25" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\User\UserForm.cs</FileName>
+      <HashCode>AAAAAAEQQCBAAAAAQACACAACAoAQAABAYAIQBABAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.EventViewerForm" Collapsed="true">
+    <Position X="81.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\EventViewerForm.cs</FileName>
+      <HashCode>AAAEIQEAkCEJAAAICACAggNCQAEiAQQAAAACDQAAoFA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.FillColorFiter" Collapsed="true">
+    <Position X="93.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\FillColorImage.cs</FileName>
+      <HashCode>AAAACAAIABAAAAAEAAAACAAAAQAAAAAAAAAACAgAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.ARGB" Collapsed="true">
+    <Position X="93.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\FillColorImage.cs</FileName>
+      <HashCode>AAACAAAAAAAAAgAAAAAAAAAAAAAAABAAAAAAqBEAAQA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.Rubberbandline" Collapsed="true">
+    <Position X="92" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandLine.cs</FileName>
+      <HashCode>AAAAEAIAIAAAAAAkAAqEAAAgIAAIAAAACgAAAAAABAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.RubberbandRectangle" Collapsed="true">
+    <Position X="93.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandRects.cs</FileName>
+      <HashCode>AAAAgQIAAAAAAAAAAAoAAAIAAQAgAAAACgCEAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Gui.Util.Vector" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="76.25" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\Vector.cs</FileName>
+      <HashCode>gQIAQAABAAAAAAAE6AEDAABAQQAAAJAAAAIMAAAAYjE=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Interfaces.ValueChangeEventWrapper" Collapsed="true">
+    <Position X="95.5" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Interfaces\IValue.cs</FileName>
+      <HashCode>AAAAAABAAAAAAAAAAAAIAAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Properties.Resources" Collapsed="true">
+    <Position X="86.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAABEAAAAQAAAAAAAAAAAAAAAIA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.AbstractManager" Collapsed="true">
+    <Position X="35.75" Y="7.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\AbstractManager.cs</FileName>
+      <HashCode>AAgABAAIAAAAgAAAAAQIAAAACAAQAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ECP.Service.AbstractObjectManager" Collapsed="true">
+    <Position X="30.25" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\AbstractObjectManager.cs</FileName>
+      <HashCode>AAAAACCAAAAAIEAAAACCAgAAGCIAAAgAAAAQCAIBBAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ECP.Service.Manager" Collapsed="true">
+    <Position X="35.75" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Manager.cs</FileName>
+      <HashCode>AQIAgIAgAAAAAAAAAACAAAAAAAEAAAABAAAAAAIAAgA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Alarm.AlarmManager" Collapsed="true">
+    <Position X="34.75" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Alarm\AlarmManager.cs</FileName>
+      <HashCode>AAIAgIAAAAgAAABAEMCCAAAAAAEQBUAAAgAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Alarm.EcpAlarm" Collapsed="true">
+    <Position X="79.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Alarm\EcpAlarm.cs</FileName>
+      <HashCode>AAIAAAABAAAAAAAAAACAEAAACAABAAAAAQGAEAACCAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Alarm.SubSystemAlarm" Collapsed="true">
+    <Position X="50.5" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Alarm\SubSystemAlarm.cs</FileName>
+      <HashCode>AAIAAJAAAAAAAAAAAAKAABAAAAEAAAAAEAAAAAAAABA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Device.DeviceManager" Collapsed="true">
+    <Position X="39.25" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Device\DeviceManager.cs</FileName>
+      <HashCode>CAIAgIAAQAAAAgAAAACAgAAAAEEAAEgIAEAAAAgAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.EventBroker.EventBrokerManager" Collapsed="true">
+    <Position X="41.5" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\EventBroker\EventBrokerManager.cs</FileName>
+      <HashCode>AAIAgIAAAAAAAQAAAEKAAEAAgIEABACAEAACCAAgAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.EventBroker.EventManagerTestClient" Collapsed="true">
+    <Position X="78" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\EventBroker\EventManagerTestClient.cs</FileName>
+      <HashCode>AAAAAAAAAAAAQAAAAAAAAAAAAIACAAAAUAACGAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.EventBroker.EventTestClient" Collapsed="true">
+    <Position X="79.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\EventBroker\EventTestClient.cs</FileName>
+      <HashCode>AAAAAAAAAAAAQAAAEAAAAAIAAIBAAAIIAAAAABAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.EventBroker.RemoteEvent" Collapsed="true">
+    <Position X="85" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\EventBroker\RemoteEvent.cs</FileName>
+      <HashCode>AAAAAAAAAAAABAAAAECIAACAAAAAAAAAAAAAAAAAACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.EventBroker.WrapperRemoteEvent" Collapsed="true">
+    <Position X="90.25" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\EventBroker\WrapperRemoteEvent.cs</FileName>
+      <HashCode>ABAAAAAAAAAAAAAAEAAIAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Gui.GUIManager" Collapsed="true">
+    <Position X="28" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Gui\GUIManager.cs</FileName>
+      <HashCode>AAEAAAAEAAAAAAAEAAGAABAQAAAAEAAAEAAAAAAgAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Logger.Category" Collapsed="true">
+    <Position X="88.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Logger\Category.cs</FileName>
+      <HashCode>ABAAAAABgAEACEAEkAAIAAAAAAAAAAAAAAggJAIAEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Logger.GenericParser" Collapsed="true">
+    <Position X="79.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Logger\GenericParser.cs</FileName>
+      <HashCode>CAAAAAABQAAAAAAgAASAAgAAAAAAAAAAAACQAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Logger.Log" Collapsed="true">
+    <Position X="79.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Logger\Log.cs</FileName>
+      <HashCode>BEQMCAABgAkCCACOAAiEjAAAAJkAAAQBJAASBKRBSAQ=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Logger.LogData" Collapsed="true">
+    <Position X="81.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Logger\LogData.cs</FileName>
+      <HashCode>AAABQIACAAAgACAAAAIAAAAAAIEAQAAAAAAYAAAAEAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Logger.LogDataHandle" Collapsed="true">
+    <Position X="83.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Logger\LogDataHandle.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAAAABAAAAABAQAACAgIAAgA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Logger.LogManager" Collapsed="true">
+    <Position X="32.5" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Logger\LogManager.cs</FileName>
+      <HashCode>AAIAgIAAAAAAAAAAAgCAIAAAAAEAAAAAQAAAAgAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Material.AbstractMaterial" Collapsed="true">
+    <Position X="46" Y="7.25" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Material\AbstractMaterial.cs</FileName>
+      <HashCode>AAIAgIAAAAAAAAAAAACAAAAAAAEAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Material.Carrier" Collapsed="true">
+    <Position X="46" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Material\Carrier.cs</FileName>
+      <HashCode>QAYAkIGAAIADiAAIRB6AgAQEAIEJAAADwQAAAsAAABA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Material.CarrierManager" Collapsed="true">
+    <Position X="37" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Material\CarrierManager.cs</FileName>
+      <HashCode>EAIAgIAAQAAAAgAIAAKIAAAAAAEIAACgAAABIMQgAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Statistics.StatisticsCollector" Collapsed="true">
+    <Position X="86.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Statistics\StatisticsCollector.cs</FileName>
+      <HashCode>AAAAAAAAAAAAIAAAAACEAAEABBFAAAAAQAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Statistics.StatisticsManager" Collapsed="true">
+    <Position X="43.75" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Statistics\StatisticsManager.cs</FileName>
+      <HashCode>AAIBgIAAEAAAAAAAAAAAAAAAAAEAAAAAAAAAEAIAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.Statistics.Trigger" Collapsed="true">
+    <Position X="83.25" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\Statistics\Trigger.cs</FileName>
+      <HashCode>AAAAAAAAAIIAAAACAAAIAAAQBAAAAAAAAAACAAAAAgA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Service.User.UserManager" Collapsed="true">
+    <Position X="30.25" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\User\UserManager.cs</FileName>
+      <HashCode>QAIBioAAASiAiQQEAACABAAAAAEAICoBEAkBQAAwIAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.Cache.AbstractObjectManager" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="81.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\Cache\AbstractObjectManager.cs</FileName>
+      <HashCode>AAAAACCAAAAAIEAAAACCAgAAGCIAAAgAAAAQCAIBBAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Util.Cache.CacheInfo" Collapsed="true">
+    <Position X="76.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\Cache\CacheInfo.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAIAAAAAAAAQAAAAAEAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.Cache.CacheSize" Collapsed="true">
+    <Position X="78" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\Cache\CacheSize.cs</FileName>
+      <HashCode>ACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.Cache.LRUCache" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="86.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\Cache\LRUCache.cs</FileName>
+      <HashCode>AAAAAQAAAACgBCBUAACCBgAiAAAEMgAABBGACAAAAAg=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Util.Client.UserPermission" Collapsed="true">
+    <Position X="92" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\Client\UserPermission.cs</FileName>
+      <HashCode>ACCAAAAAIAAAAAQCCAIAAAACDBBQQAEAWAABBAAAQAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.CryptorEngine" Collapsed="true">
+    <Position X="95.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\CryptorEngine.cs</FileName>
+      <HashCode>AQAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.FIFOQueue" Collapsed="true">
+    <Position X="92" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\FIFOQueue.cs</FileName>
+      <HashCode>AABAIAIAAAACAADEAAGAIAAAgAAAACAIAAAAAAIAAAg=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.GlobalKeyboardHook" Collapsed="true">
+    <Position X="81.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\GlobalKeyboardHook.cs</FileName>
+      <HashCode>AEAABAAAAAAAgAAAASgBDAAAAQAAgABDCSAAQgAgACA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.Helper" Collapsed="true">
+    <Position X="85" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\Helper.cs</FileName>
+      <HashCode>AIAAAAAAAAAAAAQAABAAAAAAAAAAAQAAAAAQBEBMAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.LocalLog" Collapsed="true">
+    <Position X="92" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\LocalLog.cs</FileName>
+      <HashCode>ACQhAAAAAAGAAAAEAAAAAAAAFIhkAAgBEAACAAAkQAE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.LocalLogInfo" Collapsed="true">
+    <Position X="93.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\LocalLog.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAACgAAAAAAAAAAAAAAAAgAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.ObservableConfigGenerator" Collapsed="true">
+    <Position X="83.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\ObservableConfigGenerator.cs</FileName>
+      <HashCode>AIAAAAAQAAEABAAIAERAAAACIAAAAAAAAAAAQEAABAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.OptionValues" Collapsed="true">
+    <Position X="92" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\OptionValues.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.StatisticalLog" Collapsed="true">
+    <Position X="83.25" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\StatisticalLog.cs</FileName>
+      <HashCode>ICQhAAAAABGAQAAEAAAAAAAAAMhkAAgAAAACSAR0QAE=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.StatisticalLogInfo" Collapsed="true">
+    <Position X="85" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\StatisticalLog.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAACgAAAAAAAAAAAAABAAgEAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.StatisticalFileModificationComparer" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="81.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\StatisticalLog.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Util.StreamTokenizer" Collapsed="true">
+    <Position X="88.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\StreamTokenizer.cs</FileName>
+      <HashCode>IBIQSYAGACEgFCAEhBkABAigSCBEARAAkAFAAAIQIAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.StringTokenizer" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="90.25" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\StringTokenizer.cs</FileName>
+      <HashCode>ACMAAAAAAIAEBBAACAAIAAQCAIAAAAAAgAIAAIADAAA=</HashCode>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="ECP.Util.UDProperty.AbstractUserDefindManager" Collapsed="true">
+    <Position X="85" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\UDProperty\AbstractUserDefindManager.cs</FileName>
+      <HashCode>ABAAgABAAAAACAAAAACYEAQBAAACAAAAAAAAgAAAAEA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ECP.Util.UDProperty.UserDefinedProperty" Collapsed="true">
+    <Position X="28.5" Y="7.25" Width="2.5" />
+    <TypeIdentifier>
+      <FileName>Util\UDProperty\UserDefinedProperty.cs</FileName>
+      <HashCode>QAIBgIAAAAMAAEAAACCAAoQAACMsACAAAAAgAoAAABA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="ECP.Com.FieldBus.ICnnStrEditor" Collapsed="true">
+    <Position X="78" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\GenericConnectionString.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAIAAAAgAAAAAAAAAAAAAAAAgAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.ComX.Secs.SecsTransfer" Collapsed="true">
+    <Position X="90.25" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\SecsTransfer.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAEAAAAAAAAAIAAAAAAAAgAAAACAEAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.ComX.Secs.Timer.TimerListener" Collapsed="true">
+    <Position X="93.75" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Secs\Timer\TimerListener.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.ComX.Sockets.SocketListener" Collapsed="true">
+    <Position X="92" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Sockets\SocketListener.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.ComX.Test.Logger" Collapsed="true">
+    <Position X="88.5" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>ComX\Test\Logger.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.Interfaces.Emulator.ISimulation" Collapsed="true">
+    <Position X="85" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Interfaces\Emulator\ISimulation.cs</FileName>
+      <HashCode>AAAAAAAAIAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.Interfaces.IValue" Collapsed="true">
+    <Position X="86.75" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Interfaces\IValue.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAgAAAAAAAAAAAAAAAAEAAAAgAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.Interfaces.Service.EventBroker.IECPListener" Collapsed="true">
+    <Position X="79.75" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Interfaces\Service\EventBroker\IECPListener.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.Interfaces.Service.IManager" Collapsed="true">
+    <Position X="81.5" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Interfaces\Service\IManager.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.Service.User.IPermission" Collapsed="true">
+    <Position X="83.25" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\User\IPermission.cs</FileName>
+      <HashCode>AAAAAAAAQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="ECP.Util.Cache.CacheObjectManager" Collapsed="true">
+    <Position X="76.25" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Util\Cache\CacheObjectManger.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAQAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="EzControl.Driver.MelsecNet.enumDeviceType" Collapsed="true">
+    <Position X="83.25" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\Mnet\CMelsecNetMemory.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAEQgAAAAAAAAAAIEIYQA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="EzControl.Driver.MelsecNet.enumMemoryType" Collapsed="true">
+    <Position X="86.75" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\Mnet\CMelsecNetMemory.cs</FileName>
+      <HashCode>AAEAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Global.Device.enumCarrierSizeType" Collapsed="true">
+    <Position X="81.5" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Device\GlobalEnum.cs</FileName>
+      <HashCode>AAAAAAAAACAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Global.Service.Direction" Collapsed="true">
+    <Position X="78" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Service\LogConstant.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAABAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Global.Service.Category" Collapsed="true">
+    <Position X="76.25" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Global\Service\LogConstant.cs</FileName>
+      <HashCode>AAAAAAABgAEAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Gui.Device.Observe.ObservableViewAccessMode" Collapsed="true">
+    <Position X="88.5" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableViewControl.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAIA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Gui.Util.PenStyles_Line_Line" Collapsed="true">
+    <Position X="92" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandLine.cs</FileName>
+      <HashCode>QEAAEIAAQAAAIBAAEAAAAAEwBBAACAAAAAAYAYAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Gui.Util.drawingMode" Collapsed="true">
+    <Position X="79.75" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandLine.cs</FileName>
+      <HashCode>AAAAAAAAAAAAgAgABAgAJBABAQAADAEAAAAAAAAAACE=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Gui.Util.PenStyles" Collapsed="true">
+    <Position X="90.25" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Util\RubberbandRects.cs</FileName>
+      <HashCode>AEAAAAAAAAAAABAAAAAAAAEQAAAAAAAAAAAQAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ECP.Interfaces.Emulator.enumMemoryTpe" Collapsed="true">
+    <Position X="85" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Interfaces\Emulator\ISimulation.cs</FileName>
+      <HashCode>AAAAAAAAAAACAAAAAAgAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Enum>
+  <Delegate Name="ECP.Com.FieldBus.delegateDriverConnectionStateChanged" Collapsed="true">
+    <Position X="79.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\AbstractFieldBusDriver.cs</FileName>
+      <HashCode>AAAIAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.FieldBus.delegateDriverErrorOccurred" Collapsed="true">
+    <Position X="81.5" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\FieldBus\AbstractFieldBusDriver.cs</FileName>
+      <HashCode>AAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.ReceivedMessage" Collapsed="true">
+    <Position X="95.5" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.UnknownMessage" Collapsed="true">
+    <Position X="88.5" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.TimeoutOccured" Collapsed="true">
+    <Position X="86.75" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.ReceivedInvalidMessage" Collapsed="true">
+    <Position X="93.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.Connected" Collapsed="true">
+    <Position X="78" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.Disconnected" Collapsed="true">
+    <Position X="92" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.AbortMessage" Collapsed="true">
+    <Position X="76.25" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.Secs1Log" Collapsed="true">
+    <Position X="79.75" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.Secs2Log" Collapsed="true">
+    <Position X="81.5" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.SendMessage" Collapsed="true">
+    <Position X="85" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.ReplyMessage" Collapsed="true">
+    <Position X="78" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\AbstractSecsDriver.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Com.Secs.SecsPropertyChange" Collapsed="true">
+    <Position X="83.25" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Com\Secs\SecsProperty.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAACAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Device.Observe.delegateObservableLogEvent" Collapsed="true">
+    <Position X="85" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Observe\Observable.cs</FileName>
+      <HashCode>AAAAAAAACAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Device.Observe.DelegateObservableValueChanged" Collapsed="true">
+    <Position X="86.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Observe\ObservableChangeEventWrapper.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAgA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Device.Observe.DelegateObservableEvent" Collapsed="true">
+    <Position X="83.25" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Device\Observe\ObservableChangeEventWrapper.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Gui.Device.Observe.DelegateSelectedItemChanged" Collapsed="true">
+    <Position X="88.5" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Gui\Device\Oserve\ObservableViewControl.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Interfaces.DelegateValueChanged" Collapsed="true">
+    <Position X="90.25" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Interfaces\IValue.cs</FileName>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAgA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="ECP.Service.EventBroker.RemoteEventHandler" Collapsed="true">
+    <Position X="76.25" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <FileName>Service\EventBroker\RemoteEvent.cs</FileName>
+      <HashCode>AABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Delegate>
+</ClassDiagram>

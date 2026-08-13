@@ -1,0 +1,2518 @@
+
+
+===== slide 1 =====
+프로젝트
+LG 
+생명과학 물류창고
+시스템
+ECS
+방법론
+단계
+Stage
+분석
+Step
+Task
+문서번호
+ECS-
+분석
+-PLC
+사양및시나리오
+_LG
+생명과학
+작성자
+윤선화
+버전
+0.1
+작성일자
+2009.10.20
+PLC 
+사양 및 시나리오
+승
+인
+서
+명
+작성자
+QA
+PM
+고객
+
+===== slide 2 =====
+버전
+변경일
+변경 내용
+작성자
+0.1
+2009.10.10
+최초 작성
+윤선화
+개정 이력
+
+===== slide 3 =====
+물류 창고 
+Layout
+입고 
+C/V
+범례
+출고 
+C/V
+Conveyor
+Hi-Rack
+Stacker Crane
+RGV
+4
+3
+6
+5
+8
+7
+10
+9
+12
+11
+14
+13
+16
+15
+18
+17
+20
+19
+22
+21
+25
+26
+23
+24
+27
+31
+1
+2
+3
+4
+5
+1
+2
+S/C #1
+S/C #2
+S/C #3
+S/C #4
+S/C #5
+RGV #1
+C/V #1
+C/V #2
+C/V #3
+C/V #4
+C/V #6
+C/V #5
+C/V #7
+C/V #8
+C/V #9
+C/V #10
+C/V #11
+C/V #12
+C/V #13
+C/V #14
+C/V #15
+28
+29
+30
+실온창고 
+:
+6 * 10 *14
+냉동창고 
+:
+4 * 10 *14
+
+===== slide 4 =====
+PLC 
+시스템 구성도
+S/C #1
+S/C #2
+S/C #3
+S/C #4
+S/C #5
+Master PLC
+(C/V PlC)
+ECS PC
+ETHERNET(
+사설망
+)
+WMS
+ETHERNET(
+사설망
+)
+
+===== slide 5 =====
+Command Sequence (Common Rule)
+Status Bit
+Status Word
+M- PLC
+Event Trigger
+Event Set
+Event Reset
+Status Bit Read
+Status Word Read
+ECS
+Event Handler
+Event Ack SET
+Event Check
+* Reseted By PLC
+  When Event Reset
+EVENT
+PLC
+Status Bit/Word
+Read 
+EVENT ACK 
+ECS
+Reseted 
+By PLC
+
+===== slide 6 =====
+Command Sequence (
+Command Set/Reset
+)
+Cmd Bit Write
+Cmd Word Write
+Command Trigger
+Cmd Strobe Set
+Command Handler
+Cmd Bit
+Cmd Word
+Cmd Check
+Cmd Strobe Reset
+Cmd Enable
+M-PLC
+ECS
+Command Enable
+Start/End
+PLC
+Command Bit/Word
+Write 
+Command Strobe
+ECS
+Enable Check
+Cmd Start
+* Reseted By PLC
+  When Cmd Start
+Reseted 
+By PLC
+
+===== slide 7 =====
+반송 시나리오 
+(Alarm Report)
+EQP
+ECS
+Alarm Set Report
+M0492 ON
+Set Alarm Code
+Alarm Set Report Ack
+Alarm Set Report
+Alarm Set Report Ack
+M0492 OFF
+M0963 ON
+M0483 OFF
+EQP
+ECS
+Alarm Reset Report
+M0493 ON
+Reset Alarm Code
+Alarm Reset Report Ack
+Alarm reset Report
+Alarm reset Report Ack
+M0493 OFF
+M0964 ON
+M0964 OFF
+Name
+Address
+Format
+Description
+Set Alarm code
+D0101
+Integer
+Alarm set ID
+&lt; Set Alarm Code &gt;
+Name
+Address
+Format
+Description
+Reset Alarm code
+D0162
+Integer
+Alarm set ID
+&lt; Reset Alarm Code &gt;
+Ex) S/C #1 Alarm 
+보고
+
+===== slide 8 =====
+반송 시나리오 
+(
+입고 
+: C/V # 11 )
+EQP
+ECS
+입고대에 
+Pallet 
+적재 됨
+. #22
+22
+21
+C/V #11
+Pallet Exist #22
+M0371 ON
+M0364 ON
+Load Complete#2
+M0904 ON
+Load Complete Ack#2
+M0904 OFF
+Load Complete Ack#2
+M0364 OFF
+Load Complete#2
+ECS
+는 
+WMS
+에서 반송정보를 받아 입고대 방향 확인 후
+, 
+Tracking Area
+에 
+JOB Write
+JOB NO (R0102~R0103
+)
+* Tracking Area 
+번지 지정 참조
+PLC
+는 
+Pallet 
+감지 되고 
+JOB NO
+가 있으므로
+#21
+로 
+Conveyor move
+Direction Mode Check(D0310)
+* 
+입고 
+0, 
+출고 
+1
+* 0
+이 아닐 경우 변경
+D0310 “1”
+#21 Pallet 
+도착
+Pallet Exist #21
+M0370 ON
+Pallet Exist #22
+M0371 OFF
+PLC
+에서 
+Pallet ID Shift  
+#22 
+영역에서 
+#21
+영역으로
+JOB NO(R0100~R0101
+)
+※ Exist Bit 
+변경 이후 
+ECS
+에서 
+0.5
+초 이내에 
+   읽어 가므로 
+PLC
+는 
+Data Move
+에 무결성  
+   을 보장 해야 함
+.
+●
+●
+●
+R
+영역 번호 잘못됨
+ 
+RGV 
+근처가 시작 번호
+Direction 
+모드 변경은 관련 방향 
+Job
+이 없을 경우만 일어나야 함
+.
+Direction 
+방향 반대일 경우 대기
+* 
+앞에 
+C/V
+가 
+exist Off
+하고 뒤에 
+On 
+사이의 갭 
+?
+
+===== slide 9 =====
+반송 시나리오 
+(
+입고 
+: C/V # 11 )
+EQP
+ECS
+22
+21
+C/V #11
+●
+●
+●
+RGV Call
+을 위해 
+W.O 
+보고
+RGV
+가 도착하여 
+Load 
+완료
+M0361 ON
+Unload Complete#1
+M0901 ON
+Unload Complete Ack#1
+M0901 OFF
+Unload Complete Ack#1
+Pallet Exist #21
+M0370 OFF
+M0366 OFF
+W.O
+M0361 OFF
+Unload Complete#1
+JOB NO (R0100~R0101
+)
+M0366 ON
+W.O
+최종 
+Unload 
+시점에 
+R 
+영역 
+Data 
+삭제는 누가 하는가
+?
+ Tracking 
+영역 삭제는 
+PLC
+쪽에서 처리해주면 됨
+.
+
+===== slide 10 =====
+반송 시나리오 
+(
+출고 
+: C/V # 11 )
+EQP
+ECS
+22
+21
+C/V #11
+●
+●
+●
+RGV 
+도착 
+#21
+에 
+Unload 
+완료
+Pallet Exist #21
+M0370 ON
+M0362 ON
+Load Complete#1
+M0902 ON
+Load Complete Ack#1
+M0902 OFF
+Load Complete Ack#1
+M0362 OFF
+Load Complete#1
+ECS
+는 입고대 방향 확인 후
+, 
+Tracking Area
+에 
+JOB Write
+Direction Mode Check(D0310)
+* 
+입고 
+0, 
+출고 
+1
+* 1
+이 아닐 경우 변경
+D0310 “1”
+JOB NO (R0100~R0101
+)
+* Tracking Area 
+번지 지정 참조
+PLC
+는 
+Pallet 
+감지 되고 
+JOB NO
+가 있으므로
+#22
+로 
+Conveyor move
+#22 Pallet 
+도착
+Pallet Exist #22
+M0371 ON
+Pallet Exist #21
+M0370 OFF
+PLC
+에서 
+Pallet ID Shift  
+#21 
+영역에서 
+#22
+영역으로
+JOB NO(R0102~R0103
+)
+※ Exist Bit 
+변경 이후 
+ECS
+에서 
+0.5
+초 이내에 
+   읽어 가므로 
+PLC
+는 
+Data Move
+에 무결성  
+   을 보장 해야 함
+.
+●
+●
+●
+
+===== slide 11 =====
+반송 시나리오 
+(
+출고 
+: C/V # 11 )
+EQP
+ECS
+22
+21
+C/V #11
+●
+●
+●
+작업자 
+Unload 
+실시 완료
+M0363 ON
+Unload Complete#2
+M0903 ON
+Unload Complete Ack#2
+M0903 OFF
+Unload Complete Ack#2
+M0363 OFF
+Unload Complete#2
+
+===== slide 12 =====
+반송 시나리오 
+(
+출고 
+: C/V # 14 
+피킹존 출고
+(
+동시에 입고 
+C/V 
+존재함
+))
+EQP
+ECS
+●
+●
+●
+RGV 
+도착 
+#27
+에 
+Unload 
+완료
+Pallet Exist #27
+M0430 ON
+M0422 ON
+Load Complete#1
+M0932 ON
+Load Complete Ack#1
+M0932 OFF
+Load Complete Ack#1
+M0422 OFF
+Load Complete#1
+ECS
+는 입고대 방향 확인 후
+, 
+Tracking Area
+에 
+JOB Write
+JOB NO (R0130~R0131
+)
+* Tracking Area 
+번지 지정 참조
+PLC
+는 
+Pallet 
+감지 되고 
+JOB NO
+가 있으므로
+#27
+로 
+Conveyor move
+#28 Pallet 
+도착
+Pallet Exist #28
+M0431 ON
+Pallet Exist #27
+M0430 OFF
+PLC
+에서 
+Pallet ID Shift  
+#27 
+영역에서 
+#28
+영역으로
+JOB NO(R0132~R0133
+)
+※ Exist Bit 
+변경 이후 
+ECS
+에서 
+0.5
+초 이내에 
+   읽어 가므로 
+PLC
+는 
+Data Move
+에 무결성  
+   을 보장 해야 함
+.
+●
+●
+●
+27
+28
+C/V #14
+31
+30
+29
+C/V #15
+
+===== slide 13 =====
+반송 시나리오 
+(
+출고 
+: C/V # 14 
+피킹존 출고
+(
+동시에 입고 
+C/V 
+존재함
+))
+EQP
+ECS
+●
+●
+●
+M0423 ON
+Unload Complete#2
+M0933 ON
+Unload Complete Ack#2
+M0429 OFF
+Unload Request #2 Ack
+M0935 OFF
+Unload Request #2
+27
+28
+C/V #14
+31
+32
+29
+C/V #15
+M0426 ON
+W.O
+#29 
+영역도 반복 진행
+JOB NO (R0134~R0135
+)
+Unload Request #2
+Unload Request #2 Ack
+M0429 ON
+M0935 ON
+M0933 OFF
+Unload Complete Ack#2
+M0423 OFF
+Unload Complete#2
+M0426 OFF
+W.O
+Pallet Exist #29
+M0432 ON
+Pallet Exist #30
+M0452 ON
+Pallet Exist #29
+M0432 OFF
+※ 
+출고 영역 
+#29 bit
+만 지움
+30
+
+===== slide 14 =====
+EQP
+ECS
+●
+●
+●
+●
+●
+●
+4
+3
+C/V #2
+반송 시나리오 
+(
+입
+/
+출고 
+: 
+반송 장비 중간의 
+C/V # 2 )
+RGV 
+도착 
+#3
+에 
+Unload 
+완료
+Pallet Exist #3
+M0190 ON
+M0182 ON
+Load Complete#1
+M0812 ON
+Load Complete Ack#1
+M0812 OFF
+Load Complete Ack#1
+M0182 OFF
+Load Complete#1
+ECS
+는 입고대 방향 확인 후
+, 
+Tracking Area
+에 
+JOB Write
+Direction Mode Check(M0249)
+* 
+입고 
+ON, 
+출고 
+OFF
+* ON
+이 아닐 경우 변경
+M0189 ON
+JOB NO (R0010~R0011
+)
+* Tracking Area 
+번지 지정 참조
+PLC
+는 
+Pallet 
+감지 되고 
+JOB NO
+가 있으므로
+#4
+로 
+Conveyor move
+#4 Pallet 
+도착
+Pallet Exist #4
+M0191 ON
+Pallet Exist #3
+M0190 OFF
+PLC
+에서 
+Pallet ID Shift  
+#3
+영역에서 
+#4
+영역으로
+JOB NO(R0012~R0013
+)
+※ Exist Bit 
+변경 이후 
+ECS
+에서 
+0.5
+초 이내에 
+   읽어 가므로 
+PLC
+는 
+Data Move
+에 무결성  
+   을 보장 해야 함
+.
+
+===== slide 15 =====
+반송 시나리오 
+(
+입
+/
+출고 
+: 
+반송 장비 중간의 
+C/V # 2 )
+EQP
+ECS
+●
+●
+●
+4
+3
+C/V #2
+S/C Call
+을 위해 
+W.O 
+보고
+S/C
+이 도착하여 
+Load 
+완료
+M0183 ON
+Unload Complete#2
+M0813 ON
+Unload Complete Ack#2
+M0813 OFF
+Unload Complete Ack#2
+Pallet Exist #4
+M0191 OFF
+M0186 OFF
+W.O
+M0183 OFF
+Unload Complete#2
+JOB NO (R0012~R0013
+)
+M0186 ON
+W.O
+* 
+출고의 경우는 입고의 반대 순서대로 진행되면 됨
+.
+
+===== slide 16 =====
+EQP
+ECS
+반송 시나리오 
+(S/C, RGV 
+반송 
+: RGV #1)
+Transfer Command Req’
+IDLE = 1
+D0210 
+M1010 ON
+M1010 OFF
+Transfer Command Req’
+Transfer Command Data 
+(From : D0530, To : D0533, Job No : D0536)
+4
+3
+22
+21
+RUN = 2
+Pallet Presence ON
+M0580 ON
+D0210 
+On RGV (R0310~ R0311)
+Load Complete
+M0590 ON
+Load Complete Ack
+M1011 ON
+Transfer Complete Location
+ (D0213)
+M0590 OFF
+Load Complete
+Load Complete Ack
+M1011 OFF
+●
+●
+●
+RGV
+가 도착 위치에 
+Load 
+완료
+
+===== slide 17 =====
+EQP
+ECS
+반송 시나리오 
+(S/C, RGV 
+반송 
+: RGV #1)
+4
+3
+22
+21
+●
+●
+●
+Pallet Presence OFF
+M0580 OFF
+Unload Complete
+M0591 ON
+Unload Complete Ack
+M1012 ON
+Transfer Complete Location
+ (D0213)
+M0591 OFF
+Unload Complete
+Unload Complete Ack
+IDLE = 2
+D0210 
+M1012 OFF
+* S/C
+의 경우는 경로 및 
+Location 
+정보가 열
+/
+연
+/
+단 사용하는 것이 
+RGV
+와 다름
+M0594 ON
+Transfer Complete Ack
+M1015 ON
+Transfer Complete
+M0594 OFF
+Transfer Complete
+Transfer Complete Ack
+M1015 OFF
+
+===== slide 18 =====
+Master PLC Memory Map (Bit 
+영역
+: C/V)
+Block
+Name
+C/V #1
+C/V ##2
+C/V # 3
+C/V # 4
+C/V # 5
+C/V # 6
+C/V # 7
+C/V # 8
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Address
+M0160
+M0170
+M0180
+M0190
+M0200
+M0210
+M0220
+M0230
+M0240
+M0250
+M0260
+M0270
+M0280
+M0290
+M0300
+M0310
++0
+#1
+#3
+#5
+#7
+#9
+#11
+#13
+#15
++1
+Unload
+Complete
+#1
+#2
+Unload
+Complete
+#1
+#4
+Unload
+Complete
+#1
+#6
+Unload
+Complete
+#1
+#8
+Unload
+Complete
+#1
+#10
+Unload
+Complete
+#1
+#12
+Unload
+Complete
+#1
+#14
+Unload
+Complete
+#1
+#16
++2
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
++3
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
++4
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
++5
+WI
+WI
+WI
+WI
+WI
+WI
+WI
+WI
++6
+WO
+WO
+WO
+WO
+WO
+WO
+WO
+WO
++7
+InReady #2
+InReady #2
+InReady #2
+InReady #2
+InReady #2
+InReady #2
+InReady #2
+InReady #2
++8
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
++9
++A
++B
++C
++D
++E
++F
+
+===== slide 19 =====
+Master PLC Memory Map (Bit 
+영역
+: C/V)
+Block
+Name
+C/V #9
+C/V#10
+C/V # 11
+C/V # 12
+C/V # 13
+C/V # 14
+C/V # 15
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Address
+M0320
+M0330
+M0340
+M0350
+M0360
+M0370
+M0380
+M0390
+M0400
+M0410
+M0420
+M0430
+M0440
+M0450
+M0460
+M0470
++0
+#17
+#19
+#21
+#23
+#25
+#27
+#31
++1
+Unload
+Complete
+#1
+#18
+Unload
+Complete
+#1
+#20
+Unload
+Complete
+#1
+#22
+Unload
+Complete
+#1
+#24
+Unload
+Complete
+#1
+#26
+Unload
+Complete
+#1
+#28
+Unload
+Complete
+#1
+#32
++2
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+Load
+Complete
+#1
+#29
+Load
+Complete
+#1
+#30
++3
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
+Unload
+Complete
+#2
++4
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
+Load
+Complete
+#2
++5
+WI
+WI
+WI
+WI
+WI
+WI
+WI
++6
+WO
+WO
+WO
+WO
+WO
+WO
+WO
++7
+InReady #2
+InReady #2
+InReady #2
+InReady #2
+InReady #2
+InReady #2
+InReady #2
++8
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
++9
+Unload 
+Request #2
+ Ack
++A
++B
++C
++D
++E
++F
+
+===== slide 20 =====
+Master PLC Memory Map (Bit 
+영역
+: S/C, RGV )
+Block
+Name
+S/C #1
+S/C #2
+S/C #3
+S/C #4
+S/C #5
+RGV # 1
+Status
+Event
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Event
+Pallet
+Exist
+Address
+M0480
+M0490
+M0500
+M0510
+M0520
+M0530
+M0540
+M0550
+M0560
+M0570
+M0580
+M0590
+M0600
+M0610
+M0620
+M0630
++0
+Pallet
+Presence
+Load
+Complete
+Pallet
+Presence
+Load
+Complete
+Pallet
+Presence
+Load
+Complete
+Pallet
+Presence
+Load
+Complete
+Pallet
+Presence
+Load
+Complete
+Pallet
+Presence
+Load
+Complete
++1
+Unload
+Complete
+Unload
+Complete
+Unload
+Complete
+Unload
+Complete
+Unload
+Complete
+Unload
+Complete
++2
+Alarm
+Set
+Report
+Alarm
+Set
+Report
+Alarm
+Set
+Report
+Alarm
+Set
+Report
+Alarm
+Set
+Report
+Alarm
+Set
+Report
++3
+Alarm
+Reset
+Report
+Alarm
+Reset
+Report
+Alarm
+Reset
+Report
+Alarm
+Reset
+Report
+Alarm
+Reset
+Report
+Alarm
+Reset
+Report
++4
+Transfer
+Complete
+Transfer
+Complete
+Transfer
+Complete
+Transfer
+Complete
+Transfer
+Complete
+Transfer
+Complete
++5
++6
++7
++8
++9
++A
++B
++C
++D
++E
++F
+
+===== slide 21 =====
+Master PLC Memory Map (Bit 
+영역 
+: Ack &amp; Command)
+Block
+Name
+Conveyor
+#1
+Conveyor
+#2
+Conveyor
+#3
+Conveyor
+#4
+Conveyor
+#5
+Conveyor
+#6
+Conveyor
+#7
+Conveyor
+#8
+Conveyor
+#9
+Conveyor
+#10
+Conveyor
+#11
+Conveyor
+#12
+Conveyor
+#13
+Conveyor
+#14
+Conveyor
+#15
+Address
+M0800
+M0810
+M0820
+M0830
+M0840
+M0850
+M0860
+M0870
+M0880
+M0890
+M0900
+M0910
+M0920
+M0930
+M0940
++0
++1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
+Unload
+Complete
+Ack #1
++2
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
+Load
+Complete
+Ack #1
++3
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
+Unload
+Complete
+Ack #2
++4
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
+Load
+Complete
+Ack #2
++5
+Unload 
+Request
+#2
++6
++7
++8
++9
++A
++B
++C
++D
++E
++F
+
+===== slide 22 =====
+Master PLC Memory Map (Bit 
+영역 
+: Ack &amp; Command)
+Block
+Name
+S/C
+#1
+S/C
+#2
+S/C
+#3
+S/C
+#4
+S/C
+#5
+RGV
+#1
+Address
+M0960
+M0970
+M0980
+M0990
+M1000
+M1010
++0
+Transfer
+(From/To)
+Transfer
+(From/To)
+Transfer
+(From/To)
+Transfer
+(From/To)
+Transfer
+(From/To)
+Transfer
+(From/To)
++1
+Load
+Complete
+Ack
+Load
+Complete
+Ack
+Load
+Complete
+Ack
+Load
+Complete
+Ack
+Load
+Complete
+Ack
+Load
+Complete
+Ack
++2
+Unload
+Complete
+Ack
+Unload
+Complete
+Ack
+Unload
+Complete
+Ack
+Unload
+Complete
+Ack
+Unload
+Complete
+Ack
+Unload
+Complete
+Ack
++3
+Alarm
+Set
+Report
+Ack
+Alarm
+Set
+Report
+Ack
+Alarm
+Set
+Report
+Ack
+Alarm
+Set
+Report
+Ack
+Alarm
+Set
+Report
+Ack
+Alarm
+Set
+Report
+Ack
++4
+Alarm
+Reset
+Report
+Ack
+Alarm
+Reset
+Report
+Ack
+Alarm
+Reset
+Report
+Ack
+Alarm
+Reset
+Report
+Ack
+Alarm
+Reset
+Report
+Ack
+Alarm
+Reset
+Report
+Ack
++5
+Transfer
+Complete
+Ack
+Transfer
+Complete
+Ack
+Transfer
+Complete
+Ack
+Transfer
+Complete
+Ack
+Transfer
+Complete
+Ack
+Transfer
+Complete
+Ack
++6
++7
++8
++9
++A
++B
++C
++D
++E
++F
+
+===== slide 23 =====
+Master PLC Memory Map (Word 
+영역 
+: PLC)
+Block
+Name
+S/C
+#1
+S/C
+#2
+S/C
+#3
+S/C
+#4
+S/C
+#5
+RGV
+#1
+Direction
+Value
+Address
+D0160
+D0170
+D0180
+D0190
+D0200
+D0210
+D0220
+D0230
+D0240
+D0250
+D0260
+D0270
+D0280
+D0290
+D0300
+D0310
++0
+Run
+Idle
+Down
+Run
+Idle
+Down
+Run
+Idle
+Down
+Run
+Idle
+Down
+Run
+Idle
+Down
+Run
+Idle
+Down
+다음장
+참조
++1
+Set
+Alarm
+Code
+Set
+Alarm
+Code
+Set
+Alarm
+Code
+Set
+Alarm
+Code
+Set
+Alarm
+Code
+Set
+Alarm
+Code
++2
+Reset
+Alarm
+Code
+Reset
+Alarm
+Code
+Reset
+Alarm
+Code
+Reset
+Alarm
+Code
+Reset
+Alarm
+Code
+Reset
+Alarm
+Code
++3
+Transfer
+Complete
+Location
+(1,2)
+Transfer
+Complete
+Location
+(1,2)
+Transfer
+Complete
+Location
+(1,2)
+Transfer
+Complete
+Location
+(1,2)
+Transfer
+Complete
+Location
+(1,2)
+Transfer
+Complete
+Location
+(1,2)
++4
+Transfer
+Complete
+Location
+(3,4)
+Transfer
+Complete
+Location
+(3,4)
+Transfer
+Complete
+Location
+(3,4)
+Transfer
+Complete
+Location
+(3,4)
+Transfer
+Complete
+Location
+(3,4)
+Transfer
+Complete
+Location
+(3,4)
++5
+Transfer
+Complete
+Location
+(5,6)
+Transfer
+Complete
+Location
+(5,6)
+Transfer
+Complete
+Location
+(5,6)
+Transfer
+Complete
+Location
+(5,6)
+Transfer
+Complete
+Location
+(5,6)
+Transfer
+Complete
+Location
+(5,6)
++6
+Location
+(1,2)
+Location
+(1,2)
+Location
+(1,2)
+Location
+(1,2)
+Location
+(1,2)
+Location
+(1,2)
++7
+Location
+(3,4)
+Location
+(3,4)
+Location
+(3,4)
+Location
+(3,4)
+Location
+(3,4)
+Location
+(3,4)
++8
+Location
+(5,6)
+Location
+(5,6)
+Location
+(5,6)
+Location
+(5,6)
+Location
+(5,6)
+Location
+(5,6)
++9
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
+Op
+Mode
++A
++B
++C
++D
++E
++F
+
+===== slide 24 =====
+Master PLC Memory Map (Word 
+영역 
+: PLC)
+Block
+Name
+Address
+D0300
+D0301
+D0302
+D0303
+D0304
+D0305
+D0306
+D0307
+D0308
+D0309
+D0310
+D0311
+D0312
+D0313
+D0314
+D0315
++0
+C/V #1
+(0:
+입고
+, 1:
+출고
+)
++1
+C/V #2
+(0:
+입고
+, 1:
+출고
+)
++2
+C/V #3
+(0:
+입고
+, 1:
+출고
+)
++3
+C/V #4
+(0:
+입고
+, 1:
+출고
+)
++4
+C/V #5
+(0:
+입고
+, 1:
+출고
+)
++5
+C/V #6
+(0:
+입고
+, 1:
+출고
+)
++6
+C/V #7
+(0:
+입고
+, 1:
+출고
+)
++7
+C/V #8
+(0:
+입고
+, 1:
+출고
+)
++8
+C/V #9
+(0:
+입고
+, 1:
+출고
+)
++9
+C/V #10
+(0:
+입고
+, 1:
+출고
+)
++A
+C/V #11
+(0:
+입고
+, 1:
+출고
+)
++B
+C/V #12
+(0:
+입고
+, 1:
+출고
+)
++C
+C/V #13
+(0:
+입고
+, 1:
+출고
+)
++D
+C/V #14
+(0:
+입고
+, 1:
+출고
+)
++E
+C/V #15
+(0:
+입고
+, 1:
+출고
+)
++F
+PLC Word Area Word 
+영역을 
+Bit
+로 사용 
+( Conveyor )
+
+===== slide 25 =====
+Master PLC Memory Map (Word 
+영역 
+: ECS)
+Block
+Name
+S/C
+#1
+S/C
+#2
+S/C
+#3
+S/C
+#4
+S/C
+#5
+RGV
+#1
+Address
+D0320
+D0330
+D0340
+D0350
+D0360
+D0370
+D0380
+D0390
+D0400
+D0410
+D0420
+D0430
+D0440
+D0450
+D0460
+D0470
++0
+From
+(1,2)
+From
+(1,2)
+From
+(1,2)
+From
+(1,2)
+From
+(1,2)
+From
+(1,2)
++1
+From
+(3,4)
+From
+(3,4)
+From
+(3,4)
+From
+(3,4)
+From
+(3,4)
+From
+(3,4)
++2
+From
+(5,6)
+From
+(5,6)
+From
+(5,6)
+From
+(5,6)
+From
+(5,6)
+From
+(5,6)
++3
+To
+(1,2)
+To
+(1,2)
+To
+(1,2)
+To
+(1,2)
+To
+(1,2)
+To
+(1,2)
++4
+To
+(3,4)
+To
+(3,4)
+To
+(3,4)
+To
+(3,4)
+To
+(3,4)
+To
+(3,4)
++5
+T0
+(5,6)
+T0
+(5,6)
+T0
+(5,6)
+T0
+(5,6)
+T0
+(5,6)
+T0
+(5,6)
++6
+Job no
+(1,2)
+Job no
+(1,2)
+Job no
+(1,2)
+Job no
+(1,2)
+Job no
+(1,2)
+Job no
+(1,2)
++7
+Job no
+(3,4)
+Job no
+(3,4)
+Job no
+(3,4)
+Job no
+(3,4)
+Job no
+(3,4)
+Job no
+(3,4)
++8
++9
++A
++B
++C
++D
++E
++F
+
+===== slide 26 =====
+Master PLC Memory Map (Tracking Area)
+No
+ADDR
+Conveyor
+Position
+TYPE
+REMARK
+1
+R0000
+C/V #1
+#1 
+위치
+Word
+21
+2
+R0001
+C/V #1
+#1 
+위치
+Word
+43
+R0040
+C/V #5
+#9
+위치
+Word
+R0041
+C/V #5
+#9
+위치
+Word
+※ - Conveyor 
+의 
+Tracking Start Address
+는 
+RGV Line
+에 가까운 쪽을 
+Start Address
+로 한다
+.
+    - Conveyor Start Address = (Conveyor 
+번호 
+-1)*10 word
+    - JOB NO
+는 총 
+4
+자리 
+(2word) 
+예 
+JOB NO =1234 
+는 메모리상에 
+2143
+로 
+Write
+1) Conveyor
+No
+ADDR
+Conveyor
+Position
+TYPE
+REMARK
+1
+R0300
+Stocker #1
+S/C #1
+Word
+21
+2
+R0301
+Stocker #1
+S/C #1
+Word
+43
+3
+R0302
+Stocker #2
+S/C #2
+Word
+4
+R0303
+Stocker #2
+S/C #2
+Word
+5
+R0304
+Stocker #3
+S/C #3
+Word
+6
+R0305
+Stocker #3
+S/C #3
+Word
+7
+R0306
+Stocker #4
+S/C #4
+Word
+8
+R0307
+Stocker #4
+S/C #4
+Word
+9
+R0308
+Stocker #5
+S/C #5
+Word
+10
+R0309
+Stocker #5
+S/C #5
+Word
+11
+R0310
+RGV #1
+RGV #1
+Word
+12
+R0311
+RGV #1
+RGV #1
+Word
+2) Stocker Crane, RGV 
+위의 
+Tracking Area
