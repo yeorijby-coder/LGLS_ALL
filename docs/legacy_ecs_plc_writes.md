@@ -18,6 +18,28 @@
   W/B의 ADDRESS_NO는 16진, R은 10진. 실전송: W→%DW(×2=%DB), B→%MX, R→%RB(×2).
 - 전체 태그↔주소 표는 `observables.tsv`(=TB_OBSERVABLE 덤프) 참조.
 
+### 5단계 ↔ TB_OBSERVABLE 필드 매칭 (LglsMCS DB 실측)
+
+TB_OBSERVABLE 실제 행 예 (`OWNERID='VEHICLE:11'`, SC#1의 반송요청 태그):
+
+| 필드 | 값 | 5단계 중 어디에 쓰이나 |
+|---|---|---|
+| **OWNERID** | `VEHICLE:11` | ①단계 — `vehicle` 객체가 기동 시 자기 소유 태그를 이 키로 로드 (1=RGV, 11~15=SC#1~5, CONVEYOR:n=C/V#n) |
+| OWNERTYPE | `SubSystem` | 객체 클래스 종류 (Vehicle 계열) |
+| **OBSERVABLEID** | `TRANSFER_REQUEST` | ②단계 — `Observables["TRANSFER_REQUEST"]` 딕셔너리 키(태그 이름) |
+| **ACCESSTYPE** | `IN_OUT` | ③단계 — 쓰기 허용 여부 (IN=읽기전용 / IN_OUT=양방향) |
+| **DATATYPE** | `Boolean` | ③단계 — `.AsBoolean`/`.AsString` 캐스팅과 짝 |
+| **DRIVERNO** | `1` | ④단계 — TB_FIELDBUSDRIVER의 1번(FENET, `EzControl.Driver.Fenet.FenetDriver`)이 이 태그를 담당 |
+| MONFLAG | `T` | 읽기 방향 — SCANINTERVAL(500ms) 주기 폴링 대상 |
+| **CONNECTSTRING** | `DEVICE_TYPE=B,ADDRESS_NO=0600` | ⑤단계 — **주소 결정의 핵심**. B=M비트/W=D워드/R=트래킹, 16진 주소, LENGTH=워드수. B0600=%MX1536 |
+
+TB_FIELDBUSDRIVER(DRIVERNO=1): DRIVERTYPE=FENET, SCANINTERVAL=500ms,
+CONNECTSTRING=`CHANNEL_NO=51, B_START_ADDR=0~8192, W_START_ADDR=0~8192, R_START_ADDR=0~8192`
+— B/W/R 영역을 블록으로 폴링(읽기)하고, 쓰기 태그는 변경 시 해당 주소에 기록.
+
+다른 예: `PALLET_ID`(String, W,0306,LENGTH=2 → %DW774 2워드), `LOAD_COMPLETE`(보고, B,0310 → %MX784),
+`FROM_01`(String, W,0300 → %DW768).
+
 ---
 
 ## D영역 (워드) 기록
