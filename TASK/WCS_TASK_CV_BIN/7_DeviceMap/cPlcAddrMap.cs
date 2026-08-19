@@ -83,6 +83,7 @@ namespace WCS_TASK_CV
         public int    No;
         public string Block;
         public string Signal;
+        public string NoExpr;       // 설비번호 식 : "$"(선택호기) / "$inCv" / "$outCv" / 숫자
         public int    Slot = -1;
         public bool   Value;        // observe 기대값
         public bool   IsString;
@@ -93,8 +94,20 @@ namespace WCS_TASK_CV
 
     public class ScenarioDef
     {
+        public string Id;
         public string Title;
+        public bool   CraneSelectable;          // crane="select" — 실행 시 호기(1~5) 선택
         public List<ScStepDef> Steps = new List<ScStepDef>();
+    }
+
+    /// <summary>[LGLS 2026-08-19] 호기별 통로 C/V 매핑 (XML &lt;CraneMap&gt;)</summary>
+    public class CraneMapDef
+    {
+        public int No;
+        public int ScNo;
+        public int InCv,  InRgvPort,  InScPort;
+        public int OutCv, OutScPort,  OutRgvPort;
+        public string Note;
     }
 
     public static class cPlcAddrMap
@@ -112,6 +125,7 @@ namespace WCS_TASK_CV
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private static List<EquipDef>    m_lstEquip    = new List<EquipDef>();
         private static List<ScenarioDef> m_lstScenario = new List<ScenarioDef>();
+        private static List<CraneMapDef> m_lstCrane    = new List<CraneMapDef>();
 
         public static bool   IsLoaded  { get { EnsureLoaded(); return m_bLoaded; } }
         public static string LoadError { get { EnsureLoaded(); return m_strErr; } }
@@ -174,7 +188,7 @@ namespace WCS_TASK_CV
         private static void LoadXml()
         {
             m_dicGroup.Clear(); m_dicGlobalBit.Clear();
-            m_lstEquip.Clear(); m_lstScenario.Clear();
+            m_lstEquip.Clear(); m_lstScenario.Clear(); m_lstCrane.Clear();
 
             m_strPath = FindFile();
             if (!System.IO.File.Exists(m_strPath))
@@ -254,11 +268,29 @@ namespace WCS_TASK_CV
                 if (e.Plc.Length > 0) m_lstEquip.Add(e);
             }
 
+            // ── 호기별 통로 C/V 매핑
+            foreach (XmlNode cn in doc.SelectNodes("/PlcAddressMap/CraneMap/Crane"))
+            {
+                CraneMapDef c = new CraneMapDef();
+                c.No         = Attr(cn, "no", 0);
+                c.ScNo       = Attr(cn, "scNo", 900 + c.No);
+                c.InCv       = Attr(cn, "inCv", 0);
+                c.InRgvPort  = Attr(cn, "inRgvPort", 0);
+                c.InScPort   = Attr(cn, "inScPort", 0);
+                c.OutCv      = Attr(cn, "outCv", 0);
+                c.OutScPort  = Attr(cn, "outScPort", 0);
+                c.OutRgvPort = Attr(cn, "outRgvPort", 0);
+                c.Note       = AttrS(cn, "note", "");
+                if (c.No > 0) m_lstCrane.Add(c);
+            }
+
             // ── 시나리오
             foreach (XmlNode cn in doc.SelectNodes("/PlcAddressMap/Scenarios/Scenario"))
             {
                 ScenarioDef sc = new ScenarioDef();
+                sc.Id    = AttrS(cn, "id", "");
                 sc.Title = AttrS(cn, "title", "");
+                sc.CraneSelectable = (AttrS(cn, "crane", "").Trim().ToLower() == "select");
                 foreach (XmlNode stn in cn.SelectNodes("Step"))
                 {
                     ScStepDef st = new ScStepDef();
@@ -266,7 +298,8 @@ namespace WCS_TASK_CV
                     string dev  = AttrS(stn, "device", "M");
                     st.Device   = (dev.Length > 0) ? dev[0] : 'M';
                     st.Equip    = AttrS(stn, "equip", "CV");
-                    st.No       = Attr(stn, "no", 0);
+                    st.NoExpr   = AttrS(stn, "no", "0");        // "$", "$inCv", "11" 등
+                    st.No       = Attr(stn, "no", 0);           // 숫자면 그대로
                     st.Block    = AttrS(stn, "block", "");
                     st.Signal   = AttrS(stn, "signal", "");
                     st.Slot     = Attr(stn, "slot", -1);
@@ -495,6 +528,41 @@ namespace WCS_TASK_CV
         {
             EnsureLoaded();
             return m_lstEquip;
+        }
+
+        public static List<CraneMapDef> Cranes()
+        {
+            EnsureLoaded();
+            return m_lstCrane;
+        }
+
+        public static CraneMapDef Crane(int no)
+        {
+            EnsureLoaded();
+            foreach (CraneMapDef c in m_lstCrane) if (c.No == no) return c;
+            return null;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-19] 스텝의 설비번호 식을 선택 호기로 치환한다.
+        ///   "$"      → 호기번호        "$inCv"  → 그 호기의 입고 통로 C/V
+        ///   "$outCv" → 출고 통로 C/V   숫자     → 그대로
+        /// </summary>
+        public static int ResolveNo(string expr, int craneNo, int defVal)
+        {
+            if (string.IsNullOrEmpty(expr)) return defVal;
+            string s = expr.Trim();
+            if (s.Length > 0 && s[0] != '$')
+            {
+                int v;
+                return int.TryParse(s, out v) ? v : defVal;
+            }
+            CraneMapDef c = Crane(craneNo);
+            if (s == "$") return craneNo;
+            if (c == null) return defVal;
+            if (string.Equals(s, "$inCv",  StringComparison.OrdinalIgnoreCase)) return c.InCv;
+            if (string.Equals(s, "$outCv", StringComparison.OrdinalIgnoreCase)) return c.OutCv;
+            return defVal;
         }
 
         public static List<ScenarioDef> Scenarios()

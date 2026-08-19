@@ -50,6 +50,9 @@ namespace WCS_TASK_CV
     internal class ScenarioCv
     {
         public string Title;
+        public string Id;                  // "1" / "3-1" ...
+        public bool   CraneSelectable;     // 호기 선택 가능 시나리오
+        public int    CraneNo = 1;         // 현재 적용된 호기
         public List<ScStepCv> Steps = new List<ScStepCv>();
         public ScenarioCv(string title) { Title = title; }
     }
@@ -224,6 +227,22 @@ namespace WCS_TASK_CV
             catch (Exception ex) { MessageBox.Show("탐색기 실행 실패: " + ex.Message, "주소맵 XML"); }
         }
 
+        /// <summary>
+        /// [LGLS 2026-08-19] 지정 시나리오를 선택 호기로 다시 만들어 돌려준다(스텝 창의 호기 라디오용).
+        /// </summary>
+        public ScenarioCv RebuildScenario(string id, int craneNo)
+        {
+            try
+            {
+                var list = BuildScenarios(craneNo);
+                if (list == null) return null;
+                foreach (var s in list)
+                    if (string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase)) return s;
+                return null;
+            }
+            catch { return null; }
+        }
+
         private void PauseCvThread(bool p)
         {
             try { if (owner != null && owner.m_thCvThread != null && owner.m_thCvThread[0] != null) owner.m_thCvThread[0].m_bPaused = p; }
@@ -337,12 +356,21 @@ namespace WCS_TASK_CV
         //   Step 은 (equip/no/block/signal/slot) 심볼 참조이므로, XML 의 Block origin/stride 만 고치면
         //   모든 스텝 주소가 자동으로 따라온다. XML 이 없으면 아래 내장 정의로 폴백.
         // ─────────────────────────────────────────────────────────────────────
+        /// <summary>[LGLS 2026-08-19] 스텝 앞에 설비 표기 (C/V #4 / S/C #2 / RGV #1)</summary>
+        private static string EqTag(string equip, int no)
+        {
+            if (string.Equals(equip, "CV", StringComparison.OrdinalIgnoreCase))  return "C/V #" + no + "  ";
+            if (string.Equals(equip, "SC", StringComparison.OrdinalIgnoreCase))  return "S/C #" + no + "  ";
+            if (string.Equals(equip, "RGV", StringComparison.OrdinalIgnoreCase)) return "RGV #" + no + "  ";
+            return "";
+        }
+
         private static string BitLabel(int bit)
         {
             return string.Format("M{0:000}.{1} %MX{2}", bit / 16, bit % 16, bit);
         }
 
-        private static List<ScenarioCv> BuildScenariosFromXml()
+        private static List<ScenarioCv> BuildScenariosFromXml(int craneNo)
         {
             try
             {
@@ -354,27 +382,33 @@ namespace WCS_TASK_CV
                 foreach (var sd in defs)
                 {
                     var sc = new ScenarioCv(sd.Title);
+                    sc.Id = sd.Id;
+                    sc.CraneSelectable = sd.CraneSelectable;
+                    sc.CraneNo = craneNo;
                     foreach (var st in sd.Steps)
                     {
+                        // [LGLS 2026-08-19] 설비번호 식($ / $inCv / $outCv)을 선택 호기로 치환
+                        int no = cPlcAddrMap.ResolveNo(st.NoExpr, craneNo, st.No);
                         int addr = st.RawAddr;
                         if (addr < 0)
                         {
                             if (string.Equals(st.Equip, "Global", StringComparison.OrdinalIgnoreCase))
                                 addr = cPlcAddrMap.GlobalBit(st.Signal);
                             else
-                                addr = cPlcAddrMap.Addr(st.Equip, st.No, st.Block, st.Signal, st.Slot);
+                                addr = cPlcAddrMap.Addr(st.Equip, no, st.Block, st.Signal, st.Slot);
                         }
                         if (addr < 0) continue;   // 정의 누락 스텝은 건너뛴다
 
+                        string eqTag = EqTag(st.Equip, no);
                         if (st.Kind == "observe")
-                            sc.Steps.Add(ScStepCv.E(addr, st.Value, BitLabel(addr) + (st.Value ? " ON" : " OFF"), st.Desc));
+                            sc.Steps.Add(ScStepCv.E(addr, st.Value, eqTag + BitLabel(addr) + (st.Value ? " ON" : " OFF"), st.Desc));
                         else if (st.Kind == "force")
-                            sc.Steps.Add(ScStepCv.W(addr, BitLabel(addr) + " ON", st.Desc, st.Src));
+                            sc.Steps.Add(ScStepCv.W(addr, eqTag + BitLabel(addr) + " ON", st.Desc, st.Src));
                         else
                         {
-                            string lbl = (st.Device == 'R')
+                            string lbl = eqTag + ((st.Device == 'R')
                                        ? string.Format("%RB{0} (워드 {1})", addr * 2, addr)
-                                       : string.Format("%DW{0} (%DB{1})", addr, addr * 2);
+                                       : string.Format("%DW{0} (%DB{1})", addr, addr * 2));
                             sc.Steps.Add(ScStepCv.DAbs(st.Device, addr, st.IsString, lbl, st.Desc, st.Src));
                         }
                     }
@@ -385,9 +419,11 @@ namespace WCS_TASK_CV
             catch { return null; }
         }
 
-        private static List<ScenarioCv> BuildScenarios()
+        private static List<ScenarioCv> BuildScenarios() { return BuildScenarios(1); }
+
+        private static List<ScenarioCv> BuildScenarios(int craneNo)
         {
-            var fromXml = BuildScenariosFromXml();
+            var fromXml = BuildScenariosFromXml(craneNo);
             if (fromXml != null) return fromXml;
 
             const string CV_ACK = "[WCS_TASK_CV]CvThread.cs::CvEventCheck";
@@ -574,12 +610,17 @@ namespace WCS_TASK_CV
         private readonly List<Color> obsOffColor = new List<Color>();  // 비트 OFF 시 되돌릴 색 (EQP 관측=WhiteSmoke, WCS 강제=연파랑)
         private Timer timer;
 
+        private FlowLayoutPanel flowSteps;      // [LGLS 2026-08-19] 호기 변경 시 재구성
+        private Label lblCraneInfo;
+        private readonly RadioButton[] rdoCrane = new RadioButton[5];
+        private bool craneLoading = false;
+
         public StepFormCv(FRM_SCENARIO_TEST h, ScenarioCv s)
         {
             host = h; sc = s;
             Text = s.Title;
-            Width = 780;
-            Height = Math.Min(980, 90 + s.Steps.Count * 40 + 40);
+            Width = 820;
+            Height = Math.Min(1000, 130 + s.Steps.Count * 40 + 40);
             StartPosition = FormStartPosition.CenterParent;
 
             var head = new Label
@@ -589,6 +630,28 @@ namespace WCS_TASK_CV
                 Padding = new Padding(10, 0, 0, 0), ForeColor = Color.DarkBlue
             };
 
+            // [LGLS 2026-08-19] 호기 선택 바 : 초기화 버튼 위. 고르면 이 시나리오의 모든 주소가 그 호기로 바뀐다.
+            var craneBar = new Panel { Dock = DockStyle.Top, Height = 34, Padding = new Padding(8, 4, 0, 0) };
+            var lblC = new Label { Text = "호기 선택 :", Left = 10, Top = 8, Width = 68, AutoSize = false,
+                                   Font = new Font("맑은 고딕", 9F, FontStyle.Bold) };
+            craneBar.Controls.Add(lblC);
+            for (int k = 0; k < 5; k++)
+            {
+                int no = k + 1;
+                rdoCrane[k] = new RadioButton
+                {
+                    Text = "S/C #" + no, Left = 84 + k * 76, Top = 6, Width = 72, Height = 20,
+                    AutoSize = false, Font = new Font("맑은 고딕", 9F),
+                    BackColor = Color.LightYellow, Checked = (no == s.CraneNo)
+                };
+                rdoCrane[k].CheckedChanged += (s2, e2) => OnCraneChanged();
+                craneBar.Controls.Add(rdoCrane[k]);
+            }
+            lblCraneInfo = new Label { Left = 470, Top = 8, Width = 330, AutoSize = false,
+                                       Font = new Font("맑은 고딕", 9F), ForeColor = Color.DarkBlue };
+            craneBar.Controls.Add(lblCraneInfo);
+            craneBar.Visible = s.CraneSelectable;
+
             // 초기화 바: 이 시나리오에 등장하는 모든 M비트(EQP 관측·WCS 강제)를 강제 OFF → 깨끗한 상태에서 시작
             var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 38, Padding = new Padding(8, 4, 0, 0) };
             var btnReset = new Button { Text = "■ 초기화 (이 시나리오 M비트 전체 OFF)", Width = 280, Height = 30, Font = new Font("맑은 고딕", 9F, FontStyle.Bold), BackColor = Color.FromArgb(255, 235, 235) };
@@ -596,6 +659,24 @@ namespace WCS_TASK_CV
             bar.Controls.Add(btnReset);
 
             var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(8) };
+            flowSteps = flow;
+            BuildStepRows(flow);
+
+            Controls.Add(flow);
+            Controls.Add(bar);
+            Controls.Add(craneBar);
+            Controls.Add(head);
+            UpdateCraneInfo();
+
+            timer = new Timer { Interval = 400 };
+            timer.Tick += (s2, e2) => RefreshLamps();
+            timer.Start();
+            FormClosed += (s2, e2) => timer.Stop();
+        }
+
+        /// <summary>[LGLS 2026-08-19] 스텝 행을 그린다(호기 변경 시 재호출)</summary>
+        private void BuildStepRows(FlowLayoutPanel flow)
+        {
             int n = 1;
             foreach (var st in sc.Steps)
             {
@@ -651,18 +732,62 @@ namespace WCS_TASK_CV
                 flow.Controls.Add(row);
                 n++;
             }
-
-            Controls.Add(flow);
-            Controls.Add(bar);
-            Controls.Add(head);
-
-            timer = new Timer { Interval = 400 };
-            timer.Tick += (s2, e2) => RefreshLamps();
-            timer.Start();
-            FormClosed += (s2, e2) => timer.Stop();
         }
 
         // 이 시나리오에 등장하는 모든 M비트(Kind0 관측·Kind1 강제)를 OFF 로 강제 write → 잔재 제거
+        // ═════════════════════════════════════════════════════════════════
+        // [LGLS 2026-08-19] 호기 선택 → 이 시나리오의 모든 주소를 그 호기로 다시 계산
+        //   XML 의 CraneMap($inCv/$outCv)과 Block(origin/stride)만 보므로, XML 을 고치면 함께 바뀐다.
+        // ═════════════════════════════════════════════════════════════════
+        private int SelectedCrane()
+        {
+            for (int k = 0; k < 5; k++) if (rdoCrane[k] != null && rdoCrane[k].Checked) return k + 1;
+            return sc.CraneNo;
+        }
+
+        private void UpdateCraneInfo()
+        {
+            if (lblCraneInfo == null) return;
+            var c = cPlcAddrMap.Crane(SelectedCrane());
+            if (c == null) { lblCraneInfo.Text = ""; return; }
+            lblCraneInfo.Text = string.Format("입고통로 C/V #{0} (#{1}→#{2})   출고통로 C/V #{3} (#{4}→#{5})",
+                                              c.InCv, c.InRgvPort, c.InScPort, c.OutCv, c.OutScPort, c.OutRgvPort);
+        }
+
+        private void OnCraneChanged()
+        {
+            if (craneLoading) return;
+            int no = SelectedCrane();
+            if (no == sc.CraneNo) return;
+            try
+            {
+                craneLoading = true;
+                var rebuilt = host.RebuildScenario(sc.Id, no);
+                if (rebuilt == null)
+                {
+                    MessageBox.Show("해당 호기로 시나리오를 다시 만들지 못했습니다.", "시나리오 테스트");
+                    return;
+                }
+                sc.Steps = rebuilt.Steps;
+                sc.CraneNo = no;
+                RebuildStepRows();
+                UpdateCraneInfo();
+            }
+            finally { craneLoading = false; }
+        }
+
+        private void RebuildStepRows()
+        {
+            if (flowSteps == null) return;
+            if (timer != null) timer.Stop();
+            flowSteps.SuspendLayout();
+            flowSteps.Controls.Clear();
+            obsLamps.Clear(); obsBits.Clear(); obsOffColor.Clear();
+            BuildStepRows(flowSteps);
+            flowSteps.ResumeLayout(true);
+            if (timer != null) timer.Start();
+        }
+
         private void ResetAll()
         {
             // 같은 워드를 공유하는 비트들을 스텝별 read-modify-write 하면 stale read 로 복원되므로,
