@@ -151,7 +151,8 @@ namespace WCS_TASK_CV
                 var sc = scenarios[i];
                 var b = new Button
                 {
-                    Text = (i + 1) + ". " + sc.Title,
+                    // [LGLS 2026-08-19] XML Title 이 이미 "1. …" / "3-1. …" 로 시작하므로 번호를 덧붙이지 않는다
+                    Text = string.IsNullOrEmpty(sc.Id) ? ((i + 1) + ". " + sc.Title) : sc.Title,
                     Width = 940, Height = 32, Margin = new Padding(2),
                     Font = new Font("맑은 고딕", 10F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft
                 };

@@ -45,6 +45,10 @@ namespace EQP_SIM
     internal class Scenario
     {
         public string Title;
+        // [LGLS 2026-08-19] XML(PlcAddressMap.xml) 유래 정보
+        public string Id;                  // "1" / "2" / "3-1" ...
+        public bool   CraneSelectable;     // crane="select" 이면 스텝 창에서 호기(1~5) 선택
+        public int    CraneNo = 1;
         public List<ScStep> Steps = new List<ScStep>();
         public Scenario(string title) { Title = title; }
     }
@@ -63,12 +67,12 @@ namespace EQP_SIM
             this.mem = engine.Memory;
             this.scenarios = BuildScenarios();
 
-            Text = "[시나리오 테스트] — 자동 운전 정지됨 (PPT V1.2 슬라이드 8~17 + C/V#15 입고)";
+            Text = "[시나리오 테스트] — 자동 운전 정지됨 (PlcAddressMap.xml 기준)";
             Width = 1120; Height = 820; StartPosition = FormStartPosition.CenterScreen;
 
             var lbl = new Label
             {
-                Text = "각 시나리오 버튼 = 반송 전체(슬라이드 쌍). 창을 닫으면 자동 운전이 재개됩니다.",
+                Text = "각 시나리오 버튼 = 반송 전체. 스텝 창에서 호기(1~5)를 고르면 주소가 그 호기로 재계산됩니다. 창을 닫으면 자동 운전이 재개됩니다.",
                 Dock = DockStyle.Top, Height = 28, TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(10, 0, 0, 0), ForeColor = Color.DarkRed
             };
@@ -79,7 +83,8 @@ namespace EQP_SIM
                 var sc = scenarios[i];
                 var b = new Button
                 {
-                    Text = (i + 1) + ". " + sc.Title,
+                    // [LGLS 2026-08-19] XML Title 이 이미 "1. …" / "3-1. …" 로 시작하므로 번호를 덧붙이지 않는다
+                    Text = string.IsNullOrEmpty(sc.Id) ? ((i + 1) + ". " + sc.Title) : sc.Title,
                     Width = 1080, Height = 32, Margin = new Padding(3),
                     Font = new Font("맑은 고딕", 10F, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleLeft
@@ -196,8 +201,80 @@ namespace EQP_SIM
         // ------------------------------------------------------------------
         // PPT 시나리오 정의 (슬라이드 쌍, 실제 PPTX 도형 y순 통합)
         // ------------------------------------------------------------------
-        private static List<Scenario> BuildScenarios()
+        // ── [LGLS 2026-08-19] XML(PlcAddressMap.xml) 에서 시나리오 생성 ────────────
+        //   EQP_TASK 와 같은 XML 1개를 공유한다(파서 cPlcAddrMap.cs 는 링크 참조).
+        //   ★역할이 반대다 : EQP_SIM 은 "설비"이므로
+        //       XML kind=observe(설비가 쓰는 비트) → 여기서는 [EQP 송신] 버튼
+        //       XML kind=force  (WCS 가 쓰는 ACK)  → 여기서는 [WCS 반응] 관측 램프
+        //       XML kind=word   (D/R)              → 값 관측
+        internal static string EqTag(string equip, int no)
         {
+            if (string.Equals(equip, "CV", StringComparison.OrdinalIgnoreCase))  return "C/V #" + no + "  ";
+            if (string.Equals(equip, "SC", StringComparison.OrdinalIgnoreCase))  return "S/C #" + no + "  ";
+            if (string.Equals(equip, "RGV", StringComparison.OrdinalIgnoreCase)) return "RGV #" + no + "  ";
+            return "";
+        }
+
+        private static string BitLabel(int bit)
+        {
+            return string.Format("M{0:000}.{1} %MX{2}", bit / 16, bit % 16, bit);
+        }
+
+        internal static List<Scenario> BuildScenariosFromXml(int craneNo)
+        {
+            try
+            {
+                if (!WCS_TASK_CV.cPlcAddrMap.IsLoaded) return null;
+                var defs = WCS_TASK_CV.cPlcAddrMap.Scenarios();
+                if (defs == null || defs.Count == 0) return null;
+
+                var list = new List<Scenario>();
+                foreach (var sd in defs)
+                {
+                    var sc = new Scenario(sd.Title);
+                    sc.Id = sd.Id;
+                    sc.CraneSelectable = sd.CraneSelectable;
+                    sc.CraneNo = craneNo;
+                    foreach (var st in sd.Steps)
+                    {
+                        int no = WCS_TASK_CV.cPlcAddrMap.ResolveNo(st.NoExpr, craneNo, st.No);
+                        int addr = st.RawAddr;
+                        if (addr < 0)
+                        {
+                            if (string.Equals(st.Equip, "Global", StringComparison.OrdinalIgnoreCase))
+                                addr = WCS_TASK_CV.cPlcAddrMap.GlobalBit(st.Signal);
+                            else
+                                addr = WCS_TASK_CV.cPlcAddrMap.Addr(st.Equip, no, st.Block, st.Signal, st.Slot);
+                        }
+                        if (addr < 0) continue;   // 정의 누락 스텝은 건너뛴다
+
+                        string tag = EqTag(st.Equip, no);
+                        if (st.Kind == "observe")
+                            sc.Steps.Add(ScStep.E(addr, st.Value, tag + BitLabel(addr) + (st.Value ? " ON" : " OFF"), st.Desc));
+                        else if (st.Kind == "force")
+                            sc.Steps.Add(ScStep.W(addr, tag + BitLabel(addr) + " ON", st.Desc, st.Src));
+                        else
+                        {
+                            string lbl = tag + ((st.Device == 'R')
+                                       ? string.Format("%RB{0} (워드 {1})", addr * 2, addr)
+                                       : string.Format("%DW{0} (%DB{1})", addr, addr * 2));
+                            sc.Steps.Add(ScStep.D(st.Device, addr, st.IsString, lbl, st.Desc, st.Src));
+                        }
+                    }
+                    if (sc.Steps.Count > 0) list.Add(sc);
+                }
+                return (list.Count > 0) ? list : null;
+            }
+            catch { return null; }
+        }
+
+        private static List<Scenario> BuildScenarios() { return BuildScenarios(1); }
+
+        private static List<Scenario> BuildScenarios(int craneNo)
+        {
+            var fromXml = BuildScenariosFromXml(craneNo);
+            if (fromXml != null) return fromXml;
+
             const string CV_ACK = "[WCS_TASK_CV]CvThread.cs::CvEventCheck";
             const string CV_TRK = "[WCS_TASK_CV]CvThread.cs::CvTrackingWrite";
             const string CV_DIR = "[WCS_TASK_CV]CvThread.cs::CvStatusScenario (읽기→STOCK_MODE)";
@@ -389,11 +466,16 @@ namespace EQP_SIM
     internal class ScenarioStepForm : Form
     {
         private readonly PlcMemory mem;
-        private readonly Scenario sc;
+        private Scenario sc;
         private readonly List<Control> stepCtrls = new List<Control>();
         private Timer lampTimer;
         private Timer autoTimer;
         private int autoIdx = -1;
+
+        // [LGLS 2026-08-19] 호기 선택(1~5). 선택이 바뀌면 XML 을 다시 해석해 전 스텝 주소를 재생성한다.
+        private readonly RadioButton[] rdoCrane = new RadioButton[5];
+        private Label lblCraneInfo;
+        private FlowLayoutPanel flowSteps;
 
         public ScenarioStepForm(PlcMemory mem, Scenario sc)
         {
@@ -412,6 +494,23 @@ namespace EQP_SIM
                 Padding = new Padding(10, 0, 0, 0), ForeColor = Color.DarkBlue
             };
 
+            // ── 호기 선택 줄 (초기화 버튼 줄 위) ─────────────────────────────
+            var craneBar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, Padding = new Padding(10, 4, 0, 0), WrapContents = false };
+            craneBar.Controls.Add(new Label { Text = "호기 선택 :", Width = 70, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("맑은 고딕", 9F, FontStyle.Bold), Margin = new Padding(0, 3, 0, 0) });
+            for (int c = 0; c < 5; c++)
+            {
+                rdoCrane[c] = new RadioButton
+                {
+                    Text = "S/C #" + (c + 1), Width = 76, AutoSize = false, Height = 22,
+                    Checked = (c + 1 == sc.CraneNo), Enabled = sc.CraneSelectable,
+                    Margin = new Padding(2, 3, 2, 0)
+                };
+                rdoCrane[c].CheckedChanged += OnCraneChanged;
+                craneBar.Controls.Add(rdoCrane[c]);
+            }
+            lblCraneInfo = new Label { Text = "", AutoSize = false, Width = 340, Height = 22, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.DarkGreen, Font = new Font("맑은 고딕", 9F, FontStyle.Bold), Margin = new Padding(8, 3, 0, 0) };
+            craneBar.Controls.Add(lblCraneInfo);
+
             var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(8, 4, 0, 0) };
             var btnAuto = new Button { Text = "▶ 자동 진행", Width = 120, Height = 30, Font = new Font("맑은 고딕", 9F, FontStyle.Bold), BackColor = Color.FromArgb(210, 245, 210) };
             btnAuto.Click += (s, e) => StartAuto();
@@ -419,7 +518,69 @@ namespace EQP_SIM
             btnReset.Click += (s, e) => ResetAll();
             bar.Controls.Add(btnAuto); bar.Controls.Add(btnReset);
 
-            var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, Padding = new Padding(10), WrapContents = false, AutoScroll = true };
+            flowSteps = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, Padding = new Padding(10), WrapContents = false, AutoScroll = true };
+            BuildStepRows(flowSteps);
+
+            Controls.Add(flowSteps);
+            Controls.Add(bar);
+            Controls.Add(craneBar);
+            Controls.Add(head);
+            UpdateCraneInfo();
+
+            lampTimer = new Timer { Interval = 250 };
+            lampTimer.Tick += (s, e) => RefreshLamps();
+            lampTimer.Start();
+            FormClosed += (s, e) => { lampTimer.Stop(); if (autoTimer != null) autoTimer.Stop(); };
+        }
+
+        private int SelectedCrane()
+        {
+            for (int i = 0; i < 5; i++) if (rdoCrane[i] != null && rdoCrane[i].Checked) return i + 1;
+            return 1;
+        }
+
+        private void UpdateCraneInfo()
+        {
+            if (lblCraneInfo == null) return;
+            if (!sc.CraneSelectable) { lblCraneInfo.Text = "(호기 고정 시나리오)"; return; }
+            var c = WCS_TASK_CV.cPlcAddrMap.Crane(SelectedCrane());
+            lblCraneInfo.Text = (c == null) ? ""
+                : string.Format("입고통로 C/V #{0} (#{1}→#{2})   출고통로 C/V #{3} (#{4}→#{5})",
+                                c.InCv, c.InRgvPort, c.InScPort, c.OutCv, c.OutScPort, c.OutRgvPort);
+        }
+
+        private bool rebuilding;
+        private void OnCraneChanged(object sender, EventArgs e)
+        {
+            if (rebuilding) return;
+            var rb = sender as RadioButton;
+            if (rb == null || !rb.Checked) return;
+            if (!sc.CraneSelectable) return;
+
+            rebuilding = true;
+            try
+            {
+                if (autoTimer != null) autoTimer.Stop();
+                int crane = SelectedCrane();
+                var list = ScenarioTestForm.BuildScenariosFromXml(crane);
+                if (list != null)
+                {
+                    foreach (var s2 in list)
+                        if (s2.Id == sc.Id) { sc = s2; break; }
+                }
+                sc.CraneNo = crane;
+                flowSteps.SuspendLayout();
+                flowSteps.Controls.Clear();
+                stepCtrls.Clear();
+                BuildStepRows(flowSteps);
+                flowSteps.ResumeLayout();
+                UpdateCraneInfo();
+            }
+            finally { rebuilding = false; }
+        }
+
+        private void BuildStepRows(FlowLayoutPanel flow)
+        {
             int n = 1;
             foreach (var st in sc.Steps)
             {
@@ -463,15 +624,6 @@ namespace EQP_SIM
                 stepCtrls.Add(ctrl);
                 n++;
             }
-
-            Controls.Add(flow);
-            Controls.Add(bar);
-            Controls.Add(head);
-
-            lampTimer = new Timer { Interval = 250 };
-            lampTimer.Tick += (s, e) => RefreshLamps();
-            lampTimer.Start();
-            FormClosed += (s, e) => { lampTimer.Stop(); if (autoTimer != null) autoTimer.Stop(); };
         }
 
         private void RefreshLamps()

@@ -155,6 +155,8 @@ namespace WCS_TASK_CV
             //   R 영역을 쓰는 전 지점(CvThread 통신 / VehThread 관측 / 메모리맵 직접 읽기·쓰기 / 시나리오 테스트)이
             //   cDefApp.GsRTrackWord() 를 거치므로 이 라디오 하나로 일괄 전환된다.
             cDefApp.GM_R_ADDR_HEX = cDefApi.GsReadInitProfileRAddrHex();
+            // 주소맵 파서(EQP_SIM 과 공유하는 파일)에도 같은 변환기를 꽂아 라디오와 연동한다.
+            cPlcAddrMap.RTrackWordFn = cDefApp.GsRTrackWord;
             m_bRAddrLoading = true;
             rdoRHex.Checked = cDefApp.GM_R_ADDR_HEX;
             rdoRDec.Checked = !cDefApp.GM_R_ADDR_HEX;

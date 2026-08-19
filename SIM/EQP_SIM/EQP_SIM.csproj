@@ -38,8 +38,13 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <!-- [LGLS 2026-08-19] 주소맵/시나리오 파서는 EQP_TASK 와 같은 파일을 링크로 공유(단일 소스) -->
+    <Compile Include="..\..\TASK\WCS_TASK_CV_BIN\7_DeviceMap\cPlcAddrMap.cs">
+      <Link>Shared\cPlcAddrMap.cs</Link>
+    </Compile>
     <Compile Include="Core\ObservableMap.cs" />
     <Compile Include="Core\PlcIo.cs" />
     <Compile Include="Core\PlcMemory.cs" />

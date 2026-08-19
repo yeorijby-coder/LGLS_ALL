@@ -132,6 +132,21 @@ namespace WCS_TASK_CV
         public static string FilePath  { get { EnsureLoaded(); return m_strPath; } }
         public static string Version   { get { EnsureLoaded(); return m_strVersion; } }
 
+        /// <summary>
+        /// [LGLS 2026-08-19] R(트래킹) 문서표기 → 실주소 변환 훅.
+        ///   EQP_TASK 는 기동 시 cDefApp.GsRTrackWord 를 꽂아 R_ADDR_MODE 라디오와 연동한다.
+        ///   훅이 없으면(EQP_SIM 등) 구 ECS 호환 기본값인 16진 해석을 쓴다.
+        /// </summary>
+        public static Func<int, int> RTrackWordFn;
+
+        private static int RWord(int nDoc)
+        {
+            Func<int, int> f = RTrackWordFn;
+            if (f != null) return f(nDoc);
+            try { return Convert.ToInt32(nDoc.ToString(CultureInfo.InvariantCulture), 16); }
+            catch { return nDoc; }
+        }
+
         /// <summary>강제 재로드 (파일을 수정한 뒤 프로그램 재시작 없이 반영)</summary>
         public static void Reload()
         {
@@ -159,6 +174,20 @@ namespace WCS_TASK_CV
                 @".\7_DeviceMap\PlcAddressMap.xml",
             };
             foreach (string p in cand) { if (System.IO.File.Exists(p)) return p; }
+
+            // [LGLS 2026-08-19] EQP_SIM 등 다른 실행폴더에서도 같은 XML 1개를 쓰도록
+            //   상위 폴더를 거슬러 올라가며 TASK\WCS_TASK_CV_BIN\7_DeviceMap\PlcAddressMap.xml 을 찾는다.
+            //   (주소맵/시나리오는 단일 소스여야 하므로 복사본을 만들지 않는다)
+            try
+            {
+                System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(System.Windows.Forms.Application.StartupPath);
+                for (int i = 0; i < 8 && di != null; i++, di = di.Parent)
+                {
+                    string p = System.IO.Path.Combine(di.FullName, @"TASK\WCS_TASK_CV_BIN\7_DeviceMap\PlcAddressMap.xml");
+                    if (System.IO.File.Exists(p)) return p;
+                }
+            }
+            catch { }
             return cand[0];
         }
 
@@ -337,7 +366,7 @@ namespace WCS_TASK_CV
             AddrGroup g = m_dicGroup[equipType];
             int nBase = b.Origin + (no - g.NumberFrom) * b.Stride;
             // R(트래킹)은 문서표기를 R_ADDR_MODE 로 해석한다
-            if (b.Device == 'R') nBase = cDefApp.GsRTrackWord(nBase);
+            if (b.Device == 'R') nBase = RWord(nBase);
             return nBase;
         }
 
@@ -383,7 +412,7 @@ namespace WCS_TASK_CV
                 // 문서표기 기준으로 슬롯까지 더한 뒤 한 번에 변환 (구 ECS 16진 해석 대응)
                 int nDoc = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset;
                 if (slot > 0) nDoc += slot * b.PerSlotWords;
-                return cDefApp.GsRTrackWord(nDoc);
+                return RWord(nDoc);
             }
             nBase = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset;
             if (slot > 0) nBase += slot * (s.IsArray ? s.PerSlot : 1);
@@ -425,7 +454,7 @@ namespace WCS_TASK_CV
                         if (b.Device == 'R')
                         {
                             int nDoc = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset + nExtra;
-                            return cDefApp.GsRTrackWord(nDoc);
+                            return RWord(nDoc);
                         }
                         return b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset + nExtra;
                     }
@@ -471,7 +500,7 @@ namespace WCS_TASK_CV
 
                     int nBase;
                     if (b.Device == 'R')
-                        nBase = cDefApp.GsRTrackWord(b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset);
+                        nBase = RWord(b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset);
                     else
                         nBase = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset;
 
