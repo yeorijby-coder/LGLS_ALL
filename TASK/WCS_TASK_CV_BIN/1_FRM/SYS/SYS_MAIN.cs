@@ -112,8 +112,9 @@ namespace WCS_TASK_CV
         {
 			m_nProcessCnt = 0;
 
-            // [LGLS 2026-08-19] R주소 모드 라디오(x=588~)가 기본 창폭 600 에서 잘려 보이지 않아 폭 확대
-            this.Width = 780;
+            // [LGLS 2026-08-19] 상단 컨트롤(R주소 라디오 ~780, 메모리맵/정리/시나리오 버튼 ~1080)이
+            //   전부 보이도록 기본 창폭 확대 (종전 600 에서는 우측 버튼들이 잘려 있었다)
+            this.Width = 1110;
             this.Height = 600;
 
             //중복실행을 방지하는 함수.
@@ -746,6 +747,18 @@ namespace WCS_TASK_CV
                           + "  (예: C/V#11 R0100 → 워드 " + cDefApp.GsRTrackWord(100).ToString()
                           + " / %RB" + (cDefApp.GsRTrackWord(100) * 2).ToString() + ")";
             try { PsMsgView_IMP(strMsg, 0); }
+            catch { }
+
+            // [LGLS 2026-08-19] 이미 열려 있는 PLC 메모리 맵 창을 즉시 갱신한다
+            //   (창 활성화 이벤트에만 기대면 포그라운드 전환이 막힐 때 옛 주소가 그대로 남는다)
+            try
+            {
+                foreach (Form f in Application.OpenForms)
+                {
+                    FRM_PLC_MEMMAP frm = f as FRM_PLC_MEMMAP;
+                    if (frm != null) frm.RefreshRMode();
+                }
+            }
             catch { }
         }
 

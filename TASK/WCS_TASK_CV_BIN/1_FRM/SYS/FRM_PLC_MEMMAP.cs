@@ -179,6 +179,8 @@ namespace WCS_TASK_CV
             txtIp.Text   = _ip;
             txtPort.Text = _port.ToString();
             LoadGrids();
+            // [LGLS 2026-08-19] 메인화면 R주소 라디오 변경 → 이 창으로 돌아올 때 자동 갱신
+            this.Activated += new EventHandler(FRM_PLC_MEMMAP_Activated);
             TryAutoConnect();
 
             // ─── 하트비트: 3초마다 1워드 읽기로 세션 유지 ───────────────────
@@ -303,6 +305,10 @@ namespace WCS_TASK_CV
         }
 
         // 그리드/탭 구성 (V1.1 매핑 고정 — V0.9는 2026-08-10 실 현장 판정으로 폐기)
+        // [LGLS 2026-08-19] 그리드를 채울 때 적용된 R 주소모드. 창이 활성화될 때 이 값과 현재 설정을
+        //   비교해 달라졌으면 자동으로 다시 채운다(메인화면 라디오로 바꾼 뒤 창을 다시 열 필요 없음).
+        private bool _loadedRHex = true;
+
         private void LoadGrids()
         {
             tabBit.Text      = "Bit 영역 (%MX)";
@@ -311,7 +317,38 @@ namespace WCS_TASK_CV
             PopulateGrid(dgvBit,      BitMapEntries);
             PopulateGrid(dgvWord,     WordMapEntries);
             PopulateGrid(dgvTracking, TrackingLabels(TrackingMapEntries));
-            this.Text = "LS XGT PLC 메모리 맵 읽기/쓰기";
+            _loadedRHex = cDefApp.GM_R_ADDR_HEX;
+            // 현재 어느 R 주소모드로 보고 있는지 제목에 표시
+            this.Text = "LS XGT PLC 메모리 맵 읽기/쓰기   [R주소: " + cDefApp.GsRAddrModeText() + "]";
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-19] 창이 활성화될 때 R 주소모드 변경을 감지해 트래킹 주소를 자동 갱신한다.
+        /// (메인화면 라디오를 바꾸고 이 창으로 돌아오면 즉시 반영)
+        /// </summary>
+        private void FRM_PLC_MEMMAP_Activated(object sender, EventArgs e)
+        {
+            RefreshRMode();
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-19] R 주소모드가 바뀌었으면 트래킹 그리드를 다시 채운다.
+        /// 메인화면 라디오 변경 시 SYS_MAIN 이 직접 호출하고, 창 활성화 시에도 한 번 더 확인한다.
+        /// (다른 스레드에서 불릴 수 있으므로 Invoke 로 UI 스레드에 위임)
+        /// </summary>
+        public void RefreshRMode()
+        {
+            try
+            {
+                if (this.IsDisposed || !this.IsHandleCreated) return;
+                if (this.InvokeRequired) { this.BeginInvoke(new MethodInvoker(RefreshRMode)); return; }
+                if (_loadedRHex == cDefApp.GM_R_ADDR_HEX) return;
+                LoadGrids();
+                AppendLog("[R주소모드] " + cDefApp.GsRAddrModeText()
+                        + " 로 변경되어 트래킹 주소를 갱신했습니다. (예: R0100 → %RB"
+                        + (cDefApp.GsRTrackWord(100) * 2).ToString() + ")");
+            }
+            catch { }
         }
 
         // ─── 연결 ──────────────────────────────────────────────────────────────

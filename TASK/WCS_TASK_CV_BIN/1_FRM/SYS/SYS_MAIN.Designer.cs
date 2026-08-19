@@ -319,10 +319,13 @@
             //
             // rdoRHex   [LGLS 2026-08-19] R(트래킹) 주소 해석 모드
             //
-            this.rdoRHex.AutoSize = true;
-            this.rdoRHex.Location = new System.Drawing.Point(588, 6);
+            // AutoSize=false : 폰트/DPI 에 따라 폭이 늘어나 옆 컨트롤을 침범하는 것을 막는다
+            // 배치 : 2행(y=28)은 Clear Log(593~690)·PLC 메모리 맵(700~820)이 이미 차지하고 있어
+            //        비어 있는 1행(y=4~21) 우측에 가로로 나란히 둔다
+            this.rdoRHex.AutoSize = false;
+            this.rdoRHex.Location = new System.Drawing.Point(570, 4);
             this.rdoRHex.Name = "rdoRHex";
-            this.rdoRHex.Size = new System.Drawing.Size(104, 16);
+            this.rdoRHex.Size = new System.Drawing.Size(120, 17);
             this.rdoRHex.TabIndex = 842;
             this.rdoRHex.TabStop = true;
             this.rdoRHex.Text = "R:16진(구ECS)";
@@ -331,10 +334,10 @@
             //
             // rdoRDec
             //
-            this.rdoRDec.AutoSize = true;
-            this.rdoRDec.Location = new System.Drawing.Point(588, 27);
+            this.rdoRDec.AutoSize = false;
+            this.rdoRDec.Location = new System.Drawing.Point(694, 4);
             this.rdoRDec.Name = "rdoRDec";
-            this.rdoRDec.Size = new System.Drawing.Size(100, 16);
+            this.rdoRDec.Size = new System.Drawing.Size(106, 17);
             this.rdoRDec.TabIndex = 843;
             this.rdoRDec.Text = "R:10진(현행)";
             this.rdoRDec.UseVisualStyleBackColor = true;

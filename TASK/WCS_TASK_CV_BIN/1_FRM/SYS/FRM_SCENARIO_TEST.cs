@@ -65,7 +65,10 @@ namespace WCS_TASK_CV
             owner = main;
             scenarios = BuildScenarios();
 
-            Text = "[CV_TASK 시나리오 테스트] — WCS·D·R 강제 송신 / EQP 관측 (EQP_SIM 대칭)";
+            // [LGLS 2026-08-19] R 스텝 주소는 현재 R주소모드로 변환되어 있으므로 제목에 명시
+            //   (창을 열 때마다 BuildScenarios 가 재실행되어 항상 최신 모드로 만들어진다)
+            Text = "[CV_TASK 시나리오 테스트] — WCS·D·R 강제 송신 / EQP 관측 (EQP_SIM 대칭)"
+                 + "   [R주소: " + cDefApp.GsRAddrModeText() + "]";
             Width = 1000; Height = 620; StartPosition = FormStartPosition.CenterScreen;
 
             PauseCvThread(true);   // 자동통신 정지
