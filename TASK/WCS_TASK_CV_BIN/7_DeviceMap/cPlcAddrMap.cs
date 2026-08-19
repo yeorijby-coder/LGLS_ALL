@@ -1,0 +1,423 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Xml;
+
+namespace WCS_TASK_CV
+{
+    // ─────────────────────────────────────────────────────────────────────────
+    // [LGLS 2026-08-19] PLC 주소맵 / 시나리오 외부 정의 (7_DeviceMap\PlcAddressMap.xml)
+    //
+    //   PPT(V1.3)의 메모리맵과 반송 시나리오를 XML 한 파일로 두고 런타임에 읽는다.
+    //   → XML 만 고치면 아래가 모두 따라간다.
+    //       · 자동운전 통신 : CvThread (이벤트/ACK 비트, 방향 워드, R 트래킹, 알람)
+    //       · 화면          : FRM_PLC_MEMMAP (Bit/Word/Tracking 탭)
+    //       · 시나리오 테스트: FRM_SCENARIO_TEST
+    //
+    //   ※ 안전장치 : XML 이 없거나 항목이 빠져 있으면 조회가 -1 을 돌려주고,
+    //     호출부는 종전 하드코딩 계산식으로 폴백한다. 즉 파일 문제로 통신이 멎지 않는다.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>블록 내 개별 신호</summary>
+    public class AddrSignal
+    {
+        public string Name;
+        public int    Offset;
+        public int    Words = 1;
+        public bool   IsArray;      // SignalArray (포지션 반복)
+        public int    PerSlot = 1;
+        public int    MaxSlots = 1;
+        public string AppliesTo;    // "14,15" 처럼 특정 설비에만 존재
+    }
+
+    /// <summary>설비군의 주소 블록 (base = Origin + (설비번호-NumberFrom) * Stride)</summary>
+    public class AddrBlock
+    {
+        public string Name;
+        public char   Device;        // 'M' / 'D' / 'R'
+        public int    Origin;
+        public int    Stride;
+        public int    ReadWords = 1;
+        public int    PerSlotWords = 1;
+        public int    MaxSlots = 1;
+        public int    Length = 1;
+        public string Legacy;
+        public string Desc;
+        public Dictionary<string, AddrSignal> Signals = new Dictionary<string, AddrSignal>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>설비군 (CV 15대 / SC 5대 / RGV 1대)</summary>
+    public class AddrGroup
+    {
+        public string Type;
+        public int    NumberFrom = 1;
+        public int    Count;
+        public Dictionary<string, AddrBlock> Blocks = new Dictionary<string, AddrBlock>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>설비 레이아웃 (PLC 번호 ↔ 트랙 범위)</summary>
+    public class EquipDef
+    {
+        public string Plc;
+        public string Typ;
+        public int    No;
+        public int    FrTrack;
+        public int    ToTrack;
+    }
+
+    /// <summary>시나리오 스텝</summary>
+    public class ScStepDef
+    {
+        public string Kind;         // observe / force / word
+        public char   Device;       // M / D / R
+        public string Equip;        // CV / SC / RGV / Global
+        public int    No;
+        public string Block;
+        public string Signal;
+        public int    Slot = -1;
+        public bool   Value;        // observe 기대값
+        public bool   IsString;
+        public string Desc;
+        public string Src;
+        public int    RawAddr = -1; // 심볼 대신 직접 주소를 적은 경우
+    }
+
+    public class ScenarioDef
+    {
+        public string Title;
+        public List<ScStepDef> Steps = new List<ScStepDef>();
+    }
+
+    public static class cPlcAddrMap
+    {
+        private static readonly object m_lock = new object();
+        private static bool m_bTried = false;
+        private static bool m_bLoaded = false;
+        private static string m_strErr = "";
+        private static string m_strPath = "";
+        private static string m_strVersion = "";
+
+        private static Dictionary<string, AddrGroup> m_dicGroup =
+            new Dictionary<string, AddrGroup>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, int> m_dicGlobalBit =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private static List<EquipDef>    m_lstEquip    = new List<EquipDef>();
+        private static List<ScenarioDef> m_lstScenario = new List<ScenarioDef>();
+
+        public static bool   IsLoaded  { get { EnsureLoaded(); return m_bLoaded; } }
+        public static string LoadError { get { EnsureLoaded(); return m_strErr; } }
+        public static string FilePath  { get { EnsureLoaded(); return m_strPath; } }
+        public static string Version   { get { EnsureLoaded(); return m_strVersion; } }
+
+        /// <summary>강제 재로드 (파일을 수정한 뒤 프로그램 재시작 없이 반영)</summary>
+        public static void Reload()
+        {
+            lock (m_lock) { m_bTried = false; }
+            EnsureLoaded();
+        }
+
+        private static void EnsureLoaded()
+        {
+            lock (m_lock)
+            {
+                if (m_bTried) return;
+                m_bTried = true;
+                try { LoadXml(); m_bLoaded = true; m_strErr = ""; }
+                catch (Exception ex) { m_bLoaded = false; m_strErr = ex.Message; }
+            }
+        }
+
+        private static string FindFile()
+        {
+            string[] cand = new string[]
+            {
+                System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, @"7_DeviceMap\PlcAddressMap.xml"),
+                System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "PlcAddressMap.xml"),
+                @".\7_DeviceMap\PlcAddressMap.xml",
+            };
+            foreach (string p in cand) { if (System.IO.File.Exists(p)) return p; }
+            return cand[0];
+        }
+
+        private static int Attr(XmlNode n, string name, int def)
+        {
+            if (n == null || n.Attributes == null) return def;
+            XmlAttribute a = n.Attributes[name];
+            if (a == null) return def;
+            string s = a.Value.Trim();
+            if (s.Length == 0) return def;
+            try
+            {
+                if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                    return Convert.ToInt32(s.Substring(2), 16);
+                return int.Parse(s, CultureInfo.InvariantCulture);
+            }
+            catch { return def; }
+        }
+
+        private static string AttrS(XmlNode n, string name, string def)
+        {
+            if (n == null || n.Attributes == null) return def;
+            XmlAttribute a = n.Attributes[name];
+            return (a == null) ? def : a.Value;
+        }
+
+        private static void LoadXml()
+        {
+            m_dicGroup.Clear(); m_dicGlobalBit.Clear();
+            m_lstEquip.Clear(); m_lstScenario.Clear();
+
+            m_strPath = FindFile();
+            if (!System.IO.File.Exists(m_strPath))
+                throw new Exception("PlcAddressMap.xml 없음: " + m_strPath);
+
+            XmlDocument doc = new XmlDocument();
+            doc.Load(m_strPath);
+            XmlNode root = doc.SelectSingleNode("/PlcAddressMap");
+            if (root == null) throw new Exception("루트 <PlcAddressMap> 없음");
+            m_strVersion = AttrS(root, "version", "");
+
+            // ── 설비군 / 블록 / 신호
+            foreach (XmlNode gn in doc.SelectNodes("/PlcAddressMap/EquipGroup"))
+            {
+                AddrGroup g = new AddrGroup();
+                g.Type       = AttrS(gn, "type", "");
+                g.NumberFrom = Attr(gn, "numberFrom", 1);
+                g.Count      = Attr(gn, "count", 1);
+
+                foreach (XmlNode bn in gn.SelectNodes("Block"))
+                {
+                    AddrBlock b = new AddrBlock();
+                    b.Name         = AttrS(bn, "name", "");
+                    string dev     = AttrS(bn, "device", "M");
+                    b.Device       = (dev.Length > 0) ? dev[0] : 'M';
+                    b.Origin       = Attr(bn, "origin", 0);
+                    b.Stride       = Attr(bn, "stride", 0);
+                    b.ReadWords    = Attr(bn, "readWords", 1);
+                    b.PerSlotWords = Attr(bn, "perSlotWords", 1);
+                    b.MaxSlots     = Attr(bn, "maxSlots", 1);
+                    b.Length       = Attr(bn, "length", 1);
+                    b.Legacy       = AttrS(bn, "legacy", "");
+                    b.Desc         = AttrS(bn, "desc", "");
+
+                    foreach (XmlNode sn in bn.SelectNodes("Signal"))
+                    {
+                        AddrSignal s = new AddrSignal();
+                        s.Name      = AttrS(sn, "name", "");
+                        s.Offset    = Attr(sn, "offset", 0);
+                        s.Words     = Attr(sn, "words", 1);
+                        s.AppliesTo = AttrS(sn, "appliesTo", "");
+                        if (s.Name.Length > 0) b.Signals[s.Name] = s;
+                    }
+                    foreach (XmlNode sn in bn.SelectNodes("SignalArray"))
+                    {
+                        AddrSignal s = new AddrSignal();
+                        s.Name     = AttrS(sn, "name", "");
+                        s.Offset   = Attr(sn, "offset", 0);
+                        s.IsArray  = true;
+                        s.PerSlot  = Attr(sn, "perSlot", 1);
+                        s.MaxSlots = Attr(sn, "maxSlots", 1);
+                        if (s.Name.Length > 0) b.Signals[s.Name] = s;
+                    }
+                    if (b.Name.Length > 0) g.Blocks[b.Name] = b;
+                }
+                if (g.Type.Length > 0) m_dicGroup[g.Type] = g;
+            }
+
+            // ── 전역 단일주소 (알람 등)
+            foreach (XmlNode sn in doc.SelectNodes("/PlcAddressMap/Global/Signal"))
+            {
+                string nm = AttrS(sn, "name", "");
+                int addr  = Attr(sn, "addr", -1);
+                if (nm.Length > 0 && addr >= 0) m_dicGlobalBit[nm] = addr;
+            }
+
+            // ── 설비 레이아웃
+            foreach (XmlNode en in doc.SelectNodes("/PlcAddressMap/Equipments/Equip"))
+            {
+                EquipDef e = new EquipDef();
+                e.Plc     = AttrS(en, "plc", "");
+                e.Typ     = AttrS(en, "type", "CV");
+                e.No      = Attr(en, "no", 0);
+                e.FrTrack = Attr(en, "frTrack", 0);
+                e.ToTrack = Attr(en, "toTrack", 0);
+                if (e.Plc.Length > 0) m_lstEquip.Add(e);
+            }
+
+            // ── 시나리오
+            foreach (XmlNode cn in doc.SelectNodes("/PlcAddressMap/Scenarios/Scenario"))
+            {
+                ScenarioDef sc = new ScenarioDef();
+                sc.Title = AttrS(cn, "title", "");
+                foreach (XmlNode stn in cn.SelectNodes("Step"))
+                {
+                    ScStepDef st = new ScStepDef();
+                    st.Kind     = AttrS(stn, "kind", "observe");
+                    string dev  = AttrS(stn, "device", "M");
+                    st.Device   = (dev.Length > 0) ? dev[0] : 'M';
+                    st.Equip    = AttrS(stn, "equip", "CV");
+                    st.No       = Attr(stn, "no", 0);
+                    st.Block    = AttrS(stn, "block", "");
+                    st.Signal   = AttrS(stn, "signal", "");
+                    st.Slot     = Attr(stn, "slot", -1);
+                    st.Value    = (AttrS(stn, "value", "on").Trim().ToLower() == "on");
+                    st.IsString = (AttrS(stn, "isString", "false").Trim().ToLower() == "true");
+                    st.Desc     = AttrS(stn, "desc", "");
+                    st.Src      = AttrS(stn, "src", "");
+                    int raw = Attr(stn, "bit", -1);
+                    if (raw < 0) raw = Attr(stn, "word", -1);
+                    st.RawAddr = raw;
+                    sc.Steps.Add(st);
+                }
+                if (sc.Steps.Count > 0) m_lstScenario.Add(sc);
+            }
+        }
+
+        // ── 조회 API (실패 시 -1 → 호출부가 종전 계산식으로 폴백) ─────────────
+
+        private static AddrBlock GetBlock(string equipType, string block)
+        {
+            EnsureLoaded();
+            if (!m_bLoaded) return null;
+            AddrGroup g;
+            if (!m_dicGroup.TryGetValue(equipType, out g)) return null;
+            AddrBlock b;
+            if (!g.Blocks.TryGetValue(block, out b)) return null;
+            return b;
+        }
+
+        /// <summary>블록 시작주소 : origin + (설비번호 - numberFrom) * stride. 실패 시 -1</summary>
+        public static int BlockBase(string equipType, int no, string block)
+        {
+            AddrBlock b = GetBlock(equipType, block);
+            if (b == null) return -1;
+            AddrGroup g = m_dicGroup[equipType];
+            int nBase = b.Origin + (no - g.NumberFrom) * b.Stride;
+            // R(트래킹)은 문서표기를 R_ADDR_MODE 로 해석한다
+            if (b.Device == 'R') nBase = cDefApp.GsRTrackWord(nBase);
+            return nBase;
+        }
+
+        /// <summary>블록 1회 읽기 워드수 (기본 1)</summary>
+        public static int BlockReadWords(string equipType, string block, int def)
+        {
+            AddrBlock b = GetBlock(equipType, block);
+            return (b == null) ? def : b.ReadWords;
+        }
+
+        /// <summary>블록 최대 슬롯수</summary>
+        public static int BlockMaxSlots(string equipType, string block, int def)
+        {
+            AddrBlock b = GetBlock(equipType, block);
+            return (b == null) ? def : b.MaxSlots;
+        }
+
+        /// <summary>신호 오프셋. 실패 시 -1</summary>
+        public static int SignalOffset(string equipType, string block, string signal)
+        {
+            AddrBlock b = GetBlock(equipType, block);
+            if (b == null) return -1;
+            AddrSignal s;
+            if (!b.Signals.TryGetValue(signal, out s)) return -1;
+            return s.Offset;
+        }
+
+        /// <summary>
+        /// 신호 절대주소. M 이면 비트주소, D/R 이면 워드주소. 실패 시 -1
+        ///   slot &gt;= 0 이면 SignalArray(포지션) 또는 트래킹 슬롯을 더한다.
+        /// </summary>
+        public static int Addr(string equipType, int no, string block, string signal, int slot)
+        {
+            AddrBlock b = GetBlock(equipType, block);
+            if (b == null) return -1;
+            AddrSignal s;
+            if (!b.Signals.TryGetValue(signal, out s)) return -1;
+
+            AddrGroup g = m_dicGroup[equipType];
+            int nBase;
+            if (b.Device == 'R')
+            {
+                // 문서표기 기준으로 슬롯까지 더한 뒤 한 번에 변환 (구 ECS 16진 해석 대응)
+                int nDoc = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset;
+                if (slot > 0) nDoc += slot * b.PerSlotWords;
+                return cDefApp.GsRTrackWord(nDoc);
+            }
+            nBase = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset;
+            if (slot > 0) nBase += slot * (s.IsArray ? s.PerSlot : 1);
+            return nBase;
+        }
+
+        public static int Addr(string equipType, int no, string block, string signal)
+        {
+            return Addr(equipType, no, block, signal, -1);
+        }
+
+        /// <summary>전역 비트(알람 등). 실패 시 -1</summary>
+        public static int GlobalBit(string name)
+        {
+            EnsureLoaded();
+            if (!m_bLoaded) return -1;
+            int v;
+            return m_dicGlobalBit.TryGetValue(name, out v) ? v : -1;
+        }
+
+        public static List<EquipDef> Equips()
+        {
+            EnsureLoaded();
+            return m_lstEquip;
+        }
+
+        public static List<ScenarioDef> Scenarios()
+        {
+            EnsureLoaded();
+            return m_lstScenario;
+        }
+
+        /// <summary>설비군의 블록 목록 (메모리맵 화면 생성용)</summary>
+        public static List<AddrBlock> BlocksOf(string equipType, out int numberFrom, out int count)
+        {
+            EnsureLoaded();
+            numberFrom = 1; count = 0;
+            List<AddrBlock> r = new List<AddrBlock>();
+            AddrGroup g;
+            if (!m_bLoaded || !m_dicGroup.TryGetValue(equipType, out g)) return r;
+            numberFrom = g.NumberFrom; count = g.Count;
+            foreach (AddrBlock b in g.Blocks.Values) r.Add(b);
+            return r;
+        }
+
+        /// <summary>설비군 이름 목록</summary>
+        public static List<string> GroupTypes()
+        {
+            EnsureLoaded();
+            List<string> r = new List<string>();
+            if (m_bLoaded) foreach (string k in m_dicGroup.Keys) r.Add(k);
+            return r;
+        }
+
+        /// <summary>신호가 해당 설비번호에 존재하는가 (appliesTo 필터)</summary>
+        public static bool SignalApplies(string equipType, string block, string signal, int no)
+        {
+            AddrBlock b = GetBlock(equipType, block);
+            if (b == null) return true;
+            AddrSignal s;
+            if (!b.Signals.TryGetValue(signal, out s)) return true;
+            if (string.IsNullOrEmpty(s.AppliesTo)) return true;
+            foreach (string t in s.AppliesTo.Split(','))
+            {
+                int v;
+                if (int.TryParse(t.Trim(), out v) && v == no) return true;
+            }
+            return false;
+        }
+
+        /// <summary>상태 요약 (로그/타이틀 표시용)</summary>
+        public static string StatusText()
+        {
+            EnsureLoaded();
+            if (!m_bLoaded) return "주소맵 XML 미적용(내장 기본값 사용) - " + m_strErr;
+            return "주소맵 XML v" + m_strVersion + " 적용 (" + m_dicGroup.Count + "군 / 시나리오 "
+                 + m_lstScenario.Count + "개)";
+        }
+    }
+}

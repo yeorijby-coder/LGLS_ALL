@@ -309,17 +309,73 @@ namespace WCS_TASK_CV
         //   비교해 달라졌으면 자동으로 다시 채운다(메인화면 라디오로 바꾼 뒤 창을 다시 열 필요 없음).
         private bool _loadedRHex = true;
 
+        // ─────────────────────────────────────────────────────────────────────
+        // [LGLS 2026-08-19] 주소맵 XML(7_DeviceMap\PlcAddressMap.xml)에서 표를 만든다.
+        //   XML 이 없거나 해당 디바이스 블록이 없으면 아래 내장 배열로 폴백한다.
+        // ─────────────────────────────────────────────────────────────────────
+        private static MemMapEntry[] EntriesFromXml(char device, MemMapEntry[] fallback)
+        {
+            try
+            {
+                if (!cPlcAddrMap.IsLoaded) return fallback;
+                var list = new List<MemMapEntry>();
+                foreach (string strTyp in cPlcAddrMap.GroupTypes())
+                {
+                    int nFrom, nCnt;
+                    var blocks = cPlcAddrMap.BlocksOf(strTyp, out nFrom, out nCnt);
+                    foreach (var b in blocks)
+                    {
+                        if (b.Device != device) continue;
+                        for (int n = nFrom; n < nFrom + nCnt; n++)
+                        {
+                            int nBase = cPlcAddrMap.BlockBase(strTyp, n, b.Name);
+                            if (nBase < 0) continue;
+                            string strLegacy = string.IsNullOrEmpty(b.Legacy) ? "" : "  (구 " + b.Legacy + ")";
+                            string strDesc = strTyp + " #" + n + "  " + b.Name
+                                           + (string.IsNullOrEmpty(b.Desc) ? "" : " - " + b.Desc) + strLegacy;
+                            if (device == 'M')
+                                list.Add(new MemMapEntry("%MX" + nBase, nBase / 16, strDesc));
+                            else if (device == 'D')
+                                list.Add(new MemMapEntry("%DB" + (nBase * 2), nBase, strDesc));
+                            else   // R : 슬롯별로 펼친다 (문서표기 + 실전송 %RB)
+                            {
+                                int nSlots = (b.MaxSlots > 0) ? b.MaxSlots : 1;
+                                int nWords = (b.PerSlotWords > 0) ? b.PerSlotWords : 1;
+                                for (int s = 0; s < nSlots; s++)
+                                {
+                                    for (int w = 0; w < nWords; w++)
+                                    {
+                                        int nDoc  = b.Origin + (n - nFrom) * b.Stride + s * nWords + w;
+                                        int nWord = cDefApp.GsRTrackWord(nDoc);
+                                        list.Add(new MemMapEntry(
+                                            string.Format("R{0:0000} (%RB{1})", nDoc, nWord * 2), nWord,
+                                            string.Format("{0} #{1}  Position #{2} Word{3}{4}", strTyp, n, s + 1, w + 1, strLegacy)));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (list.Count == 0) return fallback;
+                return list.ToArray();
+            }
+            catch { return fallback; }
+        }
+
         private void LoadGrids()
         {
             tabBit.Text      = "Bit 영역 (%MX)";
             tabWord.Text     = "Word 영역 (%DB)";
             tabTracking.Text = "Tracking 영역 (R→%RB)";
-            PopulateGrid(dgvBit,      BitMapEntries);
-            PopulateGrid(dgvWord,     WordMapEntries);
-            PopulateGrid(dgvTracking, TrackingLabels(TrackingMapEntries));
+            // 주소맵 XML 우선, 없으면 내장 배열
+            PopulateGrid(dgvBit,      EntriesFromXml('M', BitMapEntries));
+            PopulateGrid(dgvWord,     EntriesFromXml('D', WordMapEntries));
+            MemMapEntry[] trk = EntriesFromXml('R', null);
+            PopulateGrid(dgvTracking, (trk != null) ? trk : TrackingLabels(TrackingMapEntries));
             _loadedRHex = cDefApp.GM_R_ADDR_HEX;
-            // 현재 어느 R 주소모드로 보고 있는지 제목에 표시
-            this.Text = "LS XGT PLC 메모리 맵 읽기/쓰기   [R주소: " + cDefApp.GsRAddrModeText() + "]";
+            // 현재 어느 R 주소모드/주소맵으로 보고 있는지 제목에 표시
+            this.Text = "LS XGT PLC 메모리 맵 읽기/쓰기   [R주소: " + cDefApp.GsRAddrModeText() + "]"
+                      + "   [" + cPlcAddrMap.StatusText() + "]";
         }
 
         /// <summary>

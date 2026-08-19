@@ -42,6 +42,9 @@ namespace WCS_TASK_CV
                 strAddr = string.Format("%RB{0} (R{1:0000})", nWord * 2, wordAddr);
             return new ScStepCv { Kind = 2, Dev = dev, WordAddr = nWord, IsString = isStr, Addr = strAddr, Desc = desc, Src = src };
         }
+        /// <summary>[LGLS 2026-08-19] 이미 실주소로 확정된 값을 그대로 쓴다(주소맵 XML 경로 — 재변환 금지)</summary>
+        public static ScStepCv DAbs(char dev, int wordAddr, bool isStr, string addr, string desc, string src)
+        { return new ScStepCv { Kind = 2, Dev = dev, WordAddr = wordAddr, IsString = isStr, Addr = addr, Desc = desc, Src = src }; }
     }
 
     internal class ScenarioCv
@@ -217,8 +220,64 @@ namespace WCS_TASK_CV
             if (m.Msg == 0x0021 && m.Result == (IntPtr)2) m.Result = (IntPtr)1; // MA_ACTIVATEANDEAT(2)→MA_ACTIVATE(1) // WM_MOUSEACTIVATE: MA_ACTIVATEANDEAT→MA_ACTIVATE
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // [LGLS 2026-08-19] 주소맵 XML(7_DeviceMap\PlcAddressMap.xml)의 <Scenarios> 로 시나리오를 만든다.
+        //   Step 은 (equip/no/block/signal/slot) 심볼 참조이므로, XML 의 Block origin/stride 만 고치면
+        //   모든 스텝 주소가 자동으로 따라온다. XML 이 없으면 아래 내장 정의로 폴백.
+        // ─────────────────────────────────────────────────────────────────────
+        private static string BitLabel(int bit)
+        {
+            return string.Format("M{0:000}.{1} %MX{2}", bit / 16, bit % 16, bit);
+        }
+
+        private static List<ScenarioCv> BuildScenariosFromXml()
+        {
+            try
+            {
+                if (!cPlcAddrMap.IsLoaded) return null;
+                var defs = cPlcAddrMap.Scenarios();
+                if (defs == null || defs.Count == 0) return null;
+
+                var list = new List<ScenarioCv>();
+                foreach (var sd in defs)
+                {
+                    var sc = new ScenarioCv(sd.Title);
+                    foreach (var st in sd.Steps)
+                    {
+                        int addr = st.RawAddr;
+                        if (addr < 0)
+                        {
+                            if (string.Equals(st.Equip, "Global", StringComparison.OrdinalIgnoreCase))
+                                addr = cPlcAddrMap.GlobalBit(st.Signal);
+                            else
+                                addr = cPlcAddrMap.Addr(st.Equip, st.No, st.Block, st.Signal, st.Slot);
+                        }
+                        if (addr < 0) continue;   // 정의 누락 스텝은 건너뛴다
+
+                        if (st.Kind == "observe")
+                            sc.Steps.Add(ScStepCv.E(addr, st.Value, BitLabel(addr) + (st.Value ? " ON" : " OFF"), st.Desc));
+                        else if (st.Kind == "force")
+                            sc.Steps.Add(ScStepCv.W(addr, BitLabel(addr) + " ON", st.Desc, st.Src));
+                        else
+                        {
+                            string lbl = (st.Device == 'R')
+                                       ? string.Format("%RB{0} (워드 {1})", addr * 2, addr)
+                                       : string.Format("%DW{0} (%DB{1})", addr, addr * 2);
+                            sc.Steps.Add(ScStepCv.DAbs(st.Device, addr, st.IsString, lbl, st.Desc, st.Src));
+                        }
+                    }
+                    if (sc.Steps.Count > 0) list.Add(sc);
+                }
+                return (list.Count > 0) ? list : null;
+            }
+            catch { return null; }
+        }
+
         private static List<ScenarioCv> BuildScenarios()
         {
+            var fromXml = BuildScenariosFromXml();
+            if (fromXml != null) return fromXml;
+
             const string CV_ACK = "[WCS_TASK_CV]CvThread.cs::CvEventCheck";
             const string CV_TRK = "[WCS_TASK_CV]CvThread.cs::CvTrackingWrite";
             const string CV_DIR = "[WCS_TASK_CV]CvThread.cs::CvStatusScenario (읽기→STOCK_MODE)";

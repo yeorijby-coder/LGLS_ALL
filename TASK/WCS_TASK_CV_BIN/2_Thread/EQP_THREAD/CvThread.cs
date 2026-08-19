@@ -1443,8 +1443,15 @@ namespace WCS_TASK_CV
                             MakeMsg_Error(strTitle + " 방향지시 PLC_NO 파싱 실패 [" + m_strPlc_No + "]", m_nthNo);
                             return false;
                         }
+                        // [LGLS 2026-08-19] 판독(CvStatusScenario)과 같은 주소를 쓰도록 주소맵 XML 우선.
+                        //   XML 이 없으면 종전 내장 계산식으로 폴백한다.
                         int nDirAddr = cDefApp.GM_ADDR_V09 ? (300 + (nDirCv - 1))
                                                            : ((960 + (nDirCv - 1) * 2) / 2);
+                        if (!cDefApp.GM_ADDR_V09)
+                        {
+                            int xDirW = cPlcAddrMap.Addr("CV", nDirCv, "Direction", "IoDirection");
+                            if (xDirW >= 0) nDirAddr = xDirW;
+                        }
 
                         Array.Clear(byTxBuff, 0, byTxBuff.Length);
                         byTxBuff[0] = (byte)((nCMD_RQ_PARM == 1) ? 0x31 : 0x30);   // '1'=출고 / '0'=입고
@@ -2969,7 +2976,9 @@ namespace WCS_TASK_CV
             //   예) CV#7 → "0060" → 0x60(96), CV#11 → "0100" → 0x100(256)
             // [LGLS 2026-08-19] 위 16진 해석은 '구 ECS 호환' 모드일 때만. ini [PLC] R_ADDR_MODE 로 전환한다.
             //   HEX(기본) = 종전과 동일 / DEC = 문서 표기를 10진 워드주소로 사용(CV#11 → 100)
-            int rBase = cDefApp.GsRTrackWord((cvMachineNo - 1) * 10);
+            //   시작주소(문서표기 (N-1)*10)는 주소맵 XML <Block name="Tracking"> 을 우선 사용한다.
+            int rBase = cPlcAddrMap.BlockBase("CV", cvMachineNo, "Tracking");
+            if (rBase < 0) rBase = cDefApp.GsRTrackWord((cvMachineNo - 1) * 10);
             int slot  = trackNo - m_nFrTrackNo;           // 이 CV 내 슬롯 인덱스 (0-based)
             return rBase + slot * 2;                      // JOB NO = 2 word
         }
@@ -3045,8 +3054,12 @@ namespace WCS_TASK_CV
                     // [V1.1] 블록이 워드(16비트) 정렬로 재배치됨 (ezMCS 매핑)
                     //   이벤트 블록 : %MX256 + (N-1)*32  (PalletExist 블록은 +16)
                     //   ACK   블록 : %MX1280 + (N-1)*16
-                    mBase   = 256  + (cvMachineNo - 1) * 32;
-                    ackBase = 1280 + (cvMachineNo - 1) * 16;
+                    // [LGLS 2026-08-19] 주소맵 XML(7_DeviceMap\PlcAddressMap.xml)이 있으면 그 값을 쓰고,
+                    //   없으면 아래 내장 계산식으로 폴백한다(파일 문제로 통신이 멎지 않게).
+                    mBase   = cPlcAddrMap.BlockBase("CV", cvMachineNo, "Event");
+                    ackBase = cPlcAddrMap.BlockBase("CV", cvMachineNo, "Ack");
+                    if (mBase   < 0) mBase   = 256  + (cvMachineNo - 1) * 32;
+                    if (ackBase < 0) ackBase = 1280 + (cvMachineNo - 1) * 16;
                 }
 
                 // 이벤트 M 영역 읽기: 2 워드 (base 워드 정렬)
@@ -3320,6 +3333,15 @@ namespace WCS_TASK_CV
             int M_ALARM_RST     = cDefApp.GM_ADDR_V09 ? 493 : 787;   // PLC → ECS: 알람 해제
             int M_ALARM_SET_ACK = cDefApp.GM_ADDR_V09 ? 963 : 1539;  // ECS → PLC: 알람 발생 ACK
             int M_ALARM_RST_ACK = cDefApp.GM_ADDR_V09 ? 964 : 1540;  // ECS → PLC: 알람 해제 ACK
+            // [LGLS 2026-08-19] 주소맵 XML <Global name="Alarm"> 이 있으면 그 값 우선 (없으면 위 내장값)
+            if (!cDefApp.GM_ADDR_V09)
+            {
+                int a;
+                a = cPlcAddrMap.GlobalBit("AlarmSet");       if (a >= 0) M_ALARM_SET     = a;
+                a = cPlcAddrMap.GlobalBit("AlarmReset");     if (a >= 0) M_ALARM_RST     = a;
+                a = cPlcAddrMap.GlobalBit("AlarmSetAck");    if (a >= 0) M_ALARM_SET_ACK = a;
+                a = cPlcAddrMap.GlobalBit("AlarmResetAck");  if (a >= 0) M_ALARM_RST_ACK = a;
+            }
 
             try
             {
@@ -3443,15 +3465,23 @@ namespace WCS_TASK_CV
                 else
                 {
                     // [V1.1] ezMCS 매핑 (워드 정렬 블록)
+                    // [LGLS 2026-08-19] 주소맵 XML 우선, 없으면 내장 계산식 폴백
                     mBase       = 256 + (cvMachineNo - 1) * 32;      // 이벤트 블록 (%MX256~)
                     palletOfs   = 16;                                // PalletExist 블록 = +16
                     dirWordAddr = (960 + (cvMachineNo - 1) * 2) / 2; // 방향 (%MB960~ → 워드 480~)
+                    int xB = cPlcAddrMap.BlockBase("CV", cvMachineNo, "Event");
+                    if (xB >= 0) mBase = xB;
+                    int xP = cPlcAddrMap.SignalOffset("CV", "Event", "PalletExist");
+                    if (xP >= 0) palletOfs = xP;
+                    int xD = cPlcAddrMap.Addr("CV", cvMachineNo, "Direction", "IoDirection");
+                    if (xD >= 0) dirWordAddr = xD;
                 }
 
                 // 시나리오 맵은 CV당 최대 2포지션 (PalletExist #1/#2, Tracking Position #1/#2)
                 int nSlots = m_nToTrackNo - m_nFrTrackNo + 1;
                 if (nSlots < 1) nSlots = 1;
-                if (nSlots > 3) nSlots = 3;   // [LGLS 2026-07-21] 물리 이관: 3트랙 C/V(#14/#15) 대응 — 동일 READ의 개수·슬롯 매핑만 확장(프레임 무변경). EQP_SIM이 WCS 모드에서 관측값 번호를 트랙 순서로 기록해 슬롯 s=트랙 FR+s 정렬이 전 CV 성립
+                int nMaxSlot = cPlcAddrMap.BlockMaxSlots("CV", "Tracking", 3);   // [LGLS 2026-08-19] XML 우선
+                if (nSlots > nMaxSlot) nSlots = nMaxSlot;   // [LGLS 2026-07-21] 물리 이관: 3트랙 C/V(#14/#15) 대응 — 동일 READ의 개수·슬롯 매핑만 확장(프레임 무변경). EQP_SIM이 WCS 모드에서 관측값 번호를 트랙 순서로 기록해 슬롯 s=트랙 FR+s 정렬이 전 CV 성립
 
                 // ── 1) M 이벤트/PalletExist 블록 읽기 (2워드에 모두 포함) ──────────
                 int mWordAddr  = mBase / 16;

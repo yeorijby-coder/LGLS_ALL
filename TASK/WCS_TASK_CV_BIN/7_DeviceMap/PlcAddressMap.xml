@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  LGLS WCS - PLC 주소맵 / 시나리오 정의  (PPT V1.3 기준)
+  ─────────────────────────────────────────────────────────────────────
+  이 파일 하나만 고치면 아래가 모두 따라간다.
+    · 자동운전 통신 : CvThread (이벤트/ACK 비트, 방향 워드, R 트래킹, 알람)
+    · 화면          : PLC 메모리 맵 (Bit/Word/Tracking 탭)
+    · 시나리오 테스트: 아래 <Scenarios> 정의를 그대로 사용
+  주소 규칙
+    · M(비트) : 워드주소 = 비트주소/16, 비트위치 = 비트주소%16
+    · D(워드) : %DB(바이트표기) = 워드주소 x 2
+    · R(트래킹) : 문서표기를 R_ADDR_MODE(HEX=구ECS 16진 / DEC=현행 10진)로 해석
+  블록 주소식 : base = origin + (설비번호 - numberFrom) x stride,  주소 = base + offset
+-->
+<PlcAddressMap version="1.3" desc="PPT V1.3 (2026-08-19) 기준">
+
+  <!-- 디바이스 코드/단위 규약 -->
+  <Conventions>
+    <Device code="M" id="0x90" unit="bit"  wordDivisor="16" desc="내부릴레이(이벤트/ACK/알람)" />
+    <Device code="D" id="0xA8" unit="word" byteToWord="2"   desc="데이터레지스터(방향/상태/명령)" />
+    <Device code="R" id="0xAF" unit="word" byteToWord="2"   desc="파일레지스터(트래킹) - R_ADDR_MODE 적용" />
+  </Conventions>
+
+  <!-- ══ C/V (컨베이어) 15대 : 동일 오프셋 패턴 반복 ══ -->
+  <EquipGroup type="CV" numberFrom="1" count="15">
+
+    <Block name="Event" device="M" origin="256" stride="32" readWords="2" legacy="M0160" desc="설비→WCS 이벤트">
+      <Signal name="UnloadComplete1" offset="1" />
+      <Signal name="LoadComplete1" offset="2" />
+      <Signal name="UnloadComplete2" offset="3" />
+      <Signal name="LoadComplete2" offset="4" />
+      <Signal name="WorkInstruction" offset="5" used="false" />
+      <Signal name="WorkOrder" offset="6" />
+      <Signal name="InReady2" offset="7" />
+      <Signal name="OperationMode" offset="8" />
+      <Signal name="UnloadRequest2Ack" offset="9" appliesTo="14,15" />
+      <SignalArray name="PalletExist" offset="16" perSlot="1" maxSlots="10" desc="포지션별 파렛트 감지(슬롯 0부터)" />
+    </Block>
+
+    <Block name="Ack" device="M" origin="1280" stride="16" legacy="M0800" desc="WCS→설비 응답/지시">
+      <Signal name="UnloadComplete1Ack" offset="1" />
+      <Signal name="LoadComplete1Ack" offset="2" />
+      <Signal name="UnloadComplete2Ack" offset="3" />
+      <Signal name="LoadComplete2Ack" offset="4" />
+      <Signal name="UnloadRequest2" offset="5" appliesTo="14,15" />
+    </Block>
+
+    <Block name="Direction" device="D" origin="480" stride="1" length="1" legacy="D0300" desc="입출고 방향(ASCII)">
+      <Signal name="IoDirection" offset="0" encoding="ascii" valueMap="0=IN,1=OUT" />
+    </Block>
+
+    <Block name="Tracking" device="R" origin="0" stride="10" perSlotWords="2" maxSlots="3" legacy="R0000" desc="작업번호 트래킹(슬롯당 2워드, ASCII 4자리)">
+      <Signal name="JobNo" offset="0" words="2" encoding="ascii4" />
+    </Block>
+  </EquipGroup>
+
+  <!-- ══ S/C (스태커크레인) 5대 ══ -->
+  <EquipGroup type="SC" numberFrom="1" count="5">
+    <Block name="Event" device="M" origin="768" stride="32" legacy="M0300">
+      <Signal name="PalletExistFlag" offset="0" />
+      <Signal name="LoadComplete" offset="16" />
+      <Signal name="UnloadComplete" offset="17" />
+      <Signal name="AlarmSetReport" offset="18" />
+      <Signal name="AlarmResetReport" offset="19" />
+      <Signal name="TransferAck" offset="20" />
+    </Block>
+    <Block name="Ack" device="M" origin="1536" stride="16" legacy="M0600">
+      <Signal name="TransferRequest" offset="0" />
+      <Signal name="LoadCompleteAck" offset="1" />
+      <Signal name="UnloadCompleteAck" offset="2" />
+      <Signal name="AlarmSetReportAck" offset="3" />
+      <Signal name="AlarmResetReportAck" offset="4" />
+      <Signal name="TransferComplete" offset="5" />
+    </Block>
+    <Block name="Status" device="D" origin="256" stride="16" legacy="D0160" desc="설비→WCS 상태">
+      <Signal name="SubsystemStatus" offset="0" />
+      <Signal name="AlarmSetCode" offset="1" />
+      <Signal name="AlarmResetCode" offset="2" />
+      <Signal name="TransferCompleteLocation" offset="3" words="3" />
+      <Signal name="OperationMode" offset="9" />
+    </Block>
+    <Block name="Command" device="D" origin="768" stride="16" legacy="D0320" desc="WCS→설비 반송지시">
+      <Signal name="From" offset="0" words="3" />
+      <Signal name="To" offset="3" words="3" />
+      <Signal name="JobNo" offset="6" words="2" />
+    </Block>
+    <Block name="Tracking" device="R" origin="300" stride="2" perSlotWords="2" legacy="R0300">
+      <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" />
+    </Block>
+  </EquipGroup>
+
+  <!-- ══ RGV (반송대차) 1대 ══ -->
+  <EquipGroup type="RGV" numberFrom="1" count="1">
+    <Block name="Event" device="M" origin="928" stride="32" legacy="M03A0">
+      <Signal name="PalletExistFlag" offset="0" />
+      <Signal name="LoadComplete" offset="16" />
+      <Signal name="UnloadComplete" offset="17" />
+      <Signal name="AlarmSetReport" offset="18" />
+      <Signal name="AlarmResetReport" offset="19" />
+      <Signal name="TransferAck" offset="20" />
+    </Block>
+    <Block name="Ack" device="M" origin="1616" stride="16" legacy="M0650">
+      <Signal name="TransferRequest" offset="0" />
+      <Signal name="LoadCompleteAck" offset="1" />
+      <Signal name="UnloadCompleteAck" offset="2" />
+      <Signal name="AlarmSetReportAck" offset="3" />
+      <Signal name="AlarmResetReportAck" offset="4" />
+      <Signal name="TransferComplete" offset="5" />
+    </Block>
+    <Block name="Status" device="D" origin="336" stride="16" legacy="D0210">
+      <Signal name="SubsystemStatus" offset="0" />
+      <Signal name="TransferCompleteLocation" offset="3" words="3" />
+    </Block>
+    <Block name="Command" device="D" origin="848" stride="16" legacy="D0370">
+      <Signal name="From" offset="0" words="3" />
+      <Signal name="To" offset="3" words="3" />
+      <Signal name="JobNo" offset="6" words="2" />
+    </Block>
+    <Block name="Tracking" device="R" origin="310" stride="2" perSlotWords="2" legacy="R0310">
+      <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" />
+    </Block>
+  </EquipGroup>
+
+  <!-- ══ 전 설비 공통 단일주소 ══ -->
+  <Global name="Alarm" device="M" desc="S/C #1 알람(대표) - 사이클당 1회 점검">
+    <Signal name="AlarmSet" addr="786" legacy="M0492" />
+    <Signal name="AlarmReset" addr="787" legacy="M0493" />
+    <Signal name="AlarmSetAck" addr="1539" legacy="M0963" />
+    <Signal name="AlarmResetAck" addr="1540" legacy="M0964" />
+  </Global>
+
+  <!-- ══ 설비 레이아웃 (SYS_MAIN 하드코딩 배열 대체) ══ -->
+  <Equipments>
+    <Equip plc="01" type="CV" no="1" frTrack="101" toTrack="102" />
+    <Equip plc="02" type="CV" no="2" frTrack="103" toTrack="104" />
+    <Equip plc="03" type="CV" no="3" frTrack="105" toTrack="106" />
+    <Equip plc="04" type="CV" no="4" frTrack="107" toTrack="108" />
+    <Equip plc="05" type="CV" no="5" frTrack="109" toTrack="110" />
+    <Equip plc="06" type="CV" no="6" frTrack="111" toTrack="112" />
+    <Equip plc="07" type="CV" no="7" frTrack="113" toTrack="114" />
+    <Equip plc="08" type="CV" no="8" frTrack="115" toTrack="116" />
+    <Equip plc="09" type="CV" no="9" frTrack="117" toTrack="118" />
+    <Equip plc="10" type="CV" no="10" frTrack="119" toTrack="120" />
+    <Equip plc="11" type="CV" no="11" frTrack="121" toTrack="122" />
+    <Equip plc="12" type="CV" no="12" frTrack="123" toTrack="124" />
+    <Equip plc="13" type="CV" no="13" frTrack="125" toTrack="126" />
+    <Equip plc="14" type="CV" no="14" frTrack="127" toTrack="129" />
+    <Equip plc="15" type="CV" no="15" frTrack="130" toTrack="132" />
+  </Equipments>
+
+  <!-- ══ 시나리오 (PPT 반송 시나리오) ══
+       Step 주소는 심볼 참조(equip/block/signal/slot)로 적는다.
+       → 위 Block 의 origin/stride 만 고치면 모든 스텝 주소가 자동으로 따라간다.
+       kind : observe=설비 신호 관측 / force=WCS 비트 강제 송신 / word=D·R 워드 송신 -->
+  <Scenarios>
+    <Scenario title="반송 시나리오 (입고 : C/V #11) — 슬라이드 8~9">
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="1" value="on" desc="Pallet Exist #22 ON (입고대 적재)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="LoadComplete2" value="on" desc="Load Complete #2 ON" />
+      <Step kind="force" equip="CV" no="11" block="Ack" signal="LoadComplete2Ack" desc="Load Complete Ack #2 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
+      <Step kind="observe" equip="CV" no="11" block="Ack" signal="LoadComplete2Ack" value="off" desc="Load Complete Ack #2 OFF (설비/PLC 리셋)" />
+      <Step kind="word" device="D" equip="CV" no="11" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="Direction Mode Check &#x27;1&#x27; (입고0/출고1)" />
+      <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="1" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO #22 최초 기록 (입고 진입 시 #22 위치에 JOB Write)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="1" value="off" desc="Pallet Exist #22 OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="on" desc="Pallet Exist #21 ON (#21 도착)" />
+      <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과: #22(R0102) JOB → #21(R0100)로 이동(원위치 #22 클리어)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="WorkOrder" value="on" desc="W.O 보고 (RGV Call)" />
+      <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="0" isString="true" desc="(슬9) RGV Call 시 #21(R0100) 반출 대상 JOB 재표시 — RGV지시는 D0530~" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="off" desc="Pallet Exist #21 OFF (RGV Load 완료)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete1" value="on" desc="Unload Complete #1 ON" />
+      <Step kind="force" equip="CV" no="11" block="Ack" signal="UnloadComplete1Ack" desc="Unload Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete1" value="off" desc="Unload Complete #1 OFF" />
+      <Step kind="observe" equip="CV" no="11" block="Ack" signal="UnloadComplete1Ack" value="off" desc="Unload Complete Ack #1 OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
+    </Scenario>
+    <Scenario title="반송 시나리오 (출고 : C/V #11) — 슬라이드 10~11">
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="on" desc="Pallet Exist #21 ON (RGV 하역)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="LoadComplete1" value="on" desc="Load Complete #1 ON" />
+      <Step kind="force" equip="CV" no="11" block="Ack" signal="LoadComplete1Ack" desc="Load Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
+      <Step kind="observe" equip="CV" no="11" block="Ack" signal="LoadComplete1Ack" value="off" desc="Load Complete Ack #1 OFF (설비/PLC 리셋)" />
+      <Step kind="word" device="D" equip="CV" no="11" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="Direction Mode Check &#x27;1&#x27; (출고1)" />
+      <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO #21 Tracking Write" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="off" desc="Pallet Exist #21 OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="1" value="on" desc="Pallet Exist #22 ON (#22 도착)" />
+      <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과: #21(R0100) JOB → #22(R0102)로 이동(원위치 클리어)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete2" value="on" desc="Unload Complete #2 ON (작업자 Unload)" />
+      <Step kind="force" equip="CV" no="11" block="Ack" signal="UnloadComplete2Ack" desc="Unload Complete Ack #2 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete2" value="off" desc="Unload Complete #2 OFF" />
+      <Step kind="observe" equip="CV" no="11" block="Ack" signal="UnloadComplete2Ack" value="off" desc="Unload Complete Ack #2 OFF (설비/PLC 리셋)" />
+    </Scenario>
+    <Scenario title="반송 시나리오 (출고 : C/V #14 피킹존) — 슬라이드 12~13">
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="PalletExist" slot="0" value="on" desc="Pallet Exist #27 ON (RGV 하역)" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="LoadComplete1" value="on" desc="Load Complete #1 ON" />
+      <Step kind="force" equip="CV" no="14" block="Ack" signal="LoadComplete1Ack" desc="Load Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
+      <Step kind="observe" equip="CV" no="14" block="Ack" signal="LoadComplete1Ack" value="off" desc="Load Complete Ack #1 OFF (설비/PLC 리셋)" />
+      <Step kind="word" device="R" equip="CV" no="14" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO #27 Tracking Write" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="PalletExist" slot="0" value="off" desc="Pallet Exist #27 OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="PalletExist" slot="1" value="on" desc="Pallet Exist #28 ON (#28 도착)" />
+      <Step kind="word" device="R" equip="CV" no="14" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과: #27(R0130) JOB → #28(R0132)로 이동(원위치 클리어)" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="PalletExist" slot="2" value="on" desc="Pallet Exist #29 ON" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="2" value="on" desc="Pallet Exist #30 ON" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="WorkOrder" value="on" desc="W.O ON" />
+      <Step kind="word" device="R" equip="CV" no="14" block="Tracking" signal="JobNo" slot="2" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO #29 Tracking Write" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="UnloadRequest2Ack" value="on" desc="Unload Request #2 Ack ON" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="PalletExist" slot="2" value="off" desc="Pallet Exist #29 OFF" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="UnloadComplete2" value="on" desc="Unload Complete #2 ON" />
+      <Step kind="force" equip="CV" no="14" block="Ack" signal="UnloadComplete2Ack" desc="Unload Complete Ack #2 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="14" block="Ack" signal="UnloadRequest2" value="off" desc="Unload Request #2 OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="UnloadRequest2Ack" value="off" desc="Unload Request #2 Ack OFF" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="UnloadComplete2" value="off" desc="Unload Complete #2 OFF" />
+      <Step kind="observe" equip="CV" no="14" block="Ack" signal="UnloadComplete2Ack" value="off" desc="Unload Complete Ack #2 OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="CV" no="14" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
+    </Scenario>
+    <Scenario title="반송 시나리오 (입/출고 : 중간 C/V #2) — 슬라이드 14~15">
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="PalletExist" slot="0" value="on" desc="Pallet Exist #3 ON (RGV 하역)" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="LoadComplete1" value="on" desc="Load Complete #1 ON" />
+      <Step kind="force" equip="CV" no="2" block="Ack" signal="LoadComplete1Ack" desc="Load Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
+      <Step kind="observe" equip="CV" no="2" block="Ack" signal="LoadComplete1Ack" value="off" desc="Load Complete Ack #1 OFF (설비/PLC 리셋)" />
+      <Step kind="word" device="D" equip="CV" no="2" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="Direction Mode Check &#x27;0&#x27; (입고0/출고1) — 실구현 %DB962 word" />
+      <Step kind="word" device="R" equip="CV" no="2" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO #3 Tracking Write" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="PalletExist" slot="0" value="off" desc="Pallet Exist #3 OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="PalletExist" slot="1" value="on" desc="Pallet Exist #4 ON (#4 도착)" />
+      <Step kind="word" device="R" equip="CV" no="2" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과: #3(R0010) JOB → #4(R0012)로 이동(원위치 클리어)" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="WorkOrder" value="on" desc="W.O 보고 (S/C Call)" />
+      <Step kind="word" device="R" equip="CV" no="2" block="Tracking" signal="JobNo" slot="1" isString="true" desc="(슬15) S/C Call 시 #4 반출 대상 JOB 재표시 — 이동 스텝과 동일 값" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="PalletExist" slot="1" value="off" desc="Pallet Exist #4 OFF (S/C Load 완료)" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="UnloadComplete2" value="on" desc="Unload Complete #2 ON" />
+      <Step kind="force" equip="CV" no="2" block="Ack" signal="UnloadComplete2Ack" desc="Unload Complete Ack #2 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="UnloadComplete2" value="off" desc="Unload Complete #2 OFF" />
+      <Step kind="observe" equip="CV" no="2" block="Ack" signal="UnloadComplete2Ack" value="off" desc="Unload Complete Ack #2 OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="CV" no="2" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
+    </Scenario>
+    <Scenario title="반송 시나리오 (S/C·RGV 반송 : RGV #1) — 슬라이드 16~17">
+      <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="RGV 상태 IDLE(1) — 초기 대기" />
+      <Step kind="force" equip="RGV" no="1" block="Ack" signal="TransferRequest" desc="Transfer Command Req&#x27; ON (WCS 지시)" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="From" src="VehThread.cs::ConsumeCommands" desc="Transfer From (WCS 지시)" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="To" src="VehThread.cs::ConsumeCommands" desc="Transfer To (WCS 지시)" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="JobNo" isString="true" src="VehThread.cs::ConsumeCommands" desc="Transfer Job No (WCS 지시)" />
+      <Step kind="observe" equip="RGV" no="1" block="Ack" signal="TransferRequest" value="off" desc="Transfer Command Req&#x27; OFF (설비 소비 후)" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="RGV 상태 RUN(2) 전이 (지시 수신·상차 시작)" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="PalletExistFlag" value="on" desc="Pallet Presence ON (상차)" />
+      <Step kind="word" device="R" equip="RGV" no="1" block="Tracking" signal="PalletOnVehicle" isString="true" src="VehThread.cs::PollObservations" desc="On RGV Job No" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="LoadComplete" value="on" desc="Load Complete ON" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="TransferCompleteLocation" src="VehThread.cs::PollObservations" desc="Transfer Complete Location" />
+      <Step kind="force" equip="RGV" no="1" block="Ack" signal="LoadCompleteAck" desc="Load Complete Ack ON (WCS)" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="LoadComplete" value="off" desc="Load Complete OFF" />
+      <Step kind="observe" equip="RGV" no="1" block="Ack" signal="LoadCompleteAck" value="off" desc="Load Complete Ack OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="PalletExistFlag" value="off" desc="Pallet Presence OFF (하차)" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="UnloadComplete" value="on" desc="Unload Complete ON" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="TransferCompleteLocation" src="VehThread.cs::PollObservations" desc="Transfer Complete Location (하역 완료 위치)" />
+      <Step kind="force" equip="RGV" no="1" block="Ack" signal="UnloadCompleteAck" desc="Unload Complete Ack ON (WCS)" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="TransferAck" value="on" desc="Transfer Complete ON" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="TransferAck" value="off" desc="Transfer Complete OFF" />
+      <Step kind="observe" equip="RGV" no="1" block="Ack" signal="TransferComplete" value="off" desc="Transfer Complete Ack OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="RGV" no="1" block="Event" signal="UnloadComplete" value="off" desc="Unload Complete OFF" />
+      <Step kind="observe" equip="RGV" no="1" block="Ack" signal="UnloadCompleteAck" value="off" desc="Unload Complete Ack OFF (설비/PLC 리셋)" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="RGV 상태 IDLE(1) 복귀 (반송 완료)" />
+    </Scenario>
+    <Scenario title="반송 시나리오 (입고 : C/V #15 피킹존) — V1.2 신규 (물리 30→32→31)">
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="2" value="on" desc="Pallet Exist #30 ON (피킹존 투입)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="LoadComplete1" value="on" desc="Load Complete #1 ON" />
+      <Step kind="force" equip="CV" no="15" block="Ack" signal="LoadComplete1Ack" desc="Load Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
+      <Step kind="observe" equip="CV" no="15" block="Ack" signal="LoadComplete1Ack" value="off" desc="Load Complete Ack #1 OFF (설비/PLC 리셋)" />
+      <Step kind="word" device="D" equip="CV" no="15" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="Direction Mode Check &#x27;0&#x27; (입고 방향)" />
+      <Step kind="word" device="R" equip="CV" no="15" block="Tracking" signal="JobNo" slot="2" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO #30 최초 기록 (피킹존 진입 시 JOB Write)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="2" value="off" desc="Pallet Exist #30 OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="1" value="on" desc="Pallet Exist #32 ON (#32 도착)" />
+      <Step kind="word" device="R" equip="CV" no="15" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과: #30(R0144) JOB → #32(R0142)로 이동" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="0" value="on" desc="Pallet Exist #31 ON (반출 위치 도착)" />
+      <Step kind="word" device="R" equip="CV" no="15" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과: #32(R0142) JOB → #31(R0140)로 이동(반출 대상)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="WorkOrder" value="on" desc="W.O 보고 (S/C Call)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="UnloadRequest2Ack" value="on" desc="Unload Request #2 Ack ON" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="1" value="off" desc="Pallet Exist #32 OFF" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="UnloadComplete2" value="on" desc="Unload Complete #2 ON (S/C 반출)" />
+      <Step kind="force" equip="CV" no="15" block="Ack" signal="UnloadComplete2Ack" desc="Unload Complete Ack #2 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="15" block="Ack" signal="UnloadRequest2" value="off" desc="Unload Request #2 OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="UnloadRequest2Ack" value="off" desc="Unload Request #2 Ack OFF" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="UnloadComplete2" value="off" desc="Unload Complete #2 OFF" />
+      <Step kind="observe" equip="CV" no="15" block="Ack" signal="UnloadComplete2Ack" value="off" desc="Unload Complete Ack #2 OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="0" value="off" desc="Pallet Exist #31 OFF (반출 완료)" />
+    </Scenario>
+    <Scenario title="알람 시나리오 (Alarm Set / Reset) — 슬라이드 7">
+      <Step kind="observe" equip="Global" block="Alarm" signal="AlarmSet" value="on" desc="Alarm Set Report ON (설비 알람 발생)" />
+      <Step kind="word" device="D" equip="SC" no="1" block="Status" signal="AlarmSetCode" desc="Set Alarm Code — ※취소: Backup에 알람코드 주소 근거 없음(0101=STOCKER FAULT_CODE), WCS CvAlarmCheck는 비트(M786)만 관측" />
+      <Step kind="force" equip="Global" block="Alarm" signal="AlarmSetAck" desc="Alarm Set Report Ack ON (WCS)" />
+      <Step kind="observe" equip="Global" block="Alarm" signal="AlarmSet" value="off" desc="Alarm Set Report OFF (설비 리셋)" />
+      <Step kind="observe" equip="Global" block="Alarm" signal="AlarmSetAck" value="off" desc="Alarm Set Report Ack OFF (설비/PLC 리셋)" />
+      <Step kind="observe" equip="Global" block="Alarm" signal="AlarmReset" value="on" desc="Alarm Reset Report ON (설비 알람 해제)" />
+      <Step kind="word" device="D" equip="SC" no="1" block="Status" signal="AlarmResetCode" desc="Reset Alarm Code — ※취소: Backup에 알람코드 주소 근거 없음(0162=STOCKER CST_X_SERVO_MAX), WCS CvAlarmCheck는 비트(M787)만 관측" />
+      <Step kind="force" equip="Global" block="Alarm" signal="AlarmResetAck" desc="Alarm Reset Report Ack ON (WCS)" />
+      <Step kind="observe" equip="Global" block="Alarm" signal="AlarmReset" value="off" desc="Alarm Reset Report OFF (설비 리셋)" />
+      <Step kind="observe" equip="Global" block="Alarm" signal="AlarmResetAck" value="off" desc="Alarm Reset Report Ack OFF (설비/PLC 리셋)" />
+    </Scenario>
+  </Scenarios>
+</PlcAddressMap>
