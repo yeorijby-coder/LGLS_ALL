@@ -60,8 +60,10 @@ namespace WCS_TASK_CV
 
         private readonly SYS_MAIN owner;
         private FenetProtocol _plc;
-        private readonly List<ScenarioCv> scenarios;
+        // [LGLS 2026-08-19] 주소맵 XML 을 다시 읽어 시나리오를 재구성할 수 있게 readonly 해제
+        private List<ScenarioCv> scenarios;
         private Label lblConn;
+        private FlowLayoutPanel pnlScenario;   // 시나리오 버튼 영역 (재구성 대상)
 
         public FRM_SCENARIO_TEST(SYS_MAIN main)
         {
@@ -90,7 +92,57 @@ namespace WCS_TASK_CV
             };
             UpdateConnLabel();
 
-            var pnl = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(10) };
+            // [LGLS 2026-08-19] 주소맵 XML 도구 줄 (다시 읽기 / 메모장 / 폴더)
+            var pnlXml = new Panel { Dock = DockStyle.Top, Height = 34, Padding = new Padding(8, 4, 0, 0) };
+            var btnXmlReload = new Button
+            {
+                Text = "주소맵 XML 다시 읽기", Width = 150, Height = 25, Left = 8, Top = 3,
+                Font = new Font("맑은 고딕", 9F, FontStyle.Bold), BackColor = Color.LightSteelBlue
+            };
+            btnXmlReload.Click += btnXmlReload_Click;
+            var btnXmlNote = new Button
+            {
+                Text = "메모장 열기", Width = 96, Height = 25, Left = 164, Top = 3,
+                Font = new Font("맑은 고딕", 9F), BackColor = Color.LightGoldenrodYellow
+            };
+            btnXmlNote.Click += btnXmlNote_Click;
+            var btnXmlDir = new Button
+            {
+                Text = "폴더 열기", Width = 84, Height = 25, Left = 266, Top = 3,
+                Font = new Font("맑은 고딕", 9F), BackColor = Color.LightGoldenrodYellow
+            };
+            btnXmlDir.Click += btnXmlDir_Click;
+            lblXmlStat = new Label
+            {
+                Left = 360, Top = 8, Width = 600, AutoSize = false,
+                Font = new Font("맑은 고딕", 9F), ForeColor = Color.DarkBlue
+            };
+            pnlXml.Controls.AddRange(new Control[] { btnXmlReload, btnXmlNote, btnXmlDir, lblXmlStat });
+
+            pnlScenario = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(10) };
+            BuildScenarioButtons();
+
+            Controls.Add(pnlScenario);
+            Controls.Add(pnlXml);
+            Controls.Add(lblConn);
+            Controls.Add(lbl);
+            UpdateXmlStatus();
+
+            FormClosed += (s, e) => { PauseCvThread(false); try { _plc?.CloseSocket(); } catch { } };
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // [LGLS 2026-08-19] 주소맵 XML 다시 읽기
+        //   메모리 맵 창의 [주소맵 XML] 탭이나 메모장으로 파일을 고친 뒤, 이 창을 닫았다 열지 않고
+        //   버튼 한 번으로 시나리오(스텝 주소)를 새 XML 기준으로 재구성한다.
+        // ═════════════════════════════════════════════════════════════════════
+        private Label lblXmlStat;
+
+        private void BuildScenarioButtons()
+        {
+            if (pnlScenario == null) return;
+            pnlScenario.SuspendLayout();
+            pnlScenario.Controls.Clear();
             for (int i = 0; i < scenarios.Count; i++)
             {
                 var sc = scenarios[i];
@@ -102,14 +154,74 @@ namespace WCS_TASK_CV
                 };
                 var scLocal = sc;
                 b.Click += (s, e) => { if (EnsurePlc()) new StepFormCv(this, scLocal).Show(this); };
-                pnl.Controls.Add(b);
+                pnlScenario.Controls.Add(b);
             }
+            pnlScenario.ResumeLayout(true);
+        }
 
-            Controls.Add(pnl);
-            Controls.Add(lblConn);
-            Controls.Add(lbl);
+        private void UpdateXmlStatus()
+        {
+            if (lblXmlStat == null) return;
+            int nStep = 0;
+            foreach (var s in scenarios) nStep += s.Steps.Count;
+            lblXmlStat.Text = cPlcAddrMap.StatusText()
+                            + "   /   현재 표시 : 시나리오 " + scenarios.Count + "개 · 스텝 " + nStep + "개";
+        }
 
-            FormClosed += (s, e) => { PauseCvThread(false); try { _plc?.CloseSocket(); } catch { } };
+        private void btnXmlReload_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                cPlcAddrMap.Reload();
+                if (!cPlcAddrMap.IsLoaded)
+                {
+                    MessageBox.Show("주소맵 XML 을 읽지 못했습니다.\r\n" + cPlcAddrMap.LoadError
+                                  + "\r\n\r\n내장 기본 시나리오로 표시합니다.",
+                                    "주소맵 XML", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                scenarios = BuildScenarios();
+                BuildScenarioButtons();
+                UpdateXmlStatus();
+                Text = "[CV_TASK 시나리오 테스트] — WCS·D·R 강제 송신 / EQP 관측 (EQP_SIM 대칭)"
+                     + "   [R주소: " + cDefApp.GsRAddrModeText() + "]";
+                MessageBox.Show("주소맵 XML 을 다시 읽어 시나리오를 재구성했습니다.\r\n\r\n"
+                              + cPlcAddrMap.StatusText(),
+                                "주소맵 XML", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("다시 읽기 실패: " + ex.Message, "주소맵 XML",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnXmlNote_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string strPath = cPlcAddrMap.FilePath;
+                if (!System.IO.File.Exists(strPath))
+                { MessageBox.Show("파일이 없습니다.\r\n" + strPath, "주소맵 XML"); return; }
+                System.Diagnostics.Process.Start("notepad.exe", "\"" + strPath + "\"");
+            }
+            catch (Exception ex) { MessageBox.Show("메모장 실행 실패: " + ex.Message, "주소맵 XML"); }
+        }
+
+        private void btnXmlDir_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string strPath = cPlcAddrMap.FilePath;
+                if (System.IO.File.Exists(strPath))
+                    System.Diagnostics.Process.Start("explorer.exe", "/select,\"" + strPath + "\"");
+                else
+                {
+                    string strDir = System.IO.Path.GetDirectoryName(strPath);
+                    if (System.IO.Directory.Exists(strDir))
+                        System.Diagnostics.Process.Start("explorer.exe", "\"" + strDir + "\"");
+                }
+            }
+            catch (Exception ex) { MessageBox.Show("탐색기 실행 실패: " + ex.Message, "주소맵 XML"); }
         }
 
         private void PauseCvThread(bool p)
