@@ -126,14 +126,51 @@ namespace WCS_TASK_CV
                 {
                     string owner = "VEHICLE:1" + k;
                     if (!byOwner.ContainsKey(owner)) continue;
+                    OverrideFromAddrMap("SC", k, byOwner[owner]);   // [LGLS 2026-08-19] 주소맵 XML 우선
                     m_lstVeh.Add(new VehDef { OwnerId = owner, KeyVal = (900 + k).ToString(), Obs = byOwner[owner] });
                 }
             }
             else
             {
                 if (byOwner.ContainsKey("VEHICLE:1"))
+                {
+                    OverrideFromAddrMap("RGV", 1, byOwner["VEHICLE:1"]);   // [LGLS 2026-08-19]
                     m_lstVeh.Add(new VehDef { OwnerId = "VEHICLE:1", KeyVal = "801", Obs = byOwner["VEHICLE:1"] });
+                }
             }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-19] 주소맵 XML(7_DeviceMap\PlcAddressMap.xml)에 정의된 주소로 덮어쓴다.
+        ///   · XML 의 SC/RGV Signal 에 tag="LOAD_COMPLETE" 처럼 적힌 태그명으로 매칭한다.
+        ///   · XML 에 없는 태그는 observables.tsv 값을 그대로 둔다(폴백).
+        ///   → 이로써 SC/RGV 통신 주소도 XML 한 파일로 조정할 수 있다.
+        /// </summary>
+        private void OverrideFromAddrMap(string strEquipType, int nNo, Dictionary<string, ObsDef> dicObs)
+        {
+            try
+            {
+                if (!cPlcAddrMap.IsLoaded || dicObs == null) return;
+                int nHit = 0;
+                // 키를 복사해 순회(순회 중 값 수정 대비)
+                var keys = new List<string>(dicObs.Keys);
+                foreach (string strTag in keys)
+                {
+                    char chDev; int nWords;
+                    int nAddr = cPlcAddrMap.TagAddr(strEquipType, nNo, strTag, out chDev, out nWords);
+                    if (nAddr < 0) continue;
+                    ObsDef def = dicObs[strTag];
+                    if (def.Device != chDev) continue;         // 디바이스가 다르면 건너뜀(안전)
+                    if (def.Address == nAddr) { nHit++; continue; }
+                    def.Address = nAddr;
+                    dicObs[strTag] = def;
+                    nHit++;
+                }
+                if (nHit > 0)
+                    System.Diagnostics.Debug.WriteLine(string.Format(
+                        "[{0}#{1}] 주소맵 XML 적용 - 관측주소 {2}건 확정", strEquipType, nNo, nHit));
+            }
+            catch { }
         }
 
         // ---------- PLC 액세스 헬퍼 (CvThread 의 검증된 READ/WRITE 사용 패턴 그대로) ----------

@@ -28,6 +28,7 @@ namespace WCS_TASK_CV
         public int    PerSlot = 1;
         public int    MaxSlots = 1;
         public string AppliesTo;    // "14,15" 처럼 특정 설비에만 존재
+        public string Tag;          // observables.tsv 태그명 (SC/RGV 통신부 조회용)
     }
 
     /// <summary>설비군의 주소 블록 (base = Origin + (설비번호-NumberFrom) * Stride)</summary>
@@ -207,6 +208,7 @@ namespace WCS_TASK_CV
                         s.Offset    = Attr(sn, "offset", 0);
                         s.Words     = Attr(sn, "words", 1);
                         s.AppliesTo = AttrS(sn, "appliesTo", "");
+                        s.Tag       = AttrS(sn, "tag", "");
                         if (s.Name.Length > 0) b.Signals[s.Name] = s;
                     }
                     foreach (XmlNode sn in bn.SelectNodes("SignalArray"))
@@ -350,6 +352,56 @@ namespace WCS_TASK_CV
         public static int Addr(string equipType, int no, string block, string signal)
         {
             return Addr(equipType, no, block, signal, -1);
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-19] observables.tsv 태그명으로 주소를 조회한다 (SC/RGV 통신부용).
+        ///   · XML 의 Signal 에 tag="LOAD_COMPLETE" 처럼 적어둔 값으로 찾는다.
+        ///   · "FROM_02" 처럼 _NN 접미사가 붙은 태그는 base(_01) 를 찾아 (NN-1) 워드를 더한다.
+        ///   · 반환 : 주소(M=비트, D/R=워드). 없으면 -1
+        /// </summary>
+        public static int TagAddr(string equipType, int no, string tsvTag, out char device, out int words)
+        {
+            device = '?'; words = 1;
+            EnsureLoaded();
+            if (!m_bLoaded || string.IsNullOrEmpty(tsvTag)) return -1;
+
+            AddrGroup g;
+            if (!m_dicGroup.TryGetValue(equipType, out g)) return -1;
+
+            string strFind = tsvTag.Trim().ToUpperInvariant();
+            int nExtra = 0;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                foreach (AddrBlock b in g.Blocks.Values)
+                {
+                    foreach (AddrSignal s in b.Signals.Values)
+                    {
+                        if (string.IsNullOrEmpty(s.Tag)) continue;
+                        if (!string.Equals(s.Tag.Trim(), strFind, StringComparison.OrdinalIgnoreCase)) continue;
+                        device = b.Device;
+                        words  = s.Words;
+                        if (b.Device == 'R')
+                        {
+                            int nDoc = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset + nExtra;
+                            return cDefApp.GsRTrackWord(nDoc);
+                        }
+                        return b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset + nExtra;
+                    }
+                }
+                // 1차 실패 : "XXX_02" → base "XXX_01" 로 재시도
+                if (pass == 0)
+                {
+                    int u = strFind.LastIndexOf('_');
+                    if (u <= 0 || u == strFind.Length - 1) break;
+                    int nSeq;
+                    if (!int.TryParse(strFind.Substring(u + 1), out nSeq) || nSeq < 2) break;
+                    nExtra   = nSeq - 1;
+                    strFind  = strFind.Substring(0, u + 1) + "01";
+                }
+            }
+            device = '?'; words = 1;
+            return -1;
         }
 
         /// <summary>전역 비트(알람 등). 실패 시 -1</summary>

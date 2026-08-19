@@ -57,67 +57,69 @@
   <!-- ══ S/C (스태커크레인) 5대 ══ -->
   <EquipGroup type="SC" numberFrom="1" count="5">
     <Block name="Event" device="M" origin="768" stride="32" legacy="M0300">
-      <Signal name="PalletExistFlag" offset="0" />
-      <Signal name="LoadComplete" offset="16" />
-      <Signal name="UnloadComplete" offset="17" />
-      <Signal name="AlarmSetReport" offset="18" />
-      <Signal name="AlarmResetReport" offset="19" />
-      <Signal name="TransferAck" offset="20" />
+      <Signal name="PalletExistFlag" offset="0" tag="PALLET_EXIST_FLAG" />
+      <Signal name="LoadComplete" offset="16" tag="LOAD_COMPLETE" />
+      <Signal name="UnloadComplete" offset="17" tag="UNLOAD_COMPLETE" />
+      <Signal name="AlarmSetReport" offset="18" tag="ALARM_SET_REPORT" />
+      <Signal name="AlarmResetReport" offset="19" tag="ALARM_RESET_REPORT" />
+      <Signal name="TransferAck" offset="20" tag="TRANSFER_ACK" />
     </Block>
     <Block name="Ack" device="M" origin="1536" stride="16" legacy="M0600">
-      <Signal name="TransferRequest" offset="0" />
-      <Signal name="LoadCompleteAck" offset="1" />
-      <Signal name="UnloadCompleteAck" offset="2" />
-      <Signal name="AlarmSetReportAck" offset="3" />
-      <Signal name="AlarmResetReportAck" offset="4" />
-      <Signal name="TransferComplete" offset="5" />
+      <Signal name="TransferRequest" offset="0" tag="TRANSFER_REQUEST" />
+      <Signal name="LoadCompleteAck" offset="1" tag="LOAD_COMPLETE_ACK" />
+      <Signal name="UnloadCompleteAck" offset="2" tag="UNLOAD_COMPLETE_ACK" />
+      <Signal name="AlarmSetReportAck" offset="3" tag="ALARM_SET_REPORT_ACK" />
+      <Signal name="AlarmResetReportAck" offset="4" tag="ALARM_RESET_REPORT_ACK" />
+      <Signal name="TransferComplete" offset="5" tag="TRANSFER_COMPLETE_ACK" />
     </Block>
     <Block name="Status" device="D" origin="256" stride="16" legacy="D0160" desc="설비→WCS 상태">
-      <Signal name="SubsystemStatus" offset="0" />
-      <Signal name="AlarmSetCode" offset="1" />
-      <Signal name="AlarmResetCode" offset="2" />
-      <Signal name="TransferCompleteLocation" offset="3" words="3" />
-      <Signal name="OperationMode" offset="9" />
+      <Signal name="SubsystemStatus" offset="0" tag="SUBSYSTEM_STATUS" />
+      <Signal name="AlarmSetCode" offset="1" tag="ALARM_SET_CODE" />
+      <Signal name="AlarmResetCode" offset="2" tag="ALARM_RESET_CODE" />
+      <Signal name="TransferCompleteLocation" offset="3" words="3" tag="TRANSFER_COMPLETE_LOCATION_01" />
+      <Signal name="SubsystemLocation" offset="6" words="3" tag="SUBSYSTEM_LOCATION_01" desc="설비 현재위치(열/연/단)" />
+      <Signal name="OperationMode" offset="9" tag="OPERATION_MODE" />
     </Block>
     <Block name="Command" device="D" origin="768" stride="16" legacy="D0320" desc="WCS→설비 반송지시">
-      <Signal name="From" offset="0" words="3" />
-      <Signal name="To" offset="3" words="3" />
-      <Signal name="JobNo" offset="6" words="2" />
+      <Signal name="From" offset="0" words="3" tag="FROM_01" />
+      <Signal name="To" offset="3" words="3" tag="TO_01" />
+      <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" />
     </Block>
     <Block name="Tracking" device="R" origin="300" stride="2" perSlotWords="2" legacy="R0300">
-      <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" />
+      <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" tag="PALLET_ON_VEHICLE" />
     </Block>
   </EquipGroup>
 
   <!-- ══ RGV (반송대차) 1대 ══ -->
   <EquipGroup type="RGV" numberFrom="1" count="1">
     <Block name="Event" device="M" origin="928" stride="32" legacy="M03A0">
-      <Signal name="PalletExistFlag" offset="0" />
-      <Signal name="LoadComplete" offset="16" />
-      <Signal name="UnloadComplete" offset="17" />
-      <Signal name="AlarmSetReport" offset="18" />
-      <Signal name="AlarmResetReport" offset="19" />
-      <Signal name="TransferAck" offset="20" />
+      <Signal name="PalletExistFlag" offset="0" tag="PALLET_EXIST_FLAG" />
+      <Signal name="LoadComplete" offset="16" tag="LOAD_COMPLETE" />
+      <Signal name="UnloadComplete" offset="17" tag="UNLOAD_COMPLETE" />
+      <Signal name="AlarmSetReport" offset="18" tag="ALARM_SET_REPORT" />
+      <Signal name="AlarmResetReport" offset="19" tag="ALARM_RESET_REPORT" />
+      <Signal name="TransferAck" offset="20" tag="TRANSFER_ACK" />
     </Block>
     <Block name="Ack" device="M" origin="1616" stride="16" legacy="M0650">
-      <Signal name="TransferRequest" offset="0" />
-      <Signal name="LoadCompleteAck" offset="1" />
-      <Signal name="UnloadCompleteAck" offset="2" />
-      <Signal name="AlarmSetReportAck" offset="3" />
-      <Signal name="AlarmResetReportAck" offset="4" />
-      <Signal name="TransferComplete" offset="5" />
+      <Signal name="TransferRequest" offset="0" tag="TRANSFER_REQUEST" />
+      <Signal name="LoadCompleteAck" offset="1" tag="LOAD_COMPLETE_ACK" />
+      <Signal name="UnloadCompleteAck" offset="2" tag="UNLOAD_COMPLETE_ACK" />
+      <Signal name="AlarmSetReportAck" offset="3" tag="ALARM_SET_REPORT_ACK" />
+      <Signal name="AlarmResetReportAck" offset="4" tag="ALARM_RESET_REPORT_ACK" />
+      <Signal name="TransferComplete" offset="5" tag="TRANSFER_COMPLETE_ACK" />
     </Block>
     <Block name="Status" device="D" origin="336" stride="16" legacy="D0210">
-      <Signal name="SubsystemStatus" offset="0" />
-      <Signal name="TransferCompleteLocation" offset="3" words="3" />
+      <Signal name="SubsystemStatus" offset="0" tag="SUBSYSTEM_STATUS" />
+      <Signal name="TransferCompleteLocation" offset="3" words="3" tag="TRANSFER_COMPLETE_LOCATION_01" />
+      <Signal name="SubsystemLocation" offset="6" words="3" tag="SUBSYSTEM_LOCATION_01" desc="설비 현재위치" />
     </Block>
     <Block name="Command" device="D" origin="848" stride="16" legacy="D0370">
-      <Signal name="From" offset="0" words="3" />
-      <Signal name="To" offset="3" words="3" />
-      <Signal name="JobNo" offset="6" words="2" />
+      <Signal name="From" offset="0" words="3" tag="FROM_01" />
+      <Signal name="To" offset="3" words="3" tag="TO_01" />
+      <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" />
     </Block>
     <Block name="Tracking" device="R" origin="310" stride="2" perSlotWords="2" legacy="R0310">
-      <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" />
+      <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" tag="PALLET_ON_VEHICLE" />
     </Block>
   </EquipGroup>
 
