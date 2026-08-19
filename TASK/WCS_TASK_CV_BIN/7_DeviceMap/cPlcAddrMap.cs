@@ -18,6 +18,14 @@ namespace WCS_TASK_CV
     //     호출부는 종전 하드코딩 계산식으로 폴백한다. 즉 파일 문제로 통신이 멎지 않는다.
     // ─────────────────────────────────────────────────────────────────────────
 
+    /// <summary>[LGLS 2026-08-19] 설비 관측/지시 태그 1건 (observables.tsv 를 대체)</summary>
+    public class VehTagInfo
+    {
+        public char Device;    // 'M'(비트) / 'D'(워드) / 'R'(트래킹)
+        public int  Address;   // M=비트주소, D/R=워드주소
+        public int  Length = 1;
+    }
+
     /// <summary>블록 내 개별 신호</summary>
     public class AddrSignal
     {
@@ -402,6 +410,76 @@ namespace WCS_TASK_CV
             }
             device = '?'; words = 1;
             return -1;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-19] 설비 1대의 '태그명 → (디바이스, 주소, 길이)' 전체 표를 만든다.
+        ///   observables.tsv 를 대체하기 위한 것으로, VehThread 가 이 표만으로 동작한다.
+        ///   · tag 가 "FROM_01" 처럼 _NN 으로 끝나고 words&gt;1 이면 _01.._NN 으로 전개한다.
+        ///     (예: tag="FROM_01" words="3" → FROM_01, FROM_02, FROM_03 각 1워드)
+        ///   · 그 외 words&gt;1 은 단일 태그의 길이로 본다 (예: PALLET_ID 2워드).
+        /// 반환 : key=태그명, value=VehTagInfo. XML 미로드 시 빈 표.
+        /// </summary>
+        public static Dictionary<string, VehTagInfo> TagTable(string equipType, int no)
+        {
+            var r = new Dictionary<string, VehTagInfo>(StringComparer.OrdinalIgnoreCase);
+            EnsureLoaded();
+            if (!m_bLoaded) return r;
+
+            AddrGroup g;
+            if (!m_dicGroup.TryGetValue(equipType, out g)) return r;
+
+            foreach (AddrBlock b in g.Blocks.Values)
+            {
+                foreach (AddrSignal s in b.Signals.Values)
+                {
+                    if (string.IsNullOrEmpty(s.Tag)) continue;
+                    if (!SignalAppliesTo(s, no)) continue;
+
+                    int nBase;
+                    if (b.Device == 'R')
+                        nBase = cDefApp.GsRTrackWord(b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset);
+                    else
+                        nBase = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset;
+
+                    string strTag = s.Tag.Trim();
+                    int nWords = (s.Words > 0) ? s.Words : 1;
+
+                    // "_01" 로 끝나고 words>1 → 시리즈 전개
+                    bool bSeries = false;
+                    string strPrefix = "";
+                    if (nWords > 1 && strTag.Length > 3)
+                    {
+                        int u = strTag.LastIndexOf('_');
+                        int nSeq;
+                        if (u > 0 && int.TryParse(strTag.Substring(u + 1), out nSeq) && nSeq == 1)
+                        { bSeries = true; strPrefix = strTag.Substring(0, u + 1); }
+                    }
+
+                    if (bSeries)
+                    {
+                        for (int i = 0; i < nWords; i++)
+                            r[strPrefix + (i + 1).ToString("00")] =
+                                new VehTagInfo { Device = b.Device, Address = nBase + i, Length = 1 };
+                    }
+                    else
+                    {
+                        r[strTag] = new VehTagInfo { Device = b.Device, Address = nBase, Length = nWords };
+                    }
+                }
+            }
+            return r;
+        }
+
+        private static bool SignalAppliesTo(AddrSignal s, int no)
+        {
+            if (s == null || string.IsNullOrEmpty(s.AppliesTo)) return true;
+            foreach (string t in s.AppliesTo.Split(','))
+            {
+                int v;
+                if (int.TryParse(t.Trim(), out v) && v == no) return true;
+            }
+            return false;
         }
 
         /// <summary>전역 비트(알람 등). 실패 시 -1</summary>

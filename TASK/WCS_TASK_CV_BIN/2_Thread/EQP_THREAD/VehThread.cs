@@ -81,10 +81,54 @@ namespace WCS_TASK_CV
 
         public void Stop() { m_bRun = false; }
 
-        // ---------- observables.tsv 로드 (EQP_SIM 과 동일 파일/규격, ADDRESS_NO 는 16진) ----------
+        // ---------- 관측/지시 주소 로드 ----------
+        //  [LGLS 2026-08-19] 주소맵 XML(7_DeviceMap\PlcAddressMap.xml) 단일화.
+        //    · 1순위 : XML 의 SC/RGV 정의(tag 속성)로 주소표를 만든다 → observables.tsv 불필요
+        //    · 2순위 : XML 을 못 읽으면 종전처럼 observables.tsv 를 읽는다(폴백)
         private void LoadObservables()
         {
+            if (LoadFromAddrMap()) return;      // XML 로 확정되면 tsv 는 읽지 않는다
+            LoadFromTsv();
+        }
+
+        /// <summary>주소맵 XML 로 설비 주소표 구성. 성공 시 true</summary>
+        private bool LoadFromAddrMap()
+        {
+            try
+            {
+                if (!cPlcAddrMap.IsLoaded) return false;
+                string strTyp = (m_strKind == "SC") ? "SC" : "RGV";
+                int nCnt = (m_strKind == "SC") ? 5 : 1;
+                var lst = new List<VehDef>();
+
+                for (int k = 1; k <= nCnt; k++)
+                {
+                    var tbl = cPlcAddrMap.TagTable(strTyp, k);
+                    if (tbl == null || tbl.Count == 0) return false;   // 정의 부족 → tsv 폴백
+
+                    var obs = new Dictionary<string, ObsDef>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var kv in tbl)
+                        obs[kv.Key] = new ObsDef { Device = kv.Value.Device, Address = kv.Value.Address, Length = kv.Value.Length };
+
+                    string strOwner = (m_strKind == "SC") ? ("VEHICLE:1" + k) : "VEHICLE:1";
+                    string strKey   = (m_strKind == "SC") ? (900 + k).ToString() : "801";
+                    lst.Add(new VehDef { OwnerId = strOwner, KeyVal = strKey, Obs = obs });
+                }
+
+                m_lstVeh.Clear();
+                m_lstVeh.AddRange(lst);
+                System.Diagnostics.Debug.WriteLine(string.Format(
+                    "[{0}] 주소맵 XML 로 관측주소 구성 - 설비 {1}대 (observables.tsv 미사용)", m_strKind, m_lstVeh.Count));
+                return true;
+            }
+            catch { return false; }
+        }
+
+        // ---------- observables.tsv 로드 (폴백 : XML 부재/오류 시에만) ----------
+        private void LoadFromTsv()
+        {
             string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "observables.tsv");
+            if (!File.Exists(path)) return;
             var byOwner = new Dictionary<string, Dictionary<string, ObsDef>>(StringComparer.OrdinalIgnoreCase);
             foreach (string raw in File.ReadAllLines(path))
             {

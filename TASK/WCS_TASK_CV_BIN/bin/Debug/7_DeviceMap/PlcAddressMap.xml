@@ -83,7 +83,7 @@
     <Block name="Command" device="D" origin="768" stride="16" legacy="D0320" desc="WCS→설비 반송지시">
       <Signal name="From" offset="0" words="3" tag="FROM_01" />
       <Signal name="To" offset="3" words="3" tag="TO_01" />
-      <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" />
+      <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" desc="작업번호(파렛트ID) 2워드" />
     </Block>
     <Block name="Tracking" device="R" origin="300" stride="2" perSlotWords="2" legacy="R0300">
       <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" tag="PALLET_ON_VEHICLE" />
@@ -110,13 +110,21 @@
     </Block>
     <Block name="Status" device="D" origin="336" stride="16" legacy="D0210">
       <Signal name="SubsystemStatus" offset="0" tag="SUBSYSTEM_STATUS" />
+      <Signal name="AlarmSetCode" offset="1" tag="ALARM_SET_CODE" />
+      <Signal name="AlarmResetCode" offset="2" tag="ALARM_RESET_CODE" />
       <Signal name="TransferCompleteLocation" offset="3" words="3" tag="TRANSFER_COMPLETE_LOCATION_01" />
       <Signal name="SubsystemLocation" offset="6" words="3" tag="SUBSYSTEM_LOCATION_01" desc="설비 현재위치" />
+      <Signal name="OperationMode" offset="9" tag="OPERATION_MODE" />
     </Block>
     <Block name="Command" device="D" origin="848" stride="16" legacy="D0370">
       <Signal name="From" offset="0" words="3" tag="FROM_01" />
-      <Signal name="To" offset="3" words="3" tag="TO_01" />
-      <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" />
+      <!-- ※ RGV 의 To 는 원본 정의(구 ECS TB_OBSERVABLE / EQP_SIM observables.tsv)가 연속이 아니다.
+              TO_01=W0353(851), TO_02=W0354(852), TO_03=W0345(837) ← 3번째만 앞쪽 번지.
+              구 ECS·시뮬레이터·실 PLC 래더가 모두 이 배치를 쓰므로 그대로 맞춘다(임의 연속화 금지). -->
+      <Signal name="To1" offset="3" tag="TO_01" />
+      <Signal name="To2" offset="4" tag="TO_02" />
+      <Signal name="To3" offset="-11" tag="TO_03" desc="원본이 W0345 로 비연속 - 848-11=837" />
+      <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" desc="작업번호(파렛트ID) 2워드" />
     </Block>
     <Block name="Tracking" device="R" origin="310" stride="2" perSlotWords="2" legacy="R0310">
       <Signal name="PalletOnVehicle" offset="0" words="2" encoding="ascii4" tag="PALLET_ON_VEHICLE" />

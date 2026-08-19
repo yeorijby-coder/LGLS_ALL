@@ -1,4 +1,11 @@
-﻿CONVEYOR:10	DIRECTION_MODE	IN_OUT	String	T	DEVICE_TYPE=W,ADDRESS_NO=01E9,LENGTH=1
+﻿# ============================================================================
+# [LGLS 2026-08-19] 이 파일은 더 이상 EQP_TASK 의 주소 원본이 아닙니다.
+#   · 단일 소스 = 7_DeviceMap\PlcAddressMap.xml  (SC/RGV 는 Signal 의 tag= 속성으로 정의)
+#   · EQP_TASK(VehThread) 는 XML 을 먼저 읽고, XML 을 못 읽을 때만 이 파일로 폴백합니다.
+#   · 따라서 주소를 바꿀 때는 XML 을 고치십시오. 이 파일 수정은 반영되지 않습니다.
+#   · 남겨 둔 이유 : XML 파손 시 통신이 멎지 않도록 하는 최후 안전망 + 구 ECS 원본 대조용
+# ============================================================================
+CONVEYOR:10	DIRECTION_MODE	IN_OUT	String	T	DEVICE_TYPE=W,ADDRESS_NO=01E9,LENGTH=1
 CONVEYOR:10	IN_READY_02	IN_OUT	Boolean	T	DEVICE_TYPE=B,ADDRESS_NO=0227
 CONVEYOR:10	LOAD_COMPLETE_01	IN_OUT	Boolean	T	DEVICE_TYPE=B,ADDRESS_NO=0222
 CONVEYOR:10	LOAD_COMPLETE_02	IN_OUT	Boolean	T	DEVICE_TYPE=B,ADDRESS_NO=0224
