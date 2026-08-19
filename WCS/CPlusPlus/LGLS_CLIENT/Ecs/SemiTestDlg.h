@@ -57,6 +57,8 @@ protected:
 	void AddLog(int nLogic, LPCTSTR szAct, LPCTSTR szLugg, LPCTSTR szSys, LPCTSTR szFunc, const CString& strMsg);
 	void InitLogList();
 	BOOL RowActive(int r);
+	BOOL IsLocMode();               // [LGLS 2026-08-19] 로케이션 직접 입력 모드 여부(라디오)
+	BOOL ResolveLocRow(int r);      // [LGLS 2026-08-19] 행의 로케이션 입력을 CELL_MST 로 확정
 	BOOL PickNextCrane(int r, int& nCrane);
 	BOOL NextCell(int r, int nCrane);
 	BOOL InsertJob(int r, BOOL bSto);

@@ -3280,6 +3280,11 @@
 #define IDC_LGLS_ST_TO4                 8409
 #define IDC_LGLS_ST_TO5                 8410
 #define IDC_LGLS_ST_SC_BASE             8411
+#define IDC_LGLS_ST_LOC1                8436
+#define IDC_LGLS_ST_LOC2                8437
+#define IDC_LGLS_ST_LOC3                8438
+#define IDC_LGLS_ST_LOC4                8439
+#define IDC_LGLS_ST_LOC5                8440
 #define IDC_LGLS_ST_STAT1               8441
 #define IDC_LGLS_ST_STAT2               8442
 #define IDC_LGLS_ST_STAT3               8443
@@ -3297,6 +3302,9 @@
 #define IDC_LGLS_ST_HDR_SC3             8456
 #define IDC_LGLS_ST_HDR_SC4             8457
 #define IDC_LGLS_ST_HDR_SC5             8458
+#define IDC_LGLS_ST_MODE_AUTO           8459
+#define IDC_LGLS_ST_MODE_LOC            8460
+#define IDC_LGLS_ST_HDR_LOC             8461
 #define IDC_LGLS_CV_PAUSE_GRP           8233
 #define IDC_LGLS_RTV_CUR_LBL            8234
 #define IDC_LGLS_RTV_CUR_VAL            8235

@@ -67,6 +67,8 @@ BOOL CSemiTestDlg::OnInitDialog()
 		SetDlgItemText(IDC_LGLS_ST_TO1 + r, _T("124"));
 		SetRowStat(r, _T("-"));
 	}
+	// [LGLS 2026-08-19] 로케이션 모드 기본값 = 크레인 자동(기존 동작)
+	CheckRadioButton(IDC_LGLS_ST_MODE_AUTO, IDC_LGLS_ST_MODE_LOC, IDC_LGLS_ST_MODE_AUTO);
 	RenameByIni();
 	InitLogList();
 	return TRUE;
@@ -84,6 +86,9 @@ void CSemiTestDlg::RenameByIni()
 	s = CLib::GetIniStringFromPath(strPath, _T("startpos"), (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_HDR_FR, s);
 	s = CLib::GetIniStringFromPath(strPath, _T("destpos"),  (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_HDR_TO, s);
 	s = CLib::GetIniStringFromPath(strPath, _T("status"),   (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_HDR_STAT, s);
+	s = CLib::GetIniStringFromPath(strPath, _T("hdrloc"),   (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_HDR_LOC, s);
+	s = CLib::GetIniStringFromPath(strPath, _T("modeauto"), (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_MODE_AUTO, s);
+	s = CLib::GetIniStringFromPath(strPath, _T("modeloc"),  (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_MODE_LOC, s);
 	s = CLib::GetIniStringFromPath(strPath, _T("start"),    (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_START, s);
 	s = CLib::GetIniStringFromPath(strPath, _T("stop"),     (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_ST_STOP, s);
 	s = CLib::GetIniStringFromPath(strPath, _T("close"),    (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDCANCEL, s);
@@ -163,9 +168,86 @@ BOOL CSemiTestDlg::RowActive(int r)
 	GetDlgItemText(IDC_LGLS_ST_FR1 + r, strFr); strFr.Trim();
 	GetDlgItemText(IDC_LGLS_ST_TO1 + r, strTo); strTo.Trim();
 	if (strFr.IsEmpty() || strTo.IsEmpty()) return FALSE;
+	// [LGLS 2026-08-19] 로케이션 직접 입력 모드: 로케이션이 입력된 행만 가동
+	if (IsLocMode())
+	{
+		CString strLoc; GetDlgItemText(IDC_LGLS_ST_LOC1 + r, strLoc); strLoc.Trim();
+		return !strLoc.IsEmpty();
+	}
 	for (int k = 0; k < CRANES; k++)
 		if (IsDlgButtonChecked(IDC_LGLS_ST_SC_BASE + r * CRANES + k)) return TRUE;
 	return FALSE;
+}
+
+// [LGLS 2026-08-19] 라디오: 로케이션 직접 입력 모드인가
+BOOL CSemiTestDlg::IsLocMode()
+{
+	return IsDlgButtonChecked(IDC_LGLS_ST_MODE_LOC) == BST_CHECKED;
+}
+
+// [LGLS 2026-08-19] 행의 로케이션 입력(BB-BBB-LL, 구분자 - . 공백, 붙여쓰기 허용)을
+//   CELL_MST 에서 찾아 로케이션/담당 크레인(CELL_SC_NO)을 확정한다.
+//   ※ 점유 여부는 검사하지 않는다 - 이중입고 테스트(에러 54) 주입 용도로도 쓰기 위함.
+BOOL CSemiTestDlg::ResolveLocRow(int r)
+{
+	CString s; GetDlgItemText(IDC_LGLS_ST_LOC1 + r, s); s.Trim();
+	if (s.IsEmpty()) return FALSE;
+	s.Replace(_T("."), _T("-")); s.Replace(_T(" "), _T("-"));
+	while (s.Replace(_T("--"), _T("-")) > 0);
+	int nBank = 0, nBay = 0, nLev = 0;
+	if (s.Find(_T('-')) >= 0)
+	{
+		int nPos = 0;
+		CString strBank = s.Tokenize(_T("-"), nPos);
+		CString strBay  = s.Tokenize(_T("-"), nPos);
+		CString strLev  = s.Tokenize(_T("-"), nPos);
+		if (strLev.IsEmpty())
+		{
+			AddLog(r + 1, _T("-"), _T("-"), _T("Client"), _T("CSemiTestDlg::ResolveLocRow"), s + _T(" : 로케이션 형식 오류 (BB-BBB-LL)"));
+			return FALSE;
+		}
+		nBank = CConvert::ToInt(strBank); nBay = CConvert::ToInt(strBay); nLev = CConvert::ToInt(strLev);
+	}
+	else if (s.GetLength() >= 5)	// 붙여쓰기 BBBBBLL (2-x-2)
+	{
+		nBank = CConvert::ToInt(s.Left(2));
+		nBay  = CConvert::ToInt(s.Mid(2, s.GetLength() - 4));
+		nLev  = CConvert::ToInt(s.Right(2));
+	}
+	else
+	{
+		AddLog(r + 1, _T("-"), _T("-"), _T("Client"), _T("CSemiTestDlg::ResolveLocRow"), s + _T(" : 로케이션 형식 오류 (BB-BBB-LL)"));
+		return FALSE;
+	}
+
+	CString strSql, strMsg; int nCnt = 0;
+	strSql.Format(_T("SELECT TOP 1 BANK, BAY, LEV, CELL_NO, CELL_SC_NO FROM CELL_MST")
+	              _T(" WHERE WH_TYP = '%s' AND CELL_USE_YN = 'Y'")
+	              _T("   AND CAST(BANK AS INT) = %d AND CAST(BAY AS INT) = %d AND CAST(LEV AS INT) = %d"),
+	              (LPCTSTR)m_pDoc->m_WH_TYP, nBank, nBay, nLev);
+	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nCnt, strMsg);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	if (nCnt <= 0)
+	{
+		delete pRsw;
+		CString strErr; strErr.Format(_T("%02d-%03d-%02d : CELL_MST 에 없는 로케이션입니다"), nBank, nBay, nLev);
+		AddLog(r + 1, _T("-"), _T("-"), _T("Client"), _T("CSemiTestDlg::ResolveLocRow"), strErr);
+		return FALSE;
+	}
+	pRsw->MoveFirst();
+	m_row[r].strBank = pRsw->GetItem(_T("BANK"));
+	m_row[r].strBay  = pRsw->GetItem(_T("BAY"));
+	m_row[r].strLev  = pRsw->GetItem(_T("LEV"));
+	m_row[r].strScNo = pRsw->GetItem(_T("CELL_SC_NO"));
+	delete pRsw;
+	int nCrane = CConvert::ToInt(m_row[r].strScNo) - 901;
+	if (nCrane < 0 || nCrane >= CRANES)
+	{
+		AddLog(r + 1, _T("-"), _T("-"), _T("Client"), _T("CSemiTestDlg::ResolveLocRow"), _T("CELL_SC_NO(") + m_row[r].strScNo + _T(") 가 901~905 범위가 아닙니다"));
+		return FALSE;
+	}
+	m_row[r].nCrane = nCrane;
+	return TRUE;
 }
 
 // 체크된 크레인 중 다음(라운드로빈)
@@ -333,10 +415,18 @@ void CSemiTestDlg::StepRow(int r)
 	{
 		if (!m_bRun) return;	// [LGLS 2026-08-13] 정지 상태에서는 새 작업을 만들지 않는다
 		if (!RowActive(r)) return;
-		int nCrane = -1;
-		if (!PickNextCrane(r, nCrane)) return;
-		m_row[r].nCrane = nCrane;
-		if (!NextCell(r, nCrane)) return;
+		// [LGLS 2026-08-19] 모드 분기: 직접 입력 = 입력 로케이션 반복 / 자동 = 크레인 순환 +1
+		if (IsLocMode())
+		{
+			if (!ResolveLocRow(r)) return;
+		}
+		else
+		{
+			int nCrane = -1;
+			if (!PickNextCrane(r, nCrane)) return;
+			m_row[r].nCrane = nCrane;
+			if (!NextCell(r, nCrane)) return;
+		}
 		if (InsertJob(r, TRUE)) m_row[r].nState = 1;
 	}
 	else if (m_row[r].nState == 1)
@@ -370,6 +460,9 @@ void CSemiTestDlg::TraceSc()
 	for (int r = 0; r < ROWS; r++)
 		for (int k = 0; k < CRANES; k++)
 			if (IsDlgButtonChecked(IDC_LGLS_ST_SC_BASE + r * CRANES + k)) bUse[k] = TRUE;
+	// [LGLS 2026-08-19] 로케이션 직접 입력 모드: 진행 중 행이 확정한 크레인도 추적
+	for (int r = 0; r < ROWS; r++)
+		if (m_row[r].nState != 0 && m_row[r].nCrane >= 0 && m_row[r].nCrane < CRANES) bUse[m_row[r].nCrane] = TRUE;
 
 	for (int k = 0; k < CRANES; k++)
 	{
