@@ -179,6 +179,7 @@ namespace WCS_TASK_CV
             txtIp.Text   = _ip;
             txtPort.Text = _port.ToString();
             LoadGrids();
+            LoadAddrXmlText();   // [LGLS 2026-08-19] 주소맵 XML 탭 내용 채우기
             // [LGLS 2026-08-19] 메인화면 R주소 라디오 변경 → 이 창으로 돌아올 때 자동 갱신
             this.Activated += new EventHandler(FRM_PLC_MEMMAP_Activated);
             TryAutoConnect();
@@ -385,6 +386,123 @@ namespace WCS_TASK_CV
         private void FRM_PLC_MEMMAP_Activated(object sender, EventArgs e)
         {
             RefreshRMode();
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // [LGLS 2026-08-19] 주소맵 XML 보기 / 편집
+        //   · 저장 + 적용 : XML 문법 검사 → .bak 백업 → 저장 → 재로드 → 모든 표 즉시 갱신
+        //   · 다시 읽기   : 파일 내용으로 되돌림(편집 취소)
+        //   · 메모장 열기 / 폴더 열기
+        // ═════════════════════════════════════════════════════════════════════
+        private void LoadAddrXmlText()
+        {
+            try
+            {
+                string strPath = cPlcAddrMap.FilePath;
+                lblXmlPath.Text = strPath + "    —    " + cPlcAddrMap.StatusText();
+                if (System.IO.File.Exists(strPath))
+                    txtAddrXml.Text = System.IO.File.ReadAllText(strPath, System.Text.Encoding.UTF8);
+                else
+                    txtAddrXml.Text = "// 파일이 없습니다: " + strPath + Environment.NewLine
+                                    + "// (현재는 소스 내장 기본값으로 동작 중입니다)";
+                txtAddrXml.SelectionStart = 0;
+                txtAddrXml.SelectionLength = 0;
+            }
+            catch (Exception ex) { AppendLog("[주소맵 XML] 읽기 실패: " + ex.Message); }
+        }
+
+        private void btnXmlReload_Click(object sender, EventArgs e)
+        {
+            LoadAddrXmlText();
+            AppendLog("[주소맵 XML] 파일 내용을 다시 읽었습니다.");
+        }
+
+        private void btnXmlApply_Click(object sender, EventArgs e)
+        {
+            string strPath = cPlcAddrMap.FilePath;
+            try
+            {
+                // 1) XML 문법 검사 — 깨진 내용을 저장해 통신이 멎는 것을 막는다
+                System.Xml.XmlDocument chk = new System.Xml.XmlDocument();
+                chk.LoadXml(txtAddrXml.Text);
+                if (chk.SelectSingleNode("/PlcAddressMap") == null)
+                    throw new Exception("루트 요소 <PlcAddressMap> 이 없습니다.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("XML 형식 오류로 저장하지 않았습니다.\r\n\r\n" + ex.Message,
+                                "주소맵 XML", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                AppendLog("[주소맵 XML] 형식 오류 — 저장 취소: " + ex.Message);
+                return;
+            }
+
+            try
+            {
+                // 2) 백업 후 저장
+                if (System.IO.File.Exists(strPath))
+                    System.IO.File.Copy(strPath, strPath + ".bak", true);
+                System.IO.File.WriteAllText(strPath, txtAddrXml.Text, new System.Text.UTF8Encoding(false));
+
+                // 3) 재로드 + 화면 즉시 갱신 (통신부는 다음 사이클부터 새 주소 사용)
+                cPlcAddrMap.Reload();
+                LoadGrids();
+                LoadAddrXmlText();
+
+                if (!cPlcAddrMap.IsLoaded)
+                {
+                    MessageBox.Show("저장은 됐지만 주소맵을 읽지 못했습니다.\r\n" + cPlcAddrMap.LoadError
+                                  + "\r\n\r\n종전 내장 기본값으로 동작합니다.",
+                                    "주소맵 XML", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    AppendLog("[주소맵 XML] 저장 + 적용 완료 — " + cPlcAddrMap.StatusText()
+                            + "  (백업: " + System.IO.Path.GetFileName(strPath) + ".bak)");
+                    MessageBox.Show("저장하고 적용했습니다.\r\n" + cPlcAddrMap.StatusText()
+                                  + "\r\n\r\n· 이 창의 표는 즉시 갱신되었습니다."
+                                  + "\r\n· 자동운전 통신은 다음 스캔 주기부터 새 주소를 사용합니다."
+                                  + "\r\n· 시나리오 테스트 창은 다시 열면 반영됩니다.",
+                                    "주소맵 XML", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("저장 실패: " + ex.Message, "주소맵 XML",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                AppendLog("[주소맵 XML] 저장 실패: " + ex.Message);
+            }
+        }
+
+        private void btnXmlNotepad_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string strPath = cPlcAddrMap.FilePath;
+                if (!System.IO.File.Exists(strPath))
+                { MessageBox.Show("파일이 없습니다.\r\n" + strPath, "주소맵 XML"); return; }
+                System.Diagnostics.Process.Start("notepad.exe", "\"" + strPath + "\"");
+                AppendLog("[주소맵 XML] 메모장으로 열었습니다. 편집 후 [다시 읽기]를 누르세요.");
+            }
+            catch (Exception ex) { MessageBox.Show("메모장 실행 실패: " + ex.Message, "주소맵 XML"); }
+        }
+
+        private void btnXmlFolder_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string strPath = cPlcAddrMap.FilePath;
+                if (System.IO.File.Exists(strPath))
+                    System.Diagnostics.Process.Start("explorer.exe", "/select,\"" + strPath + "\"");
+                else
+                {
+                    string strDir = System.IO.Path.GetDirectoryName(strPath);
+                    if (System.IO.Directory.Exists(strDir))
+                        System.Diagnostics.Process.Start("explorer.exe", "\"" + strDir + "\"");
+                    else
+                        MessageBox.Show("경로를 찾을 수 없습니다.\r\n" + strPath, "주소맵 XML");
+                }
+            }
+            catch (Exception ex) { MessageBox.Show("탐색기 실행 실패: " + ex.Message, "주소맵 XML"); }
         }
 
         /// <summary>

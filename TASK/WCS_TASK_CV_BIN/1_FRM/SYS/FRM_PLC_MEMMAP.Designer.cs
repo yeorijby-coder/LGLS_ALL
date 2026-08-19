@@ -50,6 +50,15 @@
             this.btnCvWrite12   = new System.Windows.Forms.Button();
             this.btnCvWrite15   = new System.Windows.Forms.Button();
             this.tabManual      = new System.Windows.Forms.TabPage();
+            // [LGLS 2026-08-19] 주소맵 XML 보기/편집 탭
+            this.tabAddrXml     = new System.Windows.Forms.TabPage();
+            this.txtAddrXml     = new System.Windows.Forms.TextBox();
+            this.pnlAddrXmlBtn  = new System.Windows.Forms.Panel();
+            this.btnXmlApply    = new System.Windows.Forms.Button();
+            this.btnXmlReload   = new System.Windows.Forms.Button();
+            this.btnXmlNotepad  = new System.Windows.Forms.Button();
+            this.btnXmlFolder   = new System.Windows.Forms.Button();
+            this.lblXmlPath     = new System.Windows.Forms.Label();
             this.pnlManualTop   = new System.Windows.Forms.Panel();
             this.lblManualDev   = new System.Windows.Forms.Label();
             this.cmbManualDev   = new System.Windows.Forms.ComboBox();
@@ -98,6 +107,7 @@
             this.tabBit.SuspendLayout();
             this.tabWord.SuspendLayout();
             this.tabTracking.SuspendLayout();
+            this.tabAddrXml.SuspendLayout();
             this.tabManual.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvBit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvWord)).BeginInit();
@@ -138,7 +148,7 @@
             // ── tabMain ───────────────────────────────────────────────────────
             this.tabMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabMain.Controls.AddRange(new System.Windows.Forms.TabPage[] {
-                this.tabBit, this.tabWord, this.tabTracking, this.tabManual, this.tabCvWrite });
+                this.tabBit, this.tabWord, this.tabTracking, this.tabManual, this.tabCvWrite, this.tabAddrXml });
             this.tabMain.Font = new System.Drawing.Font("맑은 고딕", 9f);
 
             // ── tabBit ───────────────────────────────────────────────────────
@@ -213,6 +223,39 @@
             this.btnWriteTracking.Click += new System.EventHandler(this.btnWriteTracking_Click);
 
             this.dgvTracking.Dock = System.Windows.Forms.DockStyle.Fill;
+
+            // ── tabAddrXml : 주소맵 XML 보기/편집 ────────────────────────────
+            this.tabAddrXml.Text    = "주소맵 XML";
+            this.tabAddrXml.Padding = new System.Windows.Forms.Padding(3);
+            this.tabAddrXml.Controls.AddRange(new System.Windows.Forms.Control[] {
+                this.txtAddrXml, this.pnlAddrXmlBtn });
+
+            this.pnlAddrXmlBtn.Dock      = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlAddrXmlBtn.Height    = 38;
+            this.pnlAddrXmlBtn.BackColor = System.Drawing.Color.FromArgb(45, 45, 48);
+            this.pnlAddrXmlBtn.Controls.AddRange(new System.Windows.Forms.Control[] {
+                this.btnXmlApply, this.btnXmlReload, this.btnXmlNotepad, this.btnXmlFolder, this.lblXmlPath });
+
+            SetButton(this.btnXmlApply,   "저장 + 적용", 4, 5, 96, System.Drawing.Color.FromArgb(0, 122, 204));
+            this.btnXmlApply.Click   += new System.EventHandler(this.btnXmlApply_Click);
+            SetButton(this.btnXmlReload,  "다시 읽기", 104, 5, 84, System.Drawing.Color.FromArgb(90, 90, 95));
+            this.btnXmlReload.Click  += new System.EventHandler(this.btnXmlReload_Click);
+            SetButton(this.btnXmlNotepad, "메모장 열기", 192, 5, 96, System.Drawing.Color.FromArgb(120, 90, 0));
+            this.btnXmlNotepad.Click += new System.EventHandler(this.btnXmlNotepad_Click);
+            SetButton(this.btnXmlFolder,  "폴더 열기", 292, 5, 84, System.Drawing.Color.FromArgb(120, 90, 0));
+            this.btnXmlFolder.Click  += new System.EventHandler(this.btnXmlFolder_Click);
+            SetLabel(this.lblXmlPath, "", 384, 11, 700);
+
+            this.txtAddrXml.Dock       = System.Windows.Forms.DockStyle.Fill;
+            this.txtAddrXml.Multiline  = true;
+            this.txtAddrXml.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.txtAddrXml.WordWrap   = false;
+            this.txtAddrXml.AcceptsTab = true;
+            this.txtAddrXml.MaxLength  = 0;
+            this.txtAddrXml.Font       = new System.Drawing.Font("Consolas", 9F);
+            this.txtAddrXml.BackColor  = System.Drawing.Color.FromArgb(30, 30, 30);
+            this.txtAddrXml.ForeColor  = System.Drawing.Color.Gainsboro;
+            this.txtAddrXml.BorderStyle = System.Windows.Forms.BorderStyle.None;
             ConfigDgv(this.dgvTracking);
             // [LGLS 2026-08-19] R 주소모드(16진)에서 "R0300 (%RB1536)" 처럼 길어져 잘리므로 폭 확대
             this.colTrackAddr.Name = "colTrackAddr"; this.colTrackAddr.HeaderText = "주소"; this.colTrackAddr.Width = 150;
@@ -356,6 +399,8 @@
             this.tabBit.ResumeLayout(false);
             this.tabWord.ResumeLayout(false);
             this.tabTracking.ResumeLayout(false);
+            this.tabAddrXml.ResumeLayout(false);
+            this.tabAddrXml.PerformLayout();
             this.tabManual.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvBit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvWord)).EndInit();
@@ -442,6 +487,14 @@
         private System.Windows.Forms.TextBox txtWriteWordVal;
         private System.Windows.Forms.Button btnWriteWord;
         private System.Windows.Forms.TabPage tabTracking;
+        private System.Windows.Forms.TabPage tabAddrXml;
+        private System.Windows.Forms.TextBox txtAddrXml;
+        private System.Windows.Forms.Panel   pnlAddrXmlBtn;
+        private System.Windows.Forms.Button  btnXmlApply;
+        private System.Windows.Forms.Button  btnXmlReload;
+        private System.Windows.Forms.Button  btnXmlNotepad;
+        private System.Windows.Forms.Button  btnXmlFolder;
+        private System.Windows.Forms.Label   lblXmlPath;
         private System.Windows.Forms.DataGridView dgvTracking;
         private System.Windows.Forms.Panel  pnlTrackBtn;
         private System.Windows.Forms.Button btnReadTracking;
