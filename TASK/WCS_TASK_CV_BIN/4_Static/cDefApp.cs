@@ -66,6 +66,40 @@ namespace WCS_TASK_CV
         //   이 플래그는 항상 false. 수정 금지 영역(FenetProtocol/CvThread)의 V0.9 분기를 사문화하기 위해 존치.
         public static bool GM_ADDR_V09 = false;
 
+        // ─────────────────────────────────────────────────────────────────────
+        // @@.R(트래킹) 영역 주소 해석 모드  [LGLS 2026-08-19 추가]
+        //   PPT/문서의 R 표기(= (C/V번호-1)*10, S/C·RGV는 R0300~)를 실제 워드주소로 바꾸는 방식이
+        //   구 ECS 와 현행이 서로 다르다. 현장/상대 시스템에 맞춰 전환할 수 있도록 스위치로 뺀다.
+        //
+        //   true (HEX) = 구 ECS 호환 : 문서 표기를 "16진 문자열"로 파싱한다.
+        //                구 ECS(ECP.dll FenetDriver)가 TB_OBSERVABLE 의 ADDRESS_NO 를 R 포함 전부
+        //                Convert.ToInt32(str,16) 으로 읽기 때문. 예) C/V#11 "0100" → 0x100 = 워드 256
+        //   false(DEC) = 현행 10진   : 문서 표기를 그대로 10진 워드주소로 쓴다.
+        //                예) C/V#11 "0100" → 워드 100 (%RB200)
+        //
+        //   ini [PLC] R_ADDR_MODE = HEX | DEC   (기본 HEX = 종전 통신 동작 유지)
+        //   ※ R 영역에만 적용된다. M(비트)·D(워드) 주소 체계와 FEnet 프레임 규약(워드×2=바이트)은
+        //     양 모드 공통이므로 건드리지 않는다.
+        public static bool GM_R_ADDR_HEX = true;
+
+        /// <summary>
+        /// R 트래킹 문서표기(10진 자릿수 그대로의 정수) → 실제 전송 워드주소.
+        /// R 주소를 다루는 모든 지점(CvThread/VehThread/메모리맵/시나리오테스트)은 이 함수만 거친다.
+        /// </summary>
+        public static int GsRTrackWord(int pDocNo)
+        {
+            if (!GM_R_ADDR_HEX) return pDocNo;              // 현행 : 10진 그대로
+            try { return Convert.ToInt32(pDocNo.ToString(), 16); }   // 구 ECS : 표기를 16진으로 파싱
+            catch { return pDocNo; }
+        }
+
+        /// <summary>현재 R 주소 모드 표시문자열 (로그/화면용)</summary>
+        public static string GsRAddrModeText()
+        {
+            return GM_R_ADDR_HEX ? "구 ECS 호환(16진)" : "현행(10진)";
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // @@.쓰레드 선언
         //public Thread  GM_TH_WC1;     // @.W/C1와 통신하는 쓰레드[소켓속성:Client]
     

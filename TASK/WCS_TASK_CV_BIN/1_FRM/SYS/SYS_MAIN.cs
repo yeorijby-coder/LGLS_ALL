@@ -112,7 +112,8 @@ namespace WCS_TASK_CV
         {
 			m_nProcessCnt = 0;
 
-            this.Width = 600;
+            // [LGLS 2026-08-19] R주소 모드 라디오(x=588~)가 기본 창폭 600 에서 잘려 보이지 않아 폭 확대
+            this.Width = 780;
             this.Height = 600;
 
             //중복실행을 방지하는 함수.
@@ -148,6 +149,31 @@ namespace WCS_TASK_CV
                 btnXmlSync.Visible = true;
                 btnXmlSync.Location = btnMemMap.Location; // 맵보기 자리로 이동
             }
+
+            // [LGLS 2026-08-19] R(트래킹) 주소 해석 모드 로드 (ini [PLC] R_ADDR_MODE : HEX=구 ECS 호환, DEC=현행 10진)
+            //   R 영역을 쓰는 전 지점(CvThread 통신 / VehThread 관측 / 메모리맵 직접 읽기·쓰기 / 시나리오 테스트)이
+            //   cDefApp.GsRTrackWord() 를 거치므로 이 라디오 하나로 일괄 전환된다.
+            cDefApp.GM_R_ADDR_HEX = cDefApi.GsReadInitProfileRAddrHex();
+            m_bRAddrLoading = true;
+            rdoRHex.Checked = cDefApp.GM_R_ADDR_HEX;
+            rdoRDec.Checked = !cDefApp.GM_R_ADDR_HEX;
+            m_bRAddrLoading = false;
+            // XGT 전용 설정 - Melsec 은 R 트래킹 규약이 다르므로 숨김
+            rdoRHex.Visible = (m_nPlcMaker == 1);
+            rdoRDec.Visible = (m_nPlcMaker == 1);
+            rdoRHex.BackColor = System.Drawing.Color.LightYellow;
+            rdoRDec.BackColor = System.Drawing.Color.LightYellow;
+            string strTip = "R(트래킹) 영역 주소 해석 방식\r\n"
+                          + " · 16진(구ECS) : 문서표기를 16진 파싱  (C/V#11 R0100 → 워드 256 / %RB512)\r\n"
+                          + " · 10진(현행)  : 문서표기를 그대로 사용 (C/V#11 R0100 → 워드 100 / %RB200)\r\n"
+                          + "통신(CvThread/VehThread)·메모리맵 직접 읽기/쓰기·시나리오 테스트에 모두 적용됩니다.";
+            try
+            {
+                System.Windows.Forms.ToolTip tt = new System.Windows.Forms.ToolTip();
+                tt.SetToolTip(rdoRHex, strTip);
+                tt.SetToolTip(rdoRDec, strTip);
+            }
+            catch { }
 
 #if ORACLE
             cDefApi.GsGetInitPorFileDB_1(ref cDefApp.GM_DB1_PROVIDER, ref cDefApp.GM_DB1_ALIAS, ref cDefApp.GM_DB1_USERID, ref cDefApp.GM_DB1_PASSWORD, ref m_strRtnMsg);
@@ -700,6 +726,27 @@ namespace WCS_TASK_CV
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
             IsHex = checkBox2.Checked;
+        }
+
+        // [LGLS 2026-08-19] R(트래킹) 주소 해석 모드 전환
+        //   HEX = 구 ECS 호환 : 문서 표기를 16진 파싱 (C/V#11 R0100 → 워드 256)
+        //   DEC = 현행       : 문서 표기를 10진 워드주소로 (C/V#11 R0100 → 워드 100)
+        //   ※ 통신 중 전환하면 다음 사이클부터 새 주소로 읽고 쓴다.
+        private bool m_bRAddrLoading = false;
+        private void rdoRAddr_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bRAddrLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+
+            cDefApp.GM_R_ADDR_HEX = rdoRHex.Checked;
+            cDefApi.GsWriteInitProfileRAddrHex(cDefApp.GM_R_ADDR_HEX);
+
+            string strMsg = "[R주소모드] " + cDefApp.GsRAddrModeText()
+                          + "  (예: C/V#11 R0100 → 워드 " + cDefApp.GsRTrackWord(100).ToString()
+                          + " / %RB" + (cDefApp.GsRTrackWord(100) * 2).ToString() + ")";
+            try { PsMsgView_IMP(strMsg, 0); }
+            catch { }
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)

@@ -226,6 +226,26 @@ namespace WCS_TASK_CV
         }
         #endregion
 
+        #region [PLC]::R(트래킹) 주소 해석 모드  [LGLS 2026-08-19]
+        //   HEX = 구 ECS 호환(문서표기를 16진 파싱) / DEC = 현행(10진 워드주소)
+        //   기본값 HEX : 종전 통신 동작(CvThread.GetRTrackingAddr)과 동일하게 유지
+        public static bool GsReadInitProfileRAddrHex()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return true;
+
+            StringBuilder sb = new StringBuilder(64);
+            GetPrivateProfileString("PLC", "R_ADDR_MODE", "HEX", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            string strMode = sb.ToString().Trim().ToUpper();
+            return !(strMode == "DEC" || strMode == "10");
+        }
+
+        public static void GsWriteInitProfileRAddrHex(bool pHex)
+        {
+            WritePrivateProfileString("PLC", "R_ADDR_MODE", pHex ? "HEX" : "DEC", cDefApp.GM_ENV_INI);
+        }
+        #endregion
+
         #region [COMM]::설비통신 접속정보
         public static bool GsReadInitProfileCom(string pAppNm,
                                             ref string pGrpNo,

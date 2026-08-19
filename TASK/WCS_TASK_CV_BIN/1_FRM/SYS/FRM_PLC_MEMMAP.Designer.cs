@@ -214,7 +214,8 @@
 
             this.dgvTracking.Dock = System.Windows.Forms.DockStyle.Fill;
             ConfigDgv(this.dgvTracking);
-            this.colTrackAddr.Name = "colTrackAddr"; this.colTrackAddr.HeaderText = "주소"; this.colTrackAddr.Width = 70;
+            // [LGLS 2026-08-19] R 주소모드(16진)에서 "R0300 (%RB1536)" 처럼 길어져 잘리므로 폭 확대
+            this.colTrackAddr.Name = "colTrackAddr"; this.colTrackAddr.HeaderText = "주소"; this.colTrackAddr.Width = 150;
             this.colTrackDesc.Name = "colTrackDesc"; this.colTrackDesc.HeaderText = "설명"; this.colTrackDesc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.colTrackRaw.Name  = "colTrackRaw";  this.colTrackRaw.HeaderText  = "Hex";  this.colTrackRaw.Width  = 70;
             this.colTrackDec.Name  = "colTrackDec";  this.colTrackDec.HeaderText  = "Dec";  this.colTrackDec.Width  = 70;

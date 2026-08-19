@@ -46,6 +46,8 @@
             this.picCvSkt0 = new System.Windows.Forms.PictureBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.rdoRHex = new System.Windows.Forms.RadioButton();
+            this.rdoRDec = new System.Windows.Forms.RadioButton();
             this.picCvSkt12 = new System.Windows.Forms.PictureBox();
             this.picCvDbCn12 = new System.Windows.Forms.PictureBox();
             this.picCvSkt11 = new System.Windows.Forms.PictureBox();
@@ -230,6 +232,8 @@
             this.pnlTop.Controls.Add(this.picCvSkt0);
             this.pnlTop.Controls.Add(this.checkBox1);
             this.pnlTop.Controls.Add(this.checkBox2);
+            this.pnlTop.Controls.Add(this.rdoRHex);
+            this.pnlTop.Controls.Add(this.rdoRDec);
             this.pnlTop.Controls.Add(this.picCvSkt12);
             this.pnlTop.Controls.Add(this.picCvDbCn12);
             this.pnlTop.Controls.Add(this.picCvSkt11);
@@ -312,7 +316,30 @@
             this.checkBox2.Text = "Hex Display";
             this.checkBox2.UseVisualStyleBackColor = true;
             this.checkBox2.CheckedChanged += new System.EventHandler(this.checkBox2_CheckedChanged);
-            // 
+            //
+            // rdoRHex   [LGLS 2026-08-19] R(트래킹) 주소 해석 모드
+            //
+            this.rdoRHex.AutoSize = true;
+            this.rdoRHex.Location = new System.Drawing.Point(588, 6);
+            this.rdoRHex.Name = "rdoRHex";
+            this.rdoRHex.Size = new System.Drawing.Size(104, 16);
+            this.rdoRHex.TabIndex = 842;
+            this.rdoRHex.TabStop = true;
+            this.rdoRHex.Text = "R:16진(구ECS)";
+            this.rdoRHex.UseVisualStyleBackColor = true;
+            this.rdoRHex.CheckedChanged += new System.EventHandler(this.rdoRAddr_CheckedChanged);
+            //
+            // rdoRDec
+            //
+            this.rdoRDec.AutoSize = true;
+            this.rdoRDec.Location = new System.Drawing.Point(588, 27);
+            this.rdoRDec.Name = "rdoRDec";
+            this.rdoRDec.Size = new System.Drawing.Size(100, 16);
+            this.rdoRDec.TabIndex = 843;
+            this.rdoRDec.Text = "R:10진(현행)";
+            this.rdoRDec.UseVisualStyleBackColor = true;
+            this.rdoRDec.CheckedChanged += new System.EventHandler(this.rdoRAddr_CheckedChanged);
+            //
             // picCvSkt12
             // 
             this.picCvSkt12.Location = new System.Drawing.Point(245, 29);
@@ -813,6 +840,8 @@
         internal System.Windows.Forms.PictureBox picCvSkt7;
         internal System.Windows.Forms.CheckBox checkBox1;
         internal System.Windows.Forms.CheckBox checkBox2;
+        internal System.Windows.Forms.RadioButton rdoRHex;   // [LGLS 2026-08-19] R주소=구ECS(16진)
+        internal System.Windows.Forms.RadioButton rdoRDec;   // [LGLS 2026-08-19] R주소=현행(10진)
         internal System.Windows.Forms.ListView lsvCOMM1;
 		private System.Windows.Forms.TabControl tab;
         private System.Windows.Forms.TabPage tabPage1;

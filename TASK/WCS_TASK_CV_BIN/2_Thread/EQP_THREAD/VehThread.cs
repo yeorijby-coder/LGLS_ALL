@@ -96,6 +96,7 @@ namespace WCS_TASK_CV
                 if (!owner.StartsWith("VEHICLE:", StringComparison.OrdinalIgnoreCase)) continue;
 
                 var def = new ObsDef();
+                string strAddrNo = "";      // [LGLS 2026-08-19] 원문 보관 후 디바이스 확정 뒤 변환
                 foreach (string part in cols[5].Split(','))
                 {
                     int eq = part.IndexOf('=');
@@ -103,10 +104,18 @@ namespace WCS_TASK_CV
                     string key = part.Substring(0, eq).Trim().ToUpperInvariant();
                     string val = part.Substring(eq + 1).Trim();
                     if (key == "DEVICE_TYPE") def.Device = val == "B" ? 'M' : val == "W" ? 'D' : val == "R" ? 'R' : '?';
-                    else if (key == "ADDRESS_NO") int.TryParse(val, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out def.Address);
+                    else if (key == "ADDRESS_NO") strAddrNo = val;
                     else if (key == "LENGTH") int.TryParse(val, out def.Length);
                 }
                 if (def.Device == '?') continue;
+
+                // [LGLS 2026-08-19] ADDRESS_NO 해석
+                //   B(→M)/W(→D) : 항상 16진 (구 ECS ECP.dll 과 동일, 변경 없음)
+                //   R(트래킹)    : ini [PLC] R_ADDR_MODE 를 따른다 (HEX=구 ECS 호환, DEC=현행 10진)
+                if (def.Device == 'R' && !cDefApp.GM_R_ADDR_HEX)
+                    int.TryParse(strAddrNo, NumberStyles.Integer, CultureInfo.InvariantCulture, out def.Address);
+                else
+                    int.TryParse(strAddrNo, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out def.Address);
                 if (!byOwner.ContainsKey(owner)) byOwner[owner] = new Dictionary<string, ObsDef>(StringComparer.OrdinalIgnoreCase);
                 byOwner[owner][cols[1].Trim()] = def;
             }

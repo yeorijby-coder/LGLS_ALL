@@ -31,7 +31,17 @@ namespace WCS_TASK_CV
         public static ScStepCv W(int bit, string addr, string desc, string src)
         { return new ScStepCv { Kind = 1, Dev = 'M', Bit = bit, Val = true, Addr = addr, Desc = desc, Src = src }; }
         public static ScStepCv D(char dev, int wordAddr, bool isStr, string addr, string desc, string src)
-        { return new ScStepCv { Kind = 2, Dev = dev, WordAddr = wordAddr, IsString = isStr, Addr = addr, Desc = desc, Src = src }; }
+        {
+            // [LGLS 2026-08-19] R(트래킹) 스텝의 wordAddr 은 'PPT 문서 표기'로 적혀 있다.
+            //   실제 전송 워드주소는 R 주소모드(ini [PLC] R_ADDR_MODE)를 따라 변환한다.
+            //   HEX(구 ECS 호환) : R0102 → 0x102 = 258 / DEC(현행) : R0102 → 102
+            //   D 는 이미 실주소로 적혀 있으므로 변환하지 않는다.
+            int nWord = (dev == 'R') ? cDefApp.GsRTrackWord(wordAddr) : wordAddr;
+            string strAddr = addr;
+            if (dev == 'R')
+                strAddr = string.Format("%RB{0} (R{1:0000})", nWord * 2, wordAddr);
+            return new ScStepCv { Kind = 2, Dev = dev, WordAddr = nWord, IsString = isStr, Addr = strAddr, Desc = desc, Src = src };
+        }
     }
 
     internal class ScenarioCv

@@ -2967,7 +2967,9 @@ namespace WCS_TASK_CV
             //   문서 표기 "R0000/0010/…/0100/0110"은 10진 (CV번호-1)*10 을 그대로 적은 것이지만
             //   ECS 드라이버가 이를 16진으로 파싱하므로 실효 워드주소 = hex((CV번호-1)*10 표기).
             //   예) CV#7 → "0060" → 0x60(96), CV#11 → "0100" → 0x100(256)
-            int rBase = Convert.ToInt32(((cvMachineNo - 1) * 10).ToString(), 16);
+            // [LGLS 2026-08-19] 위 16진 해석은 '구 ECS 호환' 모드일 때만. ini [PLC] R_ADDR_MODE 로 전환한다.
+            //   HEX(기본) = 종전과 동일 / DEC = 문서 표기를 10진 워드주소로 사용(CV#11 → 100)
+            int rBase = cDefApp.GsRTrackWord((cvMachineNo - 1) * 10);
             int slot  = trackNo - m_nFrTrackNo;           // 이 CV 내 슬롯 인덱스 (0-based)
             return rBase + slot * 2;                      // JOB NO = 2 word
         }

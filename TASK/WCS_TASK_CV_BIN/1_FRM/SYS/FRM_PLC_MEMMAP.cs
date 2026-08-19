@@ -163,9 +163,12 @@ namespace WCS_TASK_CV
             var list = new List<MemMapEntry>();
             foreach (var e in src)
             {
+                // [LGLS 2026-08-19] 표의 Address 는 '문서 표기'. 실 워드주소는 R 주소모드를 따른다.
+                //   HEX(구 ECS 호환) : R0100 → 0x100 = 256,  DEC(현행) : R0100 → 100
+                int nWord = cDefApp.GsRTrackWord(e.Address);
                 string strBase = e.Name.Split(' ')[0];   // "R0000"
-                string strName = strBase + " (%RB" + (e.Address * 2) + ")";
-                list.Add(new MemMapEntry(strName, e.Address, e.Description));
+                string strName = strBase + " (%RB" + (nWord * 2) + ")";
+                list.Add(new MemMapEntry(strName, nWord, e.Description));
             }
             return list.ToArray();
         }
@@ -553,7 +556,8 @@ namespace WCS_TASK_CV
             if (!CheckConn()) return;
 
             int dirWordAddr = 480 + (cvNo - 1);      // %DB(960+(N-1)*2)
-            int trkWordAddr = (cvNo - 1) * 10;       // R 트래킹 시작 (10진 워드)
+            // [LGLS 2026-08-19] R 트래킹 시작주소는 주소모드를 따른다 (CvThread.GetRTrackingAddr 와 동일 규칙)
+            int trkWordAddr = cDefApp.GsRTrackWord((cvNo - 1) * 10);
             const int DIR_VAL = 0;                   // 0=입고
             const int JOB_BCD = 2143;                // JOB NO 1234 → 2143
 
@@ -742,10 +746,12 @@ namespace WCS_TASK_CV
                 }
                 else   // R
                 {
+                    // [LGLS 2026-08-19] R 주소모드 반영 : HEX(구 ECS)=표기를 16진 파싱 / DEC(현행)=10진 그대로
                     int n = int.Parse(s);
-                    _pptDev = 'R'; _pptWord = n; _pptBit = 0;
-                    lblPptResult.Text = string.Format("R{0:0000} (%RB{1})", n, n * 2);
-                    AppendLog(string.Format("[PPT 계산] R{0:0000} → 워드 {1} (%RB{2})", n, n, n * 2));
+                    int w = cDefApp.GsRTrackWord(n);
+                    _pptDev = 'R'; _pptWord = w; _pptBit = 0;
+                    lblPptResult.Text = string.Format("R{0:0000} → 워드 {1} (%RB{2})  [{3}]", n, w, w * 2, cDefApp.GsRAddrModeText());
+                    AppendLog(string.Format("[PPT 계산] R{0:0000} → 워드 {1} (%RB{2})  R주소모드={3}", n, w, w * 2, cDefApp.GsRAddrModeText()));
                 }
             }
             catch (Exception ex) { AppendLog("[PPT 계산] 입력 오류: " + ex.Message); return false; }
@@ -762,7 +768,8 @@ namespace WCS_TASK_CV
         {
             int w = _pptWord + i;
             if (_pptDev == 'M') return string.Format("M{0:0000} (%MX{1})", w * 10, w * 16);
-            if (_pptDev == 'R') return string.Format("R{0:0000} (%RB{1})", w, w * 2);
+            // [LGLS 2026-08-19] R 은 모드에 따라 문서표기≠워드주소 이므로 워드주소로 표기한다
+            if (_pptDev == 'R') return string.Format("%RW{0} (%RB{1})", w, w * 2);
             return string.Format("%DW{0} (%DB{1})", w, w * 2);
         }
 
