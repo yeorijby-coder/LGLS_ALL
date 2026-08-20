@@ -2963,6 +2963,14 @@ namespace WCS_TASK_CV
         ///      슬롯 s (0-based) → base + s*2 (JOB NO = 2 word)
         /// CV 기계번호는 m_strPlc_No 숫자 파싱 (예: "01" → 1, "11" → 11)
         /// </summary>
+        /// <summary>[LGLS 2026-08-21] R 트래킹 일괄 읽기 시작주소 = 항상 슬롯 0 (비선형 trackOrder 와 무관)</summary>
+        private static int RTrackReadBase(int cvMachineNo)
+        {
+            int a = cPlcAddrMap.Addr("CV", cvMachineNo, "Tracking", "JobNo", 0);
+            if (a >= 0) return a;
+            return cDefApp.GsRTrackWord((cvMachineNo - 1) * 10);
+        }
+
         /// <summary>[LGLS 2026-08-21] XML Signal 오프셋 조회. 정의 없으면 내장 기본값(구 ECS 배치).</summary>
         private static int SigOfs(string block, string signal, int defOfs)
         {
@@ -2984,11 +2992,13 @@ namespace WCS_TASK_CV
             // [LGLS 2026-08-19] 위 16진 해석은 '구 ECS 호환' 모드일 때만. ini [PLC] R_ADDR_MODE 로 전환한다.
             //   HEX(기본) = 종전과 동일 / DEC = 문서 표기를 10진 워드주소로 사용(CV#11 → 100)
             //   시작주소(문서표기 (N-1)*10)는 주소맵 XML <Block name="Tracking"> 을 우선 사용한다.
-            int rBase = cPlcAddrMap.BlockBase("CV", cvMachineNo, "Tracking");
-            if (rBase < 0) rBase = cDefApp.GsRTrackWord((cvMachineNo - 1) * 10);
             // [LGLS 2026-08-21] 트랙→슬롯은 XML trackOrder(비선형 배치, C/V#15=131,132,130) 우선
             int slot  = cPlcAddrMap.TrackSlot("CV", cvMachineNo, trackNo, m_nFrTrackNo);
-            return rBase + slot * 2;                      // JOB NO = 2 word
+            // 슬롯당 워드수(perSlotWords)까지 XML 정의를 그대로 쓴다 (Addr = base + slot*perSlot, R 모드 적용)
+            int a = cPlcAddrMap.Addr("CV", cvMachineNo, "Tracking", "JobNo", slot);
+            if (a >= 0) return a;
+            int rBase = cDefApp.GsRTrackWord((cvMachineNo - 1) * 10);
+            return rBase + slot * 2;                      // 폴백: JOB NO = 2 word
         }
 
         /// <summary>
@@ -3070,15 +3080,16 @@ namespace WCS_TASK_CV
                     if (ackBase < 0) ackBase = 1280 + (cvMachineNo - 1) * 16;
                 }
 
-                // 이벤트 M 영역 읽기: 2 워드 (base 워드 정렬)
+                // 이벤트 M 영역 읽기: XML readWords (기본 2워드, base 워드 정렬)
                 int mWordAddr  = mBase / 16;
                 int mBitOffset = mBase % 16; // 버퍼 내 시작 비트 위치
+                int nEvWords   = cPlcAddrMap.BlockReadWords("CV", "Event", 2);
 
                 byte[] byRxBuff = new byte[100];
                 Array.Clear(byRxBuff, 0, byRxBuff.Length);
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
-                                   mWordAddr, 2, ref byRxBuff))
+                                   mWordAddr, nEvWords, ref byRxBuff))
                 {
                     MakeMsg_Error(strTitle + " M비트 읽기 실패", m_nthNo);
                     return false;
@@ -3538,7 +3549,7 @@ namespace WCS_TASK_CV
                 Array.Clear(byRBuff, 0, byRBuff.Length);
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R,
-                                   GetRTrackingAddr(m_nFrTrackNo), nSlots * 2, ref byRBuff))
+                                   RTrackReadBase(cvMachineNo), nSlots * cPlcAddrMap.BlockSlotWords("CV", "Tracking", 2), ref byRBuff))
                 {
                     MakeMsg_Error(strTitle + " R트래킹 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo);
                     return false;
@@ -3556,7 +3567,7 @@ namespace WCS_TASK_CV
                     // [LGLS 2026-08-21] 슬롯→트랙은 XML trackOrder 우선 (구 ECS 기준: C/V#15 슬롯0=131,1=132,2=130)
                     int nCvNo = cPlcAddrMap.SlotTrack("CV", cvMachineNo, s, m_nFrTrackNo);
                     string SENSOR0 = GetMBitFromBuf(byMBuff, mBitOffset + palletOfs + s) ? "1" : "0";
-                    string strJobNo = DecodeJobNoR(byRBuff, s * 4);
+                    string strJobNo = DecodeJobNoR(byRBuff, s * cPlcAddrMap.BlockSlotWords("CV", "Tracking", 2) * 2);
 
                     if (!CvDic.ContainsKey(nCvNo))
                         CvDic.Add(nCvNo, new CVData());

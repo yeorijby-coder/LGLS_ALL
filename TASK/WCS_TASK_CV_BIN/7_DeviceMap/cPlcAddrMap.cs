@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using System.Xml;
 
 namespace WCS_TASK_CV
@@ -120,6 +121,7 @@ namespace WCS_TASK_CV
         private static string m_strErr = "";
         private static string m_strPath = "";
         private static string m_strVersion = "";
+        private static bool   m_bRAddrHex  = true;   // [LGLS 2026-08-21] XML rAddrMode (단일 기준)
 
         private static Dictionary<string, AddrGroup> m_dicGroup =
             new Dictionary<string, AddrGroup>(StringComparer.OrdinalIgnoreCase);
@@ -133,6 +135,8 @@ namespace WCS_TASK_CV
         public static string LoadError { get { EnsureLoaded(); return m_strErr; } }
         public static string FilePath  { get { EnsureLoaded(); return m_strPath; } }
         public static string Version   { get { EnsureLoaded(); return m_strVersion; } }
+        /// <summary>[LGLS 2026-08-21] XML rAddrMode : R 문서표기 해석 (true=HEX 구 ECS 호환)</summary>
+        public static bool   RAddrModeHex { get { EnsureLoaded(); return m_bRAddrHex; } }
 
         /// <summary>
         /// [LGLS 2026-08-19] R(트래킹) 문서표기 → 실주소 변환 훅.
@@ -145,8 +149,40 @@ namespace WCS_TASK_CV
         {
             Func<int, int> f = RTrackWordFn;
             if (f != null) return f(nDoc);
+            // [LGLS 2026-08-21] 훅이 없는 실행 경로(EQP_SIM 등)는 XML rAddrMode 를 따른다
+            //   → XML 하나만 고치면 EQP_TASK·EQP_SIM 의 R 해석이 함께 바뀐다
+            if (!m_bRAddrHex) return nDoc;
             try { return Convert.ToInt32(nDoc.ToString(CultureInfo.InvariantCulture), 16); }
             catch { return nDoc; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-21] rAddrMode 를 XML 파일에 기록하고 재로드.
+        /// EQP_TASK 라디오 전환 시 호출 - XML 이 항상 실제 동작과 일치하게 유지한다.
+        /// </summary>
+        public static bool WriteRAddrMode(bool bHex)
+        {
+            try
+            {
+                EnsureLoaded();
+                string strPath = m_strPath;
+                if (!System.IO.File.Exists(strPath)) return false;
+                string strAll = System.IO.File.ReadAllText(strPath, Encoding.UTF8);
+                string strNew = bHex ? "HEX" : "DEC";
+                string strRep;
+                if (strAll.Contains("rAddrMode=\"HEX\""))
+                    strRep = strAll.Replace("rAddrMode=\"HEX\"", "rAddrMode=\"" + strNew + "\"");
+                else if (strAll.Contains("rAddrMode=\"DEC\""))
+                    strRep = strAll.Replace("rAddrMode=\"DEC\"", "rAddrMode=\"" + strNew + "\"");
+                else
+                    strRep = strAll.Replace("<PlcAddressMap version=", "<PlcAddressMap rAddrMode=\"" + strNew + "\" version=");
+                if (strRep == strAll && ((bHex && strAll.Contains("rAddrMode=\"HEX\"")) || (!bHex && strAll.Contains("rAddrMode=\"DEC\""))))
+                    return true;    // 이미 같은 값
+                System.IO.File.WriteAllText(strPath, strRep, Encoding.UTF8);
+                Reload();
+                return true;
+            }
+            catch { return false; }
         }
 
         /// <summary>강제 재로드 (파일을 수정한 뒤 프로그램 재시작 없이 반영)</summary>
@@ -229,6 +265,9 @@ namespace WCS_TASK_CV
             doc.Load(m_strPath);
             XmlNode root = doc.SelectSingleNode("/PlcAddressMap");
             if (root == null) throw new Exception("루트 <PlcAddressMap> 없음");
+            // [LGLS 2026-08-21] R 해석 모드 - XML 이 단일 기준 (DEC/10 만 10진, 그 외 HEX)
+            string strRMode = AttrS(root, "rAddrMode", "HEX").Trim().ToUpperInvariant();
+            m_bRAddrHex = !(strRMode == "DEC" || strRMode == "10");
             m_strVersion = AttrS(root, "version", "");
 
             // ── 설비군 / 블록 / 신호
@@ -386,6 +425,13 @@ namespace WCS_TASK_CV
         }
 
         /// <summary>블록 1회 읽기 워드수 (기본 1)</summary>
+        /// <summary>[LGLS 2026-08-21] 블록 슬롯당 워드수 (perSlotWords). 정의 없으면 def</summary>
+        public static int BlockSlotWords(string equipType, string block, int def)
+        {
+            AddrBlock b = GetBlock(equipType, block);
+            return (b == null) ? def : b.PerSlotWords;
+        }
+
         public static int BlockReadWords(string equipType, string block, int def)
         {
             AddrBlock b = GetBlock(equipType, block);

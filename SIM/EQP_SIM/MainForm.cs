@@ -33,17 +33,24 @@ namespace EQP_SIM
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 config = new SimConfig(Path.Combine(baseDir, "EQP_SIM.ini"));
 
-                // 관측값 주소 맵 (TB_OBSERVABLE 덤프 — 파일 기반, DB 미사용)
+                // 관측값 주소 맵
+                // [LGLS 2026-08-21] 1순위 = 주소맵 XML(PlcAddressMap.xml, EQP_TASK 와 공유) - XML 하나로 양쪽이 함께 바뀐다
+                //   2순위(폴백) = observables.tsv (구 TB_OBSERVABLE 덤프)
                 obsMap = new ObservableMap();
-                string tsv = Path.Combine(baseDir, "observables.tsv");
-                if (!File.Exists(tsv))
+                if (!obsMap.LoadFromAddrMap())
                 {
-                    MessageBox.Show(this, "observables.tsv 파일이 없습니다.\n(TB_OBSERVABLE 덤프 — 실행 폴더에 필요)",
-                        "EQP_SIM", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Close();
-                    return;
+                    string tsv = Path.Combine(baseDir, "observables.tsv");
+                    if (!File.Exists(tsv))
+                    {
+                        MessageBox.Show(this, "주소맵 XML 도 observables.tsv 도 없습니다.\n(PlcAddressMap.xml 또는 tsv 가 필요)",
+                            "EQP_SIM", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Close();
+                        return;
+                    }
+                    obsMap.Load(tsv);
+                    obsMap.Source = "observables.tsv (폴백)";
                 }
-                obsMap.Load(tsv);
+                Text += "   [주소: " + obsMap.Source + "]";
 
                 memory = new PlcMemory();
                 io = new PlcIo(memory, obsMap);

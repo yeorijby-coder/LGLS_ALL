@@ -154,7 +154,15 @@ namespace WCS_TASK_CV
             // [LGLS 2026-08-19] R(트래킹) 주소 해석 모드 로드 (ini [PLC] R_ADDR_MODE : HEX=구 ECS 호환, DEC=현행 10진)
             //   R 영역을 쓰는 전 지점(CvThread 통신 / VehThread 관측 / 메모리맵 직접 읽기·쓰기 / 시나리오 테스트)이
             //   cDefApp.GsRTrackWord() 를 거치므로 이 라디오 하나로 일괄 전환된다.
-            cDefApp.GM_R_ADDR_HEX = cDefApi.GsReadInitProfileRAddrHex();
+            // [LGLS 2026-08-21] 단일 기준 = XML(rAddrMode). XML 이 없을 때만 INI 폴백.
+            //   라디오 전환은 XML+INI 양쪽에 기록되므로 정상 상태에서 둘은 항상 같다.
+            if (cPlcAddrMap.IsLoaded)
+            {
+                cDefApp.GM_R_ADDR_HEX = cPlcAddrMap.RAddrModeHex;
+                cDefApi.GsWriteInitProfileRAddrHex(cDefApp.GM_R_ADDR_HEX);   // INI 동기화
+            }
+            else
+                cDefApp.GM_R_ADDR_HEX = cDefApi.GsReadInitProfileRAddrHex();
             // 주소맵 파서(EQP_SIM 과 공유하는 파일)에도 같은 변환기를 꽂아 라디오와 연동한다.
             cPlcAddrMap.RTrackWordFn = cDefApp.GsRTrackWord;
             m_bRAddrLoading = true;
@@ -751,6 +759,16 @@ namespace WCS_TASK_CV
 
             cDefApp.GM_R_ADDR_HEX = rdoRHex.Checked;
             cDefApi.GsWriteInitProfileRAddrHex(cDefApp.GM_R_ADDR_HEX);
+            // [LGLS 2026-08-21] XML(rAddrMode)이 단일 기준 - 라디오 전환을 XML 에도 기록해
+            //   EQP_SIM 등 다른 프로그램이 같은 해석을 따라오게 한다
+            cPlcAddrMap.WriteRAddrMode(cDefApp.GM_R_ADDR_HEX);
+            // S/C·RGV 통신(VehThread)은 주소표를 생성 시 1회 만들므로 재구성을 요청한다
+            try
+            {
+                if (m_thVehSc  != null) m_thVehSc.RequestReloadObservables();
+                if (m_thVehRtv != null) m_thVehRtv.RequestReloadObservables();
+            }
+            catch { }
 
             string strMsg = "[R주소모드] " + cDefApp.GsRAddrModeText()
                           + "  (예: C/V#11 R0100 → 워드 " + cDefApp.GsRTrackWord(100).ToString()

@@ -332,6 +332,12 @@ namespace WCS_TASK_CV
             catch { }
         }
 
+        // ---------- 주소표 재구성 요청 ----------
+        // [LGLS 2026-08-21] R 주소모드(XML rAddrMode / 라디오) 전환 시 SYS_MAIN 이 호출.
+        //   주소표는 생성 시 1회 확정되므로, 다음 사이클 진입 시점에 스레드가 직접 재구성한다.
+        private volatile bool m_bReloadReq = false;
+        public void RequestReloadObservables() { m_bReloadReq = true; }
+
         // ---------- 메인 루프 ----------
         public void Thread_Doing()
         {
@@ -339,6 +345,12 @@ namespace WCS_TASK_CV
             {
                 try
                 {
+                    if (m_bReloadReq)
+                    {
+                        m_bReloadReq = false;
+                        LoadObservables();
+                        LogDb("[VEH_" + m_strKind + "] 주소표 재구성 (R 주소모드 전환, 차량 " + m_lstVeh.Count + "대)");
+                    }
                     if (m_msQPlc.m_bSocCon == false && m_msQPlc.m_bDBOpen == false)
                     {
                         m_msQPlc.SetConfig(m_strIp, m_nPort, 2);

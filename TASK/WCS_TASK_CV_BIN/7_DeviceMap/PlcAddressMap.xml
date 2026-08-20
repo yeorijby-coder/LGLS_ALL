@@ -12,7 +12,10 @@
     · R(트래킹) : 문서표기를 R_ADDR_MODE(HEX=구ECS 16진 / DEC=현행 10진)로 해석
   블록 주소식 : base = origin + (설비번호 - numberFrom) x stride,  주소 = base + offset
 -->
-<PlcAddressMap version="1.4" desc="PPT V1.4 (2026-08-19) / 구 ECS 운영 정의 기준">
+<!-- rAddrMode : R(트래킹) 문서표기 해석. HEX=구 ECS 호환(16진) / DEC=10진.
+     이 속성이 전 프로그램(EQP_TASK·EQP_SIM·화면·시나리오)의 단일 기준이다.
+     EQP_TASK 라디오로 전환하면 이 속성도 함께 갱신된다. -->
+<PlcAddressMap version="1.4" rAddrMode="HEX" desc="PPT V1.4 (2026-08-19) / 구 ECS 운영 정의 기준">
 
   <!-- 디바이스 코드/단위 규약 -->
   <Conventions>

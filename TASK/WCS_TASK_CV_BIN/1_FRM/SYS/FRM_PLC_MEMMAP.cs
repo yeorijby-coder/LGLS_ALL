@@ -766,9 +766,11 @@ namespace WCS_TASK_CV
         {
             if (!CheckConn()) return;
 
-            int dirWordAddr = 480 + (cvNo - 1);      // %DB(960+(N-1)*2)
-            // [LGLS 2026-08-19] R 트래킹 시작주소는 주소모드를 따른다 (CvThread.GetRTrackingAddr 와 동일 규칙)
-            int trkWordAddr = cDefApp.GsRTrackWord((cvNo - 1) * 10);
+            // [LGLS 2026-08-21] 주소맵 XML 우선 (통신부 CvThread 와 같은 출처 - XML 하나로 함께 바뀐다)
+            int dirWordAddr = cPlcAddrMap.BlockBase("CV", cvNo, "Direction");
+            if (dirWordAddr < 0) dirWordAddr = 480 + (cvNo - 1);      // 폴백 %DB(960+(N-1)*2)
+            int trkWordAddr = cPlcAddrMap.Addr("CV", cvNo, "Tracking", "JobNo", 0);
+            if (trkWordAddr < 0) trkWordAddr = cDefApp.GsRTrackWord((cvNo - 1) * 10);
             const int DIR_VAL = 0;                   // 0=입고
             const int JOB_BCD = 2143;                // JOB NO 1234 → 2143
 
