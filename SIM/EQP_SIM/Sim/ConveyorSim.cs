@@ -84,18 +84,16 @@ namespace EQP_SIM.Sim
         private string Obs(string baseName, int idx) { return baseName + "_0" + idx; }
 
         /// <summary>
-        /// [LGLS 2026-07-21] 관측값 번호 변환. 구 ECS 모드=PortOrder 그대로.
-        /// WCS 모드=트랙 순서(포트-최소포트+1) — EQP_TASK(V1.1 시나리오 맵)가 슬롯 s를 트랙 FR+s로
-        /// 해석하므로, 3트랙 C/V#15(PortOrder 3/1/2)도 트랙 130/131/132와 정렬되게 한다.
+        /// [LGLS 2026-08-21] 관측값 번호 = 구 ECS PortOrder 그대로 (WCS 모드 트랙정렬 보정 폐기).
+        ///   종전에는 EQP_TASK 가 슬롯 s 를 트랙 FR+s(선형)로 해석해 C/V#15(PortOrder 3/1/2)가
+        ///   어긋났고, 그것을 이 함수가 시뮬레이터 쪽을 비틀어 가렸다.
+        ///   이제 EQP_TASK 가 XML trackOrder(131,132,130)로 비선형을 직접 해석하므로
+        ///   시뮬레이터는 구 ECS 정의(관측 _NN = PortOrder N)를 그대로 따른다.
+        ///   → TB_OBSERVABLE·PPT 슬라이드 59(+0=#31,+1=#32,+2=#30)와 일치.
         /// </summary>
         private int ObsNo(int order)
         {
-            if (!engine.WcsSupport) return order;
-            int i = Array.IndexOf(Def.Orders, order);
-            if (i < 0) return order;
-            int minPort = int.MaxValue;
-            for (int k = 0; k < Def.Ports.Length; k++) if (Def.Ports[k] < minPort) minPort = Def.Ports[k];
-            return Def.Ports[i] - minPort + 1;
+            return order;
         }
 
         private void SetExist(int idx, bool on)

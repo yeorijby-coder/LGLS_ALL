@@ -72,6 +72,8 @@ namespace WCS_TASK_CV
         public int    No;
         public int    FrTrack;
         public int    ToTrack;
+        /// <summary>[LGLS 2026-08-21] 슬롯 0부터의 트랙 번호(비선형 배치용, 예 C/V#15="131,132,130"). null=선형</summary>
+        public int[]  TrackOrder;
     }
 
     /// <summary>시나리오 스텝</summary>
@@ -294,6 +296,19 @@ namespace WCS_TASK_CV
                 e.No      = Attr(en, "no", 0);
                 e.FrTrack = Attr(en, "frTrack", 0);
                 e.ToTrack = Attr(en, "toTrack", 0);
+                // [LGLS 2026-08-21] 비선형 슬롯 배치 (구 ECS PortOrder 기준, 예 C/V#15 "131,132,130")
+                string strOrder = AttrS(en, "trackOrder", "");
+                if (strOrder.Trim().Length > 0)
+                {
+                    string[] arr = strOrder.Split(',');
+                    List<int> lst = new List<int>();
+                    foreach (string a in arr)
+                    {
+                        int v;
+                        if (int.TryParse(a.Trim(), out v)) lst.Add(v);
+                    }
+                    if (lst.Count > 0) e.TrackOrder = lst.ToArray();
+                }
                 if (e.Plc.Length > 0) m_lstEquip.Add(e);
             }
 
@@ -557,6 +572,42 @@ namespace WCS_TASK_CV
         {
             EnsureLoaded();
             return m_lstEquip;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-21] 슬롯 인덱스 → 트랙 번호. 비선형 배치(trackOrder)가 있으면 그것을,
+        /// 없으면 frTrack + slot 선형. 정의가 없으면 pFrTrack + slot (호출부 기본값).
+        /// 구 ECS 기준: C/V#15 는 슬롯0=131, 1=132, 2=130.
+        /// </summary>
+        public static int SlotTrack(string equipType, int no, int slot, int pFrTrack)
+        {
+            EnsureLoaded();
+            foreach (EquipDef e in m_lstEquip)
+            {
+                if (!string.Equals(e.Typ, equipType, StringComparison.OrdinalIgnoreCase) || e.No != no) continue;
+                if (e.TrackOrder != null && slot >= 0 && slot < e.TrackOrder.Length) return e.TrackOrder[slot];
+                if (e.FrTrack > 0) return e.FrTrack + slot;
+                break;
+            }
+            return pFrTrack + slot;
+        }
+
+        /// <summary>[LGLS 2026-08-21] 트랙 번호 → 슬롯 인덱스 (SlotTrack 의 역방향). 못 찾으면 track - pFrTrack.</summary>
+        public static int TrackSlot(string equipType, int no, int track, int pFrTrack)
+        {
+            EnsureLoaded();
+            foreach (EquipDef e in m_lstEquip)
+            {
+                if (!string.Equals(e.Typ, equipType, StringComparison.OrdinalIgnoreCase) || e.No != no) continue;
+                if (e.TrackOrder != null)
+                {
+                    for (int s = 0; s < e.TrackOrder.Length; s++)
+                        if (e.TrackOrder[s] == track) return s;
+                }
+                if (e.FrTrack > 0) return track - e.FrTrack;
+                break;
+            }
+            return track - pFrTrack;
         }
 
         public static List<CraneMapDef> Cranes()

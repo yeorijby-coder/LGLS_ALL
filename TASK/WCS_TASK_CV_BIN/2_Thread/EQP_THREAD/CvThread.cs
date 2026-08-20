@@ -2963,6 +2963,13 @@ namespace WCS_TASK_CV
         ///      슬롯 s (0-based) → base + s*2 (JOB NO = 2 word)
         /// CV 기계번호는 m_strPlc_No 숫자 파싱 (예: "01" → 1, "11" → 11)
         /// </summary>
+        /// <summary>[LGLS 2026-08-21] XML Signal 오프셋 조회. 정의 없으면 내장 기본값(구 ECS 배치).</summary>
+        private static int SigOfs(string block, string signal, int defOfs)
+        {
+            int v = cPlcAddrMap.SignalOffset("CV", block, signal);
+            return (v >= 0) ? v : defOfs;
+        }
+
         private int GetRTrackingAddr(int trackNo)
         {
             int cvMachineNo = 0;
@@ -2979,7 +2986,8 @@ namespace WCS_TASK_CV
             //   시작주소(문서표기 (N-1)*10)는 주소맵 XML <Block name="Tracking"> 을 우선 사용한다.
             int rBase = cPlcAddrMap.BlockBase("CV", cvMachineNo, "Tracking");
             if (rBase < 0) rBase = cDefApp.GsRTrackWord((cvMachineNo - 1) * 10);
-            int slot  = trackNo - m_nFrTrackNo;           // 이 CV 내 슬롯 인덱스 (0-based)
+            // [LGLS 2026-08-21] 트랙→슬롯은 XML trackOrder(비선형 배치, C/V#15=131,132,130) 우선
+            int slot  = cPlcAddrMap.TrackSlot("CV", cvMachineNo, trackNo, m_nFrTrackNo);
             return rBase + slot * 2;                      // JOB NO = 2 word
         }
 
@@ -3077,11 +3085,22 @@ namespace WCS_TASK_CV
                 }
 
                 // 이벤트 비트 추출
-                bool unloadComp1 = GetMBitFromBuf(byRxBuff, mBitOffset + 1);
-                bool loadComp1   = GetMBitFromBuf(byRxBuff, mBitOffset + 2);
-                bool unloadComp2 = GetMBitFromBuf(byRxBuff, mBitOffset + 3);
-                bool loadComp2   = GetMBitFromBuf(byRxBuff, mBitOffset + 4);
-                bool workOrder   = GetMBitFromBuf(byRxBuff, mBitOffset + 6);
+                // [LGLS 2026-08-21] 신호 오프셋도 XML <Signal offset> 우선 (실패 시 내장값 폴백)
+                //   → "XML 하나만 고치면 통신이 따라간다"를 오프셋까지 성립시킨다
+                int ofsUC1 = SigOfs("Event", "UnloadComplete1", 1);
+                int ofsLC1 = SigOfs("Event", "LoadComplete1",   2);
+                int ofsUC2 = SigOfs("Event", "UnloadComplete2", 3);
+                int ofsLC2 = SigOfs("Event", "LoadComplete2",   4);
+                int ofsWO  = SigOfs("Event", "WorkOrder",       6);
+                bool unloadComp1 = GetMBitFromBuf(byRxBuff, mBitOffset + ofsUC1);
+                bool loadComp1   = GetMBitFromBuf(byRxBuff, mBitOffset + ofsLC1);
+                bool unloadComp2 = GetMBitFromBuf(byRxBuff, mBitOffset + ofsUC2);
+                bool loadComp2   = GetMBitFromBuf(byRxBuff, mBitOffset + ofsLC2);
+                bool workOrder   = GetMBitFromBuf(byRxBuff, mBitOffset + ofsWO);
+                int aUC1 = SigOfs("Ack", "UnloadComplete1Ack", 1);
+                int aLC1 = SigOfs("Ack", "LoadComplete1Ack",   2);
+                int aUC2 = SigOfs("Ack", "UnloadComplete2Ack", 3);
+                int aLC2 = SigOfs("Ack", "LoadComplete2Ack",   4);
 
                 // 기준 CVData 키 (이벤트는 CV 단위 → m_nFrTrackNo 키 사용)
                 int dicKey = m_nFrTrackNo;
@@ -3093,15 +3112,15 @@ namespace WCS_TASK_CV
                 // ─── Unload Complete #1 (RGV측) : ACK = 블록 +1 ─────────────
                 if (unloadComp1 && !cv.UnloadComp1Acked)
                 {
-                    if (!WriteMBit(ackBase + 1, true)) return false;
+                    if (!WriteMBit(ackBase + aUC1, true)) return false;
                     cv.UnloadComp1Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
-                        strTitle + " Unload Complete #1 ACK ON → %MX" + (ackBase + 1));
-                    MakeMsg_Imp(strTitle + " Unload Complete #1 감지, ACK %MX" + (ackBase + 1) + " ON", m_nthNo);
+                        strTitle + " Unload Complete #1 ACK ON → %MX" + (ackBase + aUC1));
+                    MakeMsg_Imp(strTitle + " Unload Complete #1 감지, ACK %MX" + (ackBase + aUC1) + " ON", m_nthNo);
                 }
                 else if (!unloadComp1 && cv.UnloadComp1Acked)
                 {
-                    if (!WriteMBit(ackBase + 1, false)) return false;
+                    if (!WriteMBit(ackBase + aUC1, false)) return false;
                     cv.UnloadComp1Acked = false;
                     MakeMsg(strTitle + " Unload Complete #1 해제, ACK OFF", m_nthNo);
                 }
@@ -3109,15 +3128,15 @@ namespace WCS_TASK_CV
                 // ─── Load Complete #1 (RGV측) : ACK = 블록 +2 ───────────────
                 if (loadComp1 && !cv.LoadComp1Acked)
                 {
-                    if (!WriteMBit(ackBase + 2, true)) return false;
+                    if (!WriteMBit(ackBase + aLC1, true)) return false;
                     cv.LoadComp1Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
-                        strTitle + " Load Complete #1 ACK ON → %MX" + (ackBase + 2));
-                    MakeMsg_Imp(strTitle + " Load Complete #1 감지, ACK %MX" + (ackBase + 2) + " ON", m_nthNo);
+                        strTitle + " Load Complete #1 ACK ON → %MX" + (ackBase + aLC1));
+                    MakeMsg_Imp(strTitle + " Load Complete #1 감지, ACK %MX" + (ackBase + aLC1) + " ON", m_nthNo);
                 }
                 else if (!loadComp1 && cv.LoadComp1Acked)
                 {
-                    if (!WriteMBit(ackBase + 2, false)) return false;
+                    if (!WriteMBit(ackBase + aLC1, false)) return false;
                     cv.LoadComp1Acked = false;
                     MakeMsg(strTitle + " Load Complete #1 해제, ACK OFF", m_nthNo);
                 }
@@ -3125,15 +3144,15 @@ namespace WCS_TASK_CV
                 // ─── Unload Complete #2 (작업자 반출) : ACK = 블록 +3 ───────
                 if (unloadComp2 && !cv.UnloadComp2Acked)
                 {
-                    if (!WriteMBit(ackBase + 3, true)) return false;
+                    if (!WriteMBit(ackBase + aUC2, true)) return false;
                     cv.UnloadComp2Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
-                        strTitle + " Unload Complete #2 ACK ON → %MX" + (ackBase + 3));
-                    MakeMsg_Imp(strTitle + " Unload Complete #2 감지, ACK %MX" + (ackBase + 3) + " ON", m_nthNo);
+                        strTitle + " Unload Complete #2 ACK ON → %MX" + (ackBase + aUC2));
+                    MakeMsg_Imp(strTitle + " Unload Complete #2 감지, ACK %MX" + (ackBase + aUC2) + " ON", m_nthNo);
                 }
                 else if (!unloadComp2 && cv.UnloadComp2Acked)
                 {
-                    if (!WriteMBit(ackBase + 3, false)) return false;
+                    if (!WriteMBit(ackBase + aUC2, false)) return false;
                     cv.UnloadComp2Acked = false;
                     MakeMsg(strTitle + " Unload Complete #2 해제, ACK OFF", m_nthNo);
                 }
@@ -3141,15 +3160,15 @@ namespace WCS_TASK_CV
                 // ─── Load Complete #2 (입고쪽) ──────────────────────────────
                 if (loadComp2 && !cv.LoadComp2Acked)
                 {
-                    if (!WriteMBit(ackBase + 4, true)) return false;
+                    if (!WriteMBit(ackBase + aLC2, true)) return false;
                     cv.LoadComp2Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
-                        strTitle + " Load Complete #2 ACK ON → %MX" + (ackBase + 4));
-                    MakeMsg_Imp(strTitle + " Load Complete #2 감지, ACK %MX" + (ackBase + 4) + " ON", m_nthNo);
+                        strTitle + " Load Complete #2 ACK ON → %MX" + (ackBase + aLC2));
+                    MakeMsg_Imp(strTitle + " Load Complete #2 감지, ACK %MX" + (ackBase + aLC2) + " ON", m_nthNo);
                 }
                 else if (!loadComp2 && cv.LoadComp2Acked)
                 {
-                    if (!WriteMBit(ackBase + 4, false)) return false;
+                    if (!WriteMBit(ackBase + aLC2, false)) return false;
                     cv.LoadComp2Acked = false;
                     MakeMsg(strTitle + " Load Complete #2 해제, ACK OFF", m_nthNo);
                 }
@@ -3161,21 +3180,23 @@ namespace WCS_TASK_CV
                 //   피킹존 반출(#2): 출고 C/V #14 + 입고 C/V #15(2026-07-27 추가) 공통 지원.
                 if (cvMachineNo == 14 || cvMachineNo == 15)
                 {
-                    bool unloadReq2Ack = GetMBitFromBuf(byRxBuff, mBitOffset + 9); // 설비 Unload Request #2 Ack
+                    int ofsURA = SigOfs("Event", "UnloadRequest2Ack", 9);
+                    int aUR2   = SigOfs("Ack",   "UnloadRequest2",    5);
+                    bool unloadReq2Ack = GetMBitFromBuf(byRxBuff, mBitOffset + ofsURA); // 설비 Unload Request #2 Ack
                     if (workOrder && !cv.UnloadReq2Sent)
                     {
-                        if (!WriteMBit(ackBase + 5, true)) return false;
+                        if (!WriteMBit(ackBase + aUR2, true)) return false;
                         cv.UnloadReq2Sent = true;
                         InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
-                            strTitle + " Unload Request #2 발행 → %MX" + (ackBase + 5));
-                        MakeMsg_Imp(strTitle + " W.O 감지, Unload Request #2 %MX" + (ackBase + 5) + " ON (Ack대기 %MX" + (mBase + 9) + ")", m_nthNo);
+                            strTitle + " Unload Request #2 발행 → %MX" + (ackBase + aUR2));
+                        MakeMsg_Imp(strTitle + " W.O 감지, Unload Request #2 %MX" + (ackBase + aUR2) + " ON (Ack대기 %MX" + (mBase + ofsURA) + ")", m_nthNo);
                     }
                     else if (!workOrder && cv.UnloadReq2Sent)
                     {
                         // 설비 W.O 해제(피킹 반출 완료) → REQ 해제
-                        if (!WriteMBit(ackBase + 5, false)) return false;
+                        if (!WriteMBit(ackBase + aUR2, false)) return false;
                         cv.UnloadReq2Sent = false;
-                        MakeMsg(strTitle + " W.O 해제, Unload Request #2 %MX" + (ackBase + 5) + " OFF (Ack=" + (unloadReq2Ack ? "ON" : "off") + ")", m_nthNo);
+                        MakeMsg(strTitle + " W.O 해제, Unload Request #2 %MX" + (ackBase + aUR2) + " OFF (Ack=" + (unloadReq2Ack ? "ON" : "off") + ")", m_nthNo);
                     }
                 }
 
@@ -3532,7 +3553,8 @@ namespace WCS_TASK_CV
 
                 for (int s = 0; s < nSlots; s++)
                 {
-                    int nCvNo = m_nFrTrackNo + s;
+                    // [LGLS 2026-08-21] 슬롯→트랙은 XML trackOrder 우선 (구 ECS 기준: C/V#15 슬롯0=131,1=132,2=130)
+                    int nCvNo = cPlcAddrMap.SlotTrack("CV", cvMachineNo, s, m_nFrTrackNo);
                     string SENSOR0 = GetMBitFromBuf(byMBuff, mBitOffset + palletOfs + s) ? "1" : "0";
                     string strJobNo = DecodeJobNoR(byRBuff, s * 4);
 

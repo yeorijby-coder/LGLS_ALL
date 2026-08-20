@@ -12,7 +12,7 @@
     · R(트래킹) : 문서표기를 R_ADDR_MODE(HEX=구ECS 16진 / DEC=현행 10진)로 해석
   블록 주소식 : base = origin + (설비번호 - numberFrom) x stride,  주소 = base + offset
 -->
-<PlcAddressMap version="1.3" desc="PPT V1.3 (2026-08-19) 기준">
+<PlcAddressMap version="1.4" desc="PPT V1.4 (2026-08-19) / 구 ECS 운영 정의 기준">
 
   <!-- 디바이스 코드/단위 규약 -->
   <Conventions>
@@ -79,6 +79,8 @@
       <Signal name="TransferCompleteLocation" offset="3" words="3" tag="TRANSFER_COMPLETE_LOCATION_01" />
       <Signal name="SubsystemLocation" offset="6" words="3" tag="SUBSYSTEM_LOCATION_01" desc="설비 현재위치(열/연/단)" />
       <Signal name="OperationMode" offset="9" tag="OPERATION_MODE" />
+      <!-- [LGLS 2026-08-21] 구 ECS TB_OBSERVABLE 복원: 이중입고(54)/공출고(58) 에러코드. W010A~014A = base+10 -->
+      <Signal name="ErrCode" offset="10" tag="ERR_CODE_RD" />
     </Block>
     <Block name="Command" device="D" origin="768" stride="16" legacy="D0320" desc="WCS→설비 반송지시">
       <Signal name="From" offset="0" words="3" tag="FROM_01" />
@@ -123,7 +125,7 @@
               구 ECS·시뮬레이터·실 PLC 래더가 모두 이 배치를 쓰므로 그대로 맞춘다(임의 연속화 금지). -->
       <Signal name="To1" offset="3" tag="TO_01" />
       <Signal name="To2" offset="4" tag="TO_02" />
-      <Signal name="To3" offset="-11" tag="TO_03" desc="원본이 W0345 로 비연속 - 848-11=837" />
+      <Signal name="To3" offset="-11" tag="TO_03" desc="구 ECS 운영 정의(TB_OBSERVABLE) W0345=837. PPT(V1.1 슬25/V1.4 슬65)는 연속(853)으로 그렸으나 구 ECS 기준 유지. S/C#5 To3 과 동일 번지임에 주의" />
       <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" desc="작업번호(파렛트ID) 2워드" />
     </Block>
     <Block name="Tracking" device="R" origin="310" stride="2" perSlotWords="2" legacy="R0310">
@@ -155,7 +157,10 @@
     <Equip plc="12" type="CV" no="12" frTrack="123" toTrack="124" />
     <Equip plc="13" type="CV" no="13" frTrack="125" toTrack="126" />
     <Equip plc="14" type="CV" no="14" frTrack="127" toTrack="129" />
-    <Equip plc="15" type="CV" no="15" frTrack="130" toTrack="132" />
+    <!-- [LGLS 2026-08-21] C/V#15 는 슬롯 배치가 비선형이다 (구 ECS TB_OBSERVABLE + PPT 슬라이드 59 일치).
+            PALLET_EXIST_FLAG_01(%MX720)=트랙131, _02(%MX721)=132, _03(%MX722)=130.
+            trackOrder = 슬롯 0부터의 트랙 번호 나열. 없으면 frTrack 부터 선형. -->
+    <Equip plc="15" type="CV" no="15" frTrack="130" toTrack="132" trackOrder="131,132,130" />
   </Equipments>
 
   <!-- ══ 호기(S/C #1~5)별 통로 C/V 매핑 ══
@@ -444,15 +449,15 @@
     </Scenario>
     <Scenario id="4-1" title="4-1. 30 입고대 → S/C 입고 (C/V #15 → RGV → 통로 → S/C → 랙)" crane="select">
       <!-- ① 30 입고대 : 적재 → 이동 → RGV 픽업 -->
-      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="1" value="on" desc="30 입고대 적재 감지 (작업자 투입)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="2" value="on" desc="30 입고대(포트30) 적재 감지 (작업자 투입) - 구 ECS 슬롯배치: _03" />
       <Step kind="observe" equip="CV" no="15" block="Event" signal="LoadComplete2" value="on" desc="Load Complete #2 ON (적재 완료)" />
       <Step kind="force" equip="CV" no="15" block="Ack" signal="LoadComplete2Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #2 ON (WCS)" />
       <Step kind="observe" equip="CV" no="15" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
       <Step kind="observe" equip="CV" no="15" block="Ack" signal="LoadComplete2Ack" value="off" desc="Load Complete Ack #2 OFF (설비 리셋)" />
       <Step kind="word" device="D" equip="CV" no="15" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 입고 &#x27;0&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="15" block="Tracking" signal="JobNo" slot="1" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 최초 기록 (적재 위치)" />
-      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="1" value="off" desc="적재 위치 Pallet Exist OFF (ID Shift)" />
-      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="0" value="on" desc="반출 위치 Pallet Exist ON (도착)" />
+      <Step kind="word" device="R" equip="CV" no="15" block="Tracking" signal="JobNo" slot="2" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 최초 기록 (적재 위치)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="2" value="off" desc="적재 위치 Pallet Exist OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="0" value="on" desc="반출 위치(포트31=_01) Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="15" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
       <Step kind="observe" equip="CV" no="15" block="Event" signal="WorkOrder" value="on" desc="W.O 보고 (RGV Call)" />
       <Step kind="observe" equip="CV" no="15" block="Event" signal="PalletExist" slot="0" value="off" desc="반출 위치 Pallet Exist OFF (RGV Load 완료)" />

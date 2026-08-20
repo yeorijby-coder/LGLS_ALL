@@ -423,6 +423,56 @@ namespace WCS_TASK_CV
                 if (tca != null) WriteBit(tca, true);
             }
 
+            // ── [LGLS 2026-08-21] 설비 알람 보고 관측 + Ack 핸드셰이크 ─────────────────
+            //   구 ECS 는 S/C·RGV 각 호기의 ALARM_SET/RESET_REPORT 를 개별 관측했다(TB_OBSERVABLE).
+            //   종전 신 WCS 는 CvAlarmCheck 가 Global 단일 비트(786/787 = 실은 S/C#1 전용)만 봐서
+            //   S/C#2~#5·RGV 알람이 유실됐다 → 호기별 관측으로 복원.
+            //   규약(슬라이드5): 설비 Report ON → WCS Ack ON → 설비 Report OFF → WCS Ack OFF.
+            ObsDef oSetRep   = O(v, "ALARM_SET_REPORT");
+            ObsDef oResetRep = O(v, "ALARM_RESET_REPORT");
+            ObsDef oSetAck   = O(v, "ALARM_SET_REPORT_ACK");
+            ObsDef oResetAck = O(v, "ALARM_RESET_REPORT_ACK");
+            if (oSetRep != null && oSetAck != null)
+            {
+                bool almSet = false;
+                ReadBit(oSetRep, ref almSet);
+                bool prevSet = (Cached(v, "ALM_SET_ACKED") == "1");
+                if (almSet && !prevSet)
+                {
+                    int code = 0;
+                    ObsDef oc = O(v, "ALARM_SET_CODE");
+                    if (oc != null) ReadShort(oc, ref code);
+                    WriteBit(oSetAck, true);
+                    v.Cache["ALM_SET_ACKED"] = "1";
+                    System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 발생 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
+                }
+                else if (!almSet && prevSet)
+                {
+                    WriteBit(oSetAck, false);
+                    v.Cache["ALM_SET_ACKED"] = "0";
+                }
+            }
+            if (oResetRep != null && oResetAck != null)
+            {
+                bool almReset = false;
+                ReadBit(oResetRep, ref almReset);
+                bool prevReset = (Cached(v, "ALM_RESET_ACKED") == "1");
+                if (almReset && !prevReset)
+                {
+                    int code = 0;
+                    ObsDef oc = O(v, "ALARM_RESET_CODE");
+                    if (oc != null) ReadShort(oc, ref code);
+                    WriteBit(oResetAck, true);
+                    v.Cache["ALM_RESET_ACKED"] = "1";
+                    System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 해제 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
+                }
+                else if (!almReset && prevReset)
+                {
+                    WriteBit(oResetAck, false);
+                    v.Cache["ALM_RESET_ACKED"] = "0";
+                }
+            }
+
             string sen = palletExist ? "1" : "0";
             string lugg = (pallet ?? "").Trim();
             if (lugg.Length == 0) lugg = "0";
