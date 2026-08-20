@@ -111,6 +111,18 @@ function Add-TableSlide($idx, $title, $subtitle, $steps, $startNo) {
     }
     $tbl.Rows.Item(1).Height = 16
     for ($r = 2; $r -le $rows; $r++) { $tbl.Rows.Item($r).Height = 12 }
+
+    # 범례 (모든 표 슬라이드 공통) - '주체' 열의 기호 뜻
+    $lg = $sl.Shapes.AddTextbox(1, 24, $H - 56, $W - 48, 34)
+    $lg.TextFrame.WordWrap = -1
+    $lg.TextFrame.TextRange.Text = "[ 주체 읽는 법 ]  EQP ▲ = 설비(PLC)가 그 비트를 ON  ·  EQP ▼ = 설비가 OFF(완료 후 리셋)  ·  ECS ▲ = WCS 가 응답 비트를 ON  ·  ECS 값 = WCS 가 D/R 워드에 값을 기록" + [char]13 + "  → EQP ▲ · ECS ▲ · EQP ▼ 가 이어지면 '설비 보고 → WCS 응답 → 설비 리셋' 핸드셰이크 한 사이클이다."
+    $lgr = $lg.TextFrame.TextRange
+    $lgr.Font.Size = 8.5
+    $lgr.Font.Color.RGB = 0x993300
+    $lgr.ParagraphFormat.Alignment = 1
+    $lg.Line.Visible = -1
+    $lg.Line.ForeColor.RGB = 0xC0C0C0
+    $lg.Fill.Visible = 0
     return $sl
 }
 
@@ -180,7 +192,7 @@ foreach ($id in @("2", "3-1", "3-2", "4-1", "4-2")) {
     for ($i = 0; $i -lt $secs.Count; $i++) {
         $eqn = switch ($secs[$i].Equip) { "CV" { "C/V" } "SC" { "S/C" } "RGV" { "RGV" } default { $secs[$i].Equip } }
         Add-TableSlide $insertAt ("반송 시나리오 " + $sc.id + "  —  구간 " + ($i + 1) + "/" + $secs.Count + " (" + $eqn + ")") `
-            ($sc.title + "     [ EQP▲=설비 ON · EQP▼=설비 OFF · ECS▲=WCS 가 ON · ECS 값=WCS 가 D/R 기록 ]") `
+            $sc.title `
             $secs[$i].Steps $no | Out-Null
         $no += $secs[$i].Steps.Count
         $insertAt++; $added++
