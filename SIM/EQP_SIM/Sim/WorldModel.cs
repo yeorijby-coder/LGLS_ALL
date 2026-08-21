@@ -16,6 +16,7 @@ namespace EQP_SIM.Sim
         public DateTime ArrivedAt = DateTime.MinValue;
         public bool Discharged = false;              // [LGLS] 출고대 배출(지게차) 1단계 완료
         public DateTime DischargedAt = DateTime.MinValue;  // [LGLS] 배출 시각(+지연 후 트래킹 제거)
+        public DateTime SensedAt = DateTime.MinValue;      // [LGLS 2026-08-22] 화물감지가 실제로 ON 된 시각(입고대 준비 판정 기준)
         public DateTime SensorOnAt = DateTime.MinValue;    // [LGLS 2026-07-21] 입고대 적재 후 재하감지 ON 예정 시각
                                                            //   (MinValue=이미 감지됨. PLC가 적재 2초 뒤 신호를 올리는 동작 재현)
     }

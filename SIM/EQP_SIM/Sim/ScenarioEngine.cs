@@ -56,13 +56,14 @@ namespace EQP_SIM.Sim
         public int MoveMs = 2000;
         public int TravelMs = 2500;
         public int WaitOutHoldMs = 9000;
-        public int OutRemoveMs = 6000;
-        public int OutTrackClearMs = 2000;   // [LGLS] 화물 배출 후 트래킹 제거까지 지연 (PLC 2초 규약)
+        public int OutRemoveMs = 3000;       // [LGLS 2026-08-22] 출고대 신호 ON 후 지게차가 화물을 가져가기까지
+        public int OutTrackClearMs = 3000;   // [LGLS 2026-08-22] 화물 반출 후 남은 데이터(트래킹) 제거까지
         // [LGLS 2026-07-31] 차량(RGV/S/C) 상차 후 "출발지 화물·트래킹 소멸"을 확인하고 그 상태를 유지하는 시간.
         //   상위(WCS_TASK_CV) 미러 주기 동안 출발지 클리어가 관측되도록 보장해, 도착지에 먼저 화물이
         //   생기는 순서 역전을 막는다. 값이 상위 미러 1주기보다 짧으면 화면상 겹쳐 보일 수 있다.
         //   기본 4000ms = 상위 미러 1주기(계측 ~2.5~3.4초)보다 크게 잡은 값. 미러가 느려지면 이 값도 올릴 것.
         public int SrcClearDwellMs = 4000;
+        public int InReadyDelayMs = 3000;    // [LGLS 2026-08-22] 입고대 화물감지 유지 → 입고대(반출요청) ON 까지
         public int InSensorDelayMs = 2000;   // [LGLS 2026-07-21] 입고대 적재 후 재하감지 ON까지 지연 (PLC 2초 규약)
         public int FeedMs = 5000;
         public int AckTimeoutMs = 60000;
@@ -112,6 +113,7 @@ namespace EQP_SIM.Sim
             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
             OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);
             InSensorDelayMs = config.GetInt("TIMING", "IN_SENSOR_DELAY_MS", InSensorDelayMs);
+            InReadyDelayMs  = config.GetInt("TIMING", "IN_READY_DELAY_MS", InReadyDelayMs);
             SrcClearDwellMs = config.GetInt("TIMING", "SRC_CLEAR_DWELL_MS", SrcClearDwellMs);
             FeedMs = config.GetInt("TIMING", "FEED_MS", FeedMs);
             UnstampedTimeoutMs = config.GetInt("TIMING", "UNSTAMPED_TIMEOUT_MS", UnstampedTimeoutMs);
