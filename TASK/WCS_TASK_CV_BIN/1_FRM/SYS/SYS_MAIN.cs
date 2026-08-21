@@ -246,7 +246,15 @@ namespace WCS_TASK_CV
                 SetDisplay(pnlTop, ii, "picCvSkt" + ii.ToString(), "D", "E");
 
             }
-         
+
+            // [LGLS 2026-08-22] PLC 소켓 접속정보를 타이틀에 표시 (COMM0 = 마스터 PLC 1소켓)
+            try
+            {
+                if (!string.IsNullOrEmpty(m_strCOMM_IP[0]))
+                    this.Text = this.Text + " [PLC:" + m_strCOMM_IP[0].Trim() + ":" + m_nCOMM_CUR_PORT[0] + "]";
+            }
+            catch { }
+
             // @@.통신 딜레이 타임읽어오기
             cDefApi.GsReadInitProfileDelay("SND", ref cDefApp.GM_COMM_SND_TIME_OUT, ref m_strRtnMsg); // @.전송
             cDefApi.GsReadInitProfileDelay("RCV", ref cDefApp.GM_COMM_RCV_TIME_OUT, ref m_strRtnMsg); // @.수신

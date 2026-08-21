@@ -209,12 +209,15 @@ void CCv::AutoRunProc()
 		// [LGLS 2026-08-01] 입출고 겸용대(22번) 방향 표시 : 레이아웃의 "입출고대" 라벨 바로 아래 칸에
 		//   현재 설비 방향을 "입고 모드"/"출고 모드" 로 보여준다(레이아웃 컨트롤 id=90000122).
 		//   ※CV_DATA.STOCK_MODE 에는 PLC 방향 워드의 원시 워드값이 들어와 ASCII 코드(48='0', 49='1')로 보인다.
-		if (m_pRsw->GetItem(_T("MC_NO")) == _T("122"))
+		//   [LGLS 2026-08-22] S/C #1 통로 C/V #2 도 입출고 겸용(방향전환형)이라 같은 표시를 둔다.
+		//     C/V #2 는 트랙 103·104 를 갖고 방향 워드는 설비당 1개이므로 대표로 103 을 쓴다.
+		//     레이아웃 컨트롤 id=90000103 (CV#2 라벨 바로 위 칸).
+		if (m_pRsw->GetItem(_T("MC_NO")) == _T("122") || m_pRsw->GetItem(_T("MC_NO")) == _T("103"))
 		{
 			CString strMode = m_pRsw->GetItem(_T("STOCK_MODE"));
 			strMode.Trim();
 			BOOL bOut = (strMode == _T("1") || strMode == _T("49"));
-			CString strCid = _T("90000122");
+			CString strCid = (m_pRsw->GetItem(_T("MC_NO")) == _T("103")) ? _T("90000103") : _T("90000122");
 			CDciControl* pDirCtrl = m_pDoc->GetDciControl_FindAllLayout(strCid);
 			if (pDirCtrl != NULL)
 			{

@@ -133,6 +133,9 @@ int i;
                 string strSrv = modDefApp.g_User.g_strDbAlias;
                 if (string.IsNullOrEmpty(strSrv)) strSrv = modDefApp.g_User.g_strDbIP;
                 this.Text = this.Text + " [DB:" + modDefApp.g_User.g_strDatabase + "@" + strSrv + "]";
+                // [LGLS 2026-08-22] WMS 소켓 접속정보 표시 — 쌍방향(수신 리슨 / 송신 원격)
+                this.Text = this.Text + " [WMS:수신 " + modDefApp.g_iListenPort
+                                      + " / 송신 " + modDefApp.g_strRemoteIP + ":" + modDefApp.g_iRemotePort + "]";
             }
             catch { }
 
