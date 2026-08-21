@@ -3,6 +3,7 @@
 //화면개요	    : 재처리 작업처리
 //수정이력	    : 
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -37,22 +38,22 @@ namespace TSK_COMM_IOSCH
         #endregion IOSCHThread
 
         #region 화면 표시용.
-        private void MakeMsg(string msg)
+        private void MakeMsg(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_NOR);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_NOR, pFile, pFunc);
             }
             catch (Exception ex)
             {
                 return;
             }
         }
-        private void MakeMsg_Error_NoLog(string msg)
+        private void MakeMsg_Error_NoLog(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR, pFile, pFunc);
             }
             catch (Exception ex)
             {
@@ -60,11 +61,11 @@ namespace TSK_COMM_IOSCH
             }
 
         }
-        private void MakeMsg_Error(string msg)
+        private void MakeMsg_Error(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR, pFile, pFunc);
                 cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
             }
             catch (Exception ex)
@@ -73,11 +74,11 @@ namespace TSK_COMM_IOSCH
             }
 
         }
-        private void MakeMsg_Imp(string msg)
+        private void MakeMsg_Imp(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_IMP);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_IMP, pFile, pFunc);
                 cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
             }
             catch (Exception ex)

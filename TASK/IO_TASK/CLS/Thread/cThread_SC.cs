@@ -5,6 +5,7 @@
 //                다시 지시(CEID 201) 후 완료(CEID 203) 처리 / 재지시 및 완료 시 MES에서 새로운 로케이션을 받아줄수있는지 확인해야함.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -44,11 +45,11 @@ namespace TSK_COMM_IOSCH
         #endregion IOSCHThread
 
         #region 화면 표시용.
-        private void MakeMsg(string msg)
+        private void MakeMsg(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_NOR);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_NOR, pFile, pFunc);
             }
             catch (Exception ex)
             {
@@ -56,11 +57,11 @@ namespace TSK_COMM_IOSCH
             }
         }
 
-        private void MakeMsg_Error_NoLog(string msg)
+        private void MakeMsg_Error_NoLog(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR, pFile, pFunc);
             }
             catch (Exception ex)
             {
@@ -69,11 +70,11 @@ namespace TSK_COMM_IOSCH
 
         }
 
-        private void MakeMsg_Error(string msg)
+        private void MakeMsg_Error(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR, pFile, pFunc);
                 cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
             }
             catch (Exception ex)
@@ -82,11 +83,11 @@ namespace TSK_COMM_IOSCH
             }
 
         }
-        private void MakeMsg_Imp(string msg)
+        private void MakeMsg_Imp(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_IMP);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_IMP, pFile, pFunc);
                 cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
             }
             catch (Exception ex)
