@@ -57,7 +57,11 @@ namespace EQP_SIM.Sim
         public void Initialize()
         {
             if (HasObs("OPERATION_MODE")) io.SetBool(Def.Id, "OPERATION_MODE", true);   // AUTO
-            if (HasObs("IN_READY_02")) io.SetBool(Def.Id, "IN_READY_02", true);
+            // [LGLS 2026-08-22] IN_READY_02 는 통로 C/V(#1~#10)에서는 "설비 준비완료" 게이트로 상시 ON 이어야 한다
+            //   (IO_TASK 배차가 이 비트를 본다). 입고대/출고대를 가진 #11~#15 만 UpdateStationSignals 가
+            //   지게차 규약대로 조건부로 관리하므로 여기서는 OFF 로 시작한다.
+            if (HasObs("IN_READY_02")) io.SetBool(Def.Id, "IN_READY_02", (Def.No < 11) || Def.IngoPath == null);
+            if (Def.No >= 11 && Def.OutgoPath != null && HasObs("WAIT_IN")) io.SetBool(Def.Id, "WAIT_IN", false);
             // [LGLS 2026-07-23] OP_Mode(슬라이드 18/19 의 8번째 비트, mBase+8) = 자동 운전 ON.
             //   CvThread 가 이 비트를 AUTO_MODE_RD 로 파싱해 DB에 기록 → IO_TASK 자동 지시 게이트의 실측값이 된다.
             if (HasObs("OPERATION_MODE")) io.SetBool(Def.Id, "OPERATION_MODE", true);
@@ -79,6 +83,81 @@ namespace EQP_SIM.Sim
                 SetTracking(i, exist ? p.Id : "");
             }
             UpdateWaitOut();
+            UpdateStationSignals();
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-22] 입고대 / 출고대 신호 (지게차 규약)
+        ///   · 입고대(IN_READY_02) : 화물감지가 InReadyDelayMs(3초) 유지되면 ON.
+        ///       양방향 겸용대는 입고 모드일 때만.  구 ECS Conveyor.OnInputReady → InReady
+        ///   · 출고대(WAIT_IN)     : 출고 화물이 출고대에 도착해 있으면 ON.
+        ///       양방향 겸용대는 출고 모드일 때만.  구 ECS Conveyor.OnWaitIn → IsWaitIn
+        ///   두 신호 모두 CvThread 가 STO_READY_RD / RET_READY_RD 로 DB 에 올린다.
+        /// </summary>
+        /// <summary>화물감지가 ON 된 시각을 파렛트에 각인 (Tick/SyncMemory 양쪽에서 호출)</summary>
+        private void StampSensed()
+        {
+            DateTime now = DateTime.Now;
+            foreach (var kv in Pallets)
+            {
+                SimPallet p = kv.Value;
+                if (p.SensedAt != DateTime.MinValue) continue;
+                if (p.SensorOnAt == DateTime.MinValue || now >= p.SensorOnAt) p.SensedAt = now;
+            }
+        }
+
+        private bool m_bInReadyLogged;      // 입고대 신호 ON 로그 1회 억제
+
+        private void UpdateStationSignals()
+        {
+            StampSensed();
+            DateTime now = DateTime.Now;
+            bool bBi = (Def.IngoPath != null && Def.OutgoPath != null);   // 입출고 겸용(방향전환형)
+            string dir = Direction;
+
+            // ── 입고대 ──
+            //   통로 C/V(#1~#10)와 입고대가 없는 설비는 건드리지 않는다(Initialize 의 상시 ON 유지).
+            if (Def.No >= 11 && Def.IngoPath != null && HasObs("IN_READY_02"))
+            {
+                bool on = false;
+                if (!bBi || dir != "1")
+                {
+                    int inIdx = Def.OrderOf(Def.IngoPath[0]);
+                    SimPallet p;
+                    if (Pallets.TryGetValue(inIdx, out p) && p.Dir == FlowDir.Ingo &&
+                        p.SensedAt != DateTime.MinValue &&
+                        now >= p.SensedAt.AddMilliseconds(engine.InReadyDelayMs))
+                    {
+                        on = true;
+                        if (!m_bInReadyLogged) { m_bInReadyLogged = true;
+                            engine.Log(Def.Id + " P" + Def.PortOfOrder(inIdx) + " 입고대 신호 ON (IN_READY_02, 화물감지 " + engine.InReadyDelayMs + "ms 유지)"); }
+                    }
+                }
+                if (!on) m_bInReadyLogged = false;
+                io.SetBool(Def.Id, "IN_READY_02", on);
+            }
+
+            // ── 출고대 ──
+            if (Def.No >= 11 && Def.OutgoPath != null && HasObs("WAIT_IN"))
+            {
+                bool on = false;
+                if (!bBi || dir == "1")
+                {
+                    int outIdx = Def.OrderOf(Def.OutgoPath[Def.OutgoPath.Length - 1]);
+                    SimPallet p;
+                    if (Pallets.TryGetValue(outIdx, out p) && p.Dir == FlowDir.Outgo && !p.Discharged &&
+                        p.SensedAt != DateTime.MinValue)
+                    {
+                        on = true;
+                        if (p.OutSignalAt == DateTime.MinValue)
+                        {
+                            p.OutSignalAt = now;                                        // 반출 3초 카운트 시작
+                            engine.Log(Def.Id + " P" + Def.PortOfOrder(outIdx) + " 출고대 신호 ON (WAIT_IN, JOB " + p.Id + ")");
+                        }
+                    }
+                }
+                io.SetBool(Def.Id, "WAIT_IN", on);
+            }
         }
 
         private string Obs(string baseName, int idx) { return baseName + "_0" + idx; }
@@ -426,7 +505,9 @@ namespace EQP_SIM.Sim
             //    ① 도착 +OutRemoveMs 에 화물(센서) 사라짐  ② 다시 +OutTrackClearMs 에 트래킹 데이터 제거
             //    ※ 입출고 컨베이어(C/V#11~15)의 출고 종점만 해당.
             //      라인 컨베이어(C/V#2~10)의 출고 파렛트는 RGV가 픽업하므로 반출 금지.
-            if (Def.OutgoPath != null && Def.No >= 11)
+            // [LGLS 2026-08-22] 겸용 입출고대는 출고 모드일 때만 지게차 반출이 일어난다
+            if (Def.OutgoPath != null && Def.No >= 11 &&
+                !(Def.IngoPath != null && Direction != "1"))
             {
                 int outPort = Def.OutgoPath[Def.OutgoPath.Length - 1];
                 int outIdx = Def.OrderOf(outPort);
@@ -437,13 +518,18 @@ namespace EQP_SIM.Sim
                     if (!p.Discharged)
                     {
                         // ① 화물 배출 (지게차가 파렛트를 들어냄 → 센서 OFF)
-                        if (now >= p.ArrivedAt.AddMilliseconds(engine.OutRemoveMs))
+                        // [LGLS 2026-08-22] 지게차 규약: 출고대 신호(WAIT_IN)가 ON 된 뒤 3초가 지나야 반출한다.
+                        //   OutSignalAt 은 UpdateStationSignals 가 신호를 올릴 때 각인하므로,
+                        //   아직 신호가 서지 않았으면(MinValue) 반출하지 않는다.
+                        if (p.OutSignalAt != DateTime.MinValue &&
+                            now >= p.OutSignalAt.AddMilliseconds(engine.OutRemoveMs))
                         {
                             p.Discharged = true;
                             p.DischargedAt = now;
                             SetExist(outIdx, false);
                             PulseEvent("UNLOAD_COMPLETE", outIdx);
-                            engine.Log(Def.Id + " P" + outPort + " 출고 화물 배출 (지게차, JOB " + p.Id + ")");
+                            engine.Log(Def.Id + " P" + outPort + " 출고 화물 배출 (지게차, JOB " + p.Id +
+                                       ", 신호ON후 " + ((int)(now - p.OutSignalAt).TotalMilliseconds) + "ms)");
                             UpdateWaitOut();
                         }
                     }
@@ -476,6 +562,7 @@ namespace EQP_SIM.Sim
             }
 
             UpdateWaitOut();
+            UpdateStationSignals();     // [LGLS 2026-08-22] 입고대/출고대 신호는 경과시간 조건이라 매 주기 재평가
             MirrorWcsTracks();
         }
 
@@ -547,6 +634,10 @@ namespace EQP_SIM.Sim
                 SetExist(nextIdx, true);
                 SetTracking(nextIdx, p.Id);
                 p.ArrivedAt = now;
+                // [LGLS 2026-08-22] 위치가 바뀌면 화물감지·출고대 신호는 새 위치에서 새로 서는 것이다.
+                //   초기화하지 않으면 이전 포트에서 각인된 시각이 남아 출고대 도착 즉시 반출돼 버린다.
+                p.SensedAt = DateTime.MinValue;
+                p.OutSignalAt = DateTime.MinValue;
                 p.MoveReadyAt = now.AddMilliseconds(engine.MoveMs);
                 if (path[i + 1] == woPort) p.HoldUntil = now.AddMilliseconds(engine.WaitOutHoldMs);
                 engine.Log(Def.Id + " " + path[i] + "→" + path[i + 1] + " 이동 (JOB " + p.Id + ")");

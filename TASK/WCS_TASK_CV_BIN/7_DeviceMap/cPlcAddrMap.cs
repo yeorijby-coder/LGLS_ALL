@@ -75,6 +75,10 @@ namespace WCS_TASK_CV
         public int    ToTrack;
         /// <summary>[LGLS 2026-08-21] 슬롯 0부터의 트랙 번호(비선형 배치용, 예 C/V#15="131,132,130"). null=선형</summary>
         public int[]  TrackOrder;
+        /// <summary>[LGLS 2026-08-22] 입고대(지게차가 화물을 올려놓는 곳) 트랙. 0=없음</summary>
+        public int    InStation;
+        /// <summary>[LGLS 2026-08-22] 출고대(지게차가 화물을 가져가는 곳) 트랙. 0=없음. 겸용대는 InStation 과 같다</summary>
+        public int    OutStation;
     }
 
     /// <summary>시나리오 스텝</summary>
@@ -335,6 +339,10 @@ namespace WCS_TASK_CV
                 e.No      = Attr(en, "no", 0);
                 e.FrTrack = Attr(en, "frTrack", 0);
                 e.ToTrack = Attr(en, "toTrack", 0);
+                // [LGLS 2026-08-22] 입고대/출고대 트랙 (구 ECS 배치: #11 겸용 122, #12 출고 124,
+                //   #13 입고 126, #14 출고 129, #15 입고 130). 통로 C/V(#1~#10)는 정의 없음.
+                e.InStation  = Attr(en, "inStation", 0);
+                e.OutStation = Attr(en, "outStation", 0);
                 // [LGLS 2026-08-21] 비선형 슬롯 배치 (구 ECS PortOrder 기준, 예 C/V#15 "131,132,130")
                 string strOrder = AttrS(en, "trackOrder", "");
                 if (strOrder.Trim().Length > 0)
@@ -612,6 +620,24 @@ namespace WCS_TASK_CV
             if (!m_bLoaded) return -1;
             int v;
             return m_dicGlobalBit.TryGetValue(name, out v) ? v : -1;
+        }
+
+        /// <summary>[LGLS 2026-08-22] 입고대 트랙 번호(없으면 0). XML Equip/@inStation 단일 기준.</summary>
+        public static int InStation(string equipType, int no)
+        {
+            EnsureLoaded();
+            foreach (EquipDef e in m_lstEquip)
+                if (e.Typ == equipType && e.No == no) return e.InStation;
+            return 0;
+        }
+
+        /// <summary>[LGLS 2026-08-22] 출고대 트랙 번호(없으면 0). XML Equip/@outStation 단일 기준.</summary>
+        public static int OutStation(string equipType, int no)
+        {
+            EnsureLoaded();
+            foreach (EquipDef e in m_lstEquip)
+                if (e.Typ == equipType && e.No == no) return e.OutStation;
+            return 0;
         }
 
         public static List<EquipDef> Equips()

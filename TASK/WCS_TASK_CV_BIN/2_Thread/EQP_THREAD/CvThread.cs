@@ -3531,7 +3531,10 @@ namespace WCS_TASK_CV
                 }
 
                 bool opMode   = GetMBitFromBuf(byMBuff, mBitOffset + 8);  // Op Mode
-                bool inReady2 = GetMBitFromBuf(byMBuff, mBitOffset + 7);  // InReady #2
+                bool inReady2 = GetMBitFromBuf(byMBuff, mBitOffset + SigOfs("Event", "InReady2", 7));       // 입고대 준비
+                // [LGLS 2026-08-22] 출고대 신호 = WAIT_IN (구 ECS Conveyor.OnWaitIn / tsv WAIT_IN, Event +5).
+                //   종전 XGT 경로는 이 비트를 읽지 않아 CV_DATA.RET_READY_RD(출고대)가 영영 비어 있었다.
+                bool waitIn   = GetMBitFromBuf(byMBuff, mBitOffset + SigOfs("Event", "WorkInstruction", 5)); // 출고대 도착
 
                 // ── 2) D 방향 워드 읽기 (0=입고, 1=출고) ───────────────────────────
                 byte[] byDBuff = new byte[100];
@@ -3564,6 +3567,10 @@ namespace WCS_TASK_CV
                 //   상위 상태보고의 PLC Mode 가 항상 '입고(0)' 로 나갔다 → '0'/'1' 로 정규화한다.
                 string STOCK     = (nDir == 0x31 || nDir == 1) ? "1" : "0";
                 string STO_READY = inReady2 ? "1" : "0";
+                string RET_READY = waitIn   ? "1" : "0";
+
+                int nInStation  = cPlcAddrMap.InStation("CV", cvMachineNo);
+                int nOutStation = cPlcAddrMap.OutStation("CV", cvMachineNo);
 
                 MakeMsg("상태값 DB저장", m_nthNo);
 
@@ -3588,8 +3595,13 @@ namespace WCS_TASK_CV
                         strSet += cDefApp.CRLF + "      ,SENSOR0_DATA_RD = '" + SENSOR0 + "'      ";
                     if ((cv.V11_JOBNO ?? "") != strJobNo)
                         strSet += cDefApp.CRLF + "      ,LUGG_NO_RD = '" + strJobNo + "'          ";
-                    if (s == 1 && (cv.STO_READY_RD ?? "") != STO_READY)
+                    // [LGLS 2026-08-22] 입고대/출고대 준비신호는 컨베이어 단위 M비트지만 CV_DATA 는 트랙 단위다.
+                    //   종전 s==1(두 번째 슬롯) 하드코딩은 C/V#15(trackOrder 131,132,130 → 입고대 130 이 슬롯 2)
+                    //   에서 엉뚱한 트랙에 기록됐다. XML Equip/@inStation·@outStation 을 단일 기준으로 삼는다.
+                    if (nCvNo == nInStation && (cv.STO_READY_RD ?? "") != STO_READY)
                         strSet += cDefApp.CRLF + "      ,STO_READY_RD = '" + STO_READY + "'       ";
+                    if (nCvNo == nOutStation && (cv.RET_READY_RD ?? "") != RET_READY)
+                        strSet += cDefApp.CRLF + "      ,RET_READY_RD = '" + RET_READY + "'       ";
 
                     // [LGLS 2026-08-21] 상위 상태보고(S)가 보는 항목이 바뀌면 즉시 보고되도록 플래그를 내린다
                     //   HOST_TASK.GetStatusReport 는 HOST_SEND_YN='N' 을 '상태 변경' 신호로 쓴다
@@ -3635,7 +3647,8 @@ namespace WCS_TASK_CV
                     cv.V11_DIR = STOCK;
                     cv.SENSOR0_DATA_RD = SENSOR0;
                     cv.V11_JOBNO = strJobNo;
-                    if (s == 1) cv.STO_READY_RD = STO_READY;
+                    if (nCvNo == nInStation)  cv.STO_READY_RD = STO_READY;
+                    if (nCvNo == nOutStation) cv.RET_READY_RD = RET_READY;
                 }
 
                 // [LGLS] 설비 통신상태(EQP_MST) 하트비트 — 구 CvStatus() 끝(Communication("Y",...))에 있던 것.
