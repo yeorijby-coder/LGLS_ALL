@@ -478,7 +478,12 @@ namespace EQP_SIM.Sim
             //   보이는 동안은 재투입을 억제한다 — 출고가 이쪽으로 나오는 중에 파렛트를 다시 올리면
             //   "회수 ↔ 재투입" 이 반복되어 화물이 생겼다 없어졌다 하는 것으로 보인다(출고 완료로 예약이
             //   지워지면 재투입 재개).
-            if (AutoFeed && Def.IngoPath != null && now >= NextFeedAt && string.IsNullOrEmpty(staleFeedTracking))
+            //   [LGLS 2026-08-21] 출고 모드(DIRECTION_MODE="1")인 입출고대에는 파렛트를 올리지 않는다.
+            //     겸용 입출고대(C/V#11 등)는 방향 워드가 출고로 서 있는 동안 입고대 자리를 비워 둬야
+            //     출고 화물이 그 자리로 나올 수 있다. 종전에는 방향과 무관하게 투입해
+            //     출고 중에도 입고대에 화물이 올라왔다(=상위 상태보고도 함께 흔들렸다).
+            if (AutoFeed && Def.IngoPath != null && now >= NextFeedAt
+                && string.IsNullOrEmpty(staleFeedTracking) && Direction != "1")
             {
                 if (InjectPallet()) NextFeedAt = now.AddMilliseconds(engine.FeedMs);
             }

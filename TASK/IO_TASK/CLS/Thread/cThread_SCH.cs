@@ -501,6 +501,20 @@ namespace TSK_COMM_IOSCH
                     if (fedSp.Contains(sp)) continue;           // 입고대별 틱당 1건
                     string pick = RgvPickupTrack(sp);
                     if (!IsTrackEmpty(sp) || !IsTrackEmpty(pick)) { fedSp.Add(sp); continue; }   // 입고대+픽업 비었을 때만(단일 슬롯)
+
+                    // [LGLS 2026-08-21] 겸용 입출고대가 출고 모드로 서 있으면 입고(0) 로 되돌린다.
+                    //   출고 전환(RequestCvDirection(...,"1"))만 있고 복귀 경로가 없어, 한 번 출고가
+                    //   나가면 계속 출고로 남았다. 설비가 방향을 무시하고 입고대에 파렛트를 올려 주던
+                    //   동안에는 드러나지 않았으나, 방향을 지키면 입고가 영영 시작되지 못한다.
+                    //   여기(공급 직전)가 맞는 자리다 — 화물이 올라오기 전에 방향이 서 있어야 한다.
+                    if (GetCvStockMode(sp) == "1")
+                    {
+                        if (RequestCvDirection(sp, "0"))
+                            MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 전환 지시 - 입고(0) (작업 {1} 공급 대기)", sp, lugg));
+                        fedSp.Add(sp);
+                        continue;                                // 방향이 설비에 반영된 뒤 다음 폴링에 공급
+                    }
+
                     WriteCvSensor(sp, "1", lugg, "1");          // [LGLS] 입고대에 파렛트(작업번호) 등장
                     m_dicInFeedDt[lugg] = now;                  // 피드 시각(등장 dwell 계산)
                     fedSp.Add(sp);
@@ -630,6 +644,7 @@ namespace TSK_COMM_IOSCH
                             if (GetCvStockMode(trackNo) != "1" && RequestCvDirection(trackNo, "1"))
                                 MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 전환 지시 - 출고(1) (작업 {1})", trackNo, luggNo));
                         }
+
                     }
 
                     MakeMsg_Imp(string.Format("[SCH][CV] CV TRACK:{0} 작업:{1}(TYP:{2}) → CV 명령 발행 (DEST:{3})",

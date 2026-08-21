@@ -126,6 +126,16 @@ int i;
 				return;
 			}
 
+            // [LGLS 2026-08-21] 접속 DB 정보를 타이틀에 표시 (CV TASK 와 동일 형식)
+            try
+            {
+                // SQL 빌드는 접속에 g_strDbAlias(=[DB] ALIAS 또는 IP)를 쓴다 — 실제 접속 대상과 같은 값을 표시
+                string strSrv = modDefApp.g_User.g_strDbAlias;
+                if (string.IsNullOrEmpty(strSrv)) strSrv = modDefApp.g_User.g_strDbIP;
+                this.Text = this.Text + " [DB:" + modDefApp.g_User.g_strDatabase + "@" + strSrv + "]";
+            }
+            catch { }
+
 			//---------------------------------------------------------------------------------
 			// 컨트롤의 System.Windows.Forms.Control.Handle 속성에 액세스하는 잘못된 스레드에 대한 
 			// 호출을 catch하는지 여부를 나타내는 값을 가져오거나 설정

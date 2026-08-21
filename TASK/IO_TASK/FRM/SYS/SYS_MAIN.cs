@@ -83,6 +83,17 @@ namespace TSK_COMM_IOSCH
             cDefApi.GsGetInitPorFilePDB(ref cDefApp.GM_PDB_IP, ref cDefApp.GM_PDB_PORT, ref cDefApp.GM_PDB_DATABASE, ref cDefApp.GM_PDB_USER, ref cDefApp.GM_PDB_USER_PW, ref cDefApp.GM_LOG_PATH, ref cDefApp.GM_FILENAME, ref m_strRtnMsg);
             m_StrConnecString = "Server=" + cDefApp.GM_PDB_IP + ";Database=" + cDefApp.GM_PDB_DATABASE + ";User ID=" + cDefApp.GM_PDB_USER + ";Password=" + cDefApp.GM_PDB_USER_PW + ";";
 #endif
+            // [LGLS 2026-08-21] 접속 DB 정보를 타이틀에 표시 (CV TASK 와 동일 형식)
+            try
+            {
+#if ORACLE
+                this.Text = this.Text + " [DB:" + cDefApp.GM_DB_ALIAS + "]";
+#else
+                this.Text = this.Text + " [DB:" + cDefApp.GM_PDB_DATABASE + "@" + cDefApp.GM_PDB_IP + "]";
+#endif
+            }
+            catch { }
+
 			//Main에서 동작중 상태를 나타내기위해 표시.
             // Scheduler 상태 LED (picDbCn0)
             SetVisable(pnlTop, 0, "picDbCn0", "Scheduler STATUS");
