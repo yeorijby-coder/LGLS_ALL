@@ -50,7 +50,6 @@
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.rdoRHex = new System.Windows.Forms.RadioButton();
             this.rdoRDec = new System.Windows.Forms.RadioButton();
-            this.btnRDiag = new System.Windows.Forms.Button();
             this.picCvSkt12 = new System.Windows.Forms.PictureBox();
             this.picCvDbCn12 = new System.Windows.Forms.PictureBox();
             this.picCvSkt11 = new System.Windows.Forms.PictureBox();
@@ -246,7 +245,6 @@
             this.pnlTop.Controls.Add(this.checkBox2);
             this.pnlTop.Controls.Add(this.rdoRHex);
             this.pnlTop.Controls.Add(this.rdoRDec);
-            this.pnlTop.Controls.Add(this.btnRDiag);
             this.pnlTop.Controls.Add(this.picCvSkt12);
             this.pnlTop.Controls.Add(this.picCvDbCn12);
             this.pnlTop.Controls.Add(this.picCvSkt11);
@@ -356,15 +354,6 @@
             this.rdoRDec.UseVisualStyleBackColor = true;
             this.rdoRDec.CheckedChanged += new System.EventHandler(this.rdoRAddr_CheckedChanged);
             //
-            // btnRDiag   [LGLS 2026-08-21] R 진법 진단 (실 PLC 에서 16진/10진 판별)
-            //
-            this.btnRDiag.Location = new System.Drawing.Point(804, 2);
-            this.btnRDiag.Name = "btnRDiag";
-            this.btnRDiag.Size = new System.Drawing.Size(92, 21);
-            this.btnRDiag.TabIndex = 844;
-            this.btnRDiag.Text = "R 진법 진단";
-            this.btnRDiag.UseVisualStyleBackColor = true;
-            this.btnRDiag.Click += new System.EventHandler(this.btnRDiag_Click);
             //
             // picCvSkt12
             // 
@@ -868,7 +857,6 @@
         internal System.Windows.Forms.CheckBox checkBox2;
         internal System.Windows.Forms.RadioButton rdoRHex;   // [LGLS 2026-08-19] R주소=구ECS(16진)
         internal System.Windows.Forms.RadioButton rdoRDec;   // [LGLS 2026-08-19] R주소=현행(10진)
-        internal System.Windows.Forms.Button btnRDiag;       // [LGLS 2026-08-21] R 진법 진단
         private System.Windows.Forms.ColumnHeader colLogFile; // [LGLS 2026-08-21] 로그 호출 파일
         private System.Windows.Forms.ColumnHeader colLogFunc; // [LGLS 2026-08-21] 로그 호출 함수
         internal System.Windows.Forms.ListView lsvCOMM1;

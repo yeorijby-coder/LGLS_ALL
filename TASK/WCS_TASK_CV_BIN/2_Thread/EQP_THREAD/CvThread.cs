@@ -3558,7 +3558,11 @@ namespace WCS_TASK_CV
 
                 // ── 4) 포지션(트랙)별 변화 감지 → CV_DATA UPDATE ──────────────────
                 string AUTO_MODE = opMode ? "1" : "0";
-                string STOCK     = Convert.ToString(nDir);
+                // [LGLS 2026-08-21] 방향 워드는 ASCII 문자('0'=0x30 / '1'=0x31)다(XML encoding="ascii",
+                //   쓰기측 CvChg_CMD_RQ_YN 도 0x30/0x31 로 기록). 종전에는 raw 워드값을 그대로 넣어
+                //   CV_DATA.STOCK_MODE 가 48/49 로 저장됐고, HOST_TASK 의 "1" 비교가 영영 성립하지 않아
+                //   상위 상태보고의 PLC Mode 가 항상 '입고(0)' 로 나갔다 → '0'/'1' 로 정규화한다.
+                string STOCK     = (nDir == 0x31 || nDir == 1) ? "1" : "0";
                 string STO_READY = inReady2 ? "1" : "0";
 
                 MakeMsg("상태값 DB저장", m_nthNo);
@@ -3586,6 +3590,10 @@ namespace WCS_TASK_CV
                         strSet += cDefApp.CRLF + "      ,LUGG_NO_RD = '" + strJobNo + "'          ";
                     if (s == 1 && (cv.STO_READY_RD ?? "") != STO_READY)
                         strSet += cDefApp.CRLF + "      ,STO_READY_RD = '" + STO_READY + "'       ";
+
+                    // [LGLS 2026-08-21] 상위 상태보고(S)가 보는 항목이 바뀌면 즉시 보고되도록 플래그를 내린다
+                    //   HOST_TASK.GetStatusReport 는 HOST_SEND_YN='N' 을 '상태 변경' 신호로 쓴다
+                    if (strSet.Length > 0) strSet += cDefApp.CRLF + "      ,HOST_SEND_YN = 'N'                 ";
 
                     if (strSet.Length == 0)
                         continue;   // 변화 없음

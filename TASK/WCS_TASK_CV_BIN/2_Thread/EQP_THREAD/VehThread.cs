@@ -521,11 +521,20 @@ namespace WCS_TASK_CV
                 int bay;
                 if (int.TryParse((loc2 ?? "").Trim(), out bay) && !((loc1 ?? "").Trim() == "00" || (loc1 ?? "").Trim() == "")) posH = bay.ToString();
                 chg("POS_H_RD", posH);
-                chg("AUTO_MODE_RD", "1");
-                chg("UCSTATUS_RD", status == 1 ? "1" : "2");
-                // [LGLS] DriveSC 게이트 필드 유지 (실설비면 각자의 관측이 채우는 값들)
-                chg("ONLINE_MODE_RD", "1");
-                chg("ACTIVE_MODE_RD", "1");
+
+                // ── [LGLS 2026-08-21] 설비 실상태를 상위 상태보고(S)에 반영 ────────────────
+                //   구 ECS 상태 체계(Vehicle.cs VEHICLE_STATE) : DOWN=0, IDLE=1, RUN=2
+                //   종전에는 AUTO/ONLINE/ACTIVE 를 "1" 상수로, UCSTATUS 를 1/2 로만 써서
+                //   크레인을 사용정지해도 HOST_TASK 가 항상 '가능(0)' 으로 보고했다.
+                //   HOST_TASK 의 불가 판정 : ONLINE/AUTO/ACTIVE != "1" 또는 UCSTATUS=="4"(에러)
+                bool bDown = (status == 0);                       // DOWN = 사용정지/이상
+                //   ※ OPERATION_MODE(운전모드) 비트는 실 PLC 에서 채워지는지 확인되지 않았고
+                //     시뮬레이터는 채우지 않아 0 으로 읽힌다 → 오판 방지를 위해 지금은 쓰지 않는다.
+                //     DOWN 판정만으로 사용정지를 반영한다(실 PLC 확인 후 확장).
+                chg("AUTO_MODE_RD", bDown ? "0" : "1");
+                chg("UCSTATUS_RD", bDown ? "4" : (status == 1 ? "1" : "2"));   // 4 = 에러/사용정지
+                chg("ONLINE_MODE_RD", bDown ? "0" : "1");
+                chg("ACTIVE_MODE_RD", bDown ? "0" : "1");
                 // [LGLS] 이중입고(54)/공출고(58): 설비 ERR_CODE_RD 관측(EQP_SIM/실PLC)에서 읽어 SC_DATA 반영. 관측 없으면 정상(0000).
                 string errCode = "0000";
                 ObsDef eco = O(v, "ERR_CODE_RD");
@@ -560,6 +569,20 @@ namespace WCS_TASK_CV
             }
 
             if (set.Length == 0) return;
+
+            // [LGLS 2026-08-21] 상위 상태보고(S) 대상 항목이 바뀌면 HOST_SEND_YN='N' 으로 내려
+            //   HOST_TASK 가 30초 주기를 기다리지 않고 즉시 보고하게 한다.
+            //   (종전에는 VehThread 가 이 플래그를 전혀 건드리지 않아 크레인 사용정지 같은
+            //    상태 변화가 최대 30초 늦게 보고됐다)
+            //   HOST 가 보는 항목 : 가용판정(UCSTATUS/AUTO_MODE/ONLINE_MODE/ACTIVE_MODE) + 적재화물(ITN_LUGG_FK1)
+            string strChanged = set.ToString();
+            if (m_strKind == "SC" &&
+                (strChanged.Contains("UCSTATUS_RD")   || strChanged.Contains("AUTO_MODE_RD") ||
+                 strChanged.Contains("ONLINE_MODE_RD")|| strChanged.Contains("ACTIVE_MODE_RD") ||
+                 strChanged.Contains("ITN_LUGG_FK1")  || strChanged.Contains("ERR_CODE_RD")))
+            {
+                set.Append(", HOST_SEND_YN = 'N'");
+            }
 
             string strSqlObs = "";
             strSqlObs += CRLF + " UPDATE " + m_strTable + "                          ";

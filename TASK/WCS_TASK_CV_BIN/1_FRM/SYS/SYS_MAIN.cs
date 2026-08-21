@@ -753,13 +753,6 @@ namespace WCS_TASK_CV
         //   HEX = 구 ECS 호환 : 문서 표기를 16진 파싱 (C/V#11 R0100 → 워드 256)
         //   DEC = 현행       : 문서 표기를 10진 워드주소로 (C/V#11 R0100 → 워드 100)
         //   ※ 통신 중 전환하면 다음 사이클부터 새 주소로 읽고 쓴다.
-        // [LGLS 2026-08-21] R 진법 진단 창 — 실 PLC 에서 16진/10진을 실측 판별
-        private void btnRDiag_Click(object sender, EventArgs e)
-        {
-            FRM_R_DIAG frm = new FRM_R_DIAG();
-            frm.Show(this);
-        }
-
         private bool m_bRAddrLoading = false;
         private void rdoRAddr_CheckedChanged(object sender, EventArgs e)
         {
