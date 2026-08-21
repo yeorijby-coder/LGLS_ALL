@@ -1002,20 +1002,31 @@ namespace TSK_HostCom
                 string strAuto = "" + m_BDb.dtMain.Rows[iii]["AUTO_MODE_RD"].ToString();
                 string strErrCd = "" + m_BDb.dtMain.Rows[iii]["ERROR_CODE"].ToString();
                 string strStock = "" + m_BDb.dtMain.Rows[iii]["STOCK_MODE"].ToString();
-                string strAvail = (strAuto == "1" && (strErrCd == "" || strErrCd == "0" || strErrCd == "0000")) ? "0" : "1";
+                string strSensor = "" + m_BDb.dtMain.Rows[iii]["SENSOR0_DATA_RD"].ToString();
+                bool bAutoOk = (strAuto == "1" && (strErrCd == "" || strErrCd == "0" || strErrCd == "0000"));
+                string strAvail = bAutoOk ? "0" : "1";
+
+                // [LGLS 2026-08-21] 구 ECS 기준(ECSDispatcher.cs 'Conveyor 상태 Check') :
+                //   자동운전이 아니면 무조건 불가(1). 자동운전이면 입고대류는
+                //   "Pallet 이 있을 경우만 반송 가능(0)" — 화물이 없으면 불가(1) 로 보고한다.
+                //     CONVEYOR:11 PALLET_EXIST_FLAG_02 = slot1 = 트랙 122 → 명세 101
+                //     CONVEYOR:15 PALLET_EXIST_FLAG_03 = slot2 = 트랙 130 → 명세 102(피킹)
+                //   종전에는 AUTO/ERROR 만 보고 화물 유무를 반영하지 않아, 입출고대에 화물이
+                //   들고 나도 상위 상태가 바뀌지 않았다(=실시간 보고가 되지 않음).
+                string strAvailPallet = bAutoOk ? ((strSensor == "1") ? "0" : "1") : "1";
 
                 switch (strMC_NO)
                 {
-                    case "122": st122 = strAvail; mode101 = (strStock == "1") ? "1" : "0"; break;
+                    case "122": st122 = strAvailPallet; mode101 = (strStock == "1") ? "1" : "0"; break;
                     case "129": st129 = strAvail; break;
-                    case "130": st130 = strAvail; break;
+                    case "130": st130 = strAvailPallet; break;
                     case "126": st126 = strAvail; break;
                     case "103": mode110 = (strStock == "1") ? "1" : "0"; break;
                 }
             }
 
             sbStatus.Append(st122);                                        // 101 외부 입고 전용 입출고대 상태
-            sbStatus.Append((st129 == "1" || st130 == "1") ? "1" : "0");   // 102 Picking 작업대 상태
+            sbStatus.Append(st130);                                        // 102 Picking 작업대 상태 (구 ECS: CONVEYOR:15 = 트랙130)
             sbStatus.Append(st126);                                        // 103 제품 입고대 상태
             sbStatus.Append(mode101);                                      // 101 PLC Mode (0=입고, 1=출고)
             sbStatus.Append(mode110);                                      // 110 실온 S/C 1호기 C/V PLC Mode
