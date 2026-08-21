@@ -221,7 +221,12 @@ void CCv::AutoRunProc()
 			CDciControl* pDirCtrl = m_pDoc->GetDciControl_FindAllLayout(strCid);
 			if (pDirCtrl != NULL)
 			{
-				CString strTxt = bOut ? _T("출고 모드") : _T("입고 모드");
+				// [LGLS 2026-08-22] C/V #2 자리는 RTV 레일(5열)과 랙(8열) 사이 1.5칸뿐이라 짧게 쓴다
+			CString strTxt;
+			if (m_pRsw->GetItem(_T("MC_NO")) == _T("103"))
+				strTxt = bOut ? _T("출고") : _T("입고");
+			else
+				strTxt = bOut ? _T("출고 모드") : _T("입고 모드");
 				if (pDirCtrl->m_strText != strTxt)
 				{
 					pDirCtrl->m_strText = strTxt;

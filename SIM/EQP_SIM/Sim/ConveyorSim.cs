@@ -364,18 +364,17 @@ namespace EQP_SIM.Sim
                 }
             }
 
-            // 1.5) 작업자 회피 (입출고 겸용 C/V#11):
-            //      ECS 는 C/V#11 입고모드에서 입고대에 파렛트가 있으면 C/V#11 로의
-            //      출고 반송을 금지한다(ECSDispatcher 1203~1216 가드). 따라서
-            //      a) 출고 파렛트가 이미 컨베이어 위에 있거나
-            //      b) 미지정(JOB 대기) 파렛트가 일정 시간 지시를 못 받으면
-            //      작업자가 파렛트를 회수한다. (자동투입이 이후 재투입)
+            // 1.5) 입고 대기 파렛트에 뒤늦게 도착한 작업번호 부여 (입출고 겸용 C/V#11 계열)
+            //      [LGLS 2026-08-22] 종전에는 여기서 "작업자 회수"를 함께 수행했다 —
+            //        a) 출고 파렛트가 컨베이어에 있거나  b) 일정 시간 지시를 못 받으면
+            //        파렛트를 지웠고, 자동투입이 다시 올려 화물이 생겼다 없어졌다를 반복했다.
+            //      실제 설비는 그렇게 동작하지 않는다. 작업자가 올린 화물은 입고 작업을 받아
+            //      크레인이 실어갈 때까지 그 자리에 그대로 있다(사람이 직접 치우지 않는 한).
+            //      → 자동 회수를 폐기하고, 작업번호 부여만 남긴다.
+            //        · 화물 생성 : 입고 모드일 때만 (아래 4) 자동 투입의 방향 게이트)
+            //        · 화물 소멸 : 크레인 픽업(2.5 훅) 또는 이동으로 자리를 뜰 때만
             if (Def.No >= 11 && Def.IngoPath != null && Def.OutgoPath != null)
             {
-                bool outgoPresent = false;
-                foreach (var kv in Pallets)
-                    if (kv.Value.Dir == FlowDir.Outgo) { outgoPresent = true; break; }
-
                 int inIdx = Def.OrderOf(Def.IngoPath[0]);
                 SimPallet wp;
                 if (Pallets.TryGetValue(inIdx, out wp) && wp.Dir == FlowDir.Ingo && string.IsNullOrEmpty(wp.Id))
@@ -391,22 +390,10 @@ namespace EQP_SIM.Sim
                     {
                         wp.Id = lateJob;
                         wp.HoldUntil = now.AddMilliseconds(engine.WaitOutHoldMs);
-                        engine.Log(Def.Id + " P" + Def.IngoPath[0] + " JOB 부여됨(회수 직전 확인): " + lateJob);
+                        engine.Log(Def.Id + " P" + Def.IngoPath[0] + " JOB 부여됨: " + lateJob);
                         UpdateWaitOut();
                     }
-
-                    bool timedOut = !bLateStamp && now >= wp.ArrivedAt.AddMilliseconds(engine.UnstampedTimeoutMs);
-                    if (!bLateStamp && (outgoPresent || timedOut))
-                    {
-                        Pallets.Remove(inIdx);
-                        SetExist(inIdx, false);
-                        SetTracking(inIdx, "");
-                        // 지시 없음 회수 후에는 빈 상태를 충분히 유지해 ECS 의 출고 반송
-                        // 디스패치(입고대 점유 시 금지 가드)가 통과할 창을 보장한다.
-                        NextFeedAt = now.AddMilliseconds(outgoPresent ? engine.FeedMs : engine.UnstampedTimeoutMs);
-                        engine.Log(Def.Id + " P" + Def.IngoPath[0] + " 작업자 파렛트 회수 (" +
-                                   (outgoPresent ? "출고 진행 중" : "입고 지시 없음") + ")");
-                    }
+                    // [LGLS 2026-08-22] 자동 회수 없음 — 입고 지시를 받아 크레인이 실어갈 때까지 대기한다.
                 }
             }
 
