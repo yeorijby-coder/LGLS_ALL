@@ -113,6 +113,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cLogCols.cs">
+      <Link>CLS\cLogCols.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\CallerInfoAttrs40.cs">
+      <Link>CLS\CallerInfoAttrs40.cs</Link>
+    </Compile>
     <Compile Include="CLS\AlarmInfo.cs" />
     <Compile Include="CLS\cCbBasePost.cs" />
     <Compile Include="CLS\cCmLib.cs">

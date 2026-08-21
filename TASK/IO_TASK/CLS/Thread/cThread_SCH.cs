@@ -19,6 +19,7 @@
 //     (해당 스레드는 현장 구성에서 빌드 제외 - DB 구조 참고용으로만 보존)
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -142,26 +143,26 @@ namespace TSK_COMM_IOSCH
         #endregion
 
         #region 메시지 출력 헬퍼
-        private void MakeMsg(string msg)
+        private void MakeMsg(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-            try { callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_NOR); }
+            try { callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_NOR, pFile, pFunc); }
             catch { }
         }
-        private void MakeMsg_Error(string msg)
+        private void MakeMsg_Error(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_ERR, pFile, pFunc);
                 if (cDefApp.m_LogQ[m_nId] != null)
                     cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
             }
             catch { }
         }
-        private void MakeMsg_Imp(string msg)
+        private void MakeMsg_Imp(string msg, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_IMP);
+                callPsMsgView(msg, m_nId.ToString(), "", "", m_nId, cDefApp.eLogMsgType.MSG_IMP, pFile, pFunc);
                 if (cDefApp.m_LogQ[m_nId] != null)
                     cDefApp.m_LogQ[m_nId].Enqueue(new LogParam(DateTime.Now, msg));
             }

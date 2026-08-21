@@ -79,6 +79,12 @@
   <ItemGroup>
     <Compile Include="CbaseDb.cs" />
     <Compile Include="cCbBasePost.cs" />
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cLogCols.cs">
+      <Link>cLogCols.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\CallerInfoAttrs40.cs">
+      <Link>CallerInfoAttrs40.cs</Link>
+    </Compile>
     <Compile Include="CCliWork.cs" />
     <Compile Include="cDbPostUse.cs" />
     <Compile Include="CLog.cs" />

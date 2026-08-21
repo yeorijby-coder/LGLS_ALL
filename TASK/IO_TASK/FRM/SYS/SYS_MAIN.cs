@@ -13,6 +13,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using System.Runtime.CompilerServices;
 
 using System.Threading;
 using System.Net.Sockets;
@@ -26,7 +27,7 @@ using System.Diagnostics;
 
 namespace TSK_COMM_IOSCH
 {
-    public delegate void PsMsgView(string pMsg, string pObjID, string pCommTyp, string pTgm, int nId, cDefApp.eLogMsgType pMsgTyp);
+    public delegate void PsMsgView(string pMsg, string pObjID, string pCommTyp, string pTgm, int nId, cDefApp.eLogMsgType pMsgTyp, string pFile, string pFunc);
 	public delegate void DelPsMsgLog(DateTime LogDate, string strMsg, int nId);
 
 	public partial class SYS_MAIN : Form
@@ -54,6 +55,9 @@ namespace TSK_COMM_IOSCH
 		{
             //MainThread가 시작되었다는것을 나타내는 Bool값.
 			cDefApp.GM_STAT_MAIN = true;
+
+			// [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
+			WcsCommon.cLogCols.Attach(lsvR);
 
             //중복실행을 방지하는 함수.
             if (cCmLib.GfPrevInstance() == true)
@@ -399,7 +403,9 @@ namespace TSK_COMM_IOSCH
 							   string pCommTyp,
 							   string pTgm,
 							   int nId,
-				  cDefApp.eLogMsgType pMsgTyp)
+				  cDefApp.eLogMsgType pMsgTyp,
+							   string pFile,
+							   string pFunc)
 		{
 			try
 			{
@@ -417,6 +423,9 @@ namespace TSK_COMM_IOSCH
 				ListViewItem vItem = new ListViewItem(LogMsg.Time, 0);
 				vItem.SubItems.Add(LogMsg.ID);
 				vItem.SubItems.Add(LogMsg.Com);
+				// [LGLS 2026-08-21] 호출 위치 (Message 앞 2열 - 헤더 우클릭으로 표시/숨김)
+				vItem.SubItems.Add(WcsCommon.cLogCols.ShortFile(pFile));
+				vItem.SubItems.Add(pFunc ?? "");
 				vItem.SubItems.Add(LogMsg.Msg);
 				vItem.SubItems.Add(LogMsg.Tgm);
 
@@ -497,7 +506,7 @@ namespace TSK_COMM_IOSCH
 
 				ListView LvCtrl = (ListView)Ctrl;
 
-				this.txtMsg.Text = LvCtrl.SelectedItems[0].SubItems[3].Text;
+				this.txtMsg.Text = LvCtrl.SelectedItems[0].SubItems[5].Text;   // [LGLS 2026-08-21] 파일/함수 2열 삽입
 			}
 			catch (Exception ex)
 			{

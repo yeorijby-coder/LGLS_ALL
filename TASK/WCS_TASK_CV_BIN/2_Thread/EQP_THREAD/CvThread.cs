@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -359,11 +360,11 @@ namespace WCS_TASK_CV
          * 화면 표시용
          */
         #region
-        private void MakeMsg(string msg, int nThGbn)
+        private void MakeMsg(string msg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                m_frmMain.PsMsgView(msg, m_strPlc_No.ToString(), nThGbn);
+                m_frmMain.PsMsgView(msg, m_strPlc_No.ToString(), "", "", nThGbn, pFile, pFunc);
             }
             catch (Exception ex)
             {
@@ -371,11 +372,11 @@ namespace WCS_TASK_CV
             }
         }
 
-        private void MakeMsg_Error(string msg, int nThGbn)
+        private void MakeMsg_Error(string msg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), nThGbn);
+                m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), "", "", nThGbn, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
                 // [LGLS 진단] 에러는 DB 로그에도 남긴다 (파일/화면 로그 확인 불가 환경 대비)
                 try { InsertWcsLogPgr("", "[ERR] " + msg); } catch { }
@@ -386,11 +387,11 @@ namespace WCS_TASK_CV
             }
         }
 
-        private void MakeMsg_Imp(string msg, int nThGbn)
+        private void MakeMsg_Imp(string msg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                m_frmMain.PsMsgView_IMP(msg, m_strPlc_No.ToString(), nThGbn);
+                m_frmMain.PsMsgView_IMP(msg, m_strPlc_No.ToString(), "", "", nThGbn, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
             }
             catch (Exception ex)

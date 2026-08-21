@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Net.Sockets;
 using log4net;
@@ -165,6 +166,9 @@ namespace WCS_TASK_CV
                 cDefApp.GM_R_ADDR_HEX = cDefApi.GsReadInitProfileRAddrHex();
             // 주소맵 파서(EQP_SIM 과 공유하는 파일)에도 같은 변환기를 꽂아 라디오와 연동한다.
             cPlcAddrMap.RTrackWordFn = cDefApp.GsRTrackWord;
+            // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
+            WcsCommon.cLogCols.Attach(lsvCOMM1);
+
             m_bRAddrLoading = true;
             rdoRHex.Checked = cDefApp.GM_R_ADDR_HEX;
             rdoRDec.Checked = !cDefApp.GM_R_ADDR_HEX;
@@ -569,56 +573,58 @@ namespace WCS_TASK_CV
 		}
 
         //@@@.PsMsgView[화면에 로깅...]
-		public void PsMsgView(string pMsg, int nThGbn)
+		public void PsMsgView(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn);
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView_Error(string pMsg, int nThGbn)
+		public void PsMsgView_Error(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn);
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView_IMP(string pMsg, int nThGbn)
+		public void PsMsgView_IMP(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn);
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView(string pMsg, string pObjID, int nThGbn)
+		public void PsMsgView(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn);
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView_Error(string pMsg, string pObjID, int nThGbn)
+		public void PsMsgView_Error(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn);
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView_IMP(string pMsg, string pObjID, int nThGbn)
+		public void PsMsgView_IMP(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn);
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, pFile, pFunc);
         }
-        public void PsMsgView(string pMsg, string pObjID, string pCommTyp, int nThGbn)
+        public void PsMsgView(string pMsg, string pObjID, string pCommTyp, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-            PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_NOR, nThGbn);
+			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
         }
-        public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, int nThGbn)
+        public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-            PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_ERR, nThGbn);
+			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn)
+		public void PsMsgView(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_NOR, nThGbn);
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn)
+		public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_ERR, nThGbn);
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
         }
-		public void PsMsgView_IMP(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn)
+		public void PsMsgView_IMP(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_IMP, nThGbn);
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_IMP, nThGbn, pFile, pFunc);
         }
         private void PsMsgView(string pMsg, 
                                string pObjID, 
                                string pCommTyp, 
                                string pTgm, 
                   cDefApp.eLogMsgType pMsgTyp,
-							   int nThGbn)
+							   int nThGbn,
+                               string pFile = "",
+                               string pFunc = "")
         {
             try
             {
@@ -636,6 +642,9 @@ namespace WCS_TASK_CV
                 ListViewItem vItem = new ListViewItem(LogMsg.Time, 0);
                 vItem.SubItems.Add(LogMsg.ID);
                 vItem.SubItems.Add(LogMsg.Com);
+                // [LGLS 2026-08-21] 호출 위치 (Message 앞 2열 - 헤더 우클릭으로 표시/숨김)
+                vItem.SubItems.Add(WcsCommon.cLogCols.ShortFile(pFile));
+                vItem.SubItems.Add(pFunc ?? "");
                 vItem.SubItems.Add(LogMsg.Msg);
                 vItem.SubItems.Add(LogMsg.Tgm);
                 switch (pMsgTyp)
@@ -685,8 +694,9 @@ namespace WCS_TASK_CV
         {
             try
             {
-                 this.txtMsg.Text = this.lsvCOMM1.SelectedItems[0].SubItems[3].Text;
-                 this.txtTgm.Text = this.lsvCOMM1.SelectedItems[0].SubItems[4].Text;
+                 // [LGLS 2026-08-21] 파일/함수 2열 삽입으로 Msg=5, Tgm=6
+                 this.txtMsg.Text = this.lsvCOMM1.SelectedItems[0].SubItems[5].Text;
+                 this.txtTgm.Text = this.lsvCOMM1.SelectedItems[0].SubItems[6].Text;
             }
             catch(Exception ex)
             {

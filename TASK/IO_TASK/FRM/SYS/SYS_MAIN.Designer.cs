@@ -48,6 +48,8 @@
             this.CH01 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.CH02 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.CH03 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLogFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLogFunc = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.CH04 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.picDbCn0)).BeginInit();
@@ -221,6 +223,8 @@
             this.CH01,
             this.CH02,
             this.CH03,
+            this.colLogFile,
+            this.colLogFunc,
             this.CH04});
             this.lsvR.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lsvR.FullRowSelect = true;
@@ -253,6 +257,10 @@
             //
             // CH04
             //
+            this.colLogFile.Text = "파일";
+            this.colLogFile.Width = 110;
+            this.colLogFunc.Text = "함수";
+            this.colLogFunc.Width = 130;
             this.CH04.Text = "Message";
             this.CH04.Width = 2000;
             //
@@ -311,6 +319,8 @@
         internal System.Windows.Forms.ColumnHeader CH02;
         internal System.Windows.Forms.ColumnHeader CH03;
         internal System.Windows.Forms.ColumnHeader CH04;
+        private System.Windows.Forms.ColumnHeader colLogFile;   // [LGLS 2026-08-21] 로그 호출 파일
+        private System.Windows.Forms.ColumnHeader colLogFunc;   // [LGLS 2026-08-21] 로그 호출 함수
         internal System.Windows.Forms.CheckBox chkLogDelTest;
         private System.Windows.Forms.Label label1;
     }

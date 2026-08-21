@@ -52,6 +52,10 @@
             this.Label4 = new System.Windows.Forms.Label();
             this.picSrvCom = new System.Windows.Forms.PictureBox();
             this.lsvMsgServer = new System.Windows.Forms.ListView();
+            this.colCliFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colCliFunc = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSrvFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSrvFunc = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.imlLog = new System.Windows.Forms.ImageList(this.components);
@@ -205,6 +209,8 @@
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.lsvMsgClient.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.ColumnHeader1,
+            this.colCliFile,
+            this.colCliFunc,
             this.ColumnHeader2});
             this.lsvMsgClient.Font = new System.Drawing.Font("돋움체", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.lsvMsgClient.FullRowSelect = true;
@@ -315,6 +321,8 @@
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.lsvMsgServer.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.ColumnHeader3,
+            this.colSrvFile,
+            this.colSrvFunc,
             this.ColumnHeader4});
             this.lsvMsgServer.Font = new System.Drawing.Font("돋움체", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.lsvMsgServer.FullRowSelect = true;
@@ -329,6 +337,14 @@
             // 
             // ColumnHeader3
             // 
+            this.colCliFile.Text = "파일";
+            this.colCliFile.Width = 100;
+            this.colCliFunc.Text = "함수";
+            this.colCliFunc.Width = 120;
+            this.colSrvFile.Text = "파일";
+            this.colSrvFile.Width = 100;
+            this.colSrvFunc.Text = "함수";
+            this.colSrvFunc.Width = 120;
             this.ColumnHeader3.Text = "시간";
             this.ColumnHeader3.Width = 110;
             // 
@@ -475,6 +491,10 @@
 		internal System.Windows.Forms.PictureBox picSrvCom;
 		internal System.Windows.Forms.ListView lsvMsgServer;
 		internal System.Windows.Forms.ColumnHeader ColumnHeader3;
+		private System.Windows.Forms.ColumnHeader colCliFile;   // [LGLS 2026-08-21]
+		private System.Windows.Forms.ColumnHeader colCliFunc;
+		private System.Windows.Forms.ColumnHeader colSrvFile;
+		private System.Windows.Forms.ColumnHeader colSrvFunc;
 		internal System.Windows.Forms.ColumnHeader ColumnHeader4;
 		internal System.Windows.Forms.ImageList imlLog;
 		internal System.Windows.Forms.TextBox txtDetail2;

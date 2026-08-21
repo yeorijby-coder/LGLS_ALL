@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ namespace TSK_HostCom
 	static class modCmWork
 	{
 		//*** 메세지 표시 ***
-		public static void ShowMsgClient(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true)
+		public static void ShowMsgClient(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true, [CallerFilePath] string p_strFile = "", [CallerMemberName] string p_strFunc = "")
 		{
             try
             {
@@ -43,6 +44,9 @@ namespace TSK_HostCom
 
                 ListViewItem lvitem = new ListViewItem(LogMsg.g_strTime, 0);
 
+                // [LGLS 2026-08-21] 호출 위치 (내용 앞 2열 - 헤더 우클릭으로 표시/숨김)
+                lvitem.SubItems.Add(WcsCommon.cLogCols.ShortFile(p_strFile));
+                lvitem.SubItems.Add(p_strFunc ?? "");
                 lvitem.SubItems.Add(p_strMsg);
 
                 // [LGLS] 통신 전문(원문) 판별: STX 포함 또는 메일박스 헤더로 시작하면 전문
@@ -106,7 +110,7 @@ namespace TSK_HostCom
 		}
 
 
-		public static void ShowMsgServer(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true)
+		public static void ShowMsgServer(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true, [CallerFilePath] string p_strFile = "", [CallerMemberName] string p_strFunc = "")
 		{
             try
             {
@@ -139,6 +143,9 @@ namespace TSK_HostCom
 
                 ListViewItem lvitem = new ListViewItem(LogMsg.g_strTime, 0);
 
+                // [LGLS 2026-08-21] 호출 위치 (내용 앞 2열 - 헤더 우클릭으로 표시/숨김)
+                lvitem.SubItems.Add(WcsCommon.cLogCols.ShortFile(p_strFile));
+                lvitem.SubItems.Add(p_strFunc ?? "");
                 lvitem.SubItems.Add(p_strMsg);
                 switch (p_strMsgKind)
                 {

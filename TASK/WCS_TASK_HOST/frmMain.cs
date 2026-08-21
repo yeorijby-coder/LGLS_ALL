@@ -99,7 +99,11 @@ namespace TSK_HostCom
 		//---------------------------------------------
 		private void frmMain_Load(object sender, EventArgs e)
 		{
-			int i;
+			
+            // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
+            WcsCommon.cLogCols.Attach(lsvMsgClient);
+            WcsCommon.cLogCols.Attach(lsvMsgServer);
+int i;
 			StatusBar1.Panels[0].Text = modUpdate.__UPDATE_DATE__;
 			modDefApp.g_blIsAppExit = false;
 			modDefApp.g_strPcNm = SystemInformation.ComputerName;
@@ -299,7 +303,7 @@ namespace TSK_HostCom
 			{
 				if (lsvMsgClient.SelectedItems.Count > 0)
 				{
-					txtDetail.Text = lsvMsgClient.SelectedItems[0].SubItems[1].Text;
+					txtDetail.Text = lsvMsgClient.SelectedItems[0].SubItems[3].Text;   // [LGLS 2026-08-21] 파일/함수 2열 삽입
 				}
 			}
 			catch (Exception ex)
@@ -315,7 +319,7 @@ namespace TSK_HostCom
 			{
 				if (lsvMsgServer.SelectedItems.Count > 0)
 				{
-					txtDetail2.Text = lsvMsgServer.SelectedItems[0].SubItems[1].Text;
+					txtDetail2.Text = lsvMsgServer.SelectedItems[0].SubItems[3].Text;  // [LGLS 2026-08-21] 파일/함수 2열 삽입
 				}
 			}
 			catch (Exception ex)

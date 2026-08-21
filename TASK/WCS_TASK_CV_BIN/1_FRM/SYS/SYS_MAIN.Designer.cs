@@ -34,6 +34,8 @@
             this.ColumnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLogFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLogFunc = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.txtMsg = new System.Windows.Forms.TextBox();
@@ -127,6 +129,8 @@
             this.ColumnHeader1,
             this.ColumnHeader2,
             this.ColumnHeader3,
+            this.colLogFile,
+            this.colLogFunc,
             this.ColumnHeader4,
             this.ColumnHeader5});
             this.lsvCOMM1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -154,6 +158,13 @@
             // ColumnHeader3
             // 
             this.ColumnHeader3.Text = "Cmd";
+            // 
+            // colLogFile / colLogFunc   [LGLS 2026-08-21] 호출 위치 (헤더 우클릭으로 표시/숨김)
+            // 
+            this.colLogFile.Text = "파일";
+            this.colLogFile.Width = 110;
+            this.colLogFunc.Text = "함수";
+            this.colLogFunc.Width = 130;
             // 
             // ColumnHeader4
             // 
@@ -858,6 +869,8 @@
         internal System.Windows.Forms.RadioButton rdoRHex;   // [LGLS 2026-08-19] R주소=구ECS(16진)
         internal System.Windows.Forms.RadioButton rdoRDec;   // [LGLS 2026-08-19] R주소=현행(10진)
         internal System.Windows.Forms.Button btnRDiag;       // [LGLS 2026-08-21] R 진법 진단
+        private System.Windows.Forms.ColumnHeader colLogFile; // [LGLS 2026-08-21] 로그 호출 파일
+        private System.Windows.Forms.ColumnHeader colLogFunc; // [LGLS 2026-08-21] 로그 호출 함수
         internal System.Windows.Forms.ListView lsvCOMM1;
 		private System.Windows.Forms.TabControl tab;
         private System.Windows.Forms.TabPage tabPage1;
