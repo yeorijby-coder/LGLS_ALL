@@ -22,12 +22,15 @@ for g in root.findall('EquipGroup'):
     for b in g.findall('Block'):
         bd = {'device': b.get('device'), 'origin': int(b.get('origin')),
               'stride': int(b.get('stride')), 'perSlotWords': int(b.get('perSlotWords', '1')),
+              'legacy': b.get('legacy') or '',
+              'legacyStride': int(b.get('legacyStride') or b.get('stride')),
               'signals': {}}
         for s in list(b):
             nm = s.get('name')
             bd['signals'][nm] = {'offset': int(s.get('offset')),
                                  'isArray': (s.tag == 'SignalArray'),
-                                 'perSlot': int(s.get('perSlot', '1'))}
+                                 'perSlot': int(s.get('perSlot', '1')),
+                                 'legacy': s.get('legacy') or ''}
         gd['blocks'][b.get('name')] = bd
     groups[g.get('type')] = gd
 
@@ -57,6 +60,35 @@ def addr(equip, no, block, signal, slot):
     a = b['origin'] + (no - g['numberFrom']) * b['stride'] + s['offset']
     if slot > 0: a += slot * (s['perSlot'] if s['isArray'] else 1)
     return a
+
+
+def doc_label(equip, no, block, signal, slot):
+    """M/D/R 영역 문서표기. M 은 비트주소에서 직접(Mxxx.y), D/R 은 legacy 라벨 기준."""
+    g = groups.get(equip)
+    if not g: return ""
+    b = g['blocks'].get(block)
+    if not b: return ""
+    sg = b['signals'].get(signal)
+    if sg is None: return ""
+    if sg.get('legacy'):
+        return sg['legacy']            # Signal 단위 override (예 RGV To3 = W0345)
+    dev = b['device']
+    if dev == 'M':
+        a = addr(equip, no, block, signal, slot)
+        return "M%03d.%d" % (a // 16, a % 16) if a >= 0 else ""
+    if dev == 'R':
+        # R 문서표기 = 진법 변환 전 값
+        d = b['origin'] + (no - g['numberFrom']) * b['stride'] + sg['offset']
+        if slot > 0: d += slot * b['perSlotWords']
+        return "R%04d" % d
+    # D : 라벨 증분(legacyStride)이 실주소 stride 와 다르다
+    lg = b.get('legacy') or ''
+    if len(lg) < 2: return ""
+    try: base = int(lg[1:])
+    except: return ""
+    n = base + (no - g['numberFrom']) * b['legacyStride'] + sg['offset']
+    if slot > 0: n += slot * b['perSlotWords']
+    return "%s%04d" % (lg[0], n)
 
 def resolve_no(expr, crane, default):
     if not expr: return default
@@ -95,7 +127,8 @@ for sc in root.findall('.//Scenario'):
             else:
                 a = addr(st.get('equip'), no, st.get('block'), st.get('signal'), slot)
                 dev = dev_of(st.get('equip'), st.get('block'))
-            rec['per'][str(cr)] = {'no': no, 'addr': a, 'dev': dev}
+            lab = "" if st.get('equip','').lower()=='global' else doc_label(st.get('equip'), no, st.get('block'), st.get('signal'), slot)
+            rec['per'][str(cr)] = {'no': no, 'addr': a, 'dev': dev, 'label': lab}
         sd['steps'].append(rec)
     out['scenarios'].append(sd)
 

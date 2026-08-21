@@ -21,8 +21,8 @@ $FS_NOTE   = 8      # 범례
 $X0        = 6      # 그림 좌측
 $W_ALL     = 660    # 그림 폭
 $X_ADDR_L  = 6      # 좌측 주소열
-$W_ADDR    = 96
-$X_EQP     = 112    # EQP 라이프라인
+$W_ADDR    = 118
+$X_EQP     = 132    # EQP 라이프라인
 $X_ECS     = 592    # ECS 라이프라인
 $H_STEP    = 26     # 스텝 1행 높이
 $H_SEC     = 24     # 구간 머리글 높이
@@ -59,15 +59,21 @@ function Split-Sections($steps) {
 
 function Bit-Label([int]$a) { "M{0:000}.{1}" -f [int]($a/16), ($a % 16) }
 
+# [LGLS 2026-08-21] 표기 규칙 : "M/D/R 영역 문서표기  실제 접근주소"
+#   M : M037.1  %MX593      (비트)
+#   D : D0310   %DW490      (워드, %DB=워드x2)
+#   R : R0102   %RB516      (트래킹, 진법은 XML rAddrMode 적용 후)
 function Addr-Text($step) {
     $p = $step.per.'1'
     if ($p.addr -lt 0) { return "-" }
+    $lab = [string]$p.label
+    if ([string]::IsNullOrEmpty($lab)) { $lab = (Bit-Label $p.addr) }
     switch ($p.dev) {
-        "M" { return (Bit-Label $p.addr) + "  %MX" + $p.addr }
-        "D" { return "%DW" + $p.addr + " (%DB" + ($p.addr * 2) + ")" }
-        "R" { return "%RB" + ($p.addr * 2) }
+        "M" { return $lab + "  %MX" + $p.addr }
+        "D" { return $lab + "  %DW" + $p.addr }
+        "R" { return $lab + "  %RB" + ($p.addr * 2) }
     }
-    return "%MX" + $p.addr
+    return $lab + "  %MX" + $p.addr
 }
 
 function Eq-Name($equip, $no) {
@@ -140,7 +146,7 @@ for ($si = 0; $si -lt 6; $si++) {
 
     # ── 범례 ──
     Add-Text $ws $X0 $y $W_ALL 14 `
-        "실선 → 비트 ON/OFF   ·   점선 → D/R 워드 값 기록·확인   ·   왼쪽 끝 = 해당 신호의 PLC 주소 (S/C #1 기준)" `
+        "실선 → 비트 ON/OFF   ·   점선 → D/R 워드 값 기록·확인   ·   왼쪽 끝 = M/D/R 영역 문서표기 + 실제 접근주소 (S/C #1 기준)" `
         $FS_NOTE $false 8421504 -4108 | Out-Null
     $y += 18
 
