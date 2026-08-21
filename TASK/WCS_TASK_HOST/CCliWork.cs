@@ -755,6 +755,9 @@ namespace TSK_HostCom
         //최초작성자	: BASE(정복열)
         //작성일		: 20200519
         //설명		    : 완료 보고 
+        /// <summary>[LGLS 2026-08-21] 직전에 송신한 상태보고 전문(변경 감지용)</summary>
+        private string m_strLastStatusFrame = "";
+
         private bool GetStatusReport(bool bTimeReport = false)
         {
             string strTitle = "[GetStatusReport] .. ";
@@ -974,11 +977,14 @@ namespace TSK_HostCom
             }
 
             // 설비의 변경이 일어나지 않았을 경우 보고하지 않음 - 30초 마다 보고하는 부분을 제외하고...
-            if ((bTimeReport == false) && 
-                ((bScTemp == false) && (bCvTemp == false)))
-            {
-                return false;
-            }
+            // [LGLS 2026-08-21] 명세(20100311) 4.상태 보고 :
+            //   "상태가 변경되면 즉시 송신하며 또한 정기적으로 30초에 1회씩 송신"
+            //   종전에는 HOST_SEND_YN='N' 플래그만 보고 조기 return 했는데,
+            //   크레인 사용정지(SC_DATA_LGLS.SUSPEND)처럼 Client 가 직접 바꾸는 항목은
+            //   그 플래그가 내려가지 않아 최대 30초 늦게 보고됐다.
+            //   → 여기서 끊지 않고 전문을 끝까지 구성한 뒤, 직전 송신본과 내용이 다르면
+            //     즉시 송신한다(어떤 컬럼이든·누가 바꾸든 반영된다).
+            //   bScTemp/bCvTemp 는 참고용으로만 남긴다.
 
             // [LGLS 2026-07-30] 명세 43B 후반부: 작업대 상태 3개(101/102/103) + PLC 모드 2개(101/110)
             //   상태 0=가능/1=불가 (AUTO 아님·에러코드 존재 시 불가). 102(피킹존)는 C/V#14(129)·#15(130) 중
@@ -1019,6 +1025,13 @@ namespace TSK_HostCom
             //MAKE FRAME
             string strTemp = sbStatus.ToString();      // 'S' + SC블록(7×5) + 상태3 + 모드2 = 41자
             byte[] bytTempByte = null;
+
+            // [LGLS 2026-08-21] 변경 감지 : 30초 주기가 아니면 직전 송신본과 다를 때만 보낸다
+            if (bTimeReport == false && strTemp == m_strLastStatusFrame)
+            {
+                return false;
+            }
+            m_strLastStatusFrame = strTemp;
 
             {
                 int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
