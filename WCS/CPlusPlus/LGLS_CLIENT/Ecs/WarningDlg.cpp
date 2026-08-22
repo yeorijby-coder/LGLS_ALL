@@ -57,9 +57,9 @@ BOOL CWarningDlg::OnInitDialog()
 	m_ctlList.SetExtendedStyle(m_ctlList.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 	m_ctlList.InsertColumn(0, _T("시각"),     LVCFMT_CENTER,  80);
 	m_ctlList.InsertColumn(1, _T("작업번호"), LVCFMT_CENTER,  80);
-	m_ctlList.InsertColumn(2, _T("상태"),     LVCFMT_CENTER,  56);
+	m_ctlList.InsertColumn(2, _T("상태"),     LVCFMT_CENTER, 120);
 	m_ctlList.InsertColumn(3, _T("체류(초)"), LVCFMT_RIGHT,   80);
-	m_ctlList.InsertColumn(4, _T("경로"),     LVCFMT_LEFT,   300);
+	m_ctlList.InsertColumn(4, _T("경로"),     LVCFMT_LEFT,   230);
 
 	SetDlgItemText(IDC_STATIC_TIP, _T(""));
 	SetDlgItemText(IDC_BUTTON_SHOW, _T("STOP"));
@@ -180,13 +180,30 @@ void CWarningDlg::ScanStalledJobs()
 {
 	if (m_pDoc == NULL) return;
 
+	// [LGLS 2026-08-22] 상태는 코드값 대신 COMMON_CODE(JOB_STATUS)의 이름으로 보여준다.
+	//   언어 설정에 따라 KOR/ENG/HUN/CHIN 컬럼을 고르고, 코드가 없으면 원래 숫자를 그대로 쓴다.
+	CString strNmCol = _T("CCD.CCD_NM_KOR");
+	switch (m_pDoc->m_enLang)
+	{
+	case EN_ENG:  strNmCol = _T("CCD.CCD_NM_ENG");  break;
+	case EN_HUN:  strNmCol = _T("CCD.CCD_NM_HUN");  break;
+	case EN_CHIN: strNmCol = _T("CCD.CCD_NM_CHIN"); break;
+	default: break;
+	}
+
 	CString strSql;
 	strSql.Format(
-		_T("SELECT LUGG_NO, JOB_STATUS, START_POS, DEST_POS, ")
-		_T("       DATEDIFF(second, UPD_DT, GETDATE()) AS IDLE_SEC ")
-		_T("  FROM JOB_MST ")
-		_T(" WHERE JOB_STATUS NOT IN ('29','19') ")
-		_T("   AND DATEDIFF(second, UPD_DT, GETDATE()) >= %d "), m_nStallSec);
+		_T("SELECT JM.LUGG_NO, JM.JOB_STATUS, JM.START_POS, JM.DEST_POS, ")
+		_T("       DATEDIFF(second, JM.UPD_DT, GETDATE()) AS IDLE_SEC, ")
+		_T("       %s(NULLIF(LTRIM(RTRIM(%s)),''), JM.JOB_STATUS) AS STATUS_NM ")
+		_T("  FROM JOB_MST JM ")
+		_T("  LEFT OUTER JOIN COMMON_CODE CCD ")
+		_T("         ON CCD.CDX_CD = 'JOB_STATUS' ")
+		_T("        AND CCD.CCD_CD = JM.JOB_STATUS ")
+		_T("        AND CCD.WH_TYP LIKE '%%' + JM.WH_TYP + '%%' ")
+		_T(" WHERE JM.JOB_STATUS NOT IN ('29','19') ")
+		_T("   AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= %d "),
+		m_pDoc->NVL, strNmCol, m_nStallSec);
 
 	int nRowCnt = -1;
 	CString strMessage;
@@ -202,6 +219,8 @@ void CWarningDlg::ScanStalledJobs()
 	{
 		CString strLugg   = pRsw->GetItem(_T("LUGG_NO"));
 		CString strStatus = pRsw->GetItem(_T("JOB_STATUS"));
+		CString strStatNm = pRsw->GetItem(_T("STATUS_NM"));
+		if (strStatNm.Trim().IsEmpty()) strStatNm = strStatus;
 		CString strIdle   = pRsw->GetItem(_T("IDLE_SEC"));
 		CString strStart  = pRsw->GetItem(_T("START_POS"));
 		CString strDest   = pRsw->GetItem(_T("DEST_POS"));
@@ -221,10 +240,10 @@ void CWarningDlg::ScanStalledJobs()
 			CTime tmNow = CTime::GetCurrentTime();
 			CString strRoute;
 			strRoute.Format(_T("%s -> %s"), strStart, strDest);
-			AddRow(tmNow.Format(_T("%H:%M:%S")), strLugg, strStatus, strIdle, strRoute);
+			AddRow(tmNow.Format(_T("%H:%M:%S")), strLugg, strStatNm, strIdle, strRoute);
 
 			strLast.Format(_T("작업 %s 이(가) 상태 '%s' 로 %s초째 진행되지 않습니다.\r\n%s\r\n설비 응답을 확인하세요."),
-			                strLugg, strStatus, strIdle, strRoute);
+			                strLugg, strStatNm, strIdle, strRoute);
 			nNew++;
 		}
 		pRsw->MoveNext();
