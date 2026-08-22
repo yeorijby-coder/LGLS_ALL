@@ -519,6 +519,9 @@ namespace WCS_TASK_CV
                         //   종전에는 슬롯 순서가 고정이라, 방향 전환(M 전문) 같은 지시가 뒤쪽 설비에
                         //   걸리면 한 바퀴를 다 돌 때까지 PLC 에 써지지 않아 화면 반영이 10초를 넘었다.
                         //   순서만 앞당기므로 처리 내용·횟수는 그대로다(한 바퀴에 모든 설비를 한 번씩).
+                        // [LGLS 2026-08-22] 상태 구간 일괄 조회(왕복 45회 → 3회). 실패 시 설비별 개별 READ 로 폴백.
+                        PreloadStatusBlocks();
+
                         System.Collections.Generic.List<EqpSlot> lstOrder = m_slots;
                         if (m_bPendScanOk && (m_setPendCmd.Count > 0 || m_setPendOd.Count > 0 || m_setPendTrk.Count > 0))
                         {
@@ -3014,6 +3017,120 @@ namespace WCS_TASK_CV
         /// CV 기계번호는 m_strPlc_No 숫자 파싱 (예: "01" → 1, "11" → 11)
         /// </summary>
         /// <summary>[LGLS 2026-08-21] R 트래킹 일괄 읽기 시작주소 = 항상 슬롯 0 (비선형 trackOrder 와 무관)</summary>
+        #region [LGLS 2026-08-22] 상태 READ 블록 일괄 조회
+        // 종전에는 설비마다 M(2워드)·D(1워드)·R(슬롯×2워드)를 따로 읽어 15설비면 45회 왕복이었고,
+        // 한 바퀴 8~13초 중 대부분이 이 READ 였다([CYCLE] status 8027/8675ms).
+        // 주소가 설비번호에 대해 등간격(stride)이라 전 설비 구간을 한 번에 읽어 캐시에 담고,
+        // 각 설비는 캐시에서 자기 구간만 잘라 쓴다 → 왕복 45회 → 3회.
+        // 실패하면 캐시를 끄고 종전 개별 READ 로 그대로 되돌아간다(누락·오판 방지).
+        private bool   m_bBulkOk   = false;
+        private bool   m_bBulkGiveUp = false;   // 한 번 실패하면 다시 시도하지 않는다(실패 READ 타임아웃 누적 방지)
+        private bool   m_bBulkLogged = false;
+        private byte[] m_bufBulkM  = null;   private int m_nBulkMWord = 0;   private int m_nBulkMCnt = 0;
+        private byte[] m_bufBulkD  = null;   private int m_nBulkDWord = 0;   private int m_nBulkDCnt = 0;
+        private byte[] m_bufBulkR  = null;   private int m_nBulkRWord = 0;   private int m_nBulkRCnt = 0;
+
+        /// <summary>캐시에서 [wordAddr, wordAddr+cnt) 구간을 잘라 dst 에 채운다. 범위 밖이면 false.</summary>
+        private static bool SliceFrom(byte[] src, int srcWord, int srcCnt, int wordAddr, int cnt, byte[] dst)
+        {
+            if (src == null || dst == null) return false;
+            if (wordAddr < srcWord || (wordAddr + cnt) > (srcWord + srcCnt)) return false;
+            int off = (wordAddr - srcWord) * 2;
+            if (off < 0 || (off + cnt * 2) > src.Length || (cnt * 2) > dst.Length) return false;
+            Array.Copy(src, off, dst, 0, cnt * 2);
+            return true;
+        }
+
+        /// <summary>
+        /// 사이클 시작에 1회. 전 설비의 M/D/R 상태 구간을 한 번씩 읽어 캐시에 담는다.
+        /// 구간은 주소맵(XML)의 origin·stride 로 계산한다 — 설비별 개별 READ 와 같은 주소를 덮는다.
+        /// </summary>
+        private void PreloadStatusBlocks()
+        {
+            m_bBulkOk = false;
+            if (m_bBulkGiveUp) return;                  // 이전에 실패 - 종전 개별 READ 로 계속 간다
+            if (cDefApp.GM_ADDR_V09) return;            // V0.9 매핑은 종전 경로 유지
+            if (m_slots == null || m_slots.Count == 0) return;
+
+            try
+            {
+                int nMin = int.MaxValue, nMax = int.MinValue, nMaxSlots = 1;
+                foreach (EqpSlot sl in m_slots)
+                {
+                    int no = 0;
+                    int.TryParse(System.Text.RegularExpressions.Regex.Match(sl.Plc, @"\d+").Value, out no);
+                    if (no < 1) return;                  // 설비번호를 못 읽으면 일괄 조회 포기
+                    if (no < nMin) nMin = no;
+                    if (no > nMax) nMax = no;
+                    int slots = sl.To - sl.Fr + 1; if (slots < 1) slots = 1;
+                    if (slots > nMaxSlots) nMaxSlots = slots;
+                }
+                if (nMin > nMax) return;
+
+                int nTrkSlotW = cPlcAddrMap.BlockSlotWords("CV", "Tracking", 2);
+                int nMaxSlot  = cPlcAddrMap.BlockMaxSlots("CV", "Tracking", 3);
+                if (nMaxSlots > nMaxSlot) nMaxSlots = nMaxSlot;
+
+                // ── M(이벤트/PalletExist) : 설비별 mBase 를 워드로 환산한 최소~최대 + 2워드
+                int mLo = int.MaxValue, mHi = int.MinValue;
+                int dLo = int.MaxValue, dHi = int.MinValue;
+                int rLo = int.MaxValue, rHi = int.MinValue;
+                for (int no = nMin; no <= nMax; no++)
+                {
+                    int mBase = cPlcAddrMap.BlockBase("CV", no, "Event");
+                    if (mBase < 0) mBase = 256 + (no - 1) * 32;
+                    int mw = mBase / 16;
+                    if (mw < mLo) mLo = mw;
+                    if (mw + 2 > mHi) mHi = mw + 2;
+
+                    int dw = cPlcAddrMap.Addr("CV", no, "Direction", "IoDirection");
+                    if (dw < 0) dw = (960 + (no - 1) * 2) / 2;
+                    if (dw < dLo) dLo = dw;
+                    if (dw + 1 > dHi) dHi = dw + 1;
+
+                    int rw = RTrackReadBase(no);
+                    if (rw < rLo) rLo = rw;
+                    if (rw + nMaxSlots * nTrkSlotW > rHi) rHi = rw + nMaxSlots * nTrkSlotW;
+                }
+                if (mLo > mHi || dLo > dHi || rLo > rHi) return;
+
+                int mCnt = mHi - mLo, dCnt = dHi - dLo, rCnt = rHi - rLo;
+                // 한 번에 읽을 워드 상한. 넘는 블록은 일괄 대상에서 빼고 종전 개별 READ 로 둔다.
+                //   (R 트래킹은 설비 간 간격이 넓어 전 구간이 300워드를 넘는다 - M/D 만으로도 왕복이 45→17회로 준다)
+                const int MAX_W = 128;
+                if (mCnt <= 0 || dCnt <= 0) { m_bBulkGiveUp = true; return; }
+                if (mCnt > MAX_W || dCnt > MAX_W) { m_bBulkGiveUp = true; return; }
+                bool bDoR = (rCnt > 0 && rCnt <= MAX_W);
+
+                byte[] bm = new byte[mCnt * 2 + 16];
+                byte[] bd = new byte[dCnt * 2 + 16];
+                byte[] br = bDoR ? new byte[rCnt * 2 + 16] : null;
+
+                if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                                   (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, mLo, mCnt, ref bm))
+                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] M 실패 - 종전 개별 READ 로 전환", m_nthNo); return; }
+                if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                                   (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D, dLo, dCnt, ref bd))
+                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] D 실패 - 종전 개별 READ 로 전환", m_nthNo); return; }
+                if (bDoR && !m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                                   (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R, rLo, rCnt, ref br))
+                { bDoR = false; br = null; }            // R 만 실패하면 R 은 개별 READ 로 둔다
+
+                m_bufBulkM = bm; m_nBulkMWord = mLo; m_nBulkMCnt = mCnt;
+                m_bufBulkD = bd; m_nBulkDWord = dLo; m_nBulkDCnt = dCnt;
+                m_bufBulkR = bDoR ? br : null; m_nBulkRWord = rLo; m_nBulkRCnt = bDoR ? rCnt : 0;
+                m_bBulkOk = true;
+                if (!m_bBulkLogged)
+                {
+                    m_bBulkLogged = true;
+                    MakeMsg_Imp(string.Format("[일괄READ] 상태 구간 일괄 조회 - M {0}워드 / D {1}워드 / R {2}",
+                        mCnt, dCnt, bDoR ? (rCnt + "워드") : "개별"), m_nthNo);
+                }
+            }
+            catch { m_bBulkOk = false; }
+        }
+        #endregion
+
         private static int RTrackReadBase(int cvMachineNo)
         {
             int a = cPlcAddrMap.Addr("CV", cvMachineNo, "Tracking", "JobNo", 0);
@@ -3571,6 +3688,8 @@ namespace WCS_TASK_CV
 
                 byte[] byMBuff = new byte[100];
                 Array.Clear(byMBuff, 0, byMBuff.Length);
+                // [LGLS 2026-08-22] 사이클 시작에 전 설비를 한 번에 읽어 둔 캐시가 있으면 거기서 자른다.
+                if (!(m_bBulkOk && SliceFrom(m_bufBulkM, m_nBulkMWord, m_nBulkMCnt, mWordAddr, 2, byMBuff)))
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
                                    mWordAddr, 2, ref byMBuff))
@@ -3588,6 +3707,7 @@ namespace WCS_TASK_CV
                 // ── 2) D 방향 워드 읽기 (0=입고, 1=출고) ───────────────────────────
                 byte[] byDBuff = new byte[100];
                 Array.Clear(byDBuff, 0, byDBuff.Length);
+                if (!(m_bBulkOk && SliceFrom(m_bufBulkD, m_nBulkDWord, m_nBulkDCnt, dirWordAddr, 1, byDBuff)))
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                    dirWordAddr, 1, ref byDBuff))
@@ -3600,9 +3720,12 @@ namespace WCS_TASK_CV
                 // ── 3) R 트래킹 JOB NO 읽기 (포지션당 2워드) ───────────────────────
                 byte[] byRBuff = new byte[100];
                 Array.Clear(byRBuff, 0, byRBuff.Length);
+                int nRBase = RTrackReadBase(cvMachineNo);
+                int nRCntW = nSlots * cPlcAddrMap.BlockSlotWords("CV", "Tracking", 2);
+                if (!(m_bBulkOk && SliceFrom(m_bufBulkR, m_nBulkRWord, m_nBulkRCnt, nRBase, nRCntW, byRBuff)))
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R,
-                                   RTrackReadBase(cvMachineNo), nSlots * cPlcAddrMap.BlockSlotWords("CV", "Tracking", 2), ref byRBuff))
+                                   nRBase, nRCntW, ref byRBuff))
                 {
                     MakeMsg_Error(strTitle + " R트래킹 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo);
                     return false;
