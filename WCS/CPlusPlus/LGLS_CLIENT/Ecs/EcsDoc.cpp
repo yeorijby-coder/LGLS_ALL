@@ -86,7 +86,8 @@ BEGIN_MESSAGE_MAP(CEcsDoc, CDocument)
 	//ON_COMMAND_RANGE(ID_LOG_IO, ID_LOG_CLIENT, &CEcsDoc::OnCommandRangeMainFrameLOG)
 	ON_COMMAND_RANGE(ID_USER_USER, ID_USER_GROUP, &CEcsDoc::OnCommandRangeMainFrameUSER)
 	ON_COMMAND_RANGE(ID_STATUS_CV, ID_STATUS_WC1, &CEcsDoc::OnCommandRangeMainFrameSTATUS)
-	ON_COMMAND_RANGE(ID_MONITORING_VIEW_JOBNO, ID_MONITORING_VIEW_PRODINFO, &CEcsDoc::OnCommandTrackTextMode)	// [LGLS 2026-07-20 재적용]
+	ON_COMMAND_RANGE(ID_MONITORING_VIEW_JOBNO, ID_MONITORING_VIEW_PRODINFO, &CEcsDoc::OnCommandTrackTextMode)
+	ON_UPDATE_COMMAND_UI_RANGE(ID_MONITORING_VIEW_JOBNO, ID_MONITORING_VIEW_PRODINFO, &CEcsDoc::OnUpdateTrackTextMode)	// [LGLS 2026-08-22] 선택 상태 표시	// [LGLS 2026-07-20 재적용]
 	ON_COMMAND(ID_ALARM_SHOW, &CEcsDoc::OnCommandAlarmShow)	// [LGLS 2026-08-22]
 	ON_COMMAND(ID_MANUAL_SEMITEST, &CEcsDoc::OnCommandSemiTestOpen)	// [LGLS 2026-08-13]
 	ON_COMMAND(ID_MANUAL_TESTCLEAR, &CEcsDoc::OnCommandSemiTestClear)	// [LGLS 2026-08-13]
@@ -100,7 +101,8 @@ CString g_strEcsPath;
 CEcsDoc::CEcsDoc()
 {
 	m_bViewFirstLoad = FALSE;
-	m_nTrackTextMode = 0;	// [LGLS 2026-07-20 재적용] 트랙 표시모드 기본=작업번호
+	m_nTrackTextMode = 1;	// [LGLS 2026-08-22] 기본=작업번호(ApplyTrackTextMode 규약: 1=작업번호 0=트랙번호 2=제품정보)
+	m_dwAliveJobTick = 0;	// [LGLS 2026-07-20 재적용] 트랙 표시모드 기본=작업번호
 	m_hWndViewRackDlg = NULL;
 	m_bExit = false;
 
@@ -2253,8 +2255,65 @@ BOOL CEcsDoc::EquipStatusCheck()
 // [LGLS 2026-07-20 재적용] 트랙 표시 모드 전환 (작업번호/트랙번호/제품정보)
 void CEcsDoc::OnCommandTrackTextMode(UINT nID)
 {
-	m_nTrackTextMode = (int)(nID - ID_MONITORING_VIEW_JOBNO);	// 0=작업번호 1=트랙번호 2=제품정보
+	// [LGLS 2026-08-22] 종전에는 (nID - ID_MONITORING_VIEW_JOBNO) 를 그대로 썼다.
+	//   그 값은 작업번호=0 / 트랙번호=1 인데, 그리는 쪽(CTrackInfo::ApplyTrackTextMode)의 규약은
+	//   1=작업번호 / 0=트랙번호 라 두 버튼이 서로 뒤바뀌어 동작했다. 규약에 맞춰 명시적으로 사상한다.
+	switch (nID)
+	{
+	case ID_MONITORING_VIEW_JOBNO:    m_nTrackTextMode = 1; break;	// 작업번호
+	case ID_MONITORING_VIEW_TRACKNO:  m_nTrackTextMode = 0; break;	// 트랙번호
+	case ID_MONITORING_VIEW_PRODINFO: m_nTrackTextMode = 2; break;	// 제품정보
+	default: return;
+	}
+	m_dwAliveJobTick = 0;			// 보기를 바꾸면 작업번호 캐시를 즉시 갱신
 	UpdateAllViews(NULL);
+}
+
+// [LGLS 2026-08-22] 지금 어떤 보기가 선택돼 있는지 리본 버튼에 표시한다.
+void CEcsDoc::OnUpdateTrackTextMode(CCmdUI* pCmdUI)
+{
+	if (pCmdUI == NULL) return;
+	int nWant = (pCmdUI->m_nID == ID_MONITORING_VIEW_JOBNO)   ? 1
+			  : (pCmdUI->m_nID == ID_MONITORING_VIEW_TRACKNO) ? 0 : 2;
+	pCmdUI->Enable(TRUE);
+	pCmdUI->SetCheck((m_nTrackTextMode == nWant) ? 1 : 0);
+}
+
+// [LGLS 2026-08-22] 그 작업번호가 작업정보(JOB_MST)에 실재하는지.
+//   트랙마다 조회하면 폴링 부담이 크므로 전체 작업번호를 2초에 한 번만 읽어 캐시한다.
+BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
+{
+	if (lpszLugg == NULL) return FALSE;
+	CString strLugg(lpszLugg);
+	strLugg.Trim();
+	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return FALSE;
+
+	if (m_dwAliveJobTick == 0 || (::GetTickCount() - m_dwAliveJobTick) >= 2000)
+	{
+		m_dwAliveJobTick = ::GetTickCount();
+		m_mapAliveJob.RemoveAll();
+		CString strSql;
+		strSql.Format(_T(" SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = '%s' "), m_WH_TYP);
+		int nRowCnt = 0;
+		CString strMsg = _T("");
+		_RecordsetPtr pRs = GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+		if (nRowCnt > 0)
+		{
+			CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+			pRsw->MoveFirst();
+			for (int i = 0; i < nRowCnt; i++)
+			{
+				CString strItem = pRsw->GetItem(_T("LUGG_NO"));
+				strItem.Trim();
+				if (!strItem.IsEmpty()) m_mapAliveJob.SetAt(strItem, _T("1"));
+				pRsw->MoveNext();
+			}
+			delete pRsw;
+		}
+	}
+
+	CString strDummy;
+	return m_mapAliveJob.Lookup(strLugg, strDummy);
 }
 
 // [LGLS 2026-08-13] 리본 MANUAL > 반자동 TEST : 반자동 TEST 창 열기 (모덜리스, 문서가 소유)

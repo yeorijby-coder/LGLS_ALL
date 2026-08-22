@@ -85,10 +85,17 @@ void CTrackInfo::ApplyTrackTextMode(CDciTrackCtrl* pTrackCtrl)
 	int nMode = m_pEquipment->m_pDoc->m_nTrackTextMode;
 	BOOL bHasJob = (m_pCV_DATA->V_LUGG_NO_RD != _T("0") && m_pCV_DATA->V_LUGG_NO_RD != _T("0000") && !m_pCV_DATA->V_LUGG_NO_RD.IsEmpty());
 
+	// [LGLS 2026-08-22] 컨베이어 위 작업번호 글자색:
+	//   작업정보(JOB_MST)에 실재하는 작업이면 검정, 실물만 남고 작업이 없는 잔재면 흰색.
+	//   (2초 캐시 조회 - CEcsDoc::IsJobInJobMst)
+	COLORREF clrJob = RGB(0, 0, 0);
+	if (bHasJob && !m_pEquipment->m_pDoc->IsJobInJobMst(m_pCV_DATA->V_LUGG_NO_RD))
+		clrJob = RGB(255, 255, 255);
+
 	if (nMode == 1)
 	{
 		// [LGLS 2026-07-22] 수집 스레드가 갱신 중인 CString 을 참조 공유 없이 깊은 복사(레이스 방어)
-		pTrackCtrl->SetExtraTextSafe(bHasJob ? CString((LPCTSTR)m_pCV_DATA->V_LUGG_NO_RD) : CString(_T(" ")), RGB(0,0,0));
+		pTrackCtrl->SetExtraTextSafe(bHasJob ? CString((LPCTSTR)m_pCV_DATA->V_LUGG_NO_RD) : CString(_T(" ")), clrJob);
 	}
 	else if (nMode == 2)
 	{

@@ -119,6 +119,7 @@ public:
 	afx_msg void OnCommandRangeMainFrameNATION(UINT nID);
 	afx_msg void OnCommandRangeMainFrameMANUAL(UINT nID);
 	afx_msg void OnCommandTrackTextMode(UINT nID);
+	afx_msg void OnUpdateTrackTextMode(CCmdUI* pCmdUI);	// [LGLS 2026-08-22] 현재 선택된 보기 표시
 	afx_msg void OnCommandSemiTestOpen();	// [LGLS 2026-08-13] 반자동 TEST 창
 	afx_msg void OnCommandSemiTestClear();	// [LGLS 2026-08-13] TEST 초기화	// [LGLS 2026-07-20 재적용] 트랙 표시모드(작업번호/트랙번호/제품정보)
 	afx_msg void OnCommandRangeMainFrameLOG(UINT nID);
@@ -405,6 +406,13 @@ public:
 	BOOL m_blConnectStatus;
 	BOOL m_blJobList;//작업정보 관련
 	BOOL m_blJobListDb;//작업정보 관련
+	// [LGLS 2026-08-22] 작업정보(JOB_MST)에 실재하는 작업번호 집합 - 2초 캐시.
+	//   창고 모니터링에서 컨베이어 위 작업번호 글자색을 정할 때 쓴다(있으면 검정 / 없으면 흰색).
+	DWORD m_dwAliveJobTick;
+	CMapStringToString m_mapAliveJob;
+public:
+	BOOL IsJobInJobMst(LPCTSTR lpszLugg);
+public:
 	int m_nTrackTextMode;				// [LGLS 2026-07-20 재적용] 0=작업번호 1=트랙번호 2=제품정보
 	CCriticalSection m_csEqpData;		// [LGLS 재적용] 설비 데이터 CString 멀티스레드 경합 방지 락
 	BOOL m_blManualLogin;//매뉴얼 로그인 관련
