@@ -5,6 +5,7 @@
 #include "Ecs.h"
 #include "EcsDoc.h"
 #include "ScInfo.h"
+#include "RecordSetWrap.h"		// [LGLS 2026-08-22] 제품정보 조회
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -287,6 +288,75 @@ COLORREF CScInfo::GetPostColor()
 	return BLUE;
 }
 
+// [LGLS 2026-08-22] 창고 모니터링 보기를 크레인에도 적용한다(컨베이어와 같은 규약).
+//   1=작업번호(싣고 있는 LUGG) / 0=호기(크레인은 트랙이 없으므로 S/C 번호) / 2=제품정보
+//   글자색 : 작업정보(JOB_MST)에 실재하는 작업이면 검정, 실물만 남은 잔재면 흰색.
+void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
+{
+	strOut = _T(" ");
+	clrOut = RGB(0, 0, 0);
+	if (pData == NULL || m_pEquipment == NULL || m_pEquipment->m_pDoc == NULL) return;
+
+	int nMode = m_pEquipment->m_pDoc->m_nTrackTextMode;
+	CString strLugg = pData->V_LUGG_NO_FK1_RD;
+	strLugg.Trim();
+	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
+
+	if (bHasJob && !m_pEquipment->m_pDoc->IsJobInJobMst(strLugg))
+		clrOut = RGB(255, 255, 255);
+
+	if (nMode == 1)
+	{
+		strOut = bHasJob ? strLugg : CString(_T(" "));
+	}
+	else if (nMode == 2)
+	{
+		if (bHasJob)
+		{
+			if (m_strScProdLugg != strLugg)
+			{
+				m_strScProdLugg = strLugg;
+				m_strScProdVal = _T("");
+				CString strSql;
+				strSql.Format(_T(" SELECT TOP 1 ISNULL(BCR_BOTTOM, ' ') AS BCR FROM JOB_MST WHERE LUGG_NO = '%s' ORDER BY INS_DT DESC "), m_strScProdLugg);
+				int nRowCnt = 0;
+				CString strMsg = _T("");
+				_RecordsetPtr pRs = m_pEquipment->m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+				if (nRowCnt > 0)
+				{
+					CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+					pRsw->MoveFirst();
+					m_strScProdVal = pRsw->GetItem(_T("BCR"));
+					delete pRsw;
+				}
+			}
+			m_strScProdVal.TrimRight();
+			strOut = m_strScProdVal.IsEmpty() ? CString(_T(" ")) : m_strScProdVal;
+		}
+		else
+			m_strScProdLugg = _T("");
+	}
+	else
+	{
+		// 호기 : SC_NO 901~905 -> 1~5
+		CString strNo = pData->K_SC_NO;
+		strNo.Trim();
+		if (strNo.GetLength() > 1) strNo = strNo.Right(1);
+		strOut = strNo.IsEmpty() ? CString(_T(" ")) : strNo;
+	}
+}
+
+void CScInfo::ApplyScTextMode(CSC_DATA* pData, CDciRvCtrl* c1, CDciRvCtrl* c2, CDciRvCtrl* c3, CDciRvCtrl* c4, CDciRvCtrl* c5)
+{
+	CString strVal; COLORREF clrJob;
+	CalcScText(pData, strVal, clrJob);
+	if (c1) c1->SetExtraTextSafe(strVal, clrJob);
+	if (c2) c2->SetExtraTextSafe(strVal, clrJob);
+	if (c3) c3->SetExtraTextSafe(strVal, clrJob);
+	if (c4) c4->SetExtraTextSafe(strVal, clrJob);
+	if (c5) c5->SetExtraTextSafe(strVal, clrJob);
+}
+
 void CScInfo::InvokeControl()
 {
 	if(m_pSC_DATA == NULL)
@@ -302,6 +372,8 @@ void CScInfo::InvokeControl()
  
  	// SC 행위치 표현하지 않음!
 	// [LGLS] 현재위치(POS_H_RD, 원본 SUBSYSTEM_LOCATION bay) 를 rail 위치로 사상
+	ApplyScTextMode(m_pSC_DATA, m_pControl, m_pControl2, m_pControl3, m_pControl4, m_pControl5);	// [LGLS 2026-08-22] 보기 모드 문자 반영
+
 	int nScPos = CConvert::ToInt(m_pSC_DATA->V_POS_H_RD);
 	if (nScPos < 0) nScPos = 0; else if (nScPos > 15) nScPos = 15;
  	if (m_pControl)						
@@ -429,6 +501,9 @@ void CScInfo::InvokeControl(CSC_DATA*	    pSC_DATA)
 
 	
 	// SC 행위치 표현하지 않음!
+	// [LGLS 2026-08-22] 보기 모드 문자 반영 (실제 갱신 경로 - SC_DATA 에 붙은 컨트롤)
+	ApplyScTextMode(pSC_DATA, pSC_DATA->m_pControl, pSC_DATA->m_pControl2, pSC_DATA->m_pControl3, pSC_DATA->m_pControl4, pSC_DATA->m_pControl5);
+
 	int nForkPos = (CConvert::ToInt(pSC_DATA->V_POS_H_RD) < 1) ? 0 : CConvert::ToInt(pSC_DATA->V_POS_H_RD);
 	if (pSC_DATA->m_pControl)						
 	{

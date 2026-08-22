@@ -49,6 +49,11 @@ public:
 public:
 	void InvokeControl(CSC_DATA*	pSC_DATA);
 	virtual void InvokeControl();
+	// [LGLS 2026-08-22] 창고 모니터링 보기(작업번호/호기/제품정보)를 크레인에도 적용
+	void CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut);
+	void ApplyScTextMode(CSC_DATA* pData, CDciRvCtrl* c1, CDciRvCtrl* c2, CDciRvCtrl* c3, CDciRvCtrl* c4, CDciRvCtrl* c5);
+	CString m_strScProdLugg;	// 제품정보 조회 캐시 키(작업번호)
+	CString m_strScProdVal;		// 제품정보 조회 캐시 값
 	COLORREF GetForkColor2();
 	COLORREF GetForkColor1();
 	COLORREF GetForkColor2(CSC_DATA* pSC_DATA);

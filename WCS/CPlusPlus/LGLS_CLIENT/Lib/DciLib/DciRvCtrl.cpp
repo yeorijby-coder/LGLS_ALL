@@ -3,13 +3,32 @@
 
 #include "StdAfx.h"
 #include "DciRvCtrl.h"
+#include <afxmt.h>		// [LGLS 2026-08-22] CCriticalSection / CSingleLock
 
 
 IMPLEMENT_SERIAL(CDciRvCtrl, CDciControl, DCI_SIRIALIZE_SCHEMA)
 
 // CDciRvCtrl
+// [LGLS 2026-08-22] 표시 문자 보호락 (CDciTrackCtrl 과 동일 규격)
+static CCriticalSection g_csRvExtraText;
+
+void CDciRvCtrl::SetExtraTextSafe(LPCTSTR s, COLORREF c)
+{
+	CSingleLock lk(&g_csRvExtraText, TRUE);
+	m_strExtraText = s;
+	m_clrExtraText = c;
+}
+
+CString CDciRvCtrl::GetExtraTextSafe(COLORREF* pColor)
+{
+	CSingleLock lk(&g_csRvExtraText, TRUE);
+	if (pColor) *pColor = m_clrExtraText;
+	return CString((LPCTSTR)m_strExtraText);
+}
+
 CDciRvCtrl::CDciRvCtrl(void)
 {
+	m_clrExtraText = RGB(0, 0, 0);
 }
 
 
@@ -1039,6 +1058,28 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 			IndicateProdSensor(pDC, rcTemp, g, s, 0x000000);
 		}
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+		// [LGLS 2026-08-22] 크레인 위 표시 문자(창고 모니터링 보기 - 작업번호/호기/제품정보)
+		{
+			COLORREF clrEx_;
+			CString strEx_ = GetExtraTextSafe(&clrEx_);
+			strEx_.Trim();
+			if (!strEx_.IsEmpty())
+			{
+				pDC->SetTextColor(clrEx_);
+				// 레일 한가운데가 아니라 크레인(포크)이 서 있는 자리에 그린다.
+				CRect rcTx = rcForkS;
+				if (rcTx.IsRectEmpty()) rcTx = rcForkT;
+				if (rcTx.IsRectEmpty()) rcTx = rcForkD;
+				if (rcTx.IsRectEmpty())
+					DrawFontText(pDC, strEx_, NULL, nOldMode, nOldFgColor);
+				else
+				{
+					rcTx.InflateRect(6, 2);
+					DrawFontText(pDC, strEx_, &rcTx, nOldMode, nOldFgColor);
+				}
+			}
+		}
 
 		pDC->SelectObject(pOldBrush);
 		pDC->SelectObject(pOldPen);

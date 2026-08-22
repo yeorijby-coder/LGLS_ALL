@@ -35,6 +35,13 @@ public:
 	COLORREF m_clrFork2;		// 포크 색깔
 	COLORREF m_clrWing;		// 날개 색깔
 	COLORREF m_clrRail;		// 레일 색깔
+
+	// [LGLS 2026-08-22] 크레인 위 표시 문자(작업번호/호기/제품정보).
+	//   CDciTrackCtrl 과 같은 규격 - 갱신 스레드와 그리기 스레드가 CString 을 함께 만지므로 락으로 감싼다.
+	CString  m_strExtraText;
+	COLORREF m_clrExtraText;
+	void    SetExtraTextSafe(LPCTSTR s, COLORREF c);
+	CString GetExtraTextSafe(COLORREF* pColor);
 //	int m_nCol;
 //	int m_nRow;
 //	int m_nFontSize;
