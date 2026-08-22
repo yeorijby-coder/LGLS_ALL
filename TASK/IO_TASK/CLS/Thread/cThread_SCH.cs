@@ -808,6 +808,29 @@ namespace TSK_COMM_IOSCH
                         if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv()) continue;
                         if (jobTyp == "1" && IsTrackEmpty(_wT)) continue;
 
+                        // [LGLS 2026-08-22] S/C #1 은 입고·출고를 C/V#2(트랙 103/104) 하나로 겸용한다
+                        //   (PlcAddressMap CraneMap : Crane no=1 inCv=outCv=2 - 방향전환형).
+                        //   작업 방향과 설비 방향이 어긋나면 그 쪽 HS 가 서지 않아 지시가 영영 보류된다
+                        //   (출고 작업이 상태 '20' 에서 멈춘 사례). 종전에는 입출고대(C/V#11)만 전환하고
+                        //   이 통로 C/V 를 전환하는 경로가 없었다 - C/V#11 과 같은 방식으로 지시 직전에 맞춘다.
+                        //   RGV 접점(103)에 화물이 남아 있는 동안에는 바꾸지 않는다(이송 방향이 뒤집혀 갇힌다).
+                        if (scNo == SC1_NO)
+                        {
+                            string wantDir = (jobTyp == "2") ? "1" : "0";
+                            if (GetCvStockMode(SC1_DUAL_CV) != wantDir)
+                            {
+                                if (IsTrackEmpty(SC1_DUAL_CV) && IsTrackLuggEmpty(SC1_DUAL_CV))
+                                {
+                                    if (RequestCvDirection(SC1_DUAL_CV, wantDir))
+                                        MakeMsg_Imp(string.Format("[SCH][SC] 겸용 통로 C/V#2({0}) 방향 전환 지시 - {1} (작업 {2})",
+                                            SC1_DUAL_CV, wantDir == "1" ? "출고(1)" : "입고(0)", luggNo));
+                                }
+                                else
+                                    DbgLog("DUALCV2", string.Format("[겸용통로] 방향 전환 보류 - 트랙 {0} 점유(작업 {1})", SC1_DUAL_CV, luggNo));
+                                continue;   // 방향이 설비에 반영된 뒤 다음 폴링에 지시
+                            }
+                        }
+
                         // [LGLS 2026-08-22] 핸드셰이크 최우선 규칙
                         //   입고는 그 트랙의 입고 HS 가, 출고는 출고 HS 가 서 있어야 지시한다.
                         if (jobTyp == "1" && !IsHsOn(_wT, "STOHS_READY_RD"))
@@ -951,6 +974,22 @@ namespace TSK_COMM_IOSCH
                     if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;    // 작업대 일시정지
                     if (destPos == "901" && HasActiveSc1Outbound()) continue;          // SC1 특례(출고 우선)
                     if (IsTrackEmpty(pickupTrack)) continue;                           // 화물이 픽업트랙 도착 후에만
+
+                    // [LGLS 2026-08-22] S/C #1 겸용 통로 C/V#2(103/104) 방향 맞추기.
+                    //   입고는 RGV 가 103 에 내려놓는 것이 SC 지시보다 먼저다 - SC 단계에서만 전환하면
+                    //   그 앞 RGV 단계에서 도착 HS 가 서지 않아 작업이 '30' 에서 멈춘다.
+                    if (dropTrack == SC1_DUAL_CV && GetCvStockMode(SC1_DUAL_CV) != "0")
+                    {
+                        if (IsTrackEmpty(SC1_DUAL_CV) && IsTrackLuggEmpty(SC1_DUAL_CV))
+                        {
+                            if (RequestCvDirection(SC1_DUAL_CV, "0"))
+                                MakeMsg_Imp(string.Format("[SCH][RGV] 겸용 통로 C/V#2({0}) 방향 전환 지시 - 입고(0) (작업 {1} 드롭 대기)",
+                                    SC1_DUAL_CV, luggNo));
+                        }
+                        else
+                            DbgLog("DUALCV2", string.Format("[겸용통로] 방향 전환 보류 - 트랙 {0} 점유(작업 {1})", SC1_DUAL_CV, luggNo));
+                        continue;   // 방향이 설비에 반영된 뒤 다음 폴링에 지시
+                    }
 
                     // [LGLS 2026-08-22] 핸드셰이크 최우선 규칙
                     //   출발지 HS(RGV 가 집어갈 준비)와 도착지 HS(RGV 가 내려놓을 준비)가 모두 서야 지시한다.
@@ -2138,6 +2177,11 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-08-01] 겸용대 방향 전환 지시. CV_DATA 커맨드 채널에 남기면
         //   WCS_TASK_CV(CvChg_CMD_RQ_YN, CMD_RQ_ID='DIR')가 설비 방향 워드에 기록한다(HOST M 전문과 동일 경로).
         //   dir : "0"=입고, "1"=출고
+        // [LGLS 2026-08-22] S/C #1 전용 겸용 통로 C/V#2 : 입고·출고가 트랙 103/104 를 공유한다.
+        //   방향 지시는 대표 트랙 103 으로 낸다(설비 단위 방향 워드 - 103/104 가 함께 바뀐다).
+        private const string SC1_NO       = "901";
+        private const string SC1_DUAL_CV  = "103";
+
         private readonly Dictionary<string, DateTime> m_dicDirReqAt = new Dictionary<string, DateTime>();
         private const int DIR_REQ_HOLD_MS = 15000;   // 설비 반영(미러 1주기)까지 재지시 억제
 
