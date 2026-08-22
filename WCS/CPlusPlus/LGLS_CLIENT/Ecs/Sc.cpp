@@ -80,6 +80,7 @@ CString CSc::GetSelectQry() //kdh20190521
 		_T("				  ") + m_pDoc->NVL + _T("(SD.FORKPOS_FK1_RD,'0') AS FORKPOS_FK1_RD,																				\n")
 		_T("				  ") + m_pDoc->NVL + _T("(SD.FORKPOS_FK2_RD,'0') AS FORKPOS_FK2_RD,																				\n")
 		_T("				  ") + m_pDoc->NVL + _T("(SD.PALLET_ON_VEHICLE_RD,'0') AS LUGG_NO_FK1_RD,																				 \n")
+		_T("				  ") + m_pDoc->NVL + _T("(SD.PALLET_ID_OD,'0') AS LUGG_NO_FK1_OD,																				 \n")
 		_T("				  ") + m_pDoc->NVL + _T("(SD.LUGG_NO_FK2_RD,'0') AS LUGG_NO_FK2_RD,																				 \n")
 		_T("				  ") + m_pDoc->NVL + _T("(SD.START_BANK_FK1_RD,'0') AS START_BANK_FK1_RD,																		\n")
 		_T("				  ") + m_pDoc->NVL + _T("(SD.START_BANK_FK2_RD,'0') AS START_BANK_FK2_RD,																		 \n")

@@ -302,6 +302,27 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 	strLugg.Trim();
 	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
 
+	// [LGLS 2026-08-22] 지시는 났는데 설비가 아직 화물을 싣지 않은 구간 메우기.
+	//   작업색(JOB_TYP_RD)은 IO_TASK 가 지시 즉시 쓰지만, 작업번호(PALLET_ON_VEHICLE_RD)는
+	//   설비가 PLC 에 실은 뒤 WCS_TASK_CV 가 읽어야 채워진다. 그 시차 동안 번호가 비어
+	//   호기 번호로 되돌아가 "작업을 받았는데 번호가 없는" 것처럼 보였다.
+	//   작업색이 켜져 있을 때에 한해 지시값으로 메운다(완료 후에는 지시값이 남아 있어도 쓰지 않는다).
+	if (!bHasJob)
+	{
+		CString strTyp = pData->V_JOB_TYP_RD;
+		strTyp.Trim();
+		if (!strTyp.IsEmpty() && strTyp != _T("0"))
+		{
+			CString strOd = pData->V_LUGG_NO_FK1_OD;
+			strOd.Trim();
+			if (!strOd.IsEmpty() && strOd != _T("0") && strOd != _T("0000"))
+			{
+				strLugg = strOd;
+				bHasJob = TRUE;
+			}
+		}
+	}
+
 	// [LGLS 2026-08-22] 호기 번호는 컨트롤이 이미 m_strText 로 포크 위에 그린다(레이아웃 text 속성).
 	//   그래서 표시할 것이 없으면 빈 문자열을 돌려주고 컨트롤이 호기를 그대로 쓰게 둔다.
 	//   (여기서 호기를 또 넣었더니 같은 자리에 두 번 찍혀 겹쳐 보였다.)

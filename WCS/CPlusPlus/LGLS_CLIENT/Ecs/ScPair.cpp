@@ -75,6 +75,7 @@ void CScPair::AutoRunProc()
 		pSC_DATA->SetCOMPLETE_RD(m_pRsw->GetItem( _T("COMPLETE_RD")));
 		pSC_DATA->SetJOB_TYP_RD(m_pRsw->GetItem( _T("JOB_TYP_RD")));
 		pSC_DATA->SetLUGG_NO_FK1_RD(m_pRsw->GetItem( _T("LUGG_NO_FK1_RD")));
+		pSC_DATA->SetLUGG_NO_FK1_OD(m_pRsw->GetItem( _T("LUGG_NO_FK1_OD")));	// [LGLS 2026-08-22] 지시값(설비 반영 전 구간 표시용)
 		pSC_DATA->SetSTART_BANK_FK1_RD(m_pRsw->GetItem( _T("START_BANK_FK1_RD")));
 		pSC_DATA->SetSTART_HSPOS_FK1_RD(m_pRsw->GetItem( _T("START_HSPOS_FK1_RD")));
 		pSC_DATA->SetDEST_BANK_FK1_RD(m_pRsw->GetItem( _T("DEST_BANK_FK1_RD")));
