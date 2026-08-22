@@ -313,13 +313,11 @@ void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
 	strLugg.Trim();
 	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
 
-	CString strUnit = pData->K_RTV_NO;			// 801 -> 1
-	strUnit.Trim();
-	if (strUnit.GetLength() > 1) strUnit = strUnit.Right(1);
-	if (strUnit.IsEmpty()) strUnit = _T(" ");
-
-	strOut = strUnit;
-	if (!bHasJob) return;
+	// [LGLS 2026-08-22] 호기 번호는 컨트롤이 이미 m_strText 로 포크 위에 그린다(레이아웃 text 속성).
+	//   그래서 표시할 것이 없으면 빈 문자열을 돌려주고 컨트롤이 호기를 그대로 쓰게 둔다.
+	//   (여기서 호기를 또 넣었더니 같은 자리에 두 번 찍혀 겹쳐 보였다.)
+	strOut = _T("");
+	if (!bHasJob) return;						// 작업 없음 -> 호기 표시
 
 	if (m_pEquipment->m_pDoc->IsJobInJobMst(strLugg) == FALSE)
 		clrOut = RGB(255, 255, 255);

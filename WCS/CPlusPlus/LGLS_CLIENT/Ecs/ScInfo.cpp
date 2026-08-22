@@ -302,15 +302,11 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 	strLugg.Trim();
 	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
 
-	// [LGLS 2026-08-22] 호기 번호가 평상시 표시값이다. 어느 보기에서든 작업이 없으면 호기를 보여주고,
-	//   작업이 있을 때만 그 자리에 작업번호(1)나 제품정보(2)를 대신 띄운다. 트랙번호 보기(0)는 늘 호기.
-	CString strUnit = pData->K_SC_NO;			// 901~905 -> 1~5
-	strUnit.Trim();
-	if (strUnit.GetLength() > 1) strUnit = strUnit.Right(1);
-	if (strUnit.IsEmpty()) strUnit = _T(" ");
-
-	strOut = strUnit;
-	if (!bHasJob) return;						// 작업 없음 → 호기 유지(색도 검정)
+	// [LGLS 2026-08-22] 호기 번호는 컨트롤이 이미 m_strText 로 포크 위에 그린다(레이아웃 text 속성).
+	//   그래서 표시할 것이 없으면 빈 문자열을 돌려주고 컨트롤이 호기를 그대로 쓰게 둔다.
+	//   (여기서 호기를 또 넣었더니 같은 자리에 두 번 찍혀 겹쳐 보였다.)
+	strOut = _T("");
+	if (!bHasJob) return;						// 작업 없음 -> 호기 표시
 
 	if (m_pEquipment->m_pDoc->IsJobInJobMst(strLugg) == FALSE)
 		clrOut = RGB(255, 255, 255);			// 작업정보에 없는 잔재 → 흰색

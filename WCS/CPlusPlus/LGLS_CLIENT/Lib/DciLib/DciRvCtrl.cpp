@@ -641,6 +641,15 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 
 	try
 	{
+		// [LGLS 2026-08-22] 창고 모니터링 보기 문자. 비어 있으면 종전처럼 m_strText(호기 번호)를 쓴다.
+		//   여기서 한 번 정해 두고 아래 포크 텍스트 출력에 그대로 넘긴다.
+		//   종전에 별도로 덧그렸더니 호기 번호 위에 작업번호가 겹쳐 찍혔다.
+		COLORREF clrExDisp;
+		CString  strExDisp = GetExtraTextSafe(&clrExDisp);
+		strExDisp.Trim();
+		CString  strDispText = strExDisp.IsEmpty() ? m_strText : strExDisp;
+		COLORREF clrDispText = strExDisp.IsEmpty() ? m_clrFgColor : clrExDisp;
+
 		CPoint ptRailS1, ptRailS2;					// 레일끝의 포인트???
 		CRect rcControlS;							// 컨트롤 헨들러??
 		CRect rcRailS1, rcRailS2;					// 레일 헨들러???		// S1:좌측(아래), S2:우측(위)
@@ -972,13 +981,13 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 
 		//pDC->DrawText(m_strText, rcForkL1, DT_SINGLELINE|DT_CENTER|DT_VCENTER);
 
-		m_pDCI->DrawText(pDC, rcForkL1, m_strText, m_clrFgColor);
+		m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText);
 
 		if (m_nForkType == enTwin)
 //		if (m_nForkType != enSingle)
 		{
 			m_pDCI->DrawButton(pDC, rcForkL2, m_clrFork2, m_bClick);
-			m_pDCI->DrawText(pDC, rcForkL2, m_strText, m_clrFgColor);
+			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText);
 		}
 
 //		if (m_nForkType == enDouble)
@@ -1006,13 +1015,13 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 		if (/*m_nForkType == enGap2 || */m_nForkType == enSingle)
 		{
 			m_pDCI->DrawButton(pDC, rcForkL1, m_clrFork, m_bClick);
-			m_pDCI->DrawText(pDC, rcForkL1, m_strText, m_clrFgColor);
+			m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText);
 		}
 
 		if (m_nForkType != enSingle/* && m_nForkType != enGap2*/)
 		{
 			m_pDCI->DrawButton(pDC, rcForkL2, m_clrFork2, m_bClick);
-			m_pDCI->DrawText(pDC, rcForkL2, m_strText, m_clrFgColor);
+			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText);
 		}
 	
 		// 더블 포크 일때는 하나의 그리드를 넘어가니깐... IntersectRect와 EqualRect를 체크하지 않는다.
@@ -1058,28 +1067,6 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 			IndicateProdSensor(pDC, rcTemp, g, s, 0x000000);
 		}
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-		// [LGLS 2026-08-22] 크레인 위 표시 문자(창고 모니터링 보기 - 작업번호/호기/제품정보)
-		{
-			COLORREF clrEx_;
-			CString strEx_ = GetExtraTextSafe(&clrEx_);
-			strEx_.Trim();
-			if (!strEx_.IsEmpty())
-			{
-				pDC->SetTextColor(clrEx_);
-				// 레일 한가운데가 아니라 크레인(포크)이 서 있는 자리에 그린다.
-				CRect rcTx = rcForkS;
-				if (rcTx.IsRectEmpty()) rcTx = rcForkT;
-				if (rcTx.IsRectEmpty()) rcTx = rcForkD;
-				if (rcTx.IsRectEmpty())
-					DrawFontText(pDC, strEx_, NULL, nOldMode, nOldFgColor);
-				else
-				{
-					rcTx.InflateRect(6, 2);
-					DrawFontText(pDC, strEx_, &rcTx, nOldMode, nOldFgColor);
-				}
-			}
-		}
 
 		pDC->SelectObject(pOldBrush);
 		pDC->SelectObject(pOldPen);
