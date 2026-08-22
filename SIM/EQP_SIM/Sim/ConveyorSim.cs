@@ -107,11 +107,35 @@ namespace EQP_SIM.Sim
         }
 
         private bool m_bInReadyLogged;      // 입고대 신호 ON 로그 1회 억제
+        private string m_strLastDir = "";   // 방향 전환 로그용
+
+        /// <summary>
+        /// [LGLS 2026-08-22] 양방향(겸용) 트랙의 방향 파생 신호.
+        ///   출고 모드  : RTV 도착지 ON  · 출고HS ON   (RGV 가 이 트랙으로 온다)
+        ///   입고 모드  : 둘 다 OFF
+        /// 구 ECS 관측 정의(TB_OBSERVABLE)에는 이 두 신호의 M비트가 없어 PLC 메모리에 실을 자리가
+        /// 없다 — 시뮬레이터 표시 상태로만 유지하고 화면(설비 상태열)에 내보낸다.
+        /// </summary>
+        public bool RtvArriveHs { get { return Def.RtvArrivePort > 0 && Direction == "1"; } }
+        public bool RetHs       { get { return Def.RetHsPort     > 0 && Direction == "1"; } }
 
         private void UpdateStationSignals()
         {
             StampSensed();
             DateTime now = DateTime.Now;
+            if (Def.HasDirection)
+            {
+                string d = Direction;
+                if (d != m_strLastDir)
+                {
+                    m_strLastDir = d;
+                    string txt = (d == "1") ? "출고" : "입고";
+                    string sig = "";
+                    if (Def.RtvArrivePort > 0) sig += "  P" + Def.RtvArrivePort + " RTV도착지=" + (RtvArriveHs ? "ON" : "OFF");
+                    if (Def.RetHsPort     > 0) sig += "  P" + Def.RetHsPort     + " 출고HS=" + (RetHs ? "ON" : "OFF");
+                    engine.Log(Def.Id + " 방향 " + txt + " 모드" + sig);
+                }
+            }
             bool bBi = (Def.IngoPath != null && Def.OutgoPath != null);   // 입출고 겸용(방향전환형)
             string dir = Direction;
 
@@ -145,8 +169,9 @@ namespace EQP_SIM.Sim
                 {
                     int outIdx = Def.OrderOf(Def.OutgoPath[Def.OutgoPath.Length - 1]);
                     SimPallet p;
+                    // [LGLS 2026-08-22] 규약: 화물과 데이터(JOB)가 모두 있어야 출고대 ON
                     if (Pallets.TryGetValue(outIdx, out p) && p.Dir == FlowDir.Outgo && !p.Discharged &&
-                        p.SensedAt != DateTime.MinValue)
+                        p.SensedAt != DateTime.MinValue && !string.IsNullOrEmpty(p.Id))
                     {
                         on = true;
                         if (p.OutSignalAt == DateTime.MinValue)
@@ -255,6 +280,11 @@ namespace EQP_SIM.Sim
             int inPort = Def.IngoPath[0];
             int idx = Def.OrderOf(inPort);
             if (Pallets.ContainsKey(idx)) return false;
+            // [LGLS 2026-08-22] 지게차 규약 : 화물과 데이터(트래킹)가 모두 없어야 새 화물을 올린다.
+            //   데이터만 남아 있는 동안(출고 반출 직후 등)에 올리면 남의 JOB 을 물고 들어간다.
+            if (!string.IsNullOrEmpty(GetTracking(idx))) return false;
+            // 겸용 트랙(C/V#2/#11)은 입고 모드일 때만. 출고 모드면 그 자리는 출고 화물이 나올 자리다.
+            if (Def.HasDirection && Direction == "1") return false;
             // 입출고 겸용 C/V#11: 컨베이어가 완전히 빌 때만 투입 (출고 흐름과 충돌 방지)
             if (Def.No == 11 && Pallets.Count > 0) return false;
 

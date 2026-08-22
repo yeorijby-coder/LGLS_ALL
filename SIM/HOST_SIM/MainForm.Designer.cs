@@ -24,6 +24,8 @@ namespace HOST_SIM
             this.chkLogic2 = new System.Windows.Forms.CheckBox();
             this.chkLogic3 = new System.Windows.Forms.CheckBox();
             this.chkCv2Test = new System.Windows.Forms.CheckBox();
+            this.chkModeCv11 = new System.Windows.Forms.CheckBox();
+            this.chkModeCv2 = new System.Windows.Forms.CheckBox();
             this.btnRedirectDouble = new System.Windows.Forms.Button();
             this.btnRedirectEmpty = new System.Windows.Forms.Button();
             this.splitMain = new System.Windows.Forms.SplitContainer();
@@ -60,6 +62,8 @@ namespace HOST_SIM
             this.pnlTop.Controls.Add(this.chkLogic2);
             this.pnlTop.Controls.Add(this.chkLogic3);
             this.pnlTop.Controls.Add(this.chkCv2Test);
+            this.pnlTop.Controls.Add(this.chkModeCv11);
+            this.pnlTop.Controls.Add(this.chkModeCv2);
             this.pnlTop.Controls.Add(this.btnRedirectDouble);
             this.pnlTop.Controls.Add(this.btnRedirectEmpty);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
@@ -116,6 +120,26 @@ namespace HOST_SIM
             this.chkCv2Test.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
             this.chkCv2Test.ForeColor = System.Drawing.Color.DarkRed;
             this.chkCv2Test.CheckedChanged += new System.EventHandler(this.chkCv2Test_CheckedChanged);
+            //
+            // [LGLS 2026-08-22] 겸용(양방향) 트랙 모드 강제 전환 — M 전문(모드변경)을 즉시 발행한다.
+            //   체크 = 입고 모드('0') / 해제 = 출고 모드('1')
+            //   C/V#11 = 명세 작업대 101, C/V#2 = 확장 코드 105(명세에 없는 통로 겸용대)
+            //
+            this.chkModeCv11.Location = new System.Drawing.Point(520, 78);
+            this.chkModeCv11.Size = new System.Drawing.Size(240, 20);
+            this.chkModeCv11.Text = "[C/V#11 모드 변경(입고모드)]";
+            this.chkModeCv11.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.chkModeCv11.ForeColor = System.Drawing.Color.DarkBlue;
+            this.chkModeCv11.Checked = true;
+            this.chkModeCv11.CheckedChanged += new System.EventHandler(this.chkModeCv_CheckedChanged);
+            //
+            this.chkModeCv2.Location = new System.Drawing.Point(520, 100);
+            this.chkModeCv2.Size = new System.Drawing.Size(240, 20);
+            this.chkModeCv2.Text = "[C/V#2 모드 변경(입고모드)]";
+            this.chkModeCv2.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.chkModeCv2.ForeColor = System.Drawing.Color.DarkBlue;
+            this.chkModeCv2.Checked = true;
+            this.chkModeCv2.CheckedChanged += new System.EventHandler(this.chkModeCv_CheckedChanged);
             //
             // btnRedirectDouble / btnRedirectEmpty (이중입고/공출고 재지정 처리 — 평소 비활성)
             //
@@ -253,6 +277,8 @@ namespace HOST_SIM
         private System.Windows.Forms.CheckBox chkLogic2;
         private System.Windows.Forms.CheckBox chkLogic3;
         private System.Windows.Forms.CheckBox chkCv2Test;
+        private System.Windows.Forms.CheckBox chkModeCv11;
+        private System.Windows.Forms.CheckBox chkModeCv2;
         private System.Windows.Forms.Button btnRedirectDouble;
         private System.Windows.Forms.Button btnRedirectEmpty;
         private System.Windows.Forms.SplitContainer splitMain;

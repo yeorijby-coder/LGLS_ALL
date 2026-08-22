@@ -696,6 +696,10 @@ namespace TSK_HostCom
                 case 102: return bSource ? "130" : "129";  // 피킹존: 입고(출발)=C/V#15(TR#30), 출고(도착)=C/V#14(TR#29)
                 case 103: return "126";                    // 제품 입고대 (현행 입고대 = C/V#13, TR#26)
                 case 104: return "124";                    // 원부자재 불출대 (현행 출고대 = C/V#12, TR#24)
+                // [LGLS 2026-08-22] 명세(20100311) 밖 확장 코드. C/V#2 는 S/C#1 통로 겸용(방향전환형)이지만
+                //   WMS 작업대가 아니어서 명세에 코드가 없다. 시뮬레이터에서 방향을 강제 전환할 수 있도록
+                //   105 를 배정한다(현장 WMS 는 105 를 보내지 않으므로 기존 동작에 영향 없음).
+                case 105: return "103";                    // C/V#2 (S/C#1 통로 겸용, TR#3)
                 default: return nCode.ToString();
             }
         }
@@ -738,7 +742,7 @@ namespace TSK_HostCom
             //   (그 전까지는 수신 로그만 남겨 실제 설비 방향이 바뀌지 않았고, IO_TASK 겸용대 게이트도 무발화였다)
             int nCvCode = 0;
             int.TryParse(strCvNo.Trim(), out nCvCode);
-            string strMcNo = (nCvCode >= 101 && nCvCode <= 104)
+            string strMcNo = (nCvCode >= 101 && nCvCode <= 105)
                              ? WmsStationToMcNo(nCvCode, (strMode != "1"))   // 입고 모드면 입고측 설비로 해석
                              : strCvNo.Trim();
             string strDir = (strMode == "1") ? "1" : "0";

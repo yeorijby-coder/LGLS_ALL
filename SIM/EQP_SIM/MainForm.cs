@@ -135,7 +135,15 @@ namespace EQP_SIM
                         : "-";
                     sb.Append("P").Append(cv.Def.PortOfOrder(i)).Append(":").Append(cell).Append("  ");
                 }
-                if (cv.Def.HasDirection) sb.Append(" [방향 ").Append(cv.Direction == "0" ? "입고" : "출고").Append("]");
+                if (cv.Def.HasDirection)
+                {
+                    sb.Append(" [방향 ").Append(cv.Direction == "0" ? "입고" : "출고").Append("]");
+                    // [LGLS 2026-08-22] 방향 파생 신호 — 출고 모드에서만 ON
+                    if (cv.Def.RtvArrivePort > 0)
+                        sb.Append(" P").Append(cv.Def.RtvArrivePort).Append(" RTV도착지:").Append(cv.RtvArriveHs ? "ON" : "OFF");
+                    if (cv.Def.RetHsPort > 0)
+                        sb.Append(" P").Append(cv.Def.RetHsPort).Append(" 출고HS:").Append(cv.RetHs ? "ON" : "OFF");
+                }
                 rows.Add(new[] { "C/V #" + cv.Def.No, sb.ToString() });
             }
             foreach (var v in engine.AllVehicles.OrderBy(x => x.Def.Id))

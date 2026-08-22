@@ -472,6 +472,42 @@ namespace HOST_SIM
         //   출고 9건(랙→124/129/122 각 3건) + 입고 9건(126/130/122→랙 각 3건)을 즉시 발행.
         //   SC1 의 모든 교통이 C/V#2(103/104) 한 라인을 공유하므로 교착 방지 게이트를 집중 검증한다.
         // ------------------------------------------------------------------
+        /// <summary>
+        /// [LGLS 2026-08-22] 겸용(양방향) 트랙 모드 강제 전환.
+        ///   체크 = 입고 모드('0') / 해제 = 출고 모드('1') 로 M 전문(모드변경)을 즉시 발행한다.
+        ///   C/V#11 = 명세(20100311) 작업대 101, C/V#2 = 확장 코드 105.
+        ///   ECS(HOST_TASK)가 CV_DATA 커맨드 채널(CMD_RQ_ID='DIR')로 남기면
+        ///   WCS_TASK_CV 가 설비 방향 워드에 기록하고, EQP_SIM 이 그 방향에 따라
+        ///   RTV 도착지·출고HS·입고대·출고대 신호를 바꾼다.
+        /// </summary>
+        private void chkModeCv_CheckedChanged(object sender, EventArgs e)
+        {
+            CheckBox cb = sender as CheckBox;
+            if (cb == null) return;
+
+            bool bCv11 = ReferenceEquals(cb, chkModeCv11);
+            string strCode = bCv11 ? "101" : "105";
+            string strName = bCv11 ? "C/V#11" : "C/V#2";
+            char chMode = cb.Checked ? '0' : '1';               // 체크=입고, 해제=출고
+            string strMode = cb.Checked ? "입고" : "출고";
+
+            if (!ecsChannel.Connected)
+            {
+                MessageBox.Show(this, "ECS 명령 채널이 접속되지 않았습니다.", "[모드 변경]",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // 되돌릴 때 핸들러가 재진입하지 않도록 이벤트를 잠시 뗀다
+                cb.CheckedChanged -= chkModeCv_CheckedChanged;
+                cb.Checked = !cb.Checked;
+                cb.CheckedChanged += chkModeCv_CheckedChanged;
+                return;
+            }
+
+            cb.Text = "[" + strName + " 모드 변경(" + strMode + "모드)]";
+            byte[] body = WmsMessage.BuildModeChange(strCode, chMode);
+            ecsChannel.Send(body, "모드변경 " + strName + " → " + strMode + "(" + chMode + ")");
+            Log("SYS", "[모드 변경] " + strName + " → " + strMode + " 모드 (M 전문 코드 " + strCode + ")");
+        }
+
         private void chkCv2Test_CheckedChanged(object sender, EventArgs e)
         {
             if (chkCv2Test.Checked)

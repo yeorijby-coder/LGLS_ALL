@@ -34,6 +34,11 @@ namespace EQP_SIM.Sim
         public int[] OutgoPath;           // 출고 이동 경로
         public bool IsInput;              // ECSDeviceManager.IsInputConveyor
         public bool HasDirection;         // C/V#2, #11 (방향 전환형)
+        /// <summary>[LGLS 2026-08-22] RTV(RGV) 도착지 신호를 내보내는 포트. 0=없음.
+        ///   겸용 트랙은 출고 모드일 때 RGV 가 이 포트로 화물을 가지러/놓으러 오므로 ON 이 된다.</summary>
+        public int RtvArrivePort;
+        /// <summary>[LGLS 2026-08-22] 출고HS(핸드셰이크) 신호를 내보내는 포트(S/C 접점). 0=없음.</summary>
+        public int RetHsPort;
 
         /// <summary>포트 번호 → PortOrder (1-base). 없으면 0.</summary>
         public int OrderOf(int port)
@@ -97,14 +102,19 @@ namespace EQP_SIM.Sim
                     IngoPath = new[] { lo, hi },   // RGV가 홀수에 내려놓고 SC측(짝수)으로
                     OutgoPath = new[] { hi, lo },  // SC가 짝수에 내려놓고 RGV측(홀수)으로
                     IsInput = Array.IndexOf(InputConveyors, n) >= 0,
-                    HasDirection = (n == 2)
+                    HasDirection = (n == 2),
+                    // [LGLS 2026-08-22] C/V#2(S/C#1 통로 겸용)만 방향 신호를 갖는다:
+                    //   RGV측 3번 트랙 = RTV 도착지, S/C측 4번 트랙 = 출고HS
+                    RtvArrivePort = (n == 2) ? lo : 0,
+                    RetHsPort     = (n == 2) ? hi : 0
                 });
             }
 
             // PortOrder 는 ECS Port.cs GetDefaultPortOrder 하드코딩과 동일해야 함:
             //  21=1,22=2 | 23=1,24=2 | 25=1,26=2 | 27=1,28=2,29=3 | 31=1,32=2,30=3 (※ C/V#15 특수)
             AddConveyor(new ConveyorDef { Id = "CONVEYOR:11", No = 11, Ports = new[] { 21, 22 }, Orders = new[] { 1, 2 },
-                IngoPath = new[] { 22, 21 }, OutgoPath = new[] { 21, 22 }, IsInput = true, HasDirection = true });
+                IngoPath = new[] { 22, 21 }, OutgoPath = new[] { 21, 22 }, IsInput = true, HasDirection = true,
+                RtvArrivePort = 21 });   // [LGLS 2026-08-22] 21번 트랙 = RGV 접점(RTV 도착지). 22번은 지게차 입출고대
             if (wcsOrientation)
             {
                 // [LGLS 2026-07-15] EcsDefine 기준 정렬: 124(C/V#12)=출고대, 126(C/V#13)=입고대 (예전엔 반대)
