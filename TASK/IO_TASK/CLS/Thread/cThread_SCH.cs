@@ -265,6 +265,7 @@ namespace TSK_COMM_IOSCH
                     CompleteCV();   // 15 → 19(출고 최종) / 20(입고 → SC 처리 인계)
                     CheckLostInboundCargo();   // [LGLS 2026-07-31] 입고 15 화물 유실 감지 → 재발행(10) 복구
                     CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
+                    SweepOrphanTraces();       // [LGLS 2026-08-22] 사라진 작업의 라인 선점/타이머 흔적 청소
                     if (!m_bScAutoComplete)
                     {
                         CompleteSC();       // 25 → 29(입고 최종) / 10(출고 → CV 처리 인계)
@@ -1863,6 +1864,94 @@ namespace TSK_COMM_IOSCH
             if (IsTrackEmpty(track)) return true;
             if (string.IsNullOrEmpty(lugg)) return false;
             return TrackLugg(track) == Cap(lugg, 4);
+        }
+
+        // [LGLS 2026-08-22] 사라진 작업의 흔적 청소.
+        //   가장 중요한 것은 출고대 반출 시퀀스(m_dicOutStn) 다 — Stage<=2 인 항목이 하나라도 남으면
+        //   RtvBusyByOutbound() 가 true 를 유지해 RGV 입고 지시가 전면 정지한다.
+        //   드롭 라인 선점(m_dicLineRsv)은 드롭 완료 때 해제한다. 그런데 작업이 완료되지 못한 채
+        //   JOB_MST 에서 없어지면(운영자 삭제, 설비 재기동으로 반송 유실) 예약이 영원히 남아
+        //   CanEnterLine 이 그 라인을 계속 막고, 결국 RGV 지시가 전면 정지한다.
+        //   실제로 작업 3건이 상태 '30' 에서 멈췄고 DB·HS 는 모두 정상이었는데
+        //   IO_TASK 재기동만으로 풀린 사례가 있다(메모리에만 남은 예약).
+        //   살아 있는 작업번호를 기준으로 30초마다 걷어낸다.
+        private DateTime m_dtLastOrphanSweep = DateTime.MinValue;
+        private const int ORPHAN_SWEEP_SEC = 30;
+
+        private void SweepOrphanTraces()
+        {
+            if ((DateTime.Now - m_dtLastOrphanSweep).TotalSeconds < ORPHAN_SWEEP_SEC) return;
+            m_dtLastOrphanSweep = DateTime.Now;
+            try
+            {
+                if (m_dicLineRsv.Count == 0 && m_dicRgvIssueDt.Count == 0 &&
+                    m_dicScIssueDt.Count == 0 && m_setInShifted.Count == 0 &&
+                    m_dicInFeedDt.Count == 0 && m_dicCvMove.Count == 0 &&
+                    m_dicOutStn.Count == 0 && m_lstOutPend.Count == 0 &&
+                    m_dicOutDoneDt.Count == 0) return;
+
+                string q = "";
+                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
+
+                var alive = new HashSet<string>();
+                DataTable dtA = _pBdb.mDtMain;
+                for (int i = 0; i < dtA.Rows.Count; i++)
+                {
+                    string lg = GetVal(dtA.Rows[i], "LUGG_NO");
+                    if (!string.IsNullOrEmpty(lg)) alive.Add(lg);
+                }
+
+                var gone = new List<string>();
+                foreach (string k in new List<string>(m_dicLineRsv.Keys))
+                    if (!alive.Contains(k)) { m_dicLineRsv.Remove(k); gone.Add(k); }
+                foreach (string k in new List<string>(m_dicRgvIssueDt.Keys))
+                    if (!alive.Contains(k)) m_dicRgvIssueDt.Remove(k);
+                foreach (string k in new List<string>(m_dicScIssueDt.Keys))
+                    if (!alive.Contains(k)) m_dicScIssueDt.Remove(k);
+                foreach (string k in new List<string>(m_dicInFeedDt.Keys))
+                    if (!alive.Contains(k)) m_dicInFeedDt.Remove(k);
+                foreach (string k in new List<string>(m_setInShifted))
+                    if (!alive.Contains(k)) m_setInShifted.Remove(k);
+                foreach (string k in new List<string>(m_dicCvMove.Keys))
+                {
+                    CvMovePend mv = m_dicCvMove[k];
+                    if (mv != null && !string.IsNullOrEmpty(mv.Lugg) && !alive.Contains(mv.Lugg))
+                        m_dicCvMove.Remove(k);
+                }
+                foreach (string k in new List<string>(m_dicRvSeq.Keys))
+                {
+                    int c = k.IndexOf(':');
+                    string lg = (c > 0) ? k.Substring(0, c) : k;
+                    if (!alive.Contains(lg)) m_dicRvSeq.Remove(k);
+                }
+                foreach (string k in new List<string>(m_setRvSeqDone))
+                {
+                    int c = k.IndexOf(':');
+                    string lg = (c > 0) ? k.Substring(0, c) : k;
+                    if (!alive.Contains(lg)) m_setRvSeqDone.Remove(k);
+                }
+
+                // 출고대 반출 시퀀스/대기열 — 여기 한 건이라도 남아 있으면 RtvBusyByOutbound() 가 계속 true 라
+                //   RGV 입고 지시가 **전면** 정지한다. 반출 중이던 작업이 사라지면 반드시 걷어내야 한다.
+                foreach (string k in new List<string>(m_dicOutStn.Keys))
+                {
+                    OutStnState st = m_dicOutStn[k];
+                    string lg = (st != null && !string.IsNullOrEmpty(st.Lugg)) ? st.Lugg : k;
+                    if (!alive.Contains(lg)) { m_dicOutStn.Remove(k); gone.Add("반출:" + lg); }
+                }
+                for (int i = m_lstOutPend.Count - 1; i >= 0; i--)
+                    if (!alive.Contains(m_lstOutPend[i].Lugg)) { gone.Add("대기열:" + m_lstOutPend[i].Lugg); m_lstOutPend.RemoveAt(i); }
+                foreach (string k in new List<string>(m_dicOutDoneDt.Keys))
+                    if (!alive.Contains(k)) m_dicOutDoneDt.Remove(k);
+
+                if (gone.Count > 0)
+                    MakeMsg_Imp("[SCH] 사라진 작업의 점유 해제 - " + string.Join(",", gone.ToArray()));
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH] SweepOrphanTraces 오류: " + ex.Message); }
         }
 
         private bool CanEnterLine(string entryTrack) { return CanEnterLine(entryTrack, ""); }

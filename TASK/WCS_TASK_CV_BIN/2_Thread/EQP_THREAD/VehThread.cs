@@ -339,6 +339,12 @@ namespace WCS_TASK_CV
         public void RequestReloadObservables() { m_bReloadReq = true; }
 
         // ---------- 메인 루프 ----------
+        // [LGLS 2026-08-22] 통신 실패/무응답 감시 — 설비 재기동 후 관측이 되살아나지 못하던 문제.
+        private int m_nComFailCycle = 0;
+        private const int COM_FAIL_LIMIT = 3;
+        private DateTime m_dtLastPollOk = DateTime.Now;
+        private const int POLL_STALL_MS = 30000;
+
         public void Thread_Doing()
         {
             while (m_bRun)
@@ -351,8 +357,12 @@ namespace WCS_TASK_CV
                         LoadObservables();
                         LogDb("[VEH_" + m_strKind + "] 주소표 재구성 (R 주소모드 전환, 차량 " + m_lstVeh.Count + "대)");
                     }
-                    if (m_msQPlc.m_bSocCon == false && m_msQPlc.m_bDBOpen == false)
+                    // [LGLS 2026-08-22] 종전에는 두 플래그가 **모두** 내려갔을 때만 재접속했다.
+                    //   설비 재기동으로 상대가 세션만 리셋하면 한쪽만 내려가 이 블록을 건너뛰고,
+                    //   관측이 조용히 멈춘 채 되살아나지 못했다(RTV_DATA_LGLS READ_UPD_DT 가 멈춤).
+                    if (m_msQPlc.m_bSocCon == false || m_msQPlc.m_bDBOpen == false)
                     {
+                        try { m_msQPlc.Close(ref m_strRtnMsg); } catch { }
                         m_msQPlc.SetConfig(m_strIp, m_nPort, 2);
                         if (!m_msQPlc.Open(ref m_strRtnMsg))
                         {
@@ -360,13 +370,38 @@ namespace WCS_TASK_CV
                             Thread.Sleep(2000);
                             continue;
                         }
+                        m_nComFailCycle = 0;
+                        m_dtLastPollOk  = DateTime.Now;
                         LogDb("[VEH_" + m_strKind + "] PLC 접속 성공 (" + m_strIp + ":" + m_nPort + ", 차량 " + m_lstVeh.Count + "대)");
                     }
 
+                    // [LGLS 2026-08-22] 차량 한 대의 관측 실패가 스레드 전체를 멈추지 않게 개별로 감싼다.
+                    //   (종전에는 PollObservations 의 예외가 바깥 catch 까지 올라가 나머지 차량의
+                    //    지시 소비(ConsumeCommands)까지 통째로 건너뛰었다)
+                    bool bAnyOk = false;
                     foreach (VehDef v in m_lstVeh)
                     {
-                        PollObservations(v);
-                        ConsumeCommands(v);
+                        try { PollObservations(v); bAnyOk = true; }
+                        catch (Exception exv) { LogDb("[VEH_" + m_strKind + "] 관측 실패: " + exv.Message); }
+                        try { ConsumeCommands(v); }
+                        catch (Exception exc) { LogDb("[VEH_" + m_strKind + "] 지시 소비 실패: " + exc.Message); }
+                    }
+
+                    // [LGLS 2026-08-22] 통신 연속 실패 감시 (CvThread 와 같은 규칙).
+                    //   세션이 죽어도 소켓 플래그가 살아 있는 경우가 있어, 실패 횟수로 판단해 강제 재접속한다.
+                    if (bAnyOk) { m_nComFailCycle = 0; m_dtLastPollOk = DateTime.Now; }
+                    else if (++m_nComFailCycle >= COM_FAIL_LIMIT)
+                    {
+                        LogDb("[VEH_" + m_strKind + "] 통신 연속 실패 " + m_nComFailCycle + "회 - 소켓 재접속");
+                        try { m_msQPlc.Close(ref m_strRtnMsg); } catch { }
+                        m_nComFailCycle = 0;
+                    }
+                    // 관측이 한동안 한 번도 갱신되지 않으면(무응답인데 실패도 아닌 상태) 강제로 끊고 다시 붙는다.
+                    else if ((DateTime.Now - m_dtLastPollOk).TotalMilliseconds > POLL_STALL_MS)
+                    {
+                        LogDb("[VEH_" + m_strKind + "] 관측 무갱신 " + (POLL_STALL_MS / 1000) + "초 - 소켓 재접속");
+                        try { m_msQPlc.Close(ref m_strRtnMsg); } catch { }
+                        m_dtLastPollOk = DateTime.Now;
                     }
                 }
                 catch (Exception ex)
