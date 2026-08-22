@@ -84,6 +84,9 @@ CString CCv::GetSelectQry() //kdh20190521
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.RET_READY_RD, '0') AS RET_READY_RD													\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.STOHS_READY_RD, '0') AS STOHS_READY_RD												\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.RETHS_READY_RD, '0') AS RETHS_READY_RD												\n")
+				  // [LGLS 2026-08-22] RGV 핸드셰이크 2종 - 조회에서 빠져 있어 대화상자가 항상 OFF 였다
+				  _T("	     ,") + m_pDoc->NVL + _T("(CD.RTV_DEPARTHS_READY_RD, '0') AS RTV_DEPARTHS_READY_RD						\n")
+				  _T("	     ,") + m_pDoc->NVL + _T("(CD.RTV_ARRIVEHS_READY_RD, '0') AS RTV_ARRIVEHS_READY_RD						\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.SENSOR0_DATA_RD, '0') AS SENSOR0_DATA_RD											\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.SENSOR1_DATA_RD, '0') AS SENSOR1_DATA_RD											\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.SENSOR2_DATA_RD, '0') AS SENSOR2_DATA_RD											\n")
@@ -191,6 +194,9 @@ void CCv::AutoRunProc()
 		pCV_DATA->SetRET_READY_RD(m_pRsw->GetItem( _T("RET_READY_RD")));
 		pCV_DATA->SetSTOHS_READY_RD(m_pRsw->GetItem( _T("STOHS_READY_RD")));
 		pCV_DATA->SetRETHS_READY_RD( m_pRsw->GetItem( _T("RETHS_READY_RD")));
+		// [LGLS 2026-08-22] RGV 출발/도착 HS - 대입이 빠져 있어 CV 상태창 표시가 안 됐다
+		pCV_DATA->SetRTV_DEPARTHS_READY_RD(m_pRsw->GetItem( _T("RTV_DEPARTHS_READY_RD")));
+		pCV_DATA->SetRTV_ARRIVEHS_READY_RD(m_pRsw->GetItem( _T("RTV_ARRIVEHS_READY_RD")));
 		pCV_DATA->SetWAIT_TIME_RD(m_pRsw->GetItem(_T("WAIT_TIME_RD")));
 		pCV_DATA->SetSENSOR0_DATA_RD(m_pRsw->GetItem( _T("SENSOR0_DATA_RD")));
 		pCV_DATA->SetSENSOR1_DATA_RD(m_pRsw->GetItem( _T("SENSOR1_DATA_RD")));
