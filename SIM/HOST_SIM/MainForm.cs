@@ -18,6 +18,11 @@ namespace HOST_SIM
         private readonly object logicLock = new object();
 
         private bool firstStatusReceived;   // 첫 상태보고(S) 수신 여부
+        // [LGLS 2026-08-22] 101(C/V#11, 트랙 22) 출고 모드 자동 복귀.
+        //   출고 화물이 반출되어 화물감지가 사라지면 일정 시간 뒤 입고 모드로 되돌린다.
+        //   (출고로 남아 있으면 설비가 입고대에 화물을 올리지 못해 다음 입고가 시작되지 않는다)
+        private DateTime cv11EmptySince = DateTime.MinValue;
+        private const int CV11_AUTO_IN_MS = 5000;
         private bool runningCycle;          // 시작 버튼 눌린 상태
 
         // [LGLS 2026-07-30] SC(크레인) 상태표 — 인터페이스명세서(20100311) 집계 S 상태보고(BODY 43)에서 갱신.
@@ -420,6 +425,51 @@ namespace HOST_SIM
                                 logic.Start();
                 }
                 if (anyChanged) SafeUI(UpdateLogicLabels);
+
+                CheckCv11AutoInMode(frame);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-22] 101 작업대(C/V#11, 트랙 22) 출고 모드 자동 복귀.
+        ///   상태보고 [39]=101 PLC 모드(0=입고 1=출고), [37]=101 작업대 상태(0=가능 1=불가).
+        ///   출고 모드인데 화물이 없어진(=가능) 상태가 CV11_AUTO_IN_MS 이상 이어지면
+        ///   M 전문으로 입고 모드로 되돌린다.
+        /// </summary>
+        private void CheckCv11AutoInMode(WmsFrame frame)
+        {
+            try
+            {
+                if (frame.Body.Length != 43) return;
+
+                string strAvail = frame.BodyText(37, 1);   // 101 작업대 상태 : 0=가능(화물 없음)
+                string strMode  = frame.BodyText(39, 1);   // 101 PLC 모드   : 1=출고
+
+                if (strMode != "1")
+                {
+                    cv11EmptySince = DateTime.MinValue;    // 이미 입고 모드
+                    return;
+                }
+                if (strAvail != "0")
+                {
+                    cv11EmptySince = DateTime.MinValue;    // 아직 화물이 있다
+                    return;
+                }
+
+                if (cv11EmptySince == DateTime.MinValue)
+                {
+                    cv11EmptySince = DateTime.Now;
+                    return;
+                }
+                if ((DateTime.Now - cv11EmptySince).TotalMilliseconds < CV11_AUTO_IN_MS) return;
+
+                cv11EmptySince = DateTime.MinValue;
+                if (!ecsChannel.Connected) return;
+
+                byte[] mode = WmsMessage.BuildModeChange(CycleLogic.CV11_CODE, '0');
+                ecsChannel.Send(mode, "모드변경 C/V#11 → 입고(0) [출고 완료·화물 없음 " + (CV11_AUTO_IN_MS / 1000) + "초 경과]");
+                Log("SYS", "[자동] C/V#11 출고 완료 후 화물 없음 " + (CV11_AUTO_IN_MS / 1000) + "초 경과 → 입고 모드로 복귀");
             }
             catch { }
         }

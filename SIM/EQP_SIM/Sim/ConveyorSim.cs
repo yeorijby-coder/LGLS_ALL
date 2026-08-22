@@ -123,6 +123,23 @@ namespace EQP_SIM.Sim
         {
             StampSensed();
             DateTime now = DateTime.Now;
+
+            // [LGLS 2026-08-22] 겸용 입고대에 올려둔 화물이 아직 작업번호를 못 받았는데
+            //   방향이 출고로 바뀌면, 그 자리는 출고 화물이 나올 자리가 된다.
+            //   지게차가 도로 걷어간 것으로 보고 화물을 없앤다(작업번호가 이미 실린 화물은 그대로 둔다).
+            if (Def.HasDirection && Direction == "1" && Def.IngoPath != null)
+            {
+                int inIdx = Def.OrderOf(Def.IngoPath[0]);
+                SimPallet ip;
+                if (Pallets.TryGetValue(inIdx, out ip) && ip.Dir == FlowDir.Ingo && string.IsNullOrEmpty(ip.Id))
+                {
+                    Pallets.Remove(inIdx);
+                    SetExist(inIdx, false);
+                    SetTracking(inIdx, "");
+                    engine.Log(Def.Id + " P" + Def.PortOfOrder(inIdx) +
+                               " 출고 모드 전환 - 미지정 입고 화물 회수 (작업번호 부여 전)");
+                }
+            }
             if (Def.HasDirection)
             {
                 string d = Direction;

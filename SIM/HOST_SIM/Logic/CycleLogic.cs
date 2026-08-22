@@ -181,6 +181,16 @@ namespace HOST_SIM.Logic
 
         private void SendOutgo()
         {
+            // [LGLS 2026-08-22] 입고 지시 전 '0'(입고) 복귀와 대칭 —
+            //   C/V#11(입출고 겸용)이 출고대인 경우, 출고 지시에 앞서 모드를 '1'(출고)로 바꾼다.
+            //   방향이 입고로 서 있으면 설비가 입고대에 화물을 계속 올리고
+            //   IO_TASK 겸용대 게이트가 "입고 모드에서 입고대 점유"로 출고를 보류한다.
+            if (OutStation == CV11_CODE)
+            {
+                byte[] mode = WmsMessage.BuildModeChange(CV11_CODE, '1');
+                sendOrder(this, mode, Name + " 모드변경 C/V#11 → 출고(1)");
+            }
+
             CurrentLuggageNo = nextLuggageNo();
             // 파렛트명은 입고 때와 동일 (ECS가 TB_PALLET에서 Assigned 상태 파렛트를 찾음)
 

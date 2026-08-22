@@ -515,9 +515,25 @@ namespace WCS_TASK_CV
                         ScanPendingWork();
                         msScan = swPh.ElapsedMilliseconds;
 
-                        for (int si = 0; si < m_slots.Count; si++)
+                        // [LGLS 2026-08-22] 지시가 걸린 설비를 먼저 돈다.
+                        //   종전에는 슬롯 순서가 고정이라, 방향 전환(M 전문) 같은 지시가 뒤쪽 설비에
+                        //   걸리면 한 바퀴를 다 돌 때까지 PLC 에 써지지 않아 화면 반영이 10초를 넘었다.
+                        //   순서만 앞당기므로 처리 내용·횟수는 그대로다(한 바퀴에 모든 설비를 한 번씩).
+                        System.Collections.Generic.List<EqpSlot> lstOrder = m_slots;
+                        if (m_bPendScanOk && (m_setPendCmd.Count > 0 || m_setPendOd.Count > 0 || m_setPendTrk.Count > 0))
                         {
-                            var slot = m_slots[si];
+                            lstOrder = new System.Collections.Generic.List<EqpSlot>(m_slots.Count);
+                            foreach (EqpSlot sl in m_slots)
+                                if (m_setPendCmd.Contains(sl.Plc) || m_setPendOd.Contains(sl.Plc) || m_setPendTrk.Contains(sl.Plc))
+                                    lstOrder.Add(sl);
+                            foreach (EqpSlot sl in m_slots)
+                                if (!(m_setPendCmd.Contains(sl.Plc) || m_setPendOd.Contains(sl.Plc) || m_setPendTrk.Contains(sl.Plc)))
+                                    lstOrder.Add(sl);
+                        }
+
+                        for (int si = 0; si < lstOrder.Count; si++)
+                        {
+                            var slot = lstOrder[si];
                             m_strPlc_No   = slot.Plc;
                             m_strEqmt_typ = slot.Typ;
                             m_nFrTrackNo  = slot.Fr;
@@ -1494,6 +1510,26 @@ namespace WCS_TASK_CV
 
                         // 캐시 무효화: 다음 판독에서 STOCK_MODE 변화를 즉시 DB에 반영
                         CvDic.Remove(Convert.ToInt32(TRACK_NO));
+
+                        // [LGLS 2026-08-22] 방향은 설비에 쓴 값이 곧 현재 값이다.
+                        //   종전에는 다음 상태 판독(15슬롯 한 바퀴)까지 기다려야 CV_DATA.STOCK_MODE 가
+                        //   바뀌어 Client 화면 반영이 10초 넘게 걸렸다. 쓴 직후 같은 설비의 전 트랙에
+                        //   바로 기록해 화면 지연을 없앤다(판독이 돌면 같은 값으로 확인된다).
+                        {
+                            string strNewDir = (nCMD_RQ_PARM == 1) ? "1" : "0";
+                            string sqlDir = "";
+                            sqlDir += cDefApp.CRLF + "UPDATE CV_DATA                                  ";
+                            sqlDir += cDefApp.CRLF + "   SET STOCK_MODE  = '" + strNewDir + "'        ";
+                            sqlDir += cDefApp.CRLF + "     , HOST_SEND_YN = 'N'                       ";
+                            sqlDir += cDefApp.CRLF + "     , READ_UPD_DT = " + DbLang.SYSDATE + "     ";
+                            sqlDir += cDefApp.CRLF + " WHERE WH_TYP = :WH_TYP                         ";
+                            sqlDir += cDefApp.CRLF + "   AND PLC_NO = :PLC_NO                         ";
+                            m_msQPlc._pBdb.mComMain.CommandType = CommandType.Text;
+                            m_msQPlc._pBdb.mComMain.Parameters.Clear();
+                            m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR, 255).Value = m_strWh_typ;
+                            m_msQPlc._pBdb.mComMain.Parameters.Add("PLC_NO", DbLang.VARCHAR, 255).Value = m_strPlc_No;
+                            try { m_msQPlc._pBdb.ExcuteNonQry(sqlDir); } catch { }
+                        }
 
                         if (!UpdateCvDataCmd(TRACK_NO))
                         {
