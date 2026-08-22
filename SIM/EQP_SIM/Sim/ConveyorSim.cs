@@ -345,6 +345,19 @@ namespace EQP_SIM.Sim
 
         /// <summary>[LGLS 2026-07-31] 해당 포트가 완전히 비었는지: 파렛트 없음 + 재하감지 OFF + 트래킹 비어 있음.
         ///   차량(RGV/S/C)이 상차 후 "출발지 화물·데이터 소멸"을 확인하고 출발하기 위한 판정.</summary>
+        /// <summary>
+        /// [LGLS 2026-08-22] 그 포트에 '이 파렛트 객체'가 아직 있는지. RGV 가 상차한 화물이
+        /// 실제로 빠졌는지 확인하는 용도 — 후속 화물이 같은 포트에 와도 오판하지 않는다.
+        /// </summary>
+        public bool HasPalletObject(int port, SimPallet p)
+        {
+            if (p == null) return false;
+            int idx = Def.OrderOf(port);
+            if (idx <= 0) return false;
+            SimPallet cur;
+            return Pallets.TryGetValue(idx, out cur) && ReferenceEquals(cur, p);
+        }
+
         public bool IsPortClear(int port)
         {
             int idx = Def.OrderOf(port);

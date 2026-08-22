@@ -124,6 +124,9 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_STATUS_RET_READY,         m_btnCvRetReady);
 	DDX_Control(pDX, IDC_BTN_STATUS_STOHS_READY,       m_btnCvStoHsReady);
 	DDX_Control(pDX, IDC_BTN_STATUS_RETHS_READY,       m_btnCvRetHsReady);
+	DDX_Control(pDX, IDC_BTN_RGV_INTERLOCK,             m_btnCvRgvInterlock);
+	DDX_Control(pDX, IDC_BTN_STATUS_RTV_DEPARTHS_READY, m_btnCvRtvDepartHsReady);
+	DDX_Control(pDX, IDC_BTN_STATUS_RTV_ARRIVEHS_READY, m_btnCvRtvArriveHsReady);
 	//--STATUS
 
 	//COMMAND
@@ -484,6 +487,45 @@ void CCvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("productid"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_CV_PRD_LBL, strValue);
+
+	// [LGLS 2026-08-22] STATUS 그룹 라벨 다국어 (RGV 행 신설 포함).
+	//   자동/수동·출고/입고 모드 버튼은 상태에 따라 본문에서 SetWindowText 로 바뀌므로 여기서 제외한다.
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("sensorprod0"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SENSOR_PROD0, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("storeadysig"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_STATUS_STO_READY, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("retreadysig"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_STATUS_RET_READY, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("scinterlock"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_INTERLOCK, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("stohssig"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_STATUS_STOHS_READY, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rethssig"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_STATUS_RETHS_READY, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rgvinterlock"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RGV_INTERLOCK, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvdeparthssig"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_STATUS_RTV_DEPARTHS_READY, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvarrivehssig"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_STATUS_RTV_ARRIVEHS_READY, strValue);
+
 }
 
 void CCvSkinDlg::RedrawImage()
@@ -540,6 +582,10 @@ void CCvSkinDlg::RedrawImage()
 	m_btnCvRetReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvStoHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvRetHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
+	// [LGLS 2026-08-22] RGV 핸드셰이크 : RGV Pickup(출발HS) / RGV Unload(도착HS) / RGV 인터락
+	m_btnCvRgvInterlock.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_LOCK_SIGN == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
+	m_btnCvRtvDepartHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_DEPARTHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
+	m_btnCvRtvArriveHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_ARRIVEHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 
 	m_btnStockMode.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 }

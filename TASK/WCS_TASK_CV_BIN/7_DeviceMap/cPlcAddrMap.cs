@@ -79,6 +79,11 @@ namespace WCS_TASK_CV
         public int    InStation;
         /// <summary>[LGLS 2026-08-22] 출고대(지게차가 화물을 가져가는 곳) 트랙. 0=없음. 겸용대는 InStation 과 같다</summary>
         public int    OutStation;
+        /// <summary>[LGLS 2026-08-22] RGV Pickup 작업대 트랙(RGV 가 집어가는 자리). 0=없음</summary>
+        public int    RgvPickTrack;
+        /// <summary>[LGLS 2026-08-22] RGV Unload 작업대 트랙(RGV 가 내려놓는 자리). 0=없음.
+        ///   겸용 트랙(C/V#11)은 RgvPickTrack 과 같은 값이며 방향 모드로 갈린다</summary>
+        public int    RgvDropTrack;
     }
 
     /// <summary>시나리오 스텝</summary>
@@ -343,6 +348,8 @@ namespace WCS_TASK_CV
                 //   #13 입고 126, #14 출고 129, #15 입고 130). 통로 C/V(#1~#10)는 정의 없음.
                 e.InStation  = Attr(en, "inStation", 0);
                 e.OutStation = Attr(en, "outStation", 0);
+                e.RgvPickTrack = Attr(en, "rgvPickTrack", 0);
+                e.RgvDropTrack = Attr(en, "rgvDropTrack", 0);
                 // [LGLS 2026-08-21] 비선형 슬롯 배치 (구 ECS PortOrder 기준, 예 C/V#15 "131,132,130")
                 string strOrder = AttrS(en, "trackOrder", "");
                 if (strOrder.Trim().Length > 0)
@@ -638,6 +645,49 @@ namespace WCS_TASK_CV
             foreach (EquipDef e in m_lstEquip)
                 if (e.Typ == equipType && e.No == no) return e.OutStation;
             return 0;
+        }
+
+        /// <summary>[LGLS 2026-08-22] 트랙의 핸드셰이크 역할</summary>
+        public enum HsRole { None, ScPick, ScDrop, RgvPick, RgvDrop }
+
+        /// <summary>
+        /// [LGLS 2026-08-22] 트랙 번호 → 핸드셰이크 역할.
+        ///   ScPick  : S/C 가 집어가는 자리(크레인 입고 작업대)   — 작업번호+화물 있으면 ON
+        ///   ScDrop  : S/C 가 내려놓는 자리(크레인 출고 작업대)   — 작업번호+화물 없으면 ON
+        ///   RgvPick : RGV 가 집어가는 자리(RGV Pickup 작업대)    — 작업번호+화물 있으면 ON
+        ///   RgvDrop : RGV 가 내려놓는 자리(RGV Unload 작업대)    — 작업번호+화물 없으면 ON
+        /// 통로 C/V(#2~#10)는 CraneMap 의 in/out × Sc/Rgv 포트에서 유도하고,
+        /// 입출고대 C/V(#11~#15)는 Equip/@rgvPickTrack·@rgvDropTrack 으로 지정한다.
+        /// 겸용(방향전환형) 자리는 같은 트랙이 방향에 따라 역할이 뒤집히므로 bOutMode 로 가른다.
+        /// </summary>
+        public static HsRole TrackHsRole(int track, bool bOutMode)
+        {
+            EnsureLoaded();
+
+            foreach (CraneMapDef c in m_lstCrane)
+            {
+                bool bSameCv = (c.InCv == c.OutCv);           // C/V#2 처럼 입출고를 한 대가 겸하는 통로
+
+                if (track == 100 + c.InScPort || track == 100 + c.OutScPort)
+                {
+                    if (bSameCv) return bOutMode ? HsRole.ScDrop : HsRole.ScPick;
+                    return (track == 100 + c.InScPort) ? HsRole.ScPick : HsRole.ScDrop;
+                }
+                if (track == 100 + c.InRgvPort || track == 100 + c.OutRgvPort)
+                {
+                    if (bSameCv) return bOutMode ? HsRole.RgvPick : HsRole.RgvDrop;
+                    return (track == 100 + c.InRgvPort) ? HsRole.RgvDrop : HsRole.RgvPick;
+                }
+            }
+
+            foreach (EquipDef e in m_lstEquip)
+            {
+                if (e.RgvPickTrack == track && e.RgvDropTrack == track)   // 겸용 입출고대(C/V#11)
+                    return bOutMode ? HsRole.RgvDrop : HsRole.RgvPick;
+                if (e.RgvPickTrack == track) return HsRole.RgvPick;
+                if (e.RgvDropTrack == track) return HsRole.RgvDrop;
+            }
+            return HsRole.None;
         }
 
         public static List<EquipDef> Equips()

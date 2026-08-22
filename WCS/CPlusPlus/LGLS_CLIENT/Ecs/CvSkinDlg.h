@@ -185,6 +185,10 @@ public:
 	CSkinButton m_btnCvRetReady;
 	CSkinButton m_btnCvStoHsReady;
 	CSkinButton m_btnCvRetHsReady;
+	// [LGLS 2026-08-22] RGV 핸드셰이크 표시행 (RGV 인터락 / 출발HS / 도착HS)
+	CSkinButton m_btnCvRgvInterlock;
+	CSkinButton m_btnCvRtvDepartHsReady;
+	CSkinButton m_btnCvRtvArriveHsReady;
 	CSkinButton m_btnCvRtyDptReady;
 	CSkinButton m_btnCvRtyArvReady;
 	//--STATUS

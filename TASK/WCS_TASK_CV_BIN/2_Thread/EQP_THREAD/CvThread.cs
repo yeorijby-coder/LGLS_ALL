@@ -83,6 +83,19 @@ namespace WCS_TASK_CV
             get { return RethsReadyRd; }
             set { RethsReadyRd = value; }
         }
+        // [LGLS 2026-08-22] RGV 핸드셰이크 캐시 (RGV Pickup / RGV Unload 작업대)
+        private string RtvDepartHsReadyRd;
+        public string RTV_DEPARTHS_READY_RD
+        {
+            get { return RtvDepartHsReadyRd; }
+            set { RtvDepartHsReadyRd = value; }
+        }
+        private string RtvArriveHsReadyRd;
+        public string RTV_ARRIVEHS_READY_RD
+        {
+            get { return RtvArriveHsReadyRd; }
+            set { RtvArriveHsReadyRd = value; }
+        }
         private string Sensor0DataRd;
         public string SENSOR0_DATA_RD
         {
@@ -3603,6 +3616,30 @@ namespace WCS_TASK_CV
                     if (nCvNo == nOutStation && (cv.RET_READY_RD ?? "") != RET_READY)
                         strSet += cDefApp.CRLF + "      ,RET_READY_RD = '" + RET_READY + "'       ";
 
+                    // [LGLS 2026-08-22] 크레인/RGV 핸드셰이크 4종 — 트랙의 역할과 (작업번호·화물) 유무로 직접 판정한다.
+                    //   집어가는 자리(ScPick/RgvPick) : 작업번호와 화물이 있으면 ON  → 가져갈 것이 있다
+                    //   내려놓는 자리(ScDrop/RgvDrop) : 작업번호와 화물이 없으면 ON  → 놓을 자리가 비었다
+                    //   역할이 없는 트랙은 '0' 으로 정리한다(종전 NULL 이라 Client 비교가 성립하지 않았다).
+                    bool bHasJob   = !(string.IsNullOrEmpty(strJobNo) || strJobNo == "0" || strJobNo == "0000");
+                    bool bHasLugg  = (SENSOR0 == "1");
+                    bool bPickOn   = bHasJob && bHasLugg;
+                    bool bDropOn   = !bHasJob && !bHasLugg;
+                    cPlcAddrMap.HsRole role = cPlcAddrMap.TrackHsRole(nCvNo, STOCK == "1");
+
+                    string STOHS   = (role == cPlcAddrMap.HsRole.ScPick)  && bPickOn ? "1" : "0";
+                    string RETHS   = (role == cPlcAddrMap.HsRole.ScDrop)  && bDropOn ? "1" : "0";
+                    string RGVDEP  = (role == cPlcAddrMap.HsRole.RgvPick) && bPickOn ? "1" : "0";
+                    string RGVARR  = (role == cPlcAddrMap.HsRole.RgvDrop) && bDropOn ? "1" : "0";
+
+                    if ((cv.STOHS_READY_RD ?? "") != STOHS)
+                        strSet += cDefApp.CRLF + "      ,STOHS_READY_RD = '" + STOHS + "'         ";
+                    if ((cv.RETHS_READY_RD ?? "") != RETHS)
+                        strSet += cDefApp.CRLF + "      ,RETHS_READY_RD = '" + RETHS + "'         ";
+                    if ((cv.RTV_DEPARTHS_READY_RD ?? "") != RGVDEP)
+                        strSet += cDefApp.CRLF + "      ,RTV_DEPARTHS_READY_RD = '" + RGVDEP + "' ";
+                    if ((cv.RTV_ARRIVEHS_READY_RD ?? "") != RGVARR)
+                        strSet += cDefApp.CRLF + "      ,RTV_ARRIVEHS_READY_RD = '" + RGVARR + "' ";
+
                     // [LGLS 2026-08-21] 상위 상태보고(S)가 보는 항목이 바뀌면 즉시 보고되도록 플래그를 내린다
                     //   HOST_TASK.GetStatusReport 는 HOST_SEND_YN='N' 을 '상태 변경' 신호로 쓴다
                     if (strSet.Length > 0) strSet += cDefApp.CRLF + "      ,HOST_SEND_YN = 'N'                 ";
@@ -3649,6 +3686,10 @@ namespace WCS_TASK_CV
                     cv.V11_JOBNO = strJobNo;
                     if (nCvNo == nInStation)  cv.STO_READY_RD = STO_READY;
                     if (nCvNo == nOutStation) cv.RET_READY_RD = RET_READY;
+                    cv.STOHS_READY_RD = STOHS;
+                    cv.RETHS_READY_RD = RETHS;
+                    cv.RTV_DEPARTHS_READY_RD = RGVDEP;
+                    cv.RTV_ARRIVEHS_READY_RD = RGVARR;
                 }
 
                 // [LGLS] 설비 통신상태(EQP_MST) 하트비트 — 구 CvStatus() 끝(Communication("Y",...))에 있던 것.

@@ -63,6 +63,8 @@ namespace EQP_SIM.Sim
         //   생기는 순서 역전을 막는다. 값이 상위 미러 1주기보다 짧으면 화면상 겹쳐 보일 수 있다.
         //   기본 4000ms = 상위 미러 1주기(계측 ~2.5~3.4초)보다 크게 잡은 값. 미러가 느려지면 이 값도 올릴 것.
         public int SrcClearDwellMs = 4000;
+        /// <summary>[LGLS 2026-08-22] 출발지 클리어 대기 상한. 넘기면 경고 후 진행(교착 방지)</summary>
+        public int SrcClearTimeoutMs = 20000;
         public int InReadyDelayMs = 3000;    // [LGLS 2026-08-22] 입고대 화물감지 유지 → 입고대(반출요청) ON 까지
         public int InSensorDelayMs = 2000;   // [LGLS 2026-07-21] 입고대 적재 후 재하감지 ON까지 지연 (PLC 2초 규약)
         public int FeedMs = 5000;
@@ -114,6 +116,7 @@ namespace EQP_SIM.Sim
             OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);
             InSensorDelayMs = config.GetInt("TIMING", "IN_SENSOR_DELAY_MS", InSensorDelayMs);
             InReadyDelayMs  = config.GetInt("TIMING", "IN_READY_DELAY_MS", InReadyDelayMs);
+            SrcClearTimeoutMs = config.GetInt("TIMING", "SRC_CLEAR_TIMEOUT_MS", SrcClearTimeoutMs);
             SrcClearDwellMs = config.GetInt("TIMING", "SRC_CLEAR_DWELL_MS", SrcClearDwellMs);
             FeedMs = config.GetInt("TIMING", "FEED_MS", FeedMs);
             UnstampedTimeoutMs = config.GetInt("TIMING", "UNSTAMPED_TIMEOUT_MS", UnstampedTimeoutMs);

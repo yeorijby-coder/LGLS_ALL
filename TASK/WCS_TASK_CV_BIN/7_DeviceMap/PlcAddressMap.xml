@@ -156,14 +156,14 @@
     <Equip plc="08" type="CV" no="8" frTrack="115" toTrack="116" />
     <Equip plc="09" type="CV" no="9" frTrack="117" toTrack="118" />
     <Equip plc="10" type="CV" no="10" frTrack="119" toTrack="120" />
-    <Equip plc="11" type="CV" no="11" frTrack="121" toTrack="122" inStation="122" outStation="122" />
-    <Equip plc="12" type="CV" no="12" frTrack="123" toTrack="124" outStation="124" />
-    <Equip plc="13" type="CV" no="13" frTrack="125" toTrack="126" inStation="126" />
-    <Equip plc="14" type="CV" no="14" frTrack="127" toTrack="129" outStation="129" />
+    <Equip plc="11" type="CV" no="11" frTrack="121" toTrack="122" inStation="122" outStation="122" rgvPickTrack="121" rgvDropTrack="121" />
+    <Equip plc="12" type="CV" no="12" frTrack="123" toTrack="124" outStation="124" rgvDropTrack="123" />
+    <Equip plc="13" type="CV" no="13" frTrack="125" toTrack="126" inStation="126" rgvPickTrack="125" />
+    <Equip plc="14" type="CV" no="14" frTrack="127" toTrack="129" outStation="129" rgvDropTrack="127" />
     <!-- [LGLS 2026-08-21] C/V#15 는 슬롯 배치가 비선형이다 (구 ECS TB_OBSERVABLE + PPT 슬라이드 59 일치).
             PALLET_EXIST_FLAG_01(%MX720)=트랙131, _02(%MX721)=132, _03(%MX722)=130.
             trackOrder = 슬롯 0부터의 트랙 번호 나열. 없으면 frTrack 부터 선형. -->
-    <Equip plc="15" type="CV" no="15" frTrack="130" toTrack="132" trackOrder="131,132,130" inStation="130" />
+    <Equip plc="15" type="CV" no="15" frTrack="130" toTrack="132" trackOrder="131,132,130" inStation="130" rgvPickTrack="131" />
   </Equipments>
 
   <!-- ══ 호기(S/C #1~5)별 통로 C/V 매핑 ══

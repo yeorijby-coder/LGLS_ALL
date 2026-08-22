@@ -264,6 +264,7 @@ namespace TSK_COMM_IOSCH
                     // ── 구동 완료 : 설비 완료 신호(_RD) → (중 → 완료 또는 다음 처리 인계)
                     CompleteCV();   // 15 → 19(출고 최종) / 20(입고 → SC 처리 인계)
                     CheckLostInboundCargo();   // [LGLS 2026-07-31] 입고 15 화물 유실 감지 → 재발행(10) 복구
+                    CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
                     if (!m_bScAutoComplete)
                     {
                         CompleteSC();       // 25 → 29(입고 최종) / 10(출고 → CV 처리 인계)
@@ -1163,6 +1164,72 @@ namespace TSK_COMM_IOSCH
         //     되돌려 재발행시킨다. 다음 파렛트가 입고대에 오면 그 파렛트에 이 작업번호가 다시 부여된다.
         private readonly Dictionary<string, DateTime> m_dicLostSince = new Dictionary<string, DateTime>();
         private const int LOST_CARGO_GRACE_MS = 60000;   // 설비 이송·미러 지연을 넉넉히 상회
+
+        // [LGLS 2026-08-22] 작업 체류 감시용 상태
+        private Dictionary<string, string> m_dicStallWarned = new Dictionary<string, string>();
+        private DateTime m_dtNextStallScan = DateTime.MinValue;
+
+        /// <summary>
+        /// [LGLS 2026-08-22] 작업 체류(무응답) 감시.
+        ///   설비가 응답을 멈추면 작업은 그 상태 그대로 무한정 남고, 뒤따르는 작업까지 적체된다
+        ///   (실측: RGV 가 상태 35 로 11시간 정지 → 작업 9건 적체, 경고 한 줄 없었음).
+        ///   완료(29/19)가 아닌 작업이 임계시간 넘게 갱신되지 않으면 경고를 남긴다.
+        ///   자동 회복은 하지 않는다 — 실물 설비 상태를 모른 채 상태를 건드리는 편이 더 위험하다.
+        ///   임계시간 : ENV_IOSCH.INI [CNF] JOB_STALL_WARN_SEC (기본 300초, 0=감시 끔)
+        /// </summary>
+        private void CheckStalledJobs()
+        {
+            try
+            {
+                int nWarnSec = cDefApi.GsReadInitProfileCnf("JOB_STALL_WARN_SEC", 300);
+                if (nWarnSec <= 0) return;
+                if (DateTime.Now < m_dtNextStallScan) return;
+                m_dtNextStallScan = DateTime.Now.AddSeconds(60);      // 1분 주기 점검
+
+                string q = "";
+                q += CRLF + " SELECT JM.LUGG_NO, JM.JOB_STATUS, JM.JOB_TYP, JM.START_POS, JM.DEST_POS,      ";
+                q += CRLF + "        DATEDIFF(second, JM.UPD_DT, GETDATE()) AS IDLE_SEC                     ";
+                q += CRLF + "   FROM JOB_MST JM                                                            ";
+                q += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                                              ";
+                q += CRLF + "    AND JM.JOB_STATUS NOT IN ('29','19')                                      ";
+                q += CRLF + "    AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= :IDLE                       ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("IDLE",   DbLang.VARCHAR).Value = nWarnSec.ToString();
+                int nCnt = _pBdb.ExcuteQry(q);
+                if (nCnt <= 0) { m_dicStallWarned.Clear(); return; }
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                List<string> lstAlive = new List<string>();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
+                    string status = GetVal(dt.Rows[i], "JOB_STATUS");
+                    lstAlive.Add(luggNo);
+
+                    // 같은 상태로 계속 머무는 동안에는 한 번만 알린다(상태가 바뀌면 다시 알림)
+                    string strPrev;
+                    if (m_dicStallWarned.TryGetValue(luggNo, out strPrev) && strPrev == status) continue;
+                    m_dicStallWarned[luggNo] = status;
+
+                    MakeMsg_Error(string.Format(
+                        "[SCH][체류경고] 작업 {0} 이(가) 상태 '{1}' 로 {2}초째 진행되지 않습니다 ({3} → {4}). 설비 응답을 확인하세요.",
+                        luggNo, status, GetVal(dt.Rows[i], "IDLE_SEC"),
+                        GetVal(dt.Rows[i], "START_POS"), GetVal(dt.Rows[i], "DEST_POS")));
+                }
+
+                // 정상 진행으로 돌아선 작업은 경고 이력에서 제거
+                List<string> lstDrop = new List<string>();
+                foreach (string k in m_dicStallWarned.Keys)
+                    if (!lstAlive.Contains(k)) lstDrop.Add(k);
+                foreach (string k in lstDrop) m_dicStallWarned.Remove(k);
+            }
+            catch (Exception ex)
+            {
+                MakeMsg_Error("[SCH] 작업 체류 감시 오류: " + ex.Message);
+            }
+        }
 
         private void CheckLostInboundCargo()
         {

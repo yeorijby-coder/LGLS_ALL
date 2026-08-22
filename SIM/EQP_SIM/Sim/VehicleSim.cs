@@ -131,6 +131,16 @@ namespace EQP_SIM.Sim
         private DateTime srcClearAt = DateTime.MinValue;
 
         /// <summary>출발지(라인/스테이션 포트)의 화물·트래킹이 실제로 사라졌는지</summary>
+        /// <summary>
+        /// [LGLS 2026-08-22] 출발지 클리어 판정.
+        ///   종전에는 "그 포트가 비었는지"(IsPortClear)를 봤다. 그런데 상차 직후 컨베이어가 다음 화물을
+        ///   같은 포트로 밀어 넣으면 그 조건은 영영 성립하지 않아 RGV 가 AtSource 에서 무한 대기했다
+        ///   (실측: 상차 109ms 뒤 후속 화물 도착 → 11시간 교착, 작업 9건 적체).
+        ///   실제 PLC 는 자기가 실은 화물이 빠졌는지만 확인하면 되므로,
+        ///   "내가 집은 파렛트가 그 포트에 더 이상 없는지"로 판정한다.
+        /// </summary>
+        private DateTime srcWaitFrom = DateTime.MinValue;   // 출발지 클리어 대기 시작 시각(타임아웃용)
+
         private bool SourceCleared()
         {
             if (!IsPort(from01, from02)) return true;      // 랙 셀에서 꺼낸 출고는 컨베이어 클리어 대상 없음
@@ -138,7 +148,9 @@ namespace EQP_SIM.Sim
             var cv = engine.World.FindByPort(port);
             if (cv == null) return true;
             var sim = engine.Conveyor(cv.Id);
-            return sim == null || sim.IsPortClear(port);
+            if (sim == null) return true;
+            if (carrying == null) return sim.IsPortClear(port);
+            return !sim.HasPalletObject(port, carrying);
         }
 
         public void Tick(DateTime now)
@@ -225,9 +237,18 @@ namespace EQP_SIM.Sim
                         //   → SrcClearDwellMs 유지(상위 판독 주기 확보) → 그 다음에 출발/하역.
                         if (!SourceCleared())
                         {
-                            StatusText = "상차 완료 — 출발지 클리어 대기";
-                            break;
+                            // [LGLS 2026-08-22] 안전장치: 어떤 이유로든 클리어가 오지 않아도 영구 교착되지 않게
+                            //   타임아웃 후에는 경고를 남기고 진행한다.
+                            if (srcWaitFrom == DateTime.MinValue) srcWaitFrom = now;
+                            if ((now - srcWaitFrom).TotalMilliseconds < engine.SrcClearTimeoutMs)
+                            {
+                                StatusText = "상차 완료 — 출발지 클리어 대기";
+                                break;
+                            }
+                            engine.Log(Def.Id + " ※ 출발지 클리어 대기 " + engine.SrcClearTimeoutMs +
+                                       "ms 초과 — 교착 방지를 위해 진행 (JOB " + palletId + ")");
                         }
+                        srcWaitFrom = DateTime.MinValue;
                         if (srcClearAt == DateTime.MinValue) srcClearAt = now;
                         if ((now - srcClearAt).TotalMilliseconds < engine.SrcClearDwellMs)
                         {

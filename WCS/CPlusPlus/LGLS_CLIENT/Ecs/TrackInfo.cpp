@@ -325,6 +325,11 @@ void CTrackInfo::InvokeControl(CDciTrackCtrl*	pTrackCtrl)
  	pTrackCtrl->m_bExist = (m_pCV_DATA->V_SENSOR0_DATA_RD == _T("1")) ? TRUE : FALSE;
 	// [LGLS] 실화이 없으면(sensor0=0 또는 lugg 0/0000) 작업색을 표시하지 않음
 	BOOL bHasData = (m_pCV_DATA->V_SENSOR0_DATA_RD == _T("1") && m_pCV_DATA->V_LUGG_NO_RD != _T("0") && m_pCV_DATA->V_LUGG_NO_RD != _T("0000"));
+
+	// [LGLS 2026-08-22] 핸드셰이크 4종은 EQP_TASK 가 트랙 역할(크레인/RGV × 싣는곳/내리는곳)까지
+	//   반영해 CV_DATA 에 직접 기록한다. 컬럼이 채워져 있으면 그것을 점등 기준으로 쓰고,
+	//   아직 비어 있는(구버전 DB) 경우에만 종전의 화물·데이터 유무 판정으로 되돌아간다.
+	#define LGLS_HS_ON(col, fallback)  ((col) == _T("1") ? TRUE : ((col) == _T("0") ? FALSE : (fallback)))
  	//pTrackCtrl->m_bDoubleExist = IsWriten2Level();
  
 	int nTrackItemCnt = pTrackCtrl->GetItemSize();
@@ -371,7 +376,7 @@ void CTrackInfo::InvokeControl(CDciTrackCtrl*	pTrackCtrl)
 		//case enStatusLfDepartHSReady:
 			{
 				// [LGLS 2026-08-04] 입고 H/S = 설비에 화물을 "싣는 곳"(CV->설비) : 화물·데이터가 있으면 점등
-				pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (bHasData ? pConfig->m_clrUSER_COLOR_HS_STO : clrStatusNone);
+				pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (LGLS_HS_ON(m_pCV_DATA->V_STOHS_READY_RD, bHasData) ? pConfig->m_clrUSER_COLOR_HS_STO : clrStatusNone);
 				//if(m_pCV_DATA->V_STOHS_READY_RD == "1")
 				//{
 				//	pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : pConfig->m_clrUSER_COLOR_HS_STO;
@@ -389,7 +394,7 @@ void CTrackInfo::InvokeControl(CDciTrackCtrl*	pTrackCtrl)
 		//case enStatusLfArriveHSReady:
 			{
 				// [LGLS 2026-08-04] 출고 H/S = 설비가 화물을 "내려놓는 곳"(설비->CV) : 화물·데이터가 없으면 점등
-				pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (!bHasData ? pConfig->m_clrUSER_COLOR_HS_RET: clrStatusNone);
+				pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (LGLS_HS_ON(m_pCV_DATA->V_RETHS_READY_RD, !bHasData) ? pConfig->m_clrUSER_COLOR_HS_RET: clrStatusNone);
 				//if (m_pCV_DATA->V_RETHS_READY_RD == "1")
 				//{
 				//	pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : pConfig->m_clrUSER_COLOR_HS_RET;
@@ -405,13 +410,13 @@ void CTrackInfo::InvokeControl(CDciTrackCtrl*	pTrackCtrl)
 		//   RtvArriveHS = RTV 가 화물을 '내려놓는' 입고 드롭 트랙 -> 화물/데이터가 없어야 받을 수 있다
 		//     색은 '내려놓는 곳' 공통(크레인 출고 하역과 동일한 HS_RET)
 		case enStatusRtvArriveHSReady:
-			pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (!bHasData ? pConfig->m_clrUSER_COLOR_HS_RET : clrStatusNone);
+			pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (LGLS_HS_ON(m_pCV_DATA->V_RTV_ARRIVEHS_READY_RD, !bHasData) ? pConfig->m_clrUSER_COLOR_HS_RET : clrStatusNone);
 			break;
 
 		//   RtvDepartHS = RTV 가 화물을 '싣는' 출고 픽업 트랙 -> 화물/데이터가 있어야 실어갈 수 있다
 		//     색은 '싣는 곳' 공통(크레인 입고 픽업과 동일한 HS_STO)
 		case enStatusRtvDepartHSReady:
-			pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (bHasData ? pConfig->m_clrUSER_COLOR_HS_STO : clrStatusNone);
+			pTrackCtrl->m_items[i].m_clrItem = (m_pCV_DATA->V_TR_PAUSE_RD == "1" || m_pCV_DATA->V_TR_PAUSE_OD == "1") ? pConfig->m_clrUSER_COLOR_SUSPEND : (LGLS_HS_ON(m_pCV_DATA->V_RTV_DEPARTHS_READY_RD, bHasData) ? pConfig->m_clrUSER_COLOR_HS_STO : clrStatusNone);
 			break;
 
 		default:

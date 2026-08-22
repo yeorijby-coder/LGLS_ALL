@@ -226,8 +226,9 @@ void CConfig::InitializeConfigUSER()
 
 	m_clrUSER_COLOR_STN_STO = GREEN;
 	m_clrUSER_COLOR_STN_RET = BLUE;
-	m_clrUSER_COLOR_HS_STO	= GREEN;
-	m_clrUSER_COLOR_HS_RET	= BLUE;
+	// [LGLS 2026-08-22] 핸드셰이크 색 규칙 : 싣는 곳(Pick)=오렌지 / 내려놓는 곳(Drop)=진한 초록
+	m_clrUSER_COLOR_HS_STO	= RGB(255,140,0);
+	m_clrUSER_COLOR_HS_RET	= RGB(0,128,0);
 	m_clrUSER_COLOR_SUSPEND = RED;
 
 	m_clrUSER_COLOR_ERROR = RED;			//
