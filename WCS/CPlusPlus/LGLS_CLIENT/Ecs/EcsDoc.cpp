@@ -2281,6 +2281,28 @@ void CEcsDoc::OnUpdateTrackTextMode(CCmdUI* pCmdUI)
 
 // [LGLS 2026-08-22] 그 작업번호가 작업정보(JOB_MST)에 실재하는지.
 //   트랙마다 조회하면 폴링 부담이 크므로 전체 작업번호를 2초에 한 번만 읽어 캐시한다.
+// [LGLS 2026-08-22] 그 호기(S/C 901~905, RGV 801)에 물려 있는 진행 중 작업번호.
+//   설비 데이터(SC_DATA_LGLS)만으로는 표시가 끊긴다 :
+//     - 지시 전(작업 '20')       : 관측·지시값 모두 비어 있다
+//     - 지시 직후               : 작업색만 켜지고 작업번호는 설비 반영 뒤에야 채워진다
+//     - 완료 후                 : 지시값(PALLET_ID_OD)이 이전 작업 번호로 남는다
+//   그래서 작업정보에서 직접 가져온다. 진행 중(20/21/25)인 작업의 호기를 보고 맞춘다.
+//   입고는 도착지(DEST_POS), 출고는 출발지(START_POS)가 그 호기다.
+//   IsJobInJobMst 와 같은 2초 캐시를 쓴다.
+CString CEcsDoc::GetVehicleJobNo(LPCTSTR lpszVehNo)
+{
+	CString strVeh(lpszVehNo == NULL ? _T("") : lpszVehNo);
+	strVeh.Trim();
+	if (strVeh.IsEmpty()) return _T("");
+
+	if (m_dwAliveJobTick == 0 || (::GetTickCount() - m_dwAliveJobTick) >= 2000)
+		IsJobInJobMst(_T("0"));		// 캐시 갱신 유도(작업번호 집합 + 호기별 작업)
+
+	CString strJob;
+	if (m_mapVehJob.Lookup(strVeh, strJob)) return strJob;
+	return _T("");
+}
+
 BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
 {
 	if (lpszLugg == NULL) return FALSE;
@@ -2292,8 +2314,9 @@ BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
 	{
 		m_dwAliveJobTick = ::GetTickCount();
 		m_mapAliveJob.RemoveAll();
+		m_mapVehJob.RemoveAll();
 		CString strSql;
-		strSql.Format(_T(" SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = '%s' "), m_WH_TYP);
+		strSql.Format(_T(" SELECT LUGG_NO, ISNULL(JOB_TYP,'') AS JOB_TYP, ISNULL(START_POS,'') AS START_POS, ISNULL(DEST_POS,'') AS DEST_POS, ISNULL(JOB_STATUS,'') AS JOB_STATUS FROM JOB_MST WHERE WH_TYP = '%s' "), m_WH_TYP);
 		int nRowCnt = 0;
 		CString strMsg = _T("");
 		_RecordsetPtr pRs = GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
@@ -2306,6 +2329,17 @@ BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
 				CString strItem = pRsw->GetItem(_T("LUGG_NO"));
 				strItem.Trim();
 				if (!strItem.IsEmpty()) m_mapAliveJob.SetAt(strItem, _T("1"));
+
+				// [LGLS 2026-08-22] 진행 중(20/21/25) 작업은 그 호기에 물려 있는 것으로 본다.
+				CString strSt = pRsw->GetItem(_T("JOB_STATUS")); strSt.Trim();
+				if (strSt == _T("20") || strSt == _T("21") || strSt == _T("25"))
+				{
+					CString strTyp = pRsw->GetItem(_T("JOB_TYP")); strTyp.Trim();
+					CString strVeh = (strTyp == _T("2") || strTyp == _T("12"))
+									 ? pRsw->GetItem(_T("START_POS")) : pRsw->GetItem(_T("DEST_POS"));
+					strVeh.Trim();
+					if (!strVeh.IsEmpty() && !strItem.IsEmpty()) m_mapVehJob.SetAt(strVeh, strItem);
+				}
 				pRsw->MoveNext();
 			}
 			delete pRsw;

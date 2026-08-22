@@ -313,24 +313,18 @@ void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
 	strLugg.Trim();
 	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
 
-	// [LGLS 2026-08-22] 지시는 났는데 설비가 아직 화물을 싣지 않은 구간 메우기.
-	//   작업색(JOB_TYP_RD)은 IO_TASK 가 지시 즉시 쓰지만, 작업번호(PALLET_ON_VEHICLE_RD)는
-	//   설비가 PLC 에 실은 뒤 WCS_TASK_CV 가 읽어야 채워진다. 그 시차 동안 번호가 비어
-	//   호기 번호로 되돌아가 "작업을 받았는데 번호가 없는" 것처럼 보였다.
-	//   작업색이 켜져 있을 때에 한해 지시값으로 메운다(완료 후에는 지시값이 남아 있어도 쓰지 않는다).
+	// [LGLS 2026-08-22] 설비 데이터만으로는 표시가 끊긴다.
+	//   지시 전에는 관측·지시값이 모두 비고, 지시 직후에는 작업색만 먼저 켜지며,
+	//   완료 뒤에는 지시값이 이전 작업 번호로 남는다(5호기 입고에서 확인).
+	//   그래서 작업번호가 비면 작업정보에서 이 호기에 물려 있는 진행 중 작업을 가져온다.
 	if (!bHasJob)
 	{
-		CString strTyp = pData->V_JOB_TYP_RD;
-		strTyp.Trim();
-		if (!strTyp.IsEmpty() && strTyp != _T("0"))
+		CString strJob = m_pEquipment->m_pDoc->GetVehicleJobNo(pData->K_RTV_NO);
+		strJob.Trim();
+		if (!strJob.IsEmpty() && strJob != _T("0") && strJob != _T("0000"))
 		{
-			CString strOd = pData->V_ITN_LUGG_FK1;
-			strOd.Trim();
-			if (!strOd.IsEmpty() && strOd != _T("0") && strOd != _T("0000"))
-			{
-				strLugg = strOd;
-				bHasJob = TRUE;
-			}
+			strLugg = strJob;
+			bHasJob = TRUE;
 		}
 	}
 

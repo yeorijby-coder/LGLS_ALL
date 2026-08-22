@@ -410,8 +410,10 @@ public:
 	//   창고 모니터링에서 컨베이어 위 작업번호 글자색을 정할 때 쓴다(있으면 검정 / 없으면 흰색).
 	DWORD m_dwAliveJobTick;
 	CMapStringToString m_mapAliveJob;
+	CMapStringToString m_mapVehJob;		// 호기(901~905/801) -> 진행 중 작업번호
 public:
 	BOOL IsJobInJobMst(LPCTSTR lpszLugg);
+	CString GetVehicleJobNo(LPCTSTR lpszVehNo);	// [LGLS 2026-08-22] 그 호기에 물려 있는 진행 중 작업번호
 public:
 	int m_nTrackTextMode;				// [LGLS 2026-07-20 재적용] 0=작업번호 1=트랙번호 2=제품정보
 	CCriticalSection m_csEqpData;		// [LGLS 재적용] 설비 데이터 CString 멀티스레드 경합 방지 락
