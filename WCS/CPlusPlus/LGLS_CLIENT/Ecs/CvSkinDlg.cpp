@@ -582,10 +582,10 @@ void CCvSkinDlg::RedrawImage()
 	m_btnCvRetReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvStoHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvRetHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
-	// [LGLS 2026-08-22] RGV 핸드셰이크 : RGV Pickup(출발HS) / RGV Unload(도착HS) / RGV 인터락
-	m_btnCvRgvInterlock.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_LOCK_SIGN == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
-	m_btnCvRtvDepartHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_DEPARTHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
-	m_btnCvRtvArriveHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_ARRIVEHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
+	// [LGLS 2026-08-22] RGV 표시행(인터락 / 출발HS / 도착HS) 초기 아이콘
+	m_btnCvRgvInterlock.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
+	m_btnCvRtvDepartHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
+	m_btnCvRtvArriveHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 
 	m_btnStockMode.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 }
@@ -798,6 +798,8 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 	//m_btnCvSenserProd3.SetIcon((m_pTrackInfo->m_pCV_DATA->V_SENSOR3_DATA_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	//m_btnCvSenserProd4.SetIcon((m_pTrackInfo->m_pCV_DATA->V_SENSOR4_DATA_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	m_btnCvRtvLockSign.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_LOCK_SIGN == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
+	// [LGLS 2026-08-22] RGV 인터락 : SC 인터락과 동일 조건(RTV_LOCK_SIGN)
+	m_btnCvRgvInterlock.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_LOCK_SIGN == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 
 	m_btnCvAutoMode.SetIcon((m_pTrackInfo->m_pCV_DATA->V_AUTO_MODE_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	if (m_pTrackInfo->m_pCV_DATA->V_AUTO_MODE_RD == _T("0"))
@@ -812,6 +814,9 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 	m_btnCvRetReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RET_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	m_btnCvStoHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_STOHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	m_btnCvRetHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RETHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
+	// [LGLS 2026-08-22] RGV Pickup(출발HS) / RGV Unload(도착HS)
+	m_btnCvRtvDepartHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_DEPARTHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
+	m_btnCvRtvArriveHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_ARRIVEHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 
 	strSql = GetQrySelectJOB_MST(m_pTrackInfo->m_pCV_DATA);
 	nRowCnt = -1;
