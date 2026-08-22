@@ -1068,6 +1068,14 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 		}
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 
+		// [LGLS 2026-08-22] 화물 마커(IndicateProdSensor)는 포크 위에 그려져 앞서 찍은 글자를 덮는다.
+		//   "지시받을 때는 작업번호가 보이다가 화물을 드는 순간 사라진다" 던 원인이 이것이다.
+		//   마커를 올린 뒤에 글자를 한 번 더 찍어 위로 올린다.
+		if (m_nProd == 1 || m_nProd == 3)
+			m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText);
+		if (m_nProd == 2 || m_nProd == 3)
+			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText);
+
 		pDC->SelectObject(pOldBrush);
 		pDC->SelectObject(pOldPen);
 		pDC->SetTextColor(nOldFgColor);
