@@ -807,6 +807,19 @@ namespace TSK_COMM_IOSCH
                         if (jobTyp == "2" && !IsTrackEmpty(_wT)) continue;
                         if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv()) continue;
                         if (jobTyp == "1" && IsTrackEmpty(_wT)) continue;
+
+                        // [LGLS 2026-08-22] 핸드셰이크 최우선 규칙
+                        //   입고는 그 트랙의 입고 HS 가, 출고는 출고 HS 가 서 있어야 지시한다.
+                        if (jobTyp == "1" && !IsHsOn(_wT, "STOHS_READY_RD"))
+                        {
+                            DbgLog("SCHS_" + scNo, string.Format("[SC] 입고 보류 - 트랙 {0} 입고 HS 신호 없음(작업 {1})", _wT, luggNo));
+                            continue;
+                        }
+                        if (jobTyp == "2" && !IsHsOn(_wT, "RETHS_READY_RD"))
+                        {
+                            DbgLog("SCHS_" + scNo, string.Format("[SC] 출고 보류 - 트랙 {0} 출고 HS 신호 없음(작업 {1})", _wT, luggNo));
+                            continue;
+                        }
                     }
 
                     // [LGLS 2026-07-21] Vehicle 반송 좌표 인코딩:
@@ -938,6 +951,19 @@ namespace TSK_COMM_IOSCH
                     if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;    // 작업대 일시정지
                     if (destPos == "901" && HasActiveSc1Outbound()) continue;          // SC1 특례(출고 우선)
                     if (IsTrackEmpty(pickupTrack)) continue;                           // 화물이 픽업트랙 도착 후에만
+
+                    // [LGLS 2026-08-22] 핸드셰이크 최우선 규칙
+                    //   출발지 HS(RGV 가 집어갈 준비)와 도착지 HS(RGV 가 내려놓을 준비)가 모두 서야 지시한다.
+                    if (!IsHsOn(pickupTrack, "RTV_DEPARTHS_READY_RD"))
+                    {
+                        DbgLog("RGVHS_" + rtvNo, string.Format("[RGV] 보류 - 출발지 {0} 출발 HS 신호 없음(작업 {1})", pickupTrack, luggNo));
+                        continue;
+                    }
+                    if (!IsHsOn(dropTrack, "RTV_ARRIVEHS_READY_RD"))
+                    {
+                        DbgLog("RGVHS_" + rtvNo, string.Format("[RGV] 보류 - 도착지 {0} 도착 HS 신호 없음(작업 {1})", dropTrack, luggNo));
+                        continue;
+                    }
 
                     MakeMsg_Imp(string.Format("[SCH][RGV] RGV #{0} 작업:{1} → 반송지시 (픽업 {2} → 드롭 {3})",
                         rtvNo, luggNo, pickupTrack, dropTrack));
@@ -2134,6 +2160,30 @@ namespace TSK_COMM_IOSCH
         {
             string v = (TrackLugg(track) ?? "").Trim();
             return v.Length == 0 || v == "0" || v == "0000";
+        }
+
+        // [LGLS 2026-08-22] 핸드셰이크 게이트 (사용자 최우선 규칙)
+        //   SC 입고 : 입고 HS(STOHS_READY_RD) 가 없으면 입고 지시 금지
+        //   SC 출고 : 출고 HS(RETHS_READY_RD) 가 없으면 출고 지시 금지
+        //   RGV     : 출발지(RTV_DEPARTHS_READY_RD)·도착지(RTV_ARRIVEHS_READY_RD) 가 모두 있어야 지시
+        //   신호는 WCS_TASK_CV 가 PLC 를 읽어 CV_DATA 에 기록한다.
+        //   조회 실패·행 없음은 "신호 없음"으로 본다 - 모르면 지시하지 않는 쪽이 안전하다.
+        private bool IsHsOn(string track, string column)
+        {
+            if (string.IsNullOrEmpty(track) || string.IsNullOrEmpty(column)) return false;
+            try {
+                string q = "";
+                q += CRLF + " SELECT " + column + " AS HS_VAL  ";
+                q += CRLF + "   FROM CV_DATA                   ";
+                q += CRLF + "  WHERE WH_TYP     = :WH_TYP      ";
+                q += CRLF + "    AND MC_NO      = :MC_NO       ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = track;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                return GetVal(_pBdb.mDtMain.Rows[0], "HS_VAL") == "1";
+            } catch { return false; }
         }
 
         private bool IsTrackEmpty(string track)
