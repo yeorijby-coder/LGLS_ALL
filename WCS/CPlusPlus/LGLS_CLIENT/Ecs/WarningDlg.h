@@ -36,6 +36,8 @@ public:
 
 public:
 	void ScanStalledJobs();
+	void ScanAlarmLogs();          // WCS_CLIENT_LOG 의 미확인 알람(ALARM_YN='Y')을 띄운다
+	void PumpupAlarm(LPCTSTR lpszWinId, LPCTSTR lpszLugg, LPCTSTR lpszMessage);  // 즉시 표시(구 CLog::PumpupAlarm 대응)
 	void ShowRow(int nIndex);      // 지정 행을 상단 팁에 표시하고 선택
 	void AddRow(LPCTSTR lpszTime, LPCTSTR lpszLugg, LPCTSTR lpszStatus,
 	            LPCTSTR lpszIdle, LPCTSTR lpszRoute);

@@ -57,9 +57,9 @@ BOOL CWarningDlg::OnInitDialog()
 	m_ctlList.SetExtendedStyle(m_ctlList.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 	m_ctlList.InsertColumn(0, _T("시각"),     LVCFMT_CENTER,  80);
 	m_ctlList.InsertColumn(1, _T("작업번호"), LVCFMT_CENTER,  80);
-	m_ctlList.InsertColumn(2, _T("상태"),     LVCFMT_CENTER, 120);
-	m_ctlList.InsertColumn(3, _T("체류(초)"), LVCFMT_RIGHT,   80);
-	m_ctlList.InsertColumn(4, _T("경로"),     LVCFMT_LEFT,   230);
+	m_ctlList.InsertColumn(2, _T("구분"),     LVCFMT_CENTER, 120);
+	m_ctlList.InsertColumn(3, _T("체류(초)"), LVCFMT_RIGHT,   70);
+	m_ctlList.InsertColumn(4, _T("내용"),     LVCFMT_LEFT,   280);
 
 	SetDlgItemText(IDC_STATIC_TIP, _T(""));
 	SetDlgItemText(IDC_BUTTON_SHOW, _T("STOP"));
@@ -82,7 +82,11 @@ void CWarningDlg::OnCancel() { ShowWindow(SW_HIDE); }
 
 void CWarningDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	if (nIDEvent == TIMER_SCAN) ScanStalledJobs();
+	if (nIDEvent == TIMER_SCAN)
+	{
+		ScanStalledJobs();
+		ScanAlarmLogs();
+	}
 	CDialog::OnTimer(nIDEvent);
 }
 
@@ -171,6 +175,74 @@ void CWarningDlg::AddRow(LPCTSTR lpszTime, LPCTSTR lpszLugg, LPCTSTR lpszStatus,
 	// 너무 쌓이지 않게 상한
 	while (m_ctlList.GetItemCount() > 200)
 		m_ctlList.DeleteItem(m_ctlList.GetItemCount() - 1);
+}
+
+// [LGLS 2026-08-22] 구 EcsSv CLog::PumpupAlarm 대응 - 로그를 남기며 즉시 알람으로 띄운다.
+void CWarningDlg::PumpupAlarm(LPCTSTR lpszWinId, LPCTSTR lpszLugg, LPCTSTR lpszMessage)
+{
+	CTime tmNow = CTime::GetCurrentTime();
+	AddRow(tmNow.Format(_T("%H:%M:%S")), lpszLugg, lpszWinId, _T(""), lpszMessage);
+	m_nCursor = 0;
+
+	CString strTip;
+	strTip.Format(_T("[알람] %s\r\n%s"), lpszWinId, lpszMessage);
+	SetDlgItemText(IDC_STATIC_TIP, strTip);
+
+	if (!m_bMute && !IsWindowVisible()) ShowWindow(SW_SHOWNA);
+}
+
+// WCS_CLIENT_LOG 에 ALARM_YN='Y' 로 남은 로그 중 아직 띄우지 않은 것을 가져와 표시한다.
+//   표시한 로그는 ALARM_CHK_YN='Y' 로 마킹해 다시 뜨지 않게 한다.
+//   (구 구조는 파일 로그라 그 PC 에서만 떴지만, DB 라 다른 Client 가 남긴 알람도 받는다)
+void CWarningDlg::ScanAlarmLogs()
+{
+	if (m_pDoc == NULL) return;
+
+	CString strSql;
+	strSql.Format(
+		_T("SELECT TOP 50 CONVERT(varchar(8), INS_DT, 108) AS LOG_TM, ")
+		_T("       %s(LUGG_NO,'') AS LUGG_NO, %s(WIN_ID,'') AS WIN_ID, %s(MESSAGE,'') AS MESSAGE ")
+		_T("  FROM WCS_CLIENT_LOG ")
+		_T(" WHERE ALARM_YN = 'Y' ")
+		_T("   AND %s(ALARM_CHK_YN,'N') <> 'Y' ")
+		_T(" ORDER BY INS_DT "),
+		m_pDoc->NVL, m_pDoc->NVL, m_pDoc->NVL, m_pDoc->NVL);
+
+	int nRowCnt = -1;
+	CString strMessage;
+	_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	if (nRowCnt <= 0) return;
+
+	CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
+	CString strLast;
+	int nNew = 0;
+
+	pRsw->MoveFirst();
+	for (int i = 0; i < nRowCnt; i++)
+	{
+		CString strTm   = pRsw->GetItem(_T("LOG_TM"));
+		CString strLugg = pRsw->GetItem(_T("LUGG_NO"));
+		CString strWin  = pRsw->GetItem(_T("WIN_ID"));
+		CString strMsg  = pRsw->GetItem(_T("MESSAGE"));
+
+		AddRow(strTm, strLugg, strWin, _T(""), strMsg);
+		strLast.Format(_T("[알람] %s\r\n%s"), strWin, strMsg);
+		nNew++;
+		pRsw->MoveNext();
+	}
+	delete pRsw;
+
+	if (nNew > 0)
+	{
+		// 띄운 알람은 확인 표시 - 같은 로그가 반복해서 뜨지 않게
+		m_pDoc->ExcuteQueryString_DLG(
+			_T("UPDATE WCS_CLIENT_LOG SET ALARM_CHK_YN = 'Y' ")
+			_T(" WHERE ALARM_YN = 'Y' AND ") + m_pDoc->NVL + _T("(ALARM_CHK_YN,'N') <> 'Y' "));
+
+		m_nCursor = 0;
+		SetDlgItemText(IDC_STATIC_TIP, strLast);
+		if (!m_bMute && !IsWindowVisible()) ShowWindow(SW_SHOWNA);
+	}
 }
 
 // 완료(29/19)가 아닌 작업이 기준시간 넘게 갱신되지 않으면 경고.

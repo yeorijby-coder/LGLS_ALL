@@ -12,6 +12,7 @@
 
 #include "MainFrm.h"
 #include "EcsDoc.h"
+#include "WarningDlg.h"
 #include "EcsView.h"
 #include "EcsDefine.h"
 
@@ -2101,7 +2102,7 @@ BOOL CEcsDoc::Permission(CString pWID_ID, int pEN_PERM)
 	return pPermission->m_ArrPerm[pEN_PERM];
 }
 
-BOOL CEcsDoc::GetQueryInsertClientLog(CString pWIN_ID, CString pLUGG_NO, CString pBOTTOM_TRAY, CString pTOP_TRAY, CString pMESSAGE)
+BOOL CEcsDoc::GetQueryInsertClientLog(CString pWIN_ID, CString pLUGG_NO, CString pBOTTOM_TRAY, CString pTOP_TRAY, CString pMESSAGE, BOOL bAlarm /* = FALSE */)
 {
 	CString CRLF = _T("\r\n");
 	CString strSql = _T("");
@@ -2115,7 +2116,8 @@ BOOL CEcsDoc::GetQueryInsertClientLog(CString pWIN_ID, CString pLUGG_NO, CString
 	strSql += CRLF + _T("				, LUGG_NO 						");
 	strSql += CRLF + _T("				, BOTTOM_TRAY  					");
 	strSql += CRLF + _T("				, TOP_TRAY  					");
-	strSql += CRLF + _T("				, MESSAGE )						");
+	strSql += CRLF + _T("				, MESSAGE 						");
+	strSql += CRLF + _T("				, ALARM_YN )					");
 	strSql += CRLF + _T("				VALUES 							");
 	strSql += CRLF + _T("				( '") + m_WH_TYP + _T("' 		");
 	strSql += CRLF + _T("				, ")  + SYSDATE + _T("			");
@@ -2125,12 +2127,20 @@ BOOL CEcsDoc::GetQueryInsertClientLog(CString pWIN_ID, CString pLUGG_NO, CString
 	strSql += CRLF + _T("				, '") + pLUGG_NO + _T("'		");
 	strSql += CRLF + _T("				, '") + pBOTTOM_TRAY + _T("'	");
 	strSql += CRLF + _T("				, '") + pTOP_TRAY + _T("'		");
-	strSql += CRLF + _T("				, '") + pMESSAGE + _T("')		");
+	strSql += CRLF + _T("				, '") + pMESSAGE + _T("'			");
+	strSql += CRLF + _T("				, '") + CString(bAlarm ? _T("Y") : _T("N")) + _T("')	");
 
  	BOOL isSuccess = ExcuteQueryString_DLG(strSql);
 	if(isSuccess == FALSE)
 	{
 		AfxMessageBox(GetMsgLangDef(_T("CLIENT LOG 추가 실패")));
+	}
+	// [LGLS 2026-08-22] 구 CLog::Write 의 bAlarm 처리(PumpupAlarm) 대응 -
+	//   로그를 남기면서 이 PC 의 경고창에 즉시 띄운다. 다른 Client 는 ALARM_YN 을
+	//   보고 자기 주기에 가져간다.
+	if (bAlarm && m_pWarningDlg != NULL && ::IsWindow(m_pWarningDlg->GetSafeHwnd()))
+	{
+		((CWarningDlg*)m_pWarningDlg)->PumpupAlarm(pWIN_ID, pLUGG_NO, pMESSAGE);
 	}
 	
 	return isSuccess;	

@@ -734,6 +734,27 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
  	pBtnLogClientLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("client_log"), (int)penLang));
 	CMFCRibbonButton* pBtnLogWcsLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(4);
  	pBtnLogWcsLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("wcs_log"), (int)penLang));
+	// [LGLS 2026-08-22] [알람] 탭 다국어. LOG 다음 카테고리(인덱스 4).
+	//   탭 이름 / 패널 이름 / 버튼 이름을 rc_resource\mainframe_alarm\alarm.ini 에서 읽는다.
+	//   빈 값이면 기존 캡션을 그대로 둔다(빈 문자열 대입 금지).
+	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_alarm\\"), _T("alarm"), strExtension);
+	CMFCRibbonCategory* pCategoryAlarm = m_wndRibbonBar.GetCategory(4);
+	if (pCategoryAlarm != NULL)
+	{
+		CString strAlarmCat = CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang);
+		if (!strAlarmCat.IsEmpty()) pCategoryAlarm->SetName(strAlarmCat);
+
+		CMFCRibbonPanel_Wrap* pPanelAlarm = (CMFCRibbonPanel_Wrap*)pCategoryAlarm->GetPanel(0);
+		if (pPanelAlarm != NULL)
+		{
+			if (!strAlarmCat.IsEmpty()) pPanelAlarm->SetName(strAlarmCat);
+
+			CMFCRibbonButton* pBtnAlarm = (CMFCRibbonButton*)pPanelAlarm->GetElement(0);
+			CString strAlarmBtn = CLib::GetIniStringFromPath(strFullPath, _T("alarm"), (int)penLang);
+			if (pBtnAlarm != NULL && !strAlarmBtn.IsEmpty()) pBtnAlarm->SetText(strAlarmBtn);
+		}
+	}
+
 // 	CMFCRibbonButton* pBtnLogEqpLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(1);
 // 	pBtnLogEqpLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("eqp_log"), (int)penLang));
 // 	CMFCRibbonButton* pBtnLogClientLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(2);
