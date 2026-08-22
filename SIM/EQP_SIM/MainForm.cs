@@ -209,6 +209,20 @@ namespace EQP_SIM
             }
         }
 
+        // [LGLS 2026-08-22] 잔재 화물 강제 제거 - 작업은 지워졌는데 실물만 남아
+        //   RGV/S/C 의 HS 를 막고 있을 때 그 슬롯만 비운다([상태 초기화]와 달리 전체를 건드리지 않는다).
+        private void btnClearPallet_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            string spec = txtClearTrack.Text;
+            if (MessageBox.Show(this, "[" + spec + "] 의 화물을 강제로 제거합니다.\r\n" +
+                                      "정상 운전 경로가 아닙니다 - 잔재 정리에만 쓰세요.", "EQP_SIM",
+                MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
+            string msg;
+            engine.RemovePallet(spec, out msg);
+            lblStatus.Text = msg;
+        }
+
         // [LGLS 2026-07-24] [시나리오 테스트] — 자동 운전 정지 + PPT 시나리오 수동 재현 창
         private ScenarioTestForm scenarioForm;
         private void btnScenarioTest_Click(object sender, EventArgs e)

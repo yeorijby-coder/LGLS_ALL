@@ -353,6 +353,40 @@ namespace EQP_SIM.Sim
             return p;
         }
 
+        /// <summary>
+        /// [LGLS 2026-08-22] 트랙 번호 → 포트순번(1-base). WCS_MIRROR 미설정 설비는 0.
+        ///   미러 규격과 동일하게 **포트 기준** 으로 맞춘다 : 트랙 = base + (포트 - 최소포트)
+        ///   (order 기준으로 하면 C/V#15(포트 30/31/32, order 3/1/2)에서 어긋난다 - WriteWcsMirror 주석 참조)
+        /// </summary>
+        public int OrderOfTrack(int track)
+        {
+            if (WcsTrackBase <= 0) return 0;
+            int minPort = int.MaxValue;
+            for (int k = 0; k < Def.Ports.Length; k++) if (Def.Ports[k] < minPort) minPort = Def.Ports[k];
+            for (int k = 0; k < Def.Ports.Length; k++)
+                if (WcsTrackBase + (Def.Ports[k] - minPort) == track) return Def.Orders[k];
+            return 0;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-22] 잔재(미지정) 화물 강제 제거 - 슬롯 하나를 비운다.
+        ///   작업이 지워졌는데 실물만 남아 RGV/SC 의 HS 를 막고 있을 때 쓰는 정리 수단이다.
+        ///   정상 운전 경로가 아니므로 완료 이벤트(UNLOAD_COMPLETE)는 내지 않는다.
+        /// </summary>
+        public bool ForceClearOrder(int idx, out string what)
+        {
+            what = "";
+            if (idx <= 0 || idx > Def.Orders.Length) return false;
+            SimPallet p;
+            bool had = Pallets.TryGetValue(idx, out p);
+            what = had ? (string.IsNullOrEmpty(p.Id) ? "(작업번호 없음)" : p.Id) : "";
+            Pallets.Remove(idx);
+            SetExist(idx, false);
+            SetTracking(idx, "");
+            UpdateWaitOut();
+            return had;
+        }
+
         public SimPallet PalletAt(int port)
         {
             int idx = Def.OrderOf(port);

@@ -21,6 +21,8 @@ namespace EQP_SIM
             this.btnFeed12 = new System.Windows.Forms.Button();
             this.btnFeed15 = new System.Windows.Forms.Button();
             this.btnReset = new System.Windows.Forms.Button();
+            this.txtClearTrack = new System.Windows.Forms.TextBox();
+            this.btnClearPallet = new System.Windows.Forms.Button();
             this.btnScenarioTest = new System.Windows.Forms.Button();
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.lvDevices = new System.Windows.Forms.ListView();
@@ -49,6 +51,8 @@ namespace EQP_SIM
             this.pnlTop.Controls.Add(this.btnFeed12);
             this.pnlTop.Controls.Add(this.btnFeed15);
             this.pnlTop.Controls.Add(this.btnReset);
+            this.pnlTop.Controls.Add(this.txtClearTrack);
+            this.pnlTop.Controls.Add(this.btnClearPallet);
             this.pnlTop.Controls.Add(this.btnScenarioTest);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlTop.Height = 86;
@@ -101,6 +105,18 @@ namespace EQP_SIM
             this.btnReset.Text = "상태 초기화";
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             //
+            // txtClearTrack
+            // 
+            this.txtClearTrack.Location = new System.Drawing.Point(750, 54);
+            this.txtClearTrack.Size = new System.Drawing.Size(70, 25);
+            // 
+            // btnClearPallet
+            // 
+            this.btnClearPallet.Location = new System.Drawing.Point(828, 52);
+            this.btnClearPallet.Size = new System.Drawing.Size(192, 27);
+            this.btnClearPallet.Text = "화물 제거 (트랙 또는 13:25)";
+            this.btnClearPallet.Click += new System.EventHandler(this.btnClearPallet_Click);
+            // 
             // btnScenarioTest
             //
             this.btnScenarioTest.Location = new System.Drawing.Point(880, 14);
@@ -181,6 +197,8 @@ namespace EQP_SIM
         private System.Windows.Forms.Button btnFeed12;
         private System.Windows.Forms.Button btnFeed15;
         private System.Windows.Forms.Button btnReset;
+        private System.Windows.Forms.TextBox txtClearTrack;
+        private System.Windows.Forms.Button btnClearPallet;
         private System.Windows.Forms.Button btnScenarioTest;
         private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.ListView lvDevices;

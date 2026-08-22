@@ -286,6 +286,58 @@ namespace EQP_SIM.Sim
         public void Resume() { paused = false; Log("[시나리오 테스트] 자동 운전 재개"); }
         public PlcMemory Memory { get { return io.Memory; } }
 
+        /// <summary>
+        /// [LGLS 2026-08-22] 잔재 화물 강제 제거.
+        ///   spec = "125"      → 트랙 번호 (ini [WCS_MIRROR] 기준, 스테이션 C/V#11~#15)
+        ///        = "13:25"    → 설비번호:포트번호 (화면 표기 P25 와 동일. 통로 C/V 포함 전 설비)
+        /// </summary>
+        public bool RemovePallet(string spec, out string msg)
+        {
+            msg = "";
+            if (string.IsNullOrEmpty(spec)) { msg = "트랙 번호를 입력하세요"; return false; }
+            spec = spec.Trim().ToUpper().Replace("CV", "").Replace("C/V", "").Replace("#", "");
+
+            ConveyorSim target = null;
+            int order = 0;
+
+            int colon = spec.IndexOf(':');
+            if (colon > 0)
+            {
+                int no, port;
+                if (!int.TryParse(spec.Substring(0, colon), out no) ||
+                    !int.TryParse(spec.Substring(colon + 1), out port))
+                { msg = "형식 오류 - 설비번호:포트번호 (예 13:25)"; return false; }
+                foreach (var cv in AllConveyors)
+                    if (cv.Def.No == no) { target = cv; order = cv.Def.OrderOf(port); break; }
+                if (target == null) { msg = "C/V #" + no + " 없음"; return false; }
+                if (order <= 0) { msg = "C/V #" + no + " 에 포트 " + port + " 없음"; return false; }
+            }
+            else
+            {
+                int track;
+                if (!int.TryParse(spec, out track)) { msg = "숫자가 아님: " + spec; return false; }
+                foreach (var cv in AllConveyors)
+                {
+                    int o = cv.OrderOfTrack(track);
+                    if (o > 0) { target = cv; order = o; break; }
+                }
+                if (target == null)
+                { msg = "트랙 " + track + " 을 가진 설비 없음 (통로 C/V 는 설비번호:포트번호 으로 지정)"; return false; }
+            }
+
+            string what;
+            bool had = target.ForceClearOrder(order, out what);
+            if (!had)
+            {
+                msg = target.Def.Id + " 슬롯 " + order + " - 화물 없음 (신호만 정리)";
+                Log(msg);
+                return false;
+            }
+            msg = target.Def.Id + " 슬롯 " + order + " 화물 제거 - " + what;
+            Log("[정리] " + msg);
+            return true;
+        }
+
         public void ResetAll()
         {
             lock (sync)
