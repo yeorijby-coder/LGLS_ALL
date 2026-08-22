@@ -1,78 +1,54 @@
 // WarningDlg.h : header file
 //
+// [LGLS 2026-08-22] 작업 체류(설비 무응답) 경고창.
+//   TASK 는 서버에서 돌아 사람이 보지 못하므로, 운전자가 보는 Client 에 띄운다.
+//   원본 CWarningDlg 는 CLog / CDialogResize / CStartupTip / CFooButton 에 의존했는데
+//   그 네 클래스의 구현이 프로젝트에 없어(헤더만 존재) 빌드 대상에서도 빠져 있었다.
+//   → MFC 표준(CDialog / CListCtrl / CStatic)만 쓰도록 다시 쓰고, 경고 원천은
+//     JOB_MST 를 직접 조회하는 방식으로 바꾼다.
 
 #pragma once
 
 #include "Resource.h"
-#include "DialogResize.h"
-#include "StartupTip.h"
 
 class CEcsDoc;
 
-
-// CWarningDlg
-//
-class CWarningDlg : public CDialogResize
+class CWarningDlg : public CDialog
 {
-
 public:
-	CWarningDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);   // standard constructor
+	CWarningDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);
 	virtual ~CWarningDlg();
 
 public:
 	CEcsDoc* m_pDoc;
-	CCriticalSection m_syncAlarmRefresh;
 
-	BOOL m_bExpand;
-	bool m_bShow;
-
-public:
-	void Refresh();
-	void SetSxButton();
-	void ExpandShow(UINT nMarkID, BOOL bExpand);
-
-public:
-// Dialog Data
 	enum { IDD = IDD_WARNING_DLG };
-	CStartupTip m_ctlTip;
-	CReportCtrl m_ctlReport;
-	CFooButton	m_btnExit;
-	CFooButton	m_btnFirst;
-	CFooButton	m_btnLast;
-	CFooButton	m_btnNext;
-	CFooButton	m_btnPrev;
-	CFooButton	m_btnDelete;
-	CFooButton	m_btnShow;
+	enum { TIMER_SCAN = 7301 };
 
-// Overrides
+	// 체류 판정 기준(초). Ecs.ini [USER] JOB_STALL_WARN_SEC, 기본 300
+	int  m_nStallSec;
+	// 자동 표시 억제(STOP 버튼)
+	BOOL m_bMute;
+	// 이미 알린 작업 : "작업번호|상태" 목록 (같은 상태로 머무는 동안 1회만 알림)
+	CStringArray m_arrNotified;
+
 public:
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	void ScanStalledJobs();
+	void AddRow(LPCTSTR lpszTime, LPCTSTR lpszLugg, LPCTSTR lpszStatus,
+	            LPCTSTR lpszIdle, LPCTSTR lpszRoute);
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	CListCtrl m_ctlList;
+
+	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();
-	virtual void PostNcDestroy();
 	virtual void OnOK();
+	virtual void OnCancel();
 
-// Implementation
-protected:
-	LRESULT OnRefreshNotify(WPARAM wParam, LPARAM lParam);
-
-protected:
-	// Generated message map functions
-	//{{AFX_MSG(CWarningDlg)
-	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg LRESULT OnNcHitTest(CPoint point);
-	afx_msg void OnButtonPrev();
-	afx_msg void OnButtonNext();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnButtonDelete();
-	afx_msg void OnButtonFirst();
-	afx_msg void OnButtonLast();
-	afx_msg void OnButtonExpand();
 	afx_msg void OnButtonShow();
-	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
-	DECLARE_DLGRESIZE_MAP;
-public:
-	afx_msg void OnDblclkListWarning(NMHDR *pNMHDR, LRESULT *pResult);
 };

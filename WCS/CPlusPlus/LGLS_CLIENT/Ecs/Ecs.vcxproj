@@ -554,6 +554,7 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClCompile Include="Cv.cpp" />
     <ClCompile Include="CvInfo.cpp" />
     <ClCompile Include="CvSkinDlg.cpp" />
+    <ClCompile Include="WarningDlg.cpp" />
     <ClCompile Include="CV_DATA.cpp" />
     <ClCompile Include="Debuger.cpp" />
     <ClCompile Include="Ecs.cpp" />

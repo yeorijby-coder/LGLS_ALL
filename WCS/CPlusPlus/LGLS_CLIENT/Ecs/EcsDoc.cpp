@@ -151,6 +151,7 @@ CEcsDoc::CEcsDoc()
 	m_pConfigStatus = NULL;
 
 	m_pCvSkinDlg = NULL;
+	m_pWarningDlg = NULL;
 	m_pRevSkinDlg = NULL;
 	m_pRollSkinDlg = NULL;
 	m_pScSkinDlg = NULL;

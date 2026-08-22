@@ -12,6 +12,7 @@
 #include "MainFrm.h"
 #include "EcsDoc.h"
 #include "EcsView.h"
+#include "WarningDlg.h"
 #include "SystemLoginDlg.h"
 #include "CvSkinDlg.h"
 #include "RevSkinDlg.h"
@@ -99,6 +100,23 @@ void CEcsView::OnInitialUpdate()
 	//pDoc->m_pViewJobListDlg = new CViewJobListDlg(pDoc);
 	//pDoc->m_pViewJobListDlg->Create(IDD_VIEW_JOBLIST);
 	//pDoc->m_pViewJobListDlg->ShowWindow(SW_HIDE);//SW_HIDE
+
+	// [LGLS 2026-08-22] 작업 체류 경고창을 미리 만들어 숨겨 둔다.
+	//   TASK 로그는 서버에만 남아 운전자가 보지 못하므로 Client 에서 창으로 알린다.
+	//   창 자신이 10초 주기로 JOB_MST 를 살펴 체류 작업이 생기면 스스로 나타난다.
+	if (pDoc->m_pWarningDlg == NULL)
+	{
+		CWarningDlg* pWarn = new CWarningDlg(pDoc);
+		if (pWarn->Create(IDD_WARNING_DLG, this))
+		{
+			pWarn->ShowWindow(SW_HIDE);
+			pDoc->m_pWarningDlg = pWarn;
+		}
+		else
+		{
+			delete pWarn;
+		}
+	}
 
 	int nMonitoringId = 35030 + pDoc->m_pConfig->m_nUSER_LAST_TAB_INDEX;
 	pDoc->OnCommandRangeMainFrameMONITORING(nMonitoringId);

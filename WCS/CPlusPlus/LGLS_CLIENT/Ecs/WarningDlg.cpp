@@ -1,25 +1,27 @@
 // WarningDlg.cpp : implementation file
 //
+// [LGLS 2026-08-22] 작업 체류(설비 무응답) 경고창 - Client 표시용.
+//   IO_TASK 도 같은 판정으로 로그를 남기지만 TASK 는 서버에서 돌아 사람이 보지 못한다.
+//   운전자가 보는 Client 에서 창을 띄워 알린다.
 
 #include "stdafx.h"
-#include "AfxDialogEx.h"
 #include "Ecs.h"
-#include "EcsDoc.h"
 #include "WarningDlg.h"
+#include "EcsDoc.h"
+#include "RecordSetWrap.h"
+#include "Global.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
-#undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
 #endif
-// CWarningDlg
-//
-CWarningDlg::CWarningDlg(CEcsDoc *pDoc, CWnd* pParent /*=NULL*/)
-	: CDialogResize(CWarningDlg::IDD, pParent)
+
+CWarningDlg::CWarningDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
+:CDialog(CWarningDlg::IDD, pParent)
 {
 	m_pDoc = pDoc;
-	m_bExpand = true;
-	m_bShow = true;
+	m_bMute = FALSE;
+	m_nStallSec = ::GetPrivateProfileInt(_T("USER"), _T("JOB_STALL_WARN_SEC"), 300, ECS_INI_FILE);
+	if (m_nStallSec < 10) m_nStallSec = 10;
 }
 
 CWarningDlg::~CWarningDlg()
@@ -28,279 +30,169 @@ CWarningDlg::~CWarningDlg()
 
 void CWarningDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogResize::DoDataExchange(pDX);
-
-	DDX_Control(pDX, IDC_STATIC_TIP, m_ctlTip);
-	DDX_Control(pDX, IDC_LIST_WARNING, m_ctlReport);
-	DDX_Control(pDX, IDOK, m_btnExit);
-	DDX_Control(pDX, IDC_BUTTON_FIRST, m_btnFirst);
-	DDX_Control(pDX, IDC_BUTTON_LAST, m_btnLast);
-	DDX_Control(pDX, IDC_BUTTON_NEXT, m_btnNext);
-	DDX_Control(pDX, IDC_BUTTON_PREV, m_btnPrev);
-	DDX_Control(pDX, IDC_BUTTON_DELETE, m_btnDelete);
-	DDX_Control(pDX, IDC_BUTTON_SHOW, m_btnShow);
+	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LIST_WARNING, m_ctlList);
 }
 
-
-BEGIN_MESSAGE_MAP(CWarningDlg, CDialogResize)
+BEGIN_MESSAGE_MAP(CWarningDlg, CDialog)
+	ON_WM_TIMER()
 	ON_WM_ERASEBKGND()
 	ON_WM_NCHITTEST()
-	ON_BN_CLICKED(IDC_BUTTON_PREV, &CWarningDlg::OnButtonPrev)
-	ON_BN_CLICKED(IDC_BUTTON_NEXT, &CWarningDlg::OnButtonNext)
 	ON_BN_CLICKED(IDC_BUTTON_DELETE, &CWarningDlg::OnButtonDelete)
-	ON_BN_CLICKED(IDC_BUTTON_FIRST, &CWarningDlg::OnButtonFirst)
-	ON_BN_CLICKED(IDC_BUTTON_LAST, &CWarningDlg::OnButtonLast)
-	ON_BN_CLICKED(IDC_BUTTON_SHOW, &CWarningDlg::OnButtonShow)
-	ON_MESSAGE(WM_USER_REFRESH_NOTIFY, &CWarningDlg::OnRefreshNotify)
-	ON_NOTIFY(NM_DBLCLK, IDC_LIST_WARNING, &CWarningDlg::OnDblclkListWarning)
+	ON_BN_CLICKED(IDC_BUTTON_SHOW,   &CWarningDlg::OnButtonShow)
 END_MESSAGE_MAP()
 
-BEGIN_DLGRESIZE_MAP(CWarningDlg)
-	DLGRESIZE_CONTROL(IDC_STATIC_PANE, DLSZ_SIZE_X)
-	DLGRESIZE_CONTROL(IDOK, DLSZ_MOVE_X)
-	DLGRESIZE_CONTROL(IDC_BUTTON_DELETE, DLSZ_MOVE_X)
-	DLGRESIZE_CONTROL(IDC_BUTTON_FIRST, DLSZ_MOVE_X)
-	DLGRESIZE_CONTROL(IDC_BUTTON_LAST, DLSZ_MOVE_X)
-	DLGRESIZE_CONTROL(IDC_BUTTON_PREV, DLSZ_MOVE_X)
-	DLGRESIZE_CONTROL(IDC_BUTTON_NEXT, DLSZ_MOVE_X)
-	DLGRESIZE_CONTROL(IDC_BUTTON_SHOW, DLSZ_MOVE_X)
-	DLGRESIZE_CONTROL(IDC_STATIC_TIP, DLSZ_SIZE_X)
-	DLGRESIZE_CONTROL(IDC_LIST_WARNING, DLSZ_SIZE_X | DLSZ_SIZE_Y)
-END_DLGRESIZE_MAP()
-
-
-// CWarningDlg 메시지 처리기입니다.
-//
-BOOL CWarningDlg::OnInitDialog() 
+BOOL CWarningDlg::OnInitDialog()
 {
-	CDialogResize::OnInitDialog();
+	CDialog::OnInitDialog();
 
-	SetSxButton();
+	// [LGLS 2026-08-22] rc 의 CONTROL 정의에 LVS_REPORT 가 없어 아이콘 뷰로 생성된다.
+	//   컬럼이 보이지 않고 항목이 한 줄로 뭉쳐 나오므로 여기서 리포트 뷰로 바꾼다.
+	m_ctlList.ModifyStyle(LVS_TYPEMASK, LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS);
+	m_ctlList.SetExtendedStyle(m_ctlList.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+	m_ctlList.InsertColumn(0, _T("시각"),     LVCFMT_CENTER,  80);
+	m_ctlList.InsertColumn(1, _T("작업번호"), LVCFMT_CENTER,  80);
+	m_ctlList.InsertColumn(2, _T("상태"),     LVCFMT_CENTER,  56);
+	m_ctlList.InsertColumn(3, _T("체류(초)"), LVCFMT_RIGHT,   80);
+	m_ctlList.InsertColumn(4, _T("경로"),     LVCFMT_LEFT,   300);
 
-	InitResizing(FALSE);
+	SetDlgItemText(IDC_STATIC_TIP, _T(""));
+	SetDlgItemText(IDC_BUTTON_SHOW, _T("STOP"));
+	if (GetDlgItem(IDC_STATIC_PANE)) GetDlgItem(IDC_STATIC_PANE)->ShowWindow(SW_HIDE);
 
-	m_ctlTip.SetIcon(IDI_ICON_LIGHTBULB);
+	// 화면 우하단에 고정 배치 (원본은 CDialogResize 로 처리했으나 그 클래스가 없다)
+	CRect rcDlg, rcWork;
+	GetWindowRect(rcDlg);
+	::SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0);
+	SetWindowPos(&wndTop, rcWork.right - rcDlg.Width() - 12,
+	              rcWork.bottom - rcDlg.Height() - 12, 0, 0, SWP_NOSIZE);
 
-	m_ctlReport.LoadImage(IDI_ICON_LOG_INFO,
-						  IDI_ICON_LOG_ERROR,
-						  IDI_ICON_LOG_WARNING,
-						  IDI_ICON_LOG_QUESTION, -1);
-	m_ctlReport.InsertColumn(_T("시간"), _T("작업번호"), _T("CARRIERID"), _T("구분"), _T("LOGGING 내용"), _T("ETX"));
-
-	Refresh();
-
+	SetTimer(TIMER_SCAN, 10000, NULL);      // 10초 주기 점검
 	return TRUE;
 }
 
-void CWarningDlg::SetSxButton()
+// [ESC]/[Enter] 로 창이 파괴되지 않게 (숨김만)
+void CWarningDlg::OnOK()     { ShowWindow(SW_HIDE); }
+void CWarningDlg::OnCancel() { ShowWindow(SW_HIDE); }
+
+void CWarningDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	m_btnShow.setType (CFooButton::checkBox);
-	m_btnShow.check (!m_bShow);
-	m_btnShow.setTextColor(RGB(51, 102, 255));
-
-	m_btnFirst.setGradient (true);
-	m_btnFirst.setType (CFooButton::hotPushButton);
-
-	m_btnLast.setGradient (true);
-	m_btnLast.setType (CFooButton::hotPushButton);
-
-	m_btnNext.setGradient (true);
-	m_btnNext.setType (CFooButton::hotPushButton);
-
-	m_btnPrev.setGradient (true);
-	m_btnPrev.setType (CFooButton::hotPushButton);
-
-	m_btnDelete.setGradient (true);
-	m_btnDelete.setType (CFooButton::hotPushButton);
-
-	m_btnExit.setGradient (true);
-	m_btnExit.setGradientBottomColor(RGB(212, 124, 168));
-	m_btnExit.setType (CFooButton::hotPushButton);
+	if (nIDEvent == TIMER_SCAN) ScanStalledJobs();
+	CDialog::OnTimer(nIDEvent);
 }
 
-LRESULT CWarningDlg::OnRefreshNotify(WPARAM wParam, LPARAM lParam) 
+void CWarningDlg::OnButtonDelete()
 {
-	Refresh();
-
-	return 0;
+	m_ctlList.DeleteAllItems();
+	m_arrNotified.RemoveAll();
+	SetDlgItemText(IDC_STATIC_TIP, _T(""));
 }
 
-void CWarningDlg::Refresh()
+void CWarningDlg::OnButtonShow()
 {
-	m_pDoc->m_pLog->DeleteMaxOverAlarm();
-	m_pDoc->m_pLog->LoadAlarmList(&m_ctlReport);
-	m_pDoc->m_pLog->LoadAlarmLast(&m_ctlTip);
+	m_bMute = !m_bMute;
+	SetDlgItemText(IDC_BUTTON_SHOW, m_bMute ? _T("START") : _T("STOP"));
 }
 
-void CWarningDlg::OnButtonFirst() 
-{
-	m_pDoc->m_pLog->LoadAlarmFirst(&m_ctlTip);	
-}
-
-void CWarningDlg::OnButtonLast() 
-{
-	m_pDoc->m_pLog->LoadAlarmLast(&m_ctlTip);	
-}
-
-void CWarningDlg::OnButtonPrev() 
-{
-	m_pDoc->m_pLog->LoadAlarmPrev(&m_ctlTip);	
-}
-
-void CWarningDlg::OnButtonNext() 
-{
-	m_pDoc->m_pLog->LoadAlarmNext(&m_ctlTip);	
-}
-
-void CWarningDlg::OnButtonDelete() 
-{
-	m_pDoc->m_pLog->DeleteAllAlarm();
-	m_ctlReport.DeleteAllItems();
-	m_ctlTip.ResetTipText();
-}
-
-void CWarningDlg::OnButtonShow() 
-{
-	m_bShow = !m_bShow;
-	Refresh();
-	ShowWindow(m_bShow);
-//	if (m_bShow )
-//		::PostMessage(m_pDoc->m_hWndView, WM_USER_ALARM_NOTIFY, 0, 0);
-}
-
-void CWarningDlg::OnButtonExpand() 
-{
-	m_bExpand = !m_bExpand;
-	if ( m_bExpand )
-	{
-		GetDlgItem(IDC_STATIC_TIP)->ShowWindow(false);
-		GetDlgItem(IDC_LIST_WARNING)->ShowWindow(true);
-
-		ENABLE_WND(IDC_BUTTON_FIRST, false);
-		ENABLE_WND(IDC_BUTTON_LAST, false);
-		ENABLE_WND(IDC_BUTTON_PREV, false);
-		ENABLE_WND(IDC_BUTTON_NEXT, false);
-	}
-	else
-	{
-		GetDlgItem(IDC_STATIC_TIP)->ShowWindow(true);
-		GetDlgItem(IDC_LIST_WARNING)->ShowWindow(false);
-
-		ENABLE_WND(IDC_BUTTON_FIRST, true);
-		ENABLE_WND(IDC_BUTTON_LAST, true);
-		ENABLE_WND(IDC_BUTTON_PREV, true);
-		ENABLE_WND(IDC_BUTTON_NEXT, true);
-	}
-}
-
-BOOL CWarningDlg::OnEraseBkgnd(CDC* pDC) 
-{
-	CDialogResize::OnEraseBkgnd(pDC);
-
-	CRect rect;
-    GetClientRect(rect);
-    
-    int r1 = 255, g1 = 0, b1 = 0;
-    int r2 = 255, g2 = 255, b2 = 0;
-    
-    for(int i=0; i<rect.right; i++) 
-    { 
-        int r = r1 + (i * (r2-r1) / rect.right); 
-        int g = g1 + (i * (g2-g1) / rect.right);
-        int b = b1 + (i * (b2-b1) / rect.right);
-        
-		CBrush brush;
-		brush.CreateSolidBrush(RGB(r, g, b));
-
-        pDC->FillRect(CRect(i, 0, i+1, rect.bottom), &brush);
-    }
-
-	return true;
-}
-
-void CWarningDlg::ExpandShow(UINT nMarkID, BOOL bExpand)
-{
-	CRect rcLarge;
-	CRect rcSmall;
-
-	CRect rcMark;
-	CWnd* pMark = GetDlgItem(nMarkID);
-	ASSERT(pMark);
-
-	GetWindowRect(rcLarge);
-	pMark->GetWindowRect(rcMark);
-
-	rcSmall = rcLarge;
-	rcSmall.bottom = rcMark.top;
-
-	if(bExpand)
-		SetWindowPos(NULL, 0,0, rcLarge.Width(), rcLarge.Height(), SWP_NOZORDER|SWP_NOMOVE);
-	else
-		SetWindowPos(NULL, 0,0, rcSmall.Width(), rcSmall.Height(), SWP_NOZORDER|SWP_NOMOVE);
-}
-
+// 캡션이 없는 창이라 본문을 잡아 끌어 옮길 수 있게 한다(원본 동작 복원)
 LRESULT CWarningDlg::OnNcHitTest(CPoint point)
 {
-	//return CDialogResize::OnNcHitTest(point);
-	UINT hit = CDialogResize::OnNcHitTest(point);
-    if ( hit == HTCLIENT ) 
-        return HTCAPTION;
-    else
-        return hit;
+	UINT hit = CDialog::OnNcHitTest(point);
+	if (hit == HTCLIENT) return HTCAPTION;
+	return hit;
 }
 
-void CWarningDlg::PostNcDestroy() 
+BOOL CWarningDlg::OnEraseBkgnd(CDC* pDC)
 {
-	m_pDoc->m_pWarningDlg = NULL;
-	delete this;
-
-	CDialogResize::PostNcDestroy();
-}
-
-void CWarningDlg::OnOK() 
-{
-//	CDialogResize::OnOK();
-//	DestroyWindow();
-	OnButtonDelete();
-	ShowWindow(false);
-}
-
-BOOL CWarningDlg::PreTranslateMessage(MSG* pMsg) 
-{
-    if( pMsg->message == WM_KEYDOWN )
-    {
-        if( pMsg->wParam == VK_ESCAPE )  // prevent close dialog
-		{
-			OnOK();
-            return true;
-		}
-    }
-	
-	return CDialogResize::PreTranslateMessage(pMsg);
-}
-
-
-void CWarningDlg::OnDblclkListWarning(NMHDR *pNMHDR, LRESULT *pResult)
-{
-	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-
-	POSITION pos = m_ctlReport.GetFirstSelectedItemPosition();
-	if (pos == NULL)
-		return;
-
-	int nIndex = m_ctlReport.GetNextSelectedItem(pos);
-	
-	if ((nIndex < 0) || (nIndex >= m_ctlReport.GetItemCount()))
-		return;
-
-	CString strBarcode = m_ctlReport.GetItemText(nIndex, 2);
-
-	if(!(strBarcode.IsEmpty()) && strBarcode.GetLength() == 6)
+	CRect rect;
+	GetClientRect(rect);
+	// 빨강 -> 노랑 그라데이션 (원본 배경 유지)
+	for (int i = 0; i < rect.right; i++)
 	{
-		m_pDoc->m_strJobSearch = strBarcode;
-		m_pDoc->IsIdleJob(strBarcode);
+		int g = (rect.right > 0) ? (i * 255 / rect.right) : 0;
+		CBrush brush;
+		brush.CreateSolidBrush(RGB(255, g, 0));
+		pDC->FillRect(CRect(i, 0, i + 1, rect.bottom), &brush);
 	}
+	return TRUE;
+}
 
-	*pResult = 0;
+void CWarningDlg::AddRow(LPCTSTR lpszTime, LPCTSTR lpszLugg, LPCTSTR lpszStatus,
+                         LPCTSTR lpszIdle, LPCTSTR lpszRoute)
+{
+	int n = m_ctlList.InsertItem(0, lpszTime);       // 최신이 위로
+	m_ctlList.SetItemText(n, 1, lpszLugg);
+	m_ctlList.SetItemText(n, 2, lpszStatus);
+	m_ctlList.SetItemText(n, 3, lpszIdle);
+	m_ctlList.SetItemText(n, 4, lpszRoute);
+
+	// 너무 쌓이지 않게 상한
+	while (m_ctlList.GetItemCount() > 200)
+		m_ctlList.DeleteItem(m_ctlList.GetItemCount() - 1);
+}
+
+// 완료(29/19)가 아닌 작업이 기준시간 넘게 갱신되지 않으면 경고.
+//   같은 상태로 머무는 동안 1회만 알리고, 상태가 바뀌면 다시 알린다.
+//   자동 회복은 하지 않는다 - 실물 설비 상태를 모른 채 DB 를 건드리는 편이 더 위험하다.
+void CWarningDlg::ScanStalledJobs()
+{
+	if (m_pDoc == NULL) return;
+
+	CString strSql;
+	strSql.Format(
+		_T("SELECT LUGG_NO, JOB_STATUS, START_POS, DEST_POS, ")
+		_T("       DATEDIFF(second, UPD_DT, GETDATE()) AS IDLE_SEC ")
+		_T("  FROM JOB_MST ")
+		_T(" WHERE JOB_STATUS NOT IN ('29','19') ")
+		_T("   AND DATEDIFF(second, UPD_DT, GETDATE()) >= %d "), m_nStallSec);
+
+	int nRowCnt = -1;
+	CString strMessage;
+	_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	if (nRowCnt <= 0) return;
+
+	CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
+	CString strLast;
+	int nNew = 0;
+
+	pRsw->MoveFirst();
+	for (int i = 0; i < nRowCnt; i++)
+	{
+		CString strLugg   = pRsw->GetItem(_T("LUGG_NO"));
+		CString strStatus = pRsw->GetItem(_T("JOB_STATUS"));
+		CString strIdle   = pRsw->GetItem(_T("IDLE_SEC"));
+		CString strStart  = pRsw->GetItem(_T("START_POS"));
+		CString strDest   = pRsw->GetItem(_T("DEST_POS"));
+
+		CString strKey;
+		strKey.Format(_T("%s|%s"), strLugg, strStatus);
+
+		BOOL bKnown = FALSE;
+		for (int k = 0; k < m_arrNotified.GetSize(); k++)
+		{
+			if (m_arrNotified.GetAt(k) == strKey) { bKnown = TRUE; break; }
+		}
+		if (!bKnown)
+		{
+			m_arrNotified.Add(strKey);
+
+			CTime tmNow = CTime::GetCurrentTime();
+			CString strRoute;
+			strRoute.Format(_T("%s -> %s"), strStart, strDest);
+			AddRow(tmNow.Format(_T("%H:%M:%S")), strLugg, strStatus, strIdle, strRoute);
+
+			strLast.Format(_T("작업 %s 이(가) 상태 '%s' 로 %s초째 진행되지 않습니다.\r\n%s\r\n설비 응답을 확인하세요."),
+			                strLugg, strStatus, strIdle, strRoute);
+			nNew++;
+		}
+		pRsw->MoveNext();
+	}
+	delete pRsw;
+
+	if (nNew > 0)
+	{
+		SetDlgItemText(IDC_STATIC_TIP, strLast);
+		if (!m_bMute && !IsWindowVisible())
+			ShowWindow(SW_SHOWNA);        // 포커스를 뺏지 않고 띄운다
+	}
 }
