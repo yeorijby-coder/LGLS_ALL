@@ -216,8 +216,11 @@ namespace EQP_SIM.Sim
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", from01);   // [LGLS] 출발지 도착 위치 확정
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", from02);
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", from03);
-                        io.SetBool(Def.Id, "PALLET_EXIST_FLAG", true);
+                        // [LGLS 2026-08-22] 데이터(ID) 를 먼저 싣고 감지 플래그를 나중에 세운다.
+                        //   WCS 는 PALLET_ON_VEHICLE(문자열)과 PALLET_EXIST_FLAG(비트)를 각각 따로 읽으므로,
+                        //   감지를 먼저 세우면 그 사이에 읽힌 주기에 "화물은 있는데 작업번호가 없는" 상태로 보인다.
                         io.SetString(Def.Id, "PALLET_ON_VEHICLE", carrying.Id);
+                        io.SetBool(Def.Id, "PALLET_EXIST_FLAG", true);
                         engine.RaiseEvent(Def.Id, "LOAD_COMPLETE", "LOAD_COMPLETE_ACK");
                         state = VState.AtSource;
                         StatusText = "상차 완료 (" + carrying.Id + ")";

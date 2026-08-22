@@ -488,6 +488,14 @@ namespace WCS_TASK_CV
             string sen = palletExist ? "1" : "0";
             string lugg = (pallet ?? "").Trim();
             if (lugg.Length == 0) lugg = "0";
+            // [LGLS 2026-08-22] "화물감지는 섰는데 작업번호가 없는" 표시 방지.
+            //   ID(문자열)와 감지(비트)는 서로 다른 READ 로 올라오므로 상차 직후 한 주기 어긋날 수 있다.
+            //   그 순간 ID 를 0 으로 덮어쓰면 화면의 크레인에서 작업번호가 사라진다 → 직전 값을 유지한다.
+            if (sen == "1" && lugg == "0")
+            {
+                string prevLugg = Cached(v, "ITN_LUGG_FK1");
+                if (!string.IsNullOrEmpty(prevLugg) && prevLugg != "0") lugg = prevLugg;
+            }
 
             var set = new StringBuilder();
             Action<string, string> chg = delegate(string col, string val)

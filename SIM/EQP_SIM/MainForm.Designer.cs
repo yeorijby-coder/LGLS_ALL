@@ -114,7 +114,7 @@ namespace EQP_SIM
             // 
             this.btnClearPallet.Location = new System.Drawing.Point(828, 52);
             this.btnClearPallet.Size = new System.Drawing.Size(192, 27);
-            this.btnClearPallet.Text = "화물 제거 (트랙 또는 13:25)";
+            this.btnClearPallet.Text = "화물 제거 (P번호 31 / 트랙 131)";
             this.btnClearPallet.Click += new System.EventHandler(this.btnClearPallet_Click);
             // 
             // btnScenarioTest

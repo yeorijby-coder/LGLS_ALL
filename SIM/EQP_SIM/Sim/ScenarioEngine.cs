@@ -288,8 +288,9 @@ namespace EQP_SIM.Sim
 
         /// <summary>
         /// [LGLS 2026-08-22] 잔재 화물 강제 제거.
-        ///   spec = "125"      → 트랙 번호 (ini [WCS_MIRROR] 기준, 스테이션 C/V#11~#15)
-        ///        = "13:25"    → 설비번호:포트번호 (화면 표기 P25 와 동일. 통로 C/V 포함 전 설비)
+        ///   spec = "31"       → 포트 번호 (화면 표기 P31 과 동일. 통로 C/V 포함 전 설비)
+        ///        = "131"      → 트랙 번호 (WCS 표기. ini [WCS_MIRROR] 설정 설비만)
+        ///        = "13:25"    → 설비번호:포트번호
         /// </summary>
         public bool RemovePallet(string spec, out string msg)
         {
@@ -314,15 +315,29 @@ namespace EQP_SIM.Sim
             }
             else
             {
-                int track;
-                if (!int.TryParse(spec, out track)) { msg = "숫자가 아님: " + spec; return false; }
-                foreach (var cv in AllConveyors)
+                int n;
+                if (!int.TryParse(spec, out n)) { msg = "숫자가 아님: " + spec; return false; }
+                if (n < 100)
                 {
-                    int o = cv.OrderOfTrack(track);
-                    if (o > 0) { target = cv; order = o; break; }
+                    // 두 자리 = 포트 번호(화면 표기 P25/P31 과 같다). 포트 번호는 전 설비에서 유일하다.
+                    foreach (var cv in AllConveyors)
+                    {
+                        int o = cv.Def.OrderOf(n);
+                        if (o > 0) { target = cv; order = o; break; }
+                    }
+                    if (target == null) { msg = "포트 " + n + " 을 가진 설비 없음"; return false; }
                 }
-                if (target == null)
-                { msg = "트랙 " + track + " 을 가진 설비 없음 (통로 C/V 는 설비번호:포트번호 으로 지정)"; return false; }
+                else
+                {
+                    // 세 자리 = 트랙 번호(WCS 표기 125/131). 미러 미설정 설비는 포트 번호로 지정한다.
+                    foreach (var cv in AllConveyors)
+                    {
+                        int o = cv.OrderOfTrack(n);
+                        if (o > 0) { target = cv; order = o; break; }
+                    }
+                    if (target == null)
+                    { msg = "트랙 " + n + " 을 가진 설비 없음 (통로 C/V 는 포트 번호로 지정)"; return false; }
+                }
             }
 
             string what;

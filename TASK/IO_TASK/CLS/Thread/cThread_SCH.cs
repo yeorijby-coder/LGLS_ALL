@@ -1622,6 +1622,15 @@ namespace TSK_COMM_IOSCH
                         if (IsRtvSuspended()) continue;
                         // [LGLS 2026-07-19] RTV 작업대(픽업/드롭 트랙) 일시정지 — RTV 지시 안 함
                         if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;
+                        // [LGLS 2026-08-22] 핸드셰이크 최우선 규칙 (DriveRGV 와 동일 - 이 경로에 빠져 있었다).
+                        //   내려놓을 자리(드롭 트랙)의 도착 HS 가 서지 않으면 지시하지 않는다.
+                        //   출발지 HS 는 이 시점엔 화물이 아직 픽업트랙에 없어(22 에 있음) 여기서 보지 않고,
+                        //   실제 적재 직전(아래 ST_RGV_CMD)에서 본다.
+                        if (!IsHsOn(dropTrack, "RTV_ARRIVEHS_READY_RD"))
+                        {
+                            DbgLog("RGVHS_801", string.Format("[RGV] 지시 보류 - 도착지 {0} 도착 HS 신호 없음(작업 {1})", dropTrack, luggNo));
+                            continue;
+                        }
                         // 대기(30) → 지시(31) : [LGLS] 파렛트는 22(입고대)에 유지, 빈 RGV 가 입고대(RT#21=plc15)로 이동.
                         //   22→21 이송은 IN_DWELL 경과 후(아래) — "22 등장"이 화면에 충분히 보이도록.
                         if (UpdateJobStatus(ST_RGV_CMD, luggNo, ref rtn))
@@ -1656,6 +1665,14 @@ namespace TSK_COMM_IOSCH
                         { int _pc = 0; int.TryParse(RgvCell(pickupTrack), out _pc);
                           int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
                           if (RvSeqFresh(luggNo + ":L") && _cur != _pc) { m_dicCraneTgt["R801"] = _pc; continue; } }   // 도착까지 대기(주행은 StepCranes)
+                        // [LGLS 2026-08-22] 적재 직전 출발지 HS 확인. 시퀀스가 시작된 뒤에는 보지 않는다 —
+                        //   적재 2단계가 픽업트랙의 화물·데이터를 지워 HS 가 스스로 내려가므로,
+                        //   계속 검사하면 자기 동작 때문에 도중에 멈춰 선다(CanEnterLine 과 같은 이유).
+                        if (RvSeqFresh(luggNo + ":L") && !IsHsOn(pickupTrack, "RTV_DEPARTHS_READY_RD"))
+                        {
+                            DbgLog("RGVHS_801", string.Format("[RGV] 적재 보류 - 출발지 {0} 출발 HS 신호 없음(작업 {1})", pickupTrack, luggNo));
+                            continue;
+                        }
                         // [LGLS] 도착 상태를 1회만 세팅: 데이터(LUGG_OD)만 있고 화물감지는 아직 없음. 픽업지점에 정지.
                         if (RvSeqFresh(luggNo + ":L"))
                             UpdateRtvVehicle("801", "2", "0", RgvCell(pickupTrack), "1", "0", luggNo, pickupTrack, dropTrack, allowEmptyMove: true);
@@ -1676,6 +1693,12 @@ namespace TSK_COMM_IOSCH
                         //   '자기가 놓은 화물' 때문에 CanEnterLine 이 false 가 되어 아래 완료 처리
                         //   (m_dicCvMove 등록 = 15→16 트래킹)에 영영 도달하지 못하고 트랙에 멈춰 선다.
                         if (RvSeqFresh(luggNo + ":U") && !CanEnterLine(dropTrack, luggNo)) continue;
+                        // [LGLS 2026-08-22] 하역 직전 도착지 HS 확인 (시퀀스 시작 전에만 - 위와 같은 이유).
+                        if (RvSeqFresh(luggNo + ":U") && !IsHsOn(dropTrack, "RTV_ARRIVEHS_READY_RD"))
+                        {
+                            DbgLog("RGVHS_801", string.Format("[RGV] 하역 보류 - 도착지 {0} 도착 HS 신호 없음(작업 {1})", dropTrack, luggNo));
+                            continue;
+                        }
                         // 중(35) → 드롭완료 : [LGLS] RTV 드롭지점 도착 → **하역 4단계 시퀀스**
                         //   (데이터+화물 실은 채 도착 →2s→ RTV 화물 사라짐 →2s→ 라인에 화물만 →2s→ RTV 데이터 사라지고 라인에 데이터)
                         // [LGLS 2026-07-19] "드롭지점 도착 스냅"(순간이동) 제거 — 주행이 실제 드롭 셀에 도착해야 하역 시작.
