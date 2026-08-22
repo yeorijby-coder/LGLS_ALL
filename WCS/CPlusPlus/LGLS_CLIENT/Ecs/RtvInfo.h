@@ -65,6 +65,13 @@ public:
 public:
 	CDciRvCtrl* m_pControl;
 
+	// [LGLS 2026-08-22] 창고 모니터링 보기(작업번호/호기/제품정보)를 RGV 에도 적용
+public:
+	void CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut);
+	void ApplyRtvTextMode(CRTV_DATA* pData, CDciRvCtrl* c1);
+	CString m_strRtvProdLugg;
+	CString m_strRtvProdVal;
+
 public:
 	CMap<CString, LPCTSTR, CRTV_DATA*, CRTV_DATA*> m_MapRTV_DATA;
 	CRTV_DATA* m_pRTV_DATA;

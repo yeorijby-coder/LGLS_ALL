@@ -299,6 +299,66 @@ int CRtvInfo::GetRtvPosition()
 	return 0;
 }
 
+// [LGLS 2026-08-22] 창고 모니터링 보기를 RGV 에도 적용한다(S/C 와 같은 규약).
+//   호기 번호가 평상시 표시값이고, 작업이 있을 때만 작업번호(1)/제품정보(2)로 바뀐다.
+//   글자색 : 작업정보(JOB_MST)에 실재하면 검정, 실물만 남은 잔재면 흰색.
+void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
+{
+	strOut = _T(" ");
+	clrOut = RGB(0, 0, 0);
+	if (pData == NULL || m_pEquipment == NULL || m_pEquipment->m_pDoc == NULL) return;
+
+	int nMode = m_pEquipment->m_pDoc->m_nTrackTextMode;
+	CString strLugg = pData->V_LUGG_NO_FK1_RD;
+	strLugg.Trim();
+	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
+
+	CString strUnit = pData->K_RTV_NO;			// 801 -> 1
+	strUnit.Trim();
+	if (strUnit.GetLength() > 1) strUnit = strUnit.Right(1);
+	if (strUnit.IsEmpty()) strUnit = _T(" ");
+
+	strOut = strUnit;
+	if (!bHasJob) return;
+
+	if (m_pEquipment->m_pDoc->IsJobInJobMst(strLugg) == FALSE)
+		clrOut = RGB(255, 255, 255);
+
+	if (nMode == 1)
+	{
+		strOut = strLugg;
+	}
+	else if (nMode == 2)
+	{
+		if (m_strRtvProdLugg != strLugg)
+		{
+			m_strRtvProdLugg = strLugg;
+			m_strRtvProdVal = _T("");
+			CString strSql;
+			strSql.Format(_T(" SELECT TOP 1 ISNULL(BCR_BOTTOM, ' ') AS BCR FROM JOB_MST WHERE LUGG_NO = '%s' ORDER BY INS_DT DESC "), m_strRtvProdLugg);
+			int nRowCnt = 0;
+			CString strMsg = _T("");
+			_RecordsetPtr pRs = m_pEquipment->m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+			if (nRowCnt > 0)
+			{
+				CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+				pRsw->MoveFirst();
+				m_strRtvProdVal = pRsw->GetItem(_T("BCR"));
+				delete pRsw;
+			}
+		}
+		m_strRtvProdVal.TrimRight();
+		if (!m_strRtvProdVal.IsEmpty()) strOut = m_strRtvProdVal;
+	}
+}
+
+void CRtvInfo::ApplyRtvTextMode(CRTV_DATA* pData, CDciRvCtrl* c1)
+{
+	CString strVal; COLORREF clrJob;
+	CalcRtvText(pData, strVal, clrJob);
+	if (c1) c1->SetExtraTextSafe(strVal, clrJob);
+}
+
 void CRtvInfo::InvokeControl(CRTV_DATA* pRTV_DATA)
 {
 	if(pRTV_DATA == NULL)
@@ -312,6 +372,8 @@ void CRtvInfo::InvokeControl(CRTV_DATA* pRTV_DATA)
 	//DEBUGER_ASSERT_VALID(m_pControl != NULL);
 
 	BOOL bErase = FALSE;	// (m_pControl->m_nForkPos != m_wHorizontalPos);
+	ApplyRtvTextMode(pRTV_DATA, pRTV_DATA->m_pControl);	// [LGLS 2026-08-22] 보기 모드 문자 반영
+
 	int nPos = pRTV_DATA->m_MapRtvPosition[pRTV_DATA->V_POS_H_RD];
 	if (pRTV_DATA->m_pControl)				
 	{
@@ -367,6 +429,8 @@ void CRtvInfo::InvokeControl()
 
 	//DEBUGER_ASSERT_VALID(m_pControl != NULL);
 	BOOL bErase = FALSE;	// (m_pControl->m_nForkPos != m_wHorizontalPos);
+
+	ApplyRtvTextMode(m_pRTV_DATA, m_pControl);	// [LGLS 2026-08-22] 보기 모드 문자 반영
 
 	if (m_pControl)						
 		m_pControl->m_nForkPos = 1;//(m_wHorizontalPos >= 254) ? 1 : m_wHorizo

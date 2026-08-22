@@ -302,47 +302,44 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 	strLugg.Trim();
 	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
 
-	if (bHasJob && !m_pEquipment->m_pDoc->IsJobInJobMst(strLugg))
-		clrOut = RGB(255, 255, 255);
+	// [LGLS 2026-08-22] 호기 번호가 평상시 표시값이다. 어느 보기에서든 작업이 없으면 호기를 보여주고,
+	//   작업이 있을 때만 그 자리에 작업번호(1)나 제품정보(2)를 대신 띄운다. 트랙번호 보기(0)는 늘 호기.
+	CString strUnit = pData->K_SC_NO;			// 901~905 -> 1~5
+	strUnit.Trim();
+	if (strUnit.GetLength() > 1) strUnit = strUnit.Right(1);
+	if (strUnit.IsEmpty()) strUnit = _T(" ");
+
+	strOut = strUnit;
+	if (!bHasJob) return;						// 작업 없음 → 호기 유지(색도 검정)
+
+	if (m_pEquipment->m_pDoc->IsJobInJobMst(strLugg) == FALSE)
+		clrOut = RGB(255, 255, 255);			// 작업정보에 없는 잔재 → 흰색
 
 	if (nMode == 1)
 	{
-		strOut = bHasJob ? strLugg : CString(_T(" "));
+		strOut = strLugg;
 	}
 	else if (nMode == 2)
 	{
-		if (bHasJob)
+		if (m_strScProdLugg != strLugg)
 		{
-			if (m_strScProdLugg != strLugg)
+			m_strScProdLugg = strLugg;
+			m_strScProdVal = _T("");
+			CString strSql;
+			strSql.Format(_T(" SELECT TOP 1 ISNULL(BCR_BOTTOM, ' ') AS BCR FROM JOB_MST WHERE LUGG_NO = '%s' ORDER BY INS_DT DESC "), m_strScProdLugg);
+			int nRowCnt = 0;
+			CString strMsg = _T("");
+			_RecordsetPtr pRs = m_pEquipment->m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+			if (nRowCnt > 0)
 			{
-				m_strScProdLugg = strLugg;
-				m_strScProdVal = _T("");
-				CString strSql;
-				strSql.Format(_T(" SELECT TOP 1 ISNULL(BCR_BOTTOM, ' ') AS BCR FROM JOB_MST WHERE LUGG_NO = '%s' ORDER BY INS_DT DESC "), m_strScProdLugg);
-				int nRowCnt = 0;
-				CString strMsg = _T("");
-				_RecordsetPtr pRs = m_pEquipment->m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
-				if (nRowCnt > 0)
-				{
-					CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
-					pRsw->MoveFirst();
-					m_strScProdVal = pRsw->GetItem(_T("BCR"));
-					delete pRsw;
-				}
+				CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+				pRsw->MoveFirst();
+				m_strScProdVal = pRsw->GetItem(_T("BCR"));
+				delete pRsw;
 			}
-			m_strScProdVal.TrimRight();
-			strOut = m_strScProdVal.IsEmpty() ? CString(_T(" ")) : m_strScProdVal;
 		}
-		else
-			m_strScProdLugg = _T("");
-	}
-	else
-	{
-		// 호기 : SC_NO 901~905 -> 1~5
-		CString strNo = pData->K_SC_NO;
-		strNo.Trim();
-		if (strNo.GetLength() > 1) strNo = strNo.Right(1);
-		strOut = strNo.IsEmpty() ? CString(_T(" ")) : strNo;
+		m_strScProdVal.TrimRight();
+		if (!m_strScProdVal.IsEmpty()) strOut = m_strScProdVal;		// 제품정보가 없으면 호기 유지
 	}
 }
 
