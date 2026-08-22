@@ -249,6 +249,7 @@ public:
 	CDialog*			m_pCvSkinDlg;
 	// [LGLS 2026-08-22] 작업 체류 경고창 (CWarningDlg) - 서버의 TASK 로그 대신 운전자에게 알린다
 	CDialog*			m_pWarningDlg;
+	afx_msg void OnCommandAlarmShow();   // [LGLS 2026-08-22] 리본 [알람] 버튼
 	CDialog*			m_pRevSkinDlg;
 	CDialog*			m_pRollSkinDlg;
 	CDialog*			m_pScSkinDlg;

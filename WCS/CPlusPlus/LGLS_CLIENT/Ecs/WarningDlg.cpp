@@ -20,6 +20,7 @@ CWarningDlg::CWarningDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 {
 	m_pDoc = pDoc;
 	m_bMute = FALSE;
+	m_nCursor = -1;
 	m_nStallSec = ::GetPrivateProfileInt(_T("USER"), _T("JOB_STALL_WARN_SEC"), 300, ECS_INI_FILE);
 	if (m_nStallSec < 10) m_nStallSec = 10;
 }
@@ -40,6 +41,10 @@ BEGIN_MESSAGE_MAP(CWarningDlg, CDialog)
 	ON_WM_NCHITTEST()
 	ON_BN_CLICKED(IDC_BUTTON_DELETE, &CWarningDlg::OnButtonDelete)
 	ON_BN_CLICKED(IDC_BUTTON_SHOW,   &CWarningDlg::OnButtonShow)
+	ON_BN_CLICKED(IDC_BUTTON_FIRST,  &CWarningDlg::OnButtonFirst)
+	ON_BN_CLICKED(IDC_BUTTON_PREV,   &CWarningDlg::OnButtonPrev)
+	ON_BN_CLICKED(IDC_BUTTON_NEXT,   &CWarningDlg::OnButtonNext)
+	ON_BN_CLICKED(IDC_BUTTON_LAST,   &CWarningDlg::OnButtonLast)
 END_MESSAGE_MAP()
 
 BOOL CWarningDlg::OnInitDialog()
@@ -85,8 +90,45 @@ void CWarningDlg::OnButtonDelete()
 {
 	m_ctlList.DeleteAllItems();
 	m_arrNotified.RemoveAll();
+	m_nCursor = -1;
 	SetDlgItemText(IDC_STATIC_TIP, _T(""));
 }
+
+// [LGLS 2026-08-22] |<< << >> >>| 목록 순회.
+//   원본은 CStartupTip 이 알람 목록을 넘겼는데 그 클래스가 없어 버튼이 죽어 있었다.
+//   지금은 리스트 행을 직접 넘기며 상단 팁에 그 행 내용을 보여준다.
+void CWarningDlg::ShowRow(int nIndex)
+{
+	int nCnt = m_ctlList.GetItemCount();
+	if (nCnt <= 0)
+	{
+		m_nCursor = -1;
+		SetDlgItemText(IDC_STATIC_TIP, _T(""));
+		return;
+	}
+	if (nIndex < 0)      nIndex = 0;
+	if (nIndex >= nCnt)  nIndex = nCnt - 1;
+	m_nCursor = nIndex;
+
+	CString strTime   = m_ctlList.GetItemText(nIndex, 0);
+	CString strLugg   = m_ctlList.GetItemText(nIndex, 1);
+	CString strStatus = m_ctlList.GetItemText(nIndex, 2);
+	CString strIdle   = m_ctlList.GetItemText(nIndex, 3);
+	CString strRoute  = m_ctlList.GetItemText(nIndex, 4);
+
+	CString strTip;
+	strTip.Format(_T("[%d/%d]  %s   작업 %s 이(가) 상태 '%s' 로 %s초째 진행되지 않습니다.\r\n%s\r\n설비 응답을 확인하세요."),
+	              nIndex + 1, nCnt, strTime, strLugg, strStatus, strIdle, strRoute);
+	SetDlgItemText(IDC_STATIC_TIP, strTip);
+
+	m_ctlList.SetItemState(nIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+	m_ctlList.EnsureVisible(nIndex, FALSE);
+}
+
+void CWarningDlg::OnButtonFirst() { ShowRow(0); }
+void CWarningDlg::OnButtonLast()  { ShowRow(m_ctlList.GetItemCount() - 1); }
+void CWarningDlg::OnButtonPrev()  { ShowRow((m_nCursor < 0) ? 0 : m_nCursor - 1); }
+void CWarningDlg::OnButtonNext()  { ShowRow((m_nCursor < 0) ? 0 : m_nCursor + 1); }
 
 void CWarningDlg::OnButtonShow()
 {
@@ -191,6 +233,7 @@ void CWarningDlg::ScanStalledJobs()
 
 	if (nNew > 0)
 	{
+		m_nCursor = 0;                     // 새 경고가 들어오면 최신 행을 가리킨다
 		SetDlgItemText(IDC_STATIC_TIP, strLast);
 		if (!m_bMute && !IsWindowVisible())
 			ShowWindow(SW_SHOWNA);        // 포커스를 뺏지 않고 띄운다

@@ -377,6 +377,7 @@ void CMainFrame::InitializeRibbonMenu(EN_LANG penLang)
 	AddCategoryWCS();
 	AddCategoryMANUAL();
 	AddCategoryLOG();
+	AddCategoryALARM();		// [LGLS 2026-08-22]
 	//AddCategoryUSER();
 	//AddCategorySTATUS();
 	//RenameRibbonText();	//test
@@ -716,7 +717,7 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 	pBtnManualRtv->SetText(CLib::GetIniStringFromPath(strFullPath, _T("rtv"), (int)penLang));
 	//[공PLT→RTV] EMPTY 라벨 제거
 
-	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_log\\"), _T("log"), strExtension);
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_log\\");
 	CMFCRibbonCategory* pCategory3 = m_wndRibbonBar.GetCategory(3);
 	CMFCRibbonPanel_Wrap* pPanel_Wrap_Log = (CMFCRibbonPanel_Wrap*)pCategory3->GetPanel(0);
 	pPanel_Wrap_Log->SetCenterColumnVert();
@@ -775,6 +776,27 @@ void CMainFrame::ExcuteTheme()
 	RecalcLayout ();
 	RedrawWindow (NULL, NULL, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
 	theApp.WriteInt (_T("ApplicationLook"), m_nAppLook);
+}
+
+void CMainFrame::AddCategoryALARM()
+{
+	// [LGLS 2026-08-22] LOG 옆 [알람] 탭. 작업 체류 경고창(CWarningDlg)을 강제로 띄운다.
+	//   평소에는 창 스스로 10초 주기로 JOB_MST 를 살펴 체류가 생기면 나타나지만,
+	//   운전자가 목록을 바로 보고 싶을 때가 있어 수동 표시 경로를 둔다.
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath = _T("");
+	strAppPath.Format(_T("%s"), chrFileName);
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_log\\");
+	CString strExtension = _T(".png");
+
+	CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("알람"), IDB_LOGO_ECS, IDB_LOGO_ECS);
+	CMFCRibbonPanel* pPanelAlarm = pCategory->AddPanel(_T("알람"));
+
+	CMFCRibbonButton* pBtnAlarm = new CMFCRibbonButton(ID_ALARM_SHOW, _T("알람"),
+		HICONFromPATH(GetConcatPath(strAppPath, _T("eqphislog"), strExtension)), TRUE);
+	pBtnAlarm->SetAlwaysLargeImage();
+	pPanelAlarm->Add(pBtnAlarm);
 }
 
 void CMainFrame::AddCategoryUSER()

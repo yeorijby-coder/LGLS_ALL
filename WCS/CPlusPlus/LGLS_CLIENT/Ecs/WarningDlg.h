@@ -31,9 +31,12 @@ public:
 	BOOL m_bMute;
 	// 이미 알린 작업 : "작업번호|상태" 목록 (같은 상태로 머무는 동안 1회만 알림)
 	CStringArray m_arrNotified;
+	// 목록 순회 위치 (|<< << >> >>| 버튼). -1 = 선택 없음
+	int m_nCursor;
 
 public:
 	void ScanStalledJobs();
+	void ShowRow(int nIndex);      // 지정 행을 상단 팁에 표시하고 선택
 	void AddRow(LPCTSTR lpszTime, LPCTSTR lpszLugg, LPCTSTR lpszStatus,
 	            LPCTSTR lpszIdle, LPCTSTR lpszRoute);
 
@@ -49,6 +52,10 @@ protected:
 	afx_msg LRESULT OnNcHitTest(CPoint point);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnButtonDelete();
+	afx_msg void OnButtonFirst();
+	afx_msg void OnButtonPrev();
+	afx_msg void OnButtonNext();
+	afx_msg void OnButtonLast();
 	afx_msg void OnButtonShow();
 	DECLARE_MESSAGE_MAP()
 };

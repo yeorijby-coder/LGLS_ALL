@@ -3442,6 +3442,7 @@
 #define ID_MANUAL_SEMITEST              35069
 #define ID_MANUAL_TESTCLEAR             35070
 #define ID_LOG_IO                       35050
+#define ID_ALARM_SHOW                  35090
 #define ID_LOG_EQP_HIS                  35051
 #define ID_LOG_MES                      35053
 #define ID_LOG_BCR                      35054

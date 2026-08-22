@@ -86,6 +86,7 @@ BEGIN_MESSAGE_MAP(CEcsDoc, CDocument)
 	ON_COMMAND_RANGE(ID_USER_USER, ID_USER_GROUP, &CEcsDoc::OnCommandRangeMainFrameUSER)
 	ON_COMMAND_RANGE(ID_STATUS_CV, ID_STATUS_WC1, &CEcsDoc::OnCommandRangeMainFrameSTATUS)
 	ON_COMMAND_RANGE(ID_MONITORING_VIEW_JOBNO, ID_MONITORING_VIEW_PRODINFO, &CEcsDoc::OnCommandTrackTextMode)	// [LGLS 2026-07-20 재적용]
+	ON_COMMAND(ID_ALARM_SHOW, &CEcsDoc::OnCommandAlarmShow)	// [LGLS 2026-08-22]
 	ON_COMMAND(ID_MANUAL_SEMITEST, &CEcsDoc::OnCommandSemiTestOpen)	// [LGLS 2026-08-13]
 	ON_COMMAND(ID_MANUAL_TESTCLEAR, &CEcsDoc::OnCommandSemiTestClear)	// [LGLS 2026-08-13]
 END_MESSAGE_MAP()
@@ -332,6 +333,19 @@ void CEcsDoc::OnCommandRangeMainFrameUSER(UINT nID)
 			break;
 		}
 	}
+}
+
+// [LGLS 2026-08-22] 리본 [알람] 버튼 - 작업 체류 경고창을 강제로 띄운다.
+//   창은 CEcsView::OnInitialUpdate 에서 미리 만들어 숨겨 두므로 여기서는 표시만 한다.
+void CEcsDoc::OnCommandAlarmShow()
+{
+	if (m_pWarningDlg == NULL || !::IsWindow(m_pWarningDlg->GetSafeHwnd()))
+	{
+		AfxMessageBox(GetMsgLangDef(_T("알람 창이 준비되지 않았습니다")));
+		return;
+	}
+	m_pWarningDlg->ShowWindow(SW_SHOW);
+	m_pWarningDlg->SetForegroundWindow();
 }
 
 void CEcsDoc::OnCommandRangeMainFrameLOG(UINT nID)
