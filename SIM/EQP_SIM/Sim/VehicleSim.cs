@@ -186,6 +186,12 @@ namespace EQP_SIM.Sim
                             }
                         }
 
+                        // [LGLS 2026-08-22] 반송지시를 받으면 그 작업번호를 즉시 싣는다 — 화물감지는 아직 OFF.
+                        //   구 ECS 규약 : "실으러 가는 차는 데이터만 있고 화물은 없다".
+                        //   종전에는 상차하는 순간에야 작업번호를 썼다. WCS 는 작업번호(R영역 문자열)와
+                        //   화물감지(M영역 비트)를 서로 다른 READ 로 읽으므로, 그 좁은 창에서 READ 가
+                        //   어긋나거나 실패하면 "화물은 실렸는데 작업번호가 없는" 상태로 화면에 남았다.
+                        io.SetString(Def.Id, "PALLET_ON_VEHICLE", palletId ?? "");
                         io.SetBool(Def.Id, "TRANSFER_REQUEST", false);     // Cmd Start 시 PLC가 리셋 (슬라이드6)
                         io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 2);        // RUN=2
                         state = VState.ToSource;
@@ -219,7 +225,7 @@ namespace EQP_SIM.Sim
                         // [LGLS 2026-08-22] 데이터(ID) 를 먼저 싣고 감지 플래그를 나중에 세운다.
                         //   WCS 는 PALLET_ON_VEHICLE(문자열)과 PALLET_EXIST_FLAG(비트)를 각각 따로 읽으므로,
                         //   감지를 먼저 세우면 그 사이에 읽힌 주기에 "화물은 있는데 작업번호가 없는" 상태로 보인다.
-                        io.SetString(Def.Id, "PALLET_ON_VEHICLE", carrying.Id);
+                        io.SetString(Def.Id, "PALLET_ON_VEHICLE", carrying.Id);   // 재라벨 반영(지시 수신 때 이미 실림)
                         io.SetBool(Def.Id, "PALLET_EXIST_FLAG", true);
                         engine.RaiseEvent(Def.Id, "LOAD_COMPLETE", "LOAD_COMPLETE_ACK");
                         state = VState.AtSource;
@@ -281,8 +287,9 @@ namespace EQP_SIM.Sim
                         break;
                     }
                     UnloadAtDest();
+                    // [LGLS 2026-08-22] 하차는 화물감지만 내린다. 데이터(작업번호)는 반송 완료까지 유지 —
+                    //   하역 규약(RvSeq 4단계)의 "차 화물 사라짐 → 라인에 화물 → 차 데이터 사라짐" 순서와 같다.
                     io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
-                    io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");
                     io.SetString(Def.Id, "TRANSFER_COMPLETE_LOCATION_01", to01);
                     io.SetString(Def.Id, "TRANSFER_COMPLETE_LOCATION_02", to02);
                     io.SetString(Def.Id, "TRANSFER_COMPLETE_LOCATION_03", to03);
@@ -300,6 +307,7 @@ namespace EQP_SIM.Sim
                         io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 1);        // IDLE=1
                         engine.RaiseEvent(Def.Id, "TRANSFER_ACK", null, 1500);  // Transfer Complete 보고 (Ack 관측값 없음)
                         engine.Log(Def.Id + " 반송 완료 (JOB " + palletId + ")");
+                        io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");   // [LGLS 2026-08-22] 데이터는 여기서 내린다
                         carrying = null;
                         state = VState.Idle;
                         StatusText = "IDLE";
