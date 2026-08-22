@@ -717,7 +717,7 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 	pBtnManualRtv->SetText(CLib::GetIniStringFromPath(strFullPath, _T("rtv"), (int)penLang));
 	//[공PLT→RTV] EMPTY 라벨 제거
 
-	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_log\\");
+	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_log\\"), _T("log"), strExtension);
 	CMFCRibbonCategory* pCategory3 = m_wndRibbonBar.GetCategory(3);
 	CMFCRibbonPanel_Wrap* pPanel_Wrap_Log = (CMFCRibbonPanel_Wrap*)pCategory3->GetPanel(0);
 	pPanel_Wrap_Log->SetCenterColumnVert();
