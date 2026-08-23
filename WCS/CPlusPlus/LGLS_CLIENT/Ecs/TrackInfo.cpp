@@ -83,7 +83,12 @@ BOOL CTrackInfo::IsStoReadyOn()
 void CTrackInfo::ApplyTrackTextMode(CDciTrackCtrl* pTrackCtrl)
 {
 	int nMode = m_pEquipment->m_pDoc->m_nTrackTextMode;
-	BOOL bHasJob = (m_pCV_DATA->V_LUGG_NO_RD != _T("0") && m_pCV_DATA->V_LUGG_NO_RD != _T("0000") && !m_pCV_DATA->V_LUGG_NO_RD.IsEmpty());
+	// [LGLS 2026-08-24] 작업번호는 **화물이 실제로 있는 트랙**에만 표시한다.
+	//   CvThread 는 CV 지시를 낼 때 도착지 트랙에 트래킹(작업번호)을 미리 기록한다(도착 예약).
+	//   그 값만 보고 표시하면, 화물이 아직 통로에 있는데도 출고대에 번호가 먼저 찍힌다
+	//   (아직 완료되지 않은 작업이 완료 자리에 보이는 것으로 오인된다).
+	BOOL bLuggVal = (m_pCV_DATA->V_LUGG_NO_RD != _T("0") && m_pCV_DATA->V_LUGG_NO_RD != _T("0000") && !m_pCV_DATA->V_LUGG_NO_RD.IsEmpty());
+	BOOL bHasJob  = (bLuggVal && m_pCV_DATA->V_SENSOR0_DATA_RD == _T("1"));
 
 	// [LGLS 2026-08-22] 컨베이어 위 작업번호 글자색:
 	//   작업정보(JOB_MST)에 실재하는 작업이면 검정, 실물만 남고 작업이 없는 잔재면 흰색.

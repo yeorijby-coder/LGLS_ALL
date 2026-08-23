@@ -2366,7 +2366,11 @@ void CEcsDoc::RefreshJobCache()
 
 				// [LGLS 2026-08-22] 진행 중(20/21/25) 작업은 그 호기에 물려 있는 것으로 본다.
 				CString strSt = pRsw->GetItem(_T("JOB_STATUS")); strSt.Trim();
-				if (strSt == _T("20") || strSt == _T("21") || strSt == _T("25"))
+				// [LGLS 2026-08-24] 20(구동대기)은 아직 크레인에 지시가 나가기 전이다.
+				//   그때부터 표시하면 크레인에는 작업이 없는데 화면에만 번호가 뜬다
+				//   (SC 상태창 작업번호는 비어 있는데 뷰에는 번호가 보이는 현상).
+				//   실제로 크레인이 들고 있는 21(지시)/25(구동중)만 본다.
+				if (strSt == _T("21") || strSt == _T("25"))
 				{
 					CString strTyp = strTypCur;
 					CString strVeh = (strTyp == _T("2") || strTyp == _T("12"))
