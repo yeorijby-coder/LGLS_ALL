@@ -232,7 +232,16 @@ namespace EQP_SIM.Sim
         private string GetTracking(int idx)
         {
             string name = "PALLET_EXIST0" + ObsNo(idx);
-            return HasObs(name) ? io.GetString(Def.Id, name) : "";
+            if (!HasObs(name)) return "";
+            string v = (io.GetString(Def.Id, name) ?? "").Trim();
+            // [LGLS 2026-08-23] '0' / '0000' 은 ECS 의 '빈 트랙' 규약이므로 트래킹 없음으로 본다.
+            //   WCS_TASK_CV 는 트래킹을 지울 때 R영역에 **ASCII "0000"** 을 쓴다(EncodeJobNoR - 0바이트가 아니다).
+            //   이걸 실제 작업번호로 받으면 그 포트는 영영 '데이터가 남은' 상태가 되어
+            //     · 입고대 자동 투입(staleFeedTracking 비어있음 조건)
+            //     · 수동 투입(InjectPallet 의 트래킹 없음 조건)
+            //   이 둘 다 영구히 막힌다. 실제로 겸용대 C/V#11(트랙 122)에서 입고가 통째로 멈췄다.
+            if (v.Length > 0 && v.TrimStart('0').Length == 0) return "";
+            return v;
         }
 
         private string staleFeedTracking = "";                  // [LGLS 2026-07-21] 빈 입고 포트에 선기록된 예약 트래킹

@@ -142,7 +142,9 @@ namespace TSK_COMM_IOSCH
         //   완료 판정은 LUGG_OD 가 아직 내 작업일 때만 성립하는데, 폴링 주기(약 3초) 사이에 다음 반출 지시가
         //   LUGG_OD 를 덮어쓰면 신호를 영영 못 본다. 그러면 이 항목이 Stage 1 에 갇혀 m_dicOutStn 를 영구 점유하고
         //   ProcessOutPend 가 막혀 **이후 출고가 전부 정지**한다(작업 1663 사례 - 반송은 끝났는데 15 에서 굳음).
-        private const int OUT_ACK_STALL_MS = 15000;
+        //   실측 반송이 11초쯤이라 15초는 너무 촉박했다(정상 반송 중에 인정될 수 있다) → 30초.
+        private const int OUT_ACK_STALL_MS = 30000;
+        private const int OUT_WAIT_LOG_MS  = 5000;    // 이 시간 넘게 기다릴 때만 대기 로그를 남긴다(정상 흐름 소음 방지)
         private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
         private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
         private readonly Dictionary<string, DateTime> m_dicCraneStepDt = new Dictionary<string, DateTime>();
@@ -2931,8 +2933,15 @@ namespace TSK_COMM_IOSCH
             // [LGLS] 출고대 **하역트랙**(121→122, 123→124)에 좌초한 화물도 복구한다.
             //   여기 막힌 화물은 ProcessOutPend 의 "출고대가 비어야 시작" 조건에 걸려 **대기열 전체를 막는 머리**가 된다.
             //   반송은 이미 끝난 상태이므로 배출 단계(Stage 3)부터 재개시켜 내보내고 정리한다.
+            // [LGLS 2026-08-23] 이 블록도 구경로 전용이다.
+            //   Stage 3 은 "배출 단계부터 재개" 를 뜻하는데, 배출을 실제로 구동하는 것은 구경로의 ProcessOutStn 이다.
+            //   실경로에서는 배출을 설비가 하고 도착 판정은 CompleteCV 가 하므로 여기서 등록할 일이 없다.
+            //   오히려 등록하면 OutSeqPending 이 true 가 되어 **CompleteCV 가 그 작업을 완료시키지 못한다**
+            //   (정상 출고에서도 화물이 121 을 지나가는 순간 걸려 완료가 지연됐다).
             try
             {
+                if (m_bScAutoComplete)
+                {
                 string[] pickTrk = { "121", "123", "127" };   // [LGLS 2026-07-19] 129(C/V#14) 하역트랙 127 추가
                 string[] stnTrk  = { "122", "124", "129" };
                 for (int k = 0; k < pickTrk.Length; k++)
@@ -2950,6 +2959,7 @@ namespace TSK_COMM_IOSCH
                     m_dicOutStn[lg] = new OutStnState { Due = DateTime.Now, Stage = 3, Lugg = lg,
                                                       Odd = RgvOutDropTrack("901"), OutStn = stnTrk[k] };
                     MakeMsg_Imp(string.Format("[SCH][OUT] 출고대 하역트랙 좌초화물 복구 - 작업 {0} 트랙 {1} → 배출 {2}", lg, pickTrk[k], stnTrk[k]));
+                }
                 }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans(출고대) 오류: " + ex.Message); }
@@ -3293,13 +3303,16 @@ namespace TSK_COMM_IOSCH
                             //   한계 시간까지 기다려보고, 그래도 안 오면 슬롯을 놓고 넘긴다.
                             if (bNotMine)
                             {
-                                if (st.OddStallSince == DateTime.MinValue)
+                                if (st.OddStallSince == DateTime.MinValue) st.OddStallSince = DateTime.Now;
+                                double dOdd = (DateTime.Now - st.OddStallSince).TotalMilliseconds;
+                                if (dOdd < OUT_ODD_STALL_MS)
                                 {
-                                    st.OddStallSince = DateTime.Now;
-                                    DbgLog("OUT_" + lg, "[OUT대기] " + lg + " 픽업트랙(" + st.Odd + ") 화물 미도착"
-                                           + " 트랙작업번호=[" + odLugg + "] - 최대 " + (OUT_ODD_STALL_MS / 1000) + "초 대기");
+                                    // 승격 직후엔 화물이 아직 안 올라온 게 정상 - 길어질 때만 남긴다.
+                                    if (dOdd >= OUT_WAIT_LOG_MS)
+                                        DbgLog("OUT_" + lg, "[OUT대기] " + lg + " 픽업트랙(" + st.Odd + ") 화물 미도착"
+                                               + " - 최대 " + (OUT_ODD_STALL_MS / 1000) + "초 대기");
                                 }
-                                else if ((DateTime.Now - st.OddStallSince).TotalMilliseconds >= OUT_ODD_STALL_MS)
+                                else
                                 {
                                     m_dicOutStn.Remove(lg);
                                     RvSeqReset(lg + ":L"); RvSeqReset(lg + ":U");
@@ -3333,13 +3346,15 @@ namespace TSK_COMM_IOSCH
                             //   들고 있으면 이 반송은 어떤 식으로든 끝난 것이다. 그 상태가 한계 시간 지속되면 슬롯을 놓는다.
                             //   (놓지 않으면 m_dicOutStn 점유가 풀리지 않아 이후 출고 전체가 멈춘다)
                             if (RtvBusyWith(lg)) { st.AckStallSince = DateTime.MinValue; continue; }   // 아직 내 작업 수행 중
-                            if (st.AckStallSince == DateTime.MinValue)
+                            if (st.AckStallSince == DateTime.MinValue) { st.AckStallSince = DateTime.Now; continue; }
+                            double dAck = (DateTime.Now - st.AckStallSince).TotalMilliseconds;
+                            if (dAck < OUT_ACK_STALL_MS)
                             {
-                                st.AckStallSince = DateTime.Now;
-                                DbgLog("OUT_" + lg, "[OUT완료대기] " + lg + " RTV 완료신호 미관측 - 최대 " + (OUT_ACK_STALL_MS / 1000) + "초 대기");
+                                // 지시 직후 한두 주기는 정상적으로 비어 보인다 - 길어질 때만 남긴다.
+                                if (dAck >= OUT_WAIT_LOG_MS)
+                                    DbgLog("OUT_" + lg, "[OUT완료대기] " + lg + " RTV 완료신호 미관측 - 최대 " + (OUT_ACK_STALL_MS / 1000) + "초 대기");
                                 continue;
                             }
-                            if ((DateTime.Now - st.AckStallSince).TotalMilliseconds < OUT_ACK_STALL_MS) continue;
                             DbgLog("OUT_" + lg, "[OUT완료인정] " + lg + " RTV 완료신호 놓침 - 반송 종료로 인정하고 슬롯 해제");
                             MakeMsg_Error(string.Format(
                                 "[SCH][OUT] 반출 완료신호 미관측 - 작업 {0} ({1} → {2}). RTV 가 해당 작업을 들고 있지 않아 반송 종료로 인정합니다.",

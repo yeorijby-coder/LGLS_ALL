@@ -425,6 +425,7 @@ namespace TSK_COMM_IOSCH
 
 				cDefApp.stutLogMsgInfo LogMsg;
 				LogMsg.Time = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss:ffffff");
+				// (작업상태 표기는 아래 JobStatusText 참고 - 숫자만으로는 뜻을 알 수 없어 [번호]내용 으로 적는다)
 				LogMsg.MsgTyp = pMsgTyp.ToString();
 				LogMsg.ID = pObjID;
 				LogMsg.Com = pCommTyp;
@@ -450,7 +451,7 @@ namespace TSK_COMM_IOSCH
 				if (mj.Success) strJob = mj.Groups[1].Value;
 				System.Text.RegularExpressions.Match ms2 =
 					System.Text.RegularExpressions.Regex.Match(strBody, @"상태\s*[']?(\d{1,2})[']?");
-				if (ms2.Success) strSta = ms2.Groups[1].Value;
+				if (ms2.Success) strSta = JobStatusText(ms2.Groups[1].Value);
 				strBody = strBody.TrimStart();
 
 				ListViewItem vItem = new ListViewItem(LogMsg.Time, 0);
@@ -480,6 +481,37 @@ namespace TSK_COMM_IOSCH
 			{
 				//MessageBox.Show(ex.Message);
 			}
+		}
+
+		/// <summary>
+		/// [LGLS 2026-08-23] 작업상태를 "[번호]내용" 으로 적는다.
+		///   숫자만 있으면 10/20/30 이 CV/SC/RGV 중 무엇의 대기인지 로그만 보고는 알 수 없다.
+		///   번호 체계는 cThread_SCH 의 ST_* 상수와 같다 (CV 1x / SC 2x / RGV 3x, x = 0대기 1지시 5중 9완료).
+		/// </summary>
+		private static string JobStatusText(string pSta)
+		{
+			if (string.IsNullOrEmpty(pSta)) return "";
+			string s = pSta.TrimStart('0');
+			if (s.Length == 0) s = "0";
+			string t;
+			switch (s)
+			{
+				case "99": t = "작업생성";     break;
+				case "10": t = "CV 구동대기";  break;
+				case "11": t = "CV 구동지시";  break;
+				case "15": t = "CV 구동중";    break;
+				case "19": t = "CV 구동완료";  break;
+				case "20": t = "SC 구동대기";  break;
+				case "21": t = "SC 구동지시";  break;
+				case "25": t = "SC 구동중";    break;
+				case "29": t = "SC 구동완료";  break;
+				case "30": t = "RGV 구동대기"; break;
+				case "31": t = "RGV 구동지시"; break;
+				case "35": t = "RGV 구동중";   break;
+				case "39": t = "RGV 구동완료"; break;
+				default:   t = "";             break;   // 모르는 값은 번호만
+			}
+			return "[" + s + "]" + t;
 		}
 		#endregion
 

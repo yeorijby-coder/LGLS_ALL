@@ -264,7 +264,7 @@
             this.colLogJob.Text = "작업번호";
             this.colLogJob.Width = 80;
             this.colLogSta.Text = "작업상태";
-            this.colLogSta.Width = 70;
+            this.colLogSta.Width = 120;   // [LGLS 2026-08-23] "[15]CV 구동중" 형태라 폭을 넓힘
             this.colLogFile.Text = "파일";
             this.colLogFile.Width = 110;
             this.colLogFunc.Text = "함수";
