@@ -48,6 +48,8 @@
             this.CH01 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.CH02 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.CH03 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLogJob = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLogSta = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colLogFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colLogFunc = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.CH04 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -223,6 +225,8 @@
             this.CH01,
             this.CH02,
             this.CH03,
+            this.colLogJob,
+            this.colLogSta,
             this.colLogFile,
             this.colLogFunc,
             this.CH04});
@@ -252,11 +256,15 @@
             //
             // CH03
             //
-            this.CH03.Text = "Command";
+            this.CH03.Text = "구분";   // [LGLS 2026-08-23] 메시지 앞머리 [CV]/[SC]/[RGV] 등
             this.CH03.Width = 80;
             //
             // CH04
             //
+            this.colLogJob.Text = "작업번호";
+            this.colLogJob.Width = 80;
+            this.colLogSta.Text = "작업상태";
+            this.colLogSta.Width = 70;
             this.colLogFile.Text = "파일";
             this.colLogFile.Width = 110;
             this.colLogFunc.Text = "함수";
@@ -319,6 +327,8 @@
         internal System.Windows.Forms.ColumnHeader CH02;
         internal System.Windows.Forms.ColumnHeader CH03;
         internal System.Windows.Forms.ColumnHeader CH04;
+        private System.Windows.Forms.ColumnHeader colLogJob;    // [LGLS 2026-08-23] 작업번호
+        private System.Windows.Forms.ColumnHeader colLogSta;    // [LGLS 2026-08-23] 작업상태
         private System.Windows.Forms.ColumnHeader colLogFile;   // [LGLS 2026-08-21] 로그 호출 파일
         private System.Windows.Forms.ColumnHeader colLogFunc;   // [LGLS 2026-08-21] 로그 호출 함수
         internal System.Windows.Forms.CheckBox chkLogDelTest;

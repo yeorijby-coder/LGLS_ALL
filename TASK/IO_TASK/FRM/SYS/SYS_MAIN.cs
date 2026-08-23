@@ -431,13 +431,37 @@ namespace TSK_COMM_IOSCH
 				LogMsg.Msg = pMsg;
 				LogMsg.Tgm = pTgm;
 				if (chkStopLog.Checked) return;
+				// [LGLS 2026-08-23] 메시지에서 구분/작업번호/작업상태를 뽑아 별도 열로 보낸다.
+				//   맨 앞의 [SCH] 는 모든 줄에 붙어 정보가 없으므로 떼어낸다.
+				string strKind = LogMsg.Com ?? "";
+				string strJob  = "";
+				string strSta  = "";
+				string strBody = LogMsg.Msg ?? "";
+				if (strBody.StartsWith("[SCH]")) strBody = strBody.Substring(5);
+				System.Text.RegularExpressions.Match mk =
+					System.Text.RegularExpressions.Regex.Match(strBody, @"^\[([^\]]{1,12})\]");
+				if (mk.Success)
+				{
+					if (strKind.Length == 0) strKind = mk.Groups[1].Value;
+					strBody = strBody.Substring(mk.Length);
+				}
+				System.Text.RegularExpressions.Match mj =
+					System.Text.RegularExpressions.Regex.Match(strBody, @"작업\s*[:]?\s*(\d{3,4})");
+				if (mj.Success) strJob = mj.Groups[1].Value;
+				System.Text.RegularExpressions.Match ms2 =
+					System.Text.RegularExpressions.Regex.Match(strBody, @"상태\s*[']?(\d{1,2})[']?");
+				if (ms2.Success) strSta = ms2.Groups[1].Value;
+				strBody = strBody.TrimStart();
+
 				ListViewItem vItem = new ListViewItem(LogMsg.Time, 0);
 				vItem.SubItems.Add(LogMsg.ID);
-				vItem.SubItems.Add(LogMsg.Com);
+				vItem.SubItems.Add(strKind);
+				vItem.SubItems.Add(strJob);
+				vItem.SubItems.Add(strSta);
 				// [LGLS 2026-08-21] 호출 위치 (Message 앞 2열 - 헤더 우클릭으로 표시/숨김)
 				vItem.SubItems.Add(WcsCommon.cLogCols.ShortFile(pFile));
 				vItem.SubItems.Add(pFunc ?? "");
-				vItem.SubItems.Add(LogMsg.Msg);
+				vItem.SubItems.Add(strBody);
 				vItem.SubItems.Add(LogMsg.Tgm);
 
 				switch (pMsgTyp)
