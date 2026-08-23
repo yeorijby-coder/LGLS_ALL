@@ -950,6 +950,9 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 
 		m_pDCI->DrawButton(pDC, rcForkL1, m_clrFork, m_bClick);
 
+		// [LGLS 2026-08-23] 포크 위 작업번호는 CDciMaster::DrawText 로 그리는데
+		//   그 함수의 nFontSize 기본값이 10 으로 고정이라 레이아웃의 fontsize 속성이 무시됐다.
+		//   그래서 CV 트랙(DrawFontText -> m_nFontSize)보다 글자가 작게 나왔다. m_nFontSize 를 넘긴다.
 		LOGFONT m_logfont;
 		CFont m_font ;
 		CFont * pOldFont;
@@ -981,13 +984,13 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 
 		//pDC->DrawText(m_strText, rcForkL1, DT_SINGLELINE|DT_CENTER|DT_VCENTER);
 
-		m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText);
+		m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText, m_nFontSize);
 
 		if (m_nForkType == enTwin)
 //		if (m_nForkType != enSingle)
 		{
 			m_pDCI->DrawButton(pDC, rcForkL2, m_clrFork2, m_bClick);
-			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText);
+			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText, m_nFontSize);
 		}
 
 //		if (m_nForkType == enDouble)
@@ -1015,13 +1018,13 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 		if (/*m_nForkType == enGap2 || */m_nForkType == enSingle)
 		{
 			m_pDCI->DrawButton(pDC, rcForkL1, m_clrFork, m_bClick);
-			m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText);
+			m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText, m_nFontSize);
 		}
 
 		if (m_nForkType != enSingle/* && m_nForkType != enGap2*/)
 		{
 			m_pDCI->DrawButton(pDC, rcForkL2, m_clrFork2, m_bClick);
-			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText);
+			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText, m_nFontSize);
 		}
 	
 		// 더블 포크 일때는 하나의 그리드를 넘어가니깐... IntersectRect와 EqualRect를 체크하지 않는다.
@@ -1072,9 +1075,9 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 		//   "지시받을 때는 작업번호가 보이다가 화물을 드는 순간 사라진다" 던 원인이 이것이다.
 		//   마커를 올린 뒤에 글자를 한 번 더 찍어 위로 올린다.
 		if (m_nProd == 1 || m_nProd == 3)
-			m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText);
+			m_pDCI->DrawText(pDC, rcForkL1, strDispText, clrDispText, m_nFontSize);
 		if (m_nProd == 2 || m_nProd == 3)
-			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText);
+			m_pDCI->DrawText(pDC, rcForkL2, strDispText, clrDispText, m_nFontSize);
 
 		pDC->SelectObject(pOldBrush);
 		pDC->SelectObject(pOldPen);

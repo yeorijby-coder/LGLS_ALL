@@ -134,6 +134,9 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-08-23] 종전 20초. 지게차가 도착 즉시 화물을 걷어가는 현장이라 완료가 2~3초 안에 나야 한다.
         //   위 LuggOnAnyTrack 이 '실화물 있는 트랙' 만 세도록 바뀌어, 이송 중인 작업을 조기 완료할 위험은 없다.
         private const int OUT_MISS_GRACE_MS = 2000;
+        // [LGLS 2026-08-24] 출고대 신호/실도착을 둘 다 놓쳤을 때의 최후 유예.
+        //   짧게 두면 RGV 하역 직후에 완료되어 버린다(작업 2034). 넉넉히 둔다.
+        private const int OUT_SIGNAL_MISS_MS = 60000;
         // [LGLS 2026-08-23] 반출 대기 항목이 "픽업 라인트랙에 내 화물 없음"으로 지시를 못 내는 상태를 견디는 한계(ms).
         //   승격 직후에는 화물이 아직 홀수 트랙에 안 올라왔을 수 있어 얼마간은 정상 대기다. 그러나 화물이 유실됐거나
         //   트래킹만 남은 경우엔 영영 오지 않으므로, 이 시간이 지나면 슬롯을 놓아 뒤에 줄 선 작업을 통과시킨다.
@@ -144,6 +147,12 @@ namespace TSK_COMM_IOSCH
         //   ProcessOutPend 가 막혀 **이후 출고가 전부 정지**한다(작업 1663 사례 - 반송은 끝났는데 15 에서 굳음).
         //   실측 반송이 11초쯤이라 15초는 너무 촉박했다(정상 반송 중에 인정될 수 있다) → 30초.
         private const int OUT_ACK_STALL_MS = 30000;
+        // [LGLS 2026-08-24] RTV 완료신호(COMPLETE_RD)를 아무도 소비하지 않은 채 남는 경우 대비.
+        //   반출 완료 대기 한계로 슬롯을 놓은 뒤에 뒤늦게 신호가 올라오면 소비자가 사라져 있다.
+        //   그러면 RtvIdle() 이 영원히 false 라 RTV 가 통째로 멈춘다(작업 2057 로 실제 교착).
+        private const int RTV_CMP_STALE_MS = 20000;
+        private DateTime m_dtRtvCmpSince = DateTime.MinValue;
+        private string   m_strRtvCmpLugg = "";
         private const int OUT_WAIT_LOG_MS  = 5000;    // 이 시간 넘게 기다릴 때만 대기 로그를 남긴다(정상 흐름 소음 방지)
         private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
         private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
@@ -283,6 +292,7 @@ namespace TSK_COMM_IOSCH
                     CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
                     SweepOrphanTraces();       // [LGLS 2026-08-22] 사라진 작업의 라인 선점/타이머 흔적 청소
                     SweepStaleTracking();      // [LGLS 2026-08-23] 화물 없는 트랙에 남은 유령 트래킹(PLC R영역) 청소
+                    SweepStaleRtvComplete();   // [LGLS 2026-08-24] 소비자 없는 RTV 완료신호 해제(RTV 교착 방지)
                     PromotePendingDirection();  // [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격
                     if (!m_bScAutoComplete)
                     {
@@ -1129,7 +1139,7 @@ namespace TSK_COMM_IOSCH
                 // 명령이 소비되고(OD_RQ_YN='N') 팔레트가 소스에서 이탈(LUGG_NO_RD='0000')하면 완료.
                 string strSql = "";
                 strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, CD.MC_NO,                    ";
-                strSql += CRLF + "        CD.SENSOR0_DATA_RD, CD.LUGG_NO_RD                    ";
+                strSql += CRLF + "        CD.SENSOR0_DATA_RD, CD.LUGG_NO_RD, CD.RET_READY_RD       ";
                 strSql += CRLF + "   FROM JOB_MST JM                                           ";
                 strSql += CRLF + "  INNER JOIN CV_DATA CD                                      ";
                 strSql += CRLF + "     ON CD.WH_TYP = JM.WH_TYP AND CD.MC_NO = " + CV_POS_EXPR + " ";   // [LGLS]
@@ -1156,6 +1166,7 @@ namespace TSK_COMM_IOSCH
                     string mcNo   = GetVal(dt.Rows[i], "MC_NO");
                     string cvSen  = GetVal(dt.Rows[i], "SENSOR0_DATA_RD");
                     string cvLugg = GetVal(dt.Rows[i], "LUGG_NO_RD");
+                    string cvRetRdy = GetVal(dt.Rows[i], "RET_READY_RD");   // [LGLS 2026-08-23] 출고대 신호(구 ECS WAIT_IN)
                     string rtn = "";
 
                     // [LGLS 2026-07-19] 출고대 일시정지(TR_PAUSE, 내부값) 시 도착완료 처리 보류 (해제되면 다음 폴링에 완료)
@@ -1177,47 +1188,64 @@ namespace TSK_COMM_IOSCH
                     else
                     {
                         // [LGLS 2026-07-21] 반출(RTV) 시퀀스가 끝나기 전의 "도착"은 인정하지 않는다.
-                        //   (겸용 C/V#11 에선 예약 트래킹 + 무지시 입고 파렛트 조합이 SENSOR=1 + 작업번호 일치로
-                        //    보여 가짜 완료가 된다 — 실화물은 아직 라인 픽업트랙에 있다)
                         if (OutSeqPending(luggNo)) continue;
-                        if (cvSen == "1" && cvLugg == luggNo)
+
+                        // [LGLS 2026-08-23] 출고 완료의 키는 **출고대 신호**(CV_DATA.RET_READY_RD) 다.
+                        //   구 ECS 의 WAIT_IN 과 같은 비트로(PlcAddressMap: WorkInstruction offset 5),
+                        //   설비가 "출고대에 작업번호를 가진 화물이 실제로 놓였다"를 이 신호로 알린다.
+                        //   종전에는 화물 트래킹이 어디에도 안 보이는 상태가 2초 지속되면 완료로 인정했는데,
+                        //   RGV 가 하역한 직후 - 아직 출고대에 도착하기도 전에 - 그 조건이 성립해서
+                        //   작업이 조기 삭제됐다(작업 2034 사례).
+                        bool bMine = (cvLugg == "" || cvLugg == "0" || cvLugg == "0000" || cvLugg == luggNo);
+
+                        if (cvRetRdy == "1" && bMine)
                         {
-                            if (!m_setOutArrived.Contains(luggNo))
-                            {
-                                m_setOutArrived.Add(luggNo);
-                                MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 실도착 관측 (배출 대기)", luggNo, mcNo));
-                            }
-                            continue;   // 배출까지 대기
-                        }
-                        if (!m_setOutArrived.Contains(luggNo))
-                        {
-                            // [LGLS 2026-07-30] 도착 관측 누락 보강: 도착~배출·데이터클리어가 폴링/미러 주기 사이에
-                            //   전부 지나가면 위의 실도착 관측이 영영 불가(SENSOR·트래킹 어느 시점에도 일치 안 함)
-                            //   → 15 영구 정체(0008/0011/0013 좀비 사례). 판정 기준은 "화물 트래킹이 전 트랙 어디에도
-                            //   없는 상태가 GRACE 동안 지속" — 설비가 이송 중이면 어느 트랙에든 트래킹이 남아 있으므로
-                            //   운반 중인 작업을 조기 완료하지 않는다. m_dicOutDoneDt 는 그 '무관측 시작 시각'.
-                            //   (IO_TASK 재기동으로 반출완료 시각을 잃은 고아 작업도 이 경로로 회수된다)
-                            if (LuggOnAnyTrack(luggNo))
-                            {
-                                m_dicOutDoneDt.Remove(luggNo);   // 트래킹 재출현 — 정상 관측 경로에 맡김
-                                continue;
-                            }
-                            DateTime dtOutDone;
-                            if (!m_dicOutDoneDt.TryGetValue(luggNo, out dtOutDone))
-                            {
-                                m_dicOutDoneDt[luggNo] = DateTime.Now;   // 무관측 시작
-                                continue;
-                            }
-                            if ((DateTime.Now - dtOutDone).TotalMilliseconds < OUT_MISS_GRACE_MS)
-                                continue;   // 아직 GRACE 미경과 — 관측 계속 대기
-                            MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 도착 관측 누락 — 화물 트래킹 {2}초 무관측, 배출 완료로 인정",
-                                luggNo, mcNo, OUT_MISS_GRACE_MS / 1000));
+                            MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 출고대 신호 ON - 출고 완료", luggNo, mcNo));
                         }
                         else
                         {
-                            if (!bEmpty) continue;                          // 배출 진행 중
-                            m_setOutArrived.Remove(luggNo);
+                            // [LGLS 2026-08-24] 보조 판정 : 출고대 신호는 설비가 잠깐만 올리는 펄스라
+                            //   폴링 주기(약 3초) 사이에 통째로 지나갈 수 있다(작업 2064 로 실제 유실).
+                            //   그 경우엔 '출고대에서 내 화물을 실제로 봤다(센서+작업번호) → 배출됐다' 로 인정한다.
+                            //   이 경로는 출고대 도착을 직접 관측하므로 조기 완료가 되지 않는다.
+                            if (cvSen == "1" && cvLugg == luggNo)
+                            {
+                                if (!m_setOutArrived.Contains(luggNo))
+                                {
+                                    m_setOutArrived.Add(luggNo);
+                                    MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 실도착 관측 (신호/배출 대기)", luggNo, mcNo));
+                                }
+                                continue;
+                            }
+                            if (m_setOutArrived.Contains(luggNo))
+                            {
+                                if (!bEmpty) continue;                       // 아직 배출 전
+                                MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 배출 확인 - 출고 완료", luggNo, mcNo));
+                            }
+                            else
+                            {
+                                // [LGLS 2026-08-24] 최후 안전망 : 신호도 도착도 못 봤는데 화물 트래킹이
+                                //   전 트랙 어디에도 없는 상태가 오래 지속되면, 이미 나갔는데 관측만 놓친 것이다.
+                                //   영구 정체를 막되 조기 완료가 되지 않도록 유예를 길게 둔다(2034 는 2초에 지워졌다).
+                                if (LuggOnAnyTrack(luggNo))
+                                {
+                                    m_dicOutDoneDt.Remove(luggNo);
+                                    continue;
+                                }
+                                DateTime dtOutDone;
+                                if (!m_dicOutDoneDt.TryGetValue(luggNo, out dtOutDone))
+                                {
+                                    m_dicOutDoneDt[luggNo] = DateTime.Now;
+                                    DbgLog("OUTRDY_" + luggNo, "[출고대신호대기] " + luggNo + " 트랙 " + mcNo + " 출고대 신호 OFF - 완료 보류");
+                                    continue;
+                                }
+                                if ((DateTime.Now - dtOutDone).TotalMilliseconds < OUT_SIGNAL_MISS_MS) continue;
+                                MakeMsg_Error(string.Format(
+                                    "[SCH][CV] 작업 {0} 출고대 {1} - 출고대 신호도 실도착도 관측하지 못했습니다. 화물 트래킹 {2}초 무관측이라 완료로 인정합니다(설비 신호 확인 필요).",
+                                    luggNo, mcNo, OUT_SIGNAL_MISS_MS / 1000));
+                            }
                         }
+                        m_setOutArrived.Remove(luggNo);
                         m_dicOutDoneDt.Remove(luggNo);
                     }
 
@@ -3213,6 +3241,60 @@ namespace TSK_COMM_IOSCH
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-24] 미소비 RTV 완료신호 청소.
+        ///   COMPLETE_RD='1' 인데 그 작업이 반출 시퀀스(m_dicOutStn)에도, RGV 구동중(31/35) 작업에도
+        ///   없으면 소비할 주체가 없다는 뜻이다. 한계 시간 지나면 신호를 내려 RTV 를 풀어준다.
+        /// </summary>
+        private void SweepStaleRtvComplete()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT " + DbLang.NVL + "(COMPLETE_RD,'0') AS CMP, " + DbLang.NVL + "(LUGG_OD,'0') AS LG ";
+                q += CRLF + "   FROM RTV_DATA_LGLS WHERE WH_TYP = :WH AND RTV_NO = '801' ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return;
+                string cmp = GetVal(_pBdb.mDtMain.Rows[0], "CMP");
+                string lg  = Cap(GetVal(_pBdb.mDtMain.Rows[0], "LG"), 4);
+                if (cmp != "1") { m_dtRtvCmpSince = DateTime.MinValue; m_strRtvCmpLugg = ""; return; }
+                if (m_dicOutStn.ContainsKey(lg)) { m_dtRtvCmpSince = DateTime.MinValue; return; }   // 반출이 소비할 것
+                if (IsRgvRunningJob(lg))         { m_dtRtvCmpSince = DateTime.MinValue; return; }   // 입고 RGV 가 소비할 것
+                if (m_dtRtvCmpSince == DateTime.MinValue || m_strRtvCmpLugg != lg)
+                {
+                    m_dtRtvCmpSince = DateTime.Now; m_strRtvCmpLugg = lg;
+                    return;
+                }
+                if ((DateTime.Now - m_dtRtvCmpSince).TotalMilliseconds < RTV_CMP_STALE_MS) return;
+                RtvResetComplete();
+                m_dtRtvCmpSince = DateTime.MinValue; m_strRtvCmpLugg = "";
+                DbgLog("RTVCMP", "[RTV완료신호청소] 작업 " + lg + " - 소비 주체 없음, 신호 해제");
+                MakeMsg_Error(string.Format("[SCH][RGV] 소비되지 않은 RTV 완료신호 해제 - 작업 {0} (그대로 두면 RTV 가 계속 비유휴로 남는다)", lg));
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] SweepStaleRtvComplete 오류: " + ex.Message); }
+        }
+
+        /// <summary>[LGLS 2026-08-24] 그 작업이 RGV 구동지시/구동중(31/35) 상태인지</summary>
+        private bool IsRgvRunningJob(string lugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT FROM JOB_MST                  ";
+                q += CRLF + "  WHERE WH_TYP = :WH AND LUGG_NO = :LG                ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')             ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LG", DbLang.VARCHAR).Value = lugg;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return true; }
         }
 
         private void RtvResetComplete()
