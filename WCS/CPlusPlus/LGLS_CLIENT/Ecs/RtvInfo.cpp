@@ -137,6 +137,19 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 		return LIGHT_GRAY;	// [LGLS] 평상시 RTV도 SC 처럼 밝은 회색
 
 	int nJobTypTmp = CConvert::ToInt(pRTV_DATA->V_JOB_TYP_RD);
+
+	// [LGLS 2026-08-23] 실경로에서는 RTV 의 JOB_TYP_RD 가 채워지지 않는 구간이 있다.
+	//   그때 이 switch 가 통째로 빠져 색 없이 움직이는 것처럼 보인다(작업 1523 사례).
+	//   자기가 실은 작업번호로 작업정보에서 구분을 가져와 메운다.
+	if (nJobTypTmp == 0 && m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
+	{
+		CString strLugg = pRTV_DATA->V_LUGG_NO_FK1_RD;
+		strLugg.Trim();
+		if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000"))
+			strLugg = pRTV_DATA->V_ITN_LUGG_FK1;
+		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strLugg));
+	}
+
 	switch (nJobTypTmp)
 	{
 	case enJobTypeAutoSto			: return pConfig->m_clrUSER_COLOR_STO;

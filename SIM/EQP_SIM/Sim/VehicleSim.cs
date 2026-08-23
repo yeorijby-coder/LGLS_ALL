@@ -13,7 +13,18 @@ namespace EQP_SIM.Sim
     /// </summary>
     public class VehicleSim
     {
-        private enum VState { Idle, ToSource, AtSource, ToDest, AtDest, Error }
+        // [LGLS 2026-08-23] 크레인(S/C)은 실제 설비처럼 구분 동작으로 나눠 수행한다.
+        //   입고 : 입고HS 이동 -> 포크출 -> 호이스트UP -> 포크센터(화물감지 ON)
+        //          -> 랙 이동 -> 포크출(화물감지 OFF) -> 호이스트DOWN -> 포크센터(완료)
+        //   출고 : 랙 이동 -> 포크출 -> 호이스트UP -> 포크센터(화물감지 ON)
+        //          -> 출고HS 이동 -> 포크출(화물감지 OFF) -> 호이스트DOWN -> 포크센터(완료)
+        //   RGV 는 종전 동작(도착 즉시 상/하차)을 그대로 쓴다.
+        private enum VState
+        {
+            Idle, ToSource, AtSource, ToDest, AtDest, Error,
+            SrcForkOut, SrcHoistUp, SrcForkCenter,
+            DstForkOut, DstHoistDown, DstForkCenter
+        }
 
         public readonly VehicleDef Def;
         private readonly PlcIo io;
@@ -217,6 +228,24 @@ namespace EQP_SIM.Sim
                         state = VState.Error;
                         break;
                     }
+                    // [LGLS 2026-08-23] 크레인은 도착 즉시 싣지 않고 포크/호이스트 3단계를 밟는다.
+                    if (!Def.IsRgv)
+                    {
+                        if (!SourceHasCargo())
+                        {
+                            stateUntil = now.AddMilliseconds(500);
+                            break;
+                        }
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", from01);
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", from02);
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", from03);
+                        state = VState.SrcForkOut;
+                        stateUntil = now.AddMilliseconds(engine.ForkStepMs);
+                        StatusText = "출발지 " + FromText() + " 포크 출";
+                        engine.Log(Def.Id + " [2/8] " + FromText() + " 포크 출 (" + engine.ForkStepMs + "ms)");
+                        break;
+                    }
+
                     if (TryLoadAtSource(now))
                     {
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", from01);   // [LGLS] 출발지 도착 위치 확정
@@ -235,6 +264,71 @@ namespace EQP_SIM.Sim
                     {
                         stateUntil = now.AddMilliseconds(500);            // 파렛트 대기 (재시도)
                     }
+                    break;
+
+                case VState.SrcForkOut:
+                    if (now < stateUntil) break;
+                    state = VState.SrcHoistUp;
+                    stateUntil = now.AddMilliseconds(engine.ForkStepMs);
+                    StatusText = "출발지 " + FromText() + " 호이스트 UP";
+                    engine.Log(Def.Id + " [3/8] " + FromText() + " 호이스트 UP (" + engine.ForkStepMs + "ms)");
+                    break;
+
+                case VState.SrcHoistUp:
+                    if (now < stateUntil) break;
+                    state = VState.SrcForkCenter;
+                    stateUntil = now.AddMilliseconds(engine.ForkStepMs);
+                    StatusText = "출발지 " + FromText() + " 포크 센터";
+                    engine.Log(Def.Id + " [4/8] " + FromText() + " 포크 센터 (" + engine.ForkStepMs + "ms, 끝나면 화물감지 ON)");
+                    break;
+
+                case VState.SrcForkCenter:
+                    if (now < stateUntil) break;
+                    // 포크가 센터로 돌아오면 화물이 크레인 위에 올라온 것으로 본다 -> 이때 화물감지 ON
+                    if (!TryLoadAtSource(now))
+                    {
+                        stateUntil = now.AddMilliseconds(500);
+                        break;
+                    }
+                    io.SetString(Def.Id, "PALLET_ON_VEHICLE", carrying.Id);
+                    io.SetBool(Def.Id, "PALLET_EXIST_FLAG", true);
+                    engine.RaiseEvent(Def.Id, "LOAD_COMPLETE", "LOAD_COMPLETE_ACK");
+                    state = VState.AtSource;
+                    StatusText = "상차 완료 (" + carrying.Id + ")";
+                    engine.Log(Def.Id + " [4/8 완료] 화물감지 ON - 상차 완료 (JOB " + carrying.Id + ")");
+                    break;
+
+                case VState.DstForkOut:
+                    if (now < stateUntil) break;
+                    // 포크가 나가 화물을 놓는다 -> 이때 화물감지 OFF (하역도 여기서)
+                    UnloadAtDest();
+                    io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
+                    state = VState.DstHoistDown;
+                    stateUntil = now.AddMilliseconds(engine.ForkStepMs);
+                    StatusText = "도착지 " + ToText() + " 호이스트 DOWN";
+                    engine.Log(Def.Id + " [6/8 완료] 화물감지 OFF -> [7/8] 호이스트 DOWN (" + engine.ForkStepMs + "ms)");
+                    break;
+
+                case VState.DstHoistDown:
+                    if (now < stateUntil) break;
+                    state = VState.DstForkCenter;
+                    stateUntil = now.AddMilliseconds(engine.ForkStepMs);
+                    StatusText = "도착지 " + ToText() + " 포크 센터";
+                    engine.Log(Def.Id + " [8/8] " + ToText() + " 포크 센터 (" + engine.ForkStepMs + "ms, 끝나면 작업 완료)");
+                    break;
+
+                case VState.DstForkCenter:
+                    if (now < stateUntil) break;
+                    io.SetString(Def.Id, "TRANSFER_COMPLETE_LOCATION_01", to01);
+                    io.SetString(Def.Id, "TRANSFER_COMPLETE_LOCATION_02", to02);
+                    io.SetString(Def.Id, "TRANSFER_COMPLETE_LOCATION_03", to03);
+                    io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", to01);
+                    io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", to02);
+                    io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", to03);
+                    engine.RaiseEvent(Def.Id, "UNLOAD_COMPLETE", "UNLOAD_COMPLETE_ACK");
+                    state = VState.AtDest;
+                    StatusText = "하차 완료";
+                    engine.Log(Def.Id + " [8/8 완료] 하차 완료 - 작업 완료");
                     break;
 
                 case VState.AtSource:
@@ -284,6 +378,18 @@ namespace EQP_SIM.Sim
                         engine.Log(Def.Id + " ★이중입고 발생: " + ToText() + " 이미 점유 (ERR_CODE_RD=54)");
                         StatusText = "★이중입고 에러 (ERR 54) — 재지정 대기";
                         state = VState.Error;
+                        break;
+                    }
+                    // [LGLS 2026-08-23] 크레인은 도착 즉시 내리지 않고 포크/호이스트 3단계를 밟는다.
+                    if (!Def.IsRgv)
+                    {
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", to01);
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", to02);
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", to03);
+                        state = VState.DstForkOut;
+                        stateUntil = now.AddMilliseconds(engine.ForkStepMs);
+                        StatusText = "도착지 " + ToText() + " 포크 출";
+                        engine.Log(Def.Id + " [6/8] " + ToText() + " 포크 출 (" + engine.ForkStepMs + "ms, 끝나면 화물감지 OFF)");
                         break;
                     }
                     UnloadAtDest();
@@ -362,6 +468,19 @@ namespace EQP_SIM.Sim
                            (string.IsNullOrEmpty(stored) || stored == id ? "" : ", 보관 JOB " + stored) + ")");
                 return true;
             }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-23] 출발지에 실을 화물이 있는지. 포트면 파렛트 유무, 랙 셀이면 항상 가능.
+        ///   크레인이 포크를 내밀기 전에 확인한다(없으면 그 자리에서 대기).
+        /// </summary>
+        private bool SourceHasCargo()
+        {
+            if (!IsPort(from01, from02)) return true;
+            int port = ParseInt(from03);
+            var cv = engine.World.FindByPort(port);
+            if (cv == null) return false;
+            return engine.Conveyor(cv.Id).PalletAt(port) != null;
         }
 
         private void UnloadAtDest()

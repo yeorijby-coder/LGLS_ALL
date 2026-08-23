@@ -2307,6 +2307,21 @@ CString CEcsDoc::GetVehicleJobNo(LPCTSTR lpszVehNo)
 
 // [LGLS 2026-08-23] 그 호기가 물고 있는 진행 중 작업의 구분(JOB_TYP). 없으면 빈 문자열.
 //   설비 데이터에 작업번호가 아직 실리지 않은 구간에도 작업색을 내기 위해 쓴다.
+// [LGLS 2026-08-23] 작업번호로 그 작업의 구분(1 입고 / 2 출고)을 얻는다.
+//   RGV 는 호기별 작업 맵의 키(901~905)가 없으므로 자기가 실은 작업번호로 찾는다.
+CString CEcsDoc::GetJobTypOfLugg(LPCTSTR lpszLugg)
+{
+	CString strLugg(lpszLugg == NULL ? _T("") : lpszLugg);
+	strLugg.Trim();
+	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return _T("");
+
+	RefreshJobCache();
+
+	CString strTyp;
+	if (m_mapAliveJob.Lookup(strLugg, strTyp)) return strTyp;
+	return _T("");
+}
+
 CString CEcsDoc::GetVehicleJobTyp(LPCTSTR lpszVehNo)
 {
 	CString strVeh(lpszVehNo == NULL ? _T("") : lpszVehNo);
@@ -2345,13 +2360,15 @@ void CEcsDoc::RefreshJobCache()
 			{
 				CString strItem = pRsw->GetItem(_T("LUGG_NO"));
 				strItem.Trim();
-				if (!strItem.IsEmpty()) m_mapAliveJob.SetAt(strItem, _T("1"));
+				// 값에 작업구분을 담아 둔다(GetJobTypOfLugg 가 쓴다). 존재 판정은 Lookup 성공 여부로 한다.
+				CString strTypCur = pRsw->GetItem(_T("JOB_TYP")); strTypCur.Trim();
+				if (!strItem.IsEmpty()) m_mapAliveJob.SetAt(strItem, strTypCur);
 
 				// [LGLS 2026-08-22] 진행 중(20/21/25) 작업은 그 호기에 물려 있는 것으로 본다.
 				CString strSt = pRsw->GetItem(_T("JOB_STATUS")); strSt.Trim();
 				if (strSt == _T("20") || strSt == _T("21") || strSt == _T("25"))
 				{
-					CString strTyp = pRsw->GetItem(_T("JOB_TYP")); strTyp.Trim();
+					CString strTyp = strTypCur;
 					CString strVeh = (strTyp == _T("2") || strTyp == _T("12"))
 									 ? pRsw->GetItem(_T("START_POS")) : pRsw->GetItem(_T("DEST_POS"));
 					strVeh.Trim();

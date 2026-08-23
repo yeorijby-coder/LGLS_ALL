@@ -55,6 +55,8 @@ namespace EQP_SIM.Sim
         // 타이밍 (ms) — ECS 판독주기(수 초)를 감안해 여유있게
         public int MoveMs = 2000;
         public int TravelMs = 2500;
+        // [LGLS 2026-08-23] 크레인 구분 동작(포크 출/호이스트/포크 센터) 1단계 시간
+        public int ForkStepMs = 3000;
         public int WaitOutHoldMs = 9000;
         public int OutRemoveMs = 3000;       // [LGLS 2026-08-22] 출고대 신호 ON 후 지게차가 화물을 가져가기까지
         public int OutTrackClearMs = 3000;   // [LGLS 2026-08-22] 화물 반출 후 남은 데이터(트래킹) 제거까지
@@ -111,6 +113,7 @@ namespace EQP_SIM.Sim
 
             MoveMs = config.GetInt("TIMING", "MOVE_MS", MoveMs);
             TravelMs = config.GetInt("TIMING", "TRAVEL_MS", TravelMs);
+            ForkStepMs = config.GetInt("TIMING", "FORK_STEP_MS", ForkStepMs);
             WaitOutHoldMs = config.GetInt("TIMING", "WAITOUT_HOLD_MS", WaitOutHoldMs);
             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
             OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);
