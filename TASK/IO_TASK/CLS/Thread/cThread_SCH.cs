@@ -280,6 +280,7 @@ namespace TSK_COMM_IOSCH
                     CheckLostInboundCargo();   // [LGLS 2026-07-31] 입고 15 화물 유실 감지 → 재발행(10) 복구
                     CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
                     SweepOrphanTraces();       // [LGLS 2026-08-22] 사라진 작업의 라인 선점/타이머 흔적 청소
+                    SweepStaleTracking();      // [LGLS 2026-08-23] 화물 없는 트랙에 남은 유령 트래킹(PLC R영역) 청소
                     PromotePendingDirection();  // [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격
                     if (!m_bScAutoComplete)
                     {
@@ -1987,6 +1988,100 @@ namespace TSK_COMM_IOSCH
                     MakeMsg_Imp("[SCH] 사라진 작업의 점유 해제 - " + string.Join(",", gone.ToArray()));
             }
             catch (Exception ex) { MakeMsg_Error("[SCH] SweepOrphanTraces 오류: " + ex.Message); }
+        }
+
+        // [LGLS 2026-08-23] 화물 없는 트랙에 남은 유령 트래킹 청소.
+        //   증상: 트랙 122 가 SENSOR0='0'(화물 없음)인데 LUGG_NO_RD='1783'(이미 사라진 작업)을 계속 달고 있었다.
+        //   트래킹의 원본은 PLC R영역이라 DB만 지워도 WCS_TASK_CV 가 다음 순회에 다시 미러링해 되살아난다.
+        //   → LUGG_NO_OD='0' + TRACKING_WRITE_YN='Y' 로 지시해서 WCS_TASK_CV 가 **PLC R영역에 0을 쓰게** 한다.
+        //   유령 트래킹은 겸용대 모드 전환 게이트(IsTrackLuggEmpty)와 반출 자기화물 확인을 잘못 막는다.
+        //
+        //   오검출 방지:
+        //     - 지시(LUGG_NO_OD)나 쓰기 대기(TRACKING_WRITE_YN='Y')가 걸린 트랙은 건드리지 않는다.
+        //       설비 도착 전에 미리 기록되는 '예약 트래킹'이 정상 동작이기 때문이다.
+        //     - JOB_MST 에 살아 있는 작업번호는 대상이 아니다.
+        //     - 같은 상태가 유예시간 동안 이어질 때만 지운다(폴링 경계의 순간적 불일치 배제).
+        private DateTime m_dtLastTrkSweep = DateTime.MinValue;
+        private const int TRK_SWEEP_SEC = 30;
+        private const int TRK_STALE_GRACE_MS = 30000;
+        private readonly Dictionary<string, DateTime> m_dicTrkStaleSince = new Dictionary<string, DateTime>();
+
+        private void SweepStaleTracking()
+        {
+            if ((DateTime.Now - m_dtLastTrkSweep).TotalSeconds < TRK_SWEEP_SEC) return;
+            m_dtLastTrkSweep = DateTime.Now;
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
+                var alive = new HashSet<string>();
+                DataTable dtA = _pBdb.mDtMain;
+                for (int i = 0; i < dtA.Rows.Count; i++)
+                {
+                    string lg = GetVal(dtA.Rows[i], "LUGG_NO");
+                    if (!string.IsNullOrEmpty(lg)) alive.Add(Cap(lg, 4));
+                }
+
+                string q2 = "";
+                q2 += CRLF + " SELECT MC_NO, LUGG_NO_RD                                    ";
+                q2 += CRLF + "   FROM CV_DATA                                              ";
+                q2 += CRLF + "  WHERE WH_TYP = :WH_TYP                                     ";
+                q2 += CRLF + "    AND ISNULL(SENSOR0_DATA_RD,'0') <> '1'                   ";   // 화물 없음
+                q2 += CRLF + "    AND ISNULL(LUGG_NO_RD,'0') NOT IN ('','0','0000')        ";   // 그런데 트래킹은 있음
+                q2 += CRLF + "    AND ISNULL(LUGG_NO_OD,'0') IN ('','0','0000')            ";   // 지시가 걸려 있지 않음
+                q2 += CRLF + "    AND ISNULL(TRACKING_WRITE_YN,'N') <> 'Y'                 ";   // 쓰기 대기 아님
+                q2 += CRLF + "    AND ISNULL(OD_RQ_YN,'N') <> 'Y'                          ";   // 명령 진행 중 아님
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int n = _pBdb.ExcuteQry(q2);
+                if (n <= 0) { m_dicTrkStaleSince.Clear(); return; }
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                var seen = new HashSet<string>();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string mcNo = GetVal(dt.Rows[i], "MC_NO");
+                    string lg   = Cap(GetVal(dt.Rows[i], "LUGG_NO_RD"), 4);
+                    if (string.IsNullOrEmpty(mcNo)) continue;
+                    if (alive.Contains(lg)) continue;                 // 살아 있는 작업의 예약 트래킹 - 건드리지 않는다
+                    seen.Add(mcNo);
+
+                    DateTime since;
+                    if (!m_dicTrkStaleSince.TryGetValue(mcNo, out since))
+                    {
+                        m_dicTrkStaleSince[mcNo] = DateTime.Now;
+                        continue;
+                    }
+                    if ((DateTime.Now - since).TotalMilliseconds < TRK_STALE_GRACE_MS) continue;
+
+                    string upd = "";
+                    upd += CRLF + " UPDATE CV_DATA                                  ";
+                    upd += CRLF + "    SET LUGG_NO_OD        = '0'                  ";
+                    upd += CRLF + "      , TRACKING_WRITE_YN = 'Y'                  ";   // WCS_TASK_CV 가 PLC R영역에 0 기록
+                    upd += CRLF + "      , JOB_TYP_RD        = '0'                  ";   // 화물이 없으므로 표시색도 해제
+                    upd += CRLF + "      , OD_UPD_DT         = " + DbLang.SYSDATE + " ";
+                    upd += CRLF + "  WHERE WH_TYP = :WH_TYP AND MC_NO = :MC_NO      ";
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
+                    _pBdb.ExcuteNonQry(upd);
+
+                    m_dicTrkStaleSince.Remove(mcNo);
+                    seen.Remove(mcNo);
+                    DbgLog("TRKSWEEP_" + mcNo, "[유령트래킹정리] 트랙 " + mcNo + " 작업번호 [" + lg + "] - 화물 없음 + 작업 없음 → PLC R영역 0 기록 지시");
+                    MakeMsg_Imp(string.Format("[SCH][CV] 유령 트래킹 정리 - 트랙 {0} 에 남은 작업번호 {1} (화물 없음, 작업도 없음) → 트래킹 0 기록", mcNo, lg));
+                }
+
+                foreach (string k in new List<string>(m_dicTrkStaleSince.Keys))   // 정상으로 돌아온 트랙은 타이머 해제
+                    if (!seen.Contains(k)) m_dicTrkStaleSince.Remove(k);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] SweepStaleTracking 오류: " + ex.Message); }
         }
 
         /// <summary>
