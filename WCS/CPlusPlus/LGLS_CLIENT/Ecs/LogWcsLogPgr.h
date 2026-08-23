@@ -66,6 +66,10 @@ public:
 	CSkinButton m_btnWcsLogSearch;
 	CComboBoxWrapper m_cbxRowCnt;
 	CComboBoxWrapper m_cbxWcsLogPgrNm;
+
+	// [LGLS 2026-08-23] 작업구분 조회 (WCS_LOG_PGR 에는 작업구분 컬럼이 없어 작업정보와 대조한다)
+	CStaticTransparent m_lblWcsLogJobDefine;
+	CComboBoxWrapper   m_cbxWcsLogJobDefine;
 	CComboBoxWrapper m_cbxWcsLogWhTyp;
 	CDateTimeCtrl m_dtpFrom;
 	CDateTimeCtrl m_dtpFromTime;

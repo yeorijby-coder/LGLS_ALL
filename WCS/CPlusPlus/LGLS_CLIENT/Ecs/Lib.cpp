@@ -841,6 +841,23 @@ CString CLib::GetEng(CString &strLang, CEcsDoc* pDoc, int nLang)
    return strLang;
 }
 
+// [LGLS 2026-08-23] 조회 콤보 선택 키 (선언부 주석 참조)
+CString CLib::GetComboKey(CComboBoxWrapper& cbx)
+{
+	if (cbx.GetSafeHwnd() == NULL) return _T("");
+
+	int nSel = cbx.GetCurSel();
+	if (nSel < 0)
+	{
+		CString strText;
+		cbx.GetWindowText(strText);
+		strText.Trim();
+		if (!strText.IsEmpty())
+			nSel = cbx.FindStringExact(-1, strText);
+	}
+	return (nSel >= 0) ? cbx.GetItemKey(nSel) : _T("");
+}
+
 bool CLib::BindCombo(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDoc *pDoc, int nEN_LANG, BOOL pbIsAll)
 {
    if(pDoc   == NULL)                     return false;

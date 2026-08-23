@@ -141,6 +141,11 @@ public:
 public:
 	static void GetComBoBoxData(CComboBoxWrapper& cbx, CString& strVal, int nlength = 0);
 	static bool BindCombo(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDoc *pDoc, int nEN_LANG, BOOL pbIsAll = FALSE);
+	// [LGLS 2026-08-23] 조회 콤보에서 선택 키 얻기.
+	//   조회 콤보는 CBS_DROPDOWN(직접 입력 가능)이라 목록에서 고르지 않으면 GetCurSel()이 -1 이 되고,
+	//   그러면 조건이 통째로 빠져 필터가 걸리지 않는다(송수신자 W2E 를 골라도 전부 나오던 문제).
+	//   -1 이면 표시 문자열로 항목을 되찾아 키를 돌려준다.
+	static CString GetComboKey(CComboBoxWrapper& cbx);
 	static bool BindCombo_STN_KIND(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDoc *pDoc, int nEN_LANG, BOOL pbIsAll = FALSE);
 	static bool BindComboPtr(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDoc *pDoc, int nEN_LANG);
 	static bool BindCombo_ViewUsageRackDlg(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, CString strAGING_TYP);

@@ -606,8 +606,8 @@ CString CLogEqpErrHisSkinDlg::GetQrySelect_Main(int nRowCheck,BOOL bSearch)
 	CString strTRAY_BOTTOM, strTRAY_TOP, strLUGG_NO, strREQUEST_ID, strEQP_NO, strEQP_ERR_CD, strEQP_ERR_MSG = _T("");
 	CString strdtFrom, strdtTo;
 	CTime tDATE_FROM, tDATE_TO, tTIME_FROM, tTIME_TO;
-	CString strWH_TYP = m_cbxWH_TYP.GetItemKey(m_cbxWH_TYP.GetCurSel());
-	CString strEQP_TYP = m_cbxEQP_TYP.GetItemKey(m_cbxEQP_TYP.GetCurSel());
+	CString strWH_TYP = CLib::GetComboKey(m_cbxWH_TYP);
+	CString strEQP_TYP = CLib::GetComboKey(m_cbxEQP_TYP);
 
 	m_edtTrayBottom.GetWindowText(strTRAY_BOTTOM);
 	m_edtTrayTop.GetWindowText(strTRAY_TOP);
@@ -630,7 +630,7 @@ CString CLogEqpErrHisSkinDlg::GetQrySelect_Main(int nRowCheck,BOOL bSearch)
 	CString strRowCnt;
 	int nRowCnt;	
 	int nRowSum;
-	strRowCnt = m_cbxRowCnt.GetItemKey(m_cbxRowCnt.GetCurSel()); 
+	strRowCnt = CLib::GetComboKey(m_cbxRowCnt); 
 	nRowCnt = CConvert::ToInt(strRowCnt);
 	if (nRowCheck == 0) { nRowSum = nRowCnt; m_pPreRowCnt = 0; }
 	if (nRowCheck < 0) { nRowSum = m_pPreRowCnt - nRowCnt; }

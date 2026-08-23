@@ -40,6 +40,8 @@ void CLogWcsLogPgr::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_WCS_LOG_SEARCH, m_btnWcsLogSearch);
 	DDX_Control(pDX, IDC_CBX_ROW_CNT, m_cbxRowCnt);
 	DDX_Control(pDX, IDC_CBX_WCS_LOG_PGR_NM, m_cbxWcsLogPgrNm);
+	DDX_Control(pDX, IDC_LBL_WCS_LOG_JOB_DEFINE, m_lblWcsLogJobDefine);
+	DDX_Control(pDX, IDC_CBX_WCS_LOG_JOB_DEFINE, m_cbxWcsLogJobDefine);
 	DDX_Control(pDX, IDC_CBX_WCS_LOG_WH_TYP, m_cbxWcsLogWhTyp);
 	DDX_Control(pDX, IDC_DTP_FROM_DATE, m_dtpFrom);
 	DDX_Control(pDX, IDC_DTP_FROM_TIME, m_dtpFromTime);
@@ -100,6 +102,15 @@ BOOL CLogWcsLogPgr::OnInitDialog()
 
 	CLib::BindCombo(m_cbxWcsLogWhTyp, _T("WH_TYP"),m_pDoc, (int)pEn, FALSE);
 	CLib::BindCombo(m_cbxWcsLogPgrNm, _T("PGR_NM"),m_pDoc, (int)pEn, TRUE);
+	// [LGLS 2026-08-23] 작업구분 (명세서 Job Define : 1 입고 / 2 출고)
+	{
+		int nIdx;
+		m_cbxWcsLogJobDefine.ResetContent();
+		nIdx = m_cbxWcsLogJobDefine.AddString(_T("ALL"));   m_cbxWcsLogJobDefine.SetItemDataEx(nIdx, _T("ALL"));
+		nIdx = m_cbxWcsLogJobDefine.AddString(_T("1:입고")); m_cbxWcsLogJobDefine.SetItemDataEx(nIdx, _T("1"));
+		nIdx = m_cbxWcsLogJobDefine.AddString(_T("2:출고")); m_cbxWcsLogJobDefine.SetItemDataEx(nIdx, _T("2"));
+		m_cbxWcsLogJobDefine.SetCurSel(0);
+	}
 	CLib::BindCombo(m_cbxRowCnt, _T("ROW_CNT"), m_pDoc ,(int)pEn, FALSE);
 	
 	InitializeResource(pEn);
@@ -420,8 +431,9 @@ CString CLogWcsLogPgr::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	CString CRLF = _T("\r\n");
 	CTime tToDate, tToTime, tFromDate, tFromTime;
 	CString strdtFrom, strdtTo;
-	CString strWH_TYP = m_cbxWcsLogWhTyp.GetItemKey(m_cbxWcsLogWhTyp.GetCurSel());
-	CString strPgrNm = m_cbxWcsLogPgrNm.GetItemKey(m_cbxWcsLogPgrNm.GetCurSel());
+	CString strWH_TYP = CLib::GetComboKey(m_cbxWcsLogWhTyp);
+	CString strPgrNm = CLib::GetComboKey(m_cbxWcsLogPgrNm);
+	CString strJobDefine = CLib::GetComboKey(m_cbxWcsLogJobDefine);
 	CString strWcsLogMessage, strWcsLogLuggNo, strWcsLogStartPos, strWcsLogDestPos;
 	m_edtWcsLogMessage.GetWindowText(strWcsLogMessage);
 	m_edtWcsLogStartPos.GetWindowText(strWcsLogStartPos);
@@ -436,7 +448,7 @@ CString CLogWcsLogPgr::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	CString strRowCnt;
 	int nRowCnt;	
 //	int nRowSum;
-	strRowCnt = m_cbxRowCnt.GetItemKey(m_cbxRowCnt.GetCurSel()); 
+	strRowCnt = CLib::GetComboKey(m_cbxRowCnt); 
 	nRowCnt = CConvert::ToInt(strRowCnt);
 
 	strdtFrom = CLib::ConvertCTimeToOracleDateTimeString(tFromDate, tFromTime);
@@ -490,6 +502,21 @@ CString CLogWcsLogPgr::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 #if ORACLE
 	strSql += CRLF + _T(" AND ROWNUM <=	") + strNextRowCnt;
 #endif
+
+	// [LGLS 2026-08-23] 작업구분은 WCS_LOG_PGR 에 컬럼이 없다.
+	//   진행 중(JOB_MST) + 종료(JOB_MST_HIS) 작업정보에서 같은 작업번호의 JOB_TYP 을 찾아 거른다.
+	//   (반자동 11/12 도 기본형 1/2 로 함께 본다)
+	if(strJobDefine != _T("") && strJobDefine != _T("ALL"))
+	{
+		CString strTyp2 = (strJobDefine == _T("1")) ? _T("11") : _T("12");
+		strSql += CRLF + _T("   AND EXISTS ( SELECT 1 FROM JOB_MST J                                    ");
+		strSql += CRLF + _T("                 WHERE J.WH_TYP = WLP.WH_TYP AND J.LUGG_NO = WLP.LUGG_NO    ");
+		strSql += CRLF + _T("                   AND J.JOB_TYP IN (") + CLib::Quot(strJobDefine) + _T(",") + CLib::Quot(strTyp2) + _T(")");
+		strSql += CRLF + _T("                UNION ALL                                                  ");
+		strSql += CRLF + _T("                SELECT 1 FROM JOB_MST_HIS H                                ");
+		strSql += CRLF + _T("                 WHERE H.WH_TYP = WLP.WH_TYP AND H.LUGG_NO = WLP.LUGG_NO    ");
+		strSql += CRLF + _T("                   AND H.JOB_TYP IN (") + CLib::Quot(strJobDefine) + _T(",") + CLib::Quot(strTyp2) + _T(") )");
+	}
 
 	strSql += CRLF + _T(" ORDER BY WLP.INS_DT DESC");
 

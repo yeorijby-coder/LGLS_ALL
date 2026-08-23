@@ -310,8 +310,8 @@ CString CLogBcrSkinDlg::GetQrySelect(int nRowCheck, BOOL bSearch = FALSE )
 {
 	if(m_pDoc == NULL){ return _T(""); };
 	//CString strWH_TYP = m_pDoc->m_WH_TYP;
-	CString strWH_TYP = m_cbxLogBcrWhTyp.GetItemKey(m_cbxLogBcrWhTyp.GetCurSel());
-	CString strWEIGHT_READ_STA = m_cbxLogBcrWeightReadSta.GetItemKey(m_cbxLogBcrWeightReadSta.GetCurSel());
+	CString strWH_TYP = CLib::GetComboKey(m_cbxLogBcrWhTyp);
+	CString strWEIGHT_READ_STA = CLib::GetComboKey(m_cbxLogBcrWeightReadSta);
 
 	CString strWC_MC_NO, strWC_NO = _T("");
 	CString strdtFrom, strdtTo;
@@ -332,7 +332,7 @@ CString CLogBcrSkinDlg::GetQrySelect(int nRowCheck, BOOL bSearch = FALSE )
 	CString strRowCnt;
 	int nRowCnt;	
 	int nRowSum;
-	strRowCnt = m_cbxRowCnt.GetItemKey(m_cbxRowCnt.GetCurSel()); 
+	strRowCnt = CLib::GetComboKey(m_cbxRowCnt); 
 	nRowCnt = CConvert::ToInt(strRowCnt);
 	if (nRowCheck == 0) { nRowSum = nRowCnt; m_pPreRowCnt = 0; }
 	if (nRowCheck < 0) { nRowSum = m_pPreRowCnt - nRowCnt; }

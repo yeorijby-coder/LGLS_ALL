@@ -583,8 +583,8 @@ CString CLogIoSkinDlg::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 
 	CTime tDATE_FROM, tDATE_TO, tTIME_FROM, tTIME_TO;
 
-	strWH_TYP = m_cbxIOLogWhTyp.GetItemKey(m_cbxIOLogWhTyp.GetCurSel());
-	strJOB_TYP = m_cbxJobTyp.GetItemKey(m_cbxJobTyp.GetCurSel());
+	strWH_TYP = CLib::GetComboKey(m_cbxIOLogWhTyp);
+	strJOB_TYP = CLib::GetComboKey(m_cbxJobTyp);
 
 	m_edtLuggNo.GetWindowText(strLUGG_NO);
 	m_edtFromTrack.GetWindowText(strTRACK_START);
@@ -614,7 +614,7 @@ CString CLogIoSkinDlg::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	CString strRowCnt;
 	int nRowCnt;	
 	int nRowSum;
-	strRowCnt = m_cbxRowCnt.GetItemKey(m_cbxRowCnt.GetCurSel()); 
+	strRowCnt = CLib::GetComboKey(m_cbxRowCnt); 
 	nRowCnt = CConvert::ToInt(strRowCnt);
 	if (nRowCheck == 0) { nRowSum = nRowCnt; m_pPreRowCnt = 0; }
 	if (nRowCheck < 0) { nRowSum = m_pPreRowCnt - nRowCnt; }

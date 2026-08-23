@@ -536,8 +536,8 @@ CString CLogClientSkinDlg::GetQrySelect_Main(int nRowCheck,BOOL bSearch)
 	CString strUserId, strUserIp;
 	CString strdtFrom, strdtTo;
 	CTime tDATE_FROM, tDATE_TO, tTIME_FROM, tTIME_TO;
-	CString strWH_TYP = m_cbxClientLogWhTyp.GetItemKey(m_cbxClientLogWhTyp.GetCurSel());
-	CString strPGR_NM = m_cbxClientLogPgrNm.GetItemKey(m_cbxClientLogPgrNm.GetCurSel());
+	CString strWH_TYP = CLib::GetComboKey(m_cbxClientLogWhTyp);
+	CString strPGR_NM = CLib::GetComboKey(m_cbxClientLogPgrNm);
 
 	m_edtClientLogBcrBottom.GetWindowText(strTRAY_BOTTOM);
 	m_edtClientLogBcrTop.GetWindowText(strTRAY_TOP);
@@ -566,7 +566,7 @@ CString CLogClientSkinDlg::GetQrySelect_Main(int nRowCheck,BOOL bSearch)
 	CString strRowCnt;
 	int nRowCnt;	
 	int nRowSum;
-	strRowCnt = m_cbxRowCnt.GetItemKey(m_cbxRowCnt.GetCurSel()); 
+	strRowCnt = CLib::GetComboKey(m_cbxRowCnt); 
 	nRowCnt = CConvert::ToInt(strRowCnt);
 	if (nRowCheck == 0) { nRowSum = nRowCnt; m_pPreRowCnt = 0; }
 	if (nRowCheck < 0) { nRowSum = m_pPreRowCnt - nRowCnt; }

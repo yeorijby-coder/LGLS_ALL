@@ -867,9 +867,9 @@ CString CLogMesSkinDlg::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	CString CRLF = _T("\r\n");
 	CTime tToDate, tToTime, tFromDate, tFromTime;
 	CString strdtFrom, strdtTo;
-	CString strWH_TYP = m_cbxMESLogWhTyp.GetItemKey(m_cbxMESLogWhTyp.GetCurSel());
-	CString strDirection = m_cbxMesLogDirection.GetItemKey(m_cbxMesLogDirection.GetCurSel());
-	CString strHostCmd = m_cbxMesLogHostCmd.GetItemKey(m_cbxMesLogHostCmd.GetCurSel());
+	CString strWH_TYP = CLib::GetComboKey(m_cbxMESLogWhTyp);
+	CString strDirection = CLib::GetComboKey(m_cbxMesLogDirection);
+	CString strHostCmd = CLib::GetComboKey(m_cbxMesLogHostCmd);
 	CString strMesMessage3;
 	//m_edtMESMessage.GetWindowText(strMesMessage1);
 	//m_edtMESMessage2.GetWindowText(strMesMessage2);
@@ -892,7 +892,7 @@ CString CLogMesSkinDlg::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	CString strRowCnt;
 	int nRowCnt;	
 	int nRowSum;
-	strRowCnt = m_cbxRowCnt.GetItemKey(m_cbxRowCnt.GetCurSel()); 
+	strRowCnt = CLib::GetComboKey(m_cbxRowCnt); 
 	nRowCnt = CConvert::ToInt(strRowCnt);
 	if (nRowCheck == 0) { nRowSum = nRowCnt; m_pPreRowCnt = 0; }
 	if (nRowCheck < 0) { nRowSum = m_pPreRowCnt - nRowCnt; }

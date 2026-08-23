@@ -37,7 +37,7 @@ CLogEqpJobHisSkinDlg::~CLogEqpJobHisSkinDlg()
 BOOL CLogEqpJobHisSkinDlg::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: 여기에 특수화된 코드를 추가 및/또는 기본 클래스를 호출합니다.
-	int a = 0;
+
 	return CSkinDialog::PreTranslateMessage(pMsg);
 
 }
@@ -320,6 +320,11 @@ CString CLogEqpJobHisSkinDlg::GetQrySelect()
 	{
 		strSql += CRLF + _T("    AND DEST_POS =  ") + CLib::Quot(strTRACK_DEST);
 	}
+
+	// [LGLS 2026-08-23] 로그 창은 열릴 때 최신이 위로 오도록 시간 내림차순으로 정렬한다.
+	//   (이 창만 ORDER BY 가 없어 DB 가 돌려주는 순서 그대로 나왔다)
+	strSql += CRLF + _T(" ORDER BY INS_DT DESC ");
+
 	return strSql;
 }
 
