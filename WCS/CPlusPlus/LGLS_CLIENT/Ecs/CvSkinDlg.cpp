@@ -1659,27 +1659,32 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 
 			//m_pDoc->BeginTrans_DLG();
 			
+			// [LGLS 2026-08-23] 구 ECS 스키마에만 있던 열을 계속 UPDATE 에 넣고 있었다.
+			//   BCR_TOP / BCR_BOTTOM / IS_TURN_OD / TRAY_LEV_OD / TRAY_TYP_OD / FMS_RPT_OD / WAIT_TIME_OD
+			//   7개는 현 CV_DATA 에 없는 열이라 이 문장은 **항상 실패**했다(붙여넣기 누르면 "실패").
+			//   [쓰기] 는 같은 열들이 이미 주석 처리돼 있었는데 [붙여넣기] 만 남아 있었다.
+			//   현 스키마에 있는 열만 남기고, 갱신시각도 다른 명령과 똑같이 남긴다.
+			CString strPulpOd = pCopyJob->PRODUCT_SIZE;
+			//   PULP_SENSOR_OD 는 varchar(2) 다. 작업정보 창의 [복사]는 이 자리에 JOB_MST.PRODUCT_SIZE 를
+			//   담아 보내므로(CV 대화상자의 [복사]는 펄프센서 값을 담는다) 길면 잘라서 넣는다.
+			if (strPulpOd.GetLength() > 2) strPulpOd = strPulpOd.Left(2);
+			if (strPulpOd.IsEmpty()) strPulpOd = _T("0");
+
 			strSql.Format(_T(" UPDATE CV_DATA					\n")
 				_T("    SET LUGG_NO_OD = '%s'		\n")
 				_T("	  , DEST_POS_OD = '%s'		\n")
 				_T("	  , JOB_TYP_OD = '%s'		\n")
 				_T("	  , PULP_SENSOR_OD = '%s'	\n")
-				_T("	  , BCR_TOP = '%s'			\n")
-				_T("	  , BCR_BOTTOM = '%s'		\n")
+				_T("      , WRITE_UPD_DT = ") + m_pDoc->SYSDATE + _T("  \n")
 				_T("      , OD_RQ_YN = 'Y'			\n")
-				_T("      , TRACKING_WRITE_YN = 'Y'   \n")   /* [LGLS 2026-08-23] 작업번호를 PLC R영역 트래킹에도 기록. OD_RQ_YN 만으로는 D영역 명령만 나가서 설비에 작업번호가 실리지 않는다 */
-				_T("	  , IS_TURN_OD = '0'		\n")
-				_T("      , TRAY_LEV_OD = '0'       \n")
-				_T("      , TRAY_TYP_OD = '0'		\n")
-				_T("	  , FMS_RPT_OD = '0'		\n")
+				_T("      , TRACKING_WRITE_YN = 'Y'	\n")   /* [LGLS 2026-08-23] 작업번호를 PLC R영역 트래킹에도 기록 */
 				_T("	  , TR_PAUSE_OD = '0'		\n")
-				_T("	  , WAIT_TIME_OD = '0'		\n")
 				_T("	  , ERR_RQ_OD = '0'			\n")
 				_T("  WHERE WH_TYP = '%s'			\n")
 				_T("	AND PLC_NO = '%02s'			\n")
 				_T("    AND MC_NO = '%s'			\n")
-				_T("    AND '1'='1'  /* [LGLS] 수동 조작: 진행중 트랙도 허용 */			  "), pCopyJob->LUGG_NO, strTO_CV, pCopyJob->JOB_TYP, pCopyJob->PRODUCT_SIZE,
-														  pCopyJob->BCR_TOP, pCopyJob->BCR_BOTTOM,strWhTyp, strPLC_NO, strTrackNo);
+				_T("    AND '1'='1'  /* [LGLS] 조건 완화: 지정한 트랙만 대상 */			  "), pCopyJob->LUGG_NO, strTO_CV, pCopyJob->JOB_TYP, strPulpOd,
+																  strWhTyp, strPLC_NO, strTrackNo);
 
 
 			BOOL isSuccess =  m_pDoc->ExcuteQueryString_DLG(strSql);
