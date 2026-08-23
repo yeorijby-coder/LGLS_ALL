@@ -3003,6 +3003,16 @@ namespace TSK_COMM_IOSCH
         }
 
         // [LGLS] 출고대 반출 대기열 처리: RTV 는 1대뿐이므로 출고대 반출 경로가 비었을 때만 다음 화물을 태운다(FIFO).
+        /// <summary>
+        /// 출고대 반출 대기열에서 **지금 진행 가능한 첫 건**을 골라 반출 시퀀스에 태운다.
+        ///
+        /// [LGLS 2026-08-24] 종전에는 큐의 머리(m_lstOutPend[0]) 하나만 보고, 그게 안 되면 그냥 return 했다.
+        ///   그래서 정지(TR_PAUSE)된 출고대 하나가 **경로가 전혀 겹치지 않는 다른 출고까지** 세웠다.
+        ///   실제로 123 을 정지시키자 그 출고대를 쓰는 3037 이 머리에 앉았고, 경로가 멀쩡한 3040(105→127→129)이
+        ///   평가조차 되지 못한 채 12분 넘게 대기했다.
+        ///   → 큐를 앞에서부터 순회해 통과하는 첫 건을 태운다(FIFO 우선은 유지).
+        ///   보류 사유도 남긴다. 종전엔 전부 무로그 return 이라 화면만 보고는 원인을 알 수 없었다.
+        /// </summary>
         private void ProcessOutPend()
         {
             if (m_lstOutPend.Count == 0) return;
@@ -3012,23 +3022,39 @@ namespace TSK_COMM_IOSCH
                        + " / dicOutStn점유=" + string.Join(",", new List<string>(m_dicOutStn.Keys).ToArray()));
                 return;
             }
-            OutPend p = m_lstOutPend[0];
-            DbgLog("OUTPEND", "[OUTPEND승격시도] " + p.Lugg + " Odd=" + p.Odd + " OutStn=" + p.OutStn
-                   + " 픽업트랙(" + RgvPickupTrack(p.OutStn) + ")빔=" + IsTrackEmpty(RgvPickupTrack(p.OutStn))
-                   + " 출고대(" + p.OutStn + ")빔=" + IsTrackEmpty(p.OutStn));
-            // [LGLS] 출고대(하역/배출 트랙)가 입고 파렛트로 점유 중이면 시작 보류.
-            //   (실 ECS ECSDispatcher 의 "입고대에 파렛트 있으면 C/V#11 출고 배차 금지" 가드와 같은 취지.
-            //    시작해버리면 출고대 반출 경로가 출고대 비기를 기다리고, 입고는 공급 보류에 걸려 교착함.)
-            if (!IsTrackEmpty(RgvPickupTrack(p.OutStn)) || !IsTrackEmpty(p.OutStn)) return;
-            // [LGLS 2026-07-19] RTV 상호배타: 입고 RGV 처리가 운반 중(31/35)이면 출고 시퀀스 시작을 보류.
-            if (RtvBusyByInbound()) return;
-            // [LGLS 2026-07-19] RTV 작업정지 — RTV 에 작업지시 안 함(출고대 반출 시퀀스 시작 보류)
-            if (IsRtvSuspended()) return;
-            // [LGLS 2026-07-19] RTV 작업대/출고대 일시정지 — 출고 라인(홀수)·하역트랙·배출트랙 정지 시 시작 보류
-            //   (출고대 정지 = 도착완료 처리 금지와 짝을 이룸: 물리 배출 시퀀스도 시작하지 않는다)
-            if (IsCvPaused(p.Odd) || IsCvPaused(RgvPickupTrack(p.OutStn)) || IsCvPaused(p.OutStn)) return;
-            m_lstOutPend.RemoveAt(0);
-            m_dicOutStn[p.Lugg] = new OutStnState { Due = DateTime.Now.AddMilliseconds(1500), Stage = 0, Lugg = p.Lugg, Odd = p.Odd, OutStn = p.OutStn };
+            // RTV 전체가 묶이는 조건은 큐를 아무리 뒤져도 소용없다 - 먼저 걸러낸다.
+            if (RtvBusyByInbound()) { DbgLog("OUTPEND", "[OUTPEND보류] 입고 RGV 운반중 - 출고 반출 시작 보류"); return; }
+            if (IsRtvSuspended())   { DbgLog("OUTPEND", "[OUTPEND보류] RTV 작업정지 - 출고 반출 시작 보류"); return; }
+
+            for (int i = 0; i < m_lstOutPend.Count; i++)
+            {
+                OutPend p = m_lstOutPend[i];
+                string pickup = RgvPickupTrack(p.OutStn);
+                string why = "";
+
+                // [LGLS] 출고대(하역/배출 트랙)가 점유 중이면 시작 보류.
+                //   (실 ECS ECSDispatcher 의 "입고대에 파렛트 있으면 C/V#11 출고 배차 금지" 가드와 같은 취지.
+                //    시작해버리면 출고대 반출 경로가 출고대 비기를 기다리고, 입고는 공급 보류에 걸려 교착함.)
+                if (!IsTrackEmpty(pickup))        why = "픽업트랙(" + pickup + ") 점유";
+                else if (!IsTrackEmpty(p.OutStn)) why = "출고대(" + p.OutStn + ") 점유";
+                // [LGLS 2026-07-19] 작업대/출고대 일시정지 - 출고 라인(홀수)·하역트랙·배출트랙 정지 시 시작 보류
+                //   (출고대 정지 = 도착완료 처리 금지와 짝을 이룬다)
+                else if (IsCvPaused(p.Odd))       why = "라인(" + p.Odd + ") 정지";
+                else if (IsCvPaused(pickup))      why = "픽업트랙(" + pickup + ") 정지";
+                else if (IsCvPaused(p.OutStn))    why = "출고대(" + p.OutStn + ") 정지";
+
+                if (why != "")
+                {
+                    DbgLog("OUTPEND_" + p.Lugg, "[OUTPEND보류] " + p.Lugg + " 라인" + p.Odd + "→출고대" + p.OutStn + " : " + why);
+                    continue;   // 이 건은 못 태우지만 뒤의 다른 건은 계속 본다
+                }
+
+                DbgLog("OUTPEND_" + p.Lugg, "[OUTPEND승격] " + p.Lugg + " 라인" + p.Odd + "→출고대" + p.OutStn
+                       + (i > 0 ? " (앞 " + i + "건 보류로 건너뜀)" : ""));
+                m_lstOutPend.RemoveAt(i);
+                m_dicOutStn[p.Lugg] = new OutStnState { Due = DateTime.Now.AddMilliseconds(1500), Stage = 0, Lugg = p.Lugg, Odd = p.Odd, OutStn = p.OutStn };
+                return;   // RTV 는 1대뿐 - 한 번에 한 건만
+            }
         }
 
         // [LGLS] RTV 출고대 반출 시퀀스: 113 픽업 → RTV 반송(파랑) → 121 하역 → 21→22 → 22 정리
