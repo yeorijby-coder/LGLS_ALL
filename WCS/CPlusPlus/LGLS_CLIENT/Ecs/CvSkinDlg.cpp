@@ -239,6 +239,10 @@ BOOL CCvSkinDlg::OnInitDialog()
 	}
 	BuildCvStatusPanel();
 
+	// [LGLS 2026-08-23] 표시 전용 항목 상시 갱신(1초). [자동조회] 와 별개로 항상 돈다.
+	//   타이머 1 = [자동조회](전체 재조회, 입력값도 덮어씀) / 타이머 2 = 표시 전용.
+	SetTimer(2, 1000, NULL);
+
 	return TRUE;
 }
 
@@ -760,6 +764,30 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 	//m_cbxCvFmsRpt.SetWindowText(_T("미정"));
 	//m_cbxCvTrayTyp.SetWindowText(_T("미정"));
 
+	// [LGLS 2026-08-23] 표시 전용 항목은 별도 메서드로 분리(상시 타이머에서도 호출)
+	InvalidateReadOnlyData(pLang);
+}
+
+void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
+{
+	// [LGLS 2026-08-23] 표시 전용(설비에서 올라오는) 항목만 갱신한다.
+	//   조작자가 입력하는 CV상태(작업번호/도착지/작업구분)는 건드리지 않으므로
+	//   1초 주기로 계속 새로 그려도 입력 중인 값을 덮어쓰지 않는다.
+	//   종전에는 이 갱신이 InvalidateTrackData 안에만 있어서 [자동조회] 를 켜야만 돌았고,
+	//   꺼두면 화물감지 같은 신호가 트랙 컨트롤과 따로 놀았다(대화상자만 옛 값 유지).
+	//   작업상태 그룹도 여기서 CV상태 작업번호(V_LUGG_NO_RD) 기준으로 다시 조회하므로,
+	//   작업번호가 지워지면 작업상태도 함께 비워진다.
+	if(m_pDoc == NULL) return;
+	if(m_pTrackInfo == NULL) return;
+	if(m_pTrackInfo->m_pCV_DATA == NULL) return;
+
+	CString strGetErrorCode = _T("");
+	CString strSUSPEND = _T("");
+	CString strSTOCK_MODE = _T("");
+	CString strROLL_MODE = _T("");
+	CString strREMOTE_CONTROL = _T("");
+	CString strKIND = _T("");
+
 	GetErrorCode(_T("CV"), m_pTrackInfo->m_pCV_DATA->V_ERROR_CODE, (int)pLang, strGetErrorCode);
 	m_edtCvErrorCode.SetWindowText(strGetErrorCode);
 
@@ -830,6 +858,10 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 		m_cbxCvJobJobStatus.SetWindowText(_T("N"));
 		m_cbxJobStartLoc.SetWindowText(_T("N"));
 		m_cbxJobDestLoc.SetWindowText(_T("N"));
+		// [LGLS 2026-08-23] 적재 용기 / 제품 정보도 함께 비운다.
+		//   종전에는 이 둘만 안 지워서, 작업번호가 사라진 뒤에도 옛 작업의 값이 남아 있었다.
+		SetDlgItemText(IDC_LGLS_CV_LOT_VAL, _T(""));
+		SetDlgItemText(IDC_LGLS_CV_PRD_VAL, _T(""));
 
 		return;	  
 	}
@@ -1409,6 +1441,7 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 					_T("      , SENSOR0_DATA_RD = '0', PULP_SENSOR_RD = '0' ")
 					_T("      , WRITE_UPD_DT = ") + m_pDoc->SYSDATE + _T("  \n")
 					_T("      , OD_RQ_YN = 'Y'			\n")
+					_T("      , TRACKING_WRITE_YN = 'Y'		\n")   /* [LGLS 2026-08-23] R영역 트래킹(작업번호)도 0 으로 기록. OD_RQ_YN 만 세우면 D영역 명령만 나가고 PLC 트래킹은 남는다 */
 					_T("  WHERE WH_TYP = '%s'			\n")
 					_T("	AND PLC_NO = '%02s'			\n")
 					_T("    AND MC_NO = '%s'			\n")
@@ -1440,6 +1473,8 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 				m_pDoc->CommitTrans_DLG();
 				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
 				SetCvStatus(_T("0000"), _T("0"), _T("000"), _T("0"), _T(""), _T(""), _T("WRITE"));
+				// [LGLS 2026-08-23] 삭제 직후 표시 즉시 갱신 - 작업상태에 지워진 작업번호가 남아 있지 않도록
+				InvalidateReadOnlyData(m_nLang);
 				return;
 			}
 			m_pDoc->RollbackTrans_DLG();
@@ -2537,10 +2572,16 @@ void CCvSkinDlg::OnBnClickedChkAutoSel()
 
 void CCvSkinDlg::OnTimer(UINT_PTR nIDEvent)
 {
+	if (nIDEvent == 2)
+	{	// [LGLS 2026-08-23] 표시 전용 항목만 갱신 - 입력 중인 값은 보존
+		InvalidateReadOnlyData(m_nLang);
+		return;
+	}
+
 	if (m_blAutoSel == true)
 	{
 		//조회
-		InvalidateTrackData(EN_KOR);
+		InvalidateTrackData(m_nLang);   /* [LGLS 2026-08-23] EN_KOR 고정을 현재 언어로 */
 	}
 }
 

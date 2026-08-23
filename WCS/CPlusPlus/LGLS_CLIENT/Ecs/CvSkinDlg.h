@@ -277,6 +277,8 @@ public:
 	afx_msg void OnBnClickedCheckCvUseN();
 	afx_msg void OnBnClickedBtnCvSave();
 	CString GetQrySelectJOB_MST( CCV_DATA* pCV_DATA );
+	// [LGLS 2026-08-23] 표시 전용 항목만 갱신(상시 타이머용). 입력 중인 CV상태는 건드리지 않는다.
+	void InvalidateReadOnlyData(EN_LANG pLang);
 	afx_msg void OnBnClickedBtnCvMgdp();
 	CString GetQrySelectSUSPEND( CCV_DATA* pCV_DATA,  CString& strGetErrorCode);
 	afx_msg void OnEnterSizeMove();
