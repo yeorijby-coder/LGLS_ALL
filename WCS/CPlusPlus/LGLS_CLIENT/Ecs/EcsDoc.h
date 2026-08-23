@@ -412,6 +412,7 @@ public:
 	CMapStringToString m_mapAliveJob;
 	CMapStringToString m_mapVehJob;		// 호기(901~905/801) -> 진행 중 작업번호
 public:
+	void RefreshJobCache();	// [LGLS 2026-08-23] 작업정보 2초 캐시 갱신
 	BOOL IsJobInJobMst(LPCTSTR lpszLugg);
 	CString GetVehicleJobNo(LPCTSTR lpszVehNo);
 	CString GetVehicleJobTyp(LPCTSTR lpszVehNo);	// [LGLS 2026-08-23] 그 호기가 물고 있는 작업의 구분(1 입고 / 2 출고)	// [LGLS 2026-08-22] 그 호기에 물려 있는 진행 중 작업번호

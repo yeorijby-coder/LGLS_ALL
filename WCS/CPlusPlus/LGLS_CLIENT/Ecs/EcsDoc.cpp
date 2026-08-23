@@ -2297,8 +2297,7 @@ CString CEcsDoc::GetVehicleJobNo(LPCTSTR lpszVehNo)
 	strVeh.Trim();
 	if (strVeh.IsEmpty()) return _T("");
 
-	if (m_dwAliveJobTick == 0 || (::GetTickCount() - m_dwAliveJobTick) >= 2000)
-		IsJobInJobMst(_T("0"));		// 캐시 갱신 유도(작업번호 집합 + 호기별 작업)
+	RefreshJobCache();
 
 	CString strJob;
 	if (!m_mapVehJob.Lookup(strVeh, strJob)) return _T("");
@@ -2314,8 +2313,7 @@ CString CEcsDoc::GetVehicleJobTyp(LPCTSTR lpszVehNo)
 	strVeh.Trim();
 	if (strVeh.IsEmpty()) return _T("");
 
-	if (m_dwAliveJobTick == 0 || (::GetTickCount() - m_dwAliveJobTick) >= 2000)
-		IsJobInJobMst(_T("0"));
+	RefreshJobCache();
 
 	CString strJob;
 	if (!m_mapVehJob.Lookup(strVeh, strJob)) return _T("");
@@ -2323,14 +2321,13 @@ CString CEcsDoc::GetVehicleJobTyp(LPCTSTR lpszVehNo)
 	return (nBar >= 0) ? strJob.Mid(nBar + 1) : _T("");
 }
 
-BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
+// [LGLS 2026-08-23] 작업정보 캐시 갱신(2초). 종전에는 IsJobInJobMst 안에만 있었고
+//   호기별 조회가 IsJobInJobMst(_T("0")) 로 갱신을 유도했는데, 그 함수는 "0" 이면
+//   맨 앞에서 그냥 FALSE 를 돌려주므로 캐시가 영영 채워지지 않았다.
+//   (그 탓에 크레인이 작업을 물고 있어도 색·작업번호가 비어 보였다)
+void CEcsDoc::RefreshJobCache()
 {
-	if (lpszLugg == NULL) return FALSE;
-	CString strLugg(lpszLugg);
-	strLugg.Trim();
-	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return FALSE;
-
-	if (m_dwAliveJobTick == 0 || (::GetTickCount() - m_dwAliveJobTick) >= 2000)
+	if (m_dwAliveJobTick != 0 && (::GetTickCount() - m_dwAliveJobTick) < 2000) return;
 	{
 		m_dwAliveJobTick = ::GetTickCount();
 		m_mapAliveJob.RemoveAll();
@@ -2367,6 +2364,17 @@ BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
 			delete pRsw;
 		}
 	}
+}
+
+BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
+{
+	if (lpszLugg == NULL) return FALSE;
+	CString strLugg(lpszLugg);
+	strLugg.Trim();
+	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return FALSE;
+
+	RefreshJobCache();
+
 
 	CString strDummy;
 	return m_mapAliveJob.Lookup(strLugg, strDummy);

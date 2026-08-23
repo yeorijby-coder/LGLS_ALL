@@ -3280,9 +3280,20 @@ namespace TSK_COMM_IOSCH
         {
             try
             {
+                // [LGLS 2026-08-23] 지시값만 지우면 관측 잔류값(ITN_LUGG_FK1 / PALLET_ON_VEHICLE_RD)이
+                //   그대로 남아, 다음 작업을 받은 크레인에 **이전 작업번호** 가 붙어 보이고 작업색도
+                //   엉킨다(4호기가 1492 를 받았는데 1489 가 남아 있던 사례).
+                //   완료 시 작업색(JOB_TYP_RD)까지 함께 내린다.
                 string strSql = "";
-                strSql += CRLF + " UPDATE SC_DATA_LGLS SET LUGG_NO_FK1_OD = '0000' ";
-                strSql += CRLF + "  WHERE WH_TYP = :WH_TYP AND LUGG_NO_FK1_OD = :LUGG_NO ";
+                strSql += CRLF + " UPDATE SC_DATA_LGLS                                   ";
+                strSql += CRLF + "    SET LUGG_NO_FK1_OD       = '0000'                  ";
+                strSql += CRLF + "      , ITN_LUGG_FK1         = '0'                     ";
+                strSql += CRLF + "      , PALLET_ON_VEHICLE_RD = ''                      ";
+                strSql += CRLF + "      , JOB_TYP_RD           = '0'                     ";
+                strSql += CRLF + "  WHERE WH_TYP = :WH_TYP                               ";
+                strSql += CRLF + "    AND (   LUGG_NO_FK1_OD       = :LUGG_NO            ";
+                strSql += CRLF + "         OR ITN_LUGG_FK1         = :LUGG_NO            ";
+                strSql += CRLF + "         OR PALLET_ON_VEHICLE_RD = :LUGG_NO )          ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
