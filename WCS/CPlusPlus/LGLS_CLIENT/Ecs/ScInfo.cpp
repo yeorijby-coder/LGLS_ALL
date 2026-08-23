@@ -55,10 +55,23 @@ COLORREF CScInfo::GetForkColor1()
  	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
  		return DARK_GRAY;
  
- 	if (m_pSC_DATA->V_ITN_LUGG_FK1 == _T("0") || m_pSC_DATA->V_ITN_LUGG_FK1 == _T("0000"))
- 		return LIGHT_GRAY;
- 
+ 	// [LGLS 2026-08-23] 크레인이 작업을 받아 화물을 뜨러 가는 동안에는 설비에 작업번호가
+	//   아직 실리지 않아(ITN_LUGG_FK1=0) 여기서 회색으로 빠졌다 - "색 없이 움직인다" 던 증상.
+	//   설비 데이터가 비어 있어도 그 호기가 작업정보상 작업을 물고 있으면 그 작업색을 낸다.
 	int nJobTypTmp = CConvert::ToInt(m_pSC_DATA->V_JOB_TYP_RD);
+
+	// 설비에 작업번호가 실리지 않았어도, 작업정보상 이 호기가 작업을 물고 있으면 회색으로 빠지지 않는다.
+	if (m_pSC_DATA->V_ITN_LUGG_FK1 == _T("0") || m_pSC_DATA->V_ITN_LUGG_FK1 == _T("0000"))
+	{
+		if (m_pEquipment->m_pDoc->GetVehicleJobNo(m_pSC_DATA->K_SC_NO).IsEmpty())
+			return LIGHT_GRAY;
+	}
+
+	// 작업 구분(JOB_TYP_RD)은 실경로에서 늘 채워지지는 않는다. 비어 있으면 작업정보에서 가져온다.
+	//   (구분을 모르면 아래 switch 가 통째로 빠져 색 없이 움직이는 것처럼 보였다)
+	if (nJobTypTmp == 0)
+		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(m_pSC_DATA->K_SC_NO));
+
 	switch (nJobTypTmp)
 	{
 	case enJobTypeAutoSto			: return pConfig->m_clrUSER_COLOR_STO;

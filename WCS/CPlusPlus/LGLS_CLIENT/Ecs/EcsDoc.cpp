@@ -2301,8 +2301,26 @@ CString CEcsDoc::GetVehicleJobNo(LPCTSTR lpszVehNo)
 		IsJobInJobMst(_T("0"));		// 캐시 갱신 유도(작업번호 집합 + 호기별 작업)
 
 	CString strJob;
-	if (m_mapVehJob.Lookup(strVeh, strJob)) return strJob;
-	return _T("");
+	if (!m_mapVehJob.Lookup(strVeh, strJob)) return _T("");
+	int nBar = strJob.Find(_T('|'));
+	return (nBar >= 0) ? strJob.Left(nBar) : strJob;
+}
+
+// [LGLS 2026-08-23] 그 호기가 물고 있는 진행 중 작업의 구분(JOB_TYP). 없으면 빈 문자열.
+//   설비 데이터에 작업번호가 아직 실리지 않은 구간에도 작업색을 내기 위해 쓴다.
+CString CEcsDoc::GetVehicleJobTyp(LPCTSTR lpszVehNo)
+{
+	CString strVeh(lpszVehNo == NULL ? _T("") : lpszVehNo);
+	strVeh.Trim();
+	if (strVeh.IsEmpty()) return _T("");
+
+	if (m_dwAliveJobTick == 0 || (::GetTickCount() - m_dwAliveJobTick) >= 2000)
+		IsJobInJobMst(_T("0"));
+
+	CString strJob;
+	if (!m_mapVehJob.Lookup(strVeh, strJob)) return _T("");
+	int nBar = strJob.Find(_T('|'));
+	return (nBar >= 0) ? strJob.Mid(nBar + 1) : _T("");
 }
 
 BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
@@ -2340,7 +2358,9 @@ BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
 					CString strVeh = (strTyp == _T("2") || strTyp == _T("12"))
 									 ? pRsw->GetItem(_T("START_POS")) : pRsw->GetItem(_T("DEST_POS"));
 					strVeh.Trim();
-					if (!strVeh.IsEmpty() && !strItem.IsEmpty()) m_mapVehJob.SetAt(strVeh, strItem);
+					// 값은 "작업번호|작업구분" 으로 담는다(색 표시에 구분이 필요하다).
+					if (!strVeh.IsEmpty() && !strItem.IsEmpty())
+						m_mapVehJob.SetAt(strVeh, strItem + _T("|") + strTyp);
 				}
 				pRsw->MoveNext();
 			}

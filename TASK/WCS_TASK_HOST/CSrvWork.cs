@@ -46,7 +46,11 @@ namespace TSK_HostCom
         //Command
         private string m_strHostCmd;
         //Direction
-        private string m_strDirection = "W2E"; // 해당 클래스에서는 이방향으로 보냄!
+        // [LGLS 2026-08-23] 이 클래스는 WMS 요청을 '받는' 쪽이고, 여기서 내보내는 것은 그 응답이다.
+        //   즉 SendSock 이 기록하는 방향은 ECS→WMS(E2W) 다. 종전 W2E 는 수신 방향을 그대로 쓴 것이라
+        //   HOST 로그에서 응답 전문(ECS_MBX ...)까지 W2E 로 남아 송수신자 조회가 뒤섞였다.
+        //   (수신 전문 자체는 Parsing 에서 "W2E" 로 따로 기록한다)
+        private string m_strDirection = "E2W";
 
         //설비상태가 연속으로 많은량 수신 될 때 SKIP을 위한 처리
 		private string[] m_strScStatus = new string[modDefApp.SC_CNT];
