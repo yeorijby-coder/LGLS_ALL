@@ -1364,6 +1364,10 @@ namespace TSK_COMM_IOSCH
         #endregion
 
         #region CompleteSC
+        // [LGLS 2026-08-23] 크레인 구분 동작(포크출/호이스트/포크센터 각 3초 x 2 + 주행)의 최소 소요.
+        //   이보다 빨리 오는 '완료' 는 이전 작업의 잔류 신호로 본다.
+        private const int SC_MIN_RUN_SEC = 8;
+
         private void CompleteSC()
         {
             try
@@ -1384,6 +1388,12 @@ namespace TSK_COMM_IOSCH
                 //   도중에 완료로 처리돼 버린다(작업 1654 사례 - 입고 HS 에서 드는 중 완료).
                 //   설비가 하역을 마치면 SUBSYSTEM_STATUS_RD 가 1(IDLE)이 되므로 그때만 인정한다.
                 strSql += CRLF + "    AND ISNULL(SD.SUBSYSTEM_STATUS_RD,'1') = '1'             ";
+                // [LGLS 2026-08-23] IDLE 은 '완료 후' 뿐 아니라 '아직 시작 전' 에도 참이다.
+                //   지시를 소비(OD_RQ_YN='N')한 직후 설비가 RUN 으로 바뀌기 전 그 짧은 창에
+                //   이전 작업의 완료신호가 남아 있으면 크레인이 움직이기도 전에 완료돼 버린다
+                //   (작업 1726 - 구동중 전이 3초 만에 입고 최종). 구분 동작은 최소 18초가 걸리므로
+                //   구동중(25) 전이 후 최소 경과시간을 둔다.
+                strSql += CRLF + "    AND DATEDIFF(second, JM.UPD_DT, " + DbLang.SYSDATE + ") >= " + SC_MIN_RUN_SEC.ToString() + " ";
                 // [LGLS 2026-07-24] 완료 판정: 완료신호(COMPLETE_RD<>0) OR 지속완결(유휴+포크빔+스트로브 내려감+경과).
                 //   VehThread 의 COMPLETE_RD 는 UNLOAD_COMPLETE 단발이라, 포화 시 CompleteSC 폴링 창을 놓치면
                 //   신호가 소실돼 25 에 영구 정체한다. SC 가 유휴(UCSTATUS_RD='1')+포크 빔(ITN_LUGG_FK1 빔)+
