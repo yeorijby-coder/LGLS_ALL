@@ -87,6 +87,12 @@ void CLogMesSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CBX_MES_LOG_HOST_CMD, m_cbxMesLogHostCmd);
 	DDX_Control(pDX, IDC_LBL_MES_LOG_DIRECTION, m_lblMesLogDirection);
 	DDX_Control(pDX, IDC_LBL_MES_LOG_HOST_CMD, m_lblMesLogHostCmd);
+	DDX_Control(pDX, IDC_LBL_MES_JOB_DEFINE, m_lblJobDefine);
+	DDX_Control(pDX, IDC_CBX_MES_JOB_DEFINE, m_cbxJobDefine);
+	DDX_Control(pDX, IDC_LBL_MES_LUGG_NO, m_lblHostLuggNo);
+	DDX_Control(pDX, IDC_EDT_MES_LUGG_NO, m_edtHostLuggNo);
+	DDX_Control(pDX, IDC_LBL_MES_STN_NO, m_lblStnNo);
+	DDX_Control(pDX, IDC_EDT_MES_STN_NO, m_edtStnNo);
 }
 
 
@@ -195,6 +201,15 @@ BOOL CLogMesSkinDlg::OnInitDialog()
 	CLib::BindCombo(m_cbxMESLogWhTyp, _T("WH_TYP"),m_pDoc, (int)pEn, FALSE);
 	CLib::BindCombo(m_cbxMesLogDirection, _T("DIRECTION"),m_pDoc, (int)pEn, TRUE);
 	CLib::BindCombo(m_cbxMesLogHostCmd, _T("HOST_CMD"),m_pDoc, (int)pEn, TRUE);
+	// [LGLS 2026-08-23] 작업구분 : 명세서 Job Define (1 입고 / 2 출고)
+	{
+		int nIdx;
+		m_cbxJobDefine.ResetContent();
+		nIdx = m_cbxJobDefine.AddString(_T("ALL"));   m_cbxJobDefine.SetItemDataEx(nIdx, _T("ALL"));
+		nIdx = m_cbxJobDefine.AddString(_T("1:입고")); m_cbxJobDefine.SetItemDataEx(nIdx, _T("1"));
+		nIdx = m_cbxJobDefine.AddString(_T("2:출고")); m_cbxJobDefine.SetItemDataEx(nIdx, _T("2"));
+		m_cbxJobDefine.SetCurSel(0);
+	}
 	CLib::BindCombo(m_cbxRowCnt, _T("ROW_CNT"), m_pDoc ,(int)pEn, FALSE);
 	
 	InitializeResource(pEn);
@@ -860,6 +875,15 @@ CString CLogMesSkinDlg::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	//m_edtMESMessage2.GetWindowText(strMesMessage2);
 	m_edtMESMessage3.GetWindowText(strMesMessage3);
 
+	// [LGLS 2026-08-23] 추가 조회 조건 : 작업구분 / 작업번호 / 스테이션 번호
+	CString strJobDefine, strLuggNo, strStnNo;
+	int nJd = m_cbxJobDefine.GetCurSel();
+	if (nJd >= 0) strJobDefine = m_cbxJobDefine.GetItemKey(nJd);
+	m_edtHostLuggNo.GetWindowText(strLuggNo);
+	m_edtStnNo.GetWindowText(strStnNo);
+	strLuggNo.Trim();
+	strStnNo.Trim();
+
 	m_dtpTo.GetTime(tToDate);
 	m_dtpToTime.GetTime(tToTime);
 	m_dtpFrom.GetTime(tFromDate);
@@ -917,6 +941,30 @@ CString CLogMesSkinDlg::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	if(strMesMessage3 != _T("") && strMesMessage3 != _T("ALL"))
 	{
 		strSql += CRLF + _T("    AND HIL.MESSAGE LIKE '%") + strMesMessage3 + _T("%'");
+	}
+
+	// [LGLS 2026-08-23] 전문 본문에서 뽑아 거른다(WMS-ECS 인터페이스명세서 2010.03.11 기준).
+	//   저장된 MESSAGE 는 헤더 15자 + STX 1자 뒤에 본문이 오므로 SUBSTRING 위치 = 명세서 offset + 1.
+	//   작업구분  : offset 17 → 18  (작업지시 O / 재작업 R / 완료보고 F)
+	//   작업번호  : offset 18 → 19  (응답 전문은 offset 20 → 21 에 있어 함께 본다)
+	//   스테이션  : 출발 offset 33 → 34, 도착 offset 46 → 47, C/V 모드(M) offset 17 → 18
+	if(strJobDefine != _T("") && strJobDefine != _T("ALL"))
+	{
+		strSql += CRLF + _T("    AND SUBSTRING(HIL.MESSAGE,18,1) = ") + CLib::Quot(strJobDefine);
+	}
+
+	if(strLuggNo != _T(""))
+	{
+		strSql += CRLF + _T("    AND ( SUBSTRING(HIL.MESSAGE,19,4) = ") + CLib::Quot(strLuggNo);
+		strSql += CRLF + _T("       OR SUBSTRING(HIL.MESSAGE,21,4) = ") + CLib::Quot(strLuggNo);
+		strSql += CRLF + _T("       OR ") + m_pDoc->NVL + _T("(HIL.LUGG_NO,'') = ") + CLib::Quot(strLuggNo) + _T(" )");
+	}
+
+	if(strStnNo != _T(""))
+	{
+		strSql += CRLF + _T("    AND ( SUBSTRING(HIL.MESSAGE,34,3) = ") + CLib::Quot(strStnNo);
+		strSql += CRLF + _T("       OR SUBSTRING(HIL.MESSAGE,47,3) = ") + CLib::Quot(strStnNo);
+		strSql += CRLF + _T("       OR SUBSTRING(HIL.MESSAGE,18,3) = ") + CLib::Quot(strStnNo) + _T(" )");
 	}
 #if ORACLE
 	strSql += CRLF + _T(" AND ROWNUM <=	") + strNextRowCnt;

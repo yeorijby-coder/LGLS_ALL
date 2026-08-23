@@ -2845,6 +2845,12 @@
 #define IDC_GRP_LOG_EQP_SEARCH2         2144
 #define IDC_LBL_MES_TO_DATE             2145
 #define IDC_LBL_MES_FROM_DATE           2146
+#define IDC_LBL_MES_JOB_DEFINE          2344
+#define IDC_CBX_MES_JOB_DEFINE          2345
+#define IDC_LBL_MES_LUGG_NO             2346
+#define IDC_EDT_MES_LUGG_NO             2347
+#define IDC_LBL_MES_STN_NO              2348
+#define IDC_EDT_MES_STN_NO              2349
 #define IDC_GRP_MES_SEARCH              2148
 #define IDC_GRP_MES_SEARCH2             2149
 #define IDC_VIEW_JOBLIST_MASK_LOCATION1 2149
@@ -3487,7 +3493,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        553
 #define _APS_NEXT_COMMAND_VALUE         33032
-#define _APS_NEXT_CONTROL_VALUE         2344
+#define _APS_NEXT_CONTROL_VALUE         2350
 #define _APS_NEXT_SYMED_VALUE           114
 #endif
 #endif

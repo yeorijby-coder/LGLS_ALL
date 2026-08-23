@@ -79,6 +79,14 @@ public:
 	CStaticTransparent m_lblMesLogDirection;
 	CStaticTransparent m_lblMesLogHostCmd;
 
+	// [LGLS 2026-08-23] HOST 로그 조회 조건 추가 : 작업구분 / 작업번호 / 스테이션 번호
+	CStaticTransparent m_lblJobDefine;
+	CComboBoxWrapper   m_cbxJobDefine;
+	CStaticTransparent m_lblHostLuggNo;
+	CEdit              m_edtHostLuggNo;
+	CStaticTransparent m_lblStnNo;
+	CEdit              m_edtStnNo;
+
 	CDateTimeCtrl m_dtpFrom;
 	CDateTimeCtrl m_dtpFromTime;
 	CDateTimeCtrl m_dtpTo;

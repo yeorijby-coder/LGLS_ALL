@@ -1,0 +1,22 @@
+SET NOCOUNT ON;
+-- [LGLS 2026-08-23] HOST 보고 유형을 WMS-ECS 인터페이스명세서(2010.03.11) 에 맞춘다.
+--   명세서 메시지 타입 : O 작업 지시 / R 재작업 지시 / M WMS C/V IO 모드 송신
+--                        S 상태 보고 / E 에러 보고 / F 작업 완료 보고
+UPDATE COMMON_CODE SET CCD_NM_KOR = N'작업 지시',        CCD_EPR_ORD = 0, CCD_CD_YN = 'Y' WHERE CDX_CD='HOST_CMD' AND CCD_CD='O';
+UPDATE COMMON_CODE SET CCD_NM_KOR = N'재작업 지시',      CCD_EPR_ORD = 1, CCD_CD_YN = 'Y' WHERE CDX_CD='HOST_CMD' AND CCD_CD='R';
+UPDATE COMMON_CODE SET CCD_NM_KOR = N'상태 보고',        CCD_EPR_ORD = 3, CCD_CD_YN = 'Y' WHERE CDX_CD='HOST_CMD' AND CCD_CD='S';
+UPDATE COMMON_CODE SET CCD_NM_KOR = N'에러 보고',        CCD_EPR_ORD = 4, CCD_CD_YN = 'Y' WHERE CDX_CD='HOST_CMD' AND CCD_CD='E';
+UPDATE COMMON_CODE SET CCD_NM_KOR = N'작업 완료 보고',   CCD_EPR_ORD = 5, CCD_CD_YN = 'Y' WHERE CDX_CD='HOST_CMD' AND CCD_CD='F';
+
+-- M 은 실제로 5천 건 넘게 쓰이는데 코드 정의가 없어 화면에 'M' 그대로 나왔다.
+IF NOT EXISTS (SELECT 1 FROM COMMON_CODE WHERE CDX_CD='HOST_CMD' AND CCD_CD='M')
+  INSERT INTO COMMON_CODE (CDX_CD, CCD_CD, CCD_CD_YN, CCD_EPR_ORD, CCD_NM_KOR, WH_TYP)
+  VALUES ('HOST_CMD', 'M', 'Y', 2, N'C/V IO 모드 송신', '10');
+ELSE
+  UPDATE COMMON_CODE SET CCD_NM_KOR = N'C/V IO 모드 송신', CCD_EPR_ORD = 2, CCD_CD_YN = 'Y' WHERE CDX_CD='HOST_CMD' AND CCD_CD='M';
+
+-- 명세서에 없는 유형은 조회 콤보에서 감춘다(과거 로그 표시는 그대로 남도록 행은 유지).
+UPDATE COMMON_CODE SET CCD_CD_YN = 'N' WHERE CDX_CD='HOST_CMD' AND CCD_CD IN ('A','D','P','U');
+
+SELECT CCD_CD + '|' + CCD_CD_YN + '|' + CAST(CCD_EPR_ORD AS varchar) + '|' + CCD_NM_KOR
+  FROM COMMON_CODE WHERE CDX_CD='HOST_CMD' ORDER BY CCD_EPR_ORD;

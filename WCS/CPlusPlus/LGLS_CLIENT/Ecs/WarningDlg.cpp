@@ -136,8 +136,11 @@ void CWarningDlg::OnButtonNext()  { ShowRow((m_nCursor < 0) ? 0 : m_nCursor + 1)
 
 void CWarningDlg::OnButtonShow()
 {
-	m_bMute = !m_bMute;
-	SetDlgItemText(IDC_BUTTON_SHOW, m_bMute ? _T("START") : _T("STOP"));
+	// [LGLS 2026-08-23] STOP : 창을 닫고 이후로는 스스로 뜨지 않는다.
+	//   다시 보려면 리본 [알람] 으로 강제로 띄운다(그때 자동 표시도 함께 다시 켜진다).
+	//   종전에는 m_bMute 만 토글하고 창은 그대로 남아 있었다.
+	m_bMute = TRUE;
+	ShowWindow(SW_HIDE);
 }
 
 // 캡션이 없는 창이라 본문을 잡아 끌어 옮길 수 있게 한다(원본 동작 복원)

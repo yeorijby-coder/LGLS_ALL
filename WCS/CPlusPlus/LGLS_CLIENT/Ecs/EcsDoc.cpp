@@ -347,6 +347,8 @@ void CEcsDoc::OnCommandAlarmShow()
 		AfxMessageBox(GetMsgLangDef(_T("알람 창이 준비되지 않았습니다")));
 		return;
 	}
+	// [LGLS 2026-08-23] STOP 으로 꺼 둔 자동 표시를 여기서 다시 켠다.
+	((CWarningDlg*)m_pWarningDlg)->m_bMute = FALSE;
 	m_pWarningDlg->ShowWindow(SW_SHOW);
 	m_pWarningDlg->SetForegroundWindow();
 }
