@@ -3573,6 +3573,13 @@ namespace TSK_COMM_IOSCH
                 string strSql = "";
                 strSql += CRLF + " UPDATE SC_DATA_LGLS                                 ";
                 strSql += CRLF + "    SET JOB_TYP_OD     = :JOB_TYP_OD            ";
+                // [LGLS 2026-08-23] 작업색 근거. 실경로에서는 이 값을 채우는 곳이 없어 화면의 크레인이
+                //   색 없이 움직였다(구 경로 UpdateScVehicle 만 쓰던 컬럼). 지시와 함께 세우고
+                //   완료 시 ClearScOd 가 0 으로 내린다.
+                strSql += CRLF + "      , JOB_TYP_RD   = :JOB_TYP_OD                ";
+                // 이전 작업의 관측 잔류가 남아 새 작업에 붙어 보이지 않게 지시 시점에 함께 비운다.
+                strSql += CRLF + "      , ITN_LUGG_FK1 = '0'                        ";
+                strSql += CRLF + "      , PALLET_ON_VEHICLE_RD = ''                 ";
                 strSql += CRLF + "      , LUGG_NO_FK1_OD = :LUGG_NO_FK1_OD        ";
                 strSql += CRLF + "      , USE_FK_OD      = '1'                    ";   // FK1 사용 (TWIN 미사용 가정)
                 strSql += CRLF + "      , PALLET_ID_OD   = :PALLET_ID_OD          ";   // Vehicle 반송 JOB
