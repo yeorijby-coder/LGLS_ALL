@@ -429,33 +429,16 @@ void CBCRSkinDlg::OnBnClickedBtnBcrWriteManual()
 		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("바코드상단, 하단 데이터 확인")));
 		return;	
 	}
-	if (strBcrTop != _T("0"))
-	{
-		strSql.Format(_T(" UPDATE CV_DATA			\n")
-			_T("    SET BCR_BOTTOM = '%s'	\n")
-			_T("  WHERE WH_TYP = '%s'		\n")
-			_T("	  AND TRACK_NO= '%s'	  "), strBcrBottom, strWhTyp, strBcrMcNo);
-	}else if (strBcrBottom != _T("0"))
-	{
-		strSql.Format(_T(" UPDATE CV_DATA			\n")
-			_T("    SET BCR_TOP = '%s'	\n")
-			_T("  WHERE WH_TYP = '%s'		\n")
-			_T("	  AND TRACK_NO= '%s'	  "), strBcrTop, strWhTyp, strBcrMcNo);
-	}else{
-		strSql.Format(_T(" UPDATE CV_DATA			\n")
-			_T("    SET BCR_TOP = '%s'	\n")
-			_T("      , BCR_BOTTOM = %s'	\n")
-			_T("  WHERE WH_TYP = '%s'		\n")
-			_T("	  AND TRACK_NO= '%s'	  "), strBcrTop, strBcrBottom, strWhTyp, strBcrMcNo);
-	}
-
-	BOOL isSuccess = m_pDoc->GetSelectQryCnt(strSql);
-
-	if(isSuccess == FALSE)
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
-		return;	
-	}
+	// [LGLS 2026-08-23] CV_DATA 에 바코드를 쓰던 UPDATE 를 걷어냈다.
+	//   · CV_DATA 에는 BCR_TOP / BCR_BOTTOM 열이 없다(구 ECS 스키마 잔재). 현 스키마의
+	//     바코드 열은 barcode 하나뿐이고, 그마저 아무 Task 도 쓰지 않아 전부 NULL 이다.
+	//   · 그래서 이 UPDATE 는 항상 실패했고, 실패하면 아래 BCR_MST 지시까지 못 갔다
+	//     (= 수동 바코드 쓰기 버튼이 통째로 동작하지 않았다).
+	//   · 게다가 위 가드에서 상단/하단이 "0" 이거나 빈 값이면 이미 돌아가므로
+	//     strBcrTop != "0" 은 항상 참이었다 - 나머지 두 분기는 도달할 수 없었고,
+	//     실행되던 분기마저 상단 검사에 하단 값을 넣는 뒤바뀐 코드였다.
+	//   실제 지시는 아래 BCR_MST.CMD_RQ_YN 이므로 그것만 남긴다.
+	BOOL isSuccess = FALSE;
 
 
 	strSql.Format(_T(" UPDATE BCR_MST				\n")

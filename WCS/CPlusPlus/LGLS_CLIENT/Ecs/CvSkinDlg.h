@@ -28,8 +28,6 @@ public:
 			EN_BtnCut = 4,
 			EN_BtnPaste = 5,
 			EN_BtnErrReset = 6,
-			EN_BtnDpInserJob = 7,
-			EN_BtnMGDP = 8,
 		  };
 
 public:
@@ -254,7 +252,6 @@ public:
 	void SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CString strGroup_No, CString strDEST_POS_RD);
 	void SetBindCombo_COMMON_CODE(CComboBox& cbx, CString strCDX_CD, CString strCCD_NM);
 	void GetComBoBoxData(CComboBox& cbx, CString& strVal, int nlength);
-	int GetDP_YN(CString pWH_TYP, CString pTrack);
 
 public:
 	BOOL IsValidataEditData(CString pJobNo, CString pDestPos, CString pJobTyp);
@@ -267,10 +264,6 @@ public:
 	afx_msg void OnBnClickedBtnCvPaste();
 	afx_msg void OnBnClickedBtnCvOk();
 	afx_msg void OnBnClickedBtnCvCancel();
-	afx_msg void OnBnClickedBtnCvBcrTopTransfer();
-	afx_msg void OnBnClickedBtnCvBcrBottomTransfer();
-	afx_msg void OnBnClickedBtnJobBcrTopTransfer();
-	afx_msg void OnBnClickedBtnJobBcrBottomTransfer();
 
 	afx_msg void OnBnClickedCheckCvUseYn();
 	afx_msg void OnBnClickedCheckCvUseY();
@@ -279,7 +272,6 @@ public:
 	CString GetQrySelectJOB_MST( CCV_DATA* pCV_DATA );
 	// [LGLS 2026-08-23] 표시 전용 항목만 갱신(상시 타이머용). 입력 중인 CV상태는 건드리지 않는다.
 	void InvalidateReadOnlyData(EN_LANG pLang);
-	afx_msg void OnBnClickedBtnCvMgdp();
 	CString GetQrySelectSUSPEND( CCV_DATA* pCV_DATA,  CString& strGetErrorCode);
 	afx_msg void OnEnterSizeMove();
 	afx_msg void OnExitSizeMove();
