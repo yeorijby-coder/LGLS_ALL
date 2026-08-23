@@ -701,16 +701,6 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 		return;
 	
 
-	//붙여넣기 활성화 여부 판단 COPY_YN(복사버튼 눌렀는지 유무)
-	CJOB_MST* pCopyJob = m_pDoc->m_pJob->GetCopyJob();
-	if (pCopyJob->COPY_YN == false)
-	{
-		GetDlgItem(IDC_BTN_CV_PASTE)->EnableWindow(FALSE);
-	}
-	else
-	{
-		GetDlgItem(IDC_BTN_CV_PASTE)->EnableWindow(TRUE);
-	}
 
 	//일시정지 활성화 처리
 	int nCNT = 0;
@@ -787,6 +777,15 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	CString strROLL_MODE = _T("");
 	CString strREMOTE_CONTROL = _T("");
 	CString strKIND = _T("");
+
+	// [LGLS 2026-08-23] 붙여넣기 활성화 판정(COPY_YN)을 여기로 옮겼다.
+	//   종전에는 전체 재조회(InvalidateTrackData) 안에만 있어서, CV 대화상자를 열어 둔 채
+	//   작업정보 창에서 [복사] 를 눌러도 [붙여넣기] 가 계속 비활성으로 남았다
+	//   ([자동조회] 를 켜거나 대화상자를 다시 열어야 풀렸다).
+	CJOB_MST* pCopyJob = m_pDoc->m_pJob->GetCopyJob();
+	CWnd* pWndPaste = GetDlgItem(IDC_BTN_CV_PASTE);
+	if (pWndPaste != NULL)
+		pWndPaste->EnableWindow((pCopyJob != NULL && pCopyJob->COPY_YN) ? TRUE : FALSE);
 
 	GetErrorCode(_T("CV"), m_pTrackInfo->m_pCV_DATA->V_ERROR_CODE, (int)pLang, strGetErrorCode);
 	m_edtCvErrorCode.SetWindowText(strGetErrorCode);
@@ -1311,6 +1310,7 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 			//_T("	  , COMP_DP		= 'N'							\n")
 			//_T("	  , COMP_VR		= 'N'							\n")
 			_T("      , OD_RQ_YN = 'Y'								\n")
+			_T("      , TRACKING_WRITE_YN = 'Y'   \n")   /* [LGLS 2026-08-23] 작업번호를 PLC R영역 트래킹에도 기록. OD_RQ_YN 만으로는 D영역 명령만 나가서 설비에 작업번호가 실리지 않는다 */
 			_T("  WHERE WH_TYP = '%s'								\n")
 			_T("	AND PLC_NO = '%02s'								\n")
 			_T("    AND MC_NO = '%s'								\n")
@@ -1438,7 +1438,10 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 					_T("	  , JOB_TYP_OD = '0'			\n")
 					_T("	  , PULP_SENSOR_OD = '0'		\n")
 					_T("      , LUGG_NO_RD = '0', JOB_TYP_RD = '0', DEST_POS_RD = '0' ")
-					_T("      , SENSOR0_DATA_RD = '0', PULP_SENSOR_RD = '0' ")
+					/* [LGLS 2026-08-23] 화물감지(SENSOR0_DATA_RD)/펄프센서는 PLC 가 소유한 읽기값이다.
+					   여기서 DB 에 0 을 써봐야 설비에 파렛트가 있으면 WCS_TASK_CV 가 다음 순회(약 3초)에
+					   1 로 되돌린다 - 화물감지가 꺼졌다가 되살아나는 것처럼 보였다.
+					   삭제는 '데이터만' 지우고 화물감지는 설비 상태 그대로 둔다. */
 					_T("      , WRITE_UPD_DT = ") + m_pDoc->SYSDATE + _T("  \n")
 					_T("      , OD_RQ_YN = 'Y'			\n")
 					_T("      , TRACKING_WRITE_YN = 'Y'		\n")   /* [LGLS 2026-08-23] R영역 트래킹(작업번호)도 0 으로 기록. OD_RQ_YN 만 세우면 D영역 명령만 나가고 PLC 트래킹은 남는다 */
@@ -1545,6 +1548,7 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 						_T("	  , PULP_SENSOR_OD = '0'						\n")
 						_T("      , WRITE_UPD_DT = ") + m_pDoc->SYSDATE + _T("  \n")
 						_T("      , OD_RQ_YN = 'Y'								\n")
+						_T("      , TRACKING_WRITE_YN = 'Y'   \n")   /* [LGLS 2026-08-23] 작업번호를 PLC R영역 트래킹에도 기록. OD_RQ_YN 만으로는 D영역 명령만 나가서 설비에 작업번호가 실리지 않는다 */
 						_T("  WHERE WH_TYP = '%s'								\n")
 						_T("	AND PLC_NO = '%02s'								\n")
 						_T("    AND MC_NO = '%s'								\n")
@@ -1663,6 +1667,7 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 				_T("	  , BCR_TOP = '%s'			\n")
 				_T("	  , BCR_BOTTOM = '%s'		\n")
 				_T("      , OD_RQ_YN = 'Y'			\n")
+				_T("      , TRACKING_WRITE_YN = 'Y'   \n")   /* [LGLS 2026-08-23] 작업번호를 PLC R영역 트래킹에도 기록. OD_RQ_YN 만으로는 D영역 명령만 나가서 설비에 작업번호가 실리지 않는다 */
 				_T("	  , IS_TURN_OD = '0'		\n")
 				_T("      , TRAY_LEV_OD = '0'       \n")
 				_T("      , TRAY_TYP_OD = '0'		\n")
