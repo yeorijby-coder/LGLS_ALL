@@ -497,7 +497,10 @@ CString CLogWcsLogPgr::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 
 	if(strWcsLogLuggNo != _T("") && strWcsLogLuggNo != _T("ALL"))
 	{
-		strSql += CRLF + _T("    AND WLP.LUGG_NO LIKE '%") + strWcsLogLuggNo + _T("%'");
+		// [LGLS 2026-08-23] WCS_LOG_PGR.LUGG_NO 는 기록 주체가 채우지 않아 사실상 전 건 비어 있다.
+		//   작업번호는 메시지 본문에 남으므로 두 곳을 함께 본다(종전에는 컬럼만 봐서 0건이었다).
+		strSql += CRLF + _T("    AND ( WLP.LUGG_NO LIKE '%") + strWcsLogLuggNo + _T("%'");
+		strSql += CRLF + _T("       OR WLP.LOG_KOR LIKE '%") + strWcsLogLuggNo + _T("%' )");
 	}
 #if ORACLE
 	strSql += CRLF + _T(" AND ROWNUM <=	") + strNextRowCnt;
