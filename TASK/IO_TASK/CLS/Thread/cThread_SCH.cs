@@ -1378,6 +1378,12 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                             ";
                 strSql += CRLF + "    AND JM.JOB_STATUS  = :ST_RUN                             ";
                 strSql += CRLF + "    AND SD.OD_RQ_YN    = 'N'                                 ";
+                // [LGLS 2026-08-23] 크레인이 실제로 멈춘 뒤에만 완료로 본다.
+                //   구분 동작(포크출→호이스트→포크센터, 각 3초)을 도입하면서 '지시 후 화물을 들기까지'
+                //   구간이 9초로 늘었다. 그 사이 이전 작업의 COMPLETE_RD 가 남아 있으면 화물을 뜨는
+                //   도중에 완료로 처리돼 버린다(작업 1654 사례 - 입고 HS 에서 드는 중 완료).
+                //   설비가 하역을 마치면 SUBSYSTEM_STATUS_RD 가 1(IDLE)이 되므로 그때만 인정한다.
+                strSql += CRLF + "    AND ISNULL(SD.SUBSYSTEM_STATUS_RD,'1') = '1'             ";
                 // [LGLS 2026-07-24] 완료 판정: 완료신호(COMPLETE_RD<>0) OR 지속완결(유휴+포크빔+스트로브 내려감+경과).
                 //   VehThread 의 COMPLETE_RD 는 UNLOAD_COMPLETE 단발이라, 포화 시 CompleteSC 폴링 창을 놓치면
                 //   신호가 소실돼 25 에 영구 정체한다. SC 가 유휴(UCSTATUS_RD='1')+포크 빔(ITN_LUGG_FK1 빔)+
