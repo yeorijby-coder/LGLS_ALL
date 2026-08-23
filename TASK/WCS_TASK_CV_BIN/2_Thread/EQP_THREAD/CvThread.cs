@@ -2038,7 +2038,7 @@ namespace WCS_TASK_CV
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 작업번호 : [" + LUGG_NO_OD + "] 도착지 : [" + DEST_POS_OD + "] 작업구분 : [" + JOB_TYP_OD + "] CV 지시 실패";
-                        if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg))
+                        if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg, LUGG_NO_OD))
                         {
                             return false;
                         }
@@ -2057,7 +2057,7 @@ namespace WCS_TASK_CV
                     }
 
                     m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 작업번호 : [" + LUGG_NO_OD + "] 도착지 : [" + DEST_POS_OD + "] 작업구분 : [" + JOB_TYP_OD + "] CV 지시 성공";
-                    if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg))
+                    if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg, LUGG_NO_OD))
                     {
                         return false;
                     }
@@ -2285,7 +2285,11 @@ namespace WCS_TASK_CV
 
 
         #region [InsertWcsLogPgr] :: WCS_LOG_PGR에 LOG 남기기
-        public bool InsertWcsLogPgr(string strTRACK_NO, string strLOG_MSG)
+        // [LGLS 2026-08-23] 작업번호/트랙번호를 실제 컬럼에 채운다.
+        //   종전에는 LUGG_NO / TRACK_FROM / TRACK_TO 에 NULL 을 그대로 넣고 트랙번호는
+        //   RQ_INS_ID 에만 들어가, Client 로그 조회에서 작업번호로 걸 수도 없고
+        //   그리드의 작업 칸도 늘 비어 있었다.
+        public bool InsertWcsLogPgr(string strTRACK_NO, string strLOG_MSG, string strLUGG_NO = "")
         {
             try
             {
@@ -2314,12 +2318,12 @@ namespace WCS_TASK_CV
 #else
                 strSql += cDefApp.CRLF + "						  ,NEXTVAL('LOG_SEQ')    ";
 #endif
-                strSql += cDefApp.CRLF + "						  ,NULL                  ";
+                strSql += cDefApp.CRLF + "						  ,:LUGG_NO              ";
                 strSql += cDefApp.CRLF + "						  ,NULL                  ";
                 strSql += cDefApp.CRLF + "						  ,NULL                  ";
                 strSql += cDefApp.CRLF + "						  ,:PGR_NM               ";
                 strSql += cDefApp.CRLF + "						  ,:LOG_KOR              ";
-                strSql += cDefApp.CRLF + "						  ,NULL                  ";
+                strSql += cDefApp.CRLF + "						  ,:TRACK_FROM           ";
                 strSql += cDefApp.CRLF + "						  ,NULL                  ";
                 strSql += cDefApp.CRLF + "						  ,:JOB_STA              ";
                 strSql += cDefApp.CRLF + "						  ,:RQ_INS_ID            ";
@@ -2333,6 +2337,10 @@ namespace WCS_TASK_CV
                 m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR, 255).Value = m_strWh_typ;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("PGR_NM", DbLang.VARCHAR, 255).Value = m_strLogFileNm;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("LOG_KOR", DbLang.VARCHAR, 255).Value = strLOG_MSG;
+                m_msQPlc._pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR, 255).Value =
+                    (string.IsNullOrEmpty(strLUGG_NO) || strLUGG_NO == "0" || strLUGG_NO == "0000") ? (object)DBNull.Value : strLUGG_NO;
+                m_msQPlc._pBdb.mComMain.Parameters.Add("TRACK_FROM", DbLang.VARCHAR, 255).Value =
+                    string.IsNullOrEmpty(strTRACK_NO) ? (object)DBNull.Value : strTRACK_NO;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("JOB_STA", DbLang.VARCHAR, 255).Value = "999";
                 m_msQPlc._pBdb.mComMain.Parameters.Add("RQ_INS_ID", DbLang.VARCHAR, 255).Value = strTRACK_NO;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("EQP_TYP", DbLang.VARCHAR, 255).Value = m_strEqmt_typ;
@@ -3463,7 +3471,7 @@ namespace WCS_TASK_CV
                             MakeMsg_Error(strTitle + " R 쓰기 TX [" + m_msQPlc.SndHexString + "]", m_nthNo);
                             MakeMsg_Error(strTitle + " R 쓰기 RX [" + m_msQPlc.RcvHexString + "]", m_nthNo);
                         }
-                        InsertWcsLogPgr(mcNo, strTitle + " R" + rAddr + " JOB[" + luggNo + "] 쓰기 실패");
+                        InsertWcsLogPgr(mcNo, strTitle + " R" + rAddr + " JOB[" + luggNo + "] 쓰기 실패", luggNo.ToString());
                         return false;
                     }
 
@@ -3475,7 +3483,7 @@ namespace WCS_TASK_CV
 
                     MakeMsg_Imp(strTitle + " TRACK[" + mcNo + "] R" + rAddr
                                 + " JOB[" + luggNo + "] DEST[" + destPos + "] 쓰기 성공", m_nthNo);
-                    InsertWcsLogPgr(mcNo, strTitle + " R" + rAddr + " JOB[" + luggNo + "] 쓰기 성공");
+                    InsertWcsLogPgr(mcNo, strTitle + " R" + rAddr + " JOB[" + luggNo + "] 쓰기 성공", luggNo.ToString());
 
                     // DB TRACKING_WRITE_YN 초기화
                     m_msQPlc._pBdb.BeginTrans();
@@ -3835,7 +3843,13 @@ namespace WCS_TASK_CV
                         MakeMsg_Imp(strTitle + " MC_NO[" + nCvNo + "] PalletExist " + (SENSOR0 == "1" ? "ON" : "OFF")
                                     + " (%MX" + (mBase + palletOfs + s) + ")", m_nthNo);
                     if ((cv.V11_JOBNO ?? "") != strJobNo)
-                        InsertWcsLogPgr(nCvNo.ToString("000"), strTitle + " R트래킹 JOB NO 변경 [" + (cv.V11_JOBNO ?? "") + "] -> [" + strJobNo + "]");
+                        {
+                            // [LGLS 2026-08-23] 작업번호가 사라지는 로그([1718] -> [0])도 그 작업으로 조회되도록
+                            //   새 값이 비면 직전 값을 남긴다.
+                            string strLogLugg = (string.IsNullOrEmpty(strJobNo) || strJobNo == "0" || strJobNo == "0000")
+                                                ? (cv.V11_JOBNO ?? "") : strJobNo;
+                            InsertWcsLogPgr(nCvNo.ToString("000"), strTitle + " 트랙 " + nCvNo + " R트래킹 JOB NO 변경 [" + (cv.V11_JOBNO ?? "") + "] -> [" + strJobNo + "]", strLogLugg);
+                        }
                     if ((cv.AUTO_MODE_RD ?? "") != AUTO_MODE)
                         MakeMsg_Imp(strTitle + " MC_NO[" + nCvNo + "] Op Mode = " + AUTO_MODE, m_nthNo);
 
