@@ -116,7 +116,10 @@ namespace TSK_COMM_IOSCH
         private readonly Dictionary<string, DateTime> m_dicCvClear = new Dictionary<string, DateTime>();  // [LGLS] 라인CV 트랙 지연 정리
         private class CvMovePend { public DateTime Due; public string Odd = ""; public string Lugg = ""; public string JobTyp = "2"; public bool NoClear = false; public string OutStn = "122"; }
         private readonly Dictionary<string, CvMovePend> m_dicCvMove = new Dictionary<string, CvMovePend>();
-        private class OutStnState { public DateTime Due; public int Stage = 0; public string Lugg = ""; public string Odd = ""; public string OutStn = "122"; }
+        // [LGLS 2026-08-23] OddStallSince : Stage 0 에서 "픽업 라인트랙에 내 화물이 없다"로 지시를 못 낸 시각.
+        //   이 상태는 로그도 없이 영원히 continue 하던 자리라, 화물이 유실된 항목 하나가 m_dicOutStn 를 물고
+        //   대기열 전체를 막았다(작업 1783 이 슬롯을 점유 → 1785 가 OUTPEND 에서 무한 대기).
+        private class OutStnState { public DateTime Due; public int Stage = 0; public string Lugg = ""; public string Odd = ""; public string OutStn = "122"; public DateTime OddStallSince = DateTime.MinValue; public DateTime AckStallSince = DateTime.MinValue; }
         private readonly Dictionary<string, OutStnState> m_dicOutStn = new Dictionary<string, OutStnState>();  // [LGLS] RTV 출고대 반출 시퀀스(113→RTV→121→22)  // [LGLS] 출고 라인CV 짝수→홀수 지연 이동
         // [LGLS] RTV 출고대 반출 대기열(FIFO): RTV 는 1대뿐이라 출고대 반출 경로는 동시에 1건만 돈다.
         //   홀수(RGV 픽업)트랙에 도착한 출고 화물을 여기 쌓아두고, 출고대 반출 경로가 비면 선입선출로 하나씩 태운다.
@@ -131,6 +134,15 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-08-23] 종전 20초. 지게차가 도착 즉시 화물을 걷어가는 현장이라 완료가 2~3초 안에 나야 한다.
         //   위 LuggOnAnyTrack 이 '실화물 있는 트랙' 만 세도록 바뀌어, 이송 중인 작업을 조기 완료할 위험은 없다.
         private const int OUT_MISS_GRACE_MS = 2000;
+        // [LGLS 2026-08-23] 반출 대기 항목이 "픽업 라인트랙에 내 화물 없음"으로 지시를 못 내는 상태를 견디는 한계(ms).
+        //   승격 직후에는 화물이 아직 홀수 트랙에 안 올라왔을 수 있어 얼마간은 정상 대기다. 그러나 화물이 유실됐거나
+        //   트래킹만 남은 경우엔 영영 오지 않으므로, 이 시간이 지나면 슬롯을 놓아 뒤에 줄 선 작업을 통과시킨다.
+        private const int OUT_ODD_STALL_MS = 60000;
+        // [LGLS 2026-08-23] 반출 지시 후 RTV 완료신호(COMPLETE_RD='1' + LUGG_OD=내작업)를 기다리는 한계(ms).
+        //   완료 판정은 LUGG_OD 가 아직 내 작업일 때만 성립하는데, 폴링 주기(약 3초) 사이에 다음 반출 지시가
+        //   LUGG_OD 를 덮어쓰면 신호를 영영 못 본다. 그러면 이 항목이 Stage 1 에 갇혀 m_dicOutStn 를 영구 점유하고
+        //   ProcessOutPend 가 막혀 **이후 출고가 전부 정지**한다(작업 1663 사례 - 반송은 끝났는데 15 에서 굳음).
+        private const int OUT_ACK_STALL_MS = 15000;
         private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
         private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
         private readonly Dictionary<string, DateTime> m_dicCraneStepDt = new Dictionary<string, DateTime>();
@@ -281,9 +293,12 @@ namespace TSK_COMM_IOSCH
                         ProcessRvSeq();     // [구 경로] RV(SC/RTV) 적재·하역 4단계 시퀀스 재현
                         ProcessCvClear();
                         ProcessCvMove();    // [구 경로] 라인CV 지연 이동 재현
-                        RecoverOutOrphans();
                         StepCranes();       // [구 경로] 크레인/RTV 주행 1칸 애니메이션
                     }
+                    // [LGLS 2026-08-23] 종전에는 이 호출이 구경로(else) 블록 안에 있어서 **실경로에서는 한 번도 돌지 않았다.**
+                    //   고아 복구는 재기동으로 대기열이 날아간 실경로에서 더 절실하다(작업 1663 = 103 트랙에 화물이 있는데
+                    //   대기열에 없어 84분 방치). 양쪽 경로에서 돌린다 - 구경로 전용 구조(m_dicCvMove)는 함수 안에서 가린다.
+                    RecoverOutOrphans();
                     ProcessOutPend();   // 출고대 반출 대기열 → 반출 경로 비면 다음 화물 투입(FIFO)
                     if (!m_bScAutoComplete)
                         ProcessOutStnReal();  // [실경로] 반출 = RTV Vehicle 지시 1건 + 완료 대기 (이동·배출은 설비)
@@ -2236,6 +2251,38 @@ namespace TSK_COMM_IOSCH
         }
 
         // [LGLS 2026-07-19] 작업번호가 진행 중인 입고 작업인지 (좌초화물 복구의 오인 방지용)
+        /// <summary>
+        /// [LGLS 2026-08-23] 출고 화물의 도착지(출고대)를 JOB_MST 에서 되찾는다.
+        ///   트랙의 DEST_POS_OD 가 비어 있을 때 쓰던 "122" 고정 fallback 은, 실제 도착지가 124/129 인 화물을
+        ///   엉뚱한 출고대로 보내버린다(작업 1663 = 도착지 124 인데 122 로 복구될 뻔함).
+        ///   지시의 원본인 JOB_MST.DEST_POS 를 우선 보고, 거기서도 못 얻으면 그때만 dflt 를 쓴다.
+        /// </summary>
+        private string JobOutDestPos(string lugg, string dflt)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT DEST_POS                            ";
+                q += CRLF + "   FROM JOB_MST                             ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP               ";
+                q += CRLF + "    AND LUGG_NO     = :LG                   ";
+                q += CRLF + "    AND JOB_TYP    IN ('2','12')            ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')   ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')   ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
+                if (_pBdb.ExcuteQry(q) > 0)
+                {
+                    string dp = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS");
+                    // 출고대만 인정 - 로직3=122 / 로직1=124 / 로직2(피킹)=129
+                    if (dp == "122" || dp == "124" || dp == "129") return dp;
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][OUT] JobOutDestPos 오류: " + ex.Message); }
+            return dflt;
+        }
+
         private bool IsActiveInboundJob(string lugg)
         {
             try {
@@ -2710,7 +2757,11 @@ namespace TSK_COMM_IOSCH
             {
                 string q = "";
                 q += CRLF + " SELECT MC_NO, LUGG_NO_RD, DEST_POS_OD FROM CV_DATA ";
-                q += CRLF + "  WHERE WH_TYP = :WH AND SENSOR0_DATA_RD = '1' AND JOB_TYP_RD = '12' ";
+                // [LGLS 2026-08-23] JOB_TYP_RD 는 2026-07-19 화물색 코드 정정(반자동 11/12 → 자동 1/2)으로 '2' 가 된다.
+                //   여기만 옛 코드 '12' 로 남아 있어서 그 뒤로 고아 복구가 **한 건도 매칭되지 않았다**
+                //   (증상: IO_TASK 재기동 후 라인에 남은 출고 화물이 도착지 없이 영구 정지 - 작업 1663 사례).
+                //   구데이터 호환을 위해 둘 다 받는다.
+                q += CRLF + "  WHERE WH_TYP = :WH AND SENSOR0_DATA_RD = '1' AND JOB_TYP_RD IN ('2','12') ";
                 q += CRLF + "    AND MC_NO IN ('101','103','105','109','113','117') ";   // 출고 RGV 픽업(홀수) 라인
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2728,8 +2779,10 @@ namespace TSK_COMM_IOSCH
                     bool movePending = false;                                       // 곧 이 트랙으로 이동 예정이면 그쪽이 등록함
                     foreach (var kv in m_dicCvMove) if (kv.Value.Odd == trk) { movePending = true; break; }
                     if (movePending) continue;
-                    if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = "122";   // 미기록 구화물 구제
+                    // [LGLS 2026-08-23] 미기록 구화물 구제 - 122 고정이 아니라 JOB_MST 의 실제 도착지를 먼저 본다.
+                    if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = JobOutDestPos(lg, "122");
                     m_lstOutPend.Add(new OutPend { Lugg = lg, Odd = trk, OutStn = dest });
+                    DbgLog("OUTREC_" + lg, "[OUT고아복구] " + lg + " 라인" + trk + "→출고대" + dest);
                     MakeMsg_Imp(string.Format("[SCH][OUT] 고아 출고화물 복구 - 작업 {0} 트랙 {1} → 출고대 {2}", lg, trk, dest));
                 }
             }
@@ -2739,8 +2792,12 @@ namespace TSK_COMM_IOSCH
             //   출고 SC 완료 시 예약되는 짝수→홀수 이동(m_dicCvMove)이 재기동으로 소실되면 화물이 짝수 트랙에
             //   영구 잔류하고, CanEnterLine(짝수) 가드 때문에 같은 크레인의 **후속 출고 완료(25→10)가 전부 차단**된다.
             //   → 이동 예약을 재구성해 홀수(RGV 픽업측)로 흘려보낸다.
+            // [LGLS 2026-08-23] 이 블록은 m_dicCvMove(구경로 전용 - ProcessCvMove 가 구경로에서만 소비)를 쓴다.
+            //   실경로에서는 짝수→홀수 이동을 설비가 직접 하므로 재구성하면 안 되고, 넣어봐야 소비자가 없어 쌓이기만 한다.
             try
             {
+                if (m_bScAutoComplete)
+                {
                 string[] evenTrk = { "104", "106", "110", "114", "118" };
                 for (int k = 0; k < evenTrk.Length; k++)
                 {
@@ -2767,10 +2824,11 @@ namespace TSK_COMM_IOSCH
                         _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = evenTrk[k];
                         if (_pBdb.ExcuteQry(qd) > 0) dest = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS_OD");
                     } catch { }
-                    if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = "122";
+                    if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = JobOutDestPos(lg, "122");
                     int en; string odd = int.TryParse(evenTrk[k], out en) ? (en - 1).ToString() : evenTrk[k];
                     m_dicCvMove[evenTrk[k]] = new CvMovePend { Due = DateTime.Now.AddMilliseconds(2500), Odd = odd, Lugg = lg, JobTyp = "2", NoClear = true, OutStn = dest };
                     MakeMsg_Imp(string.Format("[SCH][OUT] SC 하역트랙 좌초화물 복구 - 작업 {0} 트랙 {1} → {2} 이동 예약 (출고대 {3})", lg, evenTrk[k], odd, dest));
+                }
                 }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans(SC하역트랙) 오류: " + ex.Message); }
@@ -3006,6 +3064,32 @@ namespace TSK_COMM_IOSCH
         }
 
         /// <summary>해당 작업의 RTV 반송 완료(COMPLETE_RD='1' + LUGG_OD 일치) 여부</summary>
+        /// <summary>
+        /// [LGLS 2026-08-23] RTV 가 **아직 이 작업을 수행 중**인지. (반출 완료 대기 한계 판정용)
+        ///   지시가 아직 소비 전(OD_RQ_YN='Y')이거나 구동 중(SUBSYSTEM_STATUS_RD='2')이면서
+        ///   LUGG_OD 가 내 작업이면 정상 진행이므로 기다린다. 그 밖(유휴 복귀 / 다른 작업으로 교체)이면
+        ///   이 반송은 이미 끝났거나 신호를 놓친 것이다.
+        /// </summary>
+        private bool RtvBusyWith(string lugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                                  ";
+                q += CRLF + "   FROM RTV_DATA_LGLS                                    ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP                            ";
+                q += CRLF + "    AND RTV_NO      = '801'                              ";
+                q += CRLF + "    AND LUGG_OD     = :LG                                ";
+                q += CRLF + "    AND (OD_RQ_YN = 'Y' OR SUBSYSTEM_STATUS_RD = '2')    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return true; }   // 조회 실패 시엔 '수행 중'으로 보아 성급한 해제를 막는다
+        }
+
         private bool RtvCompleteFor(string lugg)
         {
             try {
@@ -3102,12 +3186,36 @@ namespace TSK_COMM_IOSCH
                         //   예외가 남아 있으면 SC 하역(104) 직후 화물이 103 으로 넘어가기도 전에 RTV 지시가 나가서
                         //   ①RTV 가 104 에서 바로 로딩 ②104 화물감지가 늦게까지 안 꺼짐 현상이 생긴다. → 전 라인 동일 게이트 적용.
                         {
-                            if (IsTrackEmpty(st.Odd)) continue;   // [LGLS 2026-07-21] 화물이 출고 라인(홀수 트랙)에 실도착한 후에만 지시
+                            // [LGLS 2026-07-21] 화물이 출고 라인(홀수 트랙)에 실도착한 후에만 지시
                             // 자기 화물 확인: 픽업트랙 화물의 작업번호가 이 반출의 작업과 일치할 때만
                             //   (지시가 화물 도착보다 앞서 나가면 RTV 가 '다음 출고의 화물'을 오픽업해 재라벨·배출 — 검출 사고).
                             //   단, 트랙 작업번호가 비어 있으면(브리지 지연 등) 다른 게이트에 맡기고 통과.
                             string odLugg = Cap(TrackLugg(st.Odd), 4);
-                            if (odLugg != "" && odLugg != "0000" && odLugg != "0" && odLugg != Cap(lg, 4)) continue;
+                            bool bNotMine = IsTrackEmpty(st.Odd)
+                                         || (odLugg != "" && odLugg != "0000" && odLugg != "0" && odLugg != Cap(lg, 4));
+                            // [LGLS 2026-08-23] 종전에는 여기서 로그 없이 무한 continue 라, 화물이 유실된 항목이
+                            //   m_dicOutStn 슬롯을 영구 점유해 뒤에 줄 선 출고가 전부 멈췄다(1783 → 1785 사례).
+                            //   한계 시간까지 기다려보고, 그래도 안 오면 슬롯을 놓고 넘긴다.
+                            if (bNotMine)
+                            {
+                                if (st.OddStallSince == DateTime.MinValue)
+                                {
+                                    st.OddStallSince = DateTime.Now;
+                                    DbgLog("OUT_" + lg, "[OUT대기] " + lg + " 픽업트랙(" + st.Odd + ") 화물 미도착"
+                                           + " 트랙작업번호=[" + odLugg + "] - 최대 " + (OUT_ODD_STALL_MS / 1000) + "초 대기");
+                                }
+                                else if ((DateTime.Now - st.OddStallSince).TotalMilliseconds >= OUT_ODD_STALL_MS)
+                                {
+                                    m_dicOutStn.Remove(lg);
+                                    RvSeqReset(lg + ":L"); RvSeqReset(lg + ":U");
+                                    DbgLog("OUT_" + lg, "[OUT포기] " + lg + " 픽업트랙(" + st.Odd + ") 화물 미도착 - 반출 슬롯 해제");
+                                    MakeMsg_Error(string.Format(
+                                        "[SCH][OUT] 반출 대기 한계 초과 - 작업 {0} 픽업트랙 {1} 에 화물이 오지 않아 슬롯 해제(대기 {2}초). 화물 위치를 확인하십시오.",
+                                        lg, st.Odd, OUT_ODD_STALL_MS / 1000));
+                                }
+                                continue;
+                            }
+                            st.OddStallSince = DateTime.MinValue;   // 화물이 도착했으면 타이머 리셋
                         }
                         string rtn = "";
                         if (UpdateRtvData("801", "2", lg, st.Odd, pickup, ref rtn))
@@ -3124,8 +3232,25 @@ namespace TSK_COMM_IOSCH
                     }
                     else
                     {
-                        if (!RtvCompleteFor(lg)) continue;
-                        RtvResetComplete();
+                        if (!RtvCompleteFor(lg))
+                        {
+                            // [LGLS 2026-08-23] 완료신호를 놓쳤는지 판별한다. RTV 가 유휴로 돌아왔거나 이미 다른 작업을
+                            //   들고 있으면 이 반송은 어떤 식으로든 끝난 것이다. 그 상태가 한계 시간 지속되면 슬롯을 놓는다.
+                            //   (놓지 않으면 m_dicOutStn 점유가 풀리지 않아 이후 출고 전체가 멈춘다)
+                            if (RtvBusyWith(lg)) { st.AckStallSince = DateTime.MinValue; continue; }   // 아직 내 작업 수행 중
+                            if (st.AckStallSince == DateTime.MinValue)
+                            {
+                                st.AckStallSince = DateTime.Now;
+                                DbgLog("OUT_" + lg, "[OUT완료대기] " + lg + " RTV 완료신호 미관측 - 최대 " + (OUT_ACK_STALL_MS / 1000) + "초 대기");
+                                continue;
+                            }
+                            if ((DateTime.Now - st.AckStallSince).TotalMilliseconds < OUT_ACK_STALL_MS) continue;
+                            DbgLog("OUT_" + lg, "[OUT완료인정] " + lg + " RTV 완료신호 놓침 - 반송 종료로 인정하고 슬롯 해제");
+                            MakeMsg_Error(string.Format(
+                                "[SCH][OUT] 반출 완료신호 미관측 - 작업 {0} ({1} → {2}). RTV 가 해당 작업을 들고 있지 않아 반송 종료로 인정합니다.",
+                                lg, st.Odd, st.OutStn));
+                        }
+                        else RtvResetComplete();
                         m_dicOutStn.Remove(lg);
                         m_dicOutDoneDt[lg] = DateTime.Now;   // [LGLS 2026-07-30] 반출 완료 시각 — CompleteCV 도착 관측 누락 보강용
                         RvSeqReset(lg + ":L"); RvSeqReset(lg + ":U");
