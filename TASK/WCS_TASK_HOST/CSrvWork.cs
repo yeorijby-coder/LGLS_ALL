@@ -652,6 +652,17 @@ namespace TSK_HostCom
         //   pDir : "0"=입고 모드, "1"=출고 모드
         private bool SetCvDirection(string pMcNo, string pDir)
         {
+            return SetCvDirection(pMcNo, pDir, false);
+        }
+
+        // [LGLS 2026-08-23] 겸용 입출고대(C/V#11=22번)는 출고 화물이 아직 그 자리에 있는 동안
+        //   입고 모드로 넘어가면 설비가 같은 자리를 입고대로 쓰기 시작한다.
+        //   그래서 '입고로 되돌리라' 는 지시는 즉시 반영하지 않고 대기 커맨드(DIRW)로 남기고,
+        //   IO_TASK 가 그 작업대(21/22)에 화물도 데이터도 없는 것을 확인한 뒤 DIR 로 승격한다.
+        //   출고(1) 전환은 종전대로 즉시 반영한다.
+        private bool SetCvDirection(string pMcNo, string pDir, bool pbDeferIfBusy)
+        {
+            string strCmdId = (pbDeferIfBusy && pDir == "0") ? "DIRW" : "DIR";
             try
             {
                 m_BDb.BeginTrans();
@@ -659,7 +670,7 @@ namespace TSK_HostCom
 
                 m_strSql = "";
                 m_strSql += modDefApp.CRLF + " UPDATE CV_DATA                                        ";
-                m_strSql += modDefApp.CRLF + "    SET CMD_RQ_ID   = 'DIR'                            ";
+                m_strSql += modDefApp.CRLF + "    SET CMD_RQ_ID   = " + m_BDb.ParamsAdd("CMD_RQ_ID", strCmdId);
                 m_strSql += modDefApp.CRLF + "      , CMD_RQ_PARM = " + m_BDb.ParamsAdd("CMD_RQ_PARM", pDir);
                 m_strSql += modDefApp.CRLF + "      , CMD_RQ_YN   = 'Y'                              ";
                 m_strSql += modDefApp.CRLF + "      , WRITE_UPD_DT = " + modDateTime.SYSDATE;
@@ -747,7 +758,8 @@ namespace TSK_HostCom
                              : strCvNo.Trim();
             string strDir = (strMode == "1") ? "1" : "0";
 
-            if (!SetCvDirection(strMcNo, strDir))
+            //   겸용 입출고대로 가는 '입고 복귀' 는 작업대가 빌 때까지 미룬다(IO_TASK 가 승격).
+            if (!SetCvDirection(strMcNo, strDir, true))
             {
                 m_strLog = string.Format("모드변경 반영 실패 [MC_NO:{0}][Mode:{1}]", strMcNo, strDir);
                 modCmWork.ShowMsgServer(strTitle + m_strLog, modDefApp.MSG_ERR);
@@ -755,7 +767,9 @@ namespace TSK_HostCom
                 return;
             }
 
-            m_strLog = string.Format("모드변경 반영 [MC_NO:{0}][Mode:{1}({2})]", strMcNo, strDir, (strDir == "1") ? "출고" : "입고");
+            m_strLog = string.Format("모드변경 {0} [MC_NO:{1}][Mode:{2}({3})]",
+                                     (strDir == "0") ? "접수(작업대가 비면 반영)" : "반영",
+                                     strMcNo, strDir, (strDir == "1") ? "출고" : "입고");
             modCmWork.ShowMsgServer(strTitle + m_strLog, modDefApp.MSG_IMP);
             MakeResponse("M", "", modDefApp.MSG_NO_ERROR);
         }

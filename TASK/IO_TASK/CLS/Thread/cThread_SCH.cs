@@ -128,7 +128,9 @@ namespace TSK_COMM_IOSCH
         //   폴링/미러 주기 사이에 놓친 채 설비가 배출·데이터클리어까지 끝내면 작업이 15에서 영구 정체(0008/0011/0013 사례)
         //   → 반출 완료 후 GRACE 경과에도 출고대에서 해당 작업번호가 관측되지 않으면 완료로 인정하는 보강에 사용.
         private readonly Dictionary<string, DateTime> m_dicOutDoneDt = new Dictionary<string, DateTime>();
-        private const int OUT_MISS_GRACE_MS = 20000;   // 반출완료→출고대 이송(최대 2홉)+배출+클리어+미러 지연을 넉넉히 상회
+        // [LGLS 2026-08-23] 종전 20초. 지게차가 도착 즉시 화물을 걷어가는 현장이라 완료가 2~3초 안에 나야 한다.
+        //   위 LuggOnAnyTrack 이 '실화물 있는 트랙' 만 세도록 바뀌어, 이송 중인 작업을 조기 완료할 위험은 없다.
+        private const int OUT_MISS_GRACE_MS = 2000;
         private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
         private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
         private readonly Dictionary<string, DateTime> m_dicCraneStepDt = new Dictionary<string, DateTime>();
@@ -266,6 +268,7 @@ namespace TSK_COMM_IOSCH
                     CheckLostInboundCargo();   // [LGLS 2026-07-31] 입고 15 화물 유실 감지 → 재발행(10) 복구
                     CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
                     SweepOrphanTraces();       // [LGLS 2026-08-22] 사라진 작업의 라인 선점/타이머 흔적 청소
+                    PromotePendingDirection();  // [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격
                     if (!m_bScAutoComplete)
                     {
                         CompleteSC();       // 25 → 29(입고 최종) / 10(출고 → CV 처리 인계)
@@ -1206,6 +1209,7 @@ namespace TSK_COMM_IOSCH
                     if (UpdateJobStatus(stNext, luggNo, ref rtn))
                     {
                         ClearScOd(luggNo);	// [LGLS] SC 작업 완료 -> 해당 작업 od 클리어(잔류 방지)
+                        ClearCvOd(luggNo);	// [LGLS 2026-08-23] CV 지시값(LUGG_NO_OD)도 비운다 - 남아 있으면 R트래킹이 재기록된다
                         m_dicPrevCV.Remove("CV_" + mcNo);   // [LGLS] 발행 키(CV_+트랙번호)로 해제
                         // [LGLS] 출고대 반출(21→22)는 SC 완료 시 m_dicOutStn(ProcessOutStn)에서 RTV 반송과 함께 시퀀스 처리
                         if (jobTyp == "1")
@@ -1954,6 +1958,66 @@ namespace TSK_COMM_IOSCH
             catch (Exception ex) { MakeMsg_Error("[SCH] SweepOrphanTraces 오류: " + ex.Message); }
         }
 
+        /// <summary>
+        /// [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격.
+        ///   겸용 입출고대는 출고 화물이 아직 그 자리에 있는 동안 입고 모드로 넘어가면
+        ///   설비가 같은 자리를 입고대로 쓰기 시작한다. 그래서 HOST 의 '입고 복귀' 지시는
+        ///   HOST_TASK 가 DIRW 로 남겨 두고, 여기서 작업대(예: 21/22)에 화물도 데이터도
+        ///   없는 것을 확인한 뒤 DIR 로 승격해 실제 설비에 반영한다.
+        /// </summary>
+        private void PromotePendingDirection()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT MC_NO, ISNULL(CMD_RQ_PARM,'0') AS CMD_RQ_PARM ";
+                q += CRLF + "   FROM CV_DATA                                        ";
+                q += CRLF + "  WHERE WH_TYP    = :WH_TYP                            ";
+                q += CRLF + "    AND CMD_RQ_ID = 'DIRW'                             ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string mcNo = GetVal(dt.Rows[i], "MC_NO");
+                    string dir  = GetVal(dt.Rows[i], "CMD_RQ_PARM");
+                    if (string.IsNullOrEmpty(mcNo)) continue;
+
+                    // 그 작업대와 짝이 되는 트랙(입출고대는 21/22 처럼 둘이 한 쌍)이 모두 비어야 한다.
+                    string mate = RgvPickupTrack(mcNo);
+                    bool bFree = IsTrackEmpty(mcNo) && IsTrackLuggEmpty(mcNo);
+                    if (bFree && mate != mcNo)
+                        bFree = IsTrackEmpty(mate) && IsTrackLuggEmpty(mate);
+
+                    if (!bFree)
+                    {
+                        DbgLog("DIRW_" + mcNo, string.Format("[모드] 전환 대기 - 작업대 {0}/{1} 에 화물·데이터 남음", mcNo, mate));
+                        continue;
+                    }
+
+                    string upd = "";
+                    upd += CRLF + " UPDATE CV_DATA                              ";
+                    upd += CRLF + "    SET CMD_RQ_ID = 'DIR'                    ";
+                    upd += CRLF + "      , CMD_RQ_YN = 'Y'                      ";
+                    upd += CRLF + "      , WRITE_UPD_DT = " + DbLang.SYSDATE + " ";
+                    upd += CRLF + "  WHERE WH_TYP    = :WH_TYP                  ";
+                    upd += CRLF + "    AND MC_NO     = :MC_NO                   ";
+                    upd += CRLF + "    AND CMD_RQ_ID = 'DIRW'                   ";
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
+                    if (_pBdb.ExcuteNonQry(upd) > 0)
+                        MakeMsg_Imp(string.Format("[SCH][CV] 보류된 모드 전환 반영 - 작업대 {0} → {1} (작업대가 비었음)",
+                            mcNo, (dir == "1") ? "출고(1)" : "입고(0)"));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] PromotePendingDirection 오류: " + ex.Message); }
+        }
+
         private bool CanEnterLine(string entryTrack) { return CanEnterLine(entryTrack, ""); }
         private bool CanEnterLine(string entryTrack, string lugg)
         {
@@ -2184,10 +2248,15 @@ namespace TSK_COMM_IOSCH
         {
             try {
                 string q = "";
-                q += CRLF + " SELECT COUNT(*) AS CNT     ";
-                q += CRLF + "   FROM CV_DATA             ";
-                q += CRLF + "  WHERE WH_TYP     = :WH_TYP ";
-                q += CRLF + "    AND LUGG_NO_RD = :LUGG   ";
+                // [LGLS 2026-08-23] 실화물이 얹혀 있는 트랙만 '이송 중' 으로 본다.
+                //   출고대는 지게차가 화물을 걷어간 뒤에도 트래킹(LUGG_NO_RD)이 몇 초 더 남고,
+                //   지시값이 남아 있으면 그 트래킹이 되살아나기도 한다. 그것까지 '존재' 로 세면
+                //   아래 무관측 유예가 영원히 리셋되어 출고 작업이 '15' 에서 굳는다(작업 1401 사례).
+                q += CRLF + " SELECT COUNT(*) AS CNT       ";
+                q += CRLF + "   FROM CV_DATA               ";
+                q += CRLF + "  WHERE WH_TYP     = :WH_TYP  ";
+                q += CRLF + "    AND LUGG_NO_RD = :LUGG    ";
+                q += CRLF + "    AND SENSOR0_DATA_RD = '1' ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -3218,6 +3287,30 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = strLuggNo;
+                _pBdb.ExcuteNonQry(strSql);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-23] 완료된 작업의 CV 지시값 정리.
+        ///   LUGG_NO_OD 가 남아 있으면 WCS_TASK_CV 가 그 값을 R 트래킹에 다시 써서,
+        ///   설비가 이미 비운 출고대에 작업번호가 되살아난다(작업 1401 사례 - 8시간 정체).
+        /// </summary>
+        private void ClearCvOd(string strLuggNo)
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " UPDATE CV_DATA                              ";
+                strSql += CRLF + "    SET LUGG_NO_OD = '0000'                  ";
+                strSql += CRLF + "      , TRACKING_WRITE_YN = 'N'              ";
+                strSql += CRLF + "  WHERE WH_TYP     = :WH_TYP                 ";
+                strSql += CRLF + "    AND LUGG_NO_OD = :LUGG_NO                ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = Cap(strLuggNo, 4);
                 _pBdb.ExcuteNonQry(strSql);
             }
             catch { }

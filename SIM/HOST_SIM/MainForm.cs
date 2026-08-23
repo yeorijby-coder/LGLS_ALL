@@ -449,6 +449,16 @@ namespace HOST_SIM
                 if (strMode != "1")
                 {
                     cv11EmptySince = DateTime.MinValue;    // 이미 입고 모드
+                    // [LGLS 2026-08-23] 입고 모드가 실제로 반영됐다. 모드 변경을 기다리던 로직이
+                    //   그때 비로소 입고 작업을 만든다(출고 화물이 빠진 뒤에야 입고가 시작된다).
+                    lock (logicLock)
+                    {
+                        if (runningCycle)
+                            foreach (var logic in logics)
+                                if (logic.Phase == CyclePhase.WaitInMode && logic.OnInModeConfirmed())
+                                    Log("SYS", logic.Name + " 입고 모드 반영 확인 → 입고 작업 생성");
+                    }
+                    SafeUI(UpdateLogicLabels);
                     return;
                 }
                 if (strAvail != "0")

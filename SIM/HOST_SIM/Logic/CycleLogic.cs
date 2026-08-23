@@ -7,7 +7,8 @@ namespace HOST_SIM.Logic
     {
         Stopped,        // 미기동
         WaitIngoDone,   // 입고 작업지시 전송 후 입고완료(F/1) 대기
-        WaitOutgoDone   // 출고 작업지시 전송 후 출고완료(F/2) 대기
+        WaitOutgoDone,  // 출고 작업지시 전송 후 출고완료(F/2) 대기
+        WaitInMode      // [LGLS 2026-08-23] 입고 모드 변경 요청 후, 상태보고로 반영이 확인되기를 대기
     }
 
     /// <summary>
@@ -108,7 +109,18 @@ namespace HOST_SIM.Logic
                 CycleCount++;
                 if (Enabled)
                 {
-                    SendIngo();
+                    // [LGLS 2026-08-23] 겸용 입출고대(C/V#11)는 출고 화물이 아직 그 자리에 있는 동안
+                    //   입고 모드로 넘기면 설비가 같은 자리를 입고대로 쓰기 시작한다.
+                    //   그래서 여기서는 모드 변경만 요청하고, 상태보고로 '입고 모드' 가 확인된 뒤에
+                    //   입고 작업을 만든다(OnInModeConfirmed).
+                    if (InStation == CV11_CODE)
+                    {
+                        byte[] mode = WmsMessage.BuildModeChange(CV11_CODE, '0');
+                        sendOrder(this, mode, Name + " 모드변경 C/V#11 → 입고(0) 요청 (반영 확인 후 입고 생성)");
+                        Phase = CyclePhase.WaitInMode;
+                    }
+                    else
+                        SendIngo();
                 }
                 else
                 {
@@ -118,6 +130,17 @@ namespace HOST_SIM.Logic
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-23] 상태보고에서 겸용대가 '입고 모드' 로 확인됐을 때 호출.
+        ///   모드 변경을 기다리던 로직만 그때 입고 작업을 만든다.
+        /// </summary>
+        public bool OnInModeConfirmed()
+        {
+            if (Phase != CyclePhase.WaitInMode) return false;
+            SendIngo();
+            return true;
         }
 
         /// <summary>셀(BBbbLL)의 담당 SC 번호 (Bank 2k-1/2k → SC#k)</summary>
@@ -213,7 +236,9 @@ namespace HOST_SIM.Logic
                 {
                     case CyclePhase.WaitIngoDone:
                         return string.Format("{0}: 입고중 JOB={1} 랙={2} (완료 {3}회){4}", Name, CurrentLuggageNo, CurrentCell, CycleCount, tail);
-                    case CyclePhase.WaitOutgoDone:
+                    case CyclePhase.WaitInMode:
+                    return string.Format("{0}: 입고 모드 반영 대기 (완료 {1}회){2}", Name, CycleCount, tail);
+                case CyclePhase.WaitOutgoDone:
                         return string.Format("{0}: 출고중 JOB={1} 랙={2} (완료 {3}회){4}", Name, CurrentLuggageNo, CurrentCell, CycleCount, tail);
                     default:
                         if (PausedNoCrane)
