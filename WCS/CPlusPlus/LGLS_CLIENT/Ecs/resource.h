@@ -3159,6 +3159,7 @@
 #define ID_JOB_STODATE_TO               4007
 #define ID_JOB_CV_COMPLETE              4007
 #define ID_JOB_UPDATE                   4008
+#define ID_JOB_ALL_COMPLETE             4013
 #define ID_BTN_MANUL_JOB_INSERT         4008
 #define ID_JOB_DELETE2                  4009
 #define ID_BTN_MANUAL_JOB_DELETE        4009

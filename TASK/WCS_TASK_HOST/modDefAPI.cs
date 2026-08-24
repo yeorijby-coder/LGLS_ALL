@@ -25,6 +25,13 @@ namespace TSK_HostCom
 		[DllImport("kernel32.dll")]
 		public static extern uint GetPrivateProfileString(string lpAppName, string lpKeyName, string lpDefault, StringBuilder lpReturnedString, int nSize, string lpFileName);
 
+		///*********************************************************************************************
+		/// [LGLS] INI파일의 섹션 전체를 읽어옴 (항목간 NULL 구분).
+		///        스테이션 매핑표([StationMap_xxx])처럼 키 개수가 가변인 섹션을 읽는 데 사용.
+		///*********************************************************************************************
+		[DllImport("kernel32.dll", EntryPoint = "GetPrivateProfileSectionA", CharSet = CharSet.Ansi, SetLastError = true)]
+		public static extern int GetPrivateProfileSection(string lpAppName, byte[] lpReturnedString, int nSize, string lpFileName);
+
 		//--------------------------------------------
 		// RYU 2013.02.05 Sleep을 분리하도록 수정
 		//--------------------------------------------

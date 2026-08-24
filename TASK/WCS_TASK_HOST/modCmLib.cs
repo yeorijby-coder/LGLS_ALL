@@ -250,6 +250,9 @@ namespace TSK_HostCom
                 modDefApp.WH_DEFINE = sb.ToString();
             }
 
+            // [LGLS] IMS(WMS) 스테이션 코드 해석 기준 적재 ([Host]StationMapMode = ECS | WMS)
+            modStationMap.LoadFromIni();
+
             //이중입고재지정횟수추가
             modDefAPI.GetPrivateProfileString("Property", "RE_DRCT_CNT", "", sb, sb.Capacity, modDefApp.MAIN_INI);
 			if (Information.IsNumeric(modDefApp.g_strRE_DRCT_CNT) == false)
@@ -382,6 +385,9 @@ namespace TSK_HostCom
             {
                 modDefApp.WH_DEFINE = sb.ToString();
             }
+
+            // [LGLS] IMS(WMS) 스테이션 코드 해석 기준 적재 ([Host]StationMapMode = ECS | WMS)
+            modStationMap.LoadFromIni();
 
             //이중입고재지정횟수추가
             modDefAPI.GetPrivateProfileString("Property", "RE_DRCT_CNT", "", sb, sb.Capacity, modDefApp.MAIN_INI);

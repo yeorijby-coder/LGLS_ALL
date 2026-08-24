@@ -703,32 +703,22 @@ namespace TSK_HostCom
         //   103=제품 입고대, 104=원부자재 불출대. 102 는 방향에 따라 설비가 갈린다(피킹존 입고=C/V#15, 출고=C/V#14).
         //   103/104 는 기능(입고/출고) 기준 매핑 — 현행 WCS 는 EcsDefine 정렬로 126=입고대(C/V#13)/124=출고대(C/V#12)
         //   (구 ECS 물리 CV#12=입고와 반대. 설비 단위가 아니라 입고대/불출대 기능 단위로 대응시킴).
+        // [LGLS 2026-08-24] 매핑표를 modStationMap 으로 이관.
+        //   INI [Host]StationMapMode = ECS | WMS 로 해석 기준을 전환할 수 있고,
+        //   [StationMap_ECS] / [StationMap_WMS] 에서 개별 코드 재정의도 가능하다.
+        //   기본값(WMS 기준)은 종전 하드코딩과 동일하며, 103/104 만 2026-08-24 협의로
+        //   설비 용도 기준(103=124 입고대 / 104=126 불출대)으로 바뀌었다.
+        //   호출부 시그니처는 그대로 유지한다.
         public static string WmsStationToMcNo(int nCode, bool bSource)
         {
-            switch (nCode)
-            {
-                case 101: return "122";                    // C/V#11 입출고 겸용대 (TR#22)
-                case 102: return bSource ? "130" : "129";  // 피킹존: 입고(출발)=C/V#15(TR#30), 출고(도착)=C/V#14(TR#29)
-                case 103: return "126";                    // 제품 입고대 (현행 입고대 = C/V#13, TR#26)
-                case 104: return "124";                    // 원부자재 불출대 (현행 출고대 = C/V#12, TR#24)
-                // [LGLS 2026-08-22] 명세(20100311) 밖 확장 코드. C/V#2 는 S/C#1 통로 겸용(방향전환형)이지만
-                //   WMS 작업대가 아니어서 명세에 코드가 없다. 시뮬레이터에서 방향을 강제 전환할 수 있도록
-                //   105 를 배정한다(현장 WMS 는 105 를 보내지 않으므로 기존 동작에 영향 없음).
-                case 105: return "103";                    // C/V#2 (S/C#1 통로 겸용, TR#3)
-                default: return nCode.ToString();
-            }
+            string strInner = nCode.ToString();
+            modStationMap.ToInner(nCode.ToString(), bSource, ref strInner);
+            return strInner;
         }
         // 역변환: MC_NO → 명세 작업대 코드 (상태/에러 보고용. 미대응 트랙은 원값 유지)
         public static string McNoToWmsStation(string strMcNo)
         {
-            switch (strMcNo)
-            {
-                case "122": return "101";
-                case "129": case "130": return "102";
-                case "126": return "103";
-                case "124": return "104";
-                default: return strMcNo;
-            }
+            return modStationMap.ToIms(strMcNo);
         }
 
         //설명 : [LGLS] 모드변경(M) 수신 — C/V#11 RGV 방향 (0=입고, 1=출고)

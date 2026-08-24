@@ -94,7 +94,8 @@
     <Compile Include="modCmWork.cs" />
     <Compile Include="modDateTime.cs" />
     <Compile Include="modDefAPI.cs" />
-    <Compile Include="modDefApp.cs" />
+    <Compile Include="modDefApp.cs" />
+    <Compile Include="modStationMap.cs" />
     <Compile Include="modSpDb.cs" />
     <Compile Include="modUpdate.cs" />
     <Compile Include="frmMain.cs">
