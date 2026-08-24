@@ -46,8 +46,7 @@ BEGIN_MESSAGE_MAP(CViewJobListDlg, CSkinDialog)
 	ON_WM_CLOSE()
 	ON_COMMAND_RANGE(ID_JOB_INSERT, ID_JOB_UPDATE, &CViewJobListDlg::OnCommandRangeButtonEvent)
 	//ON_MESSAGE(WM_USER_REFRESH_COLLECT_JOBINFO, &CViewJobListDlg::OnUpdateSpread)
- 	ON_BN_CLICKED(ID_JOB_ALL_COMPLETE, &CViewJobListDlg::OnBnClickedJobAllComplete)
-	ON_BN_CLICKED(ID_JOB_DATA_CLEAR, &CViewJobListDlg::OnBnClickedJobDataClear)	
+ 	ON_BN_CLICKED(ID_JOB_DATA_CLEAR, &CViewJobListDlg::OnBnClickedJobDataClear)	
 	ON_MESSAGE(SSM_CLICK, &CViewJobListDlg::OnSpreadLClick)
 	ON_WM_ERASEBKGND()
 //	ON_BN_CLICKED(ID_JOB_UPDATE, &CViewJobListDlg::OnBnClickedJobUpdate)
@@ -96,7 +95,6 @@ void CViewJobListDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_JOB_PRIORITY, m_cbxJobPriority);
 	DDX_Control(pDX, IDC_VIEW_JOBLIST_EDIT_PRODUCT_SIZE, m_cbxProductSize);
 	DDX_Control(pDX, ID_JOB_COPY, m_btnJobCopy);
-	DDX_Control(pDX, ID_JOB_ALL_COMPLETE, m_btnJobAllComplete);
 	DDX_Control(pDX, ID_JOB_CV_COMPLETE, m_btnJobCvComplete);
 	DDX_Control(pDX, ID_JOB_SC_COMPLETE, m_btnJobScComplete);
 }
@@ -496,123 +494,6 @@ void CViewJobListDlg::JobComplete(CString strJOB_STATUS)
 	InitializeSpread(TRUE);
 }
 
-void CViewJobListDlg::OnBnClickedJobAllComplete()
-{
-	JobCompleteAll();
-}
-
-//=====================================================================================
-// [LGLS 2026-08-24] 일괄 완료
-//
-//  배경 : 크레인이 출고 중 에러로 멈춰 화물을 수동으로 HS 에 내려놓은 경우처럼,
-//         설비 핸드셰이크가 끊겨 작업이 중간 상태(구동중 등)에 멈춰 있을 때
-//         남은 스텝을 한 번에 종료시킨다. (구 ECS 는 단계마다 [완료처리] 를 반복해야 했다)
-//
-//  동작 : JOB_MST.JOB_STATUS 를 작업의 최종 완료 상태로 바로 올린다.
-//           - 도착지가 크레인(9xx) = 입고 계열  → 29 (SC 구동완료)
-//           - 그 외              = 출고 계열  → 19 (CV 구동완료)
-//         이후 처리는 HOST_TASK(CCliWork.GetJobCompleteReport) 가 폴링하여 수행한다.
-//           - 자동(온라인) 작업  : 상위로 작업완료 보고(F) 후 JOB_MST 삭제
-//           - 반자동/수동 작업   : 보고 없이 JOB_MST 삭제
-//             (판정 기준 = LUGG_NO 9000 이상 또는 JOB_TYP 10 이상. HOST_TASK 와 동일 규칙)
-//
-//  주의 : 설비(PLC) 측 잔여 스텝은 PLC 담당이 별도로 정리해야 한다. 본 기능은 WCS 작업만 종료한다.
-//=====================================================================================
-void CViewJobListDlg::JobCompleteAll()
-{
-	if (!m_pDoc->Permission(_T("CViewJobListDlg"), UPD_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	if (m_nActiveRow < 1)
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("그리드를 클릭하시오")));
-		return;
-	}
-
-	CString strWH_TYP    = m_pDoc->m_WH_TYP;
-	CString strLUGG_NO   = m_SpreadSheet.GetValueTXT(2,  m_nActiveRow);
-	CString strSTART_POS = m_SpreadSheet.GetValueTXT(3,  m_nActiveRow);
-	CString strDEST_POS  = m_SpreadSheet.GetValueTXT(5,  m_nActiveRow);
-	CString strJOB_TYP   = m_SpreadSheet.GetValueTXT(7,  m_nActiveRow);
-	CString strJOB_STATUS= m_SpreadSheet.GetValueTXT(8,  m_nActiveRow);
-
-	strLUGG_NO.Trim();
-	strSTART_POS.Trim();
-	strDEST_POS.Trim();
-	strJOB_TYP.Trim();
-	strJOB_STATUS.Trim();
-
-	if (strLUGG_NO == _T(""))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("작업번호가 없습니다")));
-		return;
-	}
-
-	// 최종 완료 상태 결정 : 도착지가 크레인이면 입고 계열(29), 아니면 출고 계열(19)
-	int nDestPos = CConvert::ToInt(strDEST_POS);
-	CString strFinalStatus = (nDestPos >= 900) ? _T("29") : _T("19");
-
-	// 자동(온라인) / 반자동 판정 ? HOST_TASK(CCliWork) 와 동일 기준
-	int  nLuggNo  = CConvert::ToInt(strLUGG_NO);
-	int  nJobTyp  = CConvert::ToInt(strJOB_TYP);
-	BOOL bOnline  = (nLuggNo < 9000 && nJobTyp < 10);
-
-	CString strKind = bOnline ? m_pDoc->GetMsgLangDef(_T("자동(상위 완료보고 후 삭제)"))
-	                          : m_pDoc->GetMsgLangDef(_T("반자동(보고 없이 삭제)"));
-
-	CString strMsg;
-	strMsg.Format(m_pDoc->GetMsgLangDef(_T("남은 스텝을 일괄 완료 하시겠습니까?"))
-		+ _T("\n\n[작업번호 : %s]  [작업구분 : %s]  [현재상태 : %s]\n")
-		+ _T("[출발 : %s]  [도착 : %s]\n")
-		+ _T("[처리 : %s]  [최종상태 : %s]"),
-		strLUGG_NO, strJOB_TYP, strJOB_STATUS, strSTART_POS, strDEST_POS, strKind, strFinalStatus);
-
-	if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES)
-		return;
-
-	UpdateData(TRUE);
-
-	long bTrans = m_pDoc->BeginTrans_DLG();
-	if (bTrans < 1)
-		return;
-
-	CString strLOG_MSG;
-	strLOG_MSG.Format(_T("일괄완료 : JOB_STATUS %s -> %s, 출발[%s], 도착[%s], 작업구분[%s], 구분[%s]"),
-		strJOB_STATUS, strFinalStatus, strSTART_POS, strDEST_POS, strJOB_TYP,
-		bOnline ? _T("자동") : _T("반자동"));
-
-	if (!m_pDoc->GetQueryInsertClientLog(_T("CViewJobListDlg"), strLUGG_NO, _T(""), _T(""), strLOG_MSG))
-	{
-		m_pDoc->RollbackTrans_DLG();
-		return;
-	}
-
-	CString strSql;
-	strSql.Format(_T("UPDATE JOB_MST						 \n")
-		_T("	  SET JOB_STATUS  = '%s'				 \n")
-		_T("	    , UPD_USER_ID = 'CLIENT'			 \n")
-		_T("	    , UPD_DT      = ") + m_pDoc->SYSDATE + _T(" \n")
-		_T("	WHERE WH_TYP      = '%s'				 \n")
-		_T("	  AND LUGG_NO     = '%s'				  "),
-		strFinalStatus, strWH_TYP, strLUGG_NO);
-
-	BOOL isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
-
-	if (isSuccess == FALSE)
-	{
-		m_pDoc->RollbackTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
-		return;
-	}
-
-	m_pDoc->CommitTrans_DLG();
-	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
-	InitializeSpread(TRUE);
-}
-
 void CViewJobListDlg::InitializeControlLanguage()
 {
 	
@@ -997,12 +878,6 @@ void CViewJobListDlg::RedrawImage()
 	m_btnJobCopy.GetWindowRect(&rc);
 	ScreenToClient(&rc);
 	m_btnJobCopy.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
-
-	m_btnJobAllComplete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnJobAllComplete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("copy"), strExtension)), NULL, 5, 5);
-	m_btnJobAllComplete.GetWindowRect(&rc);
-	ScreenToClient(&rc);
-	m_btnJobAllComplete.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
 
 	m_btnJobCvComplete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnJobCvComplete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("copy"), strExtension)), NULL, 5, 5);

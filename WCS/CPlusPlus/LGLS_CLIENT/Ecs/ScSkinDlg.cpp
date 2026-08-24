@@ -1931,108 +1931,192 @@ CString CScSkinDlg::GetQrySelectSC_STATUS_CCD( CSC_DATA* pSC_DATA )
 }
 
 
+//=====================================================================================
+// [LGLS 2026-08-24] [강제 배출] 버튼 = 작업 일괄 완료
+//
+//  배경 : 크레인이 작업 도중 멈춰 화물을 강제로 배출해야 할 때, 남은 스텝을 사람이
+//         하나씩 완료 처리하지 않고 한 번에 정리한다.
+//
+//  동작 (크레인이 물고 있는 작업 기준)
+//   · 입고 중 : 붕괴 화물 등으로 랙에 넣으면 안 되는 경우이므로 WCS 작업을 삭제한다.
+//               - 자동(온라인) 작업  : 삭제 + "WMS 에서도 삭제하라" 안내 (상위 보고 없음)
+//               - 반자동/수동 작업   : 삭제만 (안내 없음)
+//   · 출고 중 : 크레인이 랙에서 꺼내 HS 로 배출한 상태이므로 이후 흐름은 그대로 진행한다.
+//               - 자동(온라인) 작업  : JOB_STATUS=22 로 두어 HOST_TASK 가
+//                                      완료 차수 1(1차 완료) 로 F 보고를 보내게 한다.
+//                                      (CCliWork.GetLoadArrivalReport 가 22 를 폴링)
+//               - 반자동/수동 작업   : 보고 없이 원래 흐름 그대로 진행 (작업 변경 없음)
+//
+//  자동/반자동 판정은 HOST_TASK 와 동일 : LUGG_NO 9000 이상 또는 JOB_TYP 10 이상이면 반자동.
+//  ※ 종전 동작(수동 반출 대화상자 열기)은 아래 주석으로 남겨둔다.
+//=====================================================================================
 void CScSkinDlg::OnBnClickedBtnScManualRet()
 {
-	CString strSC_NO = m_pSC_DATA->K_SC_NO;
-	m_pDoc->OnCreateScManualRet(strSC_NO);
-
-	return;
-
-	CString strLuggNo = _T("");
-	CString strHsMcNo = _T("");
-	CString strSensor0DataRd = _T("");
-	CString strItnLuggNo = m_pSC_DATA->V_ITN_LUGG_FK1; //진행중인 작업번호 미리 담기.
-	CString strSensorFkRd = m_pSC_DATA->V_SENSOR_FK_RD;
-	CString strForkPosRd = m_pSC_DATA->V_FORKPOS_FK1_RD;
-	CString strProductSize = _T("");
-	CString strLOG_MSG = _T("");
+	// [종전] 수동 반출 대화상자
+	//CString strSC_NO = m_pSC_DATA->K_SC_NO;
+	//m_pDoc->OnCreateScManualRet(strSC_NO);
+	//return;
 
 	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
 	{
 		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
 		return;
 	}
-	
-	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("강제배출은 비상 시 사용합니다. 하시겠습니까? ")), MB_YESNO) != IDYES)	
-		return;	
-	
-	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 HS에 화물이 있습니까? ")), MB_YESNO) != IDYES)	
-		return;	
-	
-	
-	//화물감지유무 확인.
-	if (RetHsDataSelect(strHsMcNo, strSensor0DataRd) == FALSE)
+
+	CString strWH_TYP  = m_pDoc->m_WH_TYP;
+	CString strLuggNo  = m_pSC_DATA->V_ITN_LUGG_FK1;		// 크레인이 물고 있는 작업번호
+	strLuggNo.Trim();
+
+	if (strLuggNo.IsEmpty() || strLuggNo == _T("0") || strLuggNo == _T("0000"))
 	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고HS 화물유무감지 조회중 실패")));
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("크레인에 진행 중인 작업이 없습니다.")));
 		return;
 	}
-	
-	if (strSensor0DataRd == _T("0"))
+
+	// ---- 작업 정보 조회 ----
+	int      nRowCnt   = 0;
+	CString  strMessage = _T("");
+	CString  strSql     = _T("");
+
+	strSql.Format(_T(" SELECT LUGG_NO, JOB_TYP, JOB_STATUS, START_POS, DEST_POS  \n")
+	              _T("   FROM JOB_MST                                            \n")
+	              _T("  WHERE WH_TYP  = '%s'                                     \n")
+	              _T("    AND LUGG_NO = '%s'                                      "),
+	              strWH_TYP, strLuggNo);
+
+	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+
+	if (nRowCnt <= 0)
 	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고HS에 화물이 없습니다. 센서를 확인해주세요.")));
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("해당 작업번호의 작업 정보가 없습니다. 작업번호 : ")) + strLuggNo);
 		return;
 	}
-	
-	//SC 화물 없어야됨.
-	if (strSensorFkRd == _T("1") || strSensorFkRd == _T("3"))
+
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	pRsw->MoveFirst();
+
+	CString strJobTyp    = pRsw->GetItem(_T("JOB_TYP"));
+	CString strJobStatus = pRsw->GetItem(_T("JOB_STATUS"));
+	CString strStartPos  = pRsw->GetItem(_T("START_POS"));
+	CString strDestPos   = pRsw->GetItem(_T("DEST_POS"));
+
+	delete pRsw;
+
+	strJobTyp.Trim();  strJobStatus.Trim();  strStartPos.Trim();  strDestPos.Trim();
+
+	// ---- 입고/출고 판정 : 도착지가 크레인(9xx) 이면 입고, 아니면 출고 ----
+	int  nDestPos = CConvert::ToInt(strDestPos);
+	BOOL bStore   = (nDestPos >= 900);
+
+	// ---- 자동(온라인) / 반자동 판정 : HOST_TASK 와 동일 기준 ----
+	int  nLuggNo  = CConvert::ToInt(strLuggNo);
+	int  nJobTyp  = CConvert::ToInt(strJobTyp);
+	BOOL bOnline  = (nLuggNo < 9000 && nJobTyp < 10);
+
+	CString strInfo;
+	strInfo.Format(_T("\n\n[작업번호 : %s]  [작업구분 : %s]  [작업상태 : %s]\n[출발 : %s]  [도착 : %s]  [구분 : %s]"),
+		strLuggNo, strJobTyp, strJobStatus, strStartPos, strDestPos,
+		bOnline ? m_pDoc->GetMsgLangDef(_T("자동")) : m_pDoc->GetMsgLangDef(_T("반자동")));
+
+	//=================================================================================
+	// 출고 중 : 크레인이 HS 로 배출한 상태 → 이후 흐름은 그대로 진행
+	//=================================================================================
+	if (bStore == FALSE)
 	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("SC에 화물이 있어서 강제배출을 할 수 없습니다.")));
+		if (bOnline == FALSE)
+		{
+			// 반자동 : 보고 없이 원래 흐름 그대로 (작업 변경 없음)
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("반자동 출고 작업입니다. 상위 보고 없이 기존 흐름 그대로 진행합니다.")) + strInfo);
+			return;
+		}
+
+		if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 1차 완료(완료 차수 1)로 상위에 보고하시겠습니까?")) + strInfo,
+			MB_YESNO | MB_ICONQUESTION) != IDYES)
+			return;
+
+		m_pDoc->BeginTrans_DLG();
+
+		CString strLogMsg;
+		strLogMsg.Format(_T("강제배출(일괄완료) 출고 : JOB_STATUS %s -> 22 (완료차수 1 보고 요청), 출발[%s], 도착[%s]"),
+			strJobStatus, strStartPos, strDestPos);
+
+		if (!m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), strLuggNo, _T(""), _T(""), strLogMsg))
+		{
+			m_pDoc->RollbackTrans_DLG();
+			return;
+		}
+
+		// JOB_STATUS = 22 : HOST_TASK(GetLoadArrivalReport) 가 폴링하여
+		//                   F + 완료차수 1 로 보고한 뒤 28 로 갱신한다.
+		strSql.Format(_T(" UPDATE JOB_MST                              \n")
+		              _T("    SET JOB_STATUS  = '22'                   \n")
+		              _T("      , UPD_USER_ID = 'CLIENT'               \n")
+		              _T("      , UPD_DT      = ") + m_pDoc->SYSDATE + _T(" \n")
+		              _T("  WHERE WH_TYP      = '%s'                   \n")
+		              _T("    AND LUGG_NO     = '%s'                    "),
+		              strWH_TYP, strLuggNo);
+
+		if (m_pDoc->ExcuteQueryString_DLG(strSql) == FALSE)
+		{
+			m_pDoc->RollbackTrans_DLG();
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+			return;
+		}
+
+		m_pDoc->CommitTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 1차 완료 보고를 요청했습니다. 이후 반송은 기존 흐름대로 진행됩니다.")) + strInfo);
 		return;
 	}
-	
-	//Sc 포크 센터여야 함.
-	if (strForkPosRd != _T("0"))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("SC 포크가 센터가 아니어서 강제배출을 할 수 없습니다.")));
+
+	//=================================================================================
+	// 입고 중 : 랙에 넣으면 안 되는 화물 → WCS 작업 삭제
+	//=================================================================================
+	CString strAsk = bOnline
+		? m_pDoc->GetMsgLangDef(_T("자동 입고 작업입니다. WCS 작업을 삭제합니다.\n(상위에는 보고하지 않으므로 WMS 에서도 별도로 삭제해야 합니다)\n진행하시겠습니까?"))
+		: m_pDoc->GetMsgLangDef(_T("반자동 입고 작업입니다. WCS 작업을 삭제하시겠습니까?"));
+
+	if (AfxMessageBox(strAsk + strInfo, MB_YESNO | MB_ICONQUESTION) != IDYES)
 		return;
-	}
-	
+
 	m_pDoc->BeginTrans_DLG();
-	
-	//SC DATA 삭제
-	if (ScDataDelete() == FALSE)
+
+	CString strLogMsg2;
+	strLogMsg2.Format(_T("강제배출(일괄완료) 입고 : 작업 삭제, JOB_STATUS[%s], 출발[%s], 도착[%s], 구분[%s]"),
+		strJobStatus, strStartPos, strDestPos, bOnline ? _T("자동") : _T("반자동"));
+
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), strLuggNo, _T(""), _T(""), strLogMsg2))
 	{
 		m_pDoc->RollbackTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("SC 데이터 삭제중 실패")));
 		return;
 	}
-	
-	//해당 작업정보 조회 및 삭제(없으면 안함)
-	if (JobMstDelete(strItnLuggNo, strProductSize) == FALSE)
+
+	strSql.Format(_T(" DELETE FROM JOB_MST      \n")
+	              _T("  WHERE WH_TYP  = '%s'    \n")
+	              _T("    AND LUGG_NO = '%s'     "), strWH_TYP, strLuggNo);
+
+	if (m_pDoc->ExcuteQueryString_DLG(strSql) == FALSE)
 	{
 		m_pDoc->RollbackTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("작업정보 삭제중 실패")));
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
 		return;
 	}
-	
-	//반자동작업 생성
-	if (JobMstInsert(strHsMcNo, strLuggNo, strProductSize) == FALSE)
-	{
-		m_pDoc->RollbackTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("반자동 작업 생성중 실패")));
-		return;
-	}
-	
-	//출고HS DATA 쓰기
-	if (CvDataUpdate(strHsMcNo, strLuggNo, strProductSize) == FALSE)
-	{
-		m_pDoc->RollbackTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 HS DATA 쓰기중 실패")));
-		return;
-	}
-	
-	strLOG_MSG.Format(_T("SC 강제 배출 BUTTON -> SC NO : %s , 삭제 작업번호 : %s, 생성 작업번호 : %s"), m_pSC_DATA->K_SC_NO, strItnLuggNo, strLuggNo);
-	if (!m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), _T(""), _T(""), _T(""), strLOG_MSG))
-	{
-		m_pDoc->RollbackTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("LOG 입력중 실패")));
-		return;
-	}
-	
+
 	m_pDoc->CommitTrans_DLG();
-	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("강제배출 성공")));
+
+	if (bOnline)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("WCS 입고 작업을 삭제했습니다.\n\n★ WMS(상위)에서도 해당 작업을 반드시 삭제해 주십시오. ★")) + strInfo,
+			MB_OK | MB_ICONEXCLAMATION);
+	}
+	else
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("반자동 입고 작업을 삭제했습니다.")) + strInfo);
+	}
+
 	return;
+
 }
+
 
 BOOL CScSkinDlg::RetHsDataSelect(CString& strHS_MC_NO, CString& strSENSOR0_DATA_RD)
 {

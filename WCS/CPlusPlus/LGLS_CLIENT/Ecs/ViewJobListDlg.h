@@ -93,7 +93,6 @@ public:
 	CSkinButton m_btnJobCopy;
 
 	
-	CSkinButton m_btnJobAllComplete;	// [LGLS 2026-08-24] ÀÏ°ý ¿Ï·á
 	CSkinButton m_btnJobCvComplete;
 	CSkinButton m_btnJobScComplete;
 
@@ -244,8 +243,6 @@ public:
 
 	void CopyJob();
 	void JobComplete(CString pJOB_STATUS);
-	void JobCompleteAll();					// [LGLS 2026-08-24] ÀÜ¿© ½ºÅÜ ÀÏ°ý ¿Ï·á
-	afx_msg void OnBnClickedJobAllComplete();
 
 	BOOL m_bFirstStart;
 };
