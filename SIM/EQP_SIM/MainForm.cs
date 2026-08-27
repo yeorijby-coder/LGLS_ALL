@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -190,7 +190,17 @@ namespace EQP_SIM
         }
 
         private void btnFeed11_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:11"); }
-        private void btnFeed12_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:12"); }
+
+        // [LGLS 2026-08-24] 가운데 투입 버튼은 "26 입고대" 를 가리킨다.
+        //   WCS 모드(MODE/TARGET != ECS, 기본) : EcsDefine 정렬로 126=C/V#13 이 입고대, 124=C/V#12 는 출고대다.
+        //     → 종전처럼 CONVEYOR:12 로 투입하면 IngoPath 가 없어 항상 실패했다(시나리오 3-1 시험 불가).
+        //   구 ECS 모드                        : C/V#12 가 입고대이므로 그대로 12 로 보낸다.
+        //   (WorldModel(wcsOrientation) 의 정의와 1:1 로 맞춘다)
+        private void btnFeed12_Click(object sender, EventArgs e)
+        {
+            ManualFeed((engine != null && engine.WcsSupport) ? "CONVEYOR:13" : "CONVEYOR:12");
+        }
+
         private void btnFeed15_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:15"); }
 
         private void ManualFeed(string id)

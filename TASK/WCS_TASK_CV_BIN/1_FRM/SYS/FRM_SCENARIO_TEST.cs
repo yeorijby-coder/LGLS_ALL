@@ -126,6 +126,7 @@ namespace WCS_TASK_CV
             BuildScenarioButtons();
 
             Controls.Add(pnlScenario);
+            Controls.Add(BuildSemiJobPanel());   // [LGLS 2026-08-24] 반자동 작업 생성 줄
             Controls.Add(pnlXml);
             Controls.Add(lblConn);
             Controls.Add(lbl);
@@ -140,6 +141,127 @@ namespace WCS_TASK_CV
         //   버튼 한 번으로 시나리오(스텝 주소)를 새 XML 기준으로 재구성한다.
         // ═════════════════════════════════════════════════════════════════════
         private Label lblXmlStat;
+
+        // ═════════════════════════════════════════════════════════════════════
+        // [LGLS 2026-08-24] 반자동 시나리오 테스트 지원 — 반자동 작업(JOB_MST) 생성
+        //
+        //  상위(WMS) 없이 이 화면만으로 반송 시나리오를 돌리기 위한 것이다.
+        //  반자동 규약(WCS_TASK_HOST.CCliWork / CLAUDE.md) :
+        //     LUGG_NO 9000번대 또는 JOB_TYP 10 이상  →  상위 완료보고 없이 삭제
+        //     입고=JOB_TYP '11' (작업대 → 크레인) / 출고=JOB_TYP '12' (크레인 → 작업대)
+        //  IO_TASK 스케줄러가 JOB_STATUS '99' 를 집어 11/12 를 1/2 로 정규화해 라우팅한다.
+        //
+        //  시나리오 문서(시나리오 영역_시나리오그림포함 V1.4) 기준 작업대 :
+        //     입고 : TR#22(C/V#11) · TR#26(C/V#13) · TR#30(C/V#15)
+        //     출고 : TR#22(C/V#11) · TR#24(C/V#12) · TR#29(C/V#14)
+        //  내부 코드 = 100 + 트랙번호 (122 / 126 / 130 / 124 / 129), 크레인 = 901~905.
+        // ═════════════════════════════════════════════════════════════════════
+        private ComboBox cboSemiKind, cboSemiStn, cboSemiCrane;
+        private TextBox  txtSemiCell;
+        private Label    lblSemiStat;
+
+        private Panel BuildSemiJobPanel()
+        {
+            var pnl = new Panel { Dock = DockStyle.Top, Height = 36, Padding = new Padding(8, 4, 0, 0), BackColor = Color.FromArgb(245, 245, 230) };
+
+            var lbl = new Label { Text = "반자동 작업", Left = 8, Top = 8, Width = 68, Font = new Font("맑은 고딕", 9F, FontStyle.Bold) };
+
+            cboSemiKind = new ComboBox { Left = 78, Top = 5, Width = 66, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("맑은 고딕", 9F) };
+            cboSemiKind.Items.AddRange(new object[] { "입고", "출고" });
+            cboSemiKind.SelectedIndex = 0;
+            cboSemiKind.SelectedIndexChanged += (s, e) => FillSemiStations();
+
+            cboSemiStn = new ComboBox { Left = 148, Top = 5, Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("맑은 고딕", 9F) };
+
+            var lblC = new Label { Text = "S/C", Left = 304, Top = 8, Width = 26, Font = new Font("맑은 고딕", 9F) };
+            cboSemiCrane = new ComboBox { Left = 330, Top = 5, Width = 50, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("맑은 고딕", 9F) };
+            for (int i = 1; i <= 5; i++) cboSemiCrane.Items.Add(i.ToString());
+            cboSemiCrane.SelectedIndex = 0;
+
+            var lblCell = new Label { Text = "셀(열-연-단)", Left = 388, Top = 8, Width = 68, Font = new Font("맑은 고딕", 9F) };
+            txtSemiCell = new TextBox { Left = 456, Top = 5, Width = 78, Text = "01-001-01", Font = new Font("맑은 고딕", 9F) };
+
+            var btn = new Button
+            {
+                Text = "반자동 작업 생성", Left = 542, Top = 3, Width = 120, Height = 25,
+                Font = new Font("맑은 고딕", 9F, FontStyle.Bold), BackColor = Color.PaleGreen
+            };
+            btn.Click += btnSemiJob_Click;
+
+            lblSemiStat = new Label { Left = 670, Top = 8, Width = 300, AutoSize = false, Font = new Font("맑은 고딕", 9F), ForeColor = Color.DarkGreen };
+
+            pnl.Controls.AddRange(new Control[] { lbl, cboSemiKind, cboSemiStn, lblC, cboSemiCrane, lblCell, txtSemiCell, btn, lblSemiStat });
+            FillSemiStations();
+            return pnl;
+        }
+
+        private void FillSemiStations()
+        {
+            if (cboSemiStn == null) return;
+            cboSemiStn.Items.Clear();
+            if (cboSemiKind.SelectedIndex == 0)
+            {
+                cboSemiStn.Items.AddRange(new object[] { "122 (TR#22 C/V#11)", "126 (TR#26 C/V#13)", "130 (TR#30 C/V#15)" });
+            }
+            else
+            {
+                cboSemiStn.Items.AddRange(new object[] { "122 (TR#22 C/V#11)", "124 (TR#24 C/V#12)", "129 (TR#29 C/V#14)" });
+            }
+            cboSemiStn.SelectedIndex = 0;
+        }
+
+        private void btnSemiJob_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                bool bSto  = (cboSemiKind.SelectedIndex == 0);            // 입고
+                string stn = cboSemiStn.Text.Split(' ')[0];               // "126 (…)" → "126"
+                string sc  = "90" + cboSemiCrane.Text;                    // 901~905
+                string cell = (txtSemiCell.Text ?? "").Trim();
+                if (cell.Length == 0) cell = "01-001-01";
+
+                string jobTyp   = bSto ? "11" : "12";
+                string startPos = bSto ? stn  : sc;
+                string destPos  = bSto ? sc   : stn;
+                string startLoc = bSto ? "00-000-00" : cell;
+                string destLoc  = bSto ? cell : "00-000-00";
+
+                string sql =
+                    " INSERT INTO JOB_MST (WH_TYP, LUGG_NO, START_POS, START_LOCATION, DEST_POS, DEST_LOCATION" +
+                    " , PRODUCT_SIZE, JOB_TYP, JOB_STATUS, JOB_PRIORITY, INS_DT, INS_USER_ID, REMARKS, WC_STEP)" +
+                    " VALUES ('" + cDefApp.GM_WH_TYP + "'" +
+                    " , (SELECT RIGHT('0000' + CAST(CASE WHEN ISNULL(MAX(CAST(LUGG_NO AS INT)),9000) >= 9900 THEN 9001" +
+                    "                            ELSE ISNULL(MAX(CAST(LUGG_NO AS INT)),9000)+1 END AS VARCHAR),4)" +
+                    "      FROM JOB_MST WHERE LUGG_NO LIKE '9[0-9][0-9][0-9]' AND LUGG_NO <= '9900')" +
+                    " , '" + startPos + "', '" + startLoc + "', '" + destPos + "', '" + destLoc + "'" +
+                    " , '0', '" + jobTyp + "', '99', '100', GETDATE(), 'CVTASK', 'SEMI-SCENARIO', '0')";
+
+                int n;
+                using (var cn = new System.Data.SqlClient.SqlConnection(owner.m_strConnectString))
+                {
+                    cn.Open();
+                    using (var cmd = new System.Data.SqlClient.SqlCommand(sql, cn))
+                        n = cmd.ExecuteNonQuery();
+                }
+
+                if (n > 0)
+                {
+                    lblSemiStat.ForeColor = Color.DarkGreen;
+                    lblSemiStat.Text = string.Format("생성됨 — {0} {1} → {2} (JOB_TYP {3}, 상태 99)",
+                                                     bSto ? "입고" : "출고", startPos, destPos, jobTyp);
+                }
+                else
+                {
+                    lblSemiStat.ForeColor = Color.Firebrick;
+                    lblSemiStat.Text = "생성 실패 (INSERT 0건)";
+                }
+            }
+            catch (Exception ex)
+            {
+                lblSemiStat.ForeColor = Color.Firebrick;
+                lblSemiStat.Text = "오류: " + ex.Message;
+            }
+        }
 
         private void BuildScenarioButtons()
         {
