@@ -152,8 +152,8 @@ namespace WCS_TASK_CV
         //  IO_TASK 스케줄러가 JOB_STATUS '99' 를 집어 11/12 를 1/2 로 정규화해 라우팅한다.
         //
         //  시나리오 문서(시나리오 영역_시나리오그림포함 V1.4) 기준 작업대 :
-        //     입고 : TR#22(C/V#11) · TR#26(C/V#13) · TR#30(C/V#15)
-        //     출고 : TR#22(C/V#11) · TR#24(C/V#12) · TR#29(C/V#14)
+        //     입고 : TR#22(C/V#11) · TR#24(C/V#12) · TR#30(C/V#15)
+        //     출고 : TR#22(C/V#11) · TR#26(C/V#13) · TR#29(C/V#14)
         //  내부 코드 = 100 + 트랙번호 (122 / 126 / 130 / 124 / 129), 크레인 = 901~905.
         // ═════════════════════════════════════════════════════════════════════
         private ComboBox cboSemiKind, cboSemiStn, cboSemiCrane;
@@ -201,11 +201,13 @@ namespace WCS_TASK_CV
             cboSemiStn.Items.Clear();
             if (cboSemiKind.SelectedIndex == 0)
             {
-                cboSemiStn.Items.AddRange(new object[] { "122 (TR#22 C/V#11)", "126 (TR#26 C/V#13)", "130 (TR#30 C/V#15)" });
+                // [LGLS 2026-08-24 현장기준] 입고대 = TR#22(C/V#11) · TR#24(C/V#12) · TR#30(C/V#15)
+                cboSemiStn.Items.AddRange(new object[] { "122 (TR#22 C/V#11)", "124 (TR#24 C/V#12)", "130 (TR#30 C/V#15)" });
             }
             else
             {
-                cboSemiStn.Items.AddRange(new object[] { "122 (TR#22 C/V#11)", "124 (TR#24 C/V#12)", "129 (TR#29 C/V#14)" });
+                // [LGLS 2026-08-24 현장기준] 출고대 = TR#22(C/V#11) · TR#26(C/V#13) · TR#29(C/V#14)
+                cboSemiStn.Items.AddRange(new object[] { "122 (TR#22 C/V#11)", "126 (TR#26 C/V#13)", "129 (TR#29 C/V#14)" });
             }
             cboSemiStn.SelectedIndex = 0;
         }

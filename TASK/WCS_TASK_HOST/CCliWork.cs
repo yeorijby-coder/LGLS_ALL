@@ -991,7 +991,7 @@ namespace TSK_HostCom
             //   하나라도 불가면 불가. 모드 0=입고/1=출고 (CV_DATA.STOCK_MODE — WCS_TASK_CV 가 방향워드 미러).
             string strMC_NO = "";
             string strMC_NO_LIST = "'0'";
-            string st122 = "0", st129 = "0", st130 = "0", st126 = "0";
+            string st122 = "0", st129 = "0", st130 = "0", st124 = "0";
             string mode101 = "0", mode110 = "0";
 
             for (int iii = 0; iii < iCnt; iii++)
@@ -1020,14 +1020,16 @@ namespace TSK_HostCom
                     case "122": st122 = strAvailPallet; mode101 = (strStock == "1") ? "1" : "0"; break;
                     case "129": st129 = strAvail; break;
                     case "130": st130 = strAvailPallet; break;
-                    case "126": st126 = strAvail; break;
+                    // [LGLS 2026-08-24 현장기준] 103 = 제품 입고대 = C/V#12(TR#24) = 내부 124.
+                    //   (종전에는 126 을 읽었으나 126 은 C/V#13 출고대다)
+                    case "124": st124 = strAvail; break;
                     case "103": mode110 = (strStock == "1") ? "1" : "0"; break;
                 }
             }
 
             sbStatus.Append(st122);                                        // 101 외부 입고 전용 입출고대 상태
             sbStatus.Append(st130);                                        // 102 Picking 작업대 상태 (구 ECS: CONVEYOR:15 = 트랙130)
-            sbStatus.Append(st126);                                        // 103 제품 입고대 상태
+            sbStatus.Append(st124);                                        // 103 제품 입고대 상태 (C/V#12 TR#24)
             sbStatus.Append(mode101);                                      // 101 PLC Mode (0=입고, 1=출고)
             sbStatus.Append(mode110);                                      // 110 실온 S/C 1호기 C/V PLC Mode
             #endregion

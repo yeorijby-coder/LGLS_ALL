@@ -479,11 +479,11 @@ namespace TSK_COMM_IOSCH
                 }
                 DateTime now = DateTime.Now;
 
-                // [LGLS] status-15(CV_RUN) 입고작업 입고대→픽업트랙 이송(입력 컨베이어). "등장" 후 IN_DWELL 경과 시. CompleteCV(15→30)가 입고대 lugg=0000 요구하므로 CV처리에서 이송. (122→121, 126→125, 130→131)
+                // [LGLS] status-15(CV_RUN) 입고작업 입고대→픽업트랙 이송(입력 컨베이어). "등장" 후 IN_DWELL 경과 시. CompleteCV(15→30)가 입고대 lugg=0000 요구하므로 CV처리에서 이송. (122→121, 124→123, 130→131)  [LGLS 2026-08-24 현장기준] C/V#12=입고(124) / C/V#13=출고(126)
                 {
                     string qs = "";
                     qs += CRLF + " SELECT JM.LUGG_NO, JM.START_POS FROM JOB_MST JM ";
-                    qs += CRLF + "  WHERE JM.WH_TYP = :WH AND JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = :ST15 AND JM.START_POS IN ('122','126','130') ";
+                    qs += CRLF + "  WHERE JM.WH_TYP = :WH AND JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = :ST15 AND JM.START_POS IN ('122','124','130') ";
                     _pBdb.mComMain.CommandType = CommandType.Text;
                     _pBdb.mComMain.Parameters.Clear();
                     _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -528,7 +528,7 @@ namespace TSK_COMM_IOSCH
                 {
                     string lugg = GetVal(dt.Rows[i], "LUGG_NO");
                     string sp   = GetVal(dt.Rows[i], "START_POS");
-                    if (sp != "122" && sp != "126" && sp != "130") continue;   // [LGLS] 로직3(122)·로직1(126)·로직2(130) 입고대만 IO_TASK 공급
+                    if (sp != "122" && sp != "124" && sp != "130") continue;   // [LGLS] 로직3(122)·로직1(124)·로직2(130) 입고대만 IO_TASK 공급  [LGLS 2026-08-24 현장기준] C/V#12=입고(124) / C/V#13=출고(126)
                     if (IsCvPaused(sp)) { fedSp.Add(sp); continue; }   // [LGLS 2026-07-19] 입고대 일시정지 — 공급 보류
                     if (string.IsNullOrEmpty(lugg) || lugg == "0" || lugg == "0000") continue;   // 빈 작업번호(0000 팬텀) 방지
                     if (fedSp.Contains(sp)) continue;           // 입고대별 틱당 1건
@@ -1635,7 +1635,7 @@ namespace TSK_COMM_IOSCH
                         //   (데이터+화물 실은 채 도착 →2s→ SC 화물 사라짐 →2s→ 라인에 화물만 →2s→ SC 데이터 사라지고 라인에 데이터)
                         //   상태 전이 뒤에는 이 분기로 되돌아올 수 없으므로 반드시 전이 '전에' 완주시킨다.
                         if (jobTyp == "2" && !RvSeqStep(luggNo + ":SU", false, "S", startPos, RgvOutDropTrack(startPos), luggNo, "2",
-                                                        (destPos == "126" ? "126" : (destPos == "124" || destPos == "122" || destPos == "129") ? destPos : "122")))
+                                                        ((destPos == "126" || destPos == "122" || destPos == "129") ? destPos : "122")))
                             continue;
                         // 중(25) → 완료 : 입고(1)=최종 29, 출고(2)=CV 처리 인계 10
                         string stNext = (jobTyp == "2") ? ST_CV_WAIT : ST_SC_DONE;
@@ -1647,7 +1647,7 @@ namespace TSK_COMM_IOSCH
                             // [LGLS] 출고: 라인CV 짝수(H/S 하역)→홀수(RGV 픽업측) 이동만 예약. RTV 출고대 반출은
                             //   홀수 트랙에 실제 도착했을 때 ProcessCvMove 가 대기열(m_lstOutPend)에 넣고 ProcessOutPend 가 태운다.
                             // [LGLS] 출고: 라인CV 짝수 트랙의 화물·데이터는 위 하역 시퀀스가 이미 기록함 → 여기선 짝수→홀수(RGV 픽업측) 이동만 예약.
-                            else if (jobTyp == "2") { string even = RgvOutDropTrack(startPos); int pn; string odd = int.TryParse(even, out pn) ? (pn - 1).ToString() : even; m_dicCvMove[even] = new CvMovePend { Due = now.AddMilliseconds(2500), Odd = odd, Lugg = luggNo, JobTyp = "2", NoClear = true, OutStn = (destPos == "126" ? "126" : (destPos == "124" || destPos == "122" || destPos == "129") ? destPos : "122") }; RvSeqReset(luggNo + ":SL"); RvSeqReset(luggNo + ":SU"); }  // OutStn=출고대(로직1=124/로직3=122)
+                            else if (jobTyp == "2") { string even = RgvOutDropTrack(startPos); int pn; string odd = int.TryParse(even, out pn) ? (pn - 1).ToString() : even; m_dicCvMove[even] = new CvMovePend { Due = now.AddMilliseconds(2500), Odd = odd, Lugg = luggNo, JobTyp = "2", NoClear = true, OutStn = ((destPos == "126" || destPos == "122" || destPos == "129") ? destPos : "122") }; RvSeqReset(luggNo + ":SL"); RvSeqReset(luggNo + ":SU"); }  // OutStn=출고대(로직1=126/로직3=122)
                             if (jobTyp == "2")
                                 MakeMsg_Imp(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 완료 - 작업 {0} → CV 처리 인계 (상태 '{1}')", luggNo, stNext));
                             else
@@ -1874,7 +1874,7 @@ namespace TSK_COMM_IOSCH
         { { "121", "15" }, { "123", "2" }, { "130", "10" }, { "131", "10" },   // 131=130(C/V#15 입고대)의 RGV측 픽업트랙(TR#31=plc10)
           { "103", "3" }, { "107", "6" }, { "111", "9" }, { "115", "12" }, { "119", "14" },      // 입고 홀수라인(RT#03,07,11,15,19)
           { "101", "1" }, { "105", "5" }, { "109", "8" }, { "113", "11" }, { "117", "13" },      // 출고 홀수라인(RT#01,05,09,13,17) — RTV 픽업지점
-          { "125", "4" }, { "126", "4" }, { "124", "2" }, { "129", "7" }, { "127", "7" } };       // 스테이션: 126입고대(C/V#13)=RT#25=plc4, 124출고대(C/V#12)=RT#23=plc2, 129출고대(C/V#14)=RT#27=plc7, 127=129의 RGV 하역트랙(동일 plc7)
+          { "125", "4" }, { "126", "4" }, { "124", "2" }, { "129", "7" }, { "127", "7" } };       // 스테이션: 126출고대(C/V#13)=RT#25=plc4, 124입고대(C/V#12)=RT#23=plc2  [LGLS 2026-08-24 현장기준] C/V#12=입고(124) / C/V#13=출고(126), 129출고대(C/V#14)=RT#27=plc7, 127=129의 RGV 하역트랙(동일 plc7)
         private static string RgvCell(string track)
         {
             return m_dicRgvCell.ContainsKey(track) ? m_dicRgvCell[track] : "0";
@@ -2400,12 +2400,41 @@ namespace TSK_COMM_IOSCH
                 if (_pBdb.ExcuteQry(q) > 0)
                 {
                     string dp = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS");
-                    // 출고대만 인정 - 로직3=122 / 로직1=124 / 로직2(피킹)=129
-                    if (dp == "122" || dp == "124" || dp == "129") return dp;
+                    // 출고대만 인정 - 로직3=122 / 로직1=126 / 로직2(피킹)=129
+                    //   [LGLS 2026-08-28 현장기준] C/V#12(124)=입고대, C/V#13(126)=출고대 → 124 는 더 이상 출고대가 아니다
+                    if (dp == "122" || dp == "126" || dp == "129") return dp;
                 }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][OUT] JobOutDestPos 오류: " + ex.Message); }
             return dflt;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-28] 해당 작업번호가 **진행 중인 출고 작업**으로 JOB_MST 에 살아 있는지.
+        ///   RecoverOutOrphans 는 CV_DATA 의 잔류 트래킹(LUGG_NO_RD)만 보고 RTV 반출을 지시했다.
+        ///   그래서 이미 삭제/완료된 작업의 잔류값(WCS_TASK_CV 가 아직 동기화하지 못한 기동 직후의
+        ///   낡은 readback 포함)으로 **유령 반송지시**가 나가, 설비 RGV 가 빈 트랙에서 영원히 대기하고
+        ///   SUBSYSTEM_STATUS 가 IDLE 로 돌아오지 않아 그 뒤의 모든 입고가 '30' 에서 멈췄다.
+        /// </summary>
+        private bool IsActiveOutboundJob(string lugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                    ";
+                q += CRLF + "   FROM JOB_MST                            ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
+                q += CRLF + "    AND LUGG_NO     = :LG                  ";
+                q += CRLF + "    AND JOB_TYP    IN ('2','12')           ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
         }
 
         private bool IsActiveInboundJob(string lugg)
@@ -2820,7 +2849,7 @@ namespace TSK_COMM_IOSCH
                 string s = "";
                 s += CRLF + " UPDATE CV_DATA SET SENSOR0_DATA_RD = :SEN, LUGG_NO_RD = :LUGG, JOB_TYP_RD = :JT, AUTO_MODE_RD = :AM ";
                 // [LGLS] 라인 트랙의 도착지 기록/정리. 클리어(sensor='0')면 '0' 으로 되돌린다.
-                //   dest 는 라인 트랙에만 넘긴다(스테이션 122/124/126 의 DEST_POS_OD 는 DriveCV 발행이 소유).
+                //   dest 는 라인 트랙에만 넘긴다(스테이션 122/124/126/129/130 의 DEST_POS_OD 는 DriveCV 발행이 소유).
                 if (dest != "" || sensor == "0") s += CRLF + "      , DEST_POS_OD = :DEST         ";
                 s += CRLF + "      , READ_UPD_DT = " + DbLang.SYSDATE + "                          ";   // [LGLS] readback 갱신 → DriveCV 의 READ_UPD_DT>WRITE_UPD_DT 게이트 충족(입고대 IO_TASK 공급용)
                 s += CRLF + "  WHERE WH_TYP = :WH_TYP AND MC_NO = :MC_NO                          ";
@@ -2901,6 +2930,7 @@ namespace TSK_COMM_IOSCH
                     if (string.IsNullOrEmpty(lg) || lg == "0" || lg == "0000") continue;
                     if (m_dicOutStn.ContainsKey(lg)) continue;                       // 이미 반송 중
                     if (m_lstOutPend.Exists(x => x.Lugg == lg)) continue;           // 이미 대기열
+                    if (!IsActiveOutboundJob(lg)) continue;                         // [LGLS 2026-08-28] 삭제/완료된 작업의 잔류 트래킹 → 유령 반송지시 금지
                     bool movePending = false;                                       // 곧 이 트랙으로 이동 예정이면 그쪽이 등록함
                     foreach (var kv in m_dicCvMove) if (kv.Value.Odd == trk) { movePending = true; break; }
                     if (movePending) continue;
@@ -2933,6 +2963,7 @@ namespace TSK_COMM_IOSCH
                     if (m_dicOutStn.ContainsKey(lg)) continue;
                     if (m_lstOutPend.Exists(x => x.Lugg == lg)) continue;
                     if (IsActiveInboundJob(lg)) continue;                       // 입고 화물(SC 픽업 대기)은 대상 아님
+                    if (!IsActiveOutboundJob(lg)) continue;                     // [LGLS 2026-08-28] 삭제/완료된 작업의 잔류 트래킹 → 유령 반송지시 금지
                     bool inSeq = false;                                         // 하역/적재 시퀀스 진행 중이면 그쪽 소유
                     foreach (var kv in m_dicRvSeq) if (kv.Value.Track == evenTrk[k]) { inSeq = true; break; }
                     if (inSeq) continue;
@@ -2958,7 +2989,7 @@ namespace TSK_COMM_IOSCH
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans(SC하역트랙) 오류: " + ex.Message); }
 
-            // [LGLS] 출고대 **하역트랙**(121→122, 123→124)에 좌초한 화물도 복구한다.
+            // [LGLS] 출고대 **하역트랙**(121→122, 125→126)에 좌초한 화물도 복구한다.
             //   여기 막힌 화물은 ProcessOutPend 의 "출고대가 비어야 시작" 조건에 걸려 **대기열 전체를 막는 머리**가 된다.
             //   반송은 이미 끝난 상태이므로 배출 단계(Stage 3)부터 재개시켜 내보내고 정리한다.
             // [LGLS 2026-08-23] 이 블록도 구경로 전용이다.
@@ -2970,8 +3001,10 @@ namespace TSK_COMM_IOSCH
             {
                 if (m_bScAutoComplete)
                 {
-                string[] pickTrk = { "121", "123", "127" };   // [LGLS 2026-07-19] 129(C/V#14) 하역트랙 127 추가
-                string[] stnTrk  = { "122", "124", "129" };
+                // [LGLS 2026-08-28 현장기준] 출고대 = 122(C/V#11) / 126(C/V#13) / 129(C/V#14)
+                //   하역트랙은 출고대-1 : 121 / 125 / 127
+                string[] pickTrk = { "121", "125", "127" };   // [LGLS 2026-07-19] 129(C/V#14) 하역트랙 127 추가
+                string[] stnTrk  = { "122", "126", "129" };
                 for (int k = 0; k < pickTrk.Length; k++)
                 {
                     if (IsTrackEmpty(pickTrk[k])) continue;
@@ -2984,6 +3017,7 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-07-19] 입고 작업의 이송 화물(122→121 등, RGV 픽업 대기)을 출고 좌초로 오인 금지.
                     //   해당 작업번호가 진행 중인 입고(JOB_TYP='1')면 AutoRunRGV 소유이므로 건너뛴다.
                     if (IsActiveInboundJob(lg)) continue;
+                    if (!IsActiveOutboundJob(lg)) continue;                  // [LGLS 2026-08-28] 삭제/완료된 작업의 잔류 트래킹 → 유령 반송지시 금지
                     m_dicOutStn[lg] = new OutStnState { Due = DateTime.Now, Stage = 3, Lugg = lg,
                                                       Odd = RgvOutDropTrack("901"), OutStn = stnTrk[k] };
                     MakeMsg_Imp(string.Format("[SCH][OUT] 출고대 하역트랙 좌초화물 복구 - 작업 {0} 트랙 {1} → 배출 {2}", lg, pickTrk[k], stnTrk[k]));
@@ -3066,9 +3100,9 @@ namespace TSK_COMM_IOSCH
             {
                 OutStnState st = m_dicOutStn[lg];
                 if (now < st.Due) continue;
-                // [LGLS] 출고대 일반화 : pickup=출고대 하역트랙(122→121, 124→123), discharge=출고대 배출트랙(122/124), outCell=출고대 RTV위치.
+                // [LGLS] 출고대 일반화 : pickup=출고대 하역트랙(122→121, 126→125), discharge=출고대 배출트랙(122/126/129), outCell=출고대 RTV위치.
                 string pickup = RgvPickupTrack(st.OutStn);   // 121(로직3) / 123(로직1)
-                string discharge = st.OutStn;                // 122(로직3) / 124(로직1)
+                string discharge = st.OutStn;                // 122(로직3) / 126(로직1) / 129(로직2)
                 string outCell = RgvCell(pickup);            // plc15(로직3) / plc2(로직1)
                 // [LGLS] Stage 0 : RTV 가 출고 라인(Odd)으로 빈차 이동해 픽업 준비
                 if (st.Stage == 0) { UpdateRtvVehicle("801", "2", "0", RgvCell(st.Odd), "2", "0", "0", st.Odd, pickup, allowEmptyMove: true); st.Due = now.AddMilliseconds(2500); st.Stage = 1; }

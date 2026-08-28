@@ -157,8 +157,8 @@
     <Equip plc="09" type="CV" no="9" frTrack="117" toTrack="118" />
     <Equip plc="10" type="CV" no="10" frTrack="119" toTrack="120" />
     <Equip plc="11" type="CV" no="11" frTrack="121" toTrack="122" inStation="122" outStation="122" rgvPickTrack="121" rgvDropTrack="121" />
-    <Equip plc="12" type="CV" no="12" frTrack="123" toTrack="124" outStation="124" rgvDropTrack="123" />
-    <Equip plc="13" type="CV" no="13" frTrack="125" toTrack="126" inStation="126" rgvPickTrack="125" />
+    <Equip plc="12" type="CV" no="12" frTrack="123" toTrack="124" inStation="124" rgvPickTrack="123" />
+    <Equip plc="13" type="CV" no="13" frTrack="125" toTrack="126" outStation="126" rgvDropTrack="125" />
     <Equip plc="14" type="CV" no="14" frTrack="127" toTrack="129" outStation="129" rgvDropTrack="127" />
     <!-- [LGLS 2026-08-21] C/V#15 는 슬롯 배치가 비선형이다 (구 ECS TB_OBSERVABLE + PPT 슬라이드 59 일치).
             PALLET_EXIST_FLAG_01(%MX720)=트랙131, _02(%MX721)=132, _03(%MX722)=130.
@@ -315,25 +315,25 @@
       <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
       <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="1" value="off" desc="입출고대 반출 완료 (작업자 회수)" />
     </Scenario>
-    <Scenario id="3-1" title="3-1. 26 입고대 → S/C 입고 (C/V #13 → RGV → 통로 → S/C → 랙)" crane="select">
-      <!-- ① 26 입고대 : 적재 → 이동 → RGV 픽업 -->
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="1" value="on" desc="26 입고대 적재 감지 (작업자 투입)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="LoadComplete2" value="on" desc="Load Complete #2 ON (적재 완료)" />
-      <Step kind="force" equip="CV" no="13" block="Ack" signal="LoadComplete2Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #2 ON (WCS)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
-      <Step kind="observe" equip="CV" no="13" block="Ack" signal="LoadComplete2Ack" value="off" desc="Load Complete Ack #2 OFF (설비 리셋)" />
-      <Step kind="word" device="D" equip="CV" no="13" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 입고 &#x27;0&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="13" block="Tracking" signal="JobNo" slot="1" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 최초 기록 (적재 위치)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="1" value="off" desc="적재 위치 Pallet Exist OFF (ID Shift)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="0" value="on" desc="반출 위치 Pallet Exist ON (도착)" />
-      <Step kind="word" device="R" equip="CV" no="13" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="WorkOrder" value="on" desc="W.O 보고 (RGV Call)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="0" value="off" desc="반출 위치 Pallet Exist OFF (RGV Load 완료)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="UnloadComplete1" value="on" desc="Unload Complete #1 ON (RGV 픽업)" />
-      <Step kind="force" equip="CV" no="13" block="Ack" signal="UnloadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Unload Complete Ack #1 ON (WCS)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="UnloadComplete1" value="off" desc="Unload Complete #1 OFF" />
-      <Step kind="observe" equip="CV" no="13" block="Ack" signal="UnloadComplete1Ack" value="off" desc="Unload Complete Ack #1 OFF (설비 리셋)" />
-      <Step kind="observe" equip="CV" no="13" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
+    <Scenario id="3-1" title="3-1. 24 입고대 → S/C 입고 (C/V #12 → RGV → 통로 → S/C → 랙)" crane="select">
+      <!-- ① 24 입고대 : 적재 → 이동 → RGV 픽업 -->
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="1" value="on" desc="24 입고대 적재 감지 (작업자 투입)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="LoadComplete2" value="on" desc="Load Complete #2 ON (적재 완료)" />
+      <Step kind="force" equip="CV" no="12" block="Ack" signal="LoadComplete2Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #2 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
+      <Step kind="observe" equip="CV" no="12" block="Ack" signal="LoadComplete2Ack" value="off" desc="Load Complete Ack #2 OFF (설비 리셋)" />
+      <Step kind="word" device="D" equip="CV" no="12" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 입고 &#x27;0&#x27;" />
+      <Step kind="word" device="R" equip="CV" no="12" block="Tracking" signal="JobNo" slot="1" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 최초 기록 (적재 위치)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="1" value="off" desc="적재 위치 Pallet Exist OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="0" value="on" desc="반출 위치 Pallet Exist ON (도착)" />
+      <Step kind="word" device="R" equip="CV" no="12" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="WorkOrder" value="on" desc="W.O 보고 (RGV Call)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="0" value="off" desc="반출 위치 Pallet Exist OFF (RGV Load 완료)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="UnloadComplete1" value="on" desc="Unload Complete #1 ON (RGV 픽업)" />
+      <Step kind="force" equip="CV" no="12" block="Ack" signal="UnloadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Unload Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="UnloadComplete1" value="off" desc="Unload Complete #1 OFF" />
+      <Step kind="observe" equip="CV" no="12" block="Ack" signal="UnloadComplete1Ack" value="off" desc="Unload Complete Ack #1 OFF (설비 리셋)" />
+      <Step kind="observe" equip="CV" no="12" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
       <!-- ② RGV #1 반송 -->
       <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="IDLE=1 확인" />
       <Step kind="force" equip="RGV" no="1" block="Ack" signal="TransferRequest" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Req’ (WCS 지시)" />
@@ -386,7 +386,7 @@
       <Step kind="observe" equip="SC" no="$" block="Event" signal="UnloadComplete" value="off" desc="Unload Complete OFF" />
       <Step kind="word" device="D" equip="SC" no="$" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="IDLE 복귀" />
     </Scenario>
-    <Scenario id="3-2" title="3-2. S/C → 24 출고대 출고 (랙 → S/C → 통로 → RGV → C/V #12)" crane="select">
+    <Scenario id="3-2" title="3-2. S/C → 26 출고대 출고 (랙 → S/C → 통로 → RGV → C/V #13)" crane="select">
       <!-- ④ S/C 반송 (출고 - 랙 취출) -->
       <Step kind="word" device="D" equip="SC" no="$" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="IDLE=1 확인" />
       <Step kind="force" equip="SC" no="$" block="Ack" signal="TransferRequest" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Req’ (WCS 지시)" />
@@ -425,7 +425,7 @@
       <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="IDLE=1 확인" />
       <Step kind="force" equip="RGV" no="1" block="Ack" signal="TransferRequest" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Req’ (WCS 지시)" />
       <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="From" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Data - From (픽업 포트)" />
-      <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="To1" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Data - To (24 출고대 #23)" />
+      <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="To1" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Data - To (26 출고대 #23)" />
       <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="JobNo" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Data - Job No" />
       <Step kind="observe" equip="RGV" no="1" block="Event" signal="PalletExistFlag" value="on" desc="Pallet Presence ON (RGV 적재)" />
       <Step kind="word" device="R" equip="RGV" no="1" block="Tracking" signal="PalletOnVehicle" isString="true" src="VehThread.cs::PollObservations" desc="On RGV - 탑재 화물번호" />
@@ -438,17 +438,17 @@
       <Step kind="force" equip="RGV" no="1" block="Ack" signal="UnloadCompleteAck" src="VehThread.cs::PollObservations" desc="Unload Complete Ack ON (WCS)" />
       <Step kind="observe" equip="RGV" no="1" block="Event" signal="UnloadComplete" value="off" desc="Unload Complete OFF" />
       <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="IDLE 복귀" />
-      <!-- ④ 24 출고대 : RGV 하역 → 이동 → 반출 -->
-      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="0" value="on" desc="24 출고대 RGV측 Pallet Exist ON (RGV 하역)" />
-      <Step kind="observe" equip="CV" no="12" block="Event" signal="LoadComplete1" value="on" desc="Load Complete #1 ON" />
-      <Step kind="force" equip="CV" no="12" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
-      <Step kind="observe" equip="CV" no="12" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
-      <Step kind="word" device="D" equip="CV" no="12" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="12" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
-      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
-      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="1" value="on" desc="24 출고대 반출 위치 Pallet Exist ON (도착)" />
-      <Step kind="word" device="R" equip="CV" no="12" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
-      <Step kind="observe" equip="CV" no="12" block="Event" signal="PalletExist" slot="1" value="off" desc="24 출고대 반출 완료 (작업자 회수)" />
+      <!-- ④ 26 출고대 : RGV 하역 → 이동 → 반출 -->
+      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="0" value="on" desc="26 출고대 RGV측 Pallet Exist ON (RGV 하역)" />
+      <Step kind="observe" equip="CV" no="13" block="Event" signal="LoadComplete1" value="on" desc="Load Complete #1 ON" />
+      <Step kind="force" equip="CV" no="13" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="13" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
+      <Step kind="word" device="D" equip="CV" no="13" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
+      <Step kind="word" device="R" equip="CV" no="13" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
+      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
+      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="1" value="on" desc="26 출고대 반출 위치 Pallet Exist ON (도착)" />
+      <Step kind="word" device="R" equip="CV" no="13" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
+      <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="1" value="off" desc="26 출고대 반출 완료 (작업자 회수)" />
     </Scenario>
     <Scenario id="4-1" title="4-1. 30 입고대 → S/C 입고 (C/V #15 → RGV → 통로 → S/C → 랙)" crane="select">
       <!-- ① 30 입고대 : 적재 → 이동 → RGV 픽업 -->

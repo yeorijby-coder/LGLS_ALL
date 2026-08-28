@@ -91,7 +91,7 @@
             this.btnFeed11.Click += new System.EventHandler(this.btnFeed11_Click);
             this.btnFeed12.Location = new System.Drawing.Point(456, 14);
             this.btnFeed12.Size = new System.Drawing.Size(130, 30);
-            this.btnFeed12.Text = "26 입고대 파렛트 투입 (WCS:CV#13)";
+            this.btnFeed12.Text = "24 입고대 파렛트 투입 (CV#12)";
             this.btnFeed12.Click += new System.EventHandler(this.btnFeed12_Click);
             this.btnFeed15.Location = new System.Drawing.Point(592, 14);
             this.btnFeed15.Size = new System.Drawing.Size(130, 30);

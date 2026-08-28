@@ -117,11 +117,15 @@ namespace EQP_SIM.Sim
                 RtvArrivePort = 21 });   // [LGLS 2026-08-22] 21번 트랙 = RGV 접점(RTV 도착지). 22번은 지게차 입출고대
             if (wcsOrientation)
             {
-                // [LGLS 2026-07-15] EcsDefine 기준 정렬: 124(C/V#12)=출고대, 126(C/V#13)=입고대 (예전엔 반대)
+                // [LGLS 2026-08-24] ★현장 확인 기준으로 정정 : C/V#12 = 입고대(TR#24), C/V#13 = 출고대(TR#26).
+                //   종전에는 "EcsDefine 정렬"이라며 반대로(124=출고/126=입고) 두었으나, 현장·WCS DB 경로정의
+                //   (CV_DEF_INF : 124→123 "C/V#12 입고" / 125→126 "C/V#13 출고") 및 DEST_POS_DEF(출고 목적지
+                //   1022·1026·1029)와 어긋났다. DB 가 맞고 이 모델이 틀렸던 것이라 여기를 뒤집는다.
+                //   → 구 ECS 모드(else)와 결과적으로 같아지지만, 모드 분기 구조는 그대로 둔다.
                 AddConveyor(new ConveyorDef { Id = "CONVEYOR:12", No = 12, Ports = new[] { 23, 24 }, Orders = new[] { 1, 2 },
-                    IngoPath = null, OutgoPath = new[] { 23, 24 }, IsInput = false });   // 124=출고대(Ret)
+                    IngoPath = new[] { 24, 23 }, OutgoPath = null, IsInput = true });    // 124=입고대(Sto)
                 AddConveyor(new ConveyorDef { Id = "CONVEYOR:13", No = 13, Ports = new[] { 25, 26 }, Orders = new[] { 1, 2 },
-                    IngoPath = new[] { 26, 25 }, OutgoPath = null, IsInput = true });    // 126=입고대(Sto)
+                    IngoPath = null, OutgoPath = new[] { 25, 26 }, IsInput = false });   // 126=출고대(Ret)
             }
             else
             {
