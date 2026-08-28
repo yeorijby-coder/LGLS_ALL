@@ -132,24 +132,24 @@
 		<Tracks plcno="12" cid="17110100" FirstTrack="123">
 			<Track	number="123">
 				<Status>
-					<RtvArriveHS name="출고대 RGV 하역 (TR#23)" id="123"/>
+					<RtvDepartHS name="입고대 RGV 픽업 (TR#23)" id="123"/>
 				</Status>
 			</Track>
 			<Track	number="124">
 				<Status>
-					<RetStation name="출고대 (TR#24)" id="124"/>
+					<StoStation name="입고대 (TR#24)" id="124"/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="13" cid="17110100" FirstTrack="125">
 			<Track	number="125">
 				<Status>
-					<RtvDepartHS name="입고대 RGV 픽업 (TR#25)" id="125"/>
+					<RtvArriveHS name="출고대 RGV 하역 (TR#25)" id="125"/>
 				</Status>
 			</Track>
 			<Track	number="126">
 				<Status>
-					<StoStation name="입고대 (TR#26)" id="126"/>
+					<RetStation name="출고대 (TR#26)" id="126"/>
 				</Status>
 			</Track>
 		</Tracks>
