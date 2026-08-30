@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -602,8 +602,14 @@ namespace HOST_SIM
         {
             int rackBase = config.GetInt("COMMON", "RACK_STATION_BASE", 200);
             string rackStation = (rackBase + 1).ToString();          // SC1 하이랙 스테이션 (기본 201)
-            string[] outStations = { "124", "129", "122" };          // 출고대 24/29/22
-            string[] inStations  = { "126", "130", "122" };          // 입고대 26/30/22
+            // [LGLS 2026-08-30] 현장기준(2026-08-24 정정) 반영 — C/V#12 = 24 입고대 / C/V#13 = 26 출고대.
+            //   종전 목록은 정정 이전 값(124=출고대/126=입고대)이라 시험이 스스로 막혔다:
+            //     · 출고 목적지를 입고대(124)로 잡아 EQP_SIM 자동투입 파렛트와 충돌 → 작업번호 없는 유령 화물이
+            //       124 를 점유 → 출고 반출(10)이 못 끝남 → 출고 직렬화 게이트로 SC1 출고 전체 정지
+            //       → 출고 우선 특례로 901행 입고 RTV 지시까지 보류(연쇄 정지)
+            //     · 입고 출발지를 출고대(126)로 잡아 자동투입 대상이 아니라 파렛트가 영영 오지 않음
+            string[] outStations = { "126", "129", "122" };          // 출고대 26(C/V#13) / 29(C/V#14) / 22(C/V#11)
+            string[] inStations  = { "124", "130", "122" };          // 입고대 24(C/V#12) / 30(C/V#15) / 22(C/V#11)
 
             lock (logicLock)
             {
