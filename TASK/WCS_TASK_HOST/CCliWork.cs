@@ -1341,7 +1341,7 @@ namespace TSK_HostCom
             m_strSql += modDefApp.CRLF + "    AND  CD.DEST_POS_RD   = '" + strWC_MC_NO + "'";
             //m_strSql += modDefApp.CRLF + "    AND  CD.DEST_POS_OD   = '" + strWC_MC_NO + "'";
             m_strSql += modDefApp.CRLF + "    AND  CD.RET_READY_RD  = '1'";
-            m_strSql += modDefApp.CRLF + "    AND  JM.JOB_STATUS    = '11'";
+            m_strSql += modDefApp.CRLF + "    AND  JM.JOB_STATUS    = '15'";   // [LGLS 2026-08-30] 구동지시 폐기 : 11 → 15
             m_strSql += modDefApp.CRLF + "    AND  JM.WC_STEP       = '0'";
 
             iCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
@@ -1523,8 +1523,8 @@ namespace TSK_HostCom
         //최초작성자	: BASE(정복열)
         //작성일		: 20200519
         //설명		    : 완료 보고  
-        /// <summary>[LGLS 2026-08-30] 완료 상태 코드. common_code JOB_STATUS '9' = 완료.</summary>
-        private const string JOB_ST_DONE = "9";
+        /// <summary>[LGLS 2026-08-30] 완료 상태 코드. common_code JOB_STATUS '09' = 완료.</summary>
+        private const string JOB_ST_DONE = "09";
 
         /// <summary>[LGLS 2026-08-30] 작업 상태만 바꾼다(완료 표시 / 실패 시 롤백용).</summary>
         private bool UpdateJobStatusTo(string strLuggNum, string strStatus)
@@ -1877,7 +1877,7 @@ namespace TSK_HostCom
                 return false;
             }
 
-            // [LGLS 2026-08-30] 완료 상태 '9' 신설 (사용자 요구)
+            // [LGLS 2026-08-30] 완료 상태 '09' 신설 (사용자 요구)
             //   입고 완료(29) / 출고 완료(19)  →  9(완료)  →  상위 응답 수신  →  삭제
             //   완료 보고를 내보내는 시점에 '완료'로 표시해 두고, 응답을 받으면 지운다.
             //   상위가 없으면 9(완료) 로 남아 "일은 끝났는데 상위 응답 대기 중"임이 화면에 드러난다.

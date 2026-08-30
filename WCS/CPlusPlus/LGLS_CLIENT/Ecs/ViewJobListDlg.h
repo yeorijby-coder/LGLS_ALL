@@ -138,7 +138,12 @@ protected:
 	CButton m_chkAutoRefresh;		// 런타임 생성(리소스 편집 없음)
 	void CreateAutoRefreshCheck();
 	void AddCodePrefixToCombo(CComboBoxWrapper& cbx);
-	void AlignComboRightTo(CComboBoxWrapper& cbx, int nRight);	// [LGLS 2026-08-30] 콤보 우변 맞춤	// [LGLS 2026-08-30] "[코드] 이름" 표기
+	void AlignComboRightTo(CComboBoxWrapper& cbx, int nRight);
+	void AlignUpdateGroupRight();		// [LGLS 2026-08-30] 수정 그룹 우변 정렬
+	int  LabelTextWidth(int nID);
+	void MoveLabelRightTo(int nID, int nLeft, int nRight);
+	void SetComboSpan(CComboBoxWrapper& cbx, int nLeft, int nRight);
+	int  CalcComboItemWidth(CComboBoxWrapper& cbx);	// [LGLS 2026-08-30] 가장 긴 항목 폭	// [LGLS 2026-08-30] 콤보 우변 맞춤	// [LGLS 2026-08-30] "[코드] 이름" 표기
 	DECLARE_MESSAGE_MAP();
 	DECLARE_EVENTSINK_MAP();
 

@@ -61,23 +61,27 @@ namespace TSK_COMM_IOSCH
         // 창고 구분 : cDefApp.eWHTYP.SKI_WH01 = 10
         private static readonly string SCH_WH_TYP = ((int)cDefApp.eWHTYP.SKI_WH01).ToString();
 
-        // JOB_MST.JOB_STATUS 라이프사이클 (설비별 4단계: 대기 → 지시 → 중 → 완료)
-        //   CV : 대기 10 → 지시 11 → 중 15 → 완료 19
-        //   SC : 대기 20 → 지시 21 → 중 25 → 완료 29
-        //   RGV: 대기 30 → 지시 31 → 중 35 → 완료 39
+        // JOB_MST.JOB_STATUS 라이프사이클 (설비별 3단계: 대기 → 중 → 완료)
+        //   CV : 대기 10 → 중 15 → 완료 19
+        //   SC : 대기 20 → 중 25 → 완료 29
+        //   RGV: 대기 30 → 중 35 → 완료 39
         //   (구동완료 후 다음 처리로 핸드오프하려면 Complete* 에서 다음 대기상태로 전이 - ★정책확인)
         private const string ST_CV_WAIT = "10"; // CV 구동대기
-        private const string ST_CV_CMD  = "11"; // CV 구동지시
+        // [LGLS 2026-08-30] 구동지시(11/21/31) 폐기 - 실경로는 "대기 → 중 → 완료" 3단계.
+        //   명령을 발행한 순간이 곧 구동 중이다. 아래 세 값은 구 경로(SC_AUTO_COMPLETE=1 의
+        //   AutoRunSC/AutoRunRGV - 타이머 기반 자동완주)만 쓴다.
+        //   common_code 에서는 폐기(CCD_CD_YN='N')라 화면 목록에 나오지 않는다.
+        private const string ST_CV_CMD  = "11"; // [폐기] CV 구동지시 - 실경로 미사용
         private const string ST_CV_RUN  = "15"; // CV 구동중
         private const string ST_CV_DONE = "19"; // CV 구동완료
 
         private const string ST_SC_WAIT = "20"; // SC 구동대기
-        private const string ST_SC_CMD  = "21"; // SC 구동지시
+        private const string ST_SC_CMD  = "21"; // [폐기] SC 구동지시 - 구 경로(AutoRunSC) 전용
         private const string ST_SC_RUN  = "25"; // SC 구동중
         private const string ST_SC_DONE = "29"; // SC 구동완료
 
         private const string ST_RGV_WAIT = "30"; // RGV 구동대기
-        private const string ST_RGV_CMD  = "31"; // RGV 구동지시
+        private const string ST_RGV_CMD  = "31"; // [폐기] RGV 구동지시 - 구 경로(AutoRunRGV) 전용
         private const string ST_RGV_RUN  = "35"; // RGV 구동중
         private const string ST_RGV_DONE = "39"; // RGV 구동완료
 
@@ -270,22 +274,19 @@ namespace TSK_COMM_IOSCH
                     if (m_bScAutoComplete)
                         FeedInGate();   // [구 경로] 입고대 파렛트 공급/이송 재현 (실경로에선 EQP_SIM 투입)
 
-                    // ── 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 지시)
+                    // ── 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 중)
                     SyncDualCvDirection();       // [LGLS 2026-08-30] 겸용대 방향 정합(실경로, 양방향)
-                    DriveCV();      // 10 → 11
+                    DriveCV();      // 10 → 15
                     if (!m_bScAutoComplete)
                     {
-                        DriveSC();      // 20 → 21 (Vehicle 반송지시 기록)
-                        DriveRGV();     // 30 → 31 (Vehicle 반송지시 기록)
+                        DriveSC();      // 20 → 25 (Vehicle 반송지시 기록)
+                        DriveRGV();     // 30 → 35 (Vehicle 반송지시 기록)
                     }
 
-                    // ── 구동 중 : PLC 명령 수신(OD_RQ_YN='N') → (지시 → 중)
-                    RunCV();        // 11 → 15
-                    if (!m_bScAutoComplete)
-                    {
-                        RunSC();    // 21 → 25
-                        RunRGV();   // 31 → 35
-                    }
+                    // [LGLS 2026-08-30] 구동지시 폐기 - "지시 → 수락" 전이 단계를 없앴다.
+                    //   설비가 명령을 실제로 소비했는지는 Complete* 가 OD_RQ_YN='N' 으로 계속
+                    //   확인하므로 수락 확인이 사라지는 것은 아니다.
+                    //   RunCV/RunSC/RunRGV 및 AdvanceOnAccept 삭제.
 
                     // ── 구동 완료 : 설비 완료 신호(_RD) → (중 → 완료 또는 다음 처리 인계)
                     CompleteCV();   // 15 → 19(출고 최종) / 20(입고 → SC 처리 인계)
@@ -321,11 +322,11 @@ namespace TSK_COMM_IOSCH
                     //   ※Drive* 는 대기 상태 + 유휴 설비에만 작용하므로 중복 호출이 안전하다(멱등).
                     //   ※물리 게이트에 걸리면 대기 상태로 남는다 — 그건 실제로 못 가는 상황이라
                     //     상태로 드러나는 편이 맞다(보류를 시간으로 뚫지 않는다는 원칙과 일관).
-                    DriveCV();                              // 출고 인계분 10 → 11 즉시
+                    DriveCV();                              // 출고 인계분 10 → 15 즉시
                     if (!m_bScAutoComplete)
                     {
-                        DriveSC();                          // 입고 인계분 20 → 21 즉시
-                        DriveRGV();                         // 30 → 31 즉시
+                        DriveSC();                          // 입고 인계분 20 → 25 즉시
+                        DriveRGV();                         // 30 → 35 즉시
                     }
 
                     RecoverOutOrphans();
@@ -613,7 +614,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "    AND CD.MC_NO            = JM.DEST_POS                      ";
                 q += CRLF + "  WHERE JM.WH_TYP           = :WH_TYP                          ";
                 q += CRLF + "    AND JM.JOB_TYP         IN ('2','12')                       ";
-                q += CRLF + "    AND JM.JOB_STATUS      IN ('11','15')                      ";   // CV 구동지시/구동중
+                q += CRLF + "    AND JM.JOB_STATUS      IN ('15')                      ";   // CV 구동지시/구동중
                 q += CRLF + "    AND CD.LUGG_NO_RD       = JM.LUGG_NO                       ";   // 그 화물이 출고대에 도착
                 q += CRLF + "    AND CD.SENSOR0_DATA_RD  = '1'                              ";
                 q += CRLF + "    AND CD.RET_READY_RD     = '1'                              ";   // ★출고대 신호 ON★
@@ -643,7 +644,7 @@ namespace TSK_COMM_IOSCH
                 qo += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
                 qo += CRLF + "    AND JM.JOB_TYP    IN ('2','12')               ";
                 qo += CRLF + "    AND JM.DEST_POS   IN ('122','103')            ";
-                qo += CRLF + "    AND JM.JOB_STATUS NOT IN ('9','19','29','" + ST_SC_WAIT + "') ";
+                qo += CRLF + "    AND JM.JOB_STATUS NOT IN ('09','19','29','" + ST_SC_WAIT + "') ";
                 qo += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')   ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -723,7 +724,7 @@ namespace TSK_COMM_IOSCH
                 //   (겸용 C/V#11 에서 입고/출고 지시가 같은 트랙에 연속 발행되는 것 방지)
                 strSql += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST J2                    ";
                 strSql += CRLF + "                     WHERE J2.WH_TYP = JM.WH_TYP                ";
-                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('11','15')         ";
+                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('15')         ";
                 strSql += CRLF + "                       AND CD.MC_NO = (CASE WHEN J2.JOB_TYP IN ('2','12') THEN J2.DEST_POS ELSE J2.START_POS END)) ";
                 // [LGLS 2026-07-23] 겸용 입출고대(122) 교착 방지: 122 로 오는 출고 반출이 RTV 에 지시된 상태
                 //   (RTV_DATA_LGLS.JOB_TYP_OD='2' + LUGG_OD=해당 출고작업)면 122 입고 발행(트래킹 기록)을 보류한다.
@@ -750,7 +751,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                           WHERE J8.WH_TYP     = JM.WH_TYP      ";
                 strSql += CRLF + "                             AND J8.JOB_TYP   IN ('2','12')     ";
                 strSql += CRLF + "                             AND J8.START_POS  = '901'          ";
-                strSql += CRLF + "                             AND J8.JOB_STATUS NOT IN ('9','19','29') ) ) ";
+                strSql += CRLF + "                             AND J8.JOB_STATUS NOT IN ('09','19','29') ) ) ";
 
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -828,13 +829,13 @@ namespace TSK_COMM_IOSCH
 
                     string rtn = "";
                     bool ok = UpdateCvData(jobTyp, destPos, luggNo, plcNo, trackNo, ref rtn)
-                              && UpdateJobStatus(ST_CV_CMD, luggNo, ref rtn);
+                              && UpdateJobStatus(ST_CV_RUN, luggNo, ref rtn);
 
                     if (ok)
                     {
                         _pBdb.Commit();
                         m_dicPrevCV[key] = luggNo;
-                        MakeMsg_Imp(string.Format("[SCH][CV] CV TRACK:{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", trackNo, luggNo, ST_CV_CMD));
+                        MakeMsg_Imp(string.Format("[SCH][CV] CV TRACK:{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", trackNo, luggNo, ST_CV_RUN));
                         // [LGLS 2026-07-21] 실경로: 출고 CV 발행과 동시에 출고대 반출 대기열(FIFO) 등록.
                         //   (구 경로에선 ProcessCvMove 가 홀수 트랙 도착 시 등록했으나, 실경로는 라인 이동을
                         //    설비가 하므로 등록 지점이 없어 RTV 반출 지시가 영영 나가지 않았다)
@@ -916,7 +917,7 @@ namespace TSK_COMM_IOSCH
                 //   (리드백 지연 창 동안의 연속 지시 → LUGG_OD 덮어쓰기 → 완료 귀속 유실 방지)
                 strSql += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST J2                     ";
                 strSql += CRLF + "                     WHERE J2.WH_TYP = JM.WH_TYP                 ";
-                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('21','25')          ";
+                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('25')          ";
                 strSql += CRLF + "                       AND SD.SC_NO = (CASE WHEN J2.JOB_TYP IN ('1','11') THEN J2.DEST_POS ELSE J2.START_POS END)) ";
                 // [LGLS 2026-07-23] SC1/C\V#2 교착 방지: SC1 출고 지시는 ① C\V#2(103/104)에 입고 작업 화물이 없고
                 //   ② RTV 에 901행 입고 지시(RTV_DATA_LGLS.JOB_TYP_OD='1')가 없을 때만 발행한다.
@@ -927,7 +928,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                   WHERE C2.WH_TYP = SD.WH_TYP                           ";
                 strSql += CRLF + "                     AND C2.MC_NO IN ('103','104')                       ";
                 strSql += CRLF + "                     AND J3.JOB_TYP IN ('1','11')                        ";
-                strSql += CRLF + "                     AND J3.JOB_STATUS NOT IN ('9','19','29'))           ";
+                strSql += CRLF + "                     AND J3.JOB_STATUS NOT IN ('09','19','29'))           ";
                 strSql += CRLF + "       OR EXISTS (SELECT 1 FROM RTV_DATA_LGLS R3                              ";
                 strSql += CRLF + "                   INNER JOIN JOB_MST J4 ON J4.WH_TYP  = R3.WH_TYP       ";
                 strSql += CRLF + "                                       AND J4.LUGG_NO = R3.LUGG_OD       ";
@@ -936,7 +937,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                     AND R3.JOB_TYP_OD = '1'                             ";
                 strSql += CRLF + "                     AND J4.JOB_TYP IN ('1','11')                        ";
                 strSql += CRLF + "                     AND J4.DEST_POS = '901'                             ";
-                strSql += CRLF + "                     AND J4.JOB_STATUS NOT IN ('9','19','29')) ) )       ";
+                strSql += CRLF + "                     AND J4.JOB_STATUS NOT IN ('09','19','29')) ) )       ";
                 // [LGLS 2026-07-24] 출고 직렬화: 같은 크레인의 선행 출고가 CV/반출 구간(10/11/15)에 남아 있으면
                 //   다음 출고 SC 지시를 보류한다 — 출고 화물이 라인(하역 2트랙)에 겹겹이 쌓여 겸용 라인이
                 //   막히는 것을 방지 ([CV#2 교착 TEST]에서 출고 3건이 C\V#2 를 가득 채워 교착하던 고리 차단).
@@ -945,7 +946,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                  WHERE J7.WH_TYP = JM.WH_TYP                            ";
                 strSql += CRLF + "                    AND J7.JOB_TYP IN ('2','12')                         ";
                 strSql += CRLF + "                    AND J7.START_POS = SD.SC_NO                          ";
-                strSql += CRLF + "                    AND J7.JOB_STATUS IN ('10','11','15')) )             ";
+                strSql += CRLF + "                    AND J7.JOB_STATUS IN ('10','15')) )             ";
                 // [LGLS 2026-07-19] suspend 방향별 게이트: 1=입고정지, 2=출고정지, 3=입출고정지
                 strSql += CRLF + "    AND NOT (JM.JOB_TYP IN ('1','11') AND SD.SUSPEND IN ('1','3'))      ";
                 strSql += CRLF + "    AND NOT (JM.JOB_TYP IN ('2','12') AND SD.SUSPEND IN ('2','3'))      ";
@@ -1047,13 +1048,13 @@ namespace TSK_COMM_IOSCH
 
                     string rtn = "";
                     bool ok = UpdateScData(scNo, jobTyp, luggNo, f1, f2, f3, t1, t2, t3, ref rtn)
-                              && UpdateJobStatus(ST_SC_CMD, luggNo, ref rtn);
+                              && UpdateJobStatus(ST_SC_RUN, luggNo, ref rtn);
 
                     if (ok)
                     {
                         _pBdb.Commit();
                         m_dicPrevSC[key] = luggNo;
-                        MakeMsg_Imp(string.Format("[SCH][SC] S/C #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", scNo, luggNo, ST_SC_CMD));
+                        MakeMsg_Imp(string.Format("[SCH][SC] S/C #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", scNo, luggNo, ST_SC_RUN));
                     }
                     else
                     {
@@ -1106,7 +1107,7 @@ namespace TSK_COMM_IOSCH
                 //    직전 지시의 LUGG_OD 를 덮어써 앞 작업의 완료 귀속이 유실된다 — DB 작업상태는 지연이 없다)
                 strSql += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST J2                     ";
                 strSql += CRLF + "                     WHERE J2.WH_TYP = JM.WH_TYP                 ";
-                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('31','35'))         ";
+                strSql += CRLF + "                       AND J2.JOB_STATUS IN ('35'))         ";
                 // [LGLS 2026-07-23] SC1/C\V#2 교착 방지: 901행 입고의 RTV 지시는 ① SC1 이 출고를 수령(21/25)하지 않았고
                 //   ② C\V#2(103/104)에 출고 작업 화물이 없을 때만 발행한다.
                 strSql += CRLF + "    AND NOT ( JM.JOB_TYP IN ('1','11') AND JM.DEST_POS = '901' AND (     ";
@@ -1114,14 +1115,14 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                   WHERE J5.WH_TYP = JM.WH_TYP                           ";
                 strSql += CRLF + "                     AND J5.JOB_TYP IN ('2','12')                        ";
                 strSql += CRLF + "                     AND J5.START_POS = '901'                            ";
-                strSql += CRLF + "                     AND J5.JOB_STATUS IN ('21','25'))                   ";
+                strSql += CRLF + "                     AND J5.JOB_STATUS IN ('25'))                   ";
                 strSql += CRLF + "       OR EXISTS (SELECT 1 FROM CV_DATA C3                               ";
                 strSql += CRLF + "                   INNER JOIN JOB_MST J6 ON J6.WH_TYP  = C3.WH_TYP       ";
                 strSql += CRLF + "                                       AND J6.LUGG_NO = C3.LUGG_NO_RD    ";
                 strSql += CRLF + "                   WHERE C3.WH_TYP = JM.WH_TYP                           ";
                 strSql += CRLF + "                     AND C3.MC_NO IN ('103','104')                       ";
                 strSql += CRLF + "                     AND J6.JOB_TYP IN ('2','12')                        ";
-                strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN ('9','19','29')) ) )       ";
+                strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN ('09','19','29')) ) )       ";
                 strSql += CRLF + "    AND (RD.ERR_CODE_RD = '0' OR RD.ERR_CODE_RD = '0000' OR RD.ERR_CODE_RD IS NULL)";
 
                 _pBdb.mComMain.CommandType = CommandType.Text;
@@ -1217,14 +1218,14 @@ namespace TSK_COMM_IOSCH
 
                     string rtn = "";
                     bool ok = UpdateRtvData(rtvNo, jobTyp, luggNo, pickupTrack, dropTrack, ref rtn)
-                              && UpdateJobStatus(ST_RGV_CMD, luggNo, ref rtn);
+                              && UpdateJobStatus(ST_RGV_RUN, luggNo, ref rtn);
                     if (ok) m_dicLineRsv[luggNo] = dropTrack;   // [LGLS] 드롭 라인 선점(완료 시 해제)
 
                     if (ok)
                     {
                         _pBdb.Commit();
                         m_dicPrevRGV[key] = luggNo;
-                        MakeMsg_Imp(string.Format("[SCH][RGV] RGV #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", rtvNo, luggNo, ST_RGV_CMD));
+                        MakeMsg_Imp(string.Format("[SCH][RGV] RGV #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", rtvNo, luggNo, ST_RGV_RUN));
                         break;   // [LGLS 2026-07-21] RTV 1대 — 한 폴링에 1건만 발행(같은 결과셋의 후속 후보가 덮어쓰지 않게)
                     }
                     else
@@ -1251,50 +1252,6 @@ namespace TSK_COMM_IOSCH
         // 구동 중 (지시 → 중)
         //   설비가 명령을 수신(OD_RQ_YN 이 'Y'→'N' 으로 리셋)하면 "구동 중" 으로 전이.
         // ─────────────────────────────────────────────────────────────────
-        #region RunCV / RunSC / RunRGV
-        // [LGLS] 설비 매칭을 처리별 설비위치식으로 변경 (입고/출고 2단계 처리 체인 대응)
-        private void RunCV()  { AdvanceOnAccept(ST_CV_CMD,  ST_CV_RUN,  "CV_DATA  CD", "CD.MC_NO = " + CV_POS_EXPR, "CV"); }
-        // [LGLS 2026-07-21] TRANSFER_REQUEST_OD='N'(브리지가 Vehicle 지시를 실제 소비) 조건 추가 — OD_RQ_YN 만으로는
-        //   직전 작업의 잔존값을 같은 폴링 창에서 볼 수 있음
-        private void RunSC()  { AdvanceOnAccept(ST_SC_CMD,  ST_SC_RUN,  "SC_DATA_LGLS  SD", "SD.SC_NO = " + SC_POS_EXPR + " AND SD.TRANSFER_REQUEST_OD = 'N'", "SC"); }
-        private void RunRGV() { AdvanceOnAccept(ST_RGV_CMD, ST_RGV_RUN, "RTV_DATA_LGLS RD", "RD.RTV_NO = '801' AND RD.TRANSFER_REQUEST_OD = 'N'", "RGV"); }
-
-        /// <summary>지시 상태 작업 중, 해당 설비가 명령 수신(OD_RQ_YN='N')하면 '중' 으로 전이</summary>
-        private void AdvanceOnAccept(string stFrom, string stTo, string eqTable, string joinCond, string kind)
-        {
-            try
-            {
-                string alias = eqTable.Trim().Split(' ')[eqTable.Trim().Split(' ').Length - 1];
-                string strSql = "";
-                strSql += CRLF + " SELECT JM.LUGG_NO                          ";
-                strSql += CRLF + "   FROM JOB_MST JM                          ";
-                strSql += CRLF + "  INNER JOIN " + eqTable + "                ";
-                strSql += CRLF + "     ON " + alias + ".WH_TYP = JM.WH_TYP AND " + joinCond + " ";
-                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP             ";
-                strSql += CRLF + "    AND JM.JOB_STATUS = :ST_FROM            ";
-                strSql += CRLF + "    AND " + alias + ".OD_RQ_YN = 'N'        ";
-
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
-                _pBdb.mComMain.Parameters.Add("ST_FROM", DbLang.VARCHAR).Value = stFrom;
-                int nCnt = _pBdb.ExcuteQry(strSql);
-                if (nCnt <= 0) return;
-
-                DataTable dt = _pBdb.mDtMain.Copy();
-                for (int i = 0; i < dt.Rows.Count; i++)
-                {
-                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
-                    string rtn = "";
-                    if (UpdateJobStatus(stTo, luggNo, ref rtn))
-                        MakeMsg(string.Format("[SCH][{0}] 작업 {1} 구동 중 → 상태 '{2}'", kind, luggNo, stTo));
-                    else
-                        MakeMsg_Error(string.Format("[SCH][{0}] 구동중 전이 실패({1}): {2}", kind, luggNo, rtn));
-                }
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH][" + kind + "] Run 오류: " + ex.Message); }
-        }
-        #endregion
 
         // ─────────────────────────────────────────────────────────────────
         // 완료 감지
@@ -2542,12 +2499,12 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "    AND START_POS   = '901'                ";
                 // [LGLS 2026-08-30] ★기아(starvation) 방지★ — "미완료 출고가 하나라도 있으면" 이 아니라
                 //   "출고가 실제로 공유 라인(C/V#2 = 103/104)을 쓰고 있으면" 으로 좁힌다.
-                //   종전에는 NOT IN ('9','19','29') 라 **아직 지시도 안 나간 대기(20)** 까지 세어서,
+                //   종전에는 NOT IN ('09','19','29') 라 **아직 지시도 안 나간 대기(20)** 까지 세어서,
                 //   출고가 줄만 서 있어도 901행 입고 RTV 가 막혔다. 출고가 끊이지 않는 현장/시험에서는
                 //   입고가 영원히 굶는다(실측: [CV#2 교착 TEST] 중 입고 0083/0098 이 30 에서 18분 정지,
                 //   그때 RTV 는 완전 유휴였고 막은 출고 3건 중 2건은 상태 20 이었다).
                 //   20 = 대기(아무것도 점유하지 않음) → 양보 사유 아님. 21 부터가 실제 점유.
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29','" + ST_SC_WAIT + "') ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','" + ST_SC_WAIT + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2604,7 +2561,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE CD.WH_TYP    = :WH_TYP                            ";
                 q += CRLF + "    AND CD.MC_NO    IN (" + tracksCsvQuoted + ")          ";
                 q += CRLF + "    AND JM.JOB_TYP  IN ('1','11')                         ";
-                q += CRLF + "    AND JM.JOB_STATUS NOT IN ('9','19','29')              ";
+                q += CRLF + "    AND JM.JOB_STATUS NOT IN ('09','19','29')              ";
                 q += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')           ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2647,7 +2604,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP               ";
                 q += CRLF + "    AND LUGG_NO     = :LG                   ";
                 q += CRLF + "    AND JOB_TYP    IN ('2','12')            ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')   ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29')   ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')   ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2681,7 +2638,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
                 q += CRLF + "    AND LUGG_NO     = :LG                  ";
                 q += CRLF + "    AND JOB_TYP    IN ('2','12')           ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29')  ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2702,7 +2659,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
                 q += CRLF + "    AND LUGG_NO     = :LG                  ";
                 q += CRLF + "    AND JOB_TYP    IN ('1','11')           ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29')  ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2798,7 +2755,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP                  ";
                 q += CRLF + "    AND JOB_TYP    IN ('2','12')               ";
                 q += CRLF + "    AND DEST_POS    = :STN                     ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29','" + ST_SC_WAIT + "') ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','" + ST_SC_WAIT + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')      ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2826,7 +2783,7 @@ namespace TSK_COMM_IOSCH
                 //   CV 구동대기(10) = 아직 그 작업대에서 출발도 하지 않은 상태다. 실제로 작업대를
                 //   점유했는지는 바로 위 물리 가드(입고 모드 + 입고대 점유)가 이미 본다.
                 //   따라서 여기서는 **실제로 반송이 시작된 입고(11 이후)** 만 센다.
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29','" + ST_CV_WAIT + "') ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','" + ST_CV_WAIT + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2892,7 +2849,7 @@ namespace TSK_COMM_IOSCH
                     q += CRLF + "    AND JOB_TYP IN ('1','11') AND START_POS = :STN ";
                 else                  // 입고로 바꾸려 한다 → 출고 화물이 남아 있으면 보류
                     q += CRLF + "    AND JOB_TYP IN ('2','12') AND DEST_POS  = :STN ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')      ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29')      ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -3910,7 +3867,7 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp3 += CRLF + "     ON JM.WH_TYP   = SD.WH_TYP                                         ";
                 strSqlDsp3 += CRLF + "    AND SD.SC_NO    = (CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END) ";
                 strSqlDsp3 += CRLF + "  WHERE SD.WH_TYP   = :WH_TYP                                           ";
-                strSqlDsp3 += CRLF + "    AND JM.JOB_STATUS IN ('21','25')                                    ";
+                strSqlDsp3 += CRLF + "    AND JM.JOB_STATUS IN ('25')                                    ";
                 strSqlDsp3 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
                 _pBdb.ExcuteNonQry(strSqlDsp3);
 
@@ -3925,7 +3882,7 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp4 += CRLF + "    AND NOT EXISTS (SELECT 1                                            ";
                 strSqlDsp4 += CRLF + "                      FROM JOB_MST JM                                   ";
                 strSqlDsp4 += CRLF + "                     WHERE JM.WH_TYP = SD.WH_TYP                        ";
-                strSqlDsp4 += CRLF + "                       AND JM.JOB_STATUS IN ('21','25')                 ";
+                strSqlDsp4 += CRLF + "                       AND JM.JOB_STATUS IN ('25')                 ";
                 strSqlDsp4 += CRLF + "                       AND SD.SC_NO = (CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END)) ";
                 _pBdb.ExcuteNonQry(strSqlDsp4);
 
@@ -3941,10 +3898,10 @@ namespace TSK_COMM_IOSCH
         //   "왜 안 움직이는지" 를 작업 목록만 보고는 알 수 없었다.
         //   에러 상태로 바꿔두면 ① 화면에 사유가 드러나고 ② 정상 지시 쿼리(JOB_STATUS = 20/30 …)에
         //   더는 걸리지 않아 조치 전까지 재지시되지 않는다.
-        private const string ST_ERR_DUAL_STORE   = "09";   // 이중입고 에러
-        private const string ST_ERR_EMPTY_RETR   = "08";   // 공출고 에러
-        private const string ST_RETRY_DUAL_STORE = "07";   // 이중입고 재지정 (상위가 새 셀을 내려준 상태)
-        private const string ST_RETRY_EMPTY_RETR = "06";   // 공출고 재지정
+        private const string ST_ERR_DUAL_STORE   = "08";   // 이중입고 에러  [LGLS 2026-08-30] 09 → 08 (09 는 완료가 가져감)
+        private const string ST_ERR_EMPTY_RETR   = "07";   // 공출고 에러    [LGLS 2026-08-30] 08 → 07
+        private const string ST_RETRY_DUAL_STORE = "06";   // 이중입고 재지정 (상위가 새 셀을 내려준 상태)  [LGLS 2026-08-30] 07 → 06
+        private const string ST_RETRY_EMPTY_RETR = "05";   // 공출고 재지정  [LGLS 2026-08-30] 06 → 05
 
         /// <summary>
         /// [LGLS 2026-08-30] 재지정 후 작업 재개.
@@ -4015,12 +3972,12 @@ namespace TSK_COMM_IOSCH
                     _pBdb.BeginTrans();
                     string rtn = "";
                     bool ok = UpdateScData(scNo, jobTyp, luggNo, f1, f2, f3, t1, t2, t3, ref rtn)
-                              && UpdateJobStatus(ST_SC_CMD, luggNo, ref rtn);
+                              && UpdateJobStatus(ST_SC_RUN, luggNo, ref rtn);
                     if (ok)
                     {
                         _pBdb.Commit();
                         m_dicPrevSC["SC_" + scNo] = luggNo;
-                        MakeMsg_Imp(string.Format("[SCH][재지정] 작업 {0} 재개 완료 → 상태 '{1}'", luggNo, ST_SC_CMD));
+                        MakeMsg_Imp(string.Format("[SCH][재지정] 작업 {0} 재개 완료 → 상태 '{1}'", luggNo, ST_SC_RUN));
                     }
                     else
                     {
@@ -4329,7 +4286,7 @@ namespace TSK_COMM_IOSCH
                 q1 += CRLF + "     ON JM.WH_TYP = SD.WH_TYP                               ";
                 q1 += CRLF + "    AND SD.SC_NO  = " + SCNO;
                 q1 += CRLF + "  WHERE SD.WH_TYP = :WH_TYP                                 ";
-                q1 += CRLF + "    AND JM.JOB_STATUS IN ('21','25')                        ";
+                q1 += CRLF + "    AND JM.JOB_STATUS IN ('25')                        ";
                 q1 += CRLF + "    AND ISNULL(SD.FORKPOS_FK1_RD,'0') <> " + side;
                 _pBdb.ExcuteNonQry(q1);
 
@@ -4344,7 +4301,7 @@ namespace TSK_COMM_IOSCH
                 q2 += CRLF + "    AND NOT EXISTS (SELECT 1                                ";
                 q2 += CRLF + "                      FROM JOB_MST JM                       ";
                 q2 += CRLF + "                     WHERE JM.WH_TYP = SD.WH_TYP            ";
-                q2 += CRLF + "                       AND JM.JOB_STATUS IN ('21','25')     ";
+                q2 += CRLF + "                       AND JM.JOB_STATUS IN ('25')     ";
                 q2 += CRLF + "                       AND SD.SC_NO = " + SCNO + ") ";
                 _pBdb.ExcuteNonQry(q2);
             }

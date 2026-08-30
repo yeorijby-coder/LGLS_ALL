@@ -49,8 +49,8 @@ namespace TSK_HostCom
 		// [LGLS 2026-08-30] 재지정 작업상태 (common_code 'JOB_STATUS' 코드값)
 		//   09 = 이중입고 에러 / 08 = 공출고 에러 / 07 = 이중입고 재지정 / 06 = 공출고 재지정
 		//   ※ EN_JOB_STATUS enum 값(9, 10)을 그대로 쓰면 안 된다 - 현행 체계에서 10 은 "CV 구동대기"다.
-		public const string JOB_ST_DUAL_RETRY  = "07";
-		public const string JOB_ST_EMPTY_RETRY = "06";
+		public const string JOB_ST_DUAL_RETRY  = "06";  // [LGLS 2026-08-30] 07 → 06
+		public const string JOB_ST_EMPTY_RETRY = "05";  // [LGLS 2026-08-30] 06 → 05
 		// [LGLS 2026-08-30] 크레인 에러코드 마스터(EQP_ECD_MST.EQP_TYP) 구분.
 		//   현장 크레인은 SFA 제작이라 이중입고/공출고 의미코드(0054~0059)가 'SC_SFA' 에 있다.
 		//   'SC' 는 무라타 기계코드표(같은 번호, 다른 의미)라 0058(공출고)이 아예 없다.

@@ -218,6 +218,7 @@ BOOL CViewJobListDlg::OnInitDialog()
 	//   찾지 못해 수정 콤보가 그 행의 상태로 맞춰지지 않았다. 표기를 맞추면 같이 풀린다.
 	AddCodePrefixToCombo(m_cmbJobStatus);
 	AddCodePrefixToCombo(m_cmbJobStatus2);
+	AlignUpdateGroupRight();
 	CLib::BindCombo(m_cbxJobPriority, _T("JOB_PRIORITY"), m_pDoc, int(pEn), FALSE);
 	CLib::BindCombo(m_cbxProductSize, _T("PRODUCT_SIZE"), m_pDoc, int(pEn), FALSE);
 	CLib::SetBindCombo_DEST_POS_DEF(m_cmbStartPos, m_pDoc);
@@ -300,6 +301,119 @@ BOOL CViewJobListDlg::OnInitDialog()
 //   코드가 없는 항목(ALL)과 이미 붙어 있는 항목은 건드리지 않는다.
 //   ResetContent() 는 목록만 비우고 m_Key 는 그대로 두므로,
 //   키를 먼저 걷어낸 뒤 원래 순서대로 다시 넣는다.
+// [LGLS 2026-08-30] 수정 그룹의 오른쪽 끝 정렬. ★콤보에 항목이 채워진 뒤에 불러야 한다★
+//   RedrawImage() 는 BindCombo 보다 먼저 돌아서, 거기서 부르면 항목 폭이 0 으로 나온다.
+void CViewJobListDlg::AlignUpdateGroupRight()
+{
+	CRect rcBtn, rcGrp, rcCbx;
+	CWnd* pGrp = GetDlgItem(IDC_GRP_UPDATE);
+	if (pGrp == NULL) return;
+
+	m_btnJobUpdate.GetWindowRect(&rcBtn);   ScreenToClient(&rcBtn);
+	pGrp->GetWindowRect(&rcGrp);            ScreenToClient(&rcGrp);
+	m_cmbJobStatus2.GetDroppedControlRect(&rcCbx); ScreenToClient(&rcCbx);
+
+	const int nInset = 8;	// 그룹 테두리에서 띄울 여백
+	const int nGap   = 7;	// 라벨과 콤보 사이
+
+	// 오른쪽 끝 : 그룹 안쪽 끝. 세 컨트롤이 여기에 맞춰진다.
+	int nRight = rcGrp.right - nInset;
+	if (nRight < rcBtn.right) nRight = rcBtn.right;
+
+	// 필요한 폭 = 두 콤보 중 가장 긴 항목이 들어가는 폭
+	int nNeed = max(CalcComboItemWidth(m_cmbJobStatus2), CalcComboItemWidth(m_cbxJobPriority));
+
+	// 라벨은 글자 폭만 남기고, 콤보가 그룹 안 나머지를 다 쓰게 한다.
+	//   오른쪽으로만 늘려서는 "[06] 이중입고 재지정" 이 들어가지 않아서,
+	//   라벨이 글자보다 넓게 잡혀 있던 여유까지 회수한다(RTEXT 라 글자는 콤보에 붙는다).
+	int nLeft = nRight - nNeed;
+	(void)nNeed;	// 필요 폭은 아래 하한 검사에만 쓴다 - 여유가 있으면 넓게 쓴다
+	int nLeftLimit = rcGrp.left + nInset + LabelTextWidth(IDC_LBL_JOB_STATUS2) + nGap;
+	int nLeftLimit2 = rcGrp.left + nInset + LabelTextWidth(IDC_LBL_JOB_PRIORITY) + nGap;
+	if (nLeftLimit2 > nLeftLimit) nLeftLimit = nLeftLimit2;
+	nLeft = nLeftLimit;	// 그룹이 넓으면 넓은 대로 - 라벨 글자 자리만 남기고 콤보가 차지한다
+	if (nLeft > rcCbx.left)  nLeft = rcCbx.left;	// 원래보다 좁히지는 않는다
+
+	// 라벨을 콤보 앞까지 당긴다(RTEXT 라 글자는 콤보에 붙어 있게 된다)
+	MoveLabelRightTo(IDC_LBL_JOB_STATUS2,  rcGrp.left + nInset, nLeft - nGap);
+	MoveLabelRightTo(IDC_LBL_JOB_PRIORITY, rcGrp.left + nInset, nLeft - nGap);
+
+	SetComboSpan(m_cmbJobStatus2,  nLeft, nRight);
+	SetComboSpan(m_cbxJobPriority, nLeft, nRight);
+
+	// 버튼은 배경이 비트맵이라 늘리면 그림이 늘어진다 - 폭은 두고 위치만 옮긴다.
+	if (nRight != rcBtn.right)
+		m_btnJobUpdate.MoveWindow(nRight - rcBtn.Width(), rcBtn.top, rcBtn.Width(), rcBtn.Height());
+}
+
+// [LGLS 2026-08-30] 라벨 글자가 실제로 차지하는 폭
+int CViewJobListDlg::LabelTextWidth(int nID)
+{
+	CWnd* p = GetDlgItem(nID);
+	if (p == NULL) return 0;
+
+	CString strText;
+	p->GetWindowText(strText);
+	CDC* pDC = p->GetDC();
+	if (pDC == NULL) return 0;
+	CFont* pOld = pDC->SelectObject(p->GetFont());
+	int cx = pDC->GetTextExtent(strText).cx;
+	pDC->SelectObject(pOld);
+	p->ReleaseDC(pDC);
+	return cx + 4;
+}
+
+// [LGLS 2026-08-30] 라벨의 좌우 끝을 지정한다(RTEXT 이므로 글자는 오른쪽에 붙는다)
+void CViewJobListDlg::MoveLabelRightTo(int nID, int nLeft, int nRight)
+{
+	CWnd* p = GetDlgItem(nID);
+	if (p == NULL || nRight <= nLeft) return;
+
+	CRect rc;
+	p->GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	p->MoveWindow(nLeft, rc.top, nRight - nLeft, rc.Height());
+}
+
+// [LGLS 2026-08-30] 콤보의 좌우 끝을 지정한다.
+//   ★GetDroppedControlRect() 를 써야 한다★ - GetWindowRect() 는 닫힌 상태 높이만 주므로
+//   그 값으로 MoveWindow 하면 드롭다운 목록이 펼쳐지지 않는다.
+void CViewJobListDlg::SetComboSpan(CComboBoxWrapper& cbx, int nLeft, int nRight)
+{
+	if (cbx.GetSafeHwnd() == NULL || nRight <= nLeft) return;
+
+	CRect rc;
+	cbx.GetDroppedControlRect(&rc);
+	ScreenToClient(&rc);
+	cbx.MoveWindow(nLeft, rc.top, nRight - nLeft, rc.Height());
+}
+
+
+// [LGLS 2026-08-30] 콤보 항목 중 가장 긴 것이 잘리지 않는 폭(드롭다운 화살표 + 여백 포함).
+int CViewJobListDlg::CalcComboItemWidth(CComboBoxWrapper& cbx)
+{
+	if (cbx.GetSafeHwnd() == NULL) return 0;
+
+	CDC* pDC = cbx.GetDC();
+	if (pDC == NULL) return 0;
+	CFont* pOld = pDC->SelectObject(cbx.GetFont());
+
+	int nMax = 0;
+	for (int i = 0; i < cbx.GetCount(); i++)
+	{
+		CString strText;
+		cbx.GetLBText(i, strText);
+		int cx = pDC->GetTextExtent(strText).cx;
+		if (cx > nMax) nMax = cx;
+	}
+
+	pDC->SelectObject(pOld);
+	cbx.ReleaseDC(pDC);
+
+	// 드롭다운 화살표(시스템 스크롤바 폭) + 좌우 여백
+	return nMax + ::GetSystemMetrics(SM_CXVSCROLL) + 10;
+}
+
 // [LGLS 2026-08-30] 콤보의 오른쪽 끝을 지정한 x 좌표에 맞춘다(왼쪽 위치는 그대로).
 //   드롭다운 목록 높이까지 포함한 GetDroppedControlRect() 를 써야 한다.
 //   GetWindowRect() 의 높이(닫힌 상태)로 MoveWindow 하면 목록이 안 펼쳐진다.
@@ -1009,18 +1123,6 @@ void CViewJobListDlg::RedrawImage()
 	ScreenToClient(&rc);
 	m_btnJobUpdate.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
 
-	// [LGLS 2026-08-30] 수정 그룹의 콤보 오른쪽 끝을 [수정] 버튼에 맞춘다.
-	//   rc 에서는 콤보 우변(692+91=783)과 버튼 우변(717+67=784)이 이미 맞아 있는데,
-	//   위에서 버튼만 비트맵 크기(szLarge)로 다시 잡아 늘어나면서 어긋난다.
-	//   원인이 런타임 리사이즈이므로 보정도 여기서 한다 - 버튼의 실제 우변을 읽어
-	//   맞추므로 화면 배율이나 비트맵 크기가 바뀌어도 따라간다.
-	{
-		CRect rcBtn;
-		m_btnJobUpdate.GetWindowRect(&rcBtn);
-		ScreenToClient(&rcBtn);
-		AlignComboRightTo(m_cmbJobStatus2,  rcBtn.right);
-		AlignComboRightTo(m_cbxJobPriority, rcBtn.right);
-	}
 	m_btnJobCopy.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnJobCopy.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("copy"), strExtension)), NULL, 5, 5);
 	m_btnJobCopy.GetWindowRect(&rc);
