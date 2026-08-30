@@ -617,9 +617,14 @@ namespace EQP_SIM.Sim
             //    ① 도착 +OutRemoveMs 에 화물(센서) 사라짐  ② 다시 +OutTrackClearMs 에 트래킹 데이터 제거
             //    ※ 입출고 컨베이어(C/V#11~15)의 출고 종점만 해당.
             //      라인 컨베이어(C/V#2~10)의 출고 파렛트는 RGV가 픽업하므로 반출 금지.
-            // [LGLS 2026-08-22] 겸용 입출고대는 출고 모드일 때만 지게차 반출이 일어난다
-            if (Def.OutgoPath != null && Def.No >= 11 &&
-                !(Def.IngoPath != null && Direction != "1"))
+            // [LGLS 2026-08-22] 겸용 입출고대는 출고 모드일 때만 지게차 반출이 "시작" 된다.
+            // [LGLS 2026-08-30] 단, 이미 시작된 반출의 **마무리(트래킹 제거)는 방향과 무관하게** 끝낸다.
+            //   종전에는 방향 게이트가 블록 전체를 감싸고 있어, 지게차가 화물을 들어낸 뒤(①완료)
+            //   방향이 입고로 돌아가면 2단계가 영영 실행되지 않았다. 그러면 화물감지는 꺼졌는데
+            //   포트에 파렛트 항목이 남아 "화물·데이터가 모두 없어야 투입" 조건을 막아
+            //   그 작업대의 입고가 통째로 시작되지 못한다(실측: 0115 배출 후 122 입고 7건 정지).
+            //   물리적으로도 지게차가 이미 들고 간 화물의 잔여 데이터 정리는 방향과 상관없다.
+            if (Def.OutgoPath != null && Def.No >= 11)
             {
                 int outPort = Def.OutgoPath[Def.OutgoPath.Length - 1];
                 int outIdx = Def.OrderOf(outPort);
@@ -631,13 +636,14 @@ namespace EQP_SIM.Sim
                 //   (실측: 작업 0113 이 122 에서 ret_ready_rd=1 인 채로 배출되지 않고 겸용대를 막음).
                 if (Pallets.TryGetValue(outIdx, out p) && !string.IsNullOrEmpty(p.Id))
                 {
+                    bool bOutDirOk = !(Def.IngoPath != null && Direction != "1");   // ①은 출고 모드일 때만
                     if (!p.Discharged)
                     {
                         // ① 화물 배출 (지게차가 파렛트를 들어냄 → 센서 OFF)
                         // [LGLS 2026-08-22] 지게차 규약: 출고대 신호(WAIT_IN)가 ON 된 뒤 3초가 지나야 반출한다.
                         //   OutSignalAt 은 UpdateStationSignals 가 신호를 올릴 때 각인하므로,
                         //   아직 신호가 서지 않았으면(MinValue) 반출하지 않는다.
-                        if (p.OutSignalAt != DateTime.MinValue &&
+                        if (bOutDirOk && p.OutSignalAt != DateTime.MinValue &&
                             now >= p.OutSignalAt.AddMilliseconds(engine.OutRemoveMs))
                         {
                             p.Discharged = true;
