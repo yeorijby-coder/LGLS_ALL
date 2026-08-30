@@ -2139,42 +2139,13 @@ namespace TSK_HostCom
             }
             #endregion
 
-            #region 보고를 못했어도 그냥 지나감! - 다시 보고안하기 위해서 먼저 업데이트 하고 넘어감
-            m_BDb.BeginTrans();
-
-            //### update manual_temp
-            //### Status UPDATE
-            m_BDb.ParamsClear();
-
-            m_strSql = modDefApp.CRLF + "  UPDATE JOB_MST ";
-            m_strSql += modDefApp.CRLF + "    SET JOB_STATUS   = " + m_BDb.ParamsAdd("JOB_STATUS", nJobStatus + 6);      // 도착 보고에서 도착보고완료로 수정 
-            m_strSql += modDefApp.CRLF + "      , UPD_USER_ID  = 'HOST_TASK'";
-            m_strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
-            m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
-            m_strSql += modDefApp.CRLF + "    AND LUGG_NO      = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
-
-            m_iSelCnt = m_BDb.ExcuteNonQry_Par(ref m_strSql);
-
-            if (m_iSelCnt < 0)
-            {
-                m_strLog = m_BDb.ErrMsg + m_strSql;
-                modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
-                m_BDb.RollbackTrans();
-                return false;
-            }
-            if (m_iSelCnt != 1)
-            {
-                m_strLog = "도착 보고 실패,[작업번호 : " + strLuggNum + "] " + m_strSql;
-                modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
-                m_BDb.RollbackTrans();
-                return false;
-            }
-
-            m_BDb.CommitTrans();
-
-            #endregion
-
-
+            // [LGLS 2026-08-30] ★순서 정정 : 송신 성공 후에 상태를 바꾼다★
+            //   종전에는 "보고를 못했어도 그냥 지나감 - 다시 보고 안 하려고 먼저 업데이트" 구조라,
+            //   상태(22→28)를 먼저 커밋하고 나서 송신했다. 그 사이 소켓이 끊겨 있으면 보고는 못 나가는데
+            //   상태는 이미 28 이라 IsJobExist(22) 가 다시 찾지 못해 **작업이 28 에 영구히 갇힌다**.
+            //   (실측: HOST_TASK 재기동 직후 ConnectSock 전에 도착보고가 걸려 작업 0134 가 28 에서 정지)
+            //   도착보고 응답으로 작업을 삭제하는 현행 규약에서는 이 유실이 곧 작업 미종결이다.
+            //   → 소켓부터 확인하고, 상태 변경/삭제는 응답을 받은 뒤에 한다.
             if (!m_blSockConnected)
             {
                 return false;
@@ -2197,10 +2168,14 @@ namespace TSK_HostCom
                 return false;
             }
             //string strLuggNum = "" + m_BDb.dtMain.Rows[0]["LUGG_NO"];
+            // [LGLS 2026-08-30] 안전 변환. nStation 은 아래 프레임(F+JobDefine+LuggNo+CompleteClass+StepCount)에
+            //   실제로 쓰이지 않는데, 값이 비면 Convert.ToInt16("") 예외로 **보고가 통째로 사라졌다**.
+            //   그 시점엔 JOB_STATUS 가 이미 22→28 로 커밋된 뒤라 작업이 28 에 영구히 갇힌다
+            //   (실측: 작업 0134 가 28 에서 정지, F 전문 미발신). E 전문에서 겪은 것과 같은 패턴이다.
             switch (nJobType)
             {
-                case 1: nStation = Convert.ToInt16(strSPosition); nKind = 1; break;
-                case 2: nStation = Convert.ToInt16(strDPosition); nKind = 2; break;
+                case 1: nStation = ToInt(strSPosition); nKind = 1; break;
+                case 2: nStation = ToInt(strDPosition); nKind = 2; break;
                 //case 3: nStation = Convert.ToInt16(strDPosition); break;
                 //case 4: nStation = Convert.ToInt16(strDPosition); break;
                 //case 5: nStation = Convert.ToInt16(strDPosition); break;
@@ -2266,6 +2241,27 @@ namespace TSK_HostCom
                 }
                 m_strLog = string.Format("출고대 도착보고 응답 수신 - 작업 삭제 완료. [작업번호:{0}]", strLuggNum);
                 modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_NOR);
+            }
+            else
+            {
+                // 12(입고 H/S 도착) : 응답을 받은 뒤에 '도착보고완료'(18)로 올린다. 재보고 방지.
+                m_BDb.BeginTrans();
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + "  UPDATE JOB_MST ";
+                m_strSql += modDefApp.CRLF + "    SET JOB_STATUS   = " + m_BDb.ParamsAdd("JOB_STATUS", nJobStatus + 6);
+                m_strSql += modDefApp.CRLF + "      , UPD_USER_ID  = 'HOST_TASK'";
+                m_strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
+                m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "    AND LUGG_NO      = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
+                m_iSelCnt = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                if (m_iSelCnt != 1)
+                {
+                    m_strLog = "도착보고 상태 변경 실패,[작업번호 : " + strLuggNum + "]";
+                    modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                    m_BDb.RollbackTrans();
+                    return false;
+                }
+                m_BDb.CommitTrans();
             }
             #endregion
 

@@ -602,6 +602,9 @@ namespace TSK_COMM_IOSCH
                 string q = "";
                 q += CRLF + " UPDATE JM                                                     ";
                 q += CRLF + "    SET JM.JOB_STATUS  = '22'                                  ";
+                // [LGLS 2026-08-30] 도착보고(22)는 HOST_TASK IsJobExist 가 HS_TRACK_NO 를 읽는다.
+                //   비워두면 보고 구성에서 값이 없어 보고가 나가지 못한다 - 도착한 출고대 트랙을 채운다.
+                q += CRLF + "      , JM.HS_TRACK_NO = JM.DEST_POS                            ";
                 q += CRLF + "      , JM.UPD_DT      = " + DbLang.SYSDATE + "                ";
                 q += CRLF + "      , JM.UPD_USER_ID = '" + OD_USER + "'                     ";
                 q += CRLF + "   FROM JOB_MST JM                                             ";
