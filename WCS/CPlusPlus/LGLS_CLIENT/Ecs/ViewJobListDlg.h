@@ -137,7 +137,8 @@ protected:
 	afx_msg void OnBnClickedAutoRefresh();
 	CButton m_chkAutoRefresh;		// 런타임 생성(리소스 편집 없음)
 	void CreateAutoRefreshCheck();
-	void AddCodePrefixToCombo(CComboBoxWrapper& cbx);	// [LGLS 2026-08-30] "[코드] 이름" 표기
+	void AddCodePrefixToCombo(CComboBoxWrapper& cbx);
+	void AlignComboRightTo(CComboBoxWrapper& cbx, int nRight);	// [LGLS 2026-08-30] 콤보 우변 맞춤	// [LGLS 2026-08-30] "[코드] 이름" 표기
 	DECLARE_MESSAGE_MAP();
 	DECLARE_EVENTSINK_MAP();
 

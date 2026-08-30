@@ -300,6 +300,22 @@ BOOL CViewJobListDlg::OnInitDialog()
 //   코드가 없는 항목(ALL)과 이미 붙어 있는 항목은 건드리지 않는다.
 //   ResetContent() 는 목록만 비우고 m_Key 는 그대로 두므로,
 //   키를 먼저 걷어낸 뒤 원래 순서대로 다시 넣는다.
+// [LGLS 2026-08-30] 콤보의 오른쪽 끝을 지정한 x 좌표에 맞춘다(왼쪽 위치는 그대로).
+//   드롭다운 목록 높이까지 포함한 GetDroppedControlRect() 를 써야 한다.
+//   GetWindowRect() 의 높이(닫힌 상태)로 MoveWindow 하면 목록이 안 펼쳐진다.
+void CViewJobListDlg::AlignComboRightTo(CComboBoxWrapper& cbx, int nRight)
+{
+	if (cbx.GetSafeHwnd() == NULL) return;
+
+	CRect rcCbx;
+	cbx.GetDroppedControlRect(&rcCbx);
+	ScreenToClient(&rcCbx);
+
+	if (nRight <= rcCbx.left) return;	// 비정상 좌표면 건드리지 않는다
+	rcCbx.right = nRight;
+	cbx.MoveWindow(&rcCbx);
+}
+
 void CViewJobListDlg::AddCodePrefixToCombo(CComboBoxWrapper& cbx)
 {
 	int nCnt = cbx.GetCount();
@@ -992,6 +1008,19 @@ void CViewJobListDlg::RedrawImage()
 	m_btnJobUpdate.GetWindowRect(&rc);
 	ScreenToClient(&rc);
 	m_btnJobUpdate.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
+
+	// [LGLS 2026-08-30] 수정 그룹의 콤보 오른쪽 끝을 [수정] 버튼에 맞춘다.
+	//   rc 에서는 콤보 우변(692+91=783)과 버튼 우변(717+67=784)이 이미 맞아 있는데,
+	//   위에서 버튼만 비트맵 크기(szLarge)로 다시 잡아 늘어나면서 어긋난다.
+	//   원인이 런타임 리사이즈이므로 보정도 여기서 한다 - 버튼의 실제 우변을 읽어
+	//   맞추므로 화면 배율이나 비트맵 크기가 바뀌어도 따라간다.
+	{
+		CRect rcBtn;
+		m_btnJobUpdate.GetWindowRect(&rcBtn);
+		ScreenToClient(&rcBtn);
+		AlignComboRightTo(m_cmbJobStatus2,  rcBtn.right);
+		AlignComboRightTo(m_cbxJobPriority, rcBtn.right);
+	}
 	m_btnJobCopy.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnJobCopy.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("copy"), strExtension)), NULL, 5, 5);
 	m_btnJobCopy.GetWindowRect(&rc);
