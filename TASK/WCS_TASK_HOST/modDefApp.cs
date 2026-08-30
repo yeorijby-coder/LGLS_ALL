@@ -46,6 +46,11 @@ namespace TSK_HostCom
         public static string WH_TYP = "10";
         public const string PRS_ID = "TSK_ECSCOM";
 		public static string g_strRE_DRCT_CNT;
+		// [LGLS 2026-08-30] 크레인 에러코드 마스터(EQP_ECD_MST.EQP_TYP) 구분.
+		//   현장 크레인은 SFA 제작이라 이중입고/공출고 의미코드(0054~0059)가 'SC_SFA' 에 있다.
+		//   'SC' 는 무라타 기계코드표(같은 번호, 다른 의미)라 0058(공출고)이 아예 없다.
+		//   EcsComA.ini [Host] ScErrCodeType 으로 전환.
+		public static string g_strScErrCodeTyp = "SC_SFA";
 		public static string[] g_strWH_CD;
         public static string[] g_strWH_TYP;
         public static string[] g_strCvNo;

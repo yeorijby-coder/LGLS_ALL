@@ -533,6 +533,7 @@ namespace WCS_TASK_CV
             }
 
             var set = new StringBuilder();
+            bool bNewErr = false;              // [LGLS 2026-08-30] 이번 폴링에서 새 설비에러가 관측됨(에러보고 E 대상)
             Action<string, string> chg = delegate(string col, string val)
             {
                 string key = col;
@@ -582,6 +583,11 @@ namespace WCS_TASK_CV
                 string errCode = "0000";
                 ObsDef eco = O(v, "ERR_CODE_RD");
                 if (eco != null) { int ec = 0; if (ReadShort(eco, ref ec) && ec != 0) errCode = ec.ToString("0000"); }
+                // [LGLS 2026-08-30] 에러가 '새로' 올라온 순간에만 에러보고(E) 플래그를 내린다.
+                //   HOST_TASK CCliWork.IsEquip_ERROR_Modified 는 HOST_ERR_SEND_YN='N' 인 건만 E 전문으로
+                //   올린다. 종전에는 ERR_CODE_RD 가 바뀌어도 상태보고(S) 플래그(HOST_SEND_YN)만 내려서,
+                //   이중입고(54)/공출고(58)가 DB 까지 와도 상위로 보고되지 않아 재지정 절차가 시작되지 않았다.
+                bNewErr = (errCode != "0000") && ((Cached(v, "ERR_CODE_RD") ?? "") != errCode);
                 chg("ERR_CODE_RD", errCode);
             }
             else
@@ -625,6 +631,11 @@ namespace WCS_TASK_CV
                  strChanged.Contains("ITN_LUGG_FK1")  || strChanged.Contains("ERR_CODE_RD")))
             {
                 set.Append(", HOST_SEND_YN = 'N'");
+            }
+            // [LGLS 2026-08-30] 새 설비에러는 에러보고(E) 로도 올린다 — 이중입고(54)/공출고(58) 재지정 절차의 출발점.
+            if (m_strKind == "SC" && bNewErr)
+            {
+                set.Append(", HOST_ERR_SEND_YN = 'N'");
             }
 
             string strSqlObs = "";

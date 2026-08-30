@@ -253,6 +253,10 @@ namespace TSK_HostCom
             // [LGLS] IMS(WMS) 스테이션 코드 해석 기준 적재 ([Host]StationMapMode = ECS | WMS)
             modStationMap.LoadFromIni();
 
+            // [LGLS 2026-08-30] 크레인 에러코드 마스터 구분 ([Host]ScErrCodeType, 기본 SC_SFA)
+            modDefAPI.GetPrivateProfileString("Host", "ScErrCodeType", "SC_SFA", sb, sb.Capacity, modDefApp.MAIN_INI);
+            if (sb.ToString().Trim().Length > 0) modDefApp.g_strScErrCodeTyp = sb.ToString().Trim();
+
             //이중입고재지정횟수추가
             modDefAPI.GetPrivateProfileString("Property", "RE_DRCT_CNT", "", sb, sb.Capacity, modDefApp.MAIN_INI);
 			if (Information.IsNumeric(modDefApp.g_strRE_DRCT_CNT) == false)
@@ -388,6 +392,10 @@ namespace TSK_HostCom
 
             // [LGLS] IMS(WMS) 스테이션 코드 해석 기준 적재 ([Host]StationMapMode = ECS | WMS)
             modStationMap.LoadFromIni();
+
+            // [LGLS 2026-08-30] 크레인 에러코드 마스터 구분 ([Host]ScErrCodeType, 기본 SC_SFA)
+            modDefAPI.GetPrivateProfileString("Host", "ScErrCodeType", "SC_SFA", sb, sb.Capacity, modDefApp.MAIN_INI);
+            if (sb.ToString().Trim().Length > 0) modDefApp.g_strScErrCodeTyp = sb.ToString().Trim();
 
             //이중입고재지정횟수추가
             modDefAPI.GetPrivateProfileString("Property", "RE_DRCT_CNT", "", sb, sb.Capacity, modDefApp.MAIN_INI);

@@ -507,6 +507,32 @@ namespace TSK_HostCom
 
         // 설비에러상태변경정보 송신 전 Data 존재여부 Check.
         // 설비 내 Alarm 발생/해제시 Host로 Message 전송.
+        /// <summary>
+        /// [LGLS 2026-08-30] 랙 위치(Bank/Bay/Level)로 쓸 수 있는 값인지 — 공백/NULL/전부 0 은 위치 아님.
+        /// </summary>
+        private static bool IsRackPos(string strBank, string strBay, string strLevel)
+        {
+            if (strBank == null || strBay == null || strLevel == null) return false;
+            strBank = strBank.Trim(); strBay = strBay.Trim(); strLevel = strLevel.Trim();
+            if (strBank.Length == 0 || strBay.Length == 0 || strLevel.Length == 0) return false;
+            int nBank, nBay, nLevel;
+            if (!int.TryParse(strBank, out nBank)) return false;
+            if (!int.TryParse(strBay, out nBay)) return false;
+            if (!int.TryParse(strLevel, out nLevel)) return false;
+            return (nBank != 0 && nBay != 0 && nLevel != 0);
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-30] 전문 구성용 안전 변환 — 공백/NULL/비숫자는 0. Convert.ToInt32 예외로
+        /// 보고가 통째로 유실되는 것을 막는다.
+        /// </summary>
+        private static int ToInt(string strVal)
+        {
+            int nVal;
+            if (strVal == null) return 0;
+            return int.TryParse(strVal.Trim(), out nVal) ? nVal : 0;
+        }
+
         public int IsEquip_ERROR_Modified(string strEQP_TYP
                                     , ref string strDeviceNo
                                     , ref string strDeviceClass
@@ -528,13 +554,19 @@ namespace TSK_HostCom
                     m_BDb.ParamsClear();
 
                     // 1.ERROR CODE에 대해 존재여부확인.
+                    // [LGLS 2026-08-30] 에러코드 해석 = 구 ECS/ECP 규약(MakeErrorString + TB_CODEMASTER '025')과 동일하게
+                    //   "설비 원본 코드를 그대로 상위에 올리고, 마스터는 표시문구/종류 해석에만 쓴다".
+                    //   ① 크레인 코드표는 현장 제작사(SFA) 기준 — [Host]ScErrCodeType (기본 SC_SFA).
+                    //      종전 'SC'(무라타 기계코드표)에는 0058(공출고)이 없어 조인이 비고, 아래 NVL 이
+                    //      이를 '0000'(정상)으로 바꿔버려 공출고 보고가 통째로 사라졌다.
+                    //   ② 마스터에 없는 코드라도 A.ERR_CODE_RD 원본을 그대로 보고한다(코드 유실 금지).
                     m_strSql = "";
-                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, '0000') AS MC_ERR_CD  ";
+                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, A.ERR_CODE_RD) AS MC_ERR_CD  ";
                     m_strSql += modDefApp.CRLF + "      , A.*                                                       ";
                     m_strSql += modDefApp.CRLF + "   FROM SC_DATA_LGLS A                                                 ";
                     m_strSql += modDefApp.CRLF + "   LEFT OUTER JOIN EQP_ECD_MST B                                  ";
                     m_strSql += modDefApp.CRLF + "     ON A.ERR_CODE_RD         = B.EQP_ERR_CD                      ";
-                    m_strSql += modDefApp.CRLF + "    AND B.EQP_TYP             = " + m_BDb.ParamsAdd("EQP_TYP", strEQP_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND B.EQP_TYP             = " + m_BDb.ParamsAdd("EQP_TYP", modDefApp.g_strScErrCodeTyp);
                     m_strSql += modDefApp.CRLF + "  WHERE A.WH_TYP              = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
                     m_strSql += modDefApp.CRLF + "    AND A.HOST_ERR_SEND_YN     = 'N'           ";
                     nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
@@ -562,20 +594,43 @@ namespace TSK_HostCom
                     strBank = "00";
                     strBay = "000";
                     strLevel = "00";
-                    
-                    if ((strSBank != "0" && strSBay != "0" && strSLevel != "0") &&
-                        (strSBank != "00" && strSBay != "000" && strSLevel != "00"))
+
+                    // [LGLS 2026-08-30] 종전에는 값이 NULL(→ "")이어도 위 세 조건을 모두 통과해
+                    //   strBank/Bay/Level 이 빈 문자열로 덮여 아래 Convert.ToInt32("") 에서 예외가 났다.
+                    //   그 시점엔 HOST_ERR_SEND_YN 이 이미 'Y' 로 커밋된 뒤라 에러보고(E)가 영구 유실됐다.
+                    //   → 실제 값이 들어있을 때만 덮어쓴다.
+                    if (IsRackPos(strSBank, strSBay, strSLevel))
                     {
                         strBank = strSBank;
                         strBay = strSBay;
                         strLevel = strSLevel;
                     }
-                    if ((strDBank != "0" && strDBay != "0" && strDLevel != "0") &&
-                        (strDBank != "00" && strDBay != "000" && strDLevel != "00"))
+                    if (IsRackPos(strDBank, strDBay, strDLevel))
                     {
                         strBank = strDBank;
                         strBay = strDBay;
                         strLevel = strDLevel;
+                    }
+
+                    // [LGLS 2026-08-30] 실경로(VehThread)는 크레인 관측을 LOCATION_01~03_RD /
+                    //   PALLET_ON_VEHICLE_RD 에 기록하고 구 경로의 *_FK1_RD 는 채우지 않는다.
+                    //   FK1 이 비어 있으면 관측 컬럼으로 대체해야 상위가 이중입고/공출고 발생 셀을 안다.
+                    if (strBank == "00" && strBay == "000" && strLevel == "00")
+                    {
+                        string strL1 = "" + m_BDb.dtMain.Rows[0]["LOCATION_01_RD"].ToString();
+                        string strL2 = "" + m_BDb.dtMain.Rows[0]["LOCATION_02_RD"].ToString();
+                        string strL3 = "" + m_BDb.dtMain.Rows[0]["LOCATION_03_RD"].ToString();
+                        if (IsRackPos(strL1, strL2, strL3))
+                        {
+                            strBank = strL1;
+                            strBay = strL2;
+                            strLevel = strL3;
+                        }
+                    }
+                    if (strLuggNo.Trim().Length == 0 || strLuggNo.Trim() == "0" || strLuggNo.Trim() == "0000")
+                    {
+                        string strPov = "" + m_BDb.dtMain.Rows[0]["PALLET_ON_VEHICLE_RD"].ToString();
+                        if (strPov.Trim().Length > 0) strLuggNo = strPov;
                     }
 
                     strErrorKind = "0";         // 기계적 에러 
@@ -620,7 +675,8 @@ namespace TSK_HostCom
                 {
                     // 1.ERROR CODE에 대해 존재여부확인.
                     m_strSql = "";
-                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, '0000') AS MC_ERR_CD ";
+                    // [LGLS 2026-08-30] SC 와 동일 — 마스터에 없는 코드도 설비 원본값을 그대로 보고한다(코드 유실 금지).
+                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, A.ERROR_CODE) AS MC_ERR_CD ";
                     m_strSql += modDefApp.CRLF + "      , A.*           ";
                     m_strSql += modDefApp.CRLF + "   FROM CV_DATA A     ";
                     m_strSql += modDefApp.CRLF + "   LEFT OUTER JOIN EQP_ECD_MST B ";
@@ -1408,13 +1464,14 @@ namespace TSK_HostCom
             //   E + DeviceClass(1) + DeviceNo(3) + ErrorKind(1) + ErrorCode(4) + LuggNo(4) + Bank(2) + Bay(3) + Level(2)
             //   (구 24바이트 WhDefine 포함 규격은 명세/원본 ECP(E_BODY_SIZE=23)와 불일치라 폐기)
             //   DeviceNo 는 명세 체계로 변환: S/C 901~905 → 001~005, 스테이션 C/V → 101~104(McNoToWmsStation)
-            int nDevNo = Convert.ToInt32(strDeviceNo);
+            // [LGLS 2026-08-30] 전 항목 안전 변환 — 한 항목이 비어도 보고 자체가 사라지지 않게 한다.
+            int nDevNo = ToInt(strDeviceNo);
             if (strDeviceClass == "1" && nDevNo > 900) nDevNo -= 900;                       // S/C 호기번호
-            else if (strDeviceClass == "2") nDevNo = Convert.ToInt32(CSrvWork.McNoToWmsStation(strDeviceNo));  // 작업대 코드(미대응 트랙은 원값)
+            else if (strDeviceClass == "2") nDevNo = ToInt(CSrvWork.McNoToWmsStation(strDeviceNo));  // 작업대 코드(미대응 트랙은 원값)
             strTemp = string.Format("E{0:0}{1:000}{2:0}{3:0000}{4:0000}{5:00}{6:000}{7:00}",
-                Convert.ToInt32(strDeviceClass), nDevNo, Convert.ToInt32(strErrorKind),
-                Convert.ToInt32(strErrorCode), Convert.ToInt32(strLuggNo),
-                Convert.ToInt32(strBank), Convert.ToInt32(strBay), Convert.ToInt32(strLevel));
+                ToInt(strDeviceClass), nDevNo, ToInt(strErrorKind),
+                ToInt(strErrorCode), ToInt(strLuggNo),
+                ToInt(strBank), ToInt(strBay), ToInt(strLevel));
 
             int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
             //MSG_ORDER_CNT
