@@ -271,6 +271,7 @@ namespace TSK_COMM_IOSCH
                         FeedInGate();   // [구 경로] 입고대 파렛트 공급/이송 재현 (실경로에선 EQP_SIM 투입)
 
                     // ── 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 지시)
+                    RestoreDualCvInboundDir();   // [LGLS 2026-08-30] 겸용대 입고 방향 복귀(실경로)
                     DriveCV();      // 10 → 11
                     if (!m_bScAutoComplete)
                     {
@@ -559,6 +560,57 @@ namespace TSK_COMM_IOSCH
         }
 
         #region DriveCV
+        /// <summary>
+        /// [LGLS 2026-08-30] 겸용 입출고대 방향을 입고로 되돌린다 (실경로).
+        ///   DriveCV 에는 출고 반송 발행 시 출고(1) 전환만 있고 **입고 복귀 경로가 없다**.
+        ///   한 번 출고로 돌아서면 계속 출고로 남아, 그 작업대발 입고가 영영 시작되지 못한다
+        ///   (실측: C/V#11 이 출고 모드로 굳어 122 발 입고 0101~0103 이 상태 10 에서 50분 정지).
+        ///   현장에서는 WMS 가 M 전문으로 되돌려 주지만, 상위 지시가 없어도 ECS 스스로 복귀해야 한다.
+        ///   구 경로(FeedInGate)에는 같은 복귀가 이미 있었는데 실경로에만 빠져 있었다.
+        ///
+        ///   전환 자체는 RequestCvDirection 이 "작업번호 붙은 화물 없음"을 확인한 뒤에만 수행한다
+        ///   — 작업번호 없는 파렛트는 그대로 두고 전환한다(사용자 확정).
+        /// </summary>
+        private void RestoreDualCvInboundDir()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT DISTINCT JM.START_POS                     ";
+                q += CRLF + "   FROM JOB_MST JM                                ";
+                q += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
+                q += CRLF + "    AND JM.JOB_TYP    IN ('1','11')               ";
+                q += CRLF + "    AND JM.JOB_STATUS  = :ST_WAIT                 ";
+                q += CRLF + "    AND JM.START_POS  IN ('122','103')            ";   // 방향전환형 겸용 입출고대
+                q += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')   ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_CV_WAIT;
+                if (_pBdb.ExcuteQry(q) <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string sp = GetVal(dt.Rows[i], "START_POS");
+                    if (string.IsNullOrEmpty(sp)) continue;
+                    if (GetCvStockMode(sp) != "1") continue;              // 이미 입고 모드
+                    // [LGLS 2026-08-30] ★그 작업대로 오는 출고가 진행 중이면 절대 되돌리지 않는다★
+                    //   화물이 아직 작업대에 닿지 않았어도(이송 중) 방향을 뒤집으면, 도착한 출고 화물이
+                    //   반대로 밀려 트래킹이 두 트랙에 걸쳐 남는다(실측: 작업 0113 이 트랙 121·122 동시 표시).
+                    //   위의 IsOppositeDirCargo 는 "이미 올라온 화물"만 보므로 이 비행 중 구간이 비어 있었다.
+                    if (HasActiveOutboundTo(sp))
+                    {
+                        DbgLog("DIRRST_" + sp, "[겸용대] 입고 방향 복귀 보류 - 그 작업대로 오는 출고 진행 중");
+                        continue;
+                    }
+                    if (RequestCvDirection(sp, "0"))
+                        MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 복귀 지시 - 입고(0) (대기 중인 입고 작업 있음)", sp));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] RestoreDualCvInboundDir 오류: " + ex.Message); }
+        }
+
         private void DriveCV()
         {
             try
@@ -860,7 +912,7 @@ namespace TSK_COMM_IOSCH
                             string wantDir = (jobTyp == "2") ? "1" : "0";
                             if (GetCvStockMode(SC1_DUAL_CV) != wantDir)
                             {
-                                if (!IsDualCvBusyWithJob(SC1_DUAL_CV))   // [LGLS 2026-08-30] 작업번호 없는 화물은 전환을 막지 않는다
+                                if (!IsDualCvBusyWithJob(SC1_DUAL_CV, wantDir))   // [LGLS 2026-08-30] 작업번호 없는 화물은 전환을 막지 않는다
                                 {
                                     if (RequestCvDirection(SC1_DUAL_CV, wantDir))
                                         MakeMsg_Imp(string.Format("[SCH][SC] 겸용 통로 C/V#2({0}) 방향 전환 지시 - {1} (작업 {2})",
@@ -1021,22 +1073,13 @@ namespace TSK_COMM_IOSCH
                     if (RtvBusyByOutbound()) continue;                                 // 출고대 반출이 RTV 사용 중
                     if (IsRtvSuspended()) continue;                                    // RTV 작업정지
                     if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;    // 작업대 일시정지
-                    // [LGLS 2026-08-30] SC1 특례(출고 우선) + 기아 방지 에이징.
-                    //   우선권은 "먼저 가라"이지 "영원히 가라"가 아니다. 특례가 어떤 이유로든 오래 풀리지
-                    //   않으면(선행 출고가 반출 구간에서 지체되는 등) 입고가 무한정 굶는다 — 실측 18분 정지.
-                    //   그래서 대기 시간이 임계를 넘으면 한 건은 통과시킨다. 물리 안전(드롭 라인 선점
-                    //   CanEnterLine, 출발/도착 HS, 픽업트랙 화물 도착)은 아래·위 게이트가 그대로 지키므로
-                    //   통과시켜도 정면 경합이 생기지 않는다.
-                    if (destPos == "901" && HasActiveSc1Outbound())
-                    {
-                        DateTime nowRgv = DateTime.Now;
-                        if (!m_dicSc1InWait.ContainsKey(luggNo)) m_dicSc1InWait[luggNo] = nowRgv;
-                        double waitMs = (nowRgv - m_dicSc1InWait[luggNo]).TotalMilliseconds;
-                        if (waitMs < SC1_INBOUND_AGING_MS) continue;
-                        MakeMsg_Imp(string.Format("[SCH][RGV] SC1 특례 에이징 - 작업 {0} 이(가) {1:0}초 대기하여 입고를 통과시킨다",
-                            luggNo, waitMs / 1000));
-                    }
-                    else m_dicSc1InWait.Remove(luggNo);
+                    // [LGLS 2026-08-30] SC1 특례(출고 우선).
+                    //   ※에이징 우회는 넣지 않는다 - 사용자 확정 : "보류가 길어져도 통과시키면 안 된다".
+                    //     보류는 물리적 이유로 서는 것이라 시간으로 뚫으면 정면 경합이 난다
+                    //     (실제로 에이징을 넣었을 때 S/C #1 충돌이 발생했다).
+                    //   기아는 우회가 아니라 **보류 조건 자체를 정확히 좁혀서** 푼다 -
+                    //   HasActiveSc1Outbound 는 실제로 라인을 점유한 출고만 센다(대기 20 제외).
+                    if (destPos == "901" && HasActiveSc1Outbound()) continue;
                     if (IsTrackEmpty(pickupTrack)) continue;                           // 화물이 픽업트랙 도착 후에만
 
                     // [LGLS 2026-08-22] S/C #1 겸용 통로 C/V#2(103/104) 방향 맞추기.
@@ -1044,7 +1087,7 @@ namespace TSK_COMM_IOSCH
                     //   그 앞 RGV 단계에서 도착 HS 가 서지 않아 작업이 '30' 에서 멈춘다.
                     if (dropTrack == SC1_DUAL_CV && GetCvStockMode(SC1_DUAL_CV) != "0")
                     {
-                        if (!IsDualCvBusyWithJob(SC1_DUAL_CV))   // [LGLS 2026-08-30] 작업번호 없는 화물은 전환을 막지 않는다
+                        if (!IsDualCvBusyWithJob(SC1_DUAL_CV, "0"))   // [LGLS 2026-08-30] 반대 방향(출고) 작업 화물이 있을 때만 보류
                         {
                             if (RequestCvDirection(SC1_DUAL_CV, "0"))
                                 MakeMsg_Imp(string.Format("[SCH][RGV] 겸용 통로 C/V#2({0}) 방향 전환 지시 - 입고(0) (작업 {1} 드롭 대기)",
@@ -2654,6 +2697,32 @@ namespace TSK_COMM_IOSCH
 
         /// <summary>[LGLS 2026-08-01] 해당 작업대에서 출발하는 입고 작업이 진행 중인지
         ///   (원본 ECS TransferDetail.getCheckInTransferFromCNV11 대응).</summary>
+        /// <summary>
+        /// [LGLS 2026-08-30] 그 작업대로 향하는 출고 반송이 진행 중인가.
+        ///   SC 구동대기(20)는 아직 크레인이 집지도 않은 상태라 '진행 중'이 아니다.
+        ///   21 부터가 실제로 화물이 그 작업대를 향해 움직이는 구간이다.
+        /// </summary>
+        private bool HasActiveOutboundTo(string station)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                        ";
+                q += CRLF + "   FROM JOB_MST                                ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP                  ";
+                q += CRLF + "    AND JOB_TYP    IN ('2','12')               ";
+                q += CRLF + "    AND DEST_POS    = :STN                     ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29','" + ST_SC_WAIT + "') ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')      ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = station;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
         private bool HasActiveInboundFrom(string station)
         {
             try {
@@ -2663,7 +2732,14 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
                 q += CRLF + "    AND JOB_TYP    IN ('1','11')           ";
                 q += CRLF + "    AND START_POS   = :STN                 ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                // [LGLS 2026-08-30] ★기아 방지★ — SC1 특례와 같은 실수가 여기에도 있었다.
+                //   "그 작업대발 입고가 하나라도 미종결이면" 출고를 보류하면, 입고가 끊이지 않는 한
+                //   출고가 영원히 'CV 구동대기(10)' 에 남는다(실측: 122 발 입고 6건이 10 에 쌓여
+                //   122 행 출고가 계속 보류됨).
+                //   CV 구동대기(10) = 아직 그 작업대에서 출발도 하지 않은 상태다. 실제로 작업대를
+                //   점유했는지는 바로 위 물리 가드(입고 모드 + 입고대 점유)가 이미 본다.
+                //   따라서 여기서는 **실제로 반송이 시작된 입고(11 이후)** 만 센다.
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29','" + ST_CV_WAIT + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2682,9 +2758,6 @@ namespace TSK_COMM_IOSCH
         //   방향 지시는 대표 트랙 103 으로 낸다(설비 단위 방향 워드 - 103/104 가 함께 바뀐다).
         private const string SC1_NO       = "901";
         private const string SC1_DUAL_CV  = "103";
-        // [LGLS 2026-08-30] SC1 특례(출고 우선) 기아 방지 — 901행 입고가 이 시간 이상 대기하면 한 건 통과시킨다.
-        private const double SC1_INBOUND_AGING_MS = 60000;   // 60초
-        private readonly Dictionary<string, DateTime> m_dicSc1InWait = new Dictionary<string, DateTime>();
 
         private readonly Dictionary<string, DateTime> m_dicDirReqAt = new Dictionary<string, DateTime>();
         private const int DIR_REQ_HOLD_MS = 15000;   // 설비 반영(미러 1주기)까지 재지시 억제
@@ -2696,15 +2769,52 @@ namespace TSK_COMM_IOSCH
         ///   지시가 없는 파렛트나 자동투입 잔재(유령 파렛트)는 방향 전환을 막지 않는다.
         ///   막아야 하는 것은 시스템이 반송 중인 화물, 즉 작업번호가 붙은 화물뿐이다.
         /// </summary>
-        private bool IsDualCvBusyWithJob(string mcNo)
+        private bool IsDualCvBusyWithJob(string mcNo, string wantDir)
         {
             string[] tracks = (mcNo == SC1_DUAL_CV || mcNo == "104") ? SHARED_LINE_CV2
                             : (mcNo == "121" || mcNo == "122")       ? DUAL_LINE_CV11
                             : null;
             if (tracks == null) tracks = new string[] { mcNo };
             foreach (string t in tracks)
-                if (!IsTrackLuggEmpty(t)) return true;     // 작업번호가 붙은 화물이 남아 있다
+            {
+                string lugg = (TrackLugg(t) ?? "").Trim();
+                if (lugg.Length == 0 || lugg == "0" || lugg == "0000") continue;   // 작업번호 없는 화물은 대상 아님
+                // [LGLS 2026-08-30] ★반대 방향 화물만 전환을 막는다★
+                //   요청이 출고(1)면 "그 작업대발 입고 화물"이, 요청이 입고(0)면 "그 작업대로 오는 출고 화물"이
+                //   아직 위에 있을 때만 보류한다. 같은 방향 화물(예: 출고 전환을 기다리는 출고 화물)까지
+                //   막으면 그 화물이 영영 못 빠지는 교착이 된다.
+                if (IsOppositeDirCargo(mcNo, lugg, wantDir)) return true;
+            }
             return false;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-30] 그 작업대 위의 화물이 "요청 방향과 반대 방향" 화물인가.
+        ///   입고 화물 = 그 작업대에서 출발하는 입고 작업(START_POS=작업대)
+        ///   출고 화물 = 그 작업대로 도착하는 출고 작업(DEST_POS=작업대)
+        /// </summary>
+        private bool IsOppositeDirCargo(string mcNo, string lugg, string wantDir)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                        ";
+                q += CRLF + "   FROM JOB_MST                                ";
+                q += CRLF + "  WHERE WH_TYP   = :WH_TYP                     ";
+                q += CRLF + "    AND LUGG_NO  = :LUGG                       ";
+                if (wantDir == "1")   // 출고로 바꾸려 한다 → 입고 화물이 남아 있으면 보류
+                    q += CRLF + "    AND JOB_TYP IN ('1','11') AND START_POS = :STN ";
+                else                  // 입고로 바꾸려 한다 → 출고 화물이 남아 있으면 보류
+                    q += CRLF + "    AND JOB_TYP IN ('2','12') AND DEST_POS  = :STN ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')      ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = lugg;
+                _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = mcNo;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
         }
 
         private bool RequestCvDirection(string mcNo, string dir)
@@ -2720,7 +2830,7 @@ namespace TSK_COMM_IOSCH
                 //   현재 방향의 작업 화물이 아직 설비에 있으면 전환하지 않는다. 뒤집으면 이송 방향이
                 //   반대가 되어 그 화물이 갇히고(HS 미성립) 크레인 앞에서 충돌한다.
                 //   화물이 빠지면 다음 폴링에 자연히 전환된다(호출부가 매 주기 재시도).
-                if (IsDualCvBusyWithJob(mcNo))
+                if (IsDualCvBusyWithJob(mcNo, dir))
                 {
                     DbgLog("DIRHOLD_" + mcNo, string.Format("[CV] 방향전환 보류 - 겸용대 {0} 에 작업 화물이 남아 있음", mcNo));
                     return false;
