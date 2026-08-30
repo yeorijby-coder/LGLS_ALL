@@ -734,13 +734,28 @@ namespace EQP_SIM.Sim
 
             int woPort = engine.World.GetWaitOutPort(Def, direction);
 
+            // [LGLS 2026-08-30] 방향전환형 겸용대(C/V#2·#11)는 **벨트가 한 방향으로만 돈다**.
+            //   그 위에 있는 화물은 시뮬 내부 플래그(p.Dir)가 무엇이든 설비 방향을 따라 간다.
+            //   종전에는 p.Dir 로 경로를 골라서, 출고로 들어온 파렛트가 남아 있는 상태에서 방향이
+            //   입고로 바뀌면 그 화물이 입고 경로를 타지 못하고 영영 제자리에 머물렀다
+            //   (실측: 122 의 출고 잔재 위에 ECS 가 입고 작업 0147 을 기록했으나 22→21 이동 없음).
+            //   → 겸용대는 "현재 방향과 일치하는 경로"만 돌리고, 그 경로에서는 p.Dir 을 따지지 않는다.
+            bool bDualCv = (Def.IngoPath != null && Def.OutgoPath != null);
+            if (bDualCv)
+            {
+                bool bWantOutgo = (direction == "1");
+                if (bWantOutgo != (dir == FlowDir.Outgo)) return;   // 지금 도는 방향의 경로가 아니다
+            }
+
             // 경로 끝쪽 파렛트부터 이동 (막힘 해소 순서)
             for (int i = path.Length - 2; i >= 0; i--)
             {
                 int curIdx = Def.OrderOf(path[i]);
                 int nextIdx = Def.OrderOf(path[i + 1]);
                 SimPallet p;
-                if (!Pallets.TryGetValue(curIdx, out p) || p.Dir != dir) continue;
+                if (!Pallets.TryGetValue(curIdx, out p)) continue;
+                if (!bDualCv && p.Dir != dir) continue;             // 전용 컨베이어는 종전대로 적재 주체로 판정
+                if (bDualCv) p.Dir = dir;                           // 겸용대는 현재 벨트 방향으로 정렬
                 if (Pallets.ContainsKey(nextIdx)) continue;
                 if (now < p.MoveReadyAt) continue;
                 if (string.IsNullOrEmpty(p.Id)) continue;                    // JOB 지정 전 이동 금지 (슬라이드8)

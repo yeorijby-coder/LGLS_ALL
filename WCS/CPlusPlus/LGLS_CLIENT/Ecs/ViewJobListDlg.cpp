@@ -311,6 +311,10 @@ void CViewJobListDlg::CreateAutoRefreshCheck()
 							rc, this, IDC_LGLS_JL_AUTOREFRESH);
 	m_chkAutoRefresh.SetFont(GetFont());
 	m_chkAutoRefresh.SetCheck(BST_UNCHECKED);
+	// [LGLS 2026-08-30] 그룹박스보다 뒤(Z순서 아래)에 만들어지면 클릭이 그룹박스에 먹혀 눌리지 않는다.
+	//   맨 앞으로 올려 마우스 입력을 받게 한다.
+	m_chkAutoRefresh.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+	m_chkAutoRefresh.BringWindowToTop();
 }
 
 void CViewJobListDlg::OnBnClickedAutoRefresh()
