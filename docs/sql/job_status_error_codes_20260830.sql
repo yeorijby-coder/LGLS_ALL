@@ -12,7 +12,8 @@ MERGE common_code AS T
 USING (VALUES
         ('09', '이중입고 에러',   'Dual Store Error',     13),
         ('08', '공출고 에러',     'Empty Retrieve Error', 14),
-        ('07', '이중입고 재지정', 'Dual Store Retry',     15)
+        ('07', '이중입고 재지정', 'Dual Store Retry',     15),
+        ('06', '공출고 재지정',   'Empty Retrieve Retry', 16)
       ) AS S(ccd_cd, nm_kor, nm_eng, ord)
    ON  T.cdx_cd = 'JOB_STATUS'
    AND T.ccd_cd = S.ccd_cd
@@ -28,5 +29,5 @@ WHEN NOT MATCHED THEN
 
 SELECT ccd_cd, ccd_nm_kor, ccd_nm_eng, ccd_epr_ord
   FROM common_code
- WHERE cdx_cd = 'JOB_STATUS' AND ccd_cd IN ('07','08','09')
+ WHERE cdx_cd = 'JOB_STATUS' AND ccd_cd IN ('06','07','08','09')
  ORDER BY ccd_cd;

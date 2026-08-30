@@ -1443,7 +1443,10 @@ namespace TSK_HostCom
 
                     m_strSql = modDefApp.CRLF + "  UPDATE JOB_MST ";
                     m_strSql += modDefApp.CRLF + "    SET DEST_LOCATION = " + m_BDb.ParamsAdd("DEST_LOCATION", strDestLoc);
-                    m_strSql += modDefApp.CRLF + "      , JOB_STATUS    = " + m_BDb.ParamsAdd("JOB_STATUS", ((int)modDefApp.EN_JOB_STATUS.enJobStatusDualStoreRetry).ToString());
+                    // [LGLS 2026-08-30] 재지정 상태는 common_code JOB_STATUS 코드값(2자리)으로 쓴다.
+                    //   enum 값을 그대로 쓰면 이중입고=9, 공출고=10 인데 현행 체계에서 10 은 "CV 구동대기"라
+                    //   재지정 작업이 CV 구동대기로 오인돼 DriveCV 에 잡힌다. 07=이중입고 재지정, 06=공출고 재지정.
+                    m_strSql += modDefApp.CRLF + "      , JOB_STATUS    = " + m_BDb.ParamsAdd("JOB_STATUS", modDefApp.JOB_ST_DUAL_RETRY);
                     m_strSql += modDefApp.CRLF + "      , UPD_DT        = " + modDateTime.SYSDATE;
                     m_strSql += modDefApp.CRLF + "      , UPD_USER_ID   = 'HOST_TASK'";
                     m_strSql += modDefApp.CRLF + "  WHERE WH_TYP        = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
@@ -1486,7 +1489,8 @@ namespace TSK_HostCom
 
                     m_strSql = modDefApp.CRLF + "  UPDATE LUGG_MST ";
                     m_strSql += modDefApp.CRLF + "    SET START_LOCATION = " + m_BDb.ParamsAdd("START_LOCATION", strStartLoc);
-                    m_strSql += modDefApp.CRLF + "      , JOB_STATUS    = " + Convert.ToInt32((int)modDefApp.EN_JOB_STATUS.enJobStatusEmptyRetrieveRetry);
+                    // [LGLS 2026-08-30] 위와 동일 - 06 = 공출고 재지정
+                    m_strSql += modDefApp.CRLF + "      , JOB_STATUS    = '" + modDefApp.JOB_ST_EMPTY_RETRY + "'";
                     m_strSql += modDefApp.CRLF + "      , UPD_DT        = " + modDateTime.SYSDATE;
                     m_strSql += modDefApp.CRLF + "      , UPD_USER_ID   = 'HOST_TASK'";
                     m_strSql += modDefApp.CRLF + "  WHERE WH_TYP        = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);

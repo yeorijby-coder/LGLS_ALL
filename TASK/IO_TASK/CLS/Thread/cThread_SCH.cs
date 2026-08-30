@@ -321,6 +321,7 @@ namespace TSK_COMM_IOSCH
                     // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
                     MonitorAlarm();
                     MarkErrorJobStatus();       // [LGLS 2026-08-30] 이중입고(54)/공출고(58) → 작업상태 반영
+                    ResumeRedirectedJobs();     // [LGLS 2026-08-30] 재지정(07/06) → 새 셀로 재개 지시
 
                     // [LGLS 2026-07-22] 표시용 작업구분 보강(실경로): 클라이언트는 CV_DATA/SC_DATA_LGLS 의
                     //   JOB_TYP_RD 로 입고/출고 색을 칠하는데, 실경로의 설비 관측(CvThread/VehThread)은
@@ -762,8 +763,12 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "    AND (SD.ERR_CODE_RD IS NULL OR SD.ERR_CODE_RD IN ('0','00','0000','')) ";   // [LGLS 2026-08-30] 정상 표기 흔들림(0/00/0000/빈 값) 흡수
                 strSql += CRLF + "    AND SD.ACTIVE_MODE_RD  = '1'                                 ";
                 strSql += CRLF + "    AND SD.UCSTATUS_RD     = '1'                                 ";
-                strSql += CRLF + "    AND SD.ITN_LUGG_FK1    = '0'                                 ";   // 포크 비어있음
-                strSql += CRLF + "    AND SD.ITN_LUGG_FK2    = '0'                                 ";
+                // [LGLS 2026-08-30] 포크 비어있음 판정 — NULL/빈 값/'0000' 도 "비어있음"으로 본다.
+                //   종전에는 = '0' 하나만 봐서, 이 컬럼이 NULL 이 되면 (수동 정리·초기 적재 등)
+                //   5대 크레인 전 지시가 조용히 영구 정지했다. VehThread 는 값이 바뀔 때만 쓰므로
+                //   한번 NULL 이 되면 스스로 복구되지도 않는다.
+                strSql += CRLF + "    AND (SD.ITN_LUGG_FK1 IS NULL OR SD.ITN_LUGG_FK1 IN ('0','00','0000','')) ";   // 포크1 비어있음
+                strSql += CRLF + "    AND (SD.ITN_LUGG_FK2 IS NULL OR SD.ITN_LUGG_FK2 IN ('0','00','0000','')) ";   // 포크2 비어있음
                 strSql += CRLF + "    AND SD.OD_RQ_YN        = 'N'                                 ";   // 설비 유휴
                 // [LGLS 2026-07-24] (제거) COMPLETE_RD<>'1' 게이트 삭제 — 마지막 작업의 완료신호가 '1'로 잔류하면
                 //   이 게이트가 SC 에 신규 지시를 영구 차단하는 데드락(완료신호 리셋이 다음 지시 소비에 의존하는데
@@ -3644,6 +3649,98 @@ namespace TSK_COMM_IOSCH
         //   더는 걸리지 않아 조치 전까지 재지시되지 않는다.
         private const string ST_ERR_DUAL_STORE   = "09";   // 이중입고 에러
         private const string ST_ERR_EMPTY_RETR   = "08";   // 공출고 에러
+        private const string ST_RETRY_DUAL_STORE = "07";   // 이중입고 재지정 (상위가 새 셀을 내려준 상태)
+        private const string ST_RETRY_EMPTY_RETR = "06";   // 공출고 재지정
+
+        /// <summary>
+        /// [LGLS 2026-08-30] 재지정 후 작업 재개.
+        ///   상위(WMS)가 R 전문으로 새 로케이션을 내려주면 HOST_TASK 가 JOB_MST 의 로케이션을 바꾸고
+        ///   상태를 07(이중입고 재지정) / 06(공출고 재지정) 으로 둔다. 종전에는 여기서 끝이라
+        ///   아무도 그 작업을 다시 집지 않았고, 크레인도 새 반송지시를 못 받아 에러가 안 풀렸다.
+        ///
+        ///   재개 규약 — "재지정 = 크레인이 든 화물을 새 셀로 보낸다"
+        ///     · 이중입고(입고) : 크레인이 화물을 든 채 원래 목적셀에 서 있다.
+        ///                       From = 크레인 현재 위치(LOCATION_*_RD), To = 새 DEST_LOCATION.
+        ///     · 공출고(출고)   : 크레인은 빈 채로 서 있다(그 셀에 재고가 없었다).
+        ///                       From = 새 START_LOCATION, To = 출고 하역트랙.
+        ///   설비는 새 TRANSFER_REQUEST 를 받으면 에러를 해제한다(EQP_SIM VState.Error / 실 PLC 동일 규약).
+        ///   ★현장 확인 필요: 실 SFA 크레인이 "이미 든 화물"을 From 재픽업 없이 To 로 옮기는지 —
+        ///     EQP_SIM 은 그렇게 동작하도록 맞춰 두었다(적재 상태 유지 후 목적지로 직행).
+        /// </summary>
+        private void ResumeRedirectedJobs()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.JOB_STATUS                        ";
+                q += CRLF + "      , JM.START_POS, JM.DEST_POS, JM.START_LOCATION, JM.DEST_LOCATION ";
+                q += CRLF + "      , SD.SC_NO                                                     ";
+                q += CRLF + "      , SD.LOCATION_01_RD, SD.LOCATION_02_RD, SD.LOCATION_03_RD      ";
+                q += CRLF + "   FROM JOB_MST JM                                                   ";
+                q += CRLF + "  INNER JOIN SC_DATA_LGLS SD                                         ";
+                q += CRLF + "     ON JM.WH_TYP = SD.WH_TYP                                        ";
+                q += CRLF + "    AND SD.SC_NO  = " + SC_POS_EXPR + "                              ";
+                q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                                      ";
+                q += CRLF + "    AND JM.JOB_STATUS IN ('" + ST_RETRY_DUAL_STORE + "','" + ST_RETRY_EMPTY_RETR + "') ";
+                q += CRLF + "    AND SD.TRANSFER_REQUEST_OD = 'N'                                 ";   // 직전 지시가 소비된 뒤에만
+                q += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')                      ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
+                    string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
+                    string scNo     = GetVal(dt.Rows[i], "SC_NO");
+                    string startPos = GetVal(dt.Rows[i], "START_POS");
+                    string startLoc = GetVal(dt.Rows[i], "START_LOCATION");
+                    string destLoc  = GetVal(dt.Rows[i], "DEST_LOCATION");
+                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";
+
+                    string f1, f2, f3, t1, t2, t3;
+                    if (jobTyp == "1")
+                    {
+                        // 크레인이 서 있는 자리(= 이중입고가 난 셀)에서 새 셀로
+                        f1 = Cap(GetVal(dt.Rows[i], "LOCATION_01_RD"), 2);
+                        f2 = Cap(GetVal(dt.Rows[i], "LOCATION_02_RD"), 2);
+                        f3 = Cap(GetVal(dt.Rows[i], "LOCATION_03_RD"), 2);
+                        VehCellLoc(destLoc, out t1, out t2, out t3);
+                    }
+                    else
+                    {
+                        VehCellLoc(startLoc, out f1, out f2, out f3);
+                        VehPortLoc(RgvOutDropTrack(startPos), out t1, out t2, out t3);
+                    }
+
+                    MakeMsg_Imp(string.Format("[SCH][재지정] S/C #{0} 작업:{1}(TYP:{2}) 재개 지시 (From:{3}/{4}/{5} To:{6}/{7}/{8})",
+                        scNo, luggNo, jobTyp, f1, f2, f3, t1, t2, t3));
+
+                    _pBdb.BeginTrans();
+                    string rtn = "";
+                    bool ok = UpdateScData(scNo, jobTyp, luggNo, f1, f2, f3, t1, t2, t3, ref rtn)
+                              && UpdateJobStatus(ST_SC_CMD, luggNo, ref rtn);
+                    if (ok)
+                    {
+                        _pBdb.Commit();
+                        m_dicPrevSC["SC_" + scNo] = luggNo;
+                        MakeMsg_Imp(string.Format("[SCH][재지정] 작업 {0} 재개 완료 → 상태 '{1}'", luggNo, ST_SC_CMD));
+                    }
+                    else
+                    {
+                        _pBdb.Rollback();
+                        MakeMsg_Error(string.Format("[SCH][재지정] 작업 {0} 재개 실패: {1}", luggNo, rtn));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MakeMsg_Error("[SCH][재지정] ResumeRedirectedJobs 오류: " + ex.Message);
+                try { _pBdb.Rollback(); } catch { }
+            }
+        }
 
         private void MarkErrorJobStatus()
         {

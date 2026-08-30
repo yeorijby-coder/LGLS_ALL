@@ -426,13 +426,41 @@ namespace EQP_SIM.Sim
                     {
                         if (!Def.IsRgv) io.SetShort(Def.Id, "ERR_CODE_RD", 0);
                         pendingErrCode = 0;
-                        carrying = null;
-                        io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
-                        io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");
-                        io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 1);   // IDLE 복귀
-                        state = VState.Idle;
-                        StatusText = "재지정 수신 → IDLE";
-                        engine.Log(Def.Id + " 재지정 수신 → 에러 해제, 재작업 대기");
+                        io.SetBool(Def.Id, "TRANSFER_REQUEST", false);      // PLC 가 스트로브 리셋
+                        io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 2);         // RUN
+
+                        // [LGLS 2026-08-30] 재지정 규약 = "이미 든 화물을 새 목적지로".
+                        //   종전에는 carrying 을 버리고 IDLE 로 돌아가, 화물이 사라진 채 처음부터 다시
+                        //   하는 모양이 됐다(재지정 작업이 끝까지 가지 못한 원인).
+                        //   이제 적재 상태를 유지한 채 새 To 로 직행한다. 빈 차(공출고)면 종전처럼
+                        //   출발지부터 정상 수행한다.
+                        to01 = io.GetString(Def.Id, "TO_01");
+                        to02 = io.GetString(Def.Id, "TO_02");
+                        to03 = io.GetString(Def.Id, "TO_03");
+                        from01 = io.GetString(Def.Id, "FROM_01");
+                        from02 = io.GetString(Def.Id, "FROM_02");
+                        from03 = io.GetString(Def.Id, "FROM_03");
+                        palletId = io.GetString(Def.Id, "PALLET_ID");
+
+                        if (carrying != null)
+                        {
+                            io.SetString(Def.Id, "PALLET_ON_VEHICLE", palletId ?? "");
+                            state = VState.ToDest;
+                            stateUntil = now.AddMilliseconds(engine.TravelMs);
+                            BeginTravel(now, AxisOf(to01, to02, to03));
+                            StatusText = "재지정 수신 → 적재 유지, 새 목적지 " + ToText();
+                            engine.Log(Def.Id + " 재지정 수신 → 에러 해제, 든 화물을 새 목적지 " + ToText() + " 로 이송 (JOB " + palletId + ")");
+                        }
+                        else
+                        {
+                            io.SetString(Def.Id, "PALLET_ON_VEHICLE", palletId ?? "");
+                            io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
+                            state = VState.ToSource;
+                            stateUntil = now.AddMilliseconds(engine.TravelMs);
+                            BeginTravel(now, AxisOf(from01, from02, from03));
+                            StatusText = "재지정 수신 → 새 출발지 " + FromText();
+                            engine.Log(Def.Id + " 재지정 수신 → 에러 해제, 새 출발지 " + FromText() + " 에서 재수행 (JOB " + palletId + ")");
+                        }
                     }
                     break;
             }
