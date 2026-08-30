@@ -1010,6 +1010,14 @@ namespace TSK_COMM_IOSCH
                     string pickupTrack = RgvPickupTrack(startPos);
                     string dropTrack   = RgvDropTrack(destPos);
                     if (!CanEnterLine(dropTrack, luggNo)) continue;                    // 드롭 라인 선점/점유 시 대기
+                    // [LGLS 2026-08-30] 위 판정은 CV_DATA 미러(최대 ~16초 지연) 기반이라, RTV 가 막
+                    //   내려놓은 화물을 못 보고 같은 드롭 트랙에 다음 입고를 또 보낼 수 있다(크레인 충돌).
+                    //   JOB_MST 로 지연 없이 한 번 더 막는다.
+                    if (HasInboundWaitingOnScLine(destPos, luggNo))
+                    {
+                        DbgLog("RGVLINE_" + rtvNo, string.Format("[RGV] 보류 - S/C {0} 라인에 픽업 대기 화물 있음(작업 {1})", destPos, luggNo));
+                        continue;
+                    }
                     if (RtvBusyByOutbound()) continue;                                 // 출고대 반출이 RTV 사용 중
                     if (IsRtvSuspended()) continue;                                    // RTV 작업정지
                     if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;    // 작업대 일시정지
@@ -1930,6 +1938,40 @@ namespace TSK_COMM_IOSCH
         //   → 라인이 비고 예약도 없을 때만 RTV 를 커밋하고, 드롭 전까지 예약을 유지한다.
         //     이러면 RTV 를 든 입고는 항상 드롭 가능(=RTV 반드시 해제)하므로 순환 대기가 성립하지 않는다.
         private readonly Dictionary<string, string> m_dicLineRsv = new Dictionary<string, string>();   // lugg → 예약 드롭 트랙
+        /// <summary>
+        /// [LGLS 2026-08-30] 그 크레인의 드롭 라인에서 S/C 픽업을 기다리는 입고 화물이 이미 있는가.
+        ///   ★크레인 충돌 방지의 최종 기준★
+        ///   기존 점유 판정(IsTrackFreeFor)은 CV_DATA 미러를 읽는데, 이 미러는 WCS_TASK_CV 의
+        ///   15설비 순회 때문에 최대 ~16초 지연된다. RTV 가 화물을 내려놓는 순간 라인 예약
+        ///   (m_dicLineRsv)은 풀리지만 미러는 아직 '비어있음'이라, 그 창에서 다음 입고가 같은
+        ///   드롭 트랙으로 또 지시돼 앞 화물 위로 겹친다(실측: 트랙 103 의 0119 위로 0117 진입).
+        ///   JOB_MST 는 지연이 없다 — 라인에 내려진 입고는 SC 가 집어갈 때까지 20/21/25 에 머문다.
+        ///   라인(103/104)은 CanEnterLine 규약상 이미 1파렛트 단위이므로 이 직렬화는 설계와 일치한다.
+        /// </summary>
+        private bool HasInboundWaitingOnScLine(string scNo, string exceptLugg)
+        {
+            try {
+                if (string.IsNullOrEmpty(scNo)) return false;
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                        ";
+                q += CRLF + "   FROM JOB_MST                                ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP                  ";
+                q += CRLF + "    AND JOB_TYP    IN ('1','11')               ";
+                q += CRLF + "    AND DEST_POS    = :SC_NO                   ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_SC_WAIT + "','" + ST_SC_CMD + "','" + ST_SC_RUN + "') ";
+                q += CRLF + "    AND LUGG_NO    <> :LUGG                    ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')      ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = exceptLugg ?? "";
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
         private bool IsLineRsvd(string track, string exceptLugg)
         {
             foreach (var kv in m_dicLineRsv)

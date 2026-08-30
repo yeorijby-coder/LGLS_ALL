@@ -1317,6 +1317,50 @@ namespace WCS_TASK_CV
         #endregion
 
 
+        /// <summary>
+        /// [LGLS 2026-08-30] 겸용대 방향 전환을 보류해야 하는가.
+        ///   현재 방향과 다른 방향 지시가 왔는데, 그 설비 위에 아직 화물이 있으면 true(보류).
+        ///   판정 근거는 CvDic - PLC 판독값을 그대로 담은 메모리 캐시라 DB 미러 지연이 없고,
+        ///   순회 중인 mDtMain 결과셋을 건드리지 않는다(같은 연결로 재조회하면 루프가 깨진다).
+        ///   방향전환형 겸용대는 C/V#2(트랙 103/104)·C/V#11(트랙 121/122) 뿐이다.
+        /// </summary>
+        private bool IsDualCvDirChangeHeld(string pTrackNo, int pWantDir)
+        {
+            try
+            {
+                int nCv = 0;
+                int.TryParse(System.Text.RegularExpressions.Regex.Match(m_strPlc_No, @"\d+").Value, out nCv);
+                if (nCv != 2 && nCv != 11) return false;          // 방향전환형만 대상
+
+                int nBase = 100 + (nCv - 1) * 2;                  // C/V#2 → 103/104, C/V#11 → 121/122
+                int[] nTracks = new int[] { nBase + 1, nBase + 2 };
+
+                // 현재 방향 : 지시 트랙 기준(같은 설비이므로 두 트랙이 함께 바뀐다)
+                int nCmdTrack = 0; int.TryParse(pTrackNo, out nCmdTrack);
+                string strNowDir = "";
+                if (CvDic.ContainsKey(nCmdTrack)) strNowDir = (CvDic[nCmdTrack].STOCK_MODE ?? "").Trim();
+                string strWantDir = (pWantDir == 1) ? "1" : "0";
+                if (strNowDir == strWantDir) return false;        // 같은 방향이면 보류할 이유가 없다
+
+                // 이 설비 위에 화물이 남아 있는가
+                for (int i = 0; i < nTracks.Length; i++)
+                {
+                    if (!CvDic.ContainsKey(nTracks[i])) continue;
+                    if ((CvDic[nTracks[i]].SENSOR0_DATA_RD ?? "").Trim() == "1")
+                    {
+                        m_strLogMsg = "[CvChg_CMD_RQ_YN] 트랙번호 : [" + pTrackNo + "] 방향전환 보류 - 트랙 "
+                                    + nTracks[i] + " 에 화물이 남아 있음 (현재 "
+                                    + (strNowDir == "1" ? "출고" : "입고") + " → 요청 "
+                                    + (strWantDir == "1" ? "출고" : "입고") + "). 화물 반출 후 전환한다.";
+                        MakeMsg_Imp(m_strLogMsg, m_nthNo);
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+
         #region [CvChg_CMD_RQ_YN] :: CV_DATA에서 CMD_RQ_YN 여부에 따른 CV 지시
         private bool CvChg_CMD_RQ_YN(int Idx)
         {
@@ -1406,6 +1450,17 @@ namespace WCS_TASK_CV
                     #region
                     if (CMD_RQ_ID == "DIR")
                     {
+                        // [LGLS 2026-08-30] 겸용대(C/V#2, C/V#11) 방향 전환 규약 - 사용자 확정.
+                        //   "현재 방향의 화물이 설비에 남아 있으면, 그 화물이 빠진 뒤에 전환한다."
+                        //   입고 중 화물이 올라와 있는데 출고로 뒤집으면 이송 방향이 반대가 되어 그 화물이
+                        //   갇히고(HS 가 서지 않아 지시가 영영 보류) 크레인 앞에서 충돌한다. 반대도 같다.
+                        //   지시를 소비하지 않고 보류만 하므로 다음 폴링에 자동 재시도된다.
+                        //   ※방향전환형은 C/V#2·#11 뿐이다(PlcAddressMap CraneMap). 그 외 설비는 종전대로.
+                        if (IsDualCvDirChangeHeld(TRACK_NO, nCMD_RQ_PARM))
+                        {
+                            continue;   // CMD_RQ_YN 을 지우지 않는다 - 화물이 빠지면 다음 폴링에 전환
+                        }
+
                         // [LGLS 2026-08-01] 입출고 방향(입고=0 / 출고=1) 지시.
                         //   HOST 의 M 전문(WMS C/V IO 모드 송신)을 WCS_TASK_HOST 가 이 커맨드로 남기면
                         //   여기서 설비 방향 워드에 직접 써서 실제 설비 방향을 바꾼다.
