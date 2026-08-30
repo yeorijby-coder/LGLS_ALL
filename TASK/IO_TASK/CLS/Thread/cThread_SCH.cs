@@ -1013,7 +1013,22 @@ namespace TSK_COMM_IOSCH
                     if (RtvBusyByOutbound()) continue;                                 // 출고대 반출이 RTV 사용 중
                     if (IsRtvSuspended()) continue;                                    // RTV 작업정지
                     if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;    // 작업대 일시정지
-                    if (destPos == "901" && HasActiveSc1Outbound()) continue;          // SC1 특례(출고 우선)
+                    // [LGLS 2026-08-30] SC1 특례(출고 우선) + 기아 방지 에이징.
+                    //   우선권은 "먼저 가라"이지 "영원히 가라"가 아니다. 특례가 어떤 이유로든 오래 풀리지
+                    //   않으면(선행 출고가 반출 구간에서 지체되는 등) 입고가 무한정 굶는다 — 실측 18분 정지.
+                    //   그래서 대기 시간이 임계를 넘으면 한 건은 통과시킨다. 물리 안전(드롭 라인 선점
+                    //   CanEnterLine, 출발/도착 HS, 픽업트랙 화물 도착)은 아래·위 게이트가 그대로 지키므로
+                    //   통과시켜도 정면 경합이 생기지 않는다.
+                    if (destPos == "901" && HasActiveSc1Outbound())
+                    {
+                        DateTime nowRgv = DateTime.Now;
+                        if (!m_dicSc1InWait.ContainsKey(luggNo)) m_dicSc1InWait[luggNo] = nowRgv;
+                        double waitMs = (nowRgv - m_dicSc1InWait[luggNo]).TotalMilliseconds;
+                        if (waitMs < SC1_INBOUND_AGING_MS) continue;
+                        MakeMsg_Imp(string.Format("[SCH][RGV] SC1 특례 에이징 - 작업 {0} 이(가) {1:0}초 대기하여 입고를 통과시킨다",
+                            luggNo, waitMs / 1000));
+                    }
+                    else m_dicSc1InWait.Remove(luggNo);
                     if (IsTrackEmpty(pickupTrack)) continue;                           // 화물이 픽업트랙 도착 후에만
 
                     // [LGLS 2026-08-22] S/C #1 겸용 통로 C/V#2(103/104) 방향 맞추기.
@@ -2351,7 +2366,14 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
                 q += CRLF + "    AND JOB_TYP    IN ('2','12')           ";
                 q += CRLF + "    AND START_POS   = '901'                ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29')  ";
+                // [LGLS 2026-08-30] ★기아(starvation) 방지★ — "미완료 출고가 하나라도 있으면" 이 아니라
+                //   "출고가 실제로 공유 라인(C/V#2 = 103/104)을 쓰고 있으면" 으로 좁힌다.
+                //   종전에는 NOT IN ('9','19','29') 라 **아직 지시도 안 나간 대기(20)** 까지 세어서,
+                //   출고가 줄만 서 있어도 901행 입고 RTV 가 막혔다. 출고가 끊이지 않는 현장/시험에서는
+                //   입고가 영원히 굶는다(실측: [CV#2 교착 TEST] 중 입고 0083/0098 이 30 에서 18분 정지,
+                //   그때 RTV 는 완전 유휴였고 막은 출고 3건 중 2건은 상태 20 이었다).
+                //   20 = 대기(아무것도 점유하지 않음) → 양보 사유 아님. 21 부터가 실제 점유.
+                q += CRLF + "    AND JOB_STATUS NOT IN ('9','19','29','" + ST_SC_WAIT + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2616,6 +2638,9 @@ namespace TSK_COMM_IOSCH
         //   방향 지시는 대표 트랙 103 으로 낸다(설비 단위 방향 워드 - 103/104 가 함께 바뀐다).
         private const string SC1_NO       = "901";
         private const string SC1_DUAL_CV  = "103";
+        // [LGLS 2026-08-30] SC1 특례(출고 우선) 기아 방지 — 901행 입고가 이 시간 이상 대기하면 한 건 통과시킨다.
+        private const double SC1_INBOUND_AGING_MS = 60000;   // 60초
+        private readonly Dictionary<string, DateTime> m_dicSc1InWait = new Dictionary<string, DateTime>();
 
         private readonly Dictionary<string, DateTime> m_dicDirReqAt = new Dictionary<string, DateTime>();
         private const int DIR_REQ_HOLD_MS = 15000;   // 설비 반영(미러 1주기)까지 재지시 억제

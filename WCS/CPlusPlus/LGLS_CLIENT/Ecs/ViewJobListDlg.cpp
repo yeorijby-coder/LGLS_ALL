@@ -497,8 +497,11 @@ void CViewJobListDlg::JobComplete(CString strJOB_STATUS)
 void CViewJobListDlg::InitializeControlLanguage()
 {
 	
-	m_lblJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업종류"), m_pDoc->m_enLang));
-	m_lblJobStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), m_pDoc->m_enLang));
+	// [LGLS 2026-08-30] 조회 필터 라벨이 한 칸씩 밀려 있었다 - JOB_STATUS 콤보에 "작업구분" 이 붙어
+	//   화면상 "작업상태" 필터가 사라져 보였다. 그리드 머리글(작업 구분 / 작업 상태) 및
+	//   다국어 ini(dlg_jobinfo.ini : jobtyp=작업구분, jobsta=작업상태) 와 일치시킨다.
+	m_lblJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), m_pDoc->m_enLang));
+	m_lblJobStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업상태"), m_pDoc->m_enLang));
 	
 	m_lblLuggNum.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), m_pDoc->m_enLang));
 	m_lblStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발지"), m_pDoc->m_enLang));
