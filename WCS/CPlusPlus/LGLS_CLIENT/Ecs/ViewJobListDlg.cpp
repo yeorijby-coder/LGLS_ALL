@@ -211,6 +211,13 @@ BOOL CViewJobListDlg::OnInitDialog()
 	CLib::BindCombo(m_cmbJobTyp, _T("JOB_TYP"), m_pDoc, int(pEn), TRUE);
 	CLib::BindCombo(m_cmbJobStatus, _T("JOB_STATUS"), m_pDoc, int(pEn), TRUE);
 	CLib::BindCombo(m_cmbJobStatus2, _T("JOB_STATUS"), m_pDoc, int(pEn), FALSE);
+
+	// [LGLS 2026-08-30] 작업상태 콤보도 그리드와 같이 "[코드] 상태명" 으로 표기한다.
+	//   그리드의 작업상태 열은 SQL 에서 이미 "[19] 출고완료" 로 만들고 있는데
+	//   콤보는 "출고완료" 뿐이라, 행을 클릭했을 때 SetCurSelTextEx() 가 텍스트로
+	//   찾지 못해 수정 콤보가 그 행의 상태로 맞춰지지 않았다. 표기를 맞추면 같이 풀린다.
+	AddCodePrefixToCombo(m_cmbJobStatus);
+	AddCodePrefixToCombo(m_cmbJobStatus2);
 	CLib::BindCombo(m_cbxJobPriority, _T("JOB_PRIORITY"), m_pDoc, int(pEn), FALSE);
 	CLib::BindCombo(m_cbxProductSize, _T("PRODUCT_SIZE"), m_pDoc, int(pEn), FALSE);
 	CLib::SetBindCombo_DEST_POS_DEF(m_cmbStartPos, m_pDoc);
@@ -289,6 +296,44 @@ BOOL CViewJobListDlg::OnInitDialog()
 
 // [LGLS 2026-08-30] 그리드 자동 갱신 체크박스를 [CV 도착보고] 버튼 왼쪽에 만든다.
 //   버튼의 실제 위치를 읽어 그 왼쪽에 붙이므로, 리소스에서 버튼이 옮겨져도 따라간다.
+// [LGLS 2026-08-30] 콤보 항목을 "[코드] 이름" 으로 다시 쓴다.
+//   코드가 없는 항목(ALL)과 이미 붙어 있는 항목은 건드리지 않는다.
+//   ResetContent() 는 목록만 비우고 m_Key 는 그대로 두므로,
+//   키를 먼저 걷어낸 뒤 원래 순서대로 다시 넣는다.
+void CViewJobListDlg::AddCodePrefixToCombo(CComboBoxWrapper& cbx)
+{
+	int nCnt = cbx.GetCount();
+	if (nCnt <= 0) return;
+
+	int nSel = cbx.GetCurSel();
+	CStringArray arrKey, arrText;
+
+	for (int i = 0; i < nCnt; i++)
+	{
+		CString strText, strKey = cbx.GetItemKey(i);
+		cbx.GetLBText(i, strText);
+		strKey.Trim();
+		strText.Trim();
+
+		if (!strKey.IsEmpty() && strKey != _T("ALL") && strText.Left(1) != _T("["))
+		{
+			CString strNew;
+			strNew.Format(_T("[%s] %s"), strKey, strText);
+			strText = strNew;
+		}
+		arrKey.Add(strKey);
+		arrText.Add(strText);
+	}
+
+	cbx.ResetContent();
+	for (int i = 0; i < nCnt; i++)
+	{
+		cbx.SetItemDataEx(i, arrKey.GetAt(i));
+		cbx.AddString(arrText.GetAt(i));
+	}
+	cbx.SetCurSel(nSel < 0 ? 0 : nSel);
+}
+
 void CViewJobListDlg::CreateAutoRefreshCheck()
 {
 	if (m_chkAutoRefresh.GetSafeHwnd() != NULL)
