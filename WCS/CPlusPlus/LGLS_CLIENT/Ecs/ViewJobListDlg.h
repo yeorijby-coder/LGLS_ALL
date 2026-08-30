@@ -130,6 +130,13 @@ protected:
 	afx_msg void OnCommandRangeButtonEvent(UINT nID);
 	afx_msg LRESULT OnUpdateSpread(WPARAM wParam, LPARAM lParam);
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);	// [LGLS] 런타임 라벨 배경 투명
+	// [LGLS 2026-08-30] 그리드 자동 갱신 : [CV 도착보고] 왼쪽 체크박스로 켜고 끈다.
+	//   체크되어 있으면 타이머가 주기적으로 InitializeSpread(TRUE) 를 돌려 목록을 새로 읽는다.
+	//   화면을 보며 작업 흐름을 쫓을 때 [조회]를 계속 누르지 않아도 되게 하기 위함.
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnBnClickedAutoRefresh();
+	CButton m_chkAutoRefresh;		// 런타임 생성(리소스 편집 없음)
+	void CreateAutoRefreshCheck();
 	DECLARE_MESSAGE_MAP();
 	DECLARE_EVENTSINK_MAP();
 

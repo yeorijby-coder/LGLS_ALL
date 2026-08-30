@@ -38,6 +38,12 @@ CViewJobListDlg::~CViewJobListDlg()
 }
 
 
+// [LGLS 2026-08-30] 그리드 자동 갱신용 런타임 컨트롤/타이머 ID.
+//   리소스(rc)를 건드리지 않고 코드에서 만든다 - rc 는 사용자가 직접 관리하므로.
+#define IDC_LGLS_JL_AUTOREFRESH   0x7F31
+#define TIMER_JL_AUTOREFRESH      0x7F32
+#define TIMER_JL_AUTOREFRESH_MS   2000
+
 BEGIN_MESSAGE_MAP(CViewJobListDlg, CSkinDialog)
 	ON_WM_CTLCOLOR()
 	ON_WM_PAINT()
@@ -49,6 +55,8 @@ BEGIN_MESSAGE_MAP(CViewJobListDlg, CSkinDialog)
  	ON_BN_CLICKED(ID_JOB_DATA_CLEAR, &CViewJobListDlg::OnBnClickedJobDataClear)	
 	ON_MESSAGE(SSM_CLICK, &CViewJobListDlg::OnSpreadLClick)
 	ON_WM_ERASEBKGND()
+	ON_WM_TIMER()
+	ON_BN_CLICKED(IDC_LGLS_JL_AUTOREFRESH, &CViewJobListDlg::OnBnClickedAutoRefresh)
 //	ON_BN_CLICKED(ID_JOB_UPDATE, &CViewJobListDlg::OnBnClickedJobUpdate)
 ON_WM_SYSCOMMAND()
 END_MESSAGE_MAP()
@@ -271,10 +279,69 @@ BOOL CViewJobListDlg::OnInitDialog()
 
 	InitializeSpread(FALSE);
 
+	// [LGLS 2026-08-30] [CV 도착보고] 왼쪽에 [자동 갱신] 체크박스 생성(런타임).
+	CreateAutoRefreshCheck();
+
 	{ CString _tt; GetWindowText(_tt); if(_tt.Find(_T("[")) < 0) SetWindowText(_tt + _T(" [JOB_MST]")); }	// [LGLS] 제목에 조회 테이블명
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
+
+// [LGLS 2026-08-30] 그리드 자동 갱신 체크박스를 [CV 도착보고] 버튼 왼쪽에 만든다.
+//   버튼의 실제 위치를 읽어 그 왼쪽에 붙이므로, 리소스에서 버튼이 옮겨져도 따라간다.
+void CViewJobListDlg::CreateAutoRefreshCheck()
+{
+	if (m_chkAutoRefresh.GetSafeHwnd() != NULL)
+		return;
+
+	CWnd* pBtn = GetDlgItem(ID_JOB_CV_COMPLETE);
+	if (pBtn == NULL)
+		return;
+
+	CRect rcBtn;
+	pBtn->GetWindowRect(&rcBtn);
+	ScreenToClient(&rcBtn);
+
+	const int nW = 104;					// 체크박스 폭
+	const int nGap = 8;					// 버튼과의 간격
+	CRect rc(rcBtn.left - nGap - nW, rcBtn.top, rcBtn.left - nGap, rcBtn.bottom);
+
+	m_chkAutoRefresh.Create(m_pDoc->GetMsgLangDef(_T("자동 갱신")),
+							WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
+							rc, this, IDC_LGLS_JL_AUTOREFRESH);
+	m_chkAutoRefresh.SetFont(GetFont());
+	m_chkAutoRefresh.SetCheck(BST_UNCHECKED);
+}
+
+void CViewJobListDlg::OnBnClickedAutoRefresh()
+{
+	if (m_chkAutoRefresh.GetSafeHwnd() == NULL)
+		return;
+
+	if (m_chkAutoRefresh.GetCheck() == BST_CHECKED)
+	{
+		SetTimer(TIMER_JL_AUTOREFRESH, TIMER_JL_AUTOREFRESH_MS, NULL);
+		InitializeSpread(TRUE);			// 켜는 즉시 한 번 갱신
+	}
+	else
+	{
+		KillTimer(TIMER_JL_AUTOREFRESH);
+	}
+}
+
+void CViewJobListDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == TIMER_JL_AUTOREFRESH)
+	{
+		// 체크가 풀렸는데 타이머가 남아 있으면 정리한다(방어).
+		if (m_chkAutoRefresh.GetSafeHwnd() == NULL || m_chkAutoRefresh.GetCheck() != BST_CHECKED)
+			KillTimer(TIMER_JL_AUTOREFRESH);
+		else
+			InitializeSpread(TRUE);		// [조회] 와 같은 경로로 목록을 다시 읽는다
+	}
+
+	CSkinDialog::OnTimer(nIDEvent);
+}
 
 void CViewJobListDlg::OnCommandRangeButtonEvent(UINT nID)
 {
