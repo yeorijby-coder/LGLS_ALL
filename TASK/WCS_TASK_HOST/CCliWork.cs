@@ -2250,6 +2250,25 @@ namespace TSK_HostCom
             }
             #endregion
 
+            #region 응답 받고 작업 삭제 (출고대 도착 = 22 만)
+            // [LGLS 2026-08-30] 사용자 요구 : "도착보고의 응답을 받으면 작업이 지워져야 한다".
+            //   RequestSrv 는 응답을 기다린 뒤 true 를 돌려주므로 여기가 '응답 받은 시점'이다.
+            //   ※22(출고 H/S 도착)에만 적용한다. 12(입고 H/S 도착)는 입고 흐름의 시작점이라
+            //     여기서 지우면 입고 작업이 중간에 사라진다 — 입고는 완료보고(29) 응답에서 지운다.
+            if (nJobStatus == 22)
+            {
+                bool bDel = modDefApp.g_frmForm.DeleteJobMst(m_BDb, true, strLuggNum);   // 함수안에서 Transaction 처리
+                if (bDel == false)
+                {
+                    m_strLog = string.Format("도착보고 후 작업 삭제 실패. [작업번호:{0}][실패내용:{1}]", strLuggNum, modDefApp.GM_RTN_MSG);
+                    modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                    return false;
+                }
+                m_strLog = string.Format("출고대 도착보고 응답 수신 - 작업 삭제 완료. [작업번호:{0}]", strLuggNum);
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_NOR);
+            }
+            #endregion
+
             return true;
         }
 

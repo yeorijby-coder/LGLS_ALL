@@ -336,6 +336,7 @@ namespace TSK_COMM_IOSCH
                         ProcessOutStn();      // [구 경로] RTV 반출 물리 시퀀스 재현
 
                     // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
+                    ReportOutStationArrival();  // [LGLS 2026-08-30] 출고대 신호 ON → 상위 도착보고(22)
                     MonitorAlarm();
                     MarkErrorJobStatus();       // [LGLS 2026-08-30] 이중입고(54)/공출고(58) → 작업상태 반영
                     ResumeRedirectedJobs();     // [LGLS 2026-08-30] 재지정(07/06) → 새 셀로 재개 지시
@@ -587,6 +588,43 @@ namespace TSK_COMM_IOSCH
         ///   전환 자체는 RequestCvDirection 이 "작업번호 붙은 화물 없음"을 확인한 뒤에만 수행한다
         ///   — 작업번호 없는 파렛트는 그대로 두고 전환한다(사용자 확정).
         /// </summary>
+        /// <summary>
+        /// [LGLS 2026-08-30] 출고대 도착 보고 트리거 (사용자 요구).
+        ///   "출고대 트랙에 그 작업의 화물이 있고 출고대 신호(RET_READY_RD)가 ON 되면 상위로 도착 보고한다."
+        ///   ECS 의 책임은 화물을 출고대에 내어 놓는 데까지다 — 지게차가 실제로 가져가는 것은 그 다음이다.
+        ///   JOB_STATUS 를 22(출고 H/S 도착보고)로 올리면 HOST_TASK 가 F 전문(StepCount=1)으로 보고하고,
+        ///   응답을 받으면 작업을 삭제한다.
+        /// </summary>
+        private void ReportOutStationArrival()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " UPDATE JM                                                     ";
+                q += CRLF + "    SET JM.JOB_STATUS  = '22'                                  ";
+                q += CRLF + "      , JM.UPD_DT      = " + DbLang.SYSDATE + "                ";
+                q += CRLF + "      , JM.UPD_USER_ID = '" + OD_USER + "'                     ";
+                q += CRLF + "   FROM JOB_MST JM                                             ";
+                q += CRLF + "  INNER JOIN CV_DATA CD                                        ";
+                q += CRLF + "     ON CD.WH_TYP           = JM.WH_TYP                        ";
+                q += CRLF + "    AND CD.MC_NO            = JM.DEST_POS                      ";
+                q += CRLF + "  WHERE JM.WH_TYP           = :WH_TYP                          ";
+                q += CRLF + "    AND JM.JOB_TYP         IN ('2','12')                       ";
+                q += CRLF + "    AND JM.JOB_STATUS      IN ('11','15')                      ";   // CV 구동지시/구동중
+                q += CRLF + "    AND CD.LUGG_NO_RD       = JM.LUGG_NO                       ";   // 그 화물이 출고대에 도착
+                q += CRLF + "    AND CD.SENSOR0_DATA_RD  = '1'                              ";
+                q += CRLF + "    AND CD.RET_READY_RD     = '1'                              ";   // ★출고대 신호 ON★
+                q += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')                ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int n = _pBdb.ExcuteNonQry(q);
+                if (n > 0)
+                    MakeMsg_Imp(string.Format("[SCH][CV] 출고대 도착 - {0}건 상위 도착보고 대상(상태 '22')으로 전환", n));
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] ReportOutStationArrival 오류: " + ex.Message); }
+        }
+
         private void SyncDualCvDirection()
         {
             try
