@@ -217,6 +217,59 @@ namespace TSK_COMM_IOSCH
         }
         #endregion
 
+        #region DB 실행 래퍼 - 조용한 실패를 드러낸다
+        // [LGLS 2026-08-30] ExcuteQry/ExcuteNonQry 는 실패해도 예외를 던지지 않는다.
+        //   DB_ERR(-1) / DB_LOCK(-2) / DB_DUP(-3) 을 돌려주는데 cCbBasePost 안에서
+        //   ShowErrMsg 가 주석 처리돼 있어 화면에도 로그에도 아무것도 남지 않는다.
+        //   그래서 SQL 이 깨져도 "해당 없음" 과 구분이 안 된 채 조용히 지나간다.
+        //
+        //   ★0 은 실패가 아니다★
+        //     SELECT 0건  = 조건에 맞는 작업이 없음 (정상)
+        //     UPDATE 0건  = 바꿀 대상이 없음 (정상. SyncScForkPos 처럼 대부분의 주기가 여기다)
+        //   그래서 0 을 실패로 보는 검사(nCnt <= 0 을 오류로 취급)는 넣으면 안 된다.
+        //   실패는 오직 음수다. 음수일 때만 로그를 남긴다.
+        //
+        //   호출 흐름은 그대로 둔다 - 기존 검사(<= 0 이면 return)는 손대지 않고,
+        //   "실패했는데 아무도 몰랐던" 경우만 보이게 만든다.
+
+        private readonly Dictionary<string, DateTime> m_dicDbErrLog = new Dictionary<string, DateTime>();
+        private const int DB_ERR_LOG_SEC = 30;   // 같은 자리 반복 실패는 30초에 한 번만
+
+        /// <summary>SELECT 실행. 실패(음수)면 로그를 남긴다. 반환값 의미는 원본과 같다.</summary>
+        private int DbQry(string strSql, [CallerMemberName] string pFunc = "")
+        {
+            int nRet = _pBdb.ExcuteQry(strSql);
+            if (nRet < 0) DbErrLog("SELECT", nRet, pFunc);
+            return nRet;
+        }
+
+        /// <summary>INSERT/UPDATE/DELETE 실행. 실패(음수)면 로그를 남긴다.
+        ///   0(영향 행 없음)은 정상이므로 로그하지 않는다.</summary>
+        private int DbNonQry(string strSql, [CallerMemberName] string pFunc = "")
+        {
+            int nRet = _pBdb.ExcuteNonQry(strSql);
+            if (nRet < 0) DbErrLog("NONQRY", nRet, pFunc);
+            return nRet;
+        }
+
+        private void DbErrLog(string strKind, int nRet, string pFunc)
+        {
+            try
+            {
+                string strKey = pFunc + "|" + strKind;
+                DateTime dtLast;
+                if (m_dicDbErrLog.TryGetValue(strKey, out dtLast) &&
+                    (DateTime.Now - dtLast).TotalSeconds < DB_ERR_LOG_SEC) return;
+                m_dicDbErrLog[strKey] = DateTime.Now;
+
+                string strWhy = (nRet == -2) ? "DB LOCK" : (nRet == -3) ? "중복" : "DB 오류";
+                MakeMsg_Error(string.Format("[SCH][DB] {0} {1} 실패({2}) : {3}",
+                              strKind, pFunc, strWhy, _pBdb.ErrMsg), "", pFunc);
+            }
+            catch { }
+        }
+        #endregion
+
         // ─────────────────────────────────────────────────────────────────
         // 메인 Thread 루프 (200ms 폴링)
         // ─────────────────────────────────────────────────────────────────
@@ -393,7 +446,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_NEW", DbLang.VARCHAR).Value = ST_JOB_NEW;
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -484,7 +537,7 @@ namespace TSK_COMM_IOSCH
                     strSqlRf1 += CRLF + "  WHERE WH_TYP           = :WH           ";
                     strSqlRf1 += CRLF + "    AND MC_NO            = '122'         ";
                     strSqlRf1 += CRLF + "    AND SENSOR0_DATA_RD  = '1'           ";
-                    _pBdb.ExcuteNonQry(strSqlRf1);
+                    DbNonQry(strSqlRf1);
                     // [LGLS] 비브리지 스테이션 126·130(입고대)·124·129(출고대): 설비 ready/accept 재현 — DriveCV(발행 OD_RQ_YN='N')·RunCV(11→15)·CompleteCV 게이트 충족.
                     _pBdb.mComMain.Parameters.Clear();
                     _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -496,7 +549,7 @@ namespace TSK_COMM_IOSCH
                     strSqlRf2 += CRLF + "        AUTO_MODE_RD     = '1'           ";
                     strSqlRf2 += CRLF + "  WHERE WH_TYP           = :WH           ";
                     strSqlRf2 += CRLF + "    AND MC_NO           IN ('124','126','129','130') ";
-                    _pBdb.ExcuteNonQry(strSqlRf2);
+                    DbNonQry(strSqlRf2);
                 }
                 DateTime now = DateTime.Now;
 
@@ -509,7 +562,7 @@ namespace TSK_COMM_IOSCH
                     _pBdb.mComMain.Parameters.Clear();
                     _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                     _pBdb.mComMain.Parameters.Add("ST15", DbLang.VARCHAR).Value = ST_CV_RUN;
-                    if (_pBdb.ExcuteQry(qs) > 0)
+                    if (DbQry(qs) > 0)
                     {
                         DataTable ds = _pBdb.mDtMain.Copy();
                         for (int i = 0; i < ds.Rows.Count; i++)
@@ -542,7 +595,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST", DbLang.VARCHAR).Value = ST_CV_WAIT;
-                if (_pBdb.ExcuteQry(q) <= 0) return;
+                if (DbQry(q) <= 0) return;
                 DataTable dt = _pBdb.mDtMain.Copy();
                 var fedSp = new HashSet<string>();
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -622,7 +675,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int n = _pBdb.ExcuteNonQry(q);
+                int n = DbNonQry(q);
                 if (n > 0)
                     MakeMsg_Imp(string.Format("[SCH][CV] 출고대 도착 - {0}건 상위 도착보고 대상(상태 '22')으로 전환", n));
             }
@@ -649,7 +702,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(qo) > 0)
+                if (DbQry(qo) > 0)
                 {
                     DataTable dto = _pBdb.mDtMain.Copy();
                     for (int k = 0; k < dto.Rows.Count; k++)
@@ -675,7 +728,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_CV_WAIT;
-                if (_pBdb.ExcuteQry(q) <= 0) return;
+                if (DbQry(q) <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -757,7 +810,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_CV_WAIT;
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -955,7 +1008,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_SC_WAIT;
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -1129,7 +1182,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_WAIT", DbLang.VARCHAR).Value = ST_RGV_WAIT;
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -1285,7 +1338,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_DONE", DbLang.VARCHAR).Value = ST_CV_RUN;   // 중(15) 대상
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -1444,7 +1497,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("IDLE",   DbLang.VARCHAR).Value = nWarnSec.ToString();
-                int nCnt = _pBdb.ExcuteQry(q);
+                int nCnt = DbQry(q);
                 if (nCnt <= 0) { m_dicStallWarned.Clear(); return; }
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -1492,7 +1545,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_CV_RUN;
-                int nCnt = _pBdb.ExcuteQry(q);
+                int nCnt = DbQry(q);
                 if (nCnt <= 0) { m_dicLostSince.Clear(); return; }
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -1585,7 +1638,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_SC_RUN;
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -1617,7 +1670,7 @@ namespace TSK_COMM_IOSCH
                             strSqlCmpRst += CRLF + "    SET COMPLETE_RD  = '0'       ";
                             strSqlCmpRst += CRLF + "  WHERE WH_TYP       = :WH_TYP   ";
                             strSqlCmpRst += CRLF + "    AND SC_NO        = :SC_NO    ";
-                            _pBdb.ExcuteNonQry(strSqlCmpRst);
+                            DbNonQry(strSqlCmpRst);
                         }
                         catch { }
                         if (jobTyp == "2")
@@ -1660,7 +1713,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -1818,7 +1871,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -2055,7 +2108,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
                 _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = exceptLugg ?? "";
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2081,7 +2134,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
-                if (_pBdb.ExcuteQry(q) <= 0) return "";
+                if (DbQry(q) <= 0) return "";
                 return GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO_RD");
             }
             catch { return ""; }
@@ -2128,7 +2181,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
+                if (DbQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
 
                 var alive = new HashSet<string>();
                 DataTable dtA = _pBdb.mDtMain;
@@ -2214,7 +2267,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
+                if (DbQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
                 var alive = new HashSet<string>();
                 DataTable dtA = _pBdb.mDtMain;
                 for (int i = 0; i < dtA.Rows.Count; i++)
@@ -2235,7 +2288,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int n = _pBdb.ExcuteQry(q2);
+                int n = DbQry(q2);
                 if (n <= 0) { m_dicTrkStaleSince.Clear(); return; }
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -2267,7 +2320,7 @@ namespace TSK_COMM_IOSCH
                     _pBdb.mComMain.Parameters.Clear();
                     _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                     _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
-                    _pBdb.ExcuteNonQry(upd);
+                    DbNonQry(upd);
 
                     m_dicTrkStaleSince.Remove(mcNo);
                     seen.Remove(mcNo);
@@ -2300,7 +2353,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return;
+                if (DbQry(q) <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -2333,7 +2386,7 @@ namespace TSK_COMM_IOSCH
                     _pBdb.mComMain.Parameters.Clear();
                     _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                     _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
-                    if (_pBdb.ExcuteNonQry(upd) > 0)
+                    if (DbNonQry(upd) > 0)
                         MakeMsg_Imp(string.Format("[SCH][CV] 보류된 모드 전환 반영 - 작업대 {0} → {1} (작업대가 비었음)",
                             mcNo, (dir == "1") ? "출고(1)" : "입고(0)"));
                 }
@@ -2377,7 +2430,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("NO", DbLang.VARCHAR).Value = scNo;
-                if (_pBdb.ExcuteQry(q) <= 0) return "0";
+                if (DbQry(q) <= 0) return "0";
                 string s = GetVal(_pBdb.mDtMain.Rows[0], "SUSPEND");
                 return string.IsNullOrEmpty(s) ? "0" : s;
             } catch { return "0"; }
@@ -2401,7 +2454,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 string s = GetVal(_pBdb.mDtMain.Rows[0], "SUSPEND");
                 return !(string.IsNullOrEmpty(s) || s == "0");
             } catch { return false; }
@@ -2427,7 +2480,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 string ec = (GetVal(_pBdb.mDtMain.Rows[0], "ERROR_CODE") ?? "").Trim();
                 if (ec.Length == 0) return false;
                 int n;
@@ -2448,7 +2501,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 return GetVal(_pBdb.mDtMain.Rows[0], "TR_PAUSE_OD") == "1" ||
                        GetVal(_pBdb.mDtMain.Rows[0], "TR_PAUSE_RD") == "1";
             } catch { return false; }
@@ -2479,7 +2532,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2509,7 +2562,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2540,7 +2593,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2566,7 +2619,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2610,7 +2663,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
-                if (_pBdb.ExcuteQry(q) > 0)
+                if (DbQry(q) > 0)
                 {
                     string dp = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS");
                     // 출고대만 인정 - 로직3=122 / 로직1=126 / 로직2(피킹)=129
@@ -2644,7 +2697,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2665,7 +2718,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2691,7 +2744,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = Cap(lugg, 4);
-                if (_pBdb.ExcuteQry(q) <= 0) return true;   // 조회 실패 시엔 보수적으로 '존재'(완료 보류)
+                if (DbQry(q) <= 0) return true;   // 조회 실패 시엔 보수적으로 '존재'(완료 보류)
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return true; }
@@ -2711,7 +2764,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "STN_KIND"), out n);
                 return (n & 3) == 3;
             } catch { return false; }
@@ -2732,7 +2785,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
-                if (_pBdb.ExcuteQry(q) <= 0) return "0";
+                if (DbQry(q) <= 0) return "0";
                 string v = (GetVal(_pBdb.mDtMain.Rows[0], "STOCK_MODE") ?? "").Trim();
                 if (v == "1" || v == "49") return "1";
                 return "0";
@@ -2761,7 +2814,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = station;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2789,7 +2842,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = station;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2855,7 +2908,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = lugg;
                 _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = mcNo;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -2896,7 +2949,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("DIR",    DbLang.VARCHAR).Value = dir;
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
-                if (_pBdb.ExcuteNonQry(q) <= 0) return false;
+                if (DbNonQry(q) <= 0) return false;
 
                 m_dicDirReqAt[mcNo] = DateTime.Now;
                 return true;
@@ -2934,7 +2987,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = track;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 return GetVal(_pBdb.mDtMain.Rows[0], "HS_VAL") == "1";
             } catch { return false; }
         }
@@ -2951,7 +3004,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = track;
-                if (_pBdb.ExcuteQry(q) <= 0) return true;
+                if (DbQry(q) <= 0) return true;
                 return GetVal(_pBdb.mDtMain.Rows[0], "SENSOR0_DATA_RD") != "1";
             } catch { return false; }
         }
@@ -3043,7 +3096,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("S",  DbLang.VARCHAR).Value = on;
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("NO", DbLang.VARCHAR).Value = no;
-                _pBdb.ExcuteNonQry(s);
+                DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RV] SetRvCargo 오류: " + ex.Message); }
         }
@@ -3076,7 +3129,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("NO", DbLang.VARCHAR).Value = no;
-                _pBdb.ExcuteNonQry(s);
+                DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RV] ClearRvData 오류: " + ex.Message); }
         }
@@ -3094,7 +3147,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
-                _pBdb.ExcuteNonQry(s);
+                DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RV] WriteCvCargoOnly 오류: " + ex.Message); }
         }
@@ -3125,7 +3178,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("CY", DbLang.VARCHAR).Value = healthy ? "Y" : "N";
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int n = _pBdb.ExcuteNonQry(s);
+                int n = DbNonQry(s);
                 if (n == 0)
                 {
                     // 행이 없으면 최초 1회 생성(시드 누락 대비)
@@ -3135,7 +3188,7 @@ namespace TSK_COMM_IOSCH
                     _pBdb.mComMain.Parameters.Clear();
                     _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                     _pBdb.mComMain.Parameters.Add("CY", DbLang.VARCHAR).Value = healthy ? "Y" : "N";
-                    _pBdb.ExcuteNonQry(ins);
+                    DbNonQry(ins);
                 }
             }
             catch { /* 하트비트 실패가 스케줄러를 죽이면 안 됨 */ }
@@ -3173,7 +3226,7 @@ namespace TSK_COMM_IOSCH
                 if (dest != "" || sensor == "0") _pBdb.mComMain.Parameters.Add("DEST", DbLang.VARCHAR).Value = (sensor == "1") ? dest : "0";
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = track;
-                _pBdb.ExcuteNonQry(s);
+                DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RGV] WriteCvSensor 오류: " + ex.Message); }
         }
@@ -3232,7 +3285,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 // [LGLS 2026-07-19] 고아 0건이어도 return 금지 — 아래 짝수트랙/출고대 하역트랙 복구가 통째로 건너뛰어짐
-                DataTable dt = (_pBdb.ExcuteQry(q) > 0) ? _pBdb.mDtMain.Copy() : new DataTable();
+                DataTable dt = (DbQry(q) > 0) ? _pBdb.mDtMain.Copy() : new DataTable();
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     string trk  = GetVal(dt.Rows[i], "MC_NO");
@@ -3289,7 +3342,7 @@ namespace TSK_COMM_IOSCH
                         _pBdb.mComMain.Parameters.Clear();
                         _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                         _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = evenTrk[k];
-                        if (_pBdb.ExcuteQry(qd) > 0) dest = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS_OD");
+                        if (DbQry(qd) > 0) dest = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS_OD");
                     } catch { }
                     if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = JobOutDestPos(lg, "122");
                     int en; string odd = int.TryParse(evenTrk[k], out en) ? (en - 1).ToString() : evenTrk[k];
@@ -3491,7 +3544,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("POS",    DbLang.VARCHAR).Value = pos.ToString();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("NO",     DbLang.VARCHAR).Value = no;
-                _pBdb.ExcuteNonQry(s);
+                DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH] WriteCranePos 오류: " + ex.Message); }
         }
@@ -3515,7 +3568,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_DONE", DbLang.VARCHAR).Value = ST_RGV_RUN;  // 중(35) 대상
-                int nCnt = _pBdb.ExcuteQry(strSql);
+                int nCnt = DbQry(strSql);
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
@@ -3561,7 +3614,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -3588,7 +3641,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return true; }   // 조회 실패 시엔 '수행 중'으로 보아 성급한 해제를 막는다
@@ -3608,7 +3661,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
@@ -3629,7 +3682,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return;
+                if (DbQry(q) <= 0) return;
                 string cmp = GetVal(_pBdb.mDtMain.Rows[0], "CMP");
                 string lg  = Cap(GetVal(_pBdb.mDtMain.Rows[0], "LG"), 4);
                 if (cmp != "1") { m_dtRtvCmpSince = DateTime.MinValue; m_strRtvCmpLugg = ""; return; }
@@ -3662,7 +3715,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LG", DbLang.VARCHAR).Value = lugg;
-                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return true; }
@@ -3683,7 +3736,7 @@ namespace TSK_COMM_IOSCH
                 strSqlRtvRst += CRLF + "        LUGG_OD      = '0'       ";
                 strSqlRtvRst += CRLF + "  WHERE WH_TYP       = :WH_TYP   ";
                 strSqlRtvRst += CRLF + "    AND RTV_NO       = '801'     ";
-                _pBdb.ExcuteNonQry(strSqlRtvRst);
+                DbNonQry(strSqlRtvRst);
             } catch { }
         }
 
@@ -3701,7 +3754,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST",     DbLang.VARCHAR).Value = ST_RGV_RUN;
-                if (_pBdb.ExcuteQry(q) <= 0) return;
+                if (DbQry(q) <= 0) return;
                 DataTable dt = _pBdb.mDtMain.Copy();
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
@@ -3844,7 +3897,7 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp1 += CRLF + "    AND JM.LUGG_NO  = CD.LUGG_NO_RD                                     ";
                 strSqlDsp1 += CRLF + "  WHERE CD.WH_TYP   = :WH_TYP                                           ";
                 strSqlDsp1 += CRLF + "    AND ISNULL(CD.JOB_TYP_RD,'0') <> (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
-                _pBdb.ExcuteNonQry(strSqlDsp1);
+                DbNonQry(strSqlDsp1);
 
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -3854,7 +3907,7 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp2 += CRLF + "  WHERE WH_TYP     = :WH_TYP                                ";
                 strSqlDsp2 += CRLF + "    AND ISNULL(JOB_TYP_RD,'0') <> '0'                       ";
                 strSqlDsp2 += CRLF + "    AND (LUGG_NO_RD IS NULL OR LUGG_NO_RD IN ('','0','0000')) ";
-                _pBdb.ExcuteNonQry(strSqlDsp2);
+                DbNonQry(strSqlDsp2);
 
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -3869,7 +3922,7 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp3 += CRLF + "  WHERE SD.WH_TYP   = :WH_TYP                                           ";
                 strSqlDsp3 += CRLF + "    AND JM.JOB_STATUS IN ('25')                                    ";
                 strSqlDsp3 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
-                _pBdb.ExcuteNonQry(strSqlDsp3);
+                DbNonQry(strSqlDsp3);
 
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -3884,7 +3937,7 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp4 += CRLF + "                     WHERE JM.WH_TYP = SD.WH_TYP                        ";
                 strSqlDsp4 += CRLF + "                       AND JM.JOB_STATUS IN ('25')                 ";
                 strSqlDsp4 += CRLF + "                       AND SD.SC_NO = (CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END)) ";
-                _pBdb.ExcuteNonQry(strSqlDsp4);
+                DbNonQry(strSqlDsp4);
 
                 SyncScForkPos();
             }
@@ -3938,7 +3991,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return;
+                if (DbQry(q) <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -4007,7 +4060,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (_pBdb.ExcuteQry(q) <= 0) return;
+                if (DbQry(q) <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -4035,7 +4088,7 @@ namespace TSK_COMM_IOSCH
                     _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                     _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = lugg;
                     _pBdb.mComMain.Parameters.Add("NEW_ST2", DbLang.VARCHAR).Value = want;
-                    int n = _pBdb.ExcuteNonQry(u);
+                    int n = DbNonQry(u);
                     if (n > 0)
                         MakeMsg_Imp(string.Format("[SCH][ERR] S/C #{0} {1} (코드 {2}) - 작업 {3} 상태 → '{4}'",
                             scNo, (nEc == 54) ? "이중입고" : "공출고", ec, lugg, want));
@@ -4081,7 +4134,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int n = _pBdb.ExcuteQry(sql);
+                int n = DbQry(sql);
                 if (n <= 0) return;
                 DataTable dt = _pBdb.mDtMain.Copy();
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -4123,7 +4176,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("JOB_STATUS", DbLang.VARCHAR).Value = strStatus;
                 _pBdb.mComMain.Parameters.Add("WH_TYP",     DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG_NO",    DbLang.VARCHAR).Value = strLuggNo;
-                int n = _pBdb.ExcuteNonQry(strSql);
+                int n = DbNonQry(strSql);
                 if (n < 0) { strRtn += "JOB_MST 상태변경 오류:" + _pBdb.ErrMsg; return false; }
                 if (n == 0) { strRtn += "변경할 JOB_MST 작업이 없음(LUGG_NO:" + strLuggNo + ")"; return false; }
                 return true;
@@ -4154,7 +4207,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = strLuggNo;
-                _pBdb.ExcuteNonQry(strSql);
+                DbNonQry(strSql);
             }
             catch { }
         }
@@ -4178,7 +4231,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = Cap(strLuggNo, 4);
-                _pBdb.ExcuteNonQry(strSql);
+                DbNonQry(strSql);
             }
             catch { }
         }
@@ -4218,7 +4271,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("WH_TYP",      DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("PLC_NO",      DbLang.VARCHAR).Value = strPlcNo;
                 _pBdb.mComMain.Parameters.Add("TRACK_NO",    DbLang.VARCHAR).Value = strTrackNo;
-                int n = _pBdb.ExcuteNonQry(strSql);
+                int n = DbNonQry(strSql);
                 if (n < 0) { strRtn += "CV_DATA 명령 오류:" + _pBdb.ErrMsg; return false; }
                 if (n == 0) { strRtn += "발행할 CV_DATA 가 없음(TRACK_NO:" + strTrackNo + ")"; return false; }
                 return true;
@@ -4288,7 +4341,7 @@ namespace TSK_COMM_IOSCH
                 q1 += CRLF + "  WHERE SD.WH_TYP = :WH_TYP                                 ";
                 q1 += CRLF + "    AND JM.JOB_STATUS IN ('25')                        ";
                 q1 += CRLF + "    AND ISNULL(SD.FORKPOS_FK1_RD,'0') <> " + side;
-                _pBdb.ExcuteNonQry(q1);
+                DbNonQry(q1);
 
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -4303,7 +4356,7 @@ namespace TSK_COMM_IOSCH
                 q2 += CRLF + "                     WHERE JM.WH_TYP = SD.WH_TYP            ";
                 q2 += CRLF + "                       AND JM.JOB_STATUS IN ('25')     ";
                 q2 += CRLF + "                       AND SD.SC_NO = " + SCNO + ") ";
-                _pBdb.ExcuteNonQry(q2);
+                DbNonQry(q2);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][SC] SyncScForkPos 오류: " + ex.Message); }
         }
@@ -4366,7 +4419,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("LOC1",   DbLang.VARCHAR).Value = Cap(toPos, 2);
                 _pBdb.mComMain.Parameters.Add("LOC2",   DbLang.VARCHAR).Value = nBay.ToString();
                 _pBdb.mComMain.Parameters.Add("LOC3",   DbLang.VARCHAR).Value = "0";
-                _pBdb.ExcuteNonQry(s);
+                DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][SC] UpdateScVehicle 오류: " + ex.Message); }
         }
@@ -4408,7 +4461,7 @@ namespace TSK_COMM_IOSCH
                 if (arriveTrack != "") _pBdb.mComMain.Parameters.Add("ARRIVE", DbLang.VARCHAR).Value = Cap(arriveTrack, 4);
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("RTV_NO", DbLang.VARCHAR).Value = rtvNo;
-                _pBdb.ExcuteNonQry(s);
+                DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RGV] UpdateRtvVehicle 오류: " + ex.Message); }
         }
@@ -4464,7 +4517,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("VEH_TO_C", DbLang.VARCHAR).Value = t3;
                 _pBdb.mComMain.Parameters.Add("WH_TYP",         DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("SC_NO",          DbLang.VARCHAR).Value = strScNo;
-                int n = _pBdb.ExcuteNonQry(strSql);
+                int n = DbNonQry(strSql);
                 if (n < 0) { strRtn += "SC_DATA_LGLS 명령 오류:" + _pBdb.ErrMsg; return false; }
                 if (n == 0) { strRtn += "발행할 SC_DATA_LGLS 가 없음(SC_NO:" + strScNo + ")"; return false; }
                 return true;
@@ -4545,7 +4598,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("VEH_TO_C", DbLang.VARCHAR).Value = t3;
                 _pBdb.mComMain.Parameters.Add("WH_TYP",     DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("RTV_NO",     DbLang.VARCHAR).Value = strRtvNo;
-                int n = _pBdb.ExcuteNonQry(strSql);
+                int n = DbNonQry(strSql);
                 if (n < 0) { strRtn += "RTV_DATA_LGLS 명령 오류:" + _pBdb.ErrMsg; return false; }
                 if (n == 0) { strRtn += "발행할 RTV_DATA_LGLS 가 없음(RTV_NO:" + strRtvNo + ")"; return false; }
                 return true;
