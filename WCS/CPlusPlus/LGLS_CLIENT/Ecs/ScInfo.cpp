@@ -80,11 +80,11 @@ COLORREF CScInfo::GetForkColor1()
 	case enJobTypeAutoA2A			: return pConfig->m_clrUSER_COLOR_ATA;
 	case enJobTypeAutoMove			: return pConfig->m_clrUSER_COLOR_MOVE;
 	case enJobTypeAutoPR			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_STO;
-	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_RTR;
-	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_MOVE;
-	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_RET;
+	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_SEMI_STO;
+	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_SEMI_RET;
+	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_SEMI_RTR;
+	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
+	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_SEMI_PR;
 	case enJobTypeManual			: return pConfig->m_clrUSER_COLOR_MANUAL;
  	}
 
@@ -116,11 +116,11 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	case enJobTypeAutoMove			: return pConfig->m_clrUSER_COLOR_MOVE;
 	case enJobTypeAutoA2A			: return pConfig->m_clrUSER_COLOR_ATA;
 	case enJobTypeAutoPR			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_STO;
-	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_RTR;
-	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_MOVE;
-	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_RET;
+	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_SEMI_STO;
+	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_SEMI_RET;
+	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_SEMI_RTR;
+	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
+	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_SEMI_PR;
 	case enJobTypeManual			: return pConfig->m_clrUSER_COLOR_MANUAL;
 	}
 
@@ -160,11 +160,11 @@ COLORREF CScInfo::GetForkColor2()
 	case enJobTypeAutoA2A			: return pConfig->m_clrUSER_COLOR_ATA;
 	case enJobTypeAutoMove			: return pConfig->m_clrUSER_COLOR_MOVE;
 	case enJobTypeAutoPR			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_STO;
-	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_RTR;
-	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_MOVE;
-	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_RET;
+	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_SEMI_STO;
+	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_SEMI_RET;
+	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_SEMI_RTR;
+	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
+	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_SEMI_PR;
 	case enJobTypeManual			: return pConfig->m_clrUSER_COLOR_MANUAL;
 	}
 
@@ -196,11 +196,11 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 	case enJobTypeAutoA2A			: return pConfig->m_clrUSER_COLOR_ATA;
 	case enJobTypeAutoMove			: return pConfig->m_clrUSER_COLOR_MOVE;
 	case enJobTypeAutoPR			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_STO;
-	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_RTR;
-	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_MOVE;
-	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_RET;
+	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_SEMI_STO;
+	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_SEMI_RET;
+	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_SEMI_RTR;
+	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
+	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_SEMI_PR;
 	case enJobTypeManual			: return pConfig->m_clrUSER_COLOR_MANUAL;
 	}
 

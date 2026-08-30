@@ -84,7 +84,7 @@ namespace EQP_SIM.Sim
         /// <summary>
         /// wcsOrientation=false(구 ECS 모드): 원본 ECS 구성 그대로 — C/V#12=입고대(24→23), C/V#13=출고대(25→26).
         ///   (ECSDeviceManager.IsInputConveyor={..12..}, TB_ITINERARY I002/O032 기준. 구 ECS는 수정 불가이므로 이 구성이 기준)
-        /// wcsOrientation=true(WCS 모드): [LGLS 2026-07-15] EcsDefine(WCS Client) 정렬 — 124(C/V#12)=출고대, 126(C/V#13)=입고대.
+        /// wcsOrientation=true(WCS 모드): [LGLS 2026-07-15] EcsDefine(WCS Client) 정렬 — 124(C/V#12)=입고대, 126(C/V#13)=출고대  [LGLS 2026-08-31 정정 - 현장기준].
         /// </summary>
         public WorldModel(bool wcsOrientation)
         {

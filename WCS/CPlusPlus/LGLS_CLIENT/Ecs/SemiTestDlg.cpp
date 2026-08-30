@@ -60,11 +60,16 @@ BOOL CSemiTestDlg::OnInitDialog()
 	m_btnClose.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnClose.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strIcoPath, _T("arrow-left"), _T(".png"))), NULL, 5, 5);
 
-	// 기본값: 입고대 126 → 출고대 124 (필요 시 수정)
+	// [LGLS 2026-08-31] ★기본값이 거꾸로였다★ - 출발지 126 / 도착지 124 로 깔려 있었다.
+	//   현장 기준은 C/V#12(124)=입고대, C/V#13(126)=출고대 다.
+	//   실제로 HOST_SIM 로직1 도 124→901(입고) / 901→126(출고) 으로 돈다.
+	//   그 탓에 반자동 시험이 스스로 막혔다 : 126(출고대)에는 파렛트를 올릴 수단이 없어
+	//   DriveCV 의 화물감지 게이트에서 멈추고, 되돌아오는 출고는 124(입고대)로 향했다.
+	// 기본값: 입고대 124 → 출고대 126
 	for (int r = 0; r < ROWS; r++)
 	{
-		SetDlgItemText(IDC_LGLS_ST_FR1 + r, _T("126"));
-		SetDlgItemText(IDC_LGLS_ST_TO1 + r, _T("124"));
+		SetDlgItemText(IDC_LGLS_ST_FR1 + r, _T("124"));
+		SetDlgItemText(IDC_LGLS_ST_TO1 + r, _T("126"));
 		SetRowStat(r, _T("-"));
 	}
 	// [LGLS 2026-08-19] 로케이션 모드 기본값 = 크레인 자동(기존 동작)

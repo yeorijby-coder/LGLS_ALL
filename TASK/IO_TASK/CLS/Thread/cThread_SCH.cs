@@ -724,6 +724,44 @@ namespace TSK_COMM_IOSCH
                     }
                 }
 
+                // ── ①-B S/C#1 통로(C/V#2 = 103) 방향 정합  [LGLS 2026-08-31 사용자 요구]
+                //   S/C#1 은 입고 드롭과 출고 반출이 같은 라인(C/V#2)을 쓴다. 그래서 이 겸용대의
+                //   방향은 "작업대" 가 아니라 ★크레인 작업의 방향★ 을 따라가야 한다.
+                //   위 ①은 작업의 START/DEST 가 103 인 경우만 보므로, 반자동처럼 124→901 / 901→126
+                //   으로 도는 작업에서는 103 이 전혀 갱신되지 않았다(실측: 103 이 출고 모드로 굳은 채
+                //   입고가 진행돼 크레인 통로가 어긋남).
+                //     SC#1 발 출고(START_POS=901) 진행 중 → 출고(1)
+                //     SC#1 행 입고(DEST_POS =901) 진행 중 → 입고(0)
+                //   전환 자체의 안전(현재 방향 화물이 남아 있으면 보류)은 RequestCvDirection 이 맡는다.
+                {
+                    string qs = "";
+                    qs += CRLF + " SELECT SUM(CASE WHEN JM.JOB_TYP IN ('2','12') THEN 1 ELSE 0 END) AS OUT_CNT, ";
+                    qs += CRLF + "        SUM(CASE WHEN JM.JOB_TYP IN ('1','11') THEN 1 ELSE 0 END) AS IN_CNT  ";
+                    qs += CRLF + "   FROM JOB_MST JM                                ";
+                    qs += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
+                    qs += CRLF + "    AND ( (JM.JOB_TYP IN ('2','12') AND JM.START_POS = '901')  ";
+                    qs += CRLF + "       OR (JM.JOB_TYP IN ('1','11') AND JM.DEST_POS  = '901') ) ";
+                    qs += CRLF + "    AND JM.JOB_STATUS NOT IN ('09','19','29') ";
+                    qs += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')   ";
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    if (DbQry(qs) > 0)
+                    {
+                        int nOut, nIn;
+                        int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "OUT_CNT"), out nOut);
+                        int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "IN_CNT"),  out nIn);
+                        // 출고가 있으면 출고 우선(크레인이 이미 화물을 들고 나온 상태일 수 있다)
+                        string want = (nOut > 0) ? "1" : (nIn > 0) ? "0" : "";
+                        if (want != "" && GetCvStockMode("103") != want)
+                        {
+                            if (RequestCvDirection("103", want))
+                                MakeMsg_Imp(string.Format("[SCH][CV] S/C#1 통로(C/V#2 103) 방향 지시 - {0} (SC#1 {1} 진행 중)",
+                                            want == "1" ? "출고(1)" : "입고(0)", want == "1" ? "출고" : "입고"));
+                        }
+                    }
+                }
+
                 // ── ② 입고 방향 복귀 : 대기 중인 입고가 있고, 오는 출고가 없으면 입고로 되돌린다.
                 string q = "";
                 q += CRLF + " SELECT DISTINCT JM.START_POS                     ";
@@ -797,7 +835,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                              ON R6.WH_TYP     = J6.WH_TYP      ";
                 strSql += CRLF + "                             AND R6.RTV_NO     = '801'          ";
                 strSql += CRLF + "                             AND R6.LUGG_OD    = J6.LUGG_NO     ";
-                strSql += CRLF + "                             AND R6.JOB_TYP_OD = '2'            ";
+                strSql += CRLF + "                             AND R6.JOB_TYP_OD IN ('2','12')    ";
                 strSql += CRLF + "                           WHERE J6.WH_TYP     = JM.WH_TYP      ";
                 strSql += CRLF + "                             AND J6.JOB_TYP   IN ('2','12')     ";
                 strSql += CRLF + "                             AND J6.DEST_POS   = '122'          ";
@@ -996,7 +1034,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                                       AND J4.LUGG_NO = R3.LUGG_OD       ";
                 strSql += CRLF + "                   WHERE R3.WH_TYP = SD.WH_TYP                           ";
                 strSql += CRLF + "                     AND R3.RTV_NO = '801'                               ";
-                strSql += CRLF + "                     AND R3.JOB_TYP_OD = '1'                             ";
+                strSql += CRLF + "                     AND R3.JOB_TYP_OD IN ('1','11')                     ";
                 strSql += CRLF + "                     AND J4.JOB_TYP IN ('1','11')                        ";
                 strSql += CRLF + "                     AND J4.DEST_POS = '901'                             ";
                 strSql += CRLF + "                     AND J4.JOB_STATUS NOT IN ('09','19','29')) ) )       ";
@@ -2183,7 +2221,8 @@ namespace TSK_COMM_IOSCH
                     m_dicScIssueDt.Count == 0 && m_setInShifted.Count == 0 &&
                     m_dicInFeedDt.Count == 0 && m_dicCvMove.Count == 0 &&
                     m_dicOutStn.Count == 0 && m_lstOutPend.Count == 0 &&
-                    m_dicOutDoneDt.Count == 0) return;
+                    m_dicOutDoneDt.Count == 0 &&
+                    m_dicPrevCV.Count == 0 && m_dicPrevRGV.Count == 0) return;
 
                 string q = "";
                 q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
@@ -2217,6 +2256,17 @@ namespace TSK_COMM_IOSCH
                     if (mv != null && !string.IsNullOrEmpty(mv.Lugg) && !alive.Contains(mv.Lugg))
                         m_dicCvMove.Remove(k);
                 }
+                // [LGLS 2026-08-31] ★중복 발행 방지 키도 청소한다★
+                //   m_dicPrevCV["CV_<트랙>"] = 작업번호 는 CompleteCV 에서만 지워진다.
+                //   작업이 완료 없이 사라지면(수동 삭제·재지정·시험 중단) 항목이 남고,
+                //   ★반자동은 작업번호(9001)를 재사용하므로 그 트랙이 영구히 막힌다★.
+                //   실측 : 9001 이 124 에서 10(구동대기)으로 무한 정체 → IO_TASK 재기동으로만 풀렸다.
+                //   키가 아니라 값(작업번호)이 살아 있는지로 판단한다.
+                foreach (string k in new List<string>(m_dicPrevCV.Keys))
+                    if (!alive.Contains(m_dicPrevCV[k])) m_dicPrevCV.Remove(k);
+                foreach (string k in new List<string>(m_dicPrevRGV.Keys))
+                    if (!alive.Contains(m_dicPrevRGV[k])) m_dicPrevRGV.Remove(k);
+
                 foreach (string k in new List<string>(m_dicRvSeq.Keys))
                 {
                     int c = k.IndexOf(':');
@@ -3889,7 +3939,12 @@ namespace TSK_COMM_IOSCH
         private readonly HashSet<string> m_setUnsupportedLogged = new HashSet<string>();   // [LGLS] 미지원 JOB_TYP 1회 로깅용
         private readonly HashSet<string> m_setOutArrived = new HashSet<string>();          // [LGLS 2026-07-21] 출고 실도착 관측 플래그(배출 확인용)
         // [LGLS 2026-07-22] 표시용 작업구분 동기화: 트랙 화물(LUGG_NO_RD)·크레인 진행 작업의 구분을
-        //   CV_DATA/SC_DATA_LGLS.JOB_TYP_RD 에 반영(입고=1, 출고=2, 없음=0). 변경 시에만 UPDATE — 표시 전용.
+        //   CV_DATA/SC_DATA_LGLS.JOB_TYP_RD 에 반영(없음=0). 변경 시에만 UPDATE - 표시 전용.
+        //   [LGLS 2026-08-31] ★작업구분을 그대로 쓴다★ (사용자 지적 : 반자동 색이 범례와 다름)
+        //     종전에는 CASE WHEN JOB_TYP IN (2,12) THEN 2 ELSE 1 로 뭉개서 반자동(11/12)이
+        //     자동(1/2)과 같은 값이 됐다. Client 는 enJobTypeSemiSto(11)/SemiRet(12) 에
+        //     별도 색(m_clrUSER_COLOR_SEMI_*)을 갖고 있는데 그 값이 도달하지 못해
+        //     반자동 화물이 자동 색으로 그려졌다.
         private void SyncDisplayTyp()
         {
             try
@@ -3899,13 +3954,13 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 string strSqlDsp1 = "";
                 strSqlDsp1 += CRLF + " UPDATE CD                                                              ";
-                strSqlDsp1 += CRLF + "    SET JOB_TYP_RD = (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                strSqlDsp1 += CRLF + "    SET JOB_TYP_RD = JM.JOB_TYP ";
                 strSqlDsp1 += CRLF + "   FROM CV_DATA CD                                                      ";
                 strSqlDsp1 += CRLF + "  INNER JOIN JOB_MST JM                                                 ";
                 strSqlDsp1 += CRLF + "     ON JM.WH_TYP   = CD.WH_TYP                                         ";
                 strSqlDsp1 += CRLF + "    AND JM.LUGG_NO  = CD.LUGG_NO_RD                                     ";
                 strSqlDsp1 += CRLF + "  WHERE CD.WH_TYP   = :WH_TYP                                           ";
-                strSqlDsp1 += CRLF + "    AND ISNULL(CD.JOB_TYP_RD,'0') <> (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                strSqlDsp1 += CRLF + "    AND ISNULL(CD.JOB_TYP_RD,'0') <> JM.JOB_TYP ";
                 DbNonQry(strSqlDsp1);
 
                 _pBdb.mComMain.Parameters.Clear();
@@ -3923,14 +3978,14 @@ namespace TSK_COMM_IOSCH
                 // [LGLS] 지시(21)~완료 구간만 — 레일색 m_bInvoke 의미
                 string strSqlDsp3 = "";
                 strSqlDsp3 += CRLF + " UPDATE SD                                                              ";
-                strSqlDsp3 += CRLF + "    SET JOB_TYP_RD = (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                strSqlDsp3 += CRLF + "    SET JOB_TYP_RD = JM.JOB_TYP ";
                 strSqlDsp3 += CRLF + "   FROM SC_DATA_LGLS SD                                                      ";
                 strSqlDsp3 += CRLF + "  INNER JOIN JOB_MST JM                                                 ";
                 strSqlDsp3 += CRLF + "     ON JM.WH_TYP   = SD.WH_TYP                                         ";
                 strSqlDsp3 += CRLF + "    AND SD.SC_NO    = (CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END) ";
                 strSqlDsp3 += CRLF + "  WHERE SD.WH_TYP   = :WH_TYP                                           ";
                 strSqlDsp3 += CRLF + "    AND JM.JOB_STATUS IN ('25')                                    ";
-                strSqlDsp3 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> (CASE WHEN JM.JOB_TYP IN ('2','12') THEN '2' ELSE '1' END) ";
+                strSqlDsp3 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> JM.JOB_TYP ";
                 DbNonQry(strSqlDsp3);
 
                 _pBdb.mComMain.Parameters.Clear();
@@ -3947,6 +4002,24 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp4 += CRLF + "                       AND JM.JOB_STATUS IN ('25')                 ";
                 strSqlDsp4 += CRLF + "                       AND SD.SC_NO = (CASE WHEN JM.JOB_TYP IN ('1','11') THEN JM.DEST_POS ELSE JM.START_POS END)) ";
                 DbNonQry(strSqlDsp4);
+
+                // [LGLS 2026-08-31] RTV 화물색 : 지시 시점에 정규화(11→1/12→2)된 값이 들어가 있어
+                //   반자동이 자동 색으로 그려졌다(사용자 지적). 살아 있는 작업의 실제 구분으로 맞춘다.
+                //   ※JOB_TYP_OD 를 조건으로 쓰는 게이트(DriveCV 122 보류 / DriveSC 901 보류)는
+                //     IN ('2','12') / IN ('1','11') 로 함께 넓혔다.
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                string strSqlDsp5 = "";
+                strSqlDsp5 += CRLF + " UPDATE RD                                                   ";
+                strSqlDsp5 += CRLF + "    SET JOB_TYP_OD = JM.JOB_TYP                              ";
+                strSqlDsp5 += CRLF + "   FROM RTV_DATA_LGLS RD                                     ";
+                strSqlDsp5 += CRLF + "  INNER JOIN JOB_MST JM                                      ";
+                strSqlDsp5 += CRLF + "     ON JM.WH_TYP  = RD.WH_TYP                               ";
+                strSqlDsp5 += CRLF + "    AND JM.LUGG_NO = RD.LUGG_OD                              ";
+                strSqlDsp5 += CRLF + "  WHERE RD.WH_TYP  = :WH_TYP                                 ";
+                strSqlDsp5 += CRLF + "    AND ISNULL(RD.JOB_TYP_OD,'0') NOT IN ('0','')          ";
+                strSqlDsp5 += CRLF + "    AND ISNULL(RD.JOB_TYP_OD,'0') <> JM.JOB_TYP             ";
+                DbNonQry(strSqlDsp5);
 
                 SyncScForkPos();
             }

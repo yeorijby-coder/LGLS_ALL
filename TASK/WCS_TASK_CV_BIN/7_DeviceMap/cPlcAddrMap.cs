@@ -344,7 +344,7 @@ namespace WCS_TASK_CV
                 e.No      = Attr(en, "no", 0);
                 e.FrTrack = Attr(en, "frTrack", 0);
                 e.ToTrack = Attr(en, "toTrack", 0);
-                // [LGLS 2026-08-22] 입고대/출고대 트랙 (구 ECS 배치: #11 겸용 122, #12 출고 124,
+                // [LGLS 2026-08-22] 입고대/출고대 트랙 (구 ECS 배치: #11 겸용 122, #12 입고 124,   [LGLS 2026-08-31 정정 - 현장기준 C/V#12=입고]
                 //   #13 입고 126, #14 출고 129, #15 입고 130). 통로 C/V(#1~#10)는 정의 없음.
                 e.InStation  = Attr(en, "inStation", 0);
                 e.OutStation = Attr(en, "outStation", 0);

@@ -606,18 +606,39 @@ int i;
                     strSql += modDefApp.CRLF + "    AND JOB_STATUS    IN ('19', '29')";
                 }
                 int nRtn = bDb.ExcuteQry_Par(ref strSql);
-                if (nRtn <= 0)
+
+                // [LGLS 2026-08-31] ★0 은 실패가 아니다★
+                //   ExcuteQry_Par 는 조회 성공이면 행 수(0 포함), 실패면 음수(DB_ERR)를 준다.
+                //   종전에는 nRtn <= 0 을 통째로 "DATABASE 에러" 라고 찍었다. 그래서 지울 작업이
+                //   이미 없을 뿐인데도 에러로 올라왔고, ErrMsg 가 비어 있어(MESSAGE []) 원인을
+                //   짚을 수 없었다. ErrMsg 가 비었다는 것이 곧 "DB 예외가 없었다" 는 증거다.
+                //   실측 : 반자동 루프(9001)가 완료→삭제→즉시 재생성을 반복하는 동안,
+                //          완료보고가 잡은 작업을 TEST 창이 먼저 지워 0건이 된 경합.
+                if (nRtn < 0)
                 {
-                    modDefApp.GM_RTN_MSG = strTitle + "JOB_MST SELECT중 DATABASE 에러., MESSAGE [" + bDb.ErrMsg + "]";
-                    if (bServerSocket == true)
-                    {
-                        modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
-                    }
-                    else
-                    {
-                        modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
-                    }
+                    modDefApp.GM_RTN_MSG = strTitle + "JOB_MST SELECT 중 DB 오류. MESSAGE [" + bDb.ErrMsg + "]";
+                    if (bServerSocket == true) modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    else                       modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
                     return false;
+                }
+
+                if (nRtn == 0)
+                {
+                    if (bJobComplete == true)
+                    {
+                        // 완료(19/29) 조건까지 걸고 찾았다 - 작업은 있는데 상태가 아직 아닐 수 있다.
+                        //   지우면 안 되므로 실패로 둔다. 다만 DB 오류라고 부르지는 않는다.
+                        modDefApp.GM_RTN_MSG = strTitle + "삭제 대상 없음(완료 상태 19/29 아님). [작업번호:" + strLuggNo + "]";
+                        if (bServerSocket == true) modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                        else                       modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                        return false;
+                    }
+
+                    // 이미 지워진 작업 - 삭제의 목적은 달성됐다(멱등). 성공으로 본다.
+                    modDefApp.GM_RTN_MSG = strTitle + "이미 삭제된 작업입니다. [작업번호:" + strLuggNo + "]";
+                    if (bServerSocket == true) modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_NOR);
+                    else                       modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_NOR);
+                    return true;
                 }
 
 
