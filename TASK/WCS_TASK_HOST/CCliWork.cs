@@ -1523,6 +1523,30 @@ namespace TSK_HostCom
         //최초작성자	: BASE(정복열)
         //작성일		: 20200519
         //설명		    : 완료 보고  
+        /// <summary>[LGLS 2026-08-30] 완료 상태 코드. common_code JOB_STATUS '9' = 완료.</summary>
+        private const string JOB_ST_DONE = "9";
+
+        /// <summary>[LGLS 2026-08-30] 작업 상태만 바꾼다(완료 표시 / 실패 시 롤백용).</summary>
+        private bool UpdateJobStatusTo(string strLuggNum, string strStatus)
+        {
+            try
+            {
+                m_BDb.BeginTrans();
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + "  UPDATE JOB_MST ";
+                m_strSql += modDefApp.CRLF + "    SET JOB_STATUS   = " + m_BDb.ParamsAdd("JOB_STATUS", strStatus);
+                m_strSql += modDefApp.CRLF + "      , UPD_USER_ID  = 'HOST_TASK'";
+                m_strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
+                m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "    AND LUGG_NO      = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
+                int n = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                if (n != 1) { m_BDb.RollbackTrans(); return false; }
+                m_BDb.CommitTrans();
+                return true;
+            }
+            catch { try { m_BDb.RollbackTrans(); } catch { } return false; }
+        }
+
         private void GetJobCompleteReport()
         {
             int[] nStation = new int[] { 19, 29 };
@@ -1852,10 +1876,20 @@ namespace TSK_HostCom
             {
                 return false;
             }
-            
+
+            // [LGLS 2026-08-30] 완료 상태 '9' 신설 (사용자 요구)
+            //   입고 완료(29) / 출고 완료(19)  →  9(완료)  →  상위 응답 수신  →  삭제
+            //   완료 보고를 내보내는 시점에 '완료'로 표시해 두고, 응답을 받으면 지운다.
+            //   상위가 없으면 9(완료) 로 남아 "일은 끝났는데 상위 응답 대기 중"임이 화면에 드러난다.
+            //   ※송신에 실패하면 원래 상태(19/29)로 되돌려 다음 주기에 다시 보고한다 —
+            //     되돌리지 않으면 IsJobExist(19/29) 가 못 찾아 작업이 9 에 갇힌다(도착보고에서 겪은 함정).
+            if (!UpdateJobStatusTo(strLuggNum, JOB_ST_DONE))
+                return false;
+
             #region 메세지 보내기
             if (!RequestSrv(iTxCnt.ToString()))
             {
+                UpdateJobStatusTo(strLuggNum, nJobStatus.ToString());   // 롤백 - 다음 주기 재보고
                 return false;
             }
             #endregion

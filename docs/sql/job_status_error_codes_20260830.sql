@@ -3,6 +3,7 @@
 --   JOB_MST.JOB_STATUS 표시명을 "이중입고 에러" / "공출고 에러" 로 명확히 한다.
 --   코드값은 구 ECS 체계를 그대로 쓴다 (09=이중입고, 08=공출고, 07=이중입고재지정).
 --   없으면 만들고, 있으면 이름만 갱신한다.
+--   [2026-08-30] 완료 상태 '9' 추가 : 입고 완료(29)/출고 완료(19) → 9(완료) → 상위 응답 → 삭제
 -- =====================================================================
 SET NOCOUNT ON;
 
@@ -13,7 +14,8 @@ USING (VALUES
         ('09', '이중입고 에러',   'Dual Store Error',     13),
         ('08', '공출고 에러',     'Empty Retrieve Error', 14),
         ('07', '이중입고 재지정', 'Dual Store Retry',     15),
-        ('06', '공출고 재지정',   'Empty Retrieve Retry', 16)
+        ('06', '공출고 재지정',   'Empty Retrieve Retry', 16),
+        ('9',  '완료',             'Done',                 17)
       ) AS S(ccd_cd, nm_kor, nm_eng, ord)
    ON  T.cdx_cd = 'JOB_STATUS'
    AND T.ccd_cd = S.ccd_cd
@@ -29,5 +31,5 @@ WHEN NOT MATCHED THEN
 
 SELECT ccd_cd, ccd_nm_kor, ccd_nm_eng, ccd_epr_ord
   FROM common_code
- WHERE cdx_cd = 'JOB_STATUS' AND ccd_cd IN ('06','07','08','09')
+ WHERE cdx_cd = 'JOB_STATUS' AND ccd_cd IN ('06','07','08','09','9')
  ORDER BY ccd_cd;
