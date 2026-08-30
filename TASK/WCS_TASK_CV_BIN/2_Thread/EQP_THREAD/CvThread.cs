@@ -1337,46 +1337,40 @@ namespace WCS_TASK_CV
             return true;
         }
 
-        private bool IsDualCvDirChangeHeld(string pTrackNo, int pWantDir)
+        private bool IsDualCvDirChangeHeld(string pTrackNo, int pWantDir, string pJobTypRd)
         {
             try
             {
                 int nCv = 0;
                 int.TryParse(System.Text.RegularExpressions.Regex.Match(m_strPlc_No, @"\d+").Value, out nCv);
-                if (nCv != 2 && nCv != 11) return false;          // 방향전환형만 대상
+                if (nCv != 2 && nCv != 11) return false;          // 방향전환형(C/V#2, C/V#11)만 대상
 
-                int nBase = 100 + (nCv - 1) * 2;                  // C/V#2 → 103/104, C/V#11 → 121/122
-                int[] nTracks = new int[] { nBase + 1, nBase + 2 };
-
-                // 현재 방향 : 지시 트랙 기준(같은 설비이므로 두 트랙이 함께 바뀐다)
                 int nCmdTrack = 0; int.TryParse(pTrackNo, out nCmdTrack);
-                string strNowDir = "";
-                if (CvDic.ContainsKey(nCmdTrack)) strNowDir = (CvDic[nCmdTrack].STOCK_MODE ?? "").Trim();
+                if (!CvDic.ContainsKey(nCmdTrack)) return false;
+
+                string strNowDir  = (CvDic[nCmdTrack].STOCK_MODE ?? "").Trim();
                 string strWantDir = (pWantDir == 1) ? "1" : "0";
                 if (strNowDir == strWantDir) return false;        // 같은 방향이면 보류할 이유가 없다
 
-                // 이 설비 위에 "작업 화물"이 남아 있는가.
-                //   [LGLS 2026-08-30 사용자 정정] ★작업번호 없는 화물은 입고 화물이 아니다★
-                //   화물감지(SENSOR0)만 보면, 작업자가 올려두었을 뿐 지시가 없는 파렛트나
-                //   EQP_SIM 자동투입 잔재(유령 파렛트)까지 "화물 있음"으로 잡아 방향 전환이
-                //   영영 보류된다. 실제로 트랙 124 에서 sensor=1 / lugg_no_rd='0' 인 유령
-                //   파렛트를 관측했다. 전환을 막아야 하는 것은 시스템이 반송 중인 화물뿐이므로,
-                //   R 트래킹 작업번호(V11_JOBNO)가 실제로 붙어 있을 때만 보류한다.
-                for (int i = 0; i < nTracks.Length; i++)
-                {
-                    if (!CvDic.ContainsKey(nTracks[i])) continue;
-                    if ((CvDic[nTracks[i]].SENSOR0_DATA_RD ?? "").Trim() != "1") continue;   // 화물 없음
-                    if (!HasRealJobNo(CvDic[nTracks[i]].V11_JOBNO)) continue;                // 작업번호 없는 화물은 대상 아님
-                    {
-                        m_strLogMsg = "[CvChg_CMD_RQ_YN] 트랙번호 : [" + pTrackNo + "] 방향전환 보류 - 트랙 "
-                                    + nTracks[i] + " 에 작업 화물(" + (CvDic[nTracks[i]].V11_JOBNO ?? "") + ") 남아 있음 (현재 "
-                                    + (strNowDir == "1" ? "출고" : "입고") + " → 요청 "
-                                    + (strWantDir == "1" ? "출고" : "입고") + "). 화물 반출 후 전환한다.";
-                        MakeMsg_Imp(m_strLogMsg, m_nthNo);
-                        return true;
-                    }
-                }
-                return false;
+                // 화물이 없으면 언제든 전환 가능
+                if ((CvDic[nCmdTrack].SENSOR0_DATA_RD ?? "").Trim() != "1") return false;
+                // [사용자 정정] 작업번호 없는 화물은 입고 화물이 아니다 - 전환을 막지 않는다
+                if (!HasRealJobNo(CvDic[nCmdTrack].V11_JOBNO)) return false;
+
+                // [LGLS 2026-08-30] ★반대 방향 화물만 막는다★
+                //   출고(1) 전환은 입고 화물이, 입고(0) 전환은 출고 화물이 남아 있을 때만 보류한다.
+                //   같은 방향 화물까지 막으면, 출고 전환을 기다리는 출고 화물 자신이 전환을 막아
+                //   그 화물이 영영 배출되지 못한다(실측: 작업 0113 이 입고 모드 122 에서 정지).
+                string strCargoTyp = (pJobTypRd ?? "").Trim();    // 1=입고 화물, 2=출고 화물
+                bool bOpposite = (strWantDir == "1") ? (strCargoTyp == "1") : (strCargoTyp == "2");
+                if (!bOpposite) return false;
+
+                m_strLogMsg = "[CvChg_CMD_RQ_YN] 트랙번호 : [" + pTrackNo + "] 방향전환 보류 - 반대방향 작업 화물("
+                            + (CvDic[nCmdTrack].V11_JOBNO ?? "") + ", " + (strCargoTyp == "1" ? "입고" : "출고")
+                            + ") 남아 있음 (현재 " + (strNowDir == "1" ? "출고" : "입고") + " → 요청 "
+                            + (strWantDir == "1" ? "출고" : "입고") + "). 화물 반출 후 전환한다.";
+                MakeMsg_Imp(m_strLogMsg, m_nthNo);
+                return true;
             }
             catch { return false; }
         }
@@ -1476,7 +1470,7 @@ namespace WCS_TASK_CV
                         //   갇히고(HS 가 서지 않아 지시가 영영 보류) 크레인 앞에서 충돌한다. 반대도 같다.
                         //   지시를 소비하지 않고 보류만 하므로 다음 폴링에 자동 재시도된다.
                         //   ※방향전환형은 C/V#2·#11 뿐이다(PlcAddressMap CraneMap). 그 외 설비는 종전대로.
-                        if (IsDualCvDirChangeHeld(TRACK_NO, nCMD_RQ_PARM))
+                        if (IsDualCvDirChangeHeld(TRACK_NO, nCMD_RQ_PARM, JOB_TYP_RD))
                         {
                             continue;   // CMD_RQ_YN 을 지우지 않는다 - 화물이 빠지면 다음 폴링에 전환
                         }

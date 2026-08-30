@@ -271,7 +271,7 @@ namespace TSK_COMM_IOSCH
                         FeedInGate();   // [구 경로] 입고대 파렛트 공급/이송 재현 (실경로에선 EQP_SIM 투입)
 
                     // ── 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 지시)
-                    RestoreDualCvInboundDir();   // [LGLS 2026-08-30] 겸용대 입고 방향 복귀(실경로)
+                    SyncDualCvDirection();       // [LGLS 2026-08-30] 겸용대 방향 정합(실경로, 양방향)
                     DriveCV();      // 10 → 11
                     if (!m_bScAutoComplete)
                     {
@@ -312,6 +312,22 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-08-23] 종전에는 이 호출이 구경로(else) 블록 안에 있어서 **실경로에서는 한 번도 돌지 않았다.**
                     //   고아 복구는 재기동으로 대기열이 날아간 실경로에서 더 절실하다(작업 1663 = 103 트랙에 화물이 있는데
                     //   대기열에 없어 84분 방치). 양쪽 경로에서 돌린다 - 구경로 전용 구조(m_dicCvMove)는 함수 안에서 가린다.
+                    // [LGLS 2026-08-30] ★인계 즉시 디스패치★ (사용자 요청)
+                    //   Drive*(대기→지시)가 Complete*(중→다음 대기)보다 먼저 돌기 때문에, 방금 인계된
+                    //   작업은 반드시 다음 주기까지 대기 상태에 머물렀다. 그래서 입고는 'SC 구동대기(20)',
+                    //   출고는 'CV 구동대기(10)' 가 화면에 계속 보였다.
+                    //   완료 처리 직후 한 번 더 디스패치해서, 물리 조건만 맞으면 같은 주기에 곧바로
+                    //   지시(21 / 11)로 넘어가게 한다 — 대기 상태를 거치지 않고 진행되는 효과.
+                    //   ※Drive* 는 대기 상태 + 유휴 설비에만 작용하므로 중복 호출이 안전하다(멱등).
+                    //   ※물리 게이트에 걸리면 대기 상태로 남는다 — 그건 실제로 못 가는 상황이라
+                    //     상태로 드러나는 편이 맞다(보류를 시간으로 뚫지 않는다는 원칙과 일관).
+                    DriveCV();                              // 출고 인계분 10 → 11 즉시
+                    if (!m_bScAutoComplete)
+                    {
+                        DriveSC();                          // 입고 인계분 20 → 21 즉시
+                        DriveRGV();                         // 30 → 31 즉시
+                    }
+
                     RecoverOutOrphans();
                     ProcessOutPend();   // 출고대 반출 대기열 → 반출 경로 비면 다음 화물 투입(FIFO)
                     if (!m_bScAutoComplete)
@@ -571,10 +587,40 @@ namespace TSK_COMM_IOSCH
         ///   전환 자체는 RequestCvDirection 이 "작업번호 붙은 화물 없음"을 확인한 뒤에만 수행한다
         ///   — 작업번호 없는 파렛트는 그대로 두고 전환한다(사용자 확정).
         /// </summary>
-        private void RestoreDualCvInboundDir()
+        private void SyncDualCvDirection()
         {
             try
             {
+                // ── ① 출고 방향 정합 : 그 작업대로 오는 출고가 진행 중인데 설비가 입고 모드면 출고로 맞춘다.
+                //   [LGLS 2026-08-30] 방향이 어긋난 채 출고 화물이 도착하면 배출되지 못하고 그대로 갇힌다.
+                //   DriveCV 의 출고 전환은 지시 시점(10→11)에만 일어나므로, 그 뒤(11/15)에 방향이
+                //   틀어지면 되돌릴 주체가 없었다(실측: 작업 0113 이 입고 모드인 122 에 도착해 정지,
+                //   트래킹이 121·122 에 이중 표시). 여기서 상시 정합을 맞춘다.
+                string qo = "";
+                qo += CRLF + " SELECT DISTINCT JM.DEST_POS AS STN               ";
+                qo += CRLF + "   FROM JOB_MST JM                                ";
+                qo += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
+                qo += CRLF + "    AND JM.JOB_TYP    IN ('2','12')               ";
+                qo += CRLF + "    AND JM.DEST_POS   IN ('122','103')            ";
+                qo += CRLF + "    AND JM.JOB_STATUS NOT IN ('9','19','29','" + ST_SC_WAIT + "') ";
+                qo += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')   ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(qo) > 0)
+                {
+                    DataTable dto = _pBdb.mDtMain.Copy();
+                    for (int k = 0; k < dto.Rows.Count; k++)
+                    {
+                        string dp = GetVal(dto.Rows[k], "STN");
+                        if (string.IsNullOrEmpty(dp)) continue;
+                        if (GetCvStockMode(dp) == "1") continue;          // 이미 출고 모드
+                        if (RequestCvDirection(dp, "1"))
+                            MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 정합 지시 - 출고(1) (진행 중인 출고 있음)", dp));
+                    }
+                }
+
+                // ── ② 입고 방향 복귀 : 대기 중인 입고가 있고, 오는 출고가 없으면 입고로 되돌린다.
                 string q = "";
                 q += CRLF + " SELECT DISTINCT JM.START_POS                     ";
                 q += CRLF + "   FROM JOB_MST JM                                ";
@@ -608,7 +654,7 @@ namespace TSK_COMM_IOSCH
                         MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 복귀 지시 - 입고(0) (대기 중인 입고 작업 있음)", sp));
                 }
             }
-            catch (Exception ex) { MakeMsg_Error("[SCH][CV] RestoreDualCvInboundDir 오류: " + ex.Message); }
+            catch (Exception ex) { MakeMsg_Error("[SCH][CV] SyncDualCvDirection 오류: " + ex.Message); }
         }
 
         private void DriveCV()
