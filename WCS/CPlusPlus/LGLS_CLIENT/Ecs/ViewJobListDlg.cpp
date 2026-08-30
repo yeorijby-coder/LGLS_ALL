@@ -303,48 +303,98 @@ BOOL CViewJobListDlg::OnInitDialog()
 //   키를 먼저 걷어낸 뒤 원래 순서대로 다시 넣는다.
 // [LGLS 2026-08-30] 수정 그룹의 오른쪽 끝 정렬. ★콤보에 항목이 채워진 뒤에 불러야 한다★
 //   RedrawImage() 는 BindCombo 보다 먼저 돌아서, 거기서 부르면 항목 폭이 0 으로 나온다.
+// [LGLS 2026-08-30] 작업정보 화면 정렬.
+//   ★콤보에 항목이 채워진 뒤에 불러야 한다★ - RedrawImage() 는 BindCombo 보다 먼저 돌아서,
+//   거기서 부르면 항목 폭이 0 으로 나온다.
+//   기준선은 두 개다.
+//     ① 오른쪽 끝 = 그리드(IDC_STATIC_SPREAD) 우변
+//        → 작업상태/우선순위 콤보, [수정], [삭제](같은 줄 통째로) 를 여기에 맞춘다.
+//     ② [초기화]/[조회] = 조회 그룹의 오른쪽 아래 구석
 void CViewJobListDlg::AlignUpdateGroupRight()
 {
-	CRect rcBtn, rcGrp, rcCbx;
-	CWnd* pGrp = GetDlgItem(IDC_GRP_UPDATE);
-	if (pGrp == NULL) return;
+	CWnd* pGrpU = GetDlgItem(IDC_GRP_UPDATE);
+	CWnd* pGrpS = GetDlgItem(IDC_GRP_SEARCH);
+	CWnd* pSpd  = GetDlgItem(IDC_STATIC_SPREAD);
+	if (pGrpU == NULL || pSpd == NULL) return;
 
-	m_btnJobUpdate.GetWindowRect(&rcBtn);   ScreenToClient(&rcBtn);
-	pGrp->GetWindowRect(&rcGrp);            ScreenToClient(&rcGrp);
-	m_cmbJobStatus2.GetDroppedControlRect(&rcCbx); ScreenToClient(&rcCbx);
+	CRect rcGrpU, rcGrpS, rcSpd;
+	pGrpU->GetWindowRect(&rcGrpU); ScreenToClient(&rcGrpU);
+	pSpd ->GetWindowRect(&rcSpd);  ScreenToClient(&rcSpd);
 
 	const int nInset = 8;	// 그룹 테두리에서 띄울 여백
-	const int nGap   = 7;	// 라벨과 콤보 사이
+	const int nGap   = 7;	// 라벨-콤보 / 버튼-버튼 사이
 
-	// 오른쪽 끝 : 그룹 안쪽 끝. 세 컨트롤이 여기에 맞춰진다.
-	int nRight = rcGrp.right - nInset;
-	if (nRight < rcBtn.right) nRight = rcBtn.right;
+	// ── ① 오른쪽 끝 = 그리드 우변
+	int nRight = rcSpd.right;
+	if (nRight > rcGrpU.right - nInset) nRight = rcGrpU.right - nInset;
 
-	// 필요한 폭 = 두 콤보 중 가장 긴 항목이 들어가는 폭
-	int nNeed = max(CalcComboItemWidth(m_cmbJobStatus2), CalcComboItemWidth(m_cbxJobPriority));
+	// 콤보 : 라벨은 글자 폭만 남기고, 나머지를 콤보가 다 쓴다(RTEXT 라 글자는 콤보에 붙는다).
+	int nLeft = rcGrpU.left + nInset + nGap
+	          + max(LabelTextWidth(IDC_LBL_JOB_STATUS2), LabelTextWidth(IDC_LBL_JOB_PRIORITY));
+	if (nLeft < rcGrpU.left) nLeft = rcGrpU.left + nInset;
 
-	// 라벨은 글자 폭만 남기고, 콤보가 그룹 안 나머지를 다 쓰게 한다.
-	//   오른쪽으로만 늘려서는 "[06] 이중입고 재지정" 이 들어가지 않아서,
-	//   라벨이 글자보다 넓게 잡혀 있던 여유까지 회수한다(RTEXT 라 글자는 콤보에 붙는다).
-	int nLeft = nRight - nNeed;
-	(void)nNeed;	// 필요 폭은 아래 하한 검사에만 쓴다 - 여유가 있으면 넓게 쓴다
-	int nLeftLimit = rcGrp.left + nInset + LabelTextWidth(IDC_LBL_JOB_STATUS2) + nGap;
-	int nLeftLimit2 = rcGrp.left + nInset + LabelTextWidth(IDC_LBL_JOB_PRIORITY) + nGap;
-	if (nLeftLimit2 > nLeftLimit) nLeftLimit = nLeftLimit2;
-	nLeft = nLeftLimit;	// 그룹이 넓으면 넓은 대로 - 라벨 글자 자리만 남기고 콤보가 차지한다
-	if (nLeft > rcCbx.left)  nLeft = rcCbx.left;	// 원래보다 좁히지는 않는다
-
-	// 라벨을 콤보 앞까지 당긴다(RTEXT 라 글자는 콤보에 붙어 있게 된다)
-	MoveLabelRightTo(IDC_LBL_JOB_STATUS2,  rcGrp.left + nInset, nLeft - nGap);
-	MoveLabelRightTo(IDC_LBL_JOB_PRIORITY, rcGrp.left + nInset, nLeft - nGap);
-
+	MoveLabelRightTo(IDC_LBL_JOB_STATUS2,  rcGrpU.left + nInset, nLeft - nGap);
+	MoveLabelRightTo(IDC_LBL_JOB_PRIORITY, rcGrpU.left + nInset, nLeft - nGap);
 	SetComboSpan(m_cmbJobStatus2,  nLeft, nRight);
 	SetComboSpan(m_cbxJobPriority, nLeft, nRight);
 
-	// 버튼은 배경이 비트맵이라 늘리면 그림이 늘어진다 - 폭은 두고 위치만 옮긴다.
-	if (nRight != rcBtn.right)
-		m_btnJobUpdate.MoveWindow(nRight - rcBtn.Width(), rcBtn.top, rcBtn.Width(), rcBtn.Height());
+	// [수정] : 배경이 비트맵이라 늘리면 그림이 늘어진다 - 폭은 두고 위치만 옮긴다.
+	MoveCtrlRightTo(&m_btnJobUpdate, nRight);
+
+	// [삭제] 를 그리드 우변에 맞추고, 같은 줄 버튼들을 같은 만큼 함께 민다(간격 유지).
+	{
+		CRect rcDel;
+		m_btnJobDelete.GetWindowRect(&rcDel); ScreenToClient(&rcDel);
+		int nShift = nRight - rcDel.right;
+		if (nShift != 0)
+		{
+			ShiftCtrlX(&m_btnJobDelete,     nShift);
+			ShiftCtrlX(&m_btnJobCopy,       nShift);
+			ShiftCtrlX(&m_btnJobScComplete, nShift);
+			ShiftCtrlX(&m_btnJobCvComplete, nShift);
+		}
+	}
+
+	// ── ② [초기화]/[조회] : 조회 그룹의 오른쪽 아래 구석
+	if (pGrpS != NULL)
+	{
+		pGrpS->GetWindowRect(&rcGrpS); ScreenToClient(&rcGrpS);
+
+		CRect rcSrch, rcClr;
+		m_btnJobSearch   .GetWindowRect(&rcSrch); ScreenToClient(&rcSrch);
+		m_btnJobDataClear.GetWindowRect(&rcClr);  ScreenToClient(&rcClr);
+
+		int nBottom = rcGrpS.bottom - nInset;
+		int nSrchL  = rcGrpS.right - nInset - rcSrch.Width();
+		int nClrL   = nSrchL - nGap - rcClr.Width();
+
+		m_btnJobSearch   .MoveWindow(nSrchL, nBottom - rcSrch.Height(), rcSrch.Width(), rcSrch.Height());
+		m_btnJobDataClear.MoveWindow(nClrL,  nBottom - rcClr.Height(),  rcClr.Width(),  rcClr.Height());
+	}
 }
+
+// [LGLS 2026-08-30] 폭은 두고 오른쪽 끝만 맞춘다
+void CViewJobListDlg::MoveCtrlRightTo(CWnd* pWnd, int nRight)
+{
+	if (pWnd == NULL || pWnd->GetSafeHwnd() == NULL) return;
+
+	CRect rc;
+	pWnd->GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	pWnd->MoveWindow(nRight - rc.Width(), rc.top, rc.Width(), rc.Height());
+}
+
+// [LGLS 2026-08-30] 가로로 그만큼 민다
+void CViewJobListDlg::ShiftCtrlX(CWnd* pWnd, int nDx)
+{
+	if (pWnd == NULL || pWnd->GetSafeHwnd() == NULL) return;
+
+	CRect rc;
+	pWnd->GetWindowRect(&rc);
+	ScreenToClient(&rc);
+	pWnd->MoveWindow(rc.left + nDx, rc.top, rc.Width(), rc.Height());
+}
+
 
 // [LGLS 2026-08-30] 라벨 글자가 실제로 차지하는 폭
 int CViewJobListDlg::LabelTextWidth(int nID)

@@ -143,6 +143,8 @@ protected:
 	int  LabelTextWidth(int nID);
 	void MoveLabelRightTo(int nID, int nLeft, int nRight);
 	void SetComboSpan(CComboBoxWrapper& cbx, int nLeft, int nRight);
+	void MoveCtrlRightTo(CWnd* pWnd, int nRight);
+	void ShiftCtrlX(CWnd* pWnd, int nDx);
 	int  CalcComboItemWidth(CComboBoxWrapper& cbx);	// [LGLS 2026-08-30] 가장 긴 항목 폭	// [LGLS 2026-08-30] 콤보 우변 맞춤	// [LGLS 2026-08-30] "[코드] 이름" 표기
 	DECLARE_MESSAGE_MAP();
 	DECLARE_EVENTSINK_MAP();
