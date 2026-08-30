@@ -740,7 +740,12 @@ namespace EQP_SIM.Sim
             //   입고로 바뀌면 그 화물이 입고 경로를 타지 못하고 영영 제자리에 머물렀다
             //   (실측: 122 의 출고 잔재 위에 ECS 가 입고 작업 0147 을 기록했으나 22→21 이동 없음).
             //   → 겸용대는 "현재 방향과 일치하는 경로"만 돌리고, 그 경로에서는 p.Dir 을 따지지 않는다.
-            bool bDualCv = (Def.IngoPath != null && Def.OutgoPath != null);
+            //   ※겸용 판정은 반드시 HasDirection(C/V#2·#11) 이어야 한다.
+            //     라인 컨베이어 C/V#3~10 도 IngoPath/OutgoPath 를 **둘 다** 가지므로
+            //     (RGV 홀수→SC 짝수 / SC 짝수→RGV 홀수), 경로 존재 여부로 판정하면
+            //     방향값이 없는 그 설비들의 출고 경로가 통째로 막힌다
+            //     (실측 : 출고 0149 가 트랙 118 에서 117 로 못 나감 - "18번에서 출발하지 않는다").
+            bool bDualCv = Def.HasDirection;
             if (bDualCv)
             {
                 bool bWantOutgo = (direction == "1");
