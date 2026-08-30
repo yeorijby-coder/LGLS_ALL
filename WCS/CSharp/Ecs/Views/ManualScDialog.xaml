@@ -1,0 +1,48 @@
+<Window x:Class="Ecs.Views.ManualScDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="수동 크레인(SC) 조작"
+        Width="460" Height="380"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Malgun Gothic" FontSize="12"
+        Background="#FF0D1B2A">
+    <Window.Resources>
+        <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#FFDDE8F0"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+        <Style TargetType="Button"><Setter Property="Padding" Value="10,5"/><Setter Property="Margin" Value="3"/></Style>
+        <Style TargetType="TextBox"><Setter Property="Height" Value="24"/></Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="수동 크레인(SC) 조작 (C++ CManualSc 대응)" FontSize="14" FontWeight="Bold" Foreground="#FF00AAFF" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4">
+            <TextBlock Text="크레인:" Width="70"/>
+            <ComboBox x:Name="CbSc" Width="180" Height="24" SelectionChanged="CbSc_Changed"/>
+            <TextBlock x:Name="TxtScState" Text="  -" Margin="10,0,0,0" Foreground="#FF90C0FF"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4">
+            <TextBlock Text="화물번호:" Width="70"/><TextBox x:Name="TxtLugg" Text="1001" Width="80"/>
+            <TextBlock Text="  행:" /><TextBox x:Name="TxtRow" Text="1" Width="50"/>
+            <TextBlock Text="  열:" /><TextBox x:Name="TxtCol" Text="1" Width="50"/>
+            <TextBlock Text="  HS:" /><TextBox x:Name="TxtHs" Text="0" Width="40"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8">
+            <Button Content="입고(Store)"   Click="BtnStore_Click"    Background="#FF1E5A2E" Foreground="White"/>
+            <Button Content="출고(Retrieve)" Click="BtnRetrieve_Click" Background="#FF2A4A6A" Foreground="White"/>
+            <Button Content="홈(Home)"      Click="BtnHome_Click"/>
+            <Button Content="취소(Cancel)"  Click="BtnCancel_Click"   Background="#FF6A2E2E" Foreground="White"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="4" x:Name="TxtResult" Foreground="#FFAACCEE" TextWrapping="Wrap" Margin="0,6"/>
+
+        <StackPanel Grid.Row="5" VerticalAlignment="Bottom" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button Content="닫기" Click="BtnClose_Click" Width="70"/>
+        </StackPanel>
+    </Grid>
+</Window>

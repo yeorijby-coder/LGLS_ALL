@@ -30,6 +30,45 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <!-- 리본 버튼 스타일 (세로형, C++ CMFCRibbonButton 대응) -->
+        <Style x:Key="RibbonBtn" TargetType="Button">
+            <Setter Property="Width" Value="74"/>
+            <Setter Property="Height" Value="64"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="#FF243447" BorderBrush="#FF3A5570"
+                                BorderThickness="1" CornerRadius="3">
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1">
+                                <Image Source="{TemplateBinding Tag}" Width="24" Height="24"
+                                       Stretch="Uniform" SnapsToDevicePixels="True" Margin="0,0,0,2"/>
+                                <TextBlock Text="{TemplateBinding Content}" TextWrapping="Wrap"
+                                           TextAlignment="Center" FontFamily="Malgun Gothic" FontSize="10"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#FF35597E"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#FF1A3A5A"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RibbonGrpLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Malgun Gothic"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="#FF7EA6CC"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+
         <!-- 통신 상태 LED 스타일 -->
         <Style x:Key="CommLedStyle" TargetType="Border">
             <Setter Property="Width" Value="10"/>
@@ -73,70 +112,92 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════════════
-             2. 메뉴 바  (SKI IDR_MAINFRAME MENU 대응)
+             2. 리본 (C++ CMFCRibbonBar 대응: ECS / MANUAL / LOG)
              ══════════════════════════════════════════════════════ -->
-        <Menu DockPanel.Dock="Top" Background="#FF001833" FontFamily="Malgun Gothic" FontSize="12">
-            <Menu.ItemContainerStyle>
-                <Style TargetType="MenuItem">
+        <TabControl DockPanel.Dock="Top" x:Name="RibbonTabs" Height="120"
+                    Background="#FF102030" BorderThickness="0">
+            <TabControl.Resources>
+                <Style TargetType="TabItem">
                     <Setter Property="FontFamily" Value="Malgun Gothic"/>
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="Background" Value="#FF001833"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsHighlighted" Value="True">
-                            <Setter Property="Background" Value="#FF003366"/>
-                            <Setter Property="Foreground" Value="White"/>
-                        </Trigger>
-                        <Trigger Property="IsSubmenuOpen" Value="True">
-                            <Setter Property="Background" Value="#FF003366"/>
-                        </Trigger>
-                    </Style.Triggers>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="Foreground" Value="#FFCCE0F0"/>
+                    <Setter Property="Background" Value="#FF0D1B2A"/>
+                    <Setter Property="Padding" Value="16,4"/>
                 </Style>
-            </Menu.ItemContainerStyle>
-            <MenuItem Header="시스템(_S)">
-                <MenuItem Header="환경 설정(_C)..."     Click="Menu_Config_Click"/>
-                <MenuItem Header="온라인(_O)"           Click="BtnOnline_Click"/>
-                <MenuItem Header="오프라인(_F)"         Click="BtnOffline_Click"/>
-                <Separator/>
-                <MenuItem Header="Host 연결(_H)"        Click="Menu_HostConnect_Click"/>
-                <Separator/>
-                <MenuItem Header="종료(_X)"             Click="Menu_Exit_Click"/>
-            </MenuItem>
-            <MenuItem Header="장비(_E)">
-                <MenuItem Header="장비 시작(_S)"        Click="BtnStart_Click"/>
-                <MenuItem Header="장비 중지(_P)"        Click="BtnStop_Click"/>
-                <MenuItem Header="일시 정지(_U)"        Click="BtnPause_Click"/>
-                <Separator/>
-                <MenuItem Header="모든 설비 정지(_A)"   Click="Menu_SuspendAll_Click"/>
-                <MenuItem Header="모든 설비 정지 해제(_R)" Click="Menu_ResumeAll_Click"/>
-            </MenuItem>
-            <MenuItem Header="작업(_J)">
-                <MenuItem Header="작업정보 관리(_M)..."  Click="Menu_JobManager_Click"/>
-                <MenuItem Header="반자동 작업(_O)..."   Click="Menu_JobOffline_Click"/>
-                <Separator/>
-                <MenuItem Header="작업정보 초기화(_R)"  Click="Menu_ClearJobs_Click"/>
-                <MenuItem Header="작업 백업(_B)"        Click="BtnBackup_Click"/>
-            </MenuItem>
-            <MenuItem Header="로그(_L)">
-                <MenuItem Header="로그 관리(_A)..."     Click="Menu_LogAll_Click"/>
-                <MenuItem Header="알람 관리(_W)"        Click="Menu_Warning_Click"/>
-                <Separator/>
-                <MenuItem Header="로그 지우기(_C)"      Click="Menu_ClearLog_Click"/>
-            </MenuItem>
-            <MenuItem Header="보기(_V)">
-                <MenuItem Header="레이아웃 1(_1)"       Click="Menu_Layout1_Click"/>
-                <MenuItem Header="레이아웃 2(_2)"       Click="Menu_Layout2_Click"/>
-                <MenuItem Header="레이아웃 3(_3)"       Click="Menu_Layout3_Click"/>
-                <Separator/>
-                <MenuItem Header="Job 목록(_J)"         Click="Menu_JobList_Click"/>
-                <MenuItem Header="로그(_L)"             Click="Menu_LogTab_Click"/>
-                <Separator/>
-                <MenuItem Header="LAYOUT 정보(_I)"      Click="Menu_LayoutInfo_Click"/>
-                <MenuItem Header="설비 범례(_Q)"        Click="Menu_EquipLegend_Click"/>
-            </MenuItem>
-            <MenuItem Header="도움말(_H)">
-                <MenuItem Header="ECS 정보(_A)..."      Click="Menu_About_Click"/>
-            </MenuItem>
-        </Menu>
+            </TabControl.Resources>
+
+            <!-- ── ECS 탭 ─────────────────────────────────── -->
+            <TabItem Header="ECS">
+                <StackPanel Orientation="Horizontal" Background="#FF152535">
+                    <DockPanel Margin="4,3">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonBtn}" Content="통신 연결 정의" Tag="/res/ribbon/eqpsuspend.png" Click="Rb_EqpSuspend_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="로그 삭제 설정" Tag="/res/ribbon/logdelete.png" Click="Rb_ConfigLogDelete_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="범례" Tag="/res/ribbon/legend.png" Click="Menu_EquipLegend_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="사용자" Tag="/res/ribbon/user.png" Click="Rb_User_Click"/>
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource RibbonGrpLabel}" Text="환경설정"/>
+                    </DockPanel>
+                    <Rectangle Width="1" Fill="#FF2A4A6A" Margin="2,6"/>
+                    <DockPanel Margin="4,3">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonBtn}" Content="작업정보" Tag="/res/ribbon/jobinfo.png" Click="Rb_JobInfo_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="공PLT작업" Tag="/res/ribbon/emptyplt.png" Click="Rb_HostEmptyPlt_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="찾기" Tag="/res/ribbon/search.png" Click="Rb_Search_Click"/>
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource RibbonGrpLabel}" Text="뷰"/>
+                    </DockPanel>
+                    <Rectangle Width="1" Fill="#FF2A4A6A" Margin="2,6"/>
+                    <DockPanel Margin="4,3">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonBtn}" Content="작업번호" Tag="/res/ribbon/mon_j.png" Click="Rb_TrackTextJob_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="트랙번호" Tag="/res/ribbon/mon_t.png" Click="Rb_TrackTextTrack_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="제품정보" Tag="/res/ribbon/mon_p.png" Click="Rb_TrackTextProd_Click"/>
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource RibbonGrpLabel}" Text="창고 모니터링"/>
+                    </DockPanel>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ── MANUAL 탭 ────────────────────────────────── -->
+            <TabItem Header="MANUAL">
+                <StackPanel Orientation="Horizontal" Background="#FF152535">
+                    <DockPanel Margin="4,3">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonBtn}" Content="작업" Tag="/res/ribbon/job.png" Click="Rb_ManualJob_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="크레인" Tag="/res/ribbon/sc.png" Click="Rb_ManualSc_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="RTV" Tag="/res/ribbon/rtv.png" Click="Rb_ManualRtv_Click"/>
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource RibbonGrpLabel}" Text="수동조작"/>
+                    </DockPanel>
+                    <Rectangle Width="1" Fill="#FF2A4A6A" Margin="2,6"/>
+                    <DockPanel x:Name="GrpSemiTest" Margin="4,3">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonBtn}" Content="반자동 TEST" Tag="/res/ribbon/semitest.png" Foreground="#FF90EE90" Click="Rb_SemiTest_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="TEST 초기화" Tag="/res/ribbon/testclear.png" Foreground="#FFFFD700" Click="Menu_ClearJobs_Click"/>
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource RibbonGrpLabel}" Text="반자동 TEST"/>
+                    </DockPanel>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ── LOG 탭 ───────────────────────────────────── -->
+            <TabItem Header="LOG">
+                <StackPanel Orientation="Horizontal" Background="#FF152535">
+                    <DockPanel Margin="4,3">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonBtn}" Content="작업로그" Tag="/res/ribbon/iolog.png" Click="Rb_LogIo_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="HOST로그" Tag="/res/ribbon/meslog.png" Click="Rb_LogMes_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="설비에러이력" Tag="/res/ribbon/eqphislog.png" Click="Rb_LogEqpHis_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="유저사용로그" Tag="/res/ribbon/clientlog.png" Click="Rb_LogClient_Click"/>
+                            <Button Style="{StaticResource RibbonBtn}" Content="ECS프로그램로그" Tag="/res/ribbon/wcslog.png" Click="Rb_LogEcs_Click"/>
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource RibbonGrpLabel}" Text="로그"/>
+                    </DockPanel>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
 
         <!-- ══════════════════════════════════════════════════════
              3. 툴바 (운영 버튼) — SKI IDR_TOOLBAR0 대응

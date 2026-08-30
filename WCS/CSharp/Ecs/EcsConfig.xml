@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<EcsConfig>
+  <!-- JOB_MST DB 연결 설정 (현행 LGLS: MS SQL Server / C++ Ecs.ini [DB_2] 대응) -->
+  <!-- 접속 실패 시 앱은 인메모리로 계속 동작합니다. 서버/DB/계정을 환경에 맞게 수정하세요. -->
+  <Db server="localhost\SQLEXPRESS" database="LGLS_MCS_IO" user="LGLS_IO" password="LGLS_IO" whtyp="10"/>
+
+  <!-- 참고: Host / Monitor / System / CV / SC / RTV 노드도 여기에 둘 수 있습니다. -->
+</EcsConfig>

@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Ecs.Equipment;
+using DciLib.Controls;
 
 namespace Ecs.Views
 {
@@ -18,6 +21,30 @@ namespace Ecs.Views
         public MainWindow()
         {
             InitializeComponent();
+
+            // 앱 아이콘(작업표시줄/제목표시줄): 다중크기 app.ico를 파일에서 로드
+            try
+            {
+                string ico = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+                if (System.IO.File.Exists(ico))
+                    Icon = System.Windows.Media.Imaging.BitmapFrame.Create(
+                        new Uri(ico), System.Windows.Media.Imaging.BitmapCreateOptions.None,
+                        System.Windows.Media.Imaging.BitmapCacheOption.OnLoad);
+            }
+            catch { }
+
+            // 실행 시 화면 왼쪽 절반에 배치(오른쪽은 Claude/터미널). 반반 분할 워크플로.
+            try
+            {
+                var wa = SystemParameters.WorkArea;
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                WindowState = WindowState.Normal;
+                Left   = wa.Left;
+                Top    = wa.Top;
+                Width  = wa.Width / 2;
+                Height = wa.Height;
+            }
+            catch { }
 
             _doc.CvStatusChanged  += (s, cv)  => Dispatcher.Invoke(UpdateStatus);
             _doc.ScStatusChanged  += (s, sc)  => Dispatcher.Invoke(UpdateStatus);
@@ -42,11 +69,20 @@ namespace Ecs.Views
             _doc.Layout3?.Load();
 
             if (_doc.Layout != null)
+            {
                 LayoutView1.SetLayout(_doc.Layout);
+                _doc.Layout.ControlClicked += OnLayoutControlClicked;
+            }
             if (_doc.Layout2 != null)
+            {
                 LayoutView2.SetLayout(_doc.Layout2);
+                _doc.Layout2.ControlClicked += OnLayoutControlClicked;
+            }
             if (_doc.Layout3 != null)
+            {
                 LayoutView3.SetLayout(_doc.Layout3);
+                _doc.Layout3.ControlClicked += OnLayoutControlClicked;
+            }
 
             EqStatusPanel.SetDoc(_doc);
             JobListView.SetDoc(_doc);
@@ -54,6 +90,10 @@ namespace Ecs.Views
 
             // 우측 Job 미니 목록 연결
             LvJobMini.ItemsSource = _doc.Jobs.Items;
+
+            // 시작 시 DB(JOB_MST)에서 작업 로드 (접속 시). 실패해도 무시.
+            int n = _doc.LoadJobsFromDb();
+            if (n >= 0) TxtStatus.Text = $"JOB_MST에서 {n}건 로드";
 
             UpdateStatus();
         }
@@ -248,17 +288,184 @@ namespace Ecs.Views
                 "LAYOUT 정보");
         }
 
-        private void Menu_EquipLegend_Click(object sender, RoutedEventArgs e)
+        // 메뉴 조회창(중복 방지): 형식별 단일 인스턴스
+        private readonly Dictionary<Type, Window> _menuDialogs = new();
+        private void OpenMenuDialog<T>(Func<T> factory) where T : Window
         {
-            MessageBox.Show("설비 범례 기능은 추후 구현 예정입니다.", "ECS",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
+            if (_menuDialogs.TryGetValue(typeof(T), out var w) && w.IsLoaded)
+            {
+                if (w.WindowState == WindowState.Minimized) w.WindowState = WindowState.Normal;
+                w.Activate(); return;
+            }
+            var dlg = factory();
+            dlg.Owner = this;
+            dlg.Closed += (s, e) => _menuDialogs.Remove(typeof(T));
+            _menuDialogs[typeof(T)] = dlg;
+            dlg.Show();
         }
+
+        private void Menu_EquipLegend_Click(object sender, RoutedEventArgs e)
+            => OpenMenuDialog(() => new LegendDialog(_doc));
 
         private void Menu_About_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("ECS (Equipment Control System)\nVersion 1.0\n\nC# WPF Port from SKI C++ MBCS",
                             "ECS 정보", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
+        // ─── 리본 핸들러 (C++ ECS 리본 대응) ───────────────────
+        // 아직 전용 다이얼로그가 없는 항목은 대응 C++ 클래스명과 함께 안내.
+        private void NotImpl(string title, string cppClass)
+            => MessageBox.Show($"[{title}]\n\nC++의 {cppClass} 에 대응하는 기능입니다.\n현재 C# 포트에서는 구현 예정입니다.",
+                               "ECS", MessageBoxButton.OK, MessageBoxImage.Information);
+
+        // ECS 탭 · 환경설정 — C++ CEqpSuspendDlg / CConfigLogDelete / CUserUserDlg 대응 조회창
+        private void Rb_EqpSuspend_Click(object sender, RoutedEventArgs e)
+            => OpenMenuDialog(() => new EqpSuspendDialog(_doc));
+        private void Rb_ConfigLogDelete_Click(object sender, RoutedEventArgs e)
+            => OpenMenuDialog(() => new ConfigLogDeleteDialog(_doc));
+        private void Rb_User_Click(object sender, RoutedEventArgs e)
+            => OpenMenuDialog(() => new UserDialog(_doc));
+        // ECS 탭 · 뷰 — 작업정보: DB(JOB_MST)에서 로드 후 Job 목록 탭 표시
+        private void Rb_JobInfo_Click(object sender, RoutedEventArgs e)
+        {
+            TabLayout.SelectedIndex = 4;
+            int n = _doc.LoadJobsFromDb();
+            TxtStatus.Text = n >= 0
+                ? $"JOB_MST에서 {n}건 로드"
+                : $"DB 미연결 — 인메모리 작업 표시 ({_doc.Db?.LastError})";
+        }
+        private void Rb_HostEmptyPlt_Click(object sender, RoutedEventArgs e)
+            => OpenMenuDialog(() => new HostEmptyPltDialog(_doc));
+        private FindDialog? _findDlg;
+        private void Rb_Search_Click(object sender, RoutedEventArgs e)
+        {
+            if (_findDlg == null || !_findDlg.IsLoaded)
+            {
+                _findDlg = new FindDialog(_doc) { Owner = this };
+                _findDlg.Closed += (s, ev) => _findDlg = null;
+            }
+            _findDlg.Show(); _findDlg.Activate();
+        }
+        // ECS 탭 · 창고 모니터링 (C++ OnCommandTrackTextMode: 트랙 텍스트 표시 모드 0/1/2)
+        private void Rb_TrackTextJob_Click(object sender, RoutedEventArgs e)    => SetTrackTextMode(0, "작업번호");
+        private void Rb_TrackTextTrack_Click(object sender, RoutedEventArgs e)  => SetTrackTextMode(1, "트랙번호");
+        private void Rb_TrackTextProd_Click(object sender, RoutedEventArgs e)   => SetTrackTextMode(2, "제품정보");
+        private void SetTrackTextMode(int mode, string name)
+        {
+            _doc.TrackTextMode = mode;   // 레이아웃 트랙 표시 모드
+            if (_doc.Layout  != null) _doc.Layout.DciMaster.TrackTextMode  = mode;
+            if (_doc.Layout2 != null) _doc.Layout2.DciMaster.TrackTextMode = mode;
+            if (_doc.Layout3 != null) _doc.Layout3.DciMaster.TrackTextMode = mode;
+            LayoutView1.Invalidate();
+            LayoutView2.Invalidate();
+            LayoutView3.Invalidate();
+            TxtStatus.Text = $"트랙 표시: {name}";
+        }
+        // MANUAL 탭 · 수동조작
+        private ManualJobDialog? _manualJobDlg;
+        private void Rb_ManualJob_Click(object sender, RoutedEventArgs e)
+        {
+            if (_manualJobDlg == null || !_manualJobDlg.IsLoaded)
+            {
+                _manualJobDlg = new ManualJobDialog(_doc) { Owner = this };
+                _manualJobDlg.Closed += (s, ev) => _manualJobDlg = null;
+            }
+            _manualJobDlg.Show();
+            _manualJobDlg.Activate();
+        }
+        private ManualScDialog? _manualScDlg;
+        private void Rb_ManualSc_Click(object sender, RoutedEventArgs e)
+        {
+            if (_manualScDlg == null || !_manualScDlg.IsLoaded)
+            {
+                _manualScDlg = new ManualScDialog(_doc) { Owner = this };
+                _manualScDlg.Closed += (s, ev) => _manualScDlg = null;
+            }
+            _manualScDlg.Show(); _manualScDlg.Activate();
+        }
+        private void Rb_ManualRtv_Click(object sender, RoutedEventArgs e)
+        {
+            // Rtv.cs에 명령 계층이 아직 없어 상태만 표시 (명령 발행은 Rtv 장비계층 구현 후)
+            var sb = new System.Text.StringBuilder("RTV 상태:\n\n");
+            if (_doc.RtvArray.Count == 0) sb.Append("(등록된 RTV 없음)");
+            for (int i = 0; i < _doc.RtvArray.Count; i++)
+            {
+                var r = _doc.RtvArray[i];
+                sb.AppendLine($"• RTV#{r.Number} ({r.DeviceName})  상태:{r.State}  연결:{(r.IsConnected ? "O" : "X")}");
+            }
+            sb.Append("\n※ 수동 RTV 명령(이동/입출고)은 Rtv 장비계층(Rtv.cs) 구현 후 활성화됩니다.");
+            MessageBox.Show(sb.ToString(), "수동 RTV (CManualRtv 대응)", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // ─── 레이아웃 설비 클릭 → 대화상자 (C++ EcsView Cv/Sc/RtvSkinDlg 대응) ───
+        // 컨트롤 타입 + ID 접두(SC=1712xxxx, RTV=1713xxxx)로 설비를 판별해 창을 연다.
+        // 열려있는 설비 상태창(중복 방지): id → Window
+        private readonly Dictionary<string, Window> _skinDialogs = new();
+
+        private void OnLayoutControlClicked(object? sender, DciControl ctrl)
+        {
+            string id = ctrl.Id.ToString();
+            switch (ctrl)
+            {
+                case DciRvCtrl:
+                    if (id.StartsWith("1713"))                         // RTV/RGV
+                        OpenSkin(id, () => new RtvSkinDialog(_doc, LastNo(id)));
+                    else                                               // SC(스태커크레인)
+                        OpenSkin(id, () => new ScSkinDialog(_doc, LastNo(id)));
+                    break;
+                case DciRackCtrl:
+                    Rb_ManualSc_Click(this, new RoutedEventArgs());    // 랙 클릭 → 수동 SC 작업
+                    break;
+                case DciTrackCtrl:                                     // CV 트랙
+                    OpenSkin(id, () => new CvSkinDialog(_doc, LastNo(id)));
+                    break;
+                // 그 외(Static/Button/Rack라벨 등)는 무시
+            }
+        }
+
+        /// <summary>레이아웃 ID의 끝 4자리 = 설비 번호(SC=sc_no, RTV=rtv_no, CV=mc_no).</summary>
+        private static int LastNo(string id)
+            => id.Length >= 4 && int.TryParse(id.Substring(id.Length - 4), out int n) ? n : 0;
+
+        private void OpenSkin(string id, Func<Window> factory)
+        {
+            if (_skinDialogs.TryGetValue(id, out var w) && w.IsLoaded)
+            {
+                if (w.WindowState == WindowState.Minimized) w.WindowState = WindowState.Normal;
+                w.Activate();
+                return;
+            }
+            var dlg = factory();
+            dlg.Owner = this;
+            dlg.Closed += (s, e) => _skinDialogs.Remove(id);
+            _skinDialogs[id] = dlg;
+            dlg.Show();
+        }
+        // MANUAL 탭 · 반자동 TEST
+        private SemiTestDialog? _semiTestDlg;
+        private void Rb_SemiTest_Click(object sender, RoutedEventArgs e)
+        {
+            if (_semiTestDlg == null || !_semiTestDlg.IsLoaded)
+            {
+                _semiTestDlg = new SemiTestDialog(_doc) { Owner = this };
+                _semiTestDlg.Closed += (s, ev) => _semiTestDlg = null;
+            }
+            _semiTestDlg.Show();
+            _semiTestDlg.Activate();
+        }
+        // LOG 탭 — 로그 종류(카테고리)별 필터로 분리 (C++ 로그 5종 대응)
+        private void ShowLog(string category, string name)
+        {
+            TabLayout.SelectedIndex = 3; // 로그 탭
+            LogView.SetCategoryFilter(category);
+            TxtStatus.Text = $"로그: {name}";
+        }
+        private void Rb_LogIo_Click(object sender, RoutedEventArgs e)      => ShowLog("IO",     "작업로그");
+        private void Rb_LogMes_Click(object sender, RoutedEventArgs e)     => ShowLog("HOST",   "HOST로그");
+        private void Rb_LogEqpHis_Click(object sender, RoutedEventArgs e)  => ShowLog("EQP",    "설비에러이력");
+        private void Rb_LogClient_Click(object sender, RoutedEventArgs e)  => ShowLog("USER",   "유저사용로그");
+        private void Rb_LogEcs_Click(object sender, RoutedEventArgs e)     => ShowLog("",       "ECS프로그램로그(전체)");
 
         // ─── 윈도우 종료 ─────────────────────────────────────────
 

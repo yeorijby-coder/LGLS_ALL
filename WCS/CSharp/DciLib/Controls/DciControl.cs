@@ -93,15 +93,16 @@ namespace DciLib.Controls
         /// fontsize=0이면 rect에 맞게 자동 결정.
         /// FgMode==2이면 텍스트 영역 배경도 BgColor로 채움.
         /// </summary>
-        protected void DrawCenteredText(DrawingContext dc, Rect rect, Brush fg, double? overrideFs = null)
+        protected void DrawCenteredText(DrawingContext dc, Rect rect, Brush fg, double? overrideFs = null, string? overrideText = null)
         {
-            if (string.IsNullOrEmpty(Text)) return;
+            string text = overrideText ?? Text;
+            if (string.IsNullOrEmpty(text)) return;
 
             double fs = overrideFs ?? ResolveFont(rect);
             if (fs <= 0) return;
 
             var dpi = VisualTreeHelper.GetDpi(Application.Current.MainWindow).PixelsPerDip;
-            var ft  = MakeText(Text, fs, fg, dpi);
+            var ft  = MakeText(text, fs, fg, dpi);
 
             if (FgMode == 2) // OPAQUE text background
                 dc.DrawRectangle(DciColor.ToBrush(BgColorHex), null,

@@ -33,6 +33,13 @@ namespace Ecs.Config
         public string BackupFolder      { get; private set; } = EcsPath.BackupFolder;
         public bool   AutoReconnect     { get; private set; } = true;
 
+        // DB 설정 (C++ Ecs.ini [DB_2] 기본값 = 현행 LGLS MS SQL Server)
+        public string DbServer   { get; private set; } = @"localhost\SQLEXPRESS";
+        public string DbDatabase { get; private set; } = "LGLS_MCS_IO";
+        public string DbUser     { get; private set; } = "LGLS_IO";
+        public string DbPassword { get; private set; } = "LGLS_IO";
+        public string WhTyp      { get; private set; } = "10";
+
         public bool Load(string filePath)
         {
             if (!LoadXml(filePath)) return false;
@@ -44,8 +51,20 @@ namespace Ecs.Config
             ParseMonitor(root);
             ParseEquipments(root);
             ParseSystem(root);
+            ParseDb(root);
 
             return true;
+        }
+
+        private void ParseDb(XmlNode root)
+        {
+            var n = root.SelectSingleNode("Db");
+            if (n == null) return;
+            DbServer   = Attr(n, "server",   DbServer);
+            DbDatabase = Attr(n, "database", DbDatabase);
+            DbUser     = Attr(n, "user",     DbUser);
+            DbPassword = Attr(n, "password", DbPassword);
+            WhTyp      = Attr(n, "whtyp",    WhTyp);
         }
 
         public bool Save(string filePath)

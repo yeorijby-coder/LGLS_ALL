@@ -10,6 +10,7 @@
     <AssemblyName>Ecs</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <LangVersion>9.0</LangVersion>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -54,6 +55,8 @@
     <Compile Include="EcsDef.cs" />
     <Compile Include="EcsDefine.cs" />
     <Compile Include="EcsDoc.cs" />
+    <Compile Include="Db\EcsDb.cs" />
+    <Compile Include="Db\CommonCode.cs" />
     <Compile Include="EcsLayout.cs" />
     <Compile Include="Equipment\Equipment.cs" />
     <Compile Include="Equipment\Cv.cs" />
@@ -82,6 +85,23 @@
     <Compile Include="Views\EquipmentStatusPanel.xaml.cs">
       <DependentUpon>EquipmentStatusPanel.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\ManualJobDialog.xaml.cs">
+      <DependentUpon>ManualJobDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SemiTestDialog.xaml.cs">
+      <DependentUpon>SemiTestDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ManualScDialog.xaml.cs">
+      <DependentUpon>ManualScDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FindDialog.xaml.cs">
+      <DependentUpon>FindDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SkinDialogBase.cs" />
+    <Compile Include="Views\ScSkinDialog.cs" />
+    <Compile Include="Views\RtvSkinDialog.cs" />
+    <Compile Include="Views\CvSkinDialog.cs" />
+    <Compile Include="Views\MenuDialogs.cs" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -104,6 +124,22 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\ManualJobDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\SemiTestDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\ManualScDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\FindDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\EquipmentStatusPanel.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -114,6 +150,19 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="EcsLayout.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="EcsConfig.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 리본 버튼 아이콘 (C++ rc_resource에서 가져옴) -->
+    <Resource Include="res\ribbon\*.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 앱 아이콘: exe 아이콘(ApplicationIcon) + 런타임 Window.Icon 로드용 복사 -->
+    <Content Include="app.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

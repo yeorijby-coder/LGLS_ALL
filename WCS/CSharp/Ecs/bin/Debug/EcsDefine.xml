@@ -1,299 +1,132 @@
-ï»¿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="euc-kr"?>
 <ECS>
-	<Equipment class="CCvXgt" thread="01" number="1" device="CV_E01">
+	<Equipment class="CCv" thread="01" number="1" device="CV_E01">
 		<Tracks plcno="01" cid="17110100" FirstTrack="101">
-			<Track	number="101">
-        <Status>
-          <StoStation name="WC ìž…ê³ ëŒ€" id="101"/>
-		  <RetStation name="WC ì¶œê³ ëŒ€" id="101"/>
-        </Status>
-      </Track>
-      <Track	number="102"/>	
-      <Track	number="103">	
-        <Status>
-          <ArvStation name="SizeChecker" id="103"/>
-        </Status>
-      </Track>
-	    <Track	number="104">	
-        <Status>
-          <ArvStation name="WeightChecker" id="104"/>
-        </Status>
-      </Track>
-	    <Track	number="105"/>	
-	    <Track	number="106"/>
-      <Track	number="107">
-        <Status>
-          <StoStation name="DPMG ï¿½Ô°ï¿½ï¿½ï¿½" id="107"/>
-          <RetStation name="DPMG ì¶œê³ ëŒ€" id="107"/>
-        </Status>
-      </Track>
-      <Track	number="108">
-        <Status>
-          <StoStation name="ï¿½Üºï¿½ ï¿½Ô°ï¿½ï¿½ï¿½" id="108"/>
-          <RetStation name="ì™¸ë¶€ ì¶œê³ ëŒ€" id="108"/>
-        </Status>
-      </Track>
-      <Track	number="109"/>	
-			<Track	number="110"/>	
-			<Track	number="111"/>	
-			<Track	number="112">
-        <Status>
-          <ScStoHS/>
-        </Status>
-      </Track>
-      <Track	number="113">
-        <Status>
-          <ScRetHS/>
-        </Status>
-      </Track>
-      <Track	number="114"/>
-			<Track	number="115"/>	
-			<Track	number="116">
-        <Status>
-          <ScStoHS/>
-        </Status>
-      </Track>
-			<Track	number="117">
-        <Status>
-          <ScRetHS/>
-        </Status>
-      </Track>
-			<Track	number="118"/>	
-			<Track	number="119"/>	
-			<Track	number="120"/>	
-			<Track	number="121"/>	
-			<Track	number="122"/>	
-			<Track	number="123"/>	
-			<Track	number="124"/>	
-			<Track	number="125">
-        <Status>
-          <ArvStation name="SC #4 ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" id="125"/>
-        </Status>
-        <Destination tid="9004" desc="H/Sê´€ë ¨ ìž‘ì—… ê³µì • ë¶ˆê°€ (1036ê´€ë ¨)"/>
-      </Track>
-		<Track	number="126"/>	
-		<Track	number="127"/>	
-		<Track	number="128"/>	
-		<Track	number="129"/>	
-		<Track	number="130"/>	
-		<Track	number="131">
-			<Status>
-				<ScRetHS/>
-			</Status>
-		</Track>
-			<Track	number="132"/>
-			<Track	number="133"/>	
-			<Track	number="134">
-        <Status>
-          <ScStoHS/>
-        </Status>
-      </Track>
-			<Track	number="135"/>	
-			<Track	number="136">
-        <Status>
-          <ScStoHS/>
-          <ScRetHS/>
-        </Status>
-      </Track>
-			<Track	number="137"/>	
-			<Track	number="138"/>	
-			<Track	number="139"/>	
-			<Track	number="140"/>	
-			<Track	number="141"/>	
-			<Track	number="142"/>	
-			<Track	number="143"/>	
-			<Track	number="144"/>	
-			<Track	number="145"/>	
-			<Track	number="146"/>
-			<Track	number="147"/>	
-			<Track	number="148">
+			<Track	number="101"/>
+			<Track	number="102"/>
+		</Tracks>
+		<Tracks plcno="02" cid="17110100" FirstTrack="103">
+			<Track	number="103"/>
+			<Track	number="104"/>
+		</Tracks>
+		<Tracks plcno="03" cid="17110100" FirstTrack="105">
+			<Track	number="105"/>
+			<Track	number="106"/>
+		</Tracks>
+		<Tracks plcno="04" cid="17110100" FirstTrack="107">
+			<Track	number="107"/>
+			<Track	number="108"/>
+		</Tracks>
+		<Tracks plcno="05" cid="17110100" FirstTrack="109">
+			<Track	number="109"/>
+			<Track	number="110"/>
+		</Tracks>
+		<Tracks plcno="06" cid="17110100" FirstTrack="111">
+			<Track	number="111"/>
+			<Track	number="112"/>
+		</Tracks>
+		<Tracks plcno="07" cid="17110100" FirstTrack="113">
+			<Track	number="113"/>
+			<Track	number="114"/>
+		</Tracks>
+		<Tracks plcno="08" cid="17110100" FirstTrack="115">
+			<Track	number="115"/>
+			<Track	number="116"/>
+		</Tracks>
+		<Tracks plcno="09" cid="17110100" FirstTrack="117">
+			<Track	number="117"/>
+			<Track	number="118"/>
+		</Tracks>
+		<Tracks plcno="10" cid="17110100" FirstTrack="119">
+			<Track	number="119"/>
+			<Track	number="120"/>
+		</Tracks>
+		<Tracks plcno="11" cid="17110100" FirstTrack="121">
+			<Track	number="121"/>
+			<Track	number="122">
 				<Status>
-					<RetStation name="ì¶œê³ ëŒ€" id="148"/>
-				</Status>
-			</Track>
-			<Track	number="149">
-				<Status>
-					<StoStation name="MGDP ìž…ê³ ëŒ€" id="149"/>
-				</Status>
-			</Track>
-			<Track	number="150"/>	
-			<Track	number="151">
-        <Status>
-          <RetStation name="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" id="151"/>
-        </Status>
-      </Track>
-      <Track	number="152"/>	
-			<Track	number="153"/>	
-			<Track	number="154">	
-				<Status>
-					<StoStation name="Roll ï¿½Ô°ï¿½ï¿½ï¿½" id="154"/>
-				</Status>
-			</Track>
-			<Track	number="155"/>	
-			<Track	number="156"/>
-			<Track	number="157"/>	
-			<Track	number="158"/>	
-			<Track	number="159"/>	
-			<Track	number="160">
-				<Status>
-					<ScStoHS/>
-				</Status>
-			</Track>
-			<Track	number="161">	
-				<Status>
-					<RetStation name="ï¿½ï¿½ï¿½ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½" id="161"/>
-				</Status>
-			</Track>
-			<Track	number="162"/>
-			<Track	number="163"/>
-			<Track	number="164"/>
-			<Track	number="165"/>
-			<Track	number="166"/>
-			<Track	number="167"/>
-			<Track	number="168"/>
-			<Track	number="169"/>
-			<Track	number="170"/>
-			<Track	number="171">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="172">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#1-1" id="172"/>
-				</Status>
-			</Track>
-			<Track	number="173">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="174">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#1-2" id="174"/>
-				</Status>
-			</Track>
-			<Track	number="175">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="176">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#1-3" id="176"/>
-				</Status>
-			</Track>
-			<Track	number="177">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="178">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#1-4" id="178"/>
-				</Status>
-			</Track>
-			<Track	number="179"/>
-			<Track	number="180"/>
-			<Track	number="181">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="182">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#2-1" id="182"/>
-				</Status>
-			</Track>
-			<Track	number="183">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="184">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#2-2" id="184"/>
-				</Status>
-			</Track>
-			<Track	number="185">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="186">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#2-3" id="186"/>
-				</Status>
-			</Track>
-			<Track	number="187">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="188">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#2-4" id="188"/>
-				</Status>
-			</Track>
-			<Track	number="189"/>
-			<Track	number="190"/>
-			<Track	number="191">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="192">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#3-1" id="192"/>
-				</Status>
-			</Track>
-			<Track	number="193">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="194">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#3-2" id="194"/>
-				</Status>
-			</Track>
-			<Track	number="195">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="196">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#3-3" id="196"/>
-				</Status>
-			</Track>
-			<Track	number="197">
-				<Status>
-					<ScRetHS/>
-				</Status>
-			</Track>
-			<Track	number="198">
-				<Status>
-					<RetStation name="ï¿½Ñ¸ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½#3-4" id="198"/>
+					<StoStation name="ÀÔÃâ°í´ë (TR#22)" id="122"/>
+					<RetStation name="ÀÔÃâ°í´ë (TR#22)" id="122"/>
 				</Status>
 			</Track>
 		</Tracks>
+		<Tracks plcno="12" cid="17110100" FirstTrack="123">
+			<Track	number="123"/>
+			<Track	number="124">
+				<Status>
+					<RetStation name="Ãâ°í´ë (TR#24)" id="124"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="13" cid="17110100" FirstTrack="125">
+			<Track	number="125"/>
+			<Track	number="126">
+				<Status>
+					<StoStation name="ÀÔ°í´ë (TR#26)" id="126"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="14" cid="17110100" FirstTrack="127">
+			<Track	number="127"/>
+			<Track	number="128"/>
+			<Track	number="129">
+				<Status>
+					<RetStation name="Ãâ°í´ë (TR#29)" id="129"/>
+				</Status>
+			</Track>
+		</Tracks>
+		<Tracks plcno="15" cid="17110100" FirstTrack="130">
+			<Track	number="130">
+				<Status>
+					<StoStation name="ÀÔ°í´ë (TR#30)" id="130"/>
+				</Status>
+			</Track>
+			<Track	number="131"/>
+			<Track	number="132"/>
+		</Tracks>
 	</Equipment>
-
+	
 	<Equipment class="CSc" thread="01" number="2" device="SC_E01">
 		<Scs>
 			<Sc plcno="01" number="901">
-				<ScStation name="S/C#1" bankpos="1" bank="2" bay="48" level="20"/>
+				<ScStation name="S/C#1" bankpos="1" bank="2" bay="10" level="5"/>
 			</Sc>
 			<Sc plcno="02" number="902">
-				<ScStation name="S/C#2" bankpos="1" bank="2" bay="48" level="20"/>
+				<ScStation name="S/C#2" bankpos="1" bank="2" bay="10" level="5"/>
 			</Sc>
 			<Sc plcno="03" number="903">
-				<ScStation name="S/C#3" bankpos="1" bank="2" bay="48" level="20"/>
+				<ScStation name="S/C#3" bankpos="1" bank="2" bay="10" level="5"/>
 			</Sc>
 			<Sc plcno="04" number="904">
-				<ScStation name="S/C#4" bankpos="1" bank="2" bay="48" level="20"/>
+				<ScStation name="S/C#4" bankpos="1" bank="2" bay="10" level="5"/>
+			</Sc>
+			<Sc plcno="05" number="905">
+				<ScStation name="S/C#5" bankpos="1" bank="2" bay="10" level="5"/>
 			</Sc>
 		</Scs>
+	</Equipment>
+	<Equipment class="CRtv" thread="01" number="4" device="RTV_E01">
+		<Rtvs>
+			<Rtv plcno="01" number="801">
+				<Position>
+					<Pos plc="0" view="0" desc="Home"/>
+					<Pos plc="1" view="1" desc="TR# 01"/>
+					<Pos plc="2" view="2" desc="TR# 23"/>
+          <Pos plc="3" view="3" desc="TR# 03"/>
+          <Pos plc="4" view="3" desc="TR# 25"/>
+          <Pos plc="5" view="4" desc="TR# 05"/>
+          <Pos plc="6" view="6" desc="TR# 07"/>
+          <Pos plc="7" view="6" desc="TR# 27"/>
+          <Pos plc="8" view="7" desc="TR# 09"/>
+          <Pos plc="9" view="9" desc="TR# 11"/>
+					<Pos plc="10" view="9" desc="TR# 31"/>
+					<Pos plc="11" view="10" desc="TR# 13"/>
+          <Pos plc="12" view="12" desc="TR# 15"/>
+          <Pos plc="13" view="13" desc="TR# 17"/>
+          <Pos plc="14" view="15" desc="TR# 19"/>
+          <Pos plc="15" view="17" desc="TR# 21"/>
+				</Position>
+			</Rtv>
+		</Rtvs>
 	</Equipment>
 </ECS>

@@ -135,9 +135,18 @@ namespace DciLib.Controls
             if (BExist)
                 DrawCornerDots(dc, rect, g, s);
 
-            // ─── Text ────────────────────────────────────────────────
-            DrawCenteredText(dc, rect, DciColor.ToBrush(FgColorHex, Colors.Black));
+            // ─── Text (창고 모니터링 모드: 0=작업번호, 1=트랙번호, 2=제품정보) ─
+            string disp = master.TrackTextMode switch
+            {
+                0 => LuggNum > 0 ? LuggNum.ToString() : "",           // 작업번호(적재 화물)
+                2 => string.IsNullOrEmpty(ProductInfo) ? Text : ProductInfo, // 제품정보
+                _ => Text,                                            // 트랙번호(XML 라벨)
+            };
+            DrawCenteredText(dc, rect, DciColor.ToBrush(FgColorHex, Colors.Black), null, disp);
         }
+
+        // 제품정보 표시용(런타임 업데이트). 없으면 트랙 라벨 사용.
+        public string ProductInfo { get; set; } = string.Empty;
 
         private static void DrawCornerDots(DrawingContext dc, Rect rc, double g, double s)
         {

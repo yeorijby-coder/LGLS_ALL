@@ -21,6 +21,15 @@ namespace Ecs
         public EcsLogger   Logger   { get; } = new EcsLogger();
         public JobManager  Jobs     { get; } = new JobManager();
         public EcsDefine?  Define   { get; private set; }
+        public Ecs.Db.EcsDb? Db     { get; private set; }   // JOB_MST DB 연동(미접속 시 null 아님, IsConnected=false)
+        public Ecs.Db.CommonCode Codes { get; } = new();    // COMMON_CODE 코드→한글 캐시
+
+        /// <summary>JOB_TYP 코드 → 한글명 (COMMON_CODE).</summary>
+        public string JobTypName(string code)    => Codes.GetName("JOB_TYP", code, Config.WhTyp);
+        /// <summary>JOB_STATUS 코드 → 한글명 (COMMON_CODE).</summary>
+        public string JobStatusName(string code) => Codes.GetName("JOB_STATUS", code, Config.WhTyp);
+        /// <summary>WH_TYP 코드 → 한글명.</summary>
+        public string WhTypName(string code)     => Codes.GetName("WH_TYP", code, Config.WhTyp);
 
         // ─── 장비 배열 ───────────────────────────────────────────────
         public EquipmentArray CvArray  { get; } = new();
@@ -42,6 +51,9 @@ namespace Ecs
         public SystemMode    Mode         { get; private set; } = SystemMode.Offline;
         public ControlState  CtrlState    { get; private set; } = ControlState.Init;
         public EquipmentState SysState    { get; private set; } = EquipmentState.Normal;
+
+        // 트랙 텍스트 표시 모드 (C++ m_nTrackTextMode 대응: 0=작업번호,1=트랙번호,2=제품정보)
+        public int           TrackTextMode { get; set; } = 1;
 
         // ─── 이벤트 ─────────────────────────────────────────────────
         public event EventHandler<Cv>?  CvStatusChanged;
@@ -81,6 +93,17 @@ namespace Ecs
 
                 // 모니터 서버 시작
                 MonitorSv.Start(Config.MulticastGroup, Config.MulticastPort);
+
+                // DB(JOB_MST) 연결 (실패해도 앱은 계속 — 인메모리 폴백)
+                Db = new Ecs.Db.EcsDb(Config.DbServer, Config.DbDatabase, Config.DbUser, Config.DbPassword);
+                if (Db.TestConnect())
+                {
+                    Log($"DB 연결됨: {Config.DbServer}/{Config.DbDatabase}");
+                    if (Db.LoadCommonCodes(Codes))
+                        Log($"COMMON_CODE 로드: {Codes.Count}건");
+                }
+                else
+                    Log($"DB 연결 실패(인메모리 동작): {Db.LastError}");
 
                 // Job 백업 복원
                 RestoreJobs();
@@ -150,10 +173,43 @@ namespace Ecs
 
         public bool AddJob(Job.JobItem job)
         {
+            // 표시용 코드/한글명 채우기 (신규 작업 = JOB_STATUS '99')
+            job.RawJobTyp    = Ecs.Db.EcsDb.JobTypCode(job.JobType);
+            job.RawJobStatus = "99";
+            job.JobTypeName  = JobTypName(job.RawJobTyp);
+            job.StatusName   = JobStatusName(job.RawJobStatus);
+
             if (!Jobs.Add(job)) return false;
             Log($"Job 추가: Lugg={job.LuggNum} Type={job.JobType}");
+
+            // DB(JOB_MST) 연동: 접속되어 있으면 INSERT (실패해도 인메모리는 유지)
+            if (Db != null)
+            {
+                if (Db.InsertJob(job, Config.WhTyp))
+                    Log($"JOB_MST INSERT: Lugg={job.LuggNum}");
+                else
+                    Log($"JOB_MST INSERT 실패: {Db.LastError}");
+            }
+
             DispatchJob(job);
             return true;
+        }
+
+        /// <summary>DB(JOB_MST)에서 작업 목록을 읽어 JobManager를 갱신한다. 접속 시에만 동작.</summary>
+        public int LoadJobsFromDb()
+        {
+            if (Db == null || !Db.TestConnect()) return -1;
+            var rows = Db.SelectJobs(Config.WhTyp);
+            Jobs.Clear();
+            foreach (var j in rows)
+            {
+                // COMMON_CODE 코드 → 한글명 변환
+                j.JobTypeName = JobTypName(j.RawJobTyp);
+                j.StatusName  = JobStatusName(j.RawJobStatus);
+                Jobs.Add(j);
+            }
+            Log($"JOB_MST 로드: {rows.Count}건");
+            return rows.Count;
         }
 
         private void DispatchJob(Job.JobItem job)

@@ -11,6 +11,14 @@ namespace Ecs.Views
         private readonly ObservableCollection<LogRowVm> _rows = new();
         private int _filterLevel = -1;
         private string _filterText = string.Empty;
+        private string _filterCategory = string.Empty;
+
+        /// <summary>로그 종류(카테고리)별 필터. 빈 문자열이면 전체. C++ 로그 5종 분리 대응.</summary>
+        public void SetCategoryFilter(string category)
+        {
+            _filterCategory = category ?? string.Empty;
+            Refresh();
+        }
 
         public LogView()
         {
@@ -31,6 +39,8 @@ namespace Ecs.Views
         private void AddEntry(LogEntry entry)
         {
             if (_filterLevel >= 0 && (int)entry.Level < _filterLevel) return;
+            if (!string.IsNullOrEmpty(_filterCategory) &&
+                !entry.Category.Equals(_filterCategory, StringComparison.OrdinalIgnoreCase)) return;
             if (!string.IsNullOrEmpty(_filterText) &&
                 !entry.Message.ToLower().Contains(_filterText.ToLower())) return;
 

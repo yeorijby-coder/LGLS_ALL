@@ -26,6 +26,9 @@ namespace DciLib
         public double ScreenWidth  { get; private set; } = 800;
         public double ScreenHeight { get; private set; } = 600;
 
+        // 트랙 텍스트 표시 모드 (C++ m_nTrackTextMode: 0=작업번호,1=트랙번호,2=제품정보)
+        public int TrackTextMode { get; set; } = 1;
+
         // ─── 스케일 (줌) ─────────────────────────────────────────────
         public double ScaleX { get; private set; } = 1.0;
         public double ScaleY { get; private set; } = 1.0;

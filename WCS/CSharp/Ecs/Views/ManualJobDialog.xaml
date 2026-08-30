@@ -1,0 +1,130 @@
+<Window x:Class="Ecs.Views.ManualJobDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="수동 작업 (Manual JOB)"
+        Width="560" Height="560"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Malgun Gothic" FontSize="12"
+        Background="#FF0D1B2A">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#FFDDE8F0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="24"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="수동 작업 생성 (C++ CManualJob 대응)" FontSize="14" FontWeight="Bold"
+                   Foreground="#FF00AAFF" Margin="0,0,0,10"/>
+
+        <!-- 입력 폼 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34"/>
+                <RowDefinition Height="34"/>
+                <RowDefinition Height="34"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="창고(WH_TYP)"/>
+            <ComboBox  Grid.Row="0" Grid.Column="1" x:Name="CbWh" SelectedIndex="0" Margin="0,4,10,4">
+                <ComboBoxItem>10</ComboBoxItem>
+                <ComboBoxItem>20</ComboBoxItem>
+            </ComboBox>
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="작업유형"/>
+            <ComboBox  Grid.Row="0" Grid.Column="3" x:Name="CbJobType" SelectedIndex="0" Margin="0,4,0,4">
+                <ComboBoxItem>입고 (Store)</ComboBoxItem>
+                <ComboBoxItem>출고 (Retrieve)</ComboBoxItem>
+                <ComboBoxItem>랙간이동 (RackToRack)</ComboBoxItem>
+                <ComboBoxItem>HS간이동 (HsToHs)</ComboBoxItem>
+            </ComboBox>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="작업번호"/>
+            <TextBox   Grid.Row="1" Grid.Column="1" x:Name="TxtLugg" Text="1001" Margin="0,4,10,4"/>
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="수량"/>
+            <TextBox   Grid.Row="1" Grid.Column="3" x:Name="TxtCnt" Text="1" Margin="0,4,0,4"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="우선순위"/>
+            <TextBox   Grid.Row="2" Grid.Column="1" x:Name="TxtPriority" Text="0" Margin="0,4,10,4"/>
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="바코드"/>
+            <TextBox   Grid.Row="2" Grid.Column="3" x:Name="TxtBarcode" Margin="0,4,0,4"/>
+        </Grid>
+
+        <!-- 출발지 / 목적지 -->
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" BorderBrush="#FF2A4A6A" BorderThickness="1" Margin="0,0,4,0" Padding="8">
+                <StackPanel>
+                    <TextBlock Text="출발지 (Src)" FontWeight="Bold" Foreground="#FF90C0FF" Margin="0,0,0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="스테이션 " Width="60"/><TextBox x:Name="TxtSrcSta" Text="1" Width="60"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="행 " Width="60"/><TextBox x:Name="TxtSrcRow" Text="0" Width="60"/>
+                        <TextBlock Text="  열 "/><TextBox x:Name="TxtSrcCol" Text="0" Width="60"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" BorderBrush="#FF2A4A6A" BorderThickness="1" Margin="4,0,0,0" Padding="8">
+                <StackPanel>
+                    <TextBlock Text="목적지 (Dst)" FontWeight="Bold" Foreground="#FF90C0FF" Margin="0,0,0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="스테이션 " Width="60"/><TextBox x:Name="TxtDstSta" Text="1" Width="60"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="행 " Width="60"/><TextBox x:Name="TxtDstRow" Text="0" Width="60"/>
+                        <TextBlock Text="  열 "/><TextBox x:Name="TxtDstCol" Text="0" Width="60"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 버튼 -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
+            <Button x:Name="BtnAdd"   Content="작업 추가" Click="BtnAdd_Click"   Background="#FF1E5A2E" Foreground="White"/>
+            <Button x:Name="BtnClear" Content="초기화"    Click="BtnClear_Click" Background="#FF6A5A1E" Foreground="White"/>
+        </StackPanel>
+
+        <!-- 현재 작업 목록 -->
+        <Border Grid.Row="4" BorderBrush="#FF2A4A6A" BorderThickness="1" Margin="0,10,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="현재 작업" Background="#FF002244" Foreground="White"
+                           FontWeight="Bold" Padding="6,3"/>
+                <TextBlock x:Name="TxtJobs" DockPanel.Dock="Top" Margin="8" TextWrapping="Wrap"
+                           Foreground="#FFAACCEE" VerticalAlignment="Top"/>
+            </DockPanel>
+        </Border>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <TextBlock x:Name="TxtCount" Text="작업 수: 0" FontWeight="Bold" Margin="0,0,16,0"/>
+            <Button Content="닫기" Click="BtnClose_Click" Width="70"/>
+        </StackPanel>
+    </Grid>
+</Window>

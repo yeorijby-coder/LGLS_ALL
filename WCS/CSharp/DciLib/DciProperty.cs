@@ -30,9 +30,12 @@ namespace DciLib
             {
                 try
                 {
-                    byte r = Convert.ToByte(hex.Substring(0, 2), 16);
+                    // C++ CConvert::ToColor는 hex를 COLORREF(0x00BBGGRR)로 파싱한다.
+                    // 즉 XML "RRGGBB" 문자열은 실제로 B/G/R 순(첫바이트=B, 끝바이트=R).
+                    // C++와 동일하게 R/B를 스왑해서 읽는다.
+                    byte b = Convert.ToByte(hex.Substring(0, 2), 16);
                     byte g = Convert.ToByte(hex.Substring(2, 2), 16);
-                    byte b = Convert.ToByte(hex.Substring(4, 2), 16);
+                    byte r = Convert.ToByte(hex.Substring(4, 2), 16);
                     return Color.FromRgb(r, g, b);
                 }
                 catch { }

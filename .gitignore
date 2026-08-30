@@ -46,7 +46,12 @@ eqp_state.txt
 # 수작업 백업 파일 (이제 git 이 이력을 관리)
 *bak
 *.bak
+*.bak*
 *.orig
+
+# Client 크래시 산출물 (재현 불가·대용량, 보관 가치 없음)
+*.RPT
+*.dmp
 
 # 임시 파일
 *.tmp
@@ -58,3 +63,6 @@ Thumbs.db
 *.7z
 *.rar
 *.map
+
+# 폐기 트리 (2026-08-14 C# 클라이언트 시도, 보관만)
+WCS/_TRASH_CSharp_LGLS_CLIENT_20260814/

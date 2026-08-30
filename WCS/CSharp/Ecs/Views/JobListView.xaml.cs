@@ -71,10 +71,13 @@ namespace Ecs.Views
         public JobRowVm(JobItem job)
         {
             LuggNum       = job.LuggNum;
-            JobTypeStr    = job.JobType.ToString();
-            StatusStr     = job.Status.ToString();
-            SrcStr        = $"ST{job.SrcStation}";
-            DstStr        = $"ST{job.DstStation} R{job.DstRow}C{job.DstCol}";
+            // COMMON_CODE 한글명 우선(DB 로드 시), 없으면 enum
+            JobTypeStr    = !string.IsNullOrEmpty(job.JobTypeName) ? job.JobTypeName : job.JobType.ToString();
+            StatusStr     = !string.IsNullOrEmpty(job.StatusName)  ? job.StatusName  : job.Status.ToString();
+            // DB 로드 작업은 위치가 TrayId("출발 → 도착")에 있음
+            bool fromDb   = !string.IsNullOrEmpty(job.RawJobTyp);
+            SrcStr        = fromDb && job.TrayId.Contains("→") ? job.TrayId.Split('→')[0].Trim() : $"ST{job.SrcStation}";
+            DstStr        = fromDb && job.TrayId.Contains("→") ? job.TrayId.Split('→')[1].Trim() : $"ST{job.DstStation} R{job.DstRow}C{job.DstCol}";
             ScIndex       = job.ScIndex;
             CreateTimeStr = job.CreateTime.ToString("MM-dd HH:mm:ss");
         }

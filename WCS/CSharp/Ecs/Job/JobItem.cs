@@ -28,6 +28,12 @@ namespace Ecs.Job
         public int    Priority   { get; set; } = 0;
         public int    Sequence   { get; set; }
 
+        // DB(JOB_MST) 원본 코드 + COMMON_CODE 변환 한글명 (표시용)
+        public string RawJobTyp    { get; set; } = string.Empty;
+        public string RawJobStatus { get; set; } = string.Empty;
+        public string JobTypeName  { get; set; } = string.Empty;
+        public string StatusName   { get; set; } = string.Empty;
+
         // ─── 트레이 정보 ───────────────────────────────────────────
         public TrayInfo Tray     { get; set; } = new TrayInfo();
         public int    CrateKind  { get; set; }
