@@ -1,4 +1,4 @@
-using EQP_SIM.Core;
+﻿using EQP_SIM.Core;
 
 namespace EQP_SIM.Core
 {

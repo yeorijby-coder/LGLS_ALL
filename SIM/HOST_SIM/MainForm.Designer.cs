@@ -1,4 +1,4 @@
-namespace HOST_SIM
+﻿namespace HOST_SIM
 {
     partial class MainForm
     {

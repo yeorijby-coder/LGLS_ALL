@@ -1,4 +1,4 @@
-namespace WCS_TASK_CV
+﻿namespace WCS_TASK_CV
 {
     partial class FRM_XML_FIELD_SYNC
     {

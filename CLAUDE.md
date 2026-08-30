@@ -67,7 +67,11 @@ Client(Ecs) ──────────────────────�
 | `Ecs.rc` | **UTF-16** | |
 | `EcsView.cpp` | UTF-8 BOM | 같은 폴더인데 다르다 — 열기 전 확인 |
 | `rc_resource/**/*.ini` | UTF-16 | 다국어 4섹션 `kor/eng/chin/hun` |
-| TASK C# | UTF-8 | Edit 도구 사용 가능 |
+| TASK C# / SIM C# | **UTF-8 BOM** | Edit 도구 사용 가능 |
+
+줄끝은 **전부 CRLF** 로 통일했다(2026-08-30). 도구가 "줄 끝을 정규화할까요?" 를 묻지
+않게 하기 위함이다. `.gitattributes` 에 `* -text` 를 두어 git 도 변환하지 않는다.
+새 파일도 CRLF + (C#이면) BOM 으로 쓴다.
 
 **파일 쓰기는 반드시 인코딩을 먼저 검증한 뒤 연다.**
 `open(p,'w')` 는 즉시 truncate 하므로, encode 실패 시 **0바이트로 날아간다**.

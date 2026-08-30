@@ -56,6 +56,11 @@ namespace TSK_COMM_IOSCH
             //MainThread가 시작되었다는것을 나타내는 Bool값.
 			cDefApp.GM_STAT_MAIN = true;
 
+			// [LGLS 2026-08-30] 자동 청소/복구 스위치를 ini 에서 읽어 화면과 맞춘다.
+			//   ENV_IOSCH.INI [CNF] SWEEP_RECOVER_ENABLE (1=사용, 0=끔)
+			cDefApp.GM_SWEEP_RECOVER = (cDefApi.GsReadInitProfileCnf("SWEEP_RECOVER_ENABLE", 1) != 0);
+			chkSweepRecover.Checked   = cDefApp.GM_SWEEP_RECOVER;
+
 			// [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
 			WcsCommon.cLogCols.Attach(lsvR);
 
@@ -102,6 +107,21 @@ namespace TSK_COMM_IOSCH
 			WrkThStart();   // @.스레드 시작
 			Thread_Timer.Enabled = true;
 		}
+
+		// [LGLS 2026-08-30] 자동 청소/복구 사용 여부 토글.
+		//   RecoverOutOrphans + Sweep 3종(흔적/트래킹/RTV 완료신호)을 한 번에 켜고 끈다.
+		//   끄면 스케줄러가 상태를 건드리지 않으므로 디버그 중 현장 상태를 붙잡아 둘 수 있다.
+		//   바꾼 값은 ini 에 남겨 다음 기동에도 유지한다.
+		private void chkSweepRecover_CheckedChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				cDefApp.GM_SWEEP_RECOVER = chkSweepRecover.Checked;
+				cDefApi.GsWriteInitProfileCnf("SWEEP_RECOVER_ENABLE", chkSweepRecover.Checked ? 1 : 0);
+			}
+			catch { }
+		}
+
 		#endregion
 
 		#region Thread 동작상태를 가져온다.

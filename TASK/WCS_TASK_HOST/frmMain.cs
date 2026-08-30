@@ -157,11 +157,16 @@ int i;
 				g_thrLogThreadObj[i].Start();
 			}
 
-			// [LGLS] 적용 중인 IMS 스테이션 코드 해석 기준을 기동 시 1회 로그에 남긴다.
-            //        (INI [Host]StationMapMode = ECS | WMS, 상세는 modStationMap.cs 참조)
-            modStationMap.LoadFromIni();
-            modCmWork.ShowMsgServer(modStationMap.DumpMap(), modDefApp.MSG_NOR);
-
+			// [LGLS] 적용 중인 IMS 스테이션 코드 해석 기준을 기동 시 1회 로그에 남긴다.
+
+            //        (INI [Host]StationMapMode = ECS | WMS, 상세는 modStationMap.cs 참조)
+
+            modStationMap.LoadFromIni();
+
+            modCmWork.ShowMsgServer(modStationMap.DumpMap(), modDefApp.MSG_NOR);
+
+
+
 			modDefApp.g_blListenThread = true;
 			modDefApp.g_blSrvThread = false;
 

@@ -17,6 +17,10 @@ namespace TSK_COMM_IOSCH
         [DllImport("kernel32.dll")]
         static extern uint GetPrivateProfileString(string lpAppName, string lpKeyName, string lpDefault, StringBuilder lpReturnedString, int nSize, string lpFileName);
 
+        // [LGLS 2026-08-30] INI 쓰기 - 화면에서 바꾼 설정을 다음 기동까지 남긴다.
+        [DllImport("kernel32.dll")]
+        static extern bool WritePrivateProfileString(string lpAppName, string lpKeyName, string lpString, string lpFileName);
+
         // @@@.GsGetInitPorFileDB
         public static void GsGetInitPorFileDB(ref string pHost,
                                               ref string pServiceName,
@@ -286,6 +290,17 @@ namespace TSK_COMM_IOSCH
                 pRtnMsg = ex.Message;
             }
             pRtnMsg = "[GsReadInitProfileDelay]Error::" + pRtnMsg;
+        }
+
+        // [LGLS 2026-08-30] @@@.GsWriteInitProfileCnf : [CNF] 섹션 정수 설정 쓰기.
+        public static bool GsWriteInitProfileCnf(string pKey, int pVal)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(cDefApp.GM_ENV_INI)) return false;
+                return WritePrivateProfileString("CNF", pKey, pVal.ToString(), cDefApp.GM_ENV_INI);
+            }
+            catch { return false; }
         }
 
         // [LGLS] @@@.GsReadInitProfileCnf : [CNF] 섹션 정수 설정 읽기 (예: SC_AUTO_COMPLETE)

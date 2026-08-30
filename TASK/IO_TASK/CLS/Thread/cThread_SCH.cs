@@ -345,9 +345,15 @@ namespace TSK_COMM_IOSCH
                     CompleteCV();   // 15 → 19(출고 최종) / 20(입고 → SC 처리 인계)
                     CheckLostInboundCargo();   // [LGLS 2026-07-31] 입고 15 화물 유실 감지 → 재발행(10) 복구
                     CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
-                    SweepOrphanTraces();       // [LGLS 2026-08-22] 사라진 작업의 라인 선점/타이머 흔적 청소
-                    SweepStaleTracking();      // [LGLS 2026-08-23] 화물 없는 트랙에 남은 유령 트래킹(PLC R영역) 청소
-                    SweepStaleRtvComplete();   // [LGLS 2026-08-24] 소비자 없는 RTV 완료신호 해제(RTV 교착 방지)
+                    // [LGLS 2026-08-30] 자동 청소/복구 : SYS_MAIN 체크박스로 통째로 끌 수 있다.
+                    //   (ENV_IOSCH.INI [CNF] SWEEP_RECOVER_ENABLE)
+                    //   끄면 스케줄러가 흔적을 지우지 않으므로 디버그 중 상태를 붙잡아 둘 수 있다.
+                    if (cDefApp.GM_SWEEP_RECOVER)
+                    {
+                        SweepOrphanTraces();       // [LGLS 2026-08-22] 사라진 작업의 라인 선점/타이머 흔적 청소
+                        SweepStaleTracking();      // [LGLS 2026-08-23] 화물 없는 트랙에 남은 유령 트래킹(PLC R영역) 청소
+                        SweepStaleRtvComplete();   // [LGLS 2026-08-24] 소비자 없는 RTV 완료신호 해제(RTV 교착 방지)
+                    }
                     PromotePendingDirection();  // [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격
                     if (!m_bScAutoComplete)
                     {
@@ -382,7 +388,7 @@ namespace TSK_COMM_IOSCH
                         DriveRGV();                         // 30 → 35 즉시
                     }
 
-                    RecoverOutOrphans();
+                    if (cDefApp.GM_SWEEP_RECOVER) RecoverOutOrphans();   // [LGLS 2026-08-30] 자동 청소/복구 스위치
                     ProcessOutPend();   // 출고대 반출 대기열 → 반출 경로 비면 다음 화물 투입(FIFO)
                     if (!m_bScAutoComplete)
                         ProcessOutStnReal();  // [실경로] 반출 = RTV Vehicle 지시 1건 + 완료 대기 (이동·배출은 설비)
@@ -655,9 +661,12 @@ namespace TSK_COMM_IOSCH
             {
                 string q = "";
                 q += CRLF + " UPDATE JM                                                     ";
-                q += CRLF + "    SET JM.JOB_STATUS  = '22'                                  ";
-                // [LGLS 2026-08-30] 도착보고(22)는 HOST_TASK IsJobExist 가 HS_TRACK_NO 를 읽는다.
-                //   비워두면 보고 구성에서 값이 없어 보고가 나가지 못한다 - 도착한 출고대 트랙을 채운다.
+                q += CRLF + "    SET JM.JOB_STATUS  = '19'                                  ";
+                // [LGLS 2026-08-30] ★22 폐기★ - 코드표에 없는 상태였다(사용자 지시).
+                //   출고대 도착 = 출고 최종 완료로 본다. 19(CV 구동완료)로 올리면
+                //   HOST_TASK.GetJobCompleteReport 가 F(완료) 보고 → 09(완료) → 응답 → 삭제로 이어간다.
+                //   HS_TRACK_NO : HOST_TASK IsJobExist 가 읽는다. 비워두면 보고 구성에서
+                //   값이 없어 보고가 나가지 못한다 - 도착한 출고대 트랙을 채운다.
                 q += CRLF + "      , JM.HS_TRACK_NO = JM.DEST_POS                            ";
                 q += CRLF + "      , JM.UPD_DT      = " + DbLang.SYSDATE + "                ";
                 q += CRLF + "      , JM.UPD_USER_ID = '" + OD_USER + "'                     ";
@@ -677,7 +686,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 int n = DbNonQry(q);
                 if (n > 0)
-                    MakeMsg_Imp(string.Format("[SCH][CV] 출고대 도착 - {0}건 상위 도착보고 대상(상태 '22')으로 전환", n));
+                    MakeMsg_Imp(string.Format("[SCH][CV] 출고대 도착 - {0}건 출고 완료(19)로 전환 → 상위 완료보고", n));
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][CV] ReportOutStationArrival 오류: " + ex.Message); }
         }

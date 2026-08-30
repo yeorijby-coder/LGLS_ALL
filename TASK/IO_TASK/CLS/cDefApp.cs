@@ -75,6 +75,12 @@ namespace TSK_COMM_IOSCH
         public static bool  GM_STAT_MAIN = false;  // @.전체 시스템 운전 상태[운전 시스템이 운전 되면 전체 운전!]
         public static bool GM_RE_START = false;
 
+        // [LGLS 2026-08-30] 자동 청소/복구 사용 여부 (SYS_MAIN 체크박스 / ENV_IOSCH.INI [CNF] SWEEP_RECOVER_ENABLE)
+        //   묶이는 대상 : RecoverOutOrphans, SweepOrphanTraces, SweepStaleTracking, SweepStaleRtvComplete
+        //   끄면 스케줄러가 흔적을 지우지도, 고아 화물을 되살리지도 않는다.
+        //   ★디버그로 상태를 붙잡아 두고 볼 때 쓴다★ - 평상시에는 켜 둔다.
+        public static bool GM_SWEEP_RECOVER = true;
+
         public static bool GM_SND_MES = false;  // @.전체 시스템 운전 상태[운전 시스템이 운전 되면 전체 운전!]
 
 

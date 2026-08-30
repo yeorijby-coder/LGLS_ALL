@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using HOST_SIM.Protocol;
 
 namespace HOST_SIM.Logic
