@@ -624,8 +624,12 @@ namespace EQP_SIM.Sim
                 int outPort = Def.OutgoPath[Def.OutgoPath.Length - 1];
                 int outIdx = Def.OrderOf(outPort);
                 SimPallet p;
-                if (Pallets.TryGetValue(outIdx, out p) && p.Dir == FlowDir.Outgo &&
-                    !string.IsNullOrEmpty(p.Id))
+                // [LGLS 2026-08-30] 신호와 같은 기준으로 판정한다 — 화물 + 데이터(작업번호).
+                //   시뮬 내부 플래그 p.Dir 조건을 빼는 이유 : 출고대 신호(OutSignalAt)는 이미
+                //   "이 자리에 데이터 붙은 화물이 서 있다" 를 뜻하고, 그 신호가 서야만 아래 반출이
+                //   시작된다. p.Dir 이 한 번 어긋나면 신호는 서는데 반출만 영영 안 되는 상태가 된다
+                //   (실측: 작업 0113 이 122 에서 ret_ready_rd=1 인 채로 배출되지 않고 겸용대를 막음).
+                if (Pallets.TryGetValue(outIdx, out p) && !string.IsNullOrEmpty(p.Id))
                 {
                     if (!p.Discharged)
                     {
