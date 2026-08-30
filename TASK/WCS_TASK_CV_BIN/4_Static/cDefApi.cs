@@ -244,6 +244,26 @@ namespace WCS_TASK_CV
         {
             WritePrivateProfileString("PLC", "R_ADDR_MODE", pHex ? "HEX" : "DEC", cDefApp.GM_ENV_INI);
         }
+
+        /// <summary>
+        /// [LGLS 2026-08-30] 설비 에러이력(EQP_ERR_HIS)에 남길 EQP_TYP — [CNF] SC_ERR_TYP / RTV_ERR_TYP.
+        ///   Client 설비에러이력 창이 이 값으로 EQP_ECD_MST 를 조인해 메시지를 표시한다.
+        ///   크레인 기본 'SC_SFA'(현장 SFA 코드표 = 이중입고/공출고 정의 보유).
+        /// </summary>
+        public static void GsReadInitProfileErrCodeTyp(ref string pScTyp, ref string pRtvTyp)
+        {
+            pScTyp = "SC_SFA";
+            pRtvTyp = "RTV";
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI)) return;
+
+            StringBuilder sb = new StringBuilder(64);
+            GetPrivateProfileString("CNF", "SC_ERR_TYP", "SC_SFA", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            if (sb.ToString().Trim().Length > 0) pScTyp = sb.ToString().Trim();
+
+            sb = new StringBuilder(64);
+            GetPrivateProfileString("CNF", "RTV_ERR_TYP", "RTV", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            if (sb.ToString().Trim().Length > 0) pRtvTyp = sb.ToString().Trim();
+        }
         #endregion
 
         #region [COMM]::설비통신 접속정보

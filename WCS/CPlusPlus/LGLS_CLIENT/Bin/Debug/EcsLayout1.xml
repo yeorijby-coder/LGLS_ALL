@@ -215,7 +215,7 @@
 				<Item shape="4" color="808080" gl="20" gt="20" gr="20" gb="20"/>
 			</Control>
 			<Control id="17110125" l="3" b="17" r="4" t="18" text="25" bgmode="2" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="1" col="1">
-				<Item shape="3" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+				<Item shape="2" color="808080" gl="20" gt="20" gr="20" gb="20"/>
 			</Control>
 			<Control id="17110126" l="2" b="17" r="3" t="18" text="26" bgmode="2" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="1" col="1">
 				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
@@ -224,7 +224,7 @@
 				<Item shape="1" color="808080" gl="20" gt="20" gr="20" gb="20"/>
 			</Control>
 			<Control id="17110123" l="3" b="18" r="4" t="19" text="23" bgmode="2" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" prod2="0" row="1" col="1">
-				<Item shape="2" color="808080" gl="20" gt="20" gr="20" gb="20"/>
+				<Item shape="3" color="808080" gl="20" gt="20" gr="20" gb="20"/>
 			</Control>
 		</CDciTrackCtrl>
 	</Group>

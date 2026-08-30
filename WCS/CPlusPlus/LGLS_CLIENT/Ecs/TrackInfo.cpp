@@ -204,12 +204,32 @@ BOOL CTrackInfo::ApplyRetCntDisplay(CDciTrackCtrl* pTrackCtrl)
 	return FALSE;
 }
 
+// [LGLS 2026-08-30] 설비 에러코드가 "에러 없음"인지 판정.
+//   표기 흔들림(0 / 00 / 0000 / 빈 값)을 모두 정상으로 본다. 숫자 0 이면 정상.
+BOOL CTrackInfo::IsNoError(const CString& strErrCode)
+{
+	CString s = strErrCode;
+	s.Trim();
+	if (s.IsEmpty())
+		return TRUE;
+	for (int i = 0; i < s.GetLength(); ++i)
+	{
+		if (s[i] != _T('0'))
+			return FALSE;
+	}
+	return TRUE;		// 전부 '0' 이면 에러 없음
+}
+
 COLORREF CTrackInfo::GetCvColor()
 {
 	CConfig* pConfig = m_pEquipment->m_pDoc->m_pConfig;
 	DEBUGER_ASSERT_VALID(pConfig != NULL);
 
-	if (m_pCV_DATA->V_ERROR_CODE != _T("0"))
+	// [LGLS 2026-08-30] 정상(무에러) 표기가 한 가지가 아니다.
+	//   설비에서 올라오는 실제 값은 CvThread 가 ToString("0000") 로 쓰는 4자리 '0000' 이고,
+	//   구 경로/초기값으로 '0', '00', 빈 값, NULL 도 함께 존재한다.
+	//   종전에는 "0" 하나만 정상으로 보아, 정상인 트랙이 전부 에러색(빨강)으로 그려졌다.
+	if (!IsNoError(m_pCV_DATA->V_ERROR_CODE))
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
 

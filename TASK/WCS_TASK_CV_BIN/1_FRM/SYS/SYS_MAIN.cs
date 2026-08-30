@@ -274,6 +274,11 @@ namespace WCS_TASK_CV
             // [LGLS 2026-07-21] 물리 이관: SC/RTV 통신 스레드 기동 (마스터 PLC = COMM0 IP:2004)
             try
             {
+                // [LGLS 2026-08-30] 설비 에러이력 EQP_TYP 적재 ([CNF] SC_ERR_TYP / RTV_ERR_TYP)
+                string strScErrTyp = "", strRtvErrTyp = "";
+                cDefApi.GsReadInitProfileErrCodeTyp(ref strScErrTyp, ref strRtvErrTyp);
+                VehThread.SetErrCodeTypes(strScErrTyp, strRtvErrTyp);
+
                 string vehIp = string.IsNullOrEmpty(m_strCOMM_IP[0]) ? "127.0.0.1" : m_strCOMM_IP[0];
                 m_thVehSc  = new VehThread("SC",  m_strConnectString, cDefApp.GM_WH_TYP, vehIp, 2004);
                 m_thVehRtv = new VehThread("RTV", m_strConnectString, cDefApp.GM_WH_TYP, vehIp, 2004);

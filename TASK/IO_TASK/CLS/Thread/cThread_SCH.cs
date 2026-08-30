@@ -320,6 +320,7 @@ namespace TSK_COMM_IOSCH
 
                     // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
                     MonitorAlarm();
+                    MarkErrorJobStatus();       // [LGLS 2026-08-30] 이중입고(54)/공출고(58) → 작업상태 반영
 
                     // [LGLS 2026-07-22] 표시용 작업구분 보강(실경로): 클라이언트는 CV_DATA/SC_DATA_LGLS 의
                     //   JOB_TYP_RD 로 입고/출고 색을 칠하는데, 실경로의 설비 관측(CvThread/VehThread)은
@@ -758,7 +759,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "    AND JM.JOB_STATUS      = :ST_WAIT                            ";   // SC 구동대기
                 strSql += CRLF + "    AND SD.ONLINE_MODE_RD  = '1'                                 ";
                 strSql += CRLF + "    AND SD.AUTO_MODE_RD    = '1'                                 ";
-                strSql += CRLF + "    AND SD.ERR_CODE_RD     = '0000'                              ";
+                strSql += CRLF + "    AND (SD.ERR_CODE_RD IS NULL OR SD.ERR_CODE_RD IN ('0','00','0000','')) ";   // [LGLS 2026-08-30] 정상 표기 흔들림(0/00/0000/빈 값) 흡수
                 strSql += CRLF + "    AND SD.ACTIVE_MODE_RD  = '1'                                 ";
                 strSql += CRLF + "    AND SD.UCSTATUS_RD     = '1'                                 ";
                 strSql += CRLF + "    AND SD.ITN_LUGG_FK1    = '0'                                 ";   // 포크 비어있음
@@ -836,6 +837,9 @@ namespace TSK_COMM_IOSCH
                         if (jobTyp == "1") { string _d = RgvDropTrack(destPos); int _n; _wT = int.TryParse(_d, out _n) ? (_n + 1).ToString() : _d; }
                         else _wT = RgvOutDropTrack(startPos);
                         if (IsCvPaused(_wT)) continue;
+                        // [LGLS 2026-08-30] 그 작업이 쓸 라인 트랙(CV)이 에러면 S/C 지시 금지 —
+                        //   에러난 CV 는 움직이지 못하므로 크레인이 화물을 들고 갇힌다.
+                        if (IsCvError(_wT)) continue;
                         if (jobTyp == "2" && !IsTrackEmpty(_wT)) continue;
                         if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv()) continue;
                         if (jobTyp == "1" && IsTrackEmpty(_wT)) continue;
@@ -1025,6 +1029,18 @@ namespace TSK_COMM_IOSCH
 
                     // [LGLS 2026-08-22] 핸드셰이크 최우선 규칙
                     //   출발지 HS(RGV 가 집어갈 준비)와 도착지 HS(RGV 가 내려놓을 준비)가 모두 서야 지시한다.
+                    // [LGLS 2026-08-30] 픽업/드롭 컨베이어가 에러면 RTV 지시 금지 —
+                    //   에러난 CV 는 화물을 내보내지도 받지도 못하므로 RTV 가 그 앞에서 멈춘다.
+                    if (IsCvError(pickupTrack))
+                    {
+                        DbgLog("RGVERR_" + rtvNo, string.Format("[RGV] 보류 - 출발지 CV {0} 에러(작업 {1})", pickupTrack, luggNo));
+                        continue;
+                    }
+                    if (IsCvError(dropTrack))
+                    {
+                        DbgLog("RGVERR_" + rtvNo, string.Format("[RGV] 보류 - 도착지 CV {0} 에러(작업 {1})", dropTrack, luggNo));
+                        continue;
+                    }
                     if (!IsHsOn(pickupTrack, "RTV_DEPARTHS_READY_RD"))
                     {
                         DbgLog("RGVHS_" + rtvNo, string.Format("[RGV] 보류 - 출발지 {0} 출발 HS 신호 없음(작업 {1})", pickupTrack, luggNo));
@@ -2240,6 +2256,35 @@ namespace TSK_COMM_IOSCH
             } catch { return false; }
         }
         /// <summary>CV 트랙 일시정지 여부 (TR_PAUSE_OD/RD='1' — PLC 비트 대신 내부값만 사용)</summary>
+        /// <summary>
+        /// [LGLS 2026-08-30] 해당 컨베이어가 에러 상태인가.
+        ///   에러난 CV 는 움직일 수 없으므로, 그 CV 를 거치는 S/C · RTV 반송 지시도 내리면 안 된다
+        ///   (지시해봐야 화물이 그 트랙에서 멈춰 라인을 막는다).
+        ///   정상 표기는 여러 형태다 — 설비 실값은 CvThread 가 ToString("0000") 로 쓰는 '0000',
+        ///   구 경로/초기값으로 '0','00',빈 값,NULL 도 있다. 전부 정상으로 본다.
+        /// </summary>
+        private bool IsCvError(string track)
+        {
+            try {
+                if (string.IsNullOrEmpty(track)) return false;
+                string q = "";
+                q += CRLF + " SELECT ERROR_CODE          ";
+                q += CRLF + "   FROM CV_DATA             ";
+                q += CRLF + "  WHERE WH_TYP     = :WH    ";
+                q += CRLF + "    AND MC_NO      = :MC    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = track;
+                if (_pBdb.ExcuteQry(q) <= 0) return false;
+                string ec = (GetVal(_pBdb.mDtMain.Rows[0], "ERROR_CODE") ?? "").Trim();
+                if (ec.Length == 0) return false;
+                int n;
+                if (!int.TryParse(ec, out n)) return true;   // 숫자가 아니면 판단 불가 → 보수적으로 에러 취급
+                return n != 0;
+            } catch { return false; }
+        }
+
         private bool IsCvPaused(string track)
         {
             try {
@@ -2322,7 +2367,17 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP              ";
                 q += CRLF + "    AND JOB_TYP    IN ('1','11')           ";
                 q += CRLF + "    AND DEST_POS    = '901'                ";
-                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_WAIT + "','" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";   // [LGLS 2026-08-04] '받았으면' = 구동대기(30)부터 포함
+                // [LGLS 2026-08-30] 구동대기(30)는 제외한다. ★교착 방지 규칙의 핵심★
+                //   SC1 특례는 "출고 우선" 한 방향 우선권이어야 한다. 그런데 종전에는
+                //     · DriveRGV  : 901행 입고 RTV 지시는 SC1 출고가 미종결이면 보류(HasActiveSc1Outbound)
+                //     · DriveSC   : SC1 출고 지시는 입고가 30/31/35 이면 보류(이 함수)
+                //   양쪽이 서로에게 양보해 순환 대기가 된다. [CV#2 교착 TEST] 18건에서 실제로
+                //   입고 2건(30) ↔ 출고 9건(20) 이 5분 이상 완전 정지하는 것을 확인했다.
+                //   30 = "픽업트랙에서 RTV 를 기다리는 중"일 뿐 RTV 가 아직 잡지 않은 상태라
+                //   양보 사유가 되지 않는다. 실제 라인 점유는 31/35 부터이고, 하역트랙 물리 점유는
+                //   DriveSC 의 !IsTrackEmpty(_wT) 가 따로 막는다.
+                //   ~~[LGLS 2026-08-04] '받았으면' = 구동대기(30)부터 포함~~ (교착 유발로 철회)
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -3581,6 +3636,66 @@ namespace TSK_COMM_IOSCH
         }
 
         private readonly Dictionary<string, string> m_dicAlarm = new Dictionary<string, string>();
+        // [LGLS 2026-08-30] 이중입고/공출고 발생 시 그 작업의 상태를 에러 상태로 바꾼다.
+        //   JOB_STATUS (common_code 'JOB_STATUS') : 09 = 이중입고 에러, 08 = 공출고 에러
+        //   종전에는 크레인만 멈추고 JOB_MST 는 직전 상태(20/25 등) 그대로여서, 운전화면에서
+        //   "왜 안 움직이는지" 를 작업 목록만 보고는 알 수 없었다.
+        //   에러 상태로 바꿔두면 ① 화면에 사유가 드러나고 ② 정상 지시 쿼리(JOB_STATUS = 20/30 …)에
+        //   더는 걸리지 않아 조치 전까지 재지시되지 않는다.
+        private const string ST_ERR_DUAL_STORE   = "09";   // 이중입고 에러
+        private const string ST_ERR_EMPTY_RETR   = "08";   // 공출고 에러
+
+        private void MarkErrorJobStatus()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT SD.SC_NO                                                        ";
+                q += CRLF + "      , SD.ERR_CODE_RD                                                  ";
+                q += CRLF + "      , COALESCE(NULLIF(SD.PALLET_ON_VEHICLE_RD,''), NULLIF(SD.ITN_LUGG_FK1,''), NULLIF(SD.LUGG_NO_FK1_RD,'')) AS LUGG ";
+                q += CRLF + "   FROM SC_DATA_LGLS SD                                                 ";
+                q += CRLF + "  WHERE SD.WH_TYP       = :WH_TYP                                       ";
+                q += CRLF + "    AND SD.ERR_CODE_RD IN ('54','0054','58','0058')                     ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (_pBdb.ExcuteQry(q) <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string scNo = GetVal(dt.Rows[i], "SC_NO");
+                    string ec   = (GetVal(dt.Rows[i], "ERR_CODE_RD") ?? "").Trim();
+                    string lugg = (GetVal(dt.Rows[i], "LUGG") ?? "").Trim();
+                    if (lugg.Length == 0 || lugg == "0" || lugg == "0000") continue;   // 실을 화물이 없으면 귀속할 작업도 없다
+
+                    int nEc; int.TryParse(ec, out nEc);
+                    string want = (nEc == 54) ? ST_ERR_DUAL_STORE : ST_ERR_EMPTY_RETR;
+
+                    // 이미 그 상태면 조용히 넘어간다(폴링마다 UPDATE 하지 않도록)
+                    string u = "";
+                    u += CRLF + " UPDATE JOB_MST                                  ";
+                    u += CRLF + "    SET JOB_STATUS  = :NEW_ST                    ";
+                    u += CRLF + "      , UPD_DT      = " + DbLang.SYSDATE + "      ";
+                    u += CRLF + "      , UPD_USER_ID = '" + OD_USER + "'          ";
+                    u += CRLF + "  WHERE WH_TYP      = :WH_TYP                    ";
+                    u += CRLF + "    AND LUGG_NO     = :LUGG_NO                   ";
+                    u += CRLF + "    AND JOB_STATUS <> :NEW_ST2                   ";
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("NEW_ST",  DbLang.VARCHAR).Value = want;
+                    _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = lugg;
+                    _pBdb.mComMain.Parameters.Add("NEW_ST2", DbLang.VARCHAR).Value = want;
+                    int n = _pBdb.ExcuteNonQry(u);
+                    if (n > 0)
+                        MakeMsg_Imp(string.Format("[SCH][ERR] S/C #{0} {1} (코드 {2}) - 작업 {3} 상태 → '{4}'",
+                            scNo, (nEc == 54) ? "이중입고" : "공출고", ec, lugg, want));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][ERR] MarkErrorJobStatus 오류: " + ex.Message); }
+        }
+
         private void MonitorAlarm()
         {
             try

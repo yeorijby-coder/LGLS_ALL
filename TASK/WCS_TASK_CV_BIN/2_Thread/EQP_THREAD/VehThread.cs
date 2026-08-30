@@ -55,6 +55,19 @@ namespace WCS_TASK_CV
         private volatile bool m_bRun;
         private string m_strRtnMsg = "";
 
+        // [LGLS 2026-08-30] 설비 에러이력(EQP_ERR_HIS) 에 남길 EQP_TYP.
+        //   Client 설비에러이력 창은 EQP_ERR_HIS.EQP_TYP 로 EQP_ECD_MST 를 조인해 메시지를 표시하므로
+        //   현장 크레인(SFA) 코드표 'SC_SFA' 를 써야 이중입고/공출고 문구가 뜬다.
+        //   ('SC' 는 무라타 기계코드표라 같은 번호가 다른 뜻이고 0058 은 아예 없다)
+        //   WCS_DB.INI [CNF] SC_ERR_TYP / RTV_ERR_TYP 로 전환.
+        private static string s_strScErrTyp = "SC_SFA";
+        private static string s_strRtvErrTyp = "RTV";
+        public static void SetErrCodeTypes(string scTyp, string rtvTyp)
+        {
+            if (!string.IsNullOrEmpty(scTyp)) s_strScErrTyp = scTyp.Trim();
+            if (!string.IsNullOrEmpty(rtvTyp)) s_strRtvErrTyp = rtvTyp.Trim();
+        }
+
         public VehThread(string kind, string connectString, string whTyp, string ip, int port)
         {
             m_strKind = kind;
@@ -316,6 +329,35 @@ namespace WCS_TASK_CV
         }
 
         private static string Esc(string s) { return (s ?? "").Replace("'", "''"); }
+
+        /// <summary>
+        /// [LGLS 2026-08-30] 설비 에러이력 적재 (Client [설비에러이력] 창 = EQP_ERR_HIS).
+        ///   CvThread.UpdateEQMT_ERR_LOG 의 크레인/RGV 판. EQP_NO 는 CV 와 같이 3자리로 맞춘다.
+        /// </summary>
+        private void InsertEqpErrHis(VehDef v, string strErrCd, string strLuggNo)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(strErrCd) || strErrCd == "0000" || strErrCd == "0") return;
+                string strEqpTyp = (m_strKind == "SC") ? s_strScErrTyp : s_strRtvErrTyp;
+                int nNo; string strEqpNo = int.TryParse((v.KeyVal ?? "").Trim(), out nNo)
+                                           ? nNo.ToString("000") : (v.KeyVal ?? "");
+
+                string sql = "";
+                sql += CRLF + " INSERT INTO EQP_ERR_HIS (WH_TYP, EQP_TYP, EQP_NO, ERROR_DT, EQP_ERR_CD, BCR_BOTTOM, BCR_TOP, LUGG_NO) ";
+                sql += CRLF + " VALUES ('" + Esc(m_strWhTyp) + "'   ";
+                sql += CRLF + "       , '" + Esc(strEqpTyp) + "'    ";
+                sql += CRLF + "       , '" + Esc(strEqpNo) + "'     ";
+                sql += CRLF + "       , GETDATE()                   ";
+                sql += CRLF + "       , '" + Esc(strErrCd) + "'     ";
+                sql += CRLF + "       , null, null                  ";
+                sql += CRLF + "       , '" + Esc(strLuggNo) + "' )  ";
+                DbExec(sql);
+                LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 설비에러 이력 적재 ("
+                      + strEqpTyp + " #" + strEqpNo + " 코드 " + strErrCd + ")");
+            }
+            catch (Exception ex) { LogDb("[VEH_" + m_strKind + "] EQP_ERR_HIS 적재 오류: " + ex.Message); }
+        }
         private const string CRLF = "\r\n";   // [LGLS 2026-07-22] 쿼리 다중행 표기(DBMS 복사 실행 가능하게)
 
         private void LogDb(string msg)
@@ -637,6 +679,9 @@ namespace WCS_TASK_CV
             {
                 set.Append(", HOST_ERR_SEND_YN = 'N'");
             }
+            // [LGLS 2026-08-30] 설비 에러이력 적재 — 종전에는 CvThread(컨베이어)만 남기고
+            //   크레인/RGV 는 남기지 않아, 이중입고/공출고가 운전화면 [설비에러이력] 에 뜨지 않았다.
+            if (bNewErr) InsertEqpErrHis(v, Cached(v, "ERR_CODE_RD"), lugg);
 
             string strSqlObs = "";
             strSqlObs += CRLF + " UPDATE " + m_strTable + "                          ";

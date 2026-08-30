@@ -115,6 +115,8 @@ public:
 
 public:
 	COLORREF GetCvColor();
+	// [LGLS 2026-08-30] 에러코드 표기 흔들림(0/00/0000/빈 값) 흡수 - 정상 판정
+	static BOOL IsNoError(const CString& strErrCode);
 	WORD GetMapStatusKey(int nIndex);
 	CObject* GetMapStatusValue(WORD wStatus);
 

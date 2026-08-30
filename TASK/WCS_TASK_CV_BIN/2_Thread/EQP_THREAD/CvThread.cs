@@ -2557,7 +2557,7 @@ namespace WCS_TASK_CV
                 strSql += CRLF + "                               AND CD.LUGG_NO_RD IS NOT NULL                                                                      ";
                 strSql += CRLF + "                               AND CD.LUGG_NO_RD <> '0'                                                                           ";
                 strSql += CRLF + "                               AND CD.SENSOR0_DATA_RD = '1'                                                                       ";
-                strSql += CRLF + "                               AND CD.ERROR_CODE = '0'                                                                            ";
+                strSql += CRLF + "                               AND (CD.ERROR_CODE IS NULL OR CD.ERROR_CODE IN ('0','00','0000',''))                               ";
                 strSql += CRLF + "                               AND CD.OD_RQ_YN = 'N'                                                                              ";
                 strSql += CRLF + "                               AND CD.CMD_RQ_YN = 'N'                                                                             ";
                 strSql += CRLF + "                               AND CD.READ_UPD_DT >= CD.WRITE_UPD_DT                                                              ";
@@ -2568,7 +2568,7 @@ namespace WCS_TASK_CV
                 strSql += CRLF + "                               AND CD2.PLC_NO = CFD.PLC_NO                                                                        ";
                 strSql += CRLF + "                               AND ( (CD2.TRACK_NO = CFD.FRONT_TRACK_NO                                                           ";
                 strSql += CRLF + "                               AND CD2.AUTO_MODE_RD = '1'                                                                         ";
-                strSql += CRLF + "                               AND CD2.ERROR_CODE = '0'                                                                           ";
+                strSql += CRLF + "                               AND (CD2.ERROR_CODE IS NULL OR CD2.ERROR_CODE IN ('0','00','0000',''))                              ";
                 strSql += CRLF + "                               AND CD2.SENSOR0_DATA_RD = '0'                                                                      ";
                 strSql += CRLF + "                                  ) OR (CFD.FRONT_TRACK_NO = '0' OR CFD.FRONT_TRACK_NO IS NULL) )                                 ";
 
