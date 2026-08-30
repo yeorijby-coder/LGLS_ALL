@@ -81,6 +81,13 @@ namespace TSK_COMM_IOSCH
         //   ★디버그로 상태를 붙잡아 두고 볼 때 쓴다★ - 평상시에는 켜 둔다.
         public static bool GM_SWEEP_RECOVER = true;
 
+        // [LGLS 2026-08-31] 출고 RGV 구간을 상태(30/35)로 표현할지 (ENV_IOSCH.INI [CNF] OUT_VIA_RGV_STATE)
+        //   ★사용자 지적★ : 입고는 RGV 구간을 30/35 로 DB 에 남기는데 출고만 메모리 큐로 관리했다.
+        //   그래서 IO_TASK 가 죽으면 "순번 대기" 와 "반출 중" 의 구분이 사라져 고아가 됐다.
+        //   1 = 출고도 15 → 30 → 35 → 15 → 19 로 돈다(고아 자체가 생기지 않는다)
+        //   0 = 구 경로(m_lstOutPend / m_dicOutStn / RecoverOutOrphans)
+        public static bool GM_OUT_VIA_RGV = false;
+
         public static bool GM_SND_MES = false;  // @.전체 시스템 운전 상태[운전 시스템이 운전 되면 전체 운전!]
 
 
