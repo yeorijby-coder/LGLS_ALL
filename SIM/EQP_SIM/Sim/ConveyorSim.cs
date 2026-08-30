@@ -165,7 +165,11 @@ namespace EQP_SIM.Sim
                 {
                     int inIdx = Def.OrderOf(Def.IngoPath[0]);
                     SimPallet p;
-                    if (Pallets.TryGetValue(inIdx, out p) && p.Dir == FlowDir.Ingo &&
+                    // [LGLS 2026-08-30 사용자 확정 신호규약] 입고대 = 화물 있고 **데이터(작업번호)가 없을 때**.
+                    //   데이터 유무가 입고/출고를 가른다 - 작업자가 올려둔 화물은 아직 작업번호가 없고,
+                    //   ECS 가 작업번호를 써 넣는 순간부터는 더 이상 '입고 대기' 화물이 아니다.
+                    //   (종전에는 시뮬 내부 플래그 p.Dir 로 판정해, 그 플래그가 어긋나면 신호도 어긋났다)
+                    if (Pallets.TryGetValue(inIdx, out p) && string.IsNullOrEmpty(p.Id) &&
                         p.SensedAt != DateTime.MinValue &&
                         now >= p.SensedAt.AddMilliseconds(engine.InReadyDelayMs))
                     {
@@ -186,8 +190,13 @@ namespace EQP_SIM.Sim
                 {
                     int outIdx = Def.OrderOf(Def.OutgoPath[Def.OutgoPath.Length - 1]);
                     SimPallet p;
-                    // [LGLS 2026-08-22] 규약: 화물과 데이터(JOB)가 모두 있어야 출고대 ON
-                    if (Pallets.TryGetValue(outIdx, out p) && p.Dir == FlowDir.Outgo && !p.Discharged &&
+                    // [LGLS 2026-08-30 사용자 확정 신호규약] 출고대 = 화물 있고 + 데이터(작업번호) 있고
+                    //   + 도착지가 자기 자신일 때. 도착지 관측은 PLC 맵에 없지만, ECS 는 그 작업대로
+                    //   가는 작업에만 그 자리의 트래킹을 써 넣으므로 "출고대 포트에 데이터가 실려 있다"
+                    //   = "도착지가 자기 자신" 이다.
+                    //   ※시뮬 내부 플래그 p.Dir 조건은 뺐다 - 방향이 한 번 어긋나면 그 화물의 출고대
+                    //     신호가 영영 서지 않아 도착보고까지 막혔다(실측: 작업 0113).
+                    if (Pallets.TryGetValue(outIdx, out p) && !p.Discharged &&
                         p.SensedAt != DateTime.MinValue && !string.IsNullOrEmpty(p.Id))
                     {
                         on = true;
