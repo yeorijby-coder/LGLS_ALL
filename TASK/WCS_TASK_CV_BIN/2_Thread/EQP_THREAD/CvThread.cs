@@ -1324,6 +1324,19 @@ namespace WCS_TASK_CV
         ///   순회 중인 mDtMain 결과셋을 건드리지 않는다(같은 연결로 재조회하면 루프가 깨진다).
         ///   방향전환형 겸용대는 C/V#2(트랙 103/104)·C/V#11(트랙 121/122) 뿐이다.
         /// </summary>
+        /// <summary>
+        /// [LGLS 2026-08-30] 실제 작업번호가 붙은 화물인가.
+        ///   빈 값 / "0" / "0000" 은 작업번호 없음 = 시스템이 반송 중인 화물이 아니다.
+        /// </summary>
+        private static bool HasRealJobNo(string pJobNo)
+        {
+            string t = (pJobNo ?? "").Trim();
+            if (t.Length == 0) return false;
+            int n;
+            if (int.TryParse(t, out n)) return n != 0;
+            return true;
+        }
+
         private bool IsDualCvDirChangeHeld(string pTrackNo, int pWantDir)
         {
             try
@@ -1342,14 +1355,21 @@ namespace WCS_TASK_CV
                 string strWantDir = (pWantDir == 1) ? "1" : "0";
                 if (strNowDir == strWantDir) return false;        // 같은 방향이면 보류할 이유가 없다
 
-                // 이 설비 위에 화물이 남아 있는가
+                // 이 설비 위에 "작업 화물"이 남아 있는가.
+                //   [LGLS 2026-08-30 사용자 정정] ★작업번호 없는 화물은 입고 화물이 아니다★
+                //   화물감지(SENSOR0)만 보면, 작업자가 올려두었을 뿐 지시가 없는 파렛트나
+                //   EQP_SIM 자동투입 잔재(유령 파렛트)까지 "화물 있음"으로 잡아 방향 전환이
+                //   영영 보류된다. 실제로 트랙 124 에서 sensor=1 / lugg_no_rd='0' 인 유령
+                //   파렛트를 관측했다. 전환을 막아야 하는 것은 시스템이 반송 중인 화물뿐이므로,
+                //   R 트래킹 작업번호(V11_JOBNO)가 실제로 붙어 있을 때만 보류한다.
                 for (int i = 0; i < nTracks.Length; i++)
                 {
                     if (!CvDic.ContainsKey(nTracks[i])) continue;
-                    if ((CvDic[nTracks[i]].SENSOR0_DATA_RD ?? "").Trim() == "1")
+                    if ((CvDic[nTracks[i]].SENSOR0_DATA_RD ?? "").Trim() != "1") continue;   // 화물 없음
+                    if (!HasRealJobNo(CvDic[nTracks[i]].V11_JOBNO)) continue;                // 작업번호 없는 화물은 대상 아님
                     {
                         m_strLogMsg = "[CvChg_CMD_RQ_YN] 트랙번호 : [" + pTrackNo + "] 방향전환 보류 - 트랙 "
-                                    + nTracks[i] + " 에 화물이 남아 있음 (현재 "
+                                    + nTracks[i] + " 에 작업 화물(" + (CvDic[nTracks[i]].V11_JOBNO ?? "") + ") 남아 있음 (현재 "
                                     + (strNowDir == "1" ? "출고" : "입고") + " → 요청 "
                                     + (strWantDir == "1" ? "출고" : "입고") + "). 화물 반출 후 전환한다.";
                         MakeMsg_Imp(m_strLogMsg, m_nthNo);

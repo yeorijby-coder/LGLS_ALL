@@ -860,7 +860,7 @@ namespace TSK_COMM_IOSCH
                             string wantDir = (jobTyp == "2") ? "1" : "0";
                             if (GetCvStockMode(SC1_DUAL_CV) != wantDir)
                             {
-                                if (IsTrackEmpty(SC1_DUAL_CV) && IsTrackLuggEmpty(SC1_DUAL_CV))
+                                if (!IsDualCvBusyWithJob(SC1_DUAL_CV))   // [LGLS 2026-08-30] 작업번호 없는 화물은 전환을 막지 않는다
                                 {
                                     if (RequestCvDirection(SC1_DUAL_CV, wantDir))
                                         MakeMsg_Imp(string.Format("[SCH][SC] 겸용 통로 C/V#2({0}) 방향 전환 지시 - {1} (작업 {2})",
@@ -1044,7 +1044,7 @@ namespace TSK_COMM_IOSCH
                     //   그 앞 RGV 단계에서 도착 HS 가 서지 않아 작업이 '30' 에서 멈춘다.
                     if (dropTrack == SC1_DUAL_CV && GetCvStockMode(SC1_DUAL_CV) != "0")
                     {
-                        if (IsTrackEmpty(SC1_DUAL_CV) && IsTrackLuggEmpty(SC1_DUAL_CV))
+                        if (!IsDualCvBusyWithJob(SC1_DUAL_CV))   // [LGLS 2026-08-30] 작업번호 없는 화물은 전환을 막지 않는다
                         {
                             if (RequestCvDirection(SC1_DUAL_CV, "0"))
                                 MakeMsg_Imp(string.Format("[SCH][RGV] 겸용 통로 C/V#2({0}) 방향 전환 지시 - 입고(0) (작업 {1} 드롭 대기)",
@@ -1931,6 +1931,8 @@ namespace TSK_COMM_IOSCH
         //     입고 화물(103 에서 104 대기)과 출고 화물(104 에서 103 대기)이 서로를 기다려 **교착**한다.
         //     → 겸용 라인은 두 트랙이 모두 비고 예약된 이동도 없을 때만 진입시켜 한 번에 한 방향만 쓰게 한다.
         private static readonly string[] SHARED_LINE_CV2 = { "103", "104" };
+        // [LGLS 2026-08-30] C/V#11 도 방향전환형 겸용대다(입출고 겸용대, 트랙 121/122).
+        private static readonly string[] DUAL_LINE_CV11 = { "121", "122" };
 
         // [LGLS] 라인 예약: 입고 RGV 처리가 화물을 싣기 전(30→31)에 드롭 라인을 선점한다.
         //   RTV 는 1대뿐인데 입고 처리와 출고대 반출이 조율 없이 RTV 를 점유하면
@@ -2687,6 +2689,24 @@ namespace TSK_COMM_IOSCH
         private readonly Dictionary<string, DateTime> m_dicDirReqAt = new Dictionary<string, DateTime>();
         private const int DIR_REQ_HOLD_MS = 15000;   // 설비 반영(미러 1주기)까지 재지시 억제
 
+        /// <summary>
+        /// [LGLS 2026-08-30] 방향전환형 겸용대(C/V#2 = 103/104, C/V#11 = 121/122)가
+        /// "작업 화물"을 아직 붙들고 있는가.
+        ///   ★사용자 정정★ 작업번호 없는 화물은 입고 화물이 아니다 — 작업자가 올려두었을 뿐
+        ///   지시가 없는 파렛트나 자동투입 잔재(유령 파렛트)는 방향 전환을 막지 않는다.
+        ///   막아야 하는 것은 시스템이 반송 중인 화물, 즉 작업번호가 붙은 화물뿐이다.
+        /// </summary>
+        private bool IsDualCvBusyWithJob(string mcNo)
+        {
+            string[] tracks = (mcNo == SC1_DUAL_CV || mcNo == "104") ? SHARED_LINE_CV2
+                            : (mcNo == "121" || mcNo == "122")       ? DUAL_LINE_CV11
+                            : null;
+            if (tracks == null) tracks = new string[] { mcNo };
+            foreach (string t in tracks)
+                if (!IsTrackLuggEmpty(t)) return true;     // 작업번호가 붙은 화물이 남아 있다
+            return false;
+        }
+
         private bool RequestCvDirection(string mcNo, string dir)
         {
             try
@@ -2695,6 +2715,16 @@ namespace TSK_COMM_IOSCH
                 if (m_dicDirReqAt.TryGetValue(mcNo, out last) &&
                     (DateTime.Now - last).TotalMilliseconds < DIR_REQ_HOLD_MS)
                     return false;      // 직전 지시가 아직 반영 중 — 중복 지시 억제
+
+                // [LGLS 2026-08-30] 겸용대 방향 전환 규약(사용자 확정):
+                //   현재 방향의 작업 화물이 아직 설비에 있으면 전환하지 않는다. 뒤집으면 이송 방향이
+                //   반대가 되어 그 화물이 갇히고(HS 미성립) 크레인 앞에서 충돌한다.
+                //   화물이 빠지면 다음 폴링에 자연히 전환된다(호출부가 매 주기 재시도).
+                if (IsDualCvBusyWithJob(mcNo))
+                {
+                    DbgLog("DIRHOLD_" + mcNo, string.Format("[CV] 방향전환 보류 - 겸용대 {0} 에 작업 화물이 남아 있음", mcNo));
+                    return false;
+                }
 
                 string q = "";
                 q += CRLF + " UPDATE CV_DATA                              ";
