@@ -704,6 +704,11 @@ namespace EQP_SIM
             autoTimer.Start();
         }
 
+        // [LGLS 2026-09-01] ★자동 진행을 시간이 아니라 상태로★ (사용자 지적 : 설비가 못 따라감)
+        //   종전에는 ACK 8초 타임아웃/관측 1.2초 후 무조건 통과라, WCS 폴링(수 초)이
+        //   따라오기 전에 다음 비트를 눌러 시나리오가 실제 교신과 어긋났다.
+        //   이제 각 스텝의 완료 조건이 실제로 관측될 때까지 기다린다(타임아웃 없음 -
+        //   어디서 기다리는지는 금색 하이라이트로 보인다. 정지하려면 다시 [자동 진행]).
         private void AutoTick(object sender, EventArgs e)
         {
             if (autoIdx >= sc.Steps.Count) { autoTimer.Stop(); HighlightNone(); return; }
@@ -711,18 +716,46 @@ namespace EQP_SIM
             HighlightCurrent(autoIdx);
             if (st.Kind == 0)
             {
+                // EQP 비트 : 직전 스텝 처리 후 1.5초 여유(WCS 폴링이 앞 상태를 볼 시간)를 두고 누른다
+                if ((DateTime.Now - waitStart).TotalSeconds < 1.5) return;
                 mem.SetBit(st.Dev, st.Bit, st.Val);
                 autoIdx++; waitStart = DateTime.Now;
             }
             else if (st.Kind == 1)
             {
-                if (mem.GetBit('M', st.Bit) || (DateTime.Now - waitStart).TotalSeconds > 8)
+                // WCS ACK : 실제로 ON 이 관측될 때까지 기다린다
+                if (mem.GetBit('M', st.Bit))
                 { autoIdx++; waitStart = DateTime.Now; }
             }
-            else // D/R 관측: 잠깐 보여주고 넘어감
+            else // D/R 관측
             {
-                if ((DateTime.Now - waitStart).TotalSeconds > 1.2)
-                { autoIdx++; waitStart = DateTime.Now; }
+                if (st.Dev == 'R' && st.IsString)
+                {
+                    // R 트래킹 : JOB 값이 실제로 실릴 때까지 기다린다.
+                    //   PLC 재현 스텝(src 없음)은 사람이 하던 이동을 자동이 대신 수행한다.
+                    string v = mem.GetString('R', st.WordAddr, 2);
+                    bool hot = !string.IsNullOrEmpty(v) && v != "0" && v != "0000";
+                    if (!hot && string.IsNullOrEmpty(st.Src))
+                    {
+                        int src = PrevRAddr(st);
+                        if (src >= 0)
+                        {
+                            string pv = mem.GetString('R', src, 2);
+                            if (!string.IsNullOrEmpty(pv) && pv != "0" && pv != "0000")
+                            {
+                                mem.SetString('R', st.WordAddr, 2, pv);
+                                mem.SetString('R', src, 2, "0000");
+                                hot = true;
+                            }
+                        }
+                    }
+                    if (hot) { autoIdx++; waitStart = DateTime.Now; }
+                }
+                else if ((DateTime.Now - waitStart).TotalSeconds > 1.2)
+                {
+                    // D 워드(방향/지시값 등)는 표시 확인용 - 잠깐 보여주고 진행
+                    autoIdx++; waitStart = DateTime.Now;
+                }
             }
         }
 
