@@ -124,6 +124,16 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("0"))
 		return DARK_GRAY;
 
+	// [LGLS 2026-08-31] 이 경로도 설비의 JOB_TYP_RD 만 봐서, 번호는 그려지는데
+	//   색만 회색으로 빠지는 창이 있었다. 크레인이 든 번호로 작업정보를 찾아 보완한다.
+	CString strHeldP = pSC_DATA->V_LUGG_NO_FK1_RD;   // 차상
+	strHeldP.Trim();
+	if (strHeldP.IsEmpty() || strHeldP == _T("0") || strHeldP == _T("0000"))
+	{ strHeldP = pSC_DATA->V_ITN_LUGG_FK1; strHeldP.Trim(); }
+	if (strHeldP.IsEmpty() || strHeldP == _T("0") || strHeldP == _T("0000"))
+	{ strHeldP = m_pEquipment->m_pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO); strHeldP.Trim(); }
+	BOOL bHeldP = (!strHeldP.IsEmpty() && strHeldP != _T("0") && strHeldP != _T("0000"));
+
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
 	switch (nJobTypTmp)
 	{
@@ -139,6 +149,28 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
 	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_SEMI_PR;
 	case enJobTypeManual			: return pConfig->m_clrUSER_COLOR_MANUAL;
+	}
+
+	// 설비 지시값이 비면 작업정보에서 작업구분을 찾는다.
+	if (bHeldP)
+	{
+		int nTypJob = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(pSC_DATA->K_SC_NO));
+		if (nTypJob == 0) nTypJob = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strHeldP));
+		switch (nTypJob)
+		{
+		case enJobTypeAutoSto		: return pConfig->m_clrUSER_COLOR_STO;
+		case enJobTypeAutoRet		: return pConfig->m_clrUSER_COLOR_RET;
+		case enJobTypeAutoR2R		: return pConfig->m_clrUSER_COLOR_RTR;
+		case enJobTypeAutoMove		: return pConfig->m_clrUSER_COLOR_MOVE;
+		case enJobTypeAutoA2A		: return pConfig->m_clrUSER_COLOR_ATA;
+		case enJobTypeAutoPR		: return pConfig->m_clrUSER_COLOR_RET;
+		case enJobTypeSemiSto		: return pConfig->m_clrUSER_COLOR_SEMI_STO;
+		case enJobTypeSemiRet		: return pConfig->m_clrUSER_COLOR_SEMI_RET;
+		case enJobTypeSemiR2R		: return pConfig->m_clrUSER_COLOR_SEMI_RTR;
+		case enJobTypeSemiMove		: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
+		case enJobTypeSemiPR		: return pConfig->m_clrUSER_COLOR_SEMI_PR;
+		case enJobTypeManual		: return pConfig->m_clrUSER_COLOR_MANUAL;
+		}
 	}
 
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("1") && 
@@ -353,8 +385,13 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 	strOut = _T("");
 	if (!bHasJob) return;						// 작업 없음 -> 호기 표시
 
+	// [LGLS 2026-08-31] ★크레인에 색 없이 번호만 남으면 안 된다★ (사용자 지시)
+	//   색(GetForkColor1)은 작업정보의 작업구분으로 낸다. 작업정보에 없는 번호는
+	//   낼 색이 없으므로 번호도 그리지 않는다 - 그래야 번호와 색이 항상 함께 있다.
+	//   (설비 차상값은 다음 작업 전까지 이전 번호를 들고 있어 잔재가 생긴다.
+	//    그 잔재는 S/C 상태창에서 설비값 그대로 볼 수 있다.)
 	if (m_pEquipment->m_pDoc->IsJobInJobMst(strLugg) == FALSE)
-		clrOut = RGB(255, 255, 255);			// 작업정보에 없는 잔재 → 흰색
+		return;
 
 	if (nMode == 1)
 	{
