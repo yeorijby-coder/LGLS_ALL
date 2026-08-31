@@ -13,6 +13,7 @@ public:
 	~CRTV_DATA(void);
 
 public:
+	DWORD m_dwJobVerSeen = 0;	// [LGLS 2026-08-31] 마지막으로 반영한 작업정보 캐시 버전(호기별)
 	BOOL m_bModified;
 	CDciRvCtrl* m_pControl;
 

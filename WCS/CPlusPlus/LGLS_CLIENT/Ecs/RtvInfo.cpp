@@ -399,9 +399,10 @@ void CRtvInfo::InvokeControl(CRTV_DATA* pRTV_DATA)
 	if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
 	{
 		m_pEquipment->m_pDoc->RefreshJobCache();
-		if (m_dwJobVerSeen != m_pEquipment->m_pDoc->m_dwJobCacheVer)
+		// [LGLS 2026-08-31] 버전 기억은 호기별(pRTV_DATA) - ScInfo 와 같은 이유.
+		if (pRTV_DATA->m_dwJobVerSeen != m_pEquipment->m_pDoc->m_dwJobCacheVer)
 		{
-			m_dwJobVerSeen = m_pEquipment->m_pDoc->m_dwJobCacheVer;
+			pRTV_DATA->m_dwJobVerSeen = m_pEquipment->m_pDoc->m_dwJobCacheVer;
 			pRTV_DATA->m_bModified = TRUE;
 		}
 	}

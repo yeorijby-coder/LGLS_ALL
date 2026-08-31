@@ -608,9 +608,13 @@ void CScInfo::InvokeControl(CSC_DATA*	    pSC_DATA)
 	if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
 	{
 		m_pEquipment->m_pDoc->RefreshJobCache();
-		if (m_dwJobVerSeen != m_pEquipment->m_pDoc->m_dwJobCacheVer)
+		// [LGLS 2026-08-31] ★버전 기억은 호기별(pSC_DATA)이어야 한다★
+		//   CScInfo 는 5대가 공유하는 객체 하나다. 여기(공유 멤버)에 두면 루프의
+		//   첫 호기가 버전을 소진해 나머지 4대는 강제 갱신을 받지 못했다 -
+		//   4호기에 9002 가 계속 남던 이유다.
+		if (pSC_DATA->m_dwJobVerSeen != m_pEquipment->m_pDoc->m_dwJobCacheVer)
 		{
-			m_dwJobVerSeen = m_pEquipment->m_pDoc->m_dwJobCacheVer;
+			pSC_DATA->m_dwJobVerSeen = m_pEquipment->m_pDoc->m_dwJobCacheVer;
 			pSC_DATA->m_bModified = TRUE;
 		}
 	}
