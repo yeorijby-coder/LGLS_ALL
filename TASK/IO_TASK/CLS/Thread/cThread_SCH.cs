@@ -81,6 +81,13 @@ namespace TSK_COMM_IOSCH
         // 창고 구분 : cDefApp.eWHTYP.SKI_WH01 = 10
         private static readonly string SCH_WH_TYP = ((int)cDefApp.eWHTYP.SKI_WH01).ToString();
 
+        // [LGLS 2026-08-31] 크레인이 실제로 들고 있는 작업번호(포크 우선, 없으면 차상).
+        //   화면의 크레인 색을 이 값으로도 칠한다 - 상태만 보면 색이 먼저 꺼진다.
+        private const string SC_HELD_LUGG =
+            "(CASE WHEN ISNULL(SD.ITN_LUGG_FK1,'0')         NOT IN ('','0','0000') THEN SD.ITN_LUGG_FK1 " +
+            "      WHEN ISNULL(SD.PALLET_ON_VEHICLE_RD,'0') NOT IN ('','0','0000') THEN SD.PALLET_ON_VEHICLE_RD " +
+            "      ELSE NULL END)";
+
         // JOB_MST.JOB_STATUS 라이프사이클 (설비별 3단계: 대기 → 중 → 완료)
         //   CV : 대기 10 → 중 15 → 완료 19
         //   SC : 대기 20 → 중 25 → 완료 29
@@ -4113,6 +4120,25 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp3 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> JM.JOB_TYP ";
                 DbNonQry(strSqlDsp3);
 
+                // [LGLS 2026-08-31] 크레인이 화물을 들고 있는 동안은 색을 유지한다 (사용자 지적)
+                //   증상 : 출고를 마친 크레인에 색 없이 작업번호만 남았다.
+                //   원인 : 색은 작업 상태(25/29)로만 칠하는데 작업이 15 로 내려가는 순간 색이 지워진다.
+                //          반면 크레인의 작업번호는 설비가 치울 때까지 남는다.
+                //          색 지우는 시점과 번호 지워지는 시점이 어긋난 것이다.
+                //   조치 : 상태가 아니라 크레인이 실제로 든 화물을 기준으로도 칠한다.
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                string strSqlDsp3b = "";
+                strSqlDsp3b += CRLF + " UPDATE SD                                                    ";
+                strSqlDsp3b += CRLF + "    SET JOB_TYP_RD = JM.JOB_TYP                               ";
+                strSqlDsp3b += CRLF + "   FROM SC_DATA_LGLS SD                                       ";
+                strSqlDsp3b += CRLF + "  INNER JOIN JOB_MST JM                                       ";
+                strSqlDsp3b += CRLF + "     ON JM.WH_TYP  = SD.WH_TYP                                ";
+                strSqlDsp3b += CRLF + "    AND JM.LUGG_NO = " + SC_HELD_LUGG;
+                strSqlDsp3b += CRLF + "  WHERE SD.WH_TYP  = :WH_TYP                                  ";
+                strSqlDsp3b += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> JM.JOB_TYP               ";
+                DbNonQry(strSqlDsp3b);
+
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 string strSqlDsp4 = "";
@@ -4121,6 +4147,8 @@ namespace TSK_COMM_IOSCH
                 strSqlDsp4 += CRLF + "   FROM SC_DATA_LGLS SD                                                      ";
                 strSqlDsp4 += CRLF + "  WHERE SD.WH_TYP   = :WH_TYP                                           ";
                 strSqlDsp4 += CRLF + "    AND ISNULL(SD.JOB_TYP_RD,'0') <> '0'                                ";
+                // [LGLS 2026-08-31] 크레인이 화물을 들고 있으면 색을 지우지 않는다(위 3b 참조).
+                strSqlDsp4 += CRLF + "    AND " + SC_HELD_LUGG + " IS NULL                           ";
                 strSqlDsp4 += CRLF + "    AND NOT EXISTS (SELECT 1                                            ";
                 strSqlDsp4 += CRLF + "                      FROM JOB_MST JM                                   ";
                 strSqlDsp4 += CRLF + "                     WHERE JM.WH_TYP = SD.WH_TYP                        ";
