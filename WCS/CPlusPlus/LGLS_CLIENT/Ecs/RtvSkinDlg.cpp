@@ -1247,7 +1247,7 @@ CString CRtvSkinDlg::GetQrySelectJOB_MST( CRTV_DATA* pRTV_DATA )
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_POS, '00000') AS DEST_POS ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.PRODUCT_ID, '') AS PRODUCT_ID ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.LOT_NO, '') AS LOT_NO ");
-	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("('[' + JM.JOB_TYP + '] ' + ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, ''), 'N') AS JOB_TYP ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, '[' + JM.JOB_TYP + ']') AS JOB_TYP ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_LOCATION, '00-000-00') AS START_LOCATION ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, '00-000-00') AS DEST_LOCATION ");
 	strSql += CRLF + _T("  FROM JOB_MST JM INNER JOIN RTV_DATA_LGLS RD_FK1 ");
@@ -1271,7 +1271,7 @@ CString CRtvSkinDlg::GetQrySelectJOB_MST( CRTV_DATA* pRTV_DATA )
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_POS, '00000') AS DEST_POS ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.PRODUCT_ID, '') AS PRODUCT_ID ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.LOT_NO, '') AS LOT_NO ");
-	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("('[' + JM.JOB_TYP + '] ' + ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, ''), 'N') AS JOB_TYP ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, '[' + JM.JOB_TYP + ']') AS JOB_TYP ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_LOCATION, '00-000-00') AS START_LOCATION ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, '00-000-00') AS DEST_LOCATION ");
 	strSql += CRLF + _T("  FROM JOB_MST JM INNER JOIN RTV_DATA_LGLS RD_FK2 ");
@@ -1297,7 +1297,7 @@ CString CRtvSkinDlg::GetQrySelectRTV_STATUS_CCD( CRTV_DATA* pRTV_DATA )
 	CString CRLF = _T("\r\n");
 	CString strSql = _T("");
 	// [LGLS 2026-08-31] "[코드]명칭" 표기 (사용자 요구)
-	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("('[' + RD.JOB_TYP_OD + '] ' + ") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR,''), '0') AS JOB_TYP_RD ");
+	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR, '[' + RD.JOB_TYP_OD + ']') AS JOB_TYP_RD ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_COMPLETE_RD.CCD_NM_KOR, '0') AS COMPLETE_RD ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_SENSOR_FK_RD.CCD_NM_KOR, '0') AS SENSOR_FK_RD ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_AUTO_MODE_RD.CCD_NM_KOR, '0') AS AUTO_MODE_RD ");
