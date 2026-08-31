@@ -1320,7 +1320,22 @@ namespace TSK_COMM_IOSCH
                     //   기아는 우회가 아니라 **보류 조건 자체를 정확히 좁혀서** 푼다 -
                     //   HasActiveSc1Outbound 는 실제로 라인을 점유한 출고만 센다(대기 20 제외).
                     if (!bOutRgv && destPos == "901" && HasActiveSc1Outbound()) continue;
+                    // [LGLS 2026-08-31] ★픽업트랙의 화물이 그 작업의 것인지까지 확인한다★
+                    //   종전에는 "비어 있지 않다" 만 봤다. 신규 체계에서 입고는 15 를 두 번 지나므로
+                    //   (CV 이동 후 / RGV 착지 후) 뒤 작업의 화물을 앞 작업이 집어가는 일이 생겼다.
+                    //   실측 : 9003 의 화물이 123 에 있는데 9001(15) 이 그것을 대상으로 반복 지시했고,
+                    //          EQP_SIM 이 "JOB 재부여: 9002 → 9001" 을 남기며 작업번호가 덮어써졌다.
+                    //          그 뒤 크레인이 화물을 든 채 비유휴(UCSTATUS=2)로 굳어 전면 정체.
                     if (IsTrackEmpty(pickupTrack)) continue;                           // 화물이 픽업트랙 도착 후에만
+                    {
+                        string _lgOnTrk = (TrackLugg(pickupTrack) ?? "").Trim();
+                        if (_lgOnTrk != luggNo)
+                        {
+                            DbgLog("RGVOWN_" + rtvNo, string.Format("[RGV] 보류 - 픽업트랙 {0} 의 화물이 다른 작업({1})",
+                                   pickupTrack, string.IsNullOrEmpty(_lgOnTrk) ? "미상" : _lgOnTrk));
+                            continue;
+                        }
+                    }
 
                     // [LGLS 2026-08-22] S/C #1 겸용 통로 C/V#2(103/104) 방향 맞추기.
                     //   입고는 RGV 가 103 에 내려놓는 것이 SC 지시보다 먼저다 - SC 단계에서만 전환하면
