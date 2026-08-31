@@ -2403,6 +2403,31 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                // [LGLS 2026-08-31] 죽은 작업의 지시값(LUGG_NO_OD) 청소.
+                //   위 루프는 "트래킹(LUGG_NO_RD)이 남은" 트랙만 본다. 트래킹은 이미 지워졌는데
+                //   지시값에만 죽은 번호가 남은 트랙은 대상이 아니었다.
+                //   그대로 두면 WCS_TASK_CV 가 그 값을 R 영역에 다시 써서 유령 트래킹이 되살아난다.
+                //   ★살아 있는 작업의 지시와 진행 중인 명령은 건드리지 않는다.★
+                string qod = "";
+                qod += CRLF + " UPDATE CV_DATA                                              ";
+                qod += CRLF + "    SET LUGG_NO_OD = '0'                                     ";
+                qod += CRLF + "  WHERE WH_TYP     = :WH_TYP                                 ";
+                qod += CRLF + "    AND ISNULL(LUGG_NO_OD,'0') NOT IN ('','0','0000')        ";
+                qod += CRLF + "    AND ISNULL(TRACKING_WRITE_YN,'N') <> 'Y'                 ";   // 쓰기 대기 아님
+                qod += CRLF + "    AND ISNULL(OD_RQ_YN,'N') <> 'Y'                          ";   // 명령 진행 중 아님
+                qod += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST JY                 ";
+                qod += CRLF + "                     WHERE JY.WH_TYP  = CV_DATA.WH_TYP       ";
+                qod += CRLF + "                       AND JY.LUGG_NO = CV_DATA.LUGG_NO_OD)  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int nOd = DbNonQry(qod);
+                if (nOd > 0)
+                    MakeMsg_Imp(string.Format("[SCH][CV] 죽은 작업의 지시값 정리 - {0}개 트랙의 LUGG_NO_OD 해제", nOd));
+
+                // ↑ [LGLS 2026-08-31] ★조기 return 앞에서 한다★
+                //   종전에 이 블록을 루프 뒤에 뒀더니, 유령 트래킹이 0건이면 아래 return 으로 빠져
+                //   지시값 청소가 영영 실행되지 않았다.
                 int n = DbQry(q2);
                 if (n <= 0) { m_dicTrkStaleSince.Clear(); return; }
 
@@ -2445,6 +2470,7 @@ namespace TSK_COMM_IOSCH
 
                 foreach (string k in new List<string>(m_dicTrkStaleSince.Keys))   // 정상으로 돌아온 트랙은 타이머 해제
                     if (!seen.Contains(k)) m_dicTrkStaleSince.Remove(k);
+
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][CV] SweepStaleTracking 오류: " + ex.Message); }
         }
