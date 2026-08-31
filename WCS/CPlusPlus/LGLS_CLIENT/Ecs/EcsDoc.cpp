@@ -102,7 +102,8 @@ CEcsDoc::CEcsDoc()
 {
 	m_bViewFirstLoad = FALSE;
 	m_nTrackTextMode = 1;	// [LGLS 2026-08-22] 기본=작업번호(ApplyTrackTextMode 규약: 1=작업번호 0=트랙번호 2=제품정보)
-	m_dwAliveJobTick = 0;	// [LGLS 2026-07-20 재적용] 트랙 표시모드 기본=작업번호
+	m_dwAliveJobTick = 0;
+	m_dwJobCacheVer = 0;
 	m_hWndViewRackDlg = NULL;
 	m_bExit = false;
 
@@ -2363,6 +2364,7 @@ void CEcsDoc::RefreshJobCache()
 	if (m_dwAliveJobTick != 0 && (::GetTickCount() - m_dwAliveJobTick) < 2000) return;
 	{
 		m_dwAliveJobTick = ::GetTickCount();
+		CString strSig;
 		m_mapAliveJob.RemoveAll();
 		m_mapVehJob.RemoveAll();
 		CString strSql;
@@ -2381,6 +2383,7 @@ void CEcsDoc::RefreshJobCache()
 				// 값에 작업구분을 담아 둔다(GetJobTypOfLugg 가 쓴다). 존재 판정은 Lookup 성공 여부로 한다.
 				CString strTypCur = pRsw->GetItem(_T("JOB_TYP")); strTypCur.Trim();
 				if (!strItem.IsEmpty()) m_mapAliveJob.SetAt(strItem, strTypCur);
+				if (!strItem.IsEmpty()) strSig += strItem + _T(":") + strTypCur + _T(",");
 
 				// [LGLS 2026-08-22] 진행 중(20/21/25) 작업은 그 호기에 물려 있는 것으로 본다.
 				CString strSt = pRsw->GetItem(_T("JOB_STATUS")); strSt.Trim();
@@ -2408,6 +2411,14 @@ void CEcsDoc::RefreshJobCache()
 				pRsw->MoveNext();
 			}
 			delete pRsw;
+		}
+		// [LGLS 2026-08-31] 작업정보가 바뀌었으면 버전을 올린다.
+		//   설비 데이터가 그대로면 화면을 다시 그리지 않기 때문에(m_bModified 체크),
+		//   작업이 삭제돼도 크레인/트랙에 번호가 그대로 남았다(9010 사례).
+		if (strSig != m_strJobCacheSig)
+		{
+			m_strJobCacheSig = strSig;
+			m_dwJobCacheVer++;
 		}
 	}
 }

@@ -14,6 +14,8 @@ class CScInfo : public CInfo
 	DECLARE_SERIAL(CScInfo)
 		
 public:
+	DWORD m_dwJobVerSeen = 0;	// [LGLS 2026-08-31] 마지막으로 반영한 작업정보 캐시 버전
+
 	CScInfo() {}
 	CScInfo(CEquipment* pEquipment);
 	virtual ~CScInfo();

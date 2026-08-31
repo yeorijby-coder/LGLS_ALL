@@ -45,6 +45,8 @@ class CRtvInfo : public CInfo
 	DECLARE_DYNAMIC(CRtvInfo)
 		
 public:
+	DWORD m_dwJobVerSeen = 0;	// [LGLS 2026-08-31] 마지막으로 반영한 작업정보 캐시 버전
+
 	CRtvInfo() {}
 	CRtvInfo(CEquipment* pEquipment);
 	virtual ~CRtvInfo();

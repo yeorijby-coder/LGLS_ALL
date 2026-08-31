@@ -17,6 +17,8 @@ class CEquipment;
 class CTrackInfo : public CObject  
 {
 public:
+	DWORD m_dwJobVerSeen = 0;	// [LGLS 2026-08-31] 마지막으로 반영한 작업정보 캐시 버전
+
 	CTrackInfo(CEquipment* pEquipment);
 
 	// [LGLS 2026-07-19] 입고대 ON 지연(데이터 없는 화물 감지 2초) 판정용

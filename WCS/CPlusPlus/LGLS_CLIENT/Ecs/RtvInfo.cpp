@@ -450,6 +450,18 @@ void CRtvInfo::InvokeControl()
 		return;
 	};
 
+	// [LGLS 2026-08-31] ★작업정보가 바뀌면 설비값이 그대로라도 다시 그린다★ (사용자 지적)
+	//   아래 m_bModified 검사 때문에 설비 데이터가 안 바뀌면 화면을 갱신하지 않는데,
+	//   번호·색은 작업정보(JOB_MST)에서도 온다. 그래서 작업이 삭제된 뒤에도
+	//   화면에는 번호가 그대로 남았다(9010 이 계속 보이던 현상).
+	//   (TrackInfo 의 입고대 2초 지연 처리가 쓰던 것과 같은 방식이다)
+	if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL &&
+		m_dwJobVerSeen != m_pEquipment->m_pDoc->m_dwJobCacheVer)
+	{
+		m_dwJobVerSeen = m_pEquipment->m_pDoc->m_dwJobCacheVer;
+		m_pRTV_DATA->m_bModified = TRUE;
+	}
+
 	if (m_pRTV_DATA->m_bModified == FALSE)
 		return;
 
