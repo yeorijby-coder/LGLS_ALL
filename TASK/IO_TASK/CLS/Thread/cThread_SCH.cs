@@ -1128,7 +1128,23 @@ namespace TSK_COMM_IOSCH
                         // [LGLS 2026-08-30] 그 작업이 쓸 라인 트랙(CV)이 에러면 S/C 지시 금지 —
                         //   에러난 CV 는 움직이지 못하므로 크레인이 화물을 들고 갇힌다.
                         if (IsCvError(_wT)) continue;
-                        if (jobTyp == "2" && !IsTrackEmpty(_wT)) continue;
+                        if (jobTyp == "2" && !IsTrackEmpty(_wT))
+                        {
+                            // [LGLS 2026-08-31] 그 트랙에 있는 것이 ★이 작업의 화물★ 이면
+                            //   크레인은 이미 내려놓은 것이고 상태만 뒤처진 것이다.
+                            //   (Client 를 사이클 중간에 재기동했을 때 실제로 나왔다 - 화물은 106 에
+                            //    있는데 작업은 20 에 머물러, 트랙이 비지 않으니 영영 지시되지 않았다.)
+                            //   실물 기준으로 CV 구간(15)에 넘겨 마저 내보낸다.
+                            if ((TrackLugg(_wT) ?? "").Trim() == luggNo)
+                            {
+                                string _rtnSkip = "";
+                                if (UpdateJobStatusHs(ST_CV_RUN, luggNo, _wT, ref _rtnSkip))
+                                    MakeMsg_Imp(string.Format(
+                                        "[SCH][SC] 작업 {0} 화물이 이미 하역 트랙 {1} 에 있음 - 크레인 단계 생략, 상태 '{2}'",
+                                        luggNo, _wT, ST_CV_RUN));
+                            }
+                            continue;
+                        }
                         if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv()) continue;
                         if (jobTyp == "1" && IsTrackEmpty(_wT)) continue;
 

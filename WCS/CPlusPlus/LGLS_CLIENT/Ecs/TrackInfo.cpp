@@ -88,13 +88,16 @@ void CTrackInfo::ApplyTrackTextMode(CDciTrackCtrl* pTrackCtrl)
 	//   그 값만 보고 표시하면, 화물이 아직 통로에 있는데도 출고대에 번호가 먼저 찍힌다
 	//   (아직 완료되지 않은 작업이 완료 자리에 보이는 것으로 오인된다).
 	BOOL bLuggVal = (m_pCV_DATA->V_LUGG_NO_RD != _T("0") && m_pCV_DATA->V_LUGG_NO_RD != _T("0000") && !m_pCV_DATA->V_LUGG_NO_RD.IsEmpty());
-	BOOL bHasJob  = (bLuggVal && m_pCV_DATA->V_SENSOR0_DATA_RD == _T("1"));
+	// [LGLS 2026-08-31] 색과 같은 기준으로 맞춘다 - 작업정보에 살아 있는 작업번호면 센서와 무관하게 보인다.
+	//   (색만 나오고 번호는 안 보이면 어느 작업인지 알 수 없다)
+	BOOL bJobAlive = (bLuggVal && m_pEquipment->m_pDoc->IsJobInJobMst(m_pCV_DATA->V_LUGG_NO_RD));
+	BOOL bHasJob  = (bLuggVal && (m_pCV_DATA->V_SENSOR0_DATA_RD == _T("1") || bJobAlive));
 
 	// [LGLS 2026-08-22] 컨베이어 위 작업번호 글자색:
 	//   작업정보(JOB_MST)에 실재하는 작업이면 검정, 실물만 남고 작업이 없는 잔재면 흰색.
 	//   (2초 캐시 조회 - CEcsDoc::IsJobInJobMst)
 	COLORREF clrJob = RGB(0, 0, 0);
-	if (bHasJob && !m_pEquipment->m_pDoc->IsJobInJobMst(m_pCV_DATA->V_LUGG_NO_RD))
+	if (bHasJob && !bJobAlive)
 		clrJob = RGB(255, 255, 255);
 
 	if (nMode == 1)
@@ -220,6 +223,29 @@ BOOL CTrackInfo::IsNoError(const CString& strErrCode)
 	return TRUE;		// 전부 '0' 이면 에러 없음
 }
 
+// [LGLS 2026-08-31] 작업구분 → 색. 종전에는 GetCvColor 안에만 있었는데,
+//   "트랙의 작업번호가 작업정보에 있으면 그 작업구분으로 칠한다" 규칙(사용자 지시)에서도
+//   같은 표를 써야 하므로 함수로 뽑았다. 0 = 해당 없음.
+static COLORREF ColorOfJobTyp(CConfig* pConfig, int nJobTyp)
+{
+	switch (nJobTyp)
+	{
+	case enJobTypeAutoSto			: return pConfig->m_clrUSER_COLOR_STO;
+	case enJobTypeAutoRet			: return pConfig->m_clrUSER_COLOR_RET;
+	case enJobTypeAutoR2R			: return pConfig->m_clrUSER_COLOR_RTR;
+	case enJobTypeAutoMove			: return pConfig->m_clrUSER_COLOR_MOVE;
+	case enJobTypeAutoA2A			: return pConfig->m_clrUSER_COLOR_ATA;
+	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_SEMI_STO;
+	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_SEMI_RET;
+	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_SEMI_RTR;
+	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
+	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_SEMI_PR;
+	case enJobTypeSemiW2W			: return pConfig->m_clrUSER_COLOR_SEMI_ATA;
+	case enJobTypeManual			: return pConfig->m_clrUSER_COLOR_MANUAL;
+	}
+	return CLR_INVALID;
+}
+
 COLORREF CTrackInfo::GetCvColor()
 {
 	CConfig* pConfig = m_pEquipment->m_pDoc->m_pConfig;
@@ -242,27 +268,32 @@ COLORREF CTrackInfo::GetCvColor()
 		
 	// [LGLS] 화물(작업) 없는 트랙은 중립 회색(11/12처럼). 잔여 JOB_TYP/DEST_POS 색 무시, 화물 있을 때만 작업색.
 
+	// [LGLS 2026-08-31] ★트랙에 작업번호가 있고 그 번호가 작업정보에 있으면
+	//   작업정보의 작업구분으로 칠한다★ (사용자 지시)
+	//   설비의 JOB_TYP_RD 는 지시 구간에서만 채워지고 그 밖에는 비어 있어서,
+	//   화물이 실려 있어도 색이 나오지 않던 자리가 있었다(C/V#4).
+	//   "작업정보에 있는가" 가 살아있는 작업과 잔재를 가르는 기준이 된다 -
+	//   잔재(작업정보에 없는 번호)는 종전대로 아래 센서 규칙을 따른다.
+	{
+		CString strLuggTrk = m_pCV_DATA->V_LUGG_NO_RD;
+		strLuggTrk.Trim();
+		if (!strLuggTrk.IsEmpty() && strLuggTrk != _T("0") && strLuggTrk != _T("0000"))
+		{
+			int nTypJob = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strLuggTrk));
+			COLORREF clrJobTyp = ColorOfJobTyp(pConfig, nTypJob);
+			if (clrJobTyp != CLR_INVALID)
+				return clrJobTyp;
+		}
+	}
+
 	if (m_pCV_DATA->V_SENSOR0_DATA_RD != _T("1"))
 		return LIGHT_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(m_pCV_DATA->V_JOB_TYP_RD);
-	switch (nJobTypTmp)
 	{
-	//case 1:return pConfig->m_clrUSER_COLOR_STO;
-	case enJobTypeAutoSto			: return pConfig->m_clrUSER_COLOR_STO;	// [LGLS 2026-07-19] TRAY_LEV 분기 제거(LGLS 미사용)
-
-	case enJobTypeAutoRet			: return pConfig->m_clrUSER_COLOR_RET;
-	case enJobTypeAutoR2R			: return pConfig->m_clrUSER_COLOR_RTR;
-	case enJobTypeAutoMove			: return pConfig->m_clrUSER_COLOR_MOVE;
-	case enJobTypeAutoA2A			: return pConfig->m_clrUSER_COLOR_ATA;	
-	case enJobTypeSemiSto			: return pConfig->m_clrUSER_COLOR_SEMI_STO;	// [LGLS] 반자동=다크
-	case enJobTypeSemiRet			: return pConfig->m_clrUSER_COLOR_SEMI_RET;
-	case enJobTypeSemiR2R			: return pConfig->m_clrUSER_COLOR_SEMI_RTR;
-	case enJobTypeSemiMove			: return pConfig->m_clrUSER_COLOR_SEMI_MOVE;
-	case enJobTypeSemiPR			: return pConfig->m_clrUSER_COLOR_SEMI_PR;
-	case enJobTypeSemiW2W			: return pConfig->m_clrUSER_COLOR_SEMI_ATA;
- 	case enJobTypeManual			: return pConfig->m_clrUSER_COLOR_MANUAL;
- 	}
+		COLORREF clrRd = ColorOfJobTyp(pConfig, nJobTypTmp);
+		if (clrRd != CLR_INVALID) return clrRd;
+	}
 
 	if (m_pCV_DATA->V_TRAY_LEV_RD == _T("1"))
 		return SKY_BLUE;
