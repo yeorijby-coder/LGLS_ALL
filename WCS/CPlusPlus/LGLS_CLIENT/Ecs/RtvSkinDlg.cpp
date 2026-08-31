@@ -42,6 +42,30 @@ CRtvSkinDlg::~CRtvSkinDlg()
 	this->DestroyWindow();
 }
 
+// [LGLS 2026-08-31] 작업구분을 "[코드]명칭" 으로 표기한다(작업상태 표기와 통일).
+static CString FormatJobTyp(const CString& strTyp)
+{
+	CString t(strTyp); t.Trim();
+	if (t.IsEmpty() || t == _T("0")) return _T("-");
+
+	LPCTSTR pszNm = _T("");
+	if      (t == _T("1"))  pszNm = _T("입고");
+	else if (t == _T("2"))  pszNm = _T("출고");
+	else if (t == _T("3"))  pszNm = _T("피킹출고");
+	else if (t == _T("4"))  pszNm = _T("랙이동");
+	else if (t == _T("5"))  pszNm = _T("호기간이동");
+	else if (t == _T("6"))  pszNm = _T("이동");
+	else if (t == _T("11")) pszNm = _T("반자동입고");
+	else if (t == _T("12")) pszNm = _T("반자동출고");
+	else if (t == _T("13")) pszNm = _T("반자동랙이동");
+	else if (t == _T("14")) pszNm = _T("반자동피킹출고");
+	else if (t == _T("15")) pszNm = _T("반자동이동");
+
+	CString s;
+	s.Format(_T("[%s]%s"), (LPCTSTR)t, pszNm);
+	return s;
+}
+
 void CRtvSkinDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CSkinDialog::DoDataExchange(pDX);
@@ -247,7 +271,9 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 			//   작업번호는 PLC 가 돌려주는 실적재 화물번호(PALLET_ON_VEHICLE_RD).
 			CString itn = pRsw->GetItem(_T("ITN"));
 			if (itn == _T("0") || itn == _T("0000") || itn.IsEmpty()) itn = lod;
-			CString jtTxt = (jt == _T("1")) ? _T("입고") : (jt == _T("2")) ? _T("출고") : _T("-");
+			// [LGLS 2026-08-31] 작업상태와 같은 "[코드]명칭" 표기로 통일한다(사용자 요구).
+			//   종전에는 1/2 만 알아서 반자동(11/12)이 "-" 로 나왔다.
+			CString jtTxt = FormatJobTyp(jt);
 			SetDlgItemText(IDC_EDIT_RTV_JOB_NO,   (itn == _T("0") || itn == _T("0000") || itn.IsEmpty()) ? _T("-") : itn);
 			SetDlgItemText(IDC_CBX_RTV_JOB_TYP,   jtTxt);
 			SetDlgItemText(IDC_CBX_RTV_START_POS, sLoc);
@@ -1221,7 +1247,7 @@ CString CRtvSkinDlg::GetQrySelectJOB_MST( CRTV_DATA* pRTV_DATA )
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_POS, '00000') AS DEST_POS ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.PRODUCT_ID, '') AS PRODUCT_ID ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.LOT_NO, '') AS LOT_NO ");
-	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.JOB_TYP, 'N') AS JOB_TYP ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("('[' + JM.JOB_TYP + '] ' + ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, ''), 'N') AS JOB_TYP ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_LOCATION, '00-000-00') AS START_LOCATION ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, '00-000-00') AS DEST_LOCATION ");
 	strSql += CRLF + _T("  FROM JOB_MST JM INNER JOIN RTV_DATA_LGLS RD_FK1 ");
@@ -1234,6 +1260,10 @@ CString CRtvSkinDlg::GetQrySelectJOB_MST( CRTV_DATA* pRTV_DATA )
 	strSql += CRLF + _T("                          ON CCD.CDX_CD = 'JOB_STATUS' ");
 	strSql += CRLF + _T("                         AND CCD.CCD_CD = JM.JOB_STATUS ");
 	strSql += CRLF + _T("                         AND CCD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("             LEFT OUTER JOIN COMMON_CODE CCD_JT ");
+	strSql += CRLF + _T("                          ON CCD_JT.CDX_CD = 'JOB_TYP' ");
+	strSql += CRLF + _T("                         AND CCD_JT.CCD_CD = JM.JOB_TYP ");
+	strSql += CRLF + _T("                         AND CCD_JT.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
 	strSql += CRLF + _T("UNION ALL ");
 	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("(JM.LUGG_NO, '0') AS LUGG_NO ");
 	strSql += CRLF + _T("	  , ") + _T("'[' + JM.JOB_STATUS + '] ' + ") + m_pDoc->NVL + _T("(CCD.CCD_NM_KOR, '0') AS JOB_STATUS ");
@@ -1241,7 +1271,7 @@ CString CRtvSkinDlg::GetQrySelectJOB_MST( CRTV_DATA* pRTV_DATA )
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_POS, '00000') AS DEST_POS ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.PRODUCT_ID, '') AS PRODUCT_ID ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.LOT_NO, '') AS LOT_NO ");
-	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.JOB_TYP, 'N') AS JOB_TYP ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("('[' + JM.JOB_TYP + '] ' + ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, ''), 'N') AS JOB_TYP ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_LOCATION, '00-000-00') AS START_LOCATION ");
 	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, '00-000-00') AS DEST_LOCATION ");
 	strSql += CRLF + _T("  FROM JOB_MST JM INNER JOIN RTV_DATA_LGLS RD_FK2 ");
@@ -1254,6 +1284,10 @@ CString CRtvSkinDlg::GetQrySelectJOB_MST( CRTV_DATA* pRTV_DATA )
 	strSql += CRLF + _T("                          ON CCD.CDX_CD = 'JOB_STATUS' ");
 	strSql += CRLF + _T("                         AND CCD.CCD_CD = JM.JOB_STATUS ");
 	strSql += CRLF + _T("                         AND CCD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("             LEFT OUTER JOIN COMMON_CODE CCD_JT ");
+	strSql += CRLF + _T("                          ON CCD_JT.CDX_CD = 'JOB_TYP' ");
+	strSql += CRLF + _T("                         AND CCD_JT.CCD_CD = JM.JOB_TYP ");
+	strSql += CRLF + _T("                         AND CCD_JT.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
 
 	return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
 }
@@ -1262,7 +1296,8 @@ CString CRtvSkinDlg::GetQrySelectRTV_STATUS_CCD( CRTV_DATA* pRTV_DATA )
 {
 	CString CRLF = _T("\r\n");
 	CString strSql = _T("");
-	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR,'0') AS JOB_TYP_RD ");
+	// [LGLS 2026-08-31] "[코드]명칭" 표기 (사용자 요구)
+	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("('[' + RD.JOB_TYP_OD + '] ' + ") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR,''), '0') AS JOB_TYP_RD ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_COMPLETE_RD.CCD_NM_KOR, '0') AS COMPLETE_RD ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_SENSOR_FK_RD.CCD_NM_KOR, '0') AS SENSOR_FK_RD ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_AUTO_MODE_RD.CCD_NM_KOR, '0') AS AUTO_MODE_RD ");

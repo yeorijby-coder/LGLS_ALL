@@ -3847,8 +3847,12 @@ namespace TSK_COMM_IOSCH
                 string q = "";
                 q += CRLF + " DELETE FROM JOB_MST                                             ";
                 q += CRLF + "  WHERE WH_TYP = :WH_TYP                                         ";
-                q += CRLF + "    AND ( TRY_CAST(LUGG_NO AS INT) >= 9000                       ";
-                q += CRLF + "       OR TRY_CAST(JOB_TYP AS INT) >= 10 )                       ";
+                // [LGLS 2026-08-31] ★TRY_CAST 를 쓰면 안 된다★ - 이 DB 는 SQL Server 2008(호환성 100) 이라
+                //   TRY_CAST(2012+)를 인식하지 못하고 DELETE 가 매 주기 통째로 실패했다.
+                //   (증상 : 반자동 9001 이 29 에서 지워지지 않고 남아 크레인 색까지 유지됐다)
+                //   캐스팅 없이 판정한다 - 작업번호는 4자리 고정이라 문자열 비교로 충분하다.
+                q += CRLF + "    AND ( (LEN(LUGG_NO) = 4 AND LUGG_NO >= '9000')                    ";
+                q += CRLF + "       OR JOB_TYP IN ('10','11','12','13','14','15') )              ";
                 q += CRLF + "    AND ( (JOB_TYP IN ('1','11','4','14') AND JOB_STATUS = '29')  ";
                 q += CRLF + "       OR (JOB_TYP NOT IN ('1','11','4','14') AND JOB_STATUS = '19') ) ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
