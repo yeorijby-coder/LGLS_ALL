@@ -445,7 +445,18 @@ void CSemiTestDlg::StepRow(int r)
 	else if (m_row[r].nState == 1)
 	{
 		int nRet = CheckJob(r);
-		if (nRet == -1) { AddLog(r + 1, _T("-"), m_row[r].strLugg, _T("Client"), _T("CSemiTestDlg::StepRow"), _T("입고 작업이 사라졌습니다 - 다음으로 진행")); m_row[r].nState = 0; return; }
+		// [LGLS 2026-08-31] ★입고만 반복되던 문제★ (사용자 지적)
+		//   반자동 삭제가 IO_TASK 로 옮겨간 뒤로, IO_TASK 가 29 를 보자마자 지워버려
+		//   Client 폴링이 29 를 한 번도 못 보고 "사라짐"(-1) 만 봤다. 그래서 출고를 만들지 않고
+		//   입고로 되돌아갔다. 반자동에서 IO_TASK 는 29(입고)/19(출고) 에서만 지우므로
+		//   ★사라짐 = 완료★ 로 본다.
+		if (nRet == -1)
+		{
+			AddLog(r + 1, _T("입고완료"), m_row[r].strLugg, _T("IO_SCH"), _T("DeleteSemiFinished"), _T("입고 작업 삭제 감지 (29 완료) → 출고 생성"));
+			if (m_bRun && InsertJob(r, FALSE)) m_row[r].nState = 2;
+			else                              m_row[r].nState = 0;
+			return;
+		}
 		if (nRet == 1)
 		{
 			DeleteJob(r);
@@ -457,7 +468,13 @@ void CSemiTestDlg::StepRow(int r)
 	else if (m_row[r].nState == 2)
 	{
 		int nRet = CheckJob(r);
-		if (nRet == -1) { AddLog(r + 1, _T("-"), m_row[r].strLugg, _T("Client"), _T("CSemiTestDlg::StepRow"), _T("출고 작업이 사라졌습니다 - 다음으로 진행")); m_row[r].nState = 0; return; }
+		// [LGLS 2026-08-31] 위와 같다 - 사라짐 = 출고 완료(19). 한 사이클을 끝낸다.
+		if (nRet == -1)
+		{
+			AddLog(r + 1, _T("출고완료"), m_row[r].strLugg, _T("IO_SCH"), _T("DeleteSemiFinished"), _T("출고 작업 삭제 감지 (19 완료) → 사이클 종료"));
+			m_row[r].nState = 0;
+			return;
+		}
 		if (nRet == 1)
 		{
 			DeleteJob(r);
