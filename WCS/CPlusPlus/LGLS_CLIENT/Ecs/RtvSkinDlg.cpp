@@ -962,6 +962,32 @@ void CRtvSkinDlg::UpdateRtvData(int nBtnJob)
 	m_pDoc->BeginTrans_DLG();
 	isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
 
+	// [LGLS 2026-09-01] ★삭제는 최소한 내부 작업번호(지시값)를 지운다★ (사용자 지시)
+	//   DELFK 명령은 통신 Task 에 소비자가 없어 명령만 남고 지시 정보가 그대로였다.
+	//   지시(_OD) 일체를 비워 스케줄러/화면이 이 RTV 를 유휴로 보게 한다.
+	if (isSuccess && (nBtnJob == EN_BtnRtvFk1Delete || nBtnJob == EN_BtnRtvFk2Delete || nBtnJob == EN_BtnRtvFk1Fk2Delete))
+	{
+		CString strSqlClr;
+		strSqlClr.Format(_T(" UPDATE RTV_DATA_LGLS                      
+")
+			_T("    SET LUGG_OD      = '0000'                
+")
+			_T("      , PALLET_ID_OD = '0000'                
+")
+			_T("      , JOB_TYP_OD   = '0'                   
+")
+			_T("      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' 
+")
+			_T("      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' 
+")
+			_T("      , RTV_DEST_OD = '', RTV_PASSCV_OD = '' 
+")
+			_T("  WHERE WH_TYP = '%s'                        
+")
+			_T("    AND RTV_NO = '%s'                          "), strWhTyp, strRtvNo);
+		isSuccess = m_pDoc->ExcuteQueryString_DLG(strSqlClr);
+	}
+
 	if(isSuccess == TRUE)
 	{
 		CString strLOG_LUGG_NO1 = m_pRTV_DATA->V_ITN_LUGG_FK1;
