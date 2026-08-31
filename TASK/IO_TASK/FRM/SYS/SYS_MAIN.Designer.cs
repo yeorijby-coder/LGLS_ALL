@@ -41,7 +41,6 @@
             this.chkStopLog = new System.Windows.Forms.CheckBox();
             this.pnlTop = new System.Windows.Forms.Panel();
             this.chkLogDelTest = new System.Windows.Forms.CheckBox();
-            this.chkSweepRecover = new System.Windows.Forms.CheckBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.TABLOG = new System.Windows.Forms.TabControl();
             this.tbR = new System.Windows.Forms.TabPage();
@@ -158,7 +157,6 @@
             //
             // pnlTop
             //
-            this.pnlTop.Controls.Add(this.chkSweepRecover);
             this.pnlTop.Controls.Add(this.label1);
             this.pnlTop.Controls.Add(this.chkLogDelTest);
             this.pnlTop.Controls.Add(this.chkStopLog);
@@ -182,21 +180,9 @@
             this.chkLogDelTest.Text = "Log Delete Test(Always Read ini) ";
             this.chkLogDelTest.UseVisualStyleBackColor = true;
             //
-            // chkSweepRecover
             //   [LGLS 2026-08-30] 자동 청소/복구 사용 여부.
             //   RecoverOutOrphans + Sweep 3종을 한 번에 켜고 끈다.
             //
-            this.chkSweepRecover.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.chkSweepRecover.AutoSize = true;
-            this.chkSweepRecover.Checked = true;
-            this.chkSweepRecover.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkSweepRecover.Location = new System.Drawing.Point(476, 30);
-            this.chkSweepRecover.Name = "chkSweepRecover";
-            this.chkSweepRecover.Size = new System.Drawing.Size(240, 16);
-            this.chkSweepRecover.TabIndex = 795;
-            this.chkSweepRecover.Text = "자동 청소/복구 (고아복구 + 흔적정리)";
-            this.chkSweepRecover.UseVisualStyleBackColor = true;
-            this.chkSweepRecover.CheckedChanged += new System.EventHandler(this.chkSweepRecover_CheckedChanged);
             //
             // splitContainer1
             //
@@ -337,7 +323,6 @@
 		internal System.Windows.Forms.CheckBox chkStopLog;
         internal System.Windows.Forms.PictureBox picDbCn0;
 		private System.Windows.Forms.Panel pnlTop;
-		private System.Windows.Forms.CheckBox chkSweepRecover;	// [LGLS 2026-08-30] 자동 청소/복구
 		private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TabControl TABLOG;
         private System.Windows.Forms.TabPage tbR;
