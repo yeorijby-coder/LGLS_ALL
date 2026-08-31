@@ -579,7 +579,18 @@ namespace EQP_SIM
             finally { rebuilding = false; }
         }
 
-        // [LGLS 2026-09-01] 이 스텝보다 앞에 있는, 주소가 다른 R 트래킹 스텝의 워드주소 (없으면 -1)
+        // [LGLS 2026-09-01] 이 R 값을 쓰는 주체가 설비/PLC 인가 (시나리오 모드에선 정지 → 재현 필요).
+        //   src 의 함수명으로 가른다 : CvTrackingWrite/ConsumeCommands = WCS 가 쓰는 값(관측 대기),
+        //   PollObservations/CvStatusScenario 또는 src 없음 = WCS 는 읽기만(설비가 씀 → 재현 대상).
+        //   ★스텝 22(RGV 탑재번호, src=PollObservations)에서 무한 대기하던 원인★ - src 유무로만 갈랐었다.
+        private static bool IsPlcWritten(ScStep st)
+        {
+            if (st.Kind != 2 || st.Dev != 'R') return false;
+            if (string.IsNullOrEmpty(st.Src)) return true;
+            return st.Src.Contains("PollObservations") || st.Src.Contains("CvStatusScenario");
+        }
+
+        // 이 스텝보다 앞에 있는, 주소가 다른 R 트래킹 스텝의 워드주소 (없으면 -1)
         private int PrevRAddr(ScStep st)
         {
             int idx = sc.Steps.IndexOf(st);
@@ -619,7 +630,7 @@ namespace EQP_SIM
                         BackColor = Color.WhiteSmoke, Padding = new Padding(6, 0, 0, 0)
                     };
                 }
-                else if (st.Kind == 2 && st.Dev == 'R' && string.IsNullOrEmpty(st.Src) && PrevRAddr(st) >= 0)
+                else if (st.Kind == 2 && IsPlcWritten(st) && PrevRAddr(st) >= 0)
                 {
                     // [LGLS 2026-09-01] ★ID Shift(트래킹 이동)는 PLC 래더의 일★ (사용자 실측 : 스텝 10 정지)
                     //   시나리오 모드는 자동 운전을 멈추므로 이 이동을 재현할 주체가 없다 -
@@ -735,7 +746,7 @@ namespace EQP_SIM
                     //   PLC 재현 스텝(src 없음)은 사람이 하던 이동을 자동이 대신 수행한다.
                     string v = mem.GetString('R', st.WordAddr, 2);
                     bool hot = !string.IsNullOrEmpty(v) && v != "0" && v != "0000";
-                    if (!hot && string.IsNullOrEmpty(st.Src))
+                    if (!hot && IsPlcWritten(st))
                     {
                         int src = PrevRAddr(st);
                         if (src >= 0)
@@ -766,6 +777,16 @@ namespace EQP_SIM
                     stepCtrls[i].BackColor = sc.Steps[i].Val ? Color.FromArgb(220, 240, 255) : Color.FromArgb(255, 235, 235);
             if (idx < stepCtrls.Count && sc.Steps[idx].Kind == 0)
                 stepCtrls[idx].BackColor = Color.Gold;
+            // [LGLS 2026-09-01] 어디서 기다리는지 모든 스텝 종류에 표시(▶) - 종전에는 EQP 버튼만
+            //   금색이라, ACK/관측 대기 중이면 멈춘 위치가 보이지 않았다.
+            for (int i = 0; i < stepCtrls.Count; i++)
+            {
+                string t = stepCtrls[i].Text;
+                bool cur = (i == idx);
+                bool marked = t.StartsWith("▶ ");
+                if (cur && !marked) stepCtrls[i].Text = "▶ " + t;
+                else if (!cur && marked) stepCtrls[i].Text = t.Substring(2);
+            }
         }
         private void HighlightNone()
         {
