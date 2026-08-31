@@ -392,6 +392,20 @@ void CRtvInfo::InvokeControl(CRTV_DATA* pRTV_DATA)
 		return;
 	};
 
+	// [LGLS 2026-08-31] ★실제로 호출되는 쪽은 이 오버로드다★ - 강제 갱신을 여기 넣는다.
+	//   (인자 없는 InvokeControl() 에 먼저 넣었는데 그쪽은 호출되지 않아 허탕이었다.)
+	//   작업정보가 바뀌면 설비값이 그대로라도 다시 그린다 - 안 그러면 삭제된
+	//   작업번호가 화면에 그대로 남는다(9010 사례).
+	if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
+	{
+		m_pEquipment->m_pDoc->RefreshJobCache();
+		if (m_dwJobVerSeen != m_pEquipment->m_pDoc->m_dwJobCacheVer)
+		{
+			m_dwJobVerSeen = m_pEquipment->m_pDoc->m_dwJobCacheVer;
+			pRTV_DATA->m_bModified = TRUE;
+		}
+	}
+
 	if (pRTV_DATA->m_bModified == FALSE)
 		return; 
 
