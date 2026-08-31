@@ -423,16 +423,14 @@ namespace TSK_HostCom
                 m_strSql = modDefApp.CRLF + " SELECT * FROM JOB_MST                   ";
                 m_strSql += modDefApp.CRLF + "  WHERE JOB_STATUS = " + m_BDb.ParamsAdd("JOB_STATUS", nJobStatus.ToString());
                 m_strSql += modDefApp.CRLF + "    AND WH_TYP     = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
-                // [LGLS 2026-08-31] ★완료 상태는 작업구분으로 좁힌다★
-                //   신규 상태 체계에서 출고는 29(SC 구동완료)를 ★중간에★ 지난다.
-                //     입고 : 99 → 10 → 15 → 35 → 39 → 15 → 25 → 29 → 09   (29 = 최종)
-                //     출고 : 99 → 20 → 25 → 29 → 15 → 35 → 39 → 15 → 19 → 09  (29 = 중간, 19 = 최종)
-                //   상태만 보고 고르면 출고의 중간 29 를 완료로 오인해 조기 완료보고가 나간다.
-                //     19 = 출고(2/12) 계열만 / 29 = 입고(1/11) 계열만
+                // [LGLS 2026-08-31] 19 는 출고 계열 전용이다. 입고는 19 를 지나지 않는다.
+                //   29 는 좁히지 않는다 - ★출고의 29 도 보고 대상★ 이기 때문이다(아래 1차/2차 참조).
                 if (nJobStatus == 19)
                     m_strSql += modDefApp.CRLF + "    AND JOB_TYP IN ('2','12','3','5','6') ";
+                // [LGLS 2026-08-31] 29(크레인 완료)는 1차 보고를 아직 안 낸 것만.
+                //   출고는 29 에 머무는 동안 매 주기 재보고될 수 있어 WC_STEP 으로 한 번만 나가게 막는다.
                 else if (nJobStatus == 29)
-                    m_strSql += modDefApp.CRLF + "    AND JOB_TYP IN ('1','11','4') ";
+                    m_strSql += modDefApp.CRLF + "    AND ISNULL(WC_STEP,'0') = '0' ";
                 int nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
                 if (nSelCnt < 0) 
                 { 
@@ -1653,9 +1651,14 @@ namespace TSK_HostCom
 
             // [LGLS] ECS 원본(WMSCommand F, BODY 10) 규격:
             //   F + JobDefine(1) + LuggNo(4) + CompleteClass(1) + StepCount(1)
-            //   최종(전체)완료 보고 — 출고(2)는 StepCount='2', 그 외 '1'
-            //   (WhDefine/DeviceNo 필드 없음 — HOST_SIM 은 StepCount='2' 로 출고 전체완료를 판정)
-            strTemp = string.Format("F{0:0}{1:0000}{2:0}{3}", nJobType, nLuggNum, nClass, (nJobType == 2 ? "2" : "1"));
+            //   [LGLS 2026-08-31] ★1차 / 2차 완료보고★ (사용자 확정)
+            //     29 = 크레인이 완료했다는 뜻이다.
+            //          출고에서는 이 시점에 랙이 비므로, 상위가 그 셀에 입고 예약을 더 빨리 걸 수 있다.
+            //          → 1차 완료보고(StepCount='1'). ★작업은 지우지 않고 15 로 계속 간다.★
+            //     19 = 출고대 도착 = 작업이 끝났다는 뜻 → 2차 완료보고(StepCount='2') → 09 → 응답 → 삭제
+            //     입고는 크레인 완료(29)가 곧 작업 완료다 → StepCount='1' 로 한 번만 보고하고 09 → 삭제
+            string strStep = (nJobStatus == 19) ? "2" : "1";
+            strTemp = string.Format("F{0:0}{1:0000}{2:0}{3}", nJobType, nLuggNum, nClass, strStep);
 
             int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
             //MSG_ORDER_CNT
@@ -1893,6 +1896,36 @@ namespace TSK_HostCom
             //   상위가 없으면 9(완료) 로 남아 "일은 끝났는데 상위 응답 대기 중"임이 화면에 드러난다.
             //   ※송신에 실패하면 원래 상태(19/29)로 되돌려 다음 주기에 다시 보고한다 —
             //     되돌리지 않으면 IsJobExist(19/29) 가 못 찾아 작업이 9 에 갇힌다(도착보고에서 겪은 함정).
+            // [LGLS 2026-08-31] ★출고의 29 는 1차 완료보고다★ (사용자 확정)
+            //   크레인이 랙에서 화물을 꺼냈다는 뜻이고, 그 셀이 비었으니 상위가 입고 예약을 앞당길 수 있다.
+            //   작업은 아직 끝나지 않았다 - 15 → 35 → 39 → 15 → 19(출고대 도착) 로 계속 간다.
+            //   그러므로 여기서는 ★보고만 하고 상태를 09 로 올리지도, 작업을 지우지도 않는다.★
+            //   재보고 방지는 WC_STEP='1' 로 한다(위 조회가 WC_STEP='0' 만 고른다).
+            bool bFirstOfRetrieval = (nJobStatus == 29) && (nJobType == 2 || nJobType == 12);
+            if (bFirstOfRetrieval)
+            {
+                if (!RequestSrv(iTxCnt.ToString()))
+                    return false;                                  // 실패 시 WC_STEP 유지 → 다음 주기 재시도
+
+                m_BDb.BeginTrans();
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + "  UPDATE JOB_MST ";
+                m_strSql += modDefApp.CRLF + "     SET WC_STEP     = '1' ";
+                m_strSql += modDefApp.CRLF + "       , UPD_USER_ID = 'HOST_TASK' ";
+                m_strSql += modDefApp.CRLF + "       , UPD_DT      = " + modDateTime.SYSDATE;
+                m_strSql += modDefApp.CRLF + "   WHERE WH_TYP      = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "     AND LUGG_NO     = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
+                if (m_BDb.ExcuteNonQry_Par(ref m_strSql) != 1)
+                {
+                    m_BDb.RollbackTrans();
+                    modCmWork.ShowMsgClient(strTitle + "1차 완료보고 표시 실패 [작업번호:" + strLuggNum + "]", modDefApp.MSG_ERR);
+                    return false;
+                }
+                m_BDb.CommitTrans();
+                modCmWork.ShowMsgClient(strTitle + string.Format("출고 1차 완료보고(크레인 완료) 완료 - 랙 셀 해제. [작업번호:{0}]", strLuggNum), modDefApp.MSG_IMP);
+                return true;
+            }
+
             if (!UpdateJobStatusTo(strLuggNum, JOB_ST_DONE))
                 return false;
 
