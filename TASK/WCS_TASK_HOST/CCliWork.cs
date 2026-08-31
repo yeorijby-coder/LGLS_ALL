@@ -423,6 +423,16 @@ namespace TSK_HostCom
                 m_strSql = modDefApp.CRLF + " SELECT * FROM JOB_MST                   ";
                 m_strSql += modDefApp.CRLF + "  WHERE JOB_STATUS = " + m_BDb.ParamsAdd("JOB_STATUS", nJobStatus.ToString());
                 m_strSql += modDefApp.CRLF + "    AND WH_TYP     = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                // [LGLS 2026-08-31] ★완료 상태는 작업구분으로 좁힌다★
+                //   신규 상태 체계에서 출고는 29(SC 구동완료)를 ★중간에★ 지난다.
+                //     입고 : 99 → 10 → 15 → 35 → 39 → 15 → 25 → 29 → 09   (29 = 최종)
+                //     출고 : 99 → 20 → 25 → 29 → 15 → 35 → 39 → 15 → 19 → 09  (29 = 중간, 19 = 최종)
+                //   상태만 보고 고르면 출고의 중간 29 를 완료로 오인해 조기 완료보고가 나간다.
+                //     19 = 출고(2/12) 계열만 / 29 = 입고(1/11) 계열만
+                if (nJobStatus == 19)
+                    m_strSql += modDefApp.CRLF + "    AND JOB_TYP IN ('2','12','3','5','6') ";
+                else if (nJobStatus == 29)
+                    m_strSql += modDefApp.CRLF + "    AND JOB_TYP IN ('1','11','4') ";
                 int nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
                 if (nSelCnt < 0) 
                 { 
