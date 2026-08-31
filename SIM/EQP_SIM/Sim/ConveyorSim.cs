@@ -759,6 +759,11 @@ namespace EQP_SIM.Sim
                 int nextIdx = Def.OrderOf(path[i + 1]);
                 SimPallet p;
                 if (!Pallets.TryGetValue(curIdx, out p)) continue;
+                // [LGLS 2026-09-01] ★배출 표시된 파렛트는 움직이지 않는다★ (9031 역류 실측)
+                //   배출은 2단계(표시 → OutTrackClearMs 후 제거)인데, 그 사이 벨트 방향이
+                //   입고로 복귀하면 이 이동이 배출 화물을 출고대(22)에서 안쪽(21)으로
+                //   되끌어 들였다. 제거 단계는 출고대만 보므로 화물이 121 에 영구 잔류했다.
+                if (p.DischargedAt != DateTime.MinValue) continue;
                 if (!bDualCv && p.Dir != dir) continue;             // 전용 컨베이어는 종전대로 적재 주체로 판정
                 if (bDualCv) p.Dir = dir;                           // 겸용대는 현재 벨트 방향으로 정렬
                 if (Pallets.ContainsKey(nextIdx)) continue;
