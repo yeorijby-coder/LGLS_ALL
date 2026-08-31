@@ -1178,20 +1178,6 @@ namespace TSK_COMM_IOSCH
                             DbgLog("SCHS_" + scNo, string.Format("[SC] 입고 보류 - 트랙 {0} 입고 HS 신호 없음(작업 {1})", _wT, luggNo));
                             continue;
                         }
-                        // [LGLS 2026-08-31] ★잔재가 다음 작업을 막는 고리를 여기서 끊는다★
-                        //   하역 트랙에 화물은 없는데(센서 OFF) 이 작업의 기록만 남아 있으면,
-                        //   지난 사이클이 남긴 것이다. 그대로 두면 출고 HS 가 서지 않아
-                        //   이 작업이 상태 20 에서 영영 나가지 못한다(실측 1분 50초 정체).
-                        //   해제를 "다음 지시가 나갈 때"에 두면 지시 자체가 막혀 있어 소용이 없다 -
-                        //   막힌 자리에서 풀어야 한다.
-                        if (jobTyp == "2" && IsTrackEmpty(_wT) && (TrackLugg(_wT) ?? "").Trim() == luggNo)
-                        {
-                            ReleaseTrackOdAt(_wT);
-                            DbgLog("TRKREL_" + _wT, string.Format("[SC] 하역 트랙 {0} 의 지난 사이클 기록 해제 (작업 {1}) - 화물 없음",
-                                        _wT, luggNo));
-                            continue;   // PLC 에 반영된 뒤 다음 폴링에 지시
-                        }
-
                         if (jobTyp == "2" && !IsHsOn(_wT, "RETHS_READY_RD"))
                         {
                             DbgLog("SCHS_" + scNo, string.Format("[SC] 출고 보류 - 트랙 {0} 출고 HS 신호 없음(작업 {1})", _wT, luggNo));
@@ -1230,9 +1216,6 @@ namespace TSK_COMM_IOSCH
                     if (ok)
                     {
                         _pBdb.Commit();
-                        // [LGLS 2026-08-31] 크레인이 화물을 가져간다 - 앞 구간의 착지 기록을 놓는다.
-                        //   (화물이 실려 있는 트랙은 ReleaseTrackOd 가 센서로 걸러 건드리지 않는다)
-                        ReleaseTrackOd(luggNo);
                         m_dicPrevSC[key] = luggNo;
                         MakeMsg_Imp(string.Format("[SCH][SC] S/C #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", scNo, luggNo, ST_SC_RUN));
                     }
@@ -1430,8 +1413,6 @@ namespace TSK_COMM_IOSCH
                     //   39 인 작업과 그 도착지가 그대로 남아 고아가 생길 자리가 없다.
                     bool ok = UpdateRtvData(rtvNo, jobTyp, luggNo, pickupTrack, dropTrack, ref rtn)
                               && UpdateJobStatusHs(ST_RGV_RUN, luggNo, dropTrack, ref rtn);
-                    // [LGLS 2026-08-31] 화물이 떠나는 것이 확정됐다 - 앞 구간의 착지 기록을 놓는다.
-                    if (ok) ReleaseTrackOd(luggNo);
                     if (ok) m_dicLineRsv[luggNo] = dropTrack;   // [LGLS] 드롭 라인 선점(완료 시 해제)
 
                     if (ok)
@@ -3851,18 +3832,32 @@ namespace TSK_COMM_IOSCH
         ///   설비가 하역트랙(짝수) → RGV 픽업트랙(홀수) 으로 곧바로 옮기므로 둘 다 본다.
         ///   ★신호(H/S)는 펄스라 폴링이 놓칠 수 있지만 화물은 남는다★ - 위치로 보는 편이 견고하다.
         /// </summary>
-        private bool LuggLandedAt(string strTrack, string strLuggNo)
+        /// <summary>
+        /// [LGLS 2026-08-31] ★화물이 실제로 있는 트랙을 돌려준다★ (사용자 지적으로 원인 확인)
+        ///   종전 LuggLandedAt 은 "하역트랙 또는 그 홀수 짝 어디에든 있으면 착지" 로 판정만 하고,
+        ///   기록은 늘 하역트랙(짝수)에 했다. 그런데 설비는 크레인이 내려놓자마자 화물을
+        ///   짝수(하역) → 홀수(RGV 픽업) 로 옮긴다. 그래서 ★화물은 105 에 있는데 기록은 106 에★
+        ///   써졌다 - 태어날 때부터 잔재인 기록이다.
+        ///   ("RTV 가 출고 화물을 가져가면 출고 HS 에 데이터가 써진다" 의 정체)
+        ///   찾은 자리를 그대로 돌려주어 그 자리에 기록하게 한다. 없으면 빈 문자열.
+        /// </summary>
+        private string LuggLandedTrack(string strTrack, string strLuggNo)
         {
-            if (string.IsNullOrEmpty(strTrack) || string.IsNullOrEmpty(strLuggNo)) return false;
-            if ((TrackLugg(strTrack) ?? "").Trim() == strLuggNo) return true;
+            if (string.IsNullOrEmpty(strTrack) || string.IsNullOrEmpty(strLuggNo)) return "";
+            if ((TrackLugg(strTrack) ?? "").Trim() == strLuggNo) return strTrack;
 
             int n;
             if (int.TryParse(strTrack, out n))
             {
                 string odd = (n % 2 == 0) ? (n - 1).ToString() : (n + 1).ToString();
-                if ((TrackLugg(odd) ?? "").Trim() == strLuggNo) return true;
+                if ((TrackLugg(odd) ?? "").Trim() == strLuggNo) return odd;
             }
-            return false;
+            return "";
+        }
+
+        private bool LuggLandedAt(string strTrack, string strLuggNo)
+        {
+            return !string.IsNullOrEmpty(LuggLandedTrack(strTrack, strLuggNo));
         }
 
         /// <summary>
@@ -3924,21 +3919,23 @@ namespace TSK_COMM_IOSCH
                     if (string.IsNullOrEmpty(hs)) continue;
 
                     // [LGLS 2026-08-31] 신호가 아니라 화물 위치로 판정한다(위 LandScDrop 주석 참조).
-                    if (!LuggLandedAt(hs, luggNo))
+                    string landTrk = LuggLandedTrack(hs, luggNo);
+                    if (string.IsNullOrEmpty(landTrk))
                     {
                         DbgLog("LANDRGV_" + luggNo, "[착지대기] " + luggNo + " RGV 도착지 " + hs + " 에 아직 화물 없음");
                         continue;
                     }
 
                     string rtn = "";
-                    if (!WriteTrackData(hs, luggNo, ref rtn))
+                    // [LGLS 2026-08-31] 지정 도착지가 아니라 ★화물이 실제로 있는 자리★ 에 기록한다.
+                    if (!WriteTrackData(landTrk, luggNo, ref rtn))
                     {
-                        MakeMsg_Error(string.Format("[SCH][RGV] 착지 기록 실패({0} → {1}): {2}", luggNo, hs, rtn));
+                        MakeMsg_Error(string.Format("[SCH][RGV] 착지 기록 실패({0} → {1}): {2}", luggNo, landTrk, rtn));
                         continue;
                     }
                     if (UpdateJobStatus(ST_CV_RUN, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RGV 도착지 {1} 기록 완료 → 상태 '{2}'",
-                                    luggNo, hs, ST_CV_RUN));
+                                    luggNo, landTrk, ST_CV_RUN));
                     else
                         MakeMsg_Error(string.Format("[SCH][RGV] 착지 전이 실패({0}): {1}", luggNo, rtn));
                 }
@@ -3985,21 +3982,23 @@ namespace TSK_COMM_IOSCH
                     //   놓치면 작업이 29 에 영원히 갇힌다(실측 : 0426/0428 이 35분 잔류, 크레인에는
                     //   색만 남음). 화물은 남지만 신호는 사라지므로 위치로 본다.
                     //   하역트랙(짝수) 또는 그 홀수 짝 어디에든 그 작업 화물이 있으면 착지 완료다.
-                    if (!LuggLandedAt(hs, luggNo))
+                    string landTrk = LuggLandedTrack(hs, luggNo);
+                    if (string.IsNullOrEmpty(landTrk))
                     {
                         DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 에 아직 화물 없음");
                         continue;
                     }
 
                     string rtn = "";
-                    if (!WriteTrackData(hs, luggNo, ref rtn))
+                    // [LGLS 2026-08-31] 지정 도착지가 아니라 ★화물이 실제로 있는 자리★ 에 기록한다.
+                    if (!WriteTrackData(landTrk, luggNo, ref rtn))
                     {
-                        MakeMsg_Error(string.Format("[SCH][SC] 착지 기록 실패({0} → {1}): {2}", luggNo, hs, rtn));
+                        MakeMsg_Error(string.Format("[SCH][SC] 착지 기록 실패({0} → {1}): {2}", luggNo, landTrk, rtn));
                         continue;
                     }
                     if (UpdateJobStatus(ST_CV_RUN, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} SC 도착지 {1} 기록 완료 → 상태 '{2}'",
-                                    luggNo, hs, ST_CV_RUN));
+                                    luggNo, landTrk, ST_CV_RUN));
                     else
                         MakeMsg_Error(string.Format("[SCH][SC] 착지 전이 실패({0}): {1}", luggNo, rtn));
                 }
@@ -4491,68 +4490,16 @@ namespace TSK_COMM_IOSCH
         ///   LUGG_NO_OD 가 남아 있으면 WCS_TASK_CV 가 그 값을 R 트래킹에 다시 써서,
         ///   설비가 이미 비운 출고대에 작업번호가 되살아난다(작업 1401 사례 - 8시간 정체).
         /// </summary>
-        /// <summary>
-        /// [LGLS 2026-08-31] ★착지 기록의 수명을 끝낸다★ (사용자 지적으로 원인 확인)
-        ///   LandScDrop/LandRgvDrop 이 도착지 트랙에 LUGG_NO_OD 를 써 넣는데(반출 소유권),
-        ///   아무도 되돌리지 않아 그 값이 그대로 눌러앉았다. 그 한 번의 기록이
-        ///   CvTrackingWrite 로 PLC R 영역에 실리고 → LUGG_NO_RD 로 다시 읽혀 화면에 남는다.
-        ///   화물은 1~2초 뒤 다음 트랙으로 떠나므로 ★번호만★ 남는다.
-        ///   (2026-08-31 실측 : 21:41:55 "SC 도착지 106 기록" → 21:41:56 RGV 픽업 105 지시.
-        ///    1초 만에 무의미해진 기록이 106 에 그대로 남았다.)
-        ///   더 나쁜 것은 그 잔재가 그 트랙을 쓰려는 ★다음 작업을 막는다★ 는 점이다 -
-        ///   9001 이 상태 20 에서 1분 50초 갇혔다가 106 의 OD 가 지워진 직후 지시가 나갔다.
-        ///
-        ///   그래서 다음 구간 지시가 나가는 순간(= 화물이 그 트랙을 떠나는 것이 확정되는 순간)
-        ///   이 작업이 잡고 있던 트랙 기록을 놓는다. ClearCvOd 와 달리 TRACKING_WRITE_YN='Y' 로
-        ///   두어 PLC R 영역까지 0 으로 밀어야 화면의 번호도 함께 사라진다.
-        /// </summary>
-        /// <summary>
-        /// [LGLS 2026-08-31] 트랙을 지정해서 그 자리의 트래킹을 놓는다.
-        ///   ReleaseTrackOd(작업번호) 는 LUGG_NO_OD 가 그 번호일 때만 걸린다. 그런데
-        ///   OD 는 이미 '0000' 인데 PLC R 영역(→ LUGG_NO_RD)에만 번호가 남은 경우가 있어
-        ///   0건 UPDATE 가 되고 잔재가 그대로였다(실측). 그 자리를 직접 지목해
-        ///   TRACKING_WRITE_YN='Y' 로 두어 CvTrackingWrite 가 R 영역에 0 을 쓰게 한다.
-        /// </summary>
-        private void ReleaseTrackOdAt(string strTrack)
-        {
-            try
-            {
-                string strSql = "";
-                strSql += CRLF + " UPDATE CV_DATA                              ";
-                strSql += CRLF + "    SET LUGG_NO_OD = '0000'                  ";
-                strSql += CRLF + "      , TRACKING_WRITE_YN = 'Y'              ";
-                strSql += CRLF + "  WHERE WH_TYP     = :WH_TYP                 ";
-                strSql += CRLF + "    AND MC_NO      = :MC_NO                  ";
-                strSql += CRLF + "    AND " + DbLang.NVL + "(SENSOR0_DATA_RD,'0') <> '1'   ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = strTrack;
-                DbNonQry(strSql);
-            }
-            catch { }
-        }
 
-        private void ReleaseTrackOd(string strLuggNo)
-        {
-            try
-            {
-                string strSql = "";
-                strSql += CRLF + " UPDATE CV_DATA                              ";
-                strSql += CRLF + "    SET LUGG_NO_OD = '0000'                  ";
-                strSql += CRLF + "      , TRACKING_WRITE_YN = 'Y'              ";
-                strSql += CRLF + "  WHERE WH_TYP     = :WH_TYP                 ";
-                strSql += CRLF + "    AND LUGG_NO_OD = :LUGG_NO                ";
-                strSql += CRLF + "    AND " + DbLang.NVL + "(SENSOR0_DATA_RD,'0') <> '1'   ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
-                _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = Cap(strLuggNo, 4);
-                DbNonQry(strSql);
-            }
-            catch { }
-        }
-
+        /// <summary>
+        /// [LGLS 2026-08-31] ★잔재의 근원이던 비대칭을 바로잡았다★
+        ///   종전에는 TRACKING_WRITE_YN='N' 이었다. 그러면 DB 의 LUGG_NO_OD 만 지워지고
+        ///   ★PLC R 트래킹 영역은 그 번호를 그대로 들고 있다★. 화면의 번호는 그 R 영역을
+        ///   되읽은 LUGG_NO_RD 이므로, "지시값은 비었는데 번호는 남아 있는" 상태가 된다.
+        ///   (실측 : 106 이 od=0000 인데 rd=9001 로 1분 넘게 남았다. 작업번호로 찾는
+        ///    해제문이 0건 UPDATE 로 헛돈 이유도 이것이다.)
+        ///   지우려면 PLC 까지 0 을 밀어야 한다 - 'Y' 로 두어 CvTrackingWrite 가 쓰게 한다.
+        /// </summary>
         private void ClearCvOd(string strLuggNo)
         {
             try
