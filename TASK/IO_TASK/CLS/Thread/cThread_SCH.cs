@@ -3970,8 +3970,12 @@ namespace TSK_COMM_IOSCH
                     string hs     = (GetVal(dt.Rows[i], "HS") ?? "").Trim();
                     if (string.IsNullOrEmpty(hs)) continue;
 
-                    // SC 하역 도착지의 도착 신호가 아직 켜져 있으면 아직 내려놓기 전이다.
-                    if (IsHsOn(hs, "STOHS_READY_RD"))
+                    // [LGLS 2026-08-31] ★출고 하역 도착지는 출고 H/S 다★
+                    //   종전에 입고 H/S(STOHS_READY_RD)를 봤다. 그 신호는 출고 하역트랙에서 애초에
+                    //   꺼져 있어서 조건이 즉시 참이 됐고, ★크레인이 하역하기도 전에 15 로 내려버렸다★.
+                    //   그래서 작업은 순식간에 완주·삭제되고 크레인에는 화물이 남아
+                    //   "작업번호만 있고 색이 없는" 상태로 서 있었다(실측 : 3호기 0384).
+                    if (IsHsOn(hs, "RETHS_READY_RD"))
                     {
                         DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 도착HS 아직 ON");
                         continue;
