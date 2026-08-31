@@ -183,6 +183,9 @@
     <Scenario id="1" title="1. 입출고대 #22 → S/C 입고 (C/V #11 → RGV → 통로 → S/C → 랙)" crane="select">
       <!-- ① 입출고대 #22 : 적재 → 이동 → RGV 픽업 -->
       <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="1" value="on" desc="입출고대 #22 적재 감지 (작업자 투입)" />
+      <!-- [LGLS 2026-09-01] 입고대 준비신호 - 실물은 PLC 가 화물 3초 감지 유지 후 세운다.
+           빠져 있으면 DriveCV 가 명령을 내지 않아 스텝 7(트래킹 기록)이 영영 대기한다(실측). -->
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="InReady2" value="on" desc="입고대 준비 신호 ON (IN_READY_02 - 화물 3초 감지 유지)" />
       <Step kind="observe" equip="CV" no="11" block="Event" signal="LoadComplete2" value="on" desc="Load Complete #2 ON (적재 완료)" />
       <Step kind="force" equip="CV" no="11" block="Ack" signal="LoadComplete2Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #2 ON (WCS)" />
       <Step kind="observe" equip="CV" no="11" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
