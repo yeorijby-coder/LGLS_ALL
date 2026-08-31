@@ -193,18 +193,21 @@
       <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="on" desc="반출 위치 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
       <Step kind="observe" equip="CV" no="11" block="Event" signal="WorkOrder" value="on" desc="W.O 보고 (RGV Call)" />
-      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="off" desc="반출 위치 Pallet Exist OFF (RGV Load 완료)" />
-      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete1" value="on" desc="Unload Complete #1 ON (RGV 픽업)" />
-      <Step kind="force" equip="CV" no="11" block="Ack" signal="UnloadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Unload Complete Ack #1 ON (WCS)" />
-      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete1" value="off" desc="Unload Complete #1 OFF" />
-      <Step kind="observe" equip="CV" no="11" block="Ack" signal="UnloadComplete1Ack" value="off" desc="Unload Complete Ack #1 OFF (설비 리셋)" />
-      <Step kind="observe" equip="CV" no="11" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
       <!-- ② RGV #1 반송 -->
       <Step kind="word" device="D" equip="RGV" no="1" block="Status" signal="SubsystemStatus" src="VehThread.cs::PollObservations" desc="IDLE=1 확인" />
       <Step kind="force" equip="RGV" no="1" block="Ack" signal="TransferRequest" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Req’ (WCS 지시)" />
       <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="From" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Data - From (픽업 포트)" />
       <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="To1" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Data - To (통로 C/V RGV측 포트)" />
       <Step kind="word" device="D" equip="RGV" no="1" block="Command" signal="JobNo" src="VehThread.cs::ConsumeCommands" desc="Transfer Command Data - Job No" />
+      <!-- [LGLS 2026-09-01] 실제 교신 순서 정정 : C/V 의 픽업 결과(Pallet OFF/Unload Complete)는
+           WCS 의 RGV 반송지시 ★뒤★ 에 온다. 종전에는 ① 구간 끝에 있어, 화물이 이미 사라진 뒤
+           지시를 기다리는 모양이 됐고 DriveRGV 가 "픽업트랙에 화물 없음" 으로 영영 보류했다(스텝 19 정체). -->
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="off" desc="반출 위치 Pallet Exist OFF (RGV Load 완료)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete1" value="on" desc="Unload Complete #1 ON (RGV 픽업)" />
+      <Step kind="force" equip="CV" no="11" block="Ack" signal="UnloadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Unload Complete Ack #1 ON (WCS)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="UnloadComplete1" value="off" desc="Unload Complete #1 OFF" />
+      <Step kind="observe" equip="CV" no="11" block="Ack" signal="UnloadComplete1Ack" value="off" desc="Unload Complete Ack #1 OFF (설비 리셋)" />
+      <Step kind="observe" equip="CV" no="11" block="Event" signal="WorkOrder" value="off" desc="W.O OFF" />
       <Step kind="observe" equip="RGV" no="1" block="Event" signal="PalletExistFlag" value="on" desc="Pallet Presence ON (RGV 적재)" />
       <Step kind="word" device="R" equip="RGV" no="1" block="Tracking" signal="PalletOnVehicle" isString="true" src="VehThread.cs::PollObservations" desc="On RGV - 탑재 화물번호" />
       <Step kind="observe" equip="RGV" no="1" block="Event" signal="LoadComplete" value="on" desc="Load Complete ON" />
