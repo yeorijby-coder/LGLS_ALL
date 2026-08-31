@@ -3927,12 +3927,15 @@ namespace TSK_COMM_IOSCH
                     }
 
                     string rtn = "";
-                    // [LGLS 2026-08-31] 지정 도착지가 아니라 ★화물이 실제로 있는 자리★ 에 기록한다.
-                    if (!WriteTrackData(landTrk, luggNo, ref rtn))
-                    {
-                        MakeMsg_Error(string.Format("[SCH][RGV] 착지 기록 실패({0} → {1}): {2}", luggNo, landTrk, rtn));
-                        continue;
-                    }
+                    // [LGLS 2026-08-31] ★착지 기록(트랙 R영역 쓰기)을 폐기했다★ - 구 ECS 기준 확인 결과.
+                    //   구 ECS 는 ECSDispatcher.cs:592 에서 SetPallet(fromPort, palletId) 단 한 곳,
+                    //   즉 ★화물이 실제로 있는 출발 포트★ 에 그 구간을 시작할 때만 쓴다
+                    //   (fromPort.IsPalletExist == true 조건 안). ★도착지에 쓰는 코드는 없다.★
+                    //   도착 뒤의 트래킹은 설비가 화물과 함께 옮긴다 -
+                    //   EQP_SIM 도 VehicleSim.UnloadAtDest 가 PlacePallet(port, carrying.Id) 로
+                    //   하역 화물에 번호를 함께 얹고, ConveyorSim 이 이동 때마다 따라 옮긴다.
+                    //   우리가 도착지에 덧쓰던 값만 그 자리에 눌러앉아 잔재가 됐다.
+                    //   (우리 쪽 SetPallet 대응물은 UpdateCvData - CV 반송지시 시 출발 트랙에 쓴다)
                     if (UpdateJobStatus(ST_CV_RUN, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RGV 도착지 {1} 기록 완료 → 상태 '{2}'",
                                     luggNo, landTrk, ST_CV_RUN));
@@ -3990,12 +3993,15 @@ namespace TSK_COMM_IOSCH
                     }
 
                     string rtn = "";
-                    // [LGLS 2026-08-31] 지정 도착지가 아니라 ★화물이 실제로 있는 자리★ 에 기록한다.
-                    if (!WriteTrackData(landTrk, luggNo, ref rtn))
-                    {
-                        MakeMsg_Error(string.Format("[SCH][SC] 착지 기록 실패({0} → {1}): {2}", luggNo, landTrk, rtn));
-                        continue;
-                    }
+                    // [LGLS 2026-08-31] ★착지 기록(트랙 R영역 쓰기)을 폐기했다★ - 구 ECS 기준 확인 결과.
+                    //   구 ECS 는 ECSDispatcher.cs:592 에서 SetPallet(fromPort, palletId) 단 한 곳,
+                    //   즉 ★화물이 실제로 있는 출발 포트★ 에 그 구간을 시작할 때만 쓴다
+                    //   (fromPort.IsPalletExist == true 조건 안). ★도착지에 쓰는 코드는 없다.★
+                    //   도착 뒤의 트래킹은 설비가 화물과 함께 옮긴다 -
+                    //   EQP_SIM 도 VehicleSim.UnloadAtDest 가 PlacePallet(port, carrying.Id) 로
+                    //   하역 화물에 번호를 함께 얹고, ConveyorSim 이 이동 때마다 따라 옮긴다.
+                    //   우리가 도착지에 덧쓰던 값만 그 자리에 눌러앉아 잔재가 됐다.
+                    //   (우리 쪽 SetPallet 대응물은 UpdateCvData - CV 반송지시 시 출발 트랙에 쓴다)
                     if (UpdateJobStatus(ST_CV_RUN, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} SC 도착지 {1} 기록 완료 → 상태 '{2}'",
                                     luggNo, landTrk, ST_CV_RUN));
@@ -4006,33 +4012,6 @@ namespace TSK_COMM_IOSCH
             catch (Exception ex) { MakeMsg_Error("[SCH][SC] LandScDrop 오류: " + ex.Message); }
         }
 
-        /// <summary>
-        /// [LGLS 2026-08-31] 도착지 트랙에 작업번호(R 트래킹)를 기록하게 한다.
-        ///   LUGG_NO_OD 를 세우고 TRACKING_WRITE_YN='Y' 로 두면 WCS_TASK_CV 가 PLC R 영역에 쓴다.
-        /// </summary>
-        private bool WriteTrackData(string strTrack, string strLuggNo, ref string strRtn)
-        {
-            try
-            {
-                string q = "";
-                q += CRLF + " UPDATE CV_DATA                                ";
-                q += CRLF + "    SET LUGG_NO_OD        = :LUGG_NO           ";
-                q += CRLF + "      , TRACKING_WRITE_YN = 'Y'                ";
-                q += CRLF + "      , WRITE_UPD_DT      = " + DbLang.SYSDATE + " ";
-                q += CRLF + "  WHERE WH_TYP            = :WH_TYP            ";
-                q += CRLF + "    AND MC_NO             = :MC_NO             ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = strLuggNo;
-                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
-                _pBdb.mComMain.Parameters.Add("MC_NO",   DbLang.VARCHAR).Value = strTrack;
-                int n = DbNonQry(q);
-                if (n < 0)  { strRtn += "CV_DATA 트래킹 기록 오류:" + _pBdb.ErrMsg; return false; }
-                if (n == 0) { strRtn += "트랙 없음(MC_NO:" + strTrack + ")"; return false; }
-                return true;
-            }
-            catch (Exception ex) { strRtn += ex.Message; return false; }
-        }
 
         /// <summary>
         /// [LGLS 2026-08-31] RTV 가 "다른 작업" 을 실제로 반송 중인가.  (사용자 확정 조건)
