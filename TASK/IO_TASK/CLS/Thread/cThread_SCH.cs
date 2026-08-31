@@ -773,6 +773,8 @@ namespace TSK_COMM_IOSCH
                     string qs = "";
                     qs += CRLF + " SELECT SUM(CASE WHEN JM.JOB_TYP IN ('2','12') THEN 1 ELSE 0 END) AS OUT_CNT, ";
                     qs += CRLF + "        SUM(CASE WHEN JM.JOB_TYP IN ('1','11') THEN 1 ELSE 0 END) AS IN_CNT  ";
+                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS IN ('25','35','39') THEN 1 ELSE 0 END) AS IN_RUN  ";
+                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS IN ('25','35','39','15') THEN 1 ELSE 0 END) AS OUT_RUN ";
                     qs += CRLF + "   FROM JOB_MST JM                                ";
                     qs += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
                     qs += CRLF + "    AND ( (JM.JOB_TYP IN ('2','12') AND JM.START_POS = '901')  ";
@@ -787,8 +789,16 @@ namespace TSK_COMM_IOSCH
                         int nOut, nIn;
                         int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "OUT_CNT"), out nOut);
                         int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "IN_CNT"),  out nIn);
-                        // 출고가 있으면 출고 우선(크레인이 이미 화물을 들고 나온 상태일 수 있다)
-                        string want = (nOut > 0) ? "1" : (nIn > 0) ? "0" : "";
+                        // [LGLS 2026-08-31] ★지시가 이미 나간 쪽(25)이 이긴다★ (실측 정체)
+                        //   종전 "출고 우선"은 아직 20(대기)인 출고가, 이미 25(크레인 구동중)인
+                        //   입고의 통로를 빼앗았다 - 크레인은 103 에서 화물을 뜨려는데 통로가
+                        //   출고 모드가 되어 입고 흐름이 죽고, 세 작업이 전부 갇혔다.
+                        int nInRun, nOutRun;
+                        int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "IN_RUN"),  out nInRun);
+                        int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "OUT_RUN"), out nOutRun);
+                        string want = (nInRun  > 0) ? "0"
+                                    : (nOutRun > 0) ? "1"
+                                    : (nOut > 0) ? "1" : (nIn > 0) ? "0" : "";
                         if (want != "" && GetCvStockMode("103") != want)
                         {
                             if (RequestCvDirection("103", want))
@@ -3090,16 +3100,21 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "   FROM JOB_MST                                ";
                 q += CRLF + "  WHERE WH_TYP   = :WH_TYP                     ";
                 q += CRLF + "    AND LUGG_NO  = :LUGG                       ";
+                // [LGLS 2026-08-31] ★겸용 통로는 작업대 기준으로 비교한다★
+                //   SC#1 통로(103/104)의 입고는 START_POS 가 입고대(124)라 통로 번호와
+                //   비교하면 절대 걸리지 않았다 - 진행 중인 입고 화물 위에서 방향이 뒤집혔다.
+                //   입고는 "그 작업대로 가는(DEST) 화물", 출고는 "그 작업대발(START) 화물" 로 본다.
+                string stn = (mcNo == SC1_DUAL_CV || mcNo == "104") ? "901" : mcNo;
                 if (wantDir == "1")   // 출고로 바꾸려 한다 → 입고 화물이 남아 있으면 보류
-                    q += CRLF + "    AND JOB_TYP IN ('1','11') AND START_POS = :STN ";
+                    q += CRLF + "    AND JOB_TYP IN ('1','11') AND (START_POS = :STN OR DEST_POS = :STN) ";
                 else                  // 입고로 바꾸려 한다 → 출고 화물이 남아 있으면 보류
-                    q += CRLF + "    AND JOB_TYP IN ('2','12') AND DEST_POS  = :STN ";
+                    q += CRLF + "    AND JOB_TYP IN ('2','12') AND (DEST_POS  = :STN OR START_POS = :STN) ";
                 q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29')      ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = lugg;
-                _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = mcNo;
+                _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = stn;
                 if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
