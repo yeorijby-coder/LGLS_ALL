@@ -3951,7 +3951,8 @@ namespace TSK_COMM_IOSCH
             try
             {
                 string q = "";
-                q += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, " + DbLang.NVL + "(JM.HS_TRACK_NO,'') AS HS ";
+                q += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, " + DbLang.NVL + "(JM.HS_TRACK_NO,'') AS HS, ";
+                q += CRLF + "        JM.DEST_POS, DATEDIFF(second, JM.UPD_DT, GETDATE()) AS ELAPSED ";
                 q += CRLF + "   FROM JOB_MST JM                                  ";
                 q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                     ";
                 q += CRLF + "    AND JM.JOB_STATUS = :ST_DONE                    ";
@@ -3974,6 +3975,28 @@ namespace TSK_COMM_IOSCH
                     if (string.IsNullOrEmpty(landTrk))
                     {
                         DbgLog("LANDRGV_" + luggNo, "[착지대기] " + luggNo + " RGV 도착지 " + hs + " 에 아직 화물 없음");
+                        // [LGLS 2026-09-01] ★겸용 출고대(122) 직행 드롭의 최종 구간 특례★ (9007 실측)
+                        //   RGV 가 121 에 내려놓으면 벨트가 즉시 121→122 로 옮기고, 출고대 신호
+                        //   ON 3초 뒤 지게차가 가져간다. RGV 완료 감지(폴링)가 그보다 늦으면
+                        //   39 가 된 시점엔 화물이 이미 배출된 뒤라 여기서 영영 기다렸다.
+                        //   조건을 좁혀 판정한다 : 출고 작업 + 도착지가 최종 출고대(DEST=122)
+                        //   + 그 짝(121/122) 모두 빔 + RGV 가 이 화물을 더 이상 물고 있지 않음
+                        //   + 39 로 20초 경과 → 배출 완료로 보고 19(출고 최종)로 올린다.
+                        {
+                            string jTyp2   = GetVal(dt.Rows[i], "JOB_TYP");
+                            string dest2   = (GetVal(dt.Rows[i], "DEST_POS") ?? "").Trim();
+                            int elapsed; int.TryParse(GetVal(dt.Rows[i], "ELAPSED"), out elapsed);
+                            if ((jTyp2 == "2" || jTyp2 == "12") && dest2 == "122" && elapsed >= 20 &&
+                                IsTrackEmpty("121") && IsTrackEmpty("122"))
+                            {
+                                string rtnF = "";
+                                if (UpdateJobStatus(ST_CV_DONE, luggNo, ref rtnF))
+                                    MakeMsg_Imp(string.Format(
+                                        "[SCH][RGV] 작업 {0} 겸용 출고대 배출 확인(라인 빔, {1}초 경과) → 상태 '{2}' (출고 최종)",
+                                        luggNo, elapsed, ST_CV_DONE));
+                                continue;
+                            }
+                        }
                         continue;
                     }
 
