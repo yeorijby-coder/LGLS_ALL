@@ -420,6 +420,7 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-08-31] 착지 처리 : 도착 신호가 꺼진 것을 보고 도착지에 데이터를 기록한다.
                     LandRgvDrop();      // 39 + HS_TRACK_NO 일치 → RGV 도착지 기록 → 15
                     LandScDrop();       // 출고 29 + HS_TRACK_NO 일치 → SC 도착지 기록 → 15
+                    DeleteSemiFinished();  // [LGLS 2026-08-31] 반자동은 19/29 에서 바로 삭제(상위 보고 없음)
                     if (m_bScAutoComplete)
                         ProcessOutStn();      // [구 경로] RTV 반출 물리 시퀀스 재현
 
@@ -3820,6 +3821,37 @@ namespace TSK_COMM_IOSCH
                 if ((TrackLugg(odd) ?? "").Trim() == strLuggNo) return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-31] 반자동/수동 작업 완결 처리.  (사용자 지시 : HOST_TASK 에서 IO_TASK 로 이관)
+        ///   ★반자동은 상위에 보고하지 않는다★ - 09(완료)를 거치지 않고 19/29 에서 바로 지운다.
+        ///     입고 계열 : 29(크레인 완료) = 최종
+        ///     출고 계열 : 19(출고대 도착) = 최종
+        ///   종전에는 HOST_TASK.GetJobCompleteReport 가 지웠다. 그러면 반자동 시험을 하려고
+        ///   상위 통신을 내렸을 때 작업이 지워지지 않고 쌓인다 - 반자동은 상위와 무관해야 한다.
+        ///   ※이력(JOB_MST_HIS)은 DB 트리거 trg_JOB_MST_StatusHis 가 남기므로 여기서는 삭제만 한다.
+        /// </summary>
+        private void DeleteSemiFinished()
+        {
+            try
+            {
+                // 반자동/수동 판정은 HOST_TASK 와 같은 기준을 쓴다 : LUGG 9000번대 또는 JOB_TYP 10 이상
+                string q = "";
+                q += CRLF + " DELETE FROM JOB_MST                                             ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP                                         ";
+                q += CRLF + "    AND ( TRY_CAST(LUGG_NO AS INT) >= 9000                       ";
+                q += CRLF + "       OR TRY_CAST(JOB_TYP AS INT) >= 10 )                       ";
+                q += CRLF + "    AND ( (JOB_TYP IN ('1','11','4','14') AND JOB_STATUS = '29')  ";
+                q += CRLF + "       OR (JOB_TYP NOT IN ('1','11','4','14') AND JOB_STATUS = '19') ) ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int n = DbNonQry(q);
+                if (n > 0)
+                    MakeMsg_Imp(string.Format("[SCH][JOB] 반자동 작업 완결 - {0}건 삭제(상위 보고 없음)", n));
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][JOB] DeleteSemiFinished 오류: " + ex.Message); }
         }
 
         private void LandRgvDrop()

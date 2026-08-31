@@ -1610,26 +1610,12 @@ namespace TSK_HostCom
             //   (기존에는 chkSimMode 가 켜져 있으면 반자동도 F 보고를 보냈음)
             if (nLuggNum >= 9000 || nJobType >= 10)
             {
-                m_strLog = "작업정보는 존재하지만 온라인 작업이 아니므로 작업완료 처리합니다. [작업 번호:" + strLuggNum + "]";
-                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_IMP);
-
-                #region 반자동 작업은 그냥 작업 삭제
-                //modDefApp.g_frmForm.DeleteJobMst(false);
-
-                bResult = modDefApp.g_frmForm.DeleteJobMst(m_BDb, true, strLuggNum);     // 함수안에서 Transaction 처리함!
-                if (bResult == false)
-                {
-                    m_strLog = string.Format("작업 삭제 실패하였습니다. [작업번호:{0}][실패내용:{1}]", strLuggNum, modDefApp.GM_RTN_MSG);
-                    modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
-
-                    return false;
-                }
-
-                m_strLog = string.Format("작업 삭제 성공하였습니다. [작업번호:{0}]", strLuggNum);
-                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_NOR);
-                #endregion
-
-                return true;                
+                // [LGLS 2026-08-31] ★반자동/수동은 여기서 아무것도 하지 않는다★ (사용자 지시)
+                //   보고하지 않는 것은 종전과 같고, ★삭제도 IO_TASK 가 한다★
+                //   (cThread_SCH.DeleteSemiFinished - 19/29 에서 바로 삭제).
+                //   종전에는 HOST_TASK 가 지웠다. 그러면 반자동 시험을 하려고 상위 통신을
+                //   내렸을 때 작업이 지워지지 않고 쌓인다 - 반자동은 상위와 무관해야 한다.
+                return true;
             }
             //string strLuggNum = "" + m_BDb.dtMain.Rows[0]["LUGG_NO"];
             switch (nJobType)
