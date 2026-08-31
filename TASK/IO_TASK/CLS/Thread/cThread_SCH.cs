@@ -1517,7 +1517,17 @@ namespace TSK_COMM_IOSCH
 
                     // [LGLS 2026-08-31] 입고는 15 를 유지한다 - RGV 가 15 에서 화물을 가져간다.
                     //   (RGV 대기 상태 30 폐기). 출고만 최종 완료(19 → HOST 2차 완료보고).
-                    if (jobTyp == "1") continue;
+                    if (jobTyp == "1")
+                    {
+                        // [LGLS 2026-08-31] ★상태는 그대로 두더라도 지시값 정리는 반드시 한다★
+                        //   여기서 그냥 continue 했더니 LUGG_NO_OD 에 죽은 작업번호가 남았고,
+                        //   SweepStaleTracking 이 "지시가 걸린 트랙" 으로 보고 유령 트래킹을
+                        //   영영 못 지웠다(실측 : 트랙 115 에 0355 가 40분 잔류 → 도착 HS 미성립 → 0371 정체).
+                        ClearScOd(luggNo);
+                        ClearCvOd(luggNo);
+                        m_dicPrevCV.Remove("CV_" + mcNo);
+                        continue;
+                    }
                     string stNext = ST_CV_DONE;
 
                     if (UpdateJobStatus(stNext, luggNo, ref rtn))
@@ -2381,7 +2391,13 @@ namespace TSK_COMM_IOSCH
                 q2 += CRLF + "  WHERE WH_TYP = :WH_TYP                                     ";
                 q2 += CRLF + "    AND ISNULL(SENSOR0_DATA_RD,'0') <> '1'                   ";   // 화물 없음
                 q2 += CRLF + "    AND ISNULL(LUGG_NO_RD,'0') NOT IN ('','0','0000')        ";   // 그런데 트래킹은 있음
-                q2 += CRLF + "    AND ISNULL(LUGG_NO_OD,'0') IN ('','0','0000')            ";   // 지시가 걸려 있지 않음
+                // [LGLS 2026-08-31] ★죽은 작업번호가 남은 지시값은 "지시" 가 아니다★
+                //   종전에는 LUGG_NO_OD 가 비어 있어야만 청소했는데, 삭제된 작업의 번호가 남아 있으면
+                //   그 트랙을 영영 청소하지 못했다. 살아 있는 작업의 지시만 보호한다.
+                q2 += CRLF + "    AND ( ISNULL(LUGG_NO_OD,'0') IN ('','0','0000')            ";
+                q2 += CRLF + "       OR NOT EXISTS (SELECT 1 FROM JOB_MST JX                ";
+                q2 += CRLF + "                       WHERE JX.WH_TYP  = CV_DATA.WH_TYP      ";
+                q2 += CRLF + "                         AND JX.LUGG_NO = CV_DATA.LUGG_NO_OD) ) ";
                 q2 += CRLF + "    AND ISNULL(TRACKING_WRITE_YN,'N') <> 'Y'                 ";   // 쓰기 대기 아님
                 q2 += CRLF + "    AND ISNULL(OD_RQ_YN,'N') <> 'Y'                          ";   // 명령 진행 중 아님
                 _pBdb.mComMain.CommandType = CommandType.Text;
@@ -3891,6 +3907,25 @@ namespace TSK_COMM_IOSCH
         ///    찾아서 RGV 도착지에 데이터를 기록한다 (이러면서 15 가 된다)"
         ///   도착 신호(RTV_ARRIVEHS_READY_RD)가 꺼졌다 = RGV 가 그 트랙에 내려놓아 더 받을 수 없다.
         /// </summary>
+        /// <summary>
+        /// [LGLS 2026-08-31] 그 작업의 화물이 도착지에 실제로 내려졌는가.
+        ///   설비가 하역트랙(짝수) → RGV 픽업트랙(홀수) 으로 곧바로 옮기므로 둘 다 본다.
+        ///   ★신호(H/S)는 펄스라 폴링이 놓칠 수 있지만 화물은 남는다★ - 위치로 보는 편이 견고하다.
+        /// </summary>
+        private bool LuggLandedAt(string strTrack, string strLuggNo)
+        {
+            if (string.IsNullOrEmpty(strTrack) || string.IsNullOrEmpty(strLuggNo)) return false;
+            if ((TrackLugg(strTrack) ?? "").Trim() == strLuggNo) return true;
+
+            int n;
+            if (int.TryParse(strTrack, out n))
+            {
+                string odd = (n % 2 == 0) ? (n - 1).ToString() : (n + 1).ToString();
+                if ((TrackLugg(odd) ?? "").Trim() == strLuggNo) return true;
+            }
+            return false;
+        }
+
         private void LandRgvDrop()
         {
             try
@@ -3914,10 +3949,10 @@ namespace TSK_COMM_IOSCH
                     string hs     = (GetVal(dt.Rows[i], "HS") ?? "").Trim();
                     if (string.IsNullOrEmpty(hs)) continue;
 
-                    // 도착지 신호가 아직 켜져 있으면 아직 내려놓기 전이다.
-                    if (IsHsOn(hs, "RTV_ARRIVEHS_READY_RD"))
+                    // [LGLS 2026-08-31] 신호가 아니라 화물 위치로 판정한다(위 LandScDrop 주석 참조).
+                    if (!LuggLandedAt(hs, luggNo))
                     {
-                        DbgLog("LANDRGV_" + luggNo, "[착지대기] " + luggNo + " 도착지 " + hs + " 도착HS 아직 ON");
+                        DbgLog("LANDRGV_" + luggNo, "[착지대기] " + luggNo + " RGV 도착지 " + hs + " 에 아직 화물 없음");
                         continue;
                     }
 
@@ -3970,14 +4005,15 @@ namespace TSK_COMM_IOSCH
                     string hs     = (GetVal(dt.Rows[i], "HS") ?? "").Trim();
                     if (string.IsNullOrEmpty(hs)) continue;
 
-                    // [LGLS 2026-08-31] ★출고 하역 도착지는 출고 H/S 다★
-                    //   종전에 입고 H/S(STOHS_READY_RD)를 봤다. 그 신호는 출고 하역트랙에서 애초에
-                    //   꺼져 있어서 조건이 즉시 참이 됐고, ★크레인이 하역하기도 전에 15 로 내려버렸다★.
-                    //   그래서 작업은 순식간에 완주·삭제되고 크레인에는 화물이 남아
-                    //   "작업번호만 있고 색이 없는" 상태로 서 있었다(실측 : 3호기 0384).
-                    if (IsHsOn(hs, "RETHS_READY_RD"))
+                    // [LGLS 2026-08-31] ★신호가 아니라 화물 위치로 판정한다★
+                    //   출고 H/S(RETHS_READY_RD)는 크레인이 내려놓는 동안만 꺼졌다가, 설비가 화물을
+                    //   짝수(하역) → 홀수(RGV 픽업) 로 옮기면 ★다시 켜진다★. 폴링이 그 짧은 창을
+                    //   놓치면 작업이 29 에 영원히 갇힌다(실측 : 0426/0428 이 35분 잔류, 크레인에는
+                    //   색만 남음). 화물은 남지만 신호는 사라지므로 위치로 본다.
+                    //   하역트랙(짝수) 또는 그 홀수 짝 어디에든 그 작업 화물이 있으면 착지 완료다.
+                    if (!LuggLandedAt(hs, luggNo))
                     {
-                        DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 도착HS 아직 ON");
+                        DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 에 아직 화물 없음");
                         continue;
                     }
 
