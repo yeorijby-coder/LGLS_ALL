@@ -968,23 +968,15 @@ void CRtvSkinDlg::UpdateRtvData(int nBtnJob)
 	if (isSuccess && (nBtnJob == EN_BtnRtvFk1Delete || nBtnJob == EN_BtnRtvFk2Delete || nBtnJob == EN_BtnRtvFk1Fk2Delete))
 	{
 		CString strSqlClr;
-		strSqlClr.Format(_T(" UPDATE RTV_DATA_LGLS                      
-")
-			_T("    SET LUGG_OD      = '0000'                
-")
-			_T("      , PALLET_ID_OD = '0000'                
-")
-			_T("      , JOB_TYP_OD   = '0'                   
-")
-			_T("      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' 
-")
-			_T("      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' 
-")
-			_T("      , RTV_DEST_OD = '', RTV_PASSCV_OD = '' 
-")
-			_T("  WHERE WH_TYP = '%s'                        
-")
-			_T("    AND RTV_NO = '%s'                          "), strWhTyp, strRtvNo);
+		strSqlClr.Format(_T(" UPDATE RTV_DATA_LGLS \n")
+			_T("    SET LUGG_OD      = '0000' \n")
+			_T("      , PALLET_ID_OD = '0000' \n")
+			_T("      , JOB_TYP_OD   = '0' \n")
+			_T("      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' \n")
+			_T("      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' \n")
+			_T("      , RTV_DEST_OD = '', RTV_PASSCV_OD = '' \n")
+			_T("  WHERE WH_TYP = '%s' \n")
+			_T("    AND RTV_NO = '%s'   "), strWhTyp, strRtvNo);
 		isSuccess = m_pDoc->ExcuteQueryString_DLG(strSqlClr);
 	}
 
