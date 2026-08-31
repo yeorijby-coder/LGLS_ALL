@@ -798,7 +798,14 @@ namespace EQP_SIM
         private void ResetAll()
         {
             if (autoTimer != null) autoTimer.Stop();
-            foreach (var st in sc.Steps) if (st.Kind != 2) mem.SetBit(st.Dev, st.Bit, false);
+            foreach (var st in sc.Steps)
+            {
+                if (st.Kind != 2) { mem.SetBit(st.Dev, st.Bit, false); continue; }
+                // [LGLS 2026-09-01] R 트래킹도 초기화 (사용자 지적 - 비트만 지워 JOB 잔재가 남았다).
+                //   D 워드(방향/지시값)는 WCS 가 관리하는 값이라 건드리지 않는다.
+                if (st.Dev == 'R')
+                    mem.SetString('R', st.WordAddr, 2, "0000");
+            }
             HighlightNone();
         }
     }
