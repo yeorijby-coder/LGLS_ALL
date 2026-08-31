@@ -81,13 +81,18 @@ COLORREF CScInfo::GetForkColor1()
 	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000"))
 		return LIGHT_GRAY;
 
-	// 작업 구분(JOB_TYP_RD)은 실경로에서 늘 채워지지는 않는다. 비어 있으면 작업정보에서 가져온다.
-	//   (구분을 모르면 아래 switch 가 통째로 빠져 색 없이 움직이는 것처럼 보였다)
-	if (nJobTypTmp == 0)
-		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(m_pSC_DATA->K_SC_NO));
-	// [LGLS 2026-08-31] 캐시에도 없으면 크레인이 든 작업번호로 직접 찾는다(RtvInfo 와 같은 방식).
-	if (nJobTypTmp == 0)
-		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strHeld));
+	// [LGLS 2026-08-31] ★작업정보를 설비값보다 우선한다★ (사용자 지적 : 색 0.5초 튐)
+	//   설비 지시(JOB_TYP_OD)는 규약상 기본형(1/2)만 쓴다 - DriveSC 가 11/12 를 1/2 로
+	//   정규화해 보낸다. 그 값이 JOB_TYP_RD 로 먼저 올라와 자동색이 0.5초 보였다가,
+	//   SyncDisplayTyp 이 JOB_MST 원본(11/12)으로 덮으면 반자동색으로 바뀌었다.
+	//   작업정보가 원본이므로 먼저 보고, 없을 때만 설비값을 쓴다.
+	{
+		int nTypJm = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(m_pSC_DATA->K_SC_NO));
+		if (nTypJm == 0)
+			nTypJm = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strHeld));
+		if (nTypJm != 0)
+			nJobTypTmp = nTypJm;
+	}
 
 	switch (nJobTypTmp)
 	{
@@ -135,6 +140,13 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	BOOL bHeldP = (!strHeldP.IsEmpty() && strHeldP != _T("0") && strHeldP != _T("0000"));
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
+	// [LGLS 2026-08-31] 작업정보 우선 (설비 지시값은 기본형 1/2 라 반자동색이 늦게 든다 - 색 0.5초 튐)
+	if (bHeldP)
+	{
+		int nTypJm = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(pSC_DATA->K_SC_NO));
+		if (nTypJm == 0) nTypJm = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strHeldP));
+		if (nTypJm != 0) nJobTypTmp = nTypJm;
+	}
 	switch (nJobTypTmp)
 	{
 	case enJobTypeAutoSto			: return pConfig->m_clrUSER_COLOR_STO;
