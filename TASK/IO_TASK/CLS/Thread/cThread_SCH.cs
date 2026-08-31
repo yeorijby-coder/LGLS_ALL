@@ -53,6 +53,26 @@ namespace TSK_COMM_IOSCH
 
         // 설비별 직전 발행 작업 추적 (동일 작업 중복 발행 방지)
         private Dictionary<string, string> m_dicPrevCV  = new Dictionary<string, string>();
+        // [LGLS 2026-08-31] 중복 발행 방지 키의 ★유효기간★.
+        //   이 가드의 목적은 "설비 리드백이 반영되기 전 같은 폴링 창에서 두 번 발행" 을 막는 것뿐이다.
+        //   그런데 값이 작업번호라, ★반자동처럼 번호를 재사용하면 그 트랙이 영구히 막힌다.★
+        //   (실측 : 9001 이 124 에서 10 으로 무한 정체 - 앞 사이클의 CV_124=9001 잔재)
+        //   중복 발행은 상태 전이(10 → 15)가 이미 막는다. 짧은 만료만 있으면 충분하다.
+        private readonly Dictionary<string, DateTime> m_dicPrevAt = new Dictionary<string, DateTime>();
+        private const int PREV_KEY_TTL_MS = 5000;
+        private bool PrevIssued(Dictionary<string, string> dic, string key, string lugg)
+        {
+            string prev;
+            if (!dic.TryGetValue(key, out prev) || prev != lugg) return false;
+            DateTime at;
+            if (!m_dicPrevAt.TryGetValue(key, out at)) { dic.Remove(key); return false; }
+            if ((DateTime.Now - at).TotalMilliseconds >= PREV_KEY_TTL_MS)
+            {
+                dic.Remove(key); m_dicPrevAt.Remove(key);   // 만료 - 잔재로 본다
+                return false;
+            }
+            return true;
+        }
         private Dictionary<string, string> m_dicPrevSC  = new Dictionary<string, string>();
         private Dictionary<string, string> m_dicPrevRGV = new Dictionary<string, string>();
         #endregion
@@ -884,7 +904,7 @@ namespace TSK_COMM_IOSCH
 
                     // 동일 작업 중복 발행 방지
                     string key = "CV_" + trackNo;
-                    if (m_dicPrevCV.ContainsKey(key) && m_dicPrevCV[key] == luggNo) continue;
+                    if (PrevIssued(m_dicPrevCV, key, luggNo)) continue;   // [LGLS 2026-08-31] 5초 만료
 
                     // [LGLS 2026-07-21] 출고 CV 지시는 목적지(출고대 배출트랙)와 하역트랙이 빈 상태에서만 발행.
                     //   (지시 즉시 CvThread 가 도착 예약 트래킹을 배출트랙에 선기록하므로, 겸용 입고대(C/V#11)에
@@ -942,7 +962,7 @@ namespace TSK_COMM_IOSCH
                     if (ok)
                     {
                         _pBdb.Commit();
-                        m_dicPrevCV[key] = luggNo;
+                        m_dicPrevCV[key] = luggNo;  m_dicPrevAt[key] = DateTime.Now;
                         MakeMsg_Imp(string.Format("[SCH][CV] CV TRACK:{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", trackNo, luggNo, ST_CV_RUN));
                         // [LGLS 2026-07-21] 실경로: 출고 CV 발행과 동시에 출고대 반출 대기열(FIFO) 등록.
                         //   (구 경로에선 ProcessCvMove 가 홀수 트랙 도착 시 등록했으나, 실경로는 라인 이동을
@@ -1263,7 +1283,7 @@ namespace TSK_COMM_IOSCH
                     string destPos = GetVal(dt.Rows[i], "DEST_POS");
 
                     string key = "RGV_" + rtvNo;
-                    if (m_dicPrevRGV.ContainsKey(key) && m_dicPrevRGV[key] == luggNo) continue;
+                    if (PrevIssued(m_dicPrevRGV, key, luggNo)) continue;  // [LGLS 2026-08-31] 5초 만료
 
                     // [LGLS 2026-07-21] 실경로 게이트 (AutoRunRGV 에서 이식):
                     // [LGLS 2026-08-31] 출고도 이 경로를 탄다(OUT_VIA_RGV_STATE=1).
@@ -1359,7 +1379,7 @@ namespace TSK_COMM_IOSCH
                     if (ok)
                     {
                         _pBdb.Commit();
-                        m_dicPrevRGV[key] = luggNo;
+                        m_dicPrevRGV[key] = luggNo; m_dicPrevAt[key] = DateTime.Now;
                         MakeMsg_Imp(string.Format("[SCH][RGV] RGV #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", rtvNo, luggNo, ST_RGV_RUN));
                         break;   // [LGLS 2026-07-21] RTV 1대 — 한 폴링에 1건만 발행(같은 결과셋의 후속 후보가 덮어쓰지 않게)
                     }
