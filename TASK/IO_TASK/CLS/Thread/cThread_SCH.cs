@@ -1169,6 +1169,17 @@ namespace TSK_COMM_IOSCH
                         }
                         if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv()) continue;
                         if (jobTyp == "1" && IsTrackEmpty(_wT)) continue;
+                        // [LGLS 2026-08-31] ★픽업 트랙의 화물이 이 작업의 화물인지 확인한다★
+                        //   (RGV 오집 수정과 같은 패턴 - 크레인 판)
+                        //   실측 : 방향 전환이 늦어 앞 출고 화물(9004)이 작업대에 남았는데,
+                        //   화물 유무만 보고 입고 지시를 내 크레인이 남의 화물을 집어
+                        //   랙에 저장했다(시뮬 로그 "JOB 재부여: 9004 → 9003").
+                        if (jobTyp == "1" && (TrackLugg(_wT) ?? "").Trim() != luggNo)
+                        {
+                            DbgLog("SCOWN_" + scNo, string.Format("[SC] 입고 보류 - 트랙 {0} 화물({1})이 작업 {2} 의 화물이 아님",
+                                        _wT, (TrackLugg(_wT) ?? "").Trim(), luggNo));
+                            continue;
+                        }
 
                         // [LGLS 2026-08-22] S/C #1 은 입고·출고를 C/V#2(트랙 103/104) 하나로 겸용한다
                         //   (PlcAddressMap CraneMap : Crane no=1 inCv=outCv=2 - 방향전환형).
@@ -3105,11 +3116,21 @@ namespace TSK_COMM_IOSCH
                 //   비교하면 절대 걸리지 않았다 - 진행 중인 입고 화물 위에서 방향이 뒤집혔다.
                 //   입고는 "그 작업대로 가는(DEST) 화물", 출고는 "그 작업대발(START) 화물" 로 본다.
                 string stn = (mcNo == SC1_DUAL_CV || mcNo == "104") ? "901" : mcNo;
+                // [LGLS 2026-08-31] ★상태 제외는 방향별이다★ (실측 : 9004 오집 사건)
+                //   입고 29 = 최종(랙 저장 끝) 이지만 ★출고 29 = 크레인이 작업대에 방금
+                //   내려놓은 진행 단계★ 다. 29 를 일괄 제외했더니 출고 완료 3초 뒤
+                //   방향이 입고로 뒤집혔고, 크레인이 그 출고 화물(9004)을 다음 입고
+                //   작업(9003)의 화물로 오집했다.
                 if (wantDir == "1")   // 출고로 바꾸려 한다 → 입고 화물이 남아 있으면 보류
+                {
                     q += CRLF + "    AND JOB_TYP IN ('1','11') AND (START_POS = :STN OR DEST_POS = :STN) ";
+                    q += CRLF + "    AND JOB_STATUS NOT IN ('09','29')       ";   // 입고 29 = 최종
+                }
                 else                  // 입고로 바꾸려 한다 → 출고 화물이 남아 있으면 보류
+                {
                     q += CRLF + "    AND JOB_TYP IN ('2','12') AND (DEST_POS  = :STN OR START_POS = :STN) ";
-                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29')      ";
+                    q += CRLF + "    AND JOB_STATUS NOT IN ('09','19')       ";   // 출고 19 = 최종, 29 는 보호
+                }
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
