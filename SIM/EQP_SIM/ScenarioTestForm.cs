@@ -579,6 +579,16 @@ namespace EQP_SIM
             finally { rebuilding = false; }
         }
 
+        // [LGLS 2026-09-01] 이 스텝보다 앞에 있는, 주소가 다른 R 트래킹 스텝의 워드주소 (없으면 -1)
+        private int PrevRAddr(ScStep st)
+        {
+            int idx = sc.Steps.IndexOf(st);
+            for (int k = idx - 1; k >= 0; k--)
+                if (sc.Steps[k].Kind == 2 && sc.Steps[k].Dev == 'R' && sc.Steps[k].WordAddr != st.WordAddr)
+                    return sc.Steps[k].WordAddr;
+            return -1;
+        }
+
         private void BuildStepRows(FlowLayoutPanel flow)
         {
             int n = 1;
@@ -608,6 +618,31 @@ namespace EQP_SIM
                         TextAlign = ContentAlignment.MiddleLeft, BorderStyle = BorderStyle.FixedSingle,
                         BackColor = Color.WhiteSmoke, Padding = new Padding(6, 0, 0, 0)
                     };
+                }
+                else if (st.Kind == 2 && st.Dev == 'R' && string.IsNullOrEmpty(st.Src) && PrevRAddr(st) >= 0)
+                {
+                    // [LGLS 2026-09-01] ★ID Shift(트래킹 이동)는 PLC 래더의 일★ (사용자 실측 : 스텝 10 정지)
+                    //   시나리오 모드는 자동 운전을 멈추므로 이 이동을 재현할 주체가 없다 -
+                    //   1~9번은 진행되는데 10번(ID Shift 결과 관측)에서 영영 멈췄다.
+                    //   src 없는 R 트래킹 스텝 = WCS 가 쓰는 값이 아니라 PLC 가 옮기는 값이므로,
+                    //   버튼으로 만들어 사람이 PLC 역할을 대신한다 : 직전 R 트래킹 스텝의 값을
+                    //   이 주소로 옮기고 원위치를 '0000' 으로 클리어(실 PLC ID Shift 와 동일).
+                    var stL = st; int srcL = PrevRAddr(st);
+                    var b2 = new Button
+                    {
+                        Text = n + ") [PLC 재현]  " + st.Addr + "  →  " + st.Desc,
+                        Width = 620, Height = 32, Margin = new Padding(2),
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        BackColor = Color.FromArgb(235, 255, 235)
+                    };
+                    b2.Click += (s2, e2) =>
+                    {
+                        string v = mem.GetString('R', srcL, 2);
+                        if (string.IsNullOrEmpty(v) || v == "0" || v == "0000") return;   // 옮길 JOB 없음
+                        mem.SetString('R', stL.WordAddr, 2, v);
+                        mem.SetString('R', srcL, 2, "0000");
+                    };
+                    ctrl = b2;
                 }
                 else // Kind 2 : D/R 워드 관측
                 {
@@ -642,6 +677,12 @@ namespace EQP_SIM
                     string v = st.IsString ? mem.GetString(st.Dev, st.WordAddr, 2) : mem.GetWord(st.Dev, st.WordAddr).ToString("X4");
                     if (string.IsNullOrEmpty(v)) v = "-";
                     bool hot = v != "-" && v != "0" && v != "0000";
+                    if (stepCtrls[i] is Button)   // [LGLS 2026-09-01] PLC 재현 버튼은 값에 따라 배경만
+                    {
+                        stepCtrls[i].BackColor = hot ? Color.FromArgb(120, 170, 90) : Color.FromArgb(235, 255, 235);
+                        stepCtrls[i].ForeColor = hot ? Color.White : Color.Black;
+                        continue;
+                    }
                     string baseText = (i + 1) + ") [" + st.Dev + " 관측]  " + st.Addr + "  :  " + st.Desc + "   = " + v
                                       + (string.IsNullOrEmpty(st.Src) ? "" : ("\n        ⇒ " + st.Src));
                     if (stepCtrls[i].Text != baseText) stepCtrls[i].Text = baseText;
