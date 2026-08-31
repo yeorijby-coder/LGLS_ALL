@@ -32,12 +32,13 @@ namespace TSK_COMM_IOSCH
     /// <summary>
     /// LG생명과학 물류창고 자동 반송 Scheduler Thread (JOB_MST 스키마)
     /// - [LGLS] 신규 접수 : WCS_TASK_HOST INSERT(JOB_STATUS='99') → 입고 '10' / 출고 '20' 라우팅
-    /// - C/V 구동 : 입고대/출고대 팔레트 + 구동대기 작업(JOB_STATUS='10') → CV 명령 발행
-    /// - S/C 반송 : 구동대기 작업(JOB_STATUS='20') + 유휴 S/C → 이송 명령 발행
-    ///              ([CNF] SC_AUTO_COMPLETE=1 이면 TASK프로그램 부재 시뮬레이션으로 자동완주)
-    /// - RGV 반송 : 구동대기 작업 + 유휴 RGV → 이송 명령 발행 (반송 체인 미연결 - 참고용)
-    /// - [LGLS] 2단계 처리 체인 : 입고 CV→SC(최종 '29'), 출고 SC→CV(최종 '19')
-    ///          (19/29 는 WCS_TASK_HOST 가 F(작업완료) 보고로 소비)
+    /// - 상태 체계(2026-08-31 확정) :
+    ///     입고 : 99 → 10 → 15 → 35 → 39 → 15 → 25 → 29 → 09
+    ///     출고 : 99 → 20 → 25 → 29 → 15 → 35 → 39 → 15 → 19 → 09
+    ///   자동은 29/19 를 WCS_TASK_HOST 가 F(완료) 보고 후 09 → 응답 시 삭제,
+    ///   반자동(11/12)은 29/19 에서 IO_TASK 가 바로 삭제(상위 보고 없음).
+    /// - 물리(이동/하역/공급)는 전부 설비(EQP_SIM/실장비) 담당 -
+    ///   스케줄러는 지시(_OD)와 상태 전이만 한다.
     /// </summary>
     public class cThread_SCH : IOSchDB
     {
@@ -94,21 +95,16 @@ namespace TSK_COMM_IOSCH
         //   RGV: 대기 30 → 중 35 → 완료 39
         //   (구동완료 후 다음 처리로 핸드오프하려면 Complete* 에서 다음 대기상태로 전이 - ★정책확인)
         private const string ST_CV_WAIT = "10"; // CV 구동대기
-        // [LGLS 2026-08-30] 구동지시(11/21/31) 폐기 - 실경로는 "대기 → 중 → 완료" 3단계.
-        //   명령을 발행한 순간이 곧 구동 중이다. 아래 세 값은 구 경로(SC_AUTO_COMPLETE=1 의
-        //   AutoRunSC/AutoRunRGV - 타이머 기반 자동완주)만 쓴다.
-        //   common_code 에서는 폐기(CCD_CD_YN='N')라 화면 목록에 나오지 않는다.
-        private const string ST_CV_CMD  = "11"; // [폐기] CV 구동지시 - 실경로 미사용
+        // [LGLS 2026-08-30] 구동지시(11/21/31) 폐기 - "대기 → 중 → 완료" 3단계.
+        //   명령을 발행한 순간이 곧 구동 중이다. 수락 확인은 Complete* 의 OD_RQ_YN='N' 이 한다.
         private const string ST_CV_RUN  = "15"; // CV 구동중
         private const string ST_CV_DONE = "19"; // CV 구동완료
 
         private const string ST_SC_WAIT = "20"; // SC 구동대기
-        private const string ST_SC_CMD  = "21"; // [폐기] SC 구동지시 - 구 경로(AutoRunSC) 전용
         private const string ST_SC_RUN  = "25"; // SC 구동중
         private const string ST_SC_DONE = "29"; // SC 구동완료
 
         private const string ST_RGV_WAIT = "30"; // RGV 구동대기
-        private const string ST_RGV_CMD  = "31"; // [폐기] RGV 구동지시 - 구 경로(AutoRunRGV) 전용
         private const string ST_RGV_RUN  = "35"; // RGV 구동중
         private const string ST_RGV_DONE = "39"; // RGV 구동완료
 
@@ -349,54 +345,29 @@ namespace TSK_COMM_IOSCH
                     // [LGLS] ── 신규 작업 접수 : WCS_TASK_HOST INSERT('99') → 첫 처리 대기상태로 라우팅
                     AcceptNewJob(); // 99 → 10(입고:CV먼저) / 20(출고:SC먼저)
 
-                    // [LGLS 2026-07-21] 물리 이관: SC_AUTO_COMPLETE=0(기본) 이면 물리 재현 없이
-                    //   실핸드셰이크만 수행한다 — 이동/하역/공급은 전부 EQP_SIM(설비)이 담당하고,
-                    //   IO_TASK 는 지시(_OD)와 상태 전이만. (자동완주=1 은 구 DB 재현 경로 보존용)
-                    // ── 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 중)
-                    SyncDualCvDirection();       // [LGLS 2026-08-30] 겸용대 방향 정합(실경로, 양방향)
+                    // ── ① 구동 완료 : 설비 완료 신호(_RD) → (중 → 완료 또는 다음 처리 인계)
+                    CompleteCV();       // 15 → 19(출고 최종) / 입고는 15 유지(RGV 가 가져간다)
+                    CompleteSC();       // 25 → 29 (입고 최종 / 출고 1차 - 랙 셀 해제)
+                    CompleteRGVReal();  // 35 → 39 (RTV COMPLETE_RD 소비)
+
+                    // ── ② 착지 처리 : 도착 신호 대신 ★화물 위치★ 로 판정해 다음 구간에 인계
+                    LandRgvDrop();      // 39 + HS_TRACK_NO 에 화물 → 15 (CV/SC 인계)
+                    LandScDrop();       // 출고 29 + HS_TRACK_NO 에 화물 → 15 (CV 인계)
+
+                    // ── ③ 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 중)
+                    //   [LGLS 2026-09-01] Drive* 를 사이클당 1회로 정리 (사용자 지적).
+                    //   종전에는 "인계 즉시 디스패치" 를 위해 완료 앞뒤로 2회 불렀는데,
+                    //   완료·착지 ★뒤★ 에 한 번만 불러도 같은 효과다 - 방금 인계된 작업도
+                    //   이 호출이 잡는다. (Drive* 는 대기 상태 + 유휴 설비에만 작용하는 멱등 함수)
+                    SyncDualCvDirection();       // 겸용대 방향 정합(양방향)
+                    PromotePendingDirection();   // 보류된 모드 전환(DIRW) 승격
                     DriveCV();      // 10 → 15
                     DriveSC();      // 입고 15 / 출고 20 → 25
                     DriveRGV();     // 15 → 35 (RGV 도착지를 HS_TRACK_NO 에 기록)
 
-                    // [LGLS 2026-08-30] 구동지시 폐기 - "지시 → 수락" 전이 단계를 없앴다.
-                    //   설비가 명령을 실제로 소비했는지는 Complete* 가 OD_RQ_YN='N' 으로 계속
-                    //   확인하므로 수락 확인이 사라지는 것은 아니다.
-                    //   RunCV/RunSC/RunRGV 및 AdvanceOnAccept 삭제.
-
-                    // ── 구동 완료 : 설비 완료 신호(_RD) → (중 → 완료 또는 다음 처리 인계)
-                    CompleteCV();   // 15 → 19(출고 최종) / 20(입고 → SC 처리 인계)
-                    // [LGLS 2026-08-31] PromoteOutToRgvWait 폐기 - RGV 대기 상태(30) 자체를 없앴다.
-                    //   출고는 15 에서 DriveRGV 가 바로 가져간다.
-                    // [LGLS 2026-09-01] CheckLostInboundCargo / Sweep 3종 폐기 (사용자 지시).
-                    //   신규 상태 체계에서 잔재의 근원(도착지 착지 기록)을 없앤 뒤,
-                    //   청소 전부 꺼진 상태(SWEEP_RECOVER_ENABLE=0)로 3로직 반자동
-                    //   35+ 사이클을 정체·잔재 0 으로 완주해 실증했다.
-                    CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
-                    PromotePendingDirection();  // [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격
-                    CompleteSC();       // 25 → 29(입고 최종) / 10(출고 → CV 처리 인계)
-                    CompleteRGVReal();  // 35 → 20 (RTV COMPLETE_RD 소비, SC 처리 인계)
-                    // [LGLS 2026-08-23] 종전에는 이 호출이 구경로(else) 블록 안에 있어서 **실경로에서는 한 번도 돌지 않았다.**
-                    //   고아 복구는 재기동으로 대기열이 날아간 실경로에서 더 절실하다(작업 1663 = 103 트랙에 화물이 있는데
-                    //   대기열에 없어 84분 방치). 양쪽 경로에서 돌린다 - 구경로 전용 구조(m_dicCvMove)는 함수 안에서 가린다.
-                    // [LGLS 2026-08-30] ★인계 즉시 디스패치★ (사용자 요청)
-                    //   Drive*(대기→지시)가 Complete*(중→다음 대기)보다 먼저 돌기 때문에, 방금 인계된
-                    //   작업은 반드시 다음 주기까지 대기 상태에 머물렀다. 그래서 입고는 'SC 구동대기(20)',
-                    //   출고는 'CV 구동대기(10)' 가 화면에 계속 보였다.
-                    //   완료 처리 직후 한 번 더 디스패치해서, 물리 조건만 맞으면 같은 주기에 곧바로
-                    //   지시(21 / 11)로 넘어가게 한다 — 대기 상태를 거치지 않고 진행되는 효과.
-                    //   ※Drive* 는 대기 상태 + 유휴 설비에만 작용하므로 중복 호출이 안전하다(멱등).
-                    //   ※물리 게이트에 걸리면 대기 상태로 남는다 — 그건 실제로 못 가는 상황이라
-                    //     상태로 드러나는 편이 맞다(보류를 시간으로 뚫지 않는다는 원칙과 일관).
-                    DriveCV();                              // 출고 인계분 10 → 15 즉시
-                    DriveSC();                          // 입고 인계분 20 → 25 즉시
-                    DriveRGV();                         // 30 → 35 즉시
-
-                    // [LGLS 2026-08-31] RecoverOutOrphans 폐기 - 신규 상태 체계에서는 고아가 생기지 않는다.
-                    //   반출 소유권(도착지)이 HS_TRACK_NO 로 DB 에 남아 재기동해도 그대로 이어진다.
-                    // [LGLS 2026-08-31] 착지 처리 : 도착 신호가 꺼진 것을 보고 도착지에 데이터를 기록한다.
-                    LandRgvDrop();      // 39 + HS_TRACK_NO 일치 → RGV 도착지 기록 → 15
-                    LandScDrop();       // 출고 29 + HS_TRACK_NO 일치 → SC 도착지 기록 → 15
-                    DeleteSemiFinished();  // [LGLS 2026-08-31] 반자동은 19/29 에서 바로 삭제(상위 보고 없음)
+                    // ── ④ 마무리 : 반자동 삭제 / 감시
+                    DeleteSemiFinished();      // 반자동(11/12)은 19/29 에서 바로 삭제(상위 보고 없음)
+                    CheckStalledJobs();        // 작업 체류(설비 무응답) 감시 → 경고
 
                     // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
                     ReportOutStationArrival();  // [LGLS 2026-08-30] 출고대 신호 ON → 상위 도착보고(22)
@@ -1761,7 +1732,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "  WHERE WH_TYP      = :WH_TYP                  ";
                 q += CRLF + "    AND JOB_TYP    IN ('1','11')               ";
                 q += CRLF + "    AND DEST_POS    = :SC_NO                   ";
-                q += CRLF + "    AND JOB_STATUS IN ('" + ST_SC_WAIT + "','" + ST_SC_CMD + "','" + ST_SC_RUN + "') ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_SC_WAIT + "','" + ST_SC_RUN + "') ";
                 q += CRLF + "    AND LUGG_NO    <> :LUGG                    ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')      ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
@@ -2048,7 +2019,7 @@ namespace TSK_COMM_IOSCH
                 //   양보 사유가 되지 않는다. 실제 라인 점유는 31/35 부터이고, 하역트랙 물리 점유는
                 //   DriveSC 의 !IsTrackEmpty(_wT) 가 따로 막는다.
                 //   ~~[LGLS 2026-08-04] '받았으면' = 구동대기(30)부터 포함~~ (교착 유발로 철회)
-                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_RUN + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2819,7 +2790,7 @@ namespace TSK_COMM_IOSCH
                 string q = "";
                 q += CRLF + " SELECT COUNT(*) AS CNT FROM JOB_MST                  ";
                 q += CRLF + "  WHERE WH_TYP = :WH AND LUGG_NO = :LG                ";
-                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_RUN + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')             ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
