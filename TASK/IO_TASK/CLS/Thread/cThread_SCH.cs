@@ -131,7 +131,6 @@ namespace TSK_COMM_IOSCH
         //   현 환경에는 SC/RGV PLC TASK프로그램이 없어 SC_DATA_LGLS.OD_RQ_YN='Y' 를 소비할 주체가 없다.
         //   1(기본) : SC 처리(20→21→25→완료)를 타이머 기반으로 자동 전이하여 시나리오를 완주시킨다.
         //   0       : 실제 SC TASK프로그램 사용 (DriveSC/RunSC/CompleteSC 핸드셰이크 경로)
-        private bool m_bScAutoComplete = true;
         private const int SC_AUTO_ACCEPT_MS   = 3500;   // 지시(21) → 중(25) 지연 [LGLS] 라인CV 체류 확보(RTV→SC 인계 분리 가시화)
         private const int SC_AUTO_COMPLETE_MS = 5000;   // 지시 후 완료까지 지연
         private readonly Dictionary<string, DateTime> m_dicScIssueDt = new Dictionary<string, DateTime>();
@@ -183,7 +182,6 @@ namespace TSK_COMM_IOSCH
         //   그러면 RtvIdle() 이 영원히 false 라 RTV 가 통째로 멈춘다(작업 2057 로 실제 교착).
         private const int RTV_CMP_STALE_MS = 20000;
         private DateTime m_dtRtvCmpSince = DateTime.MinValue;
-        private string   m_strRtvCmpLugg = "";
         private const int OUT_WAIT_LOG_MS  = 5000;    // 이 시간 넘게 기다릴 때만 대기 로그를 남긴다(정상 흐름 소음 방지)
         private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
         private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
@@ -312,17 +310,15 @@ namespace TSK_COMM_IOSCH
                     {
                         MakeMsg("[SCH] DB Open 완료 - LG생명과학 Scheduler 시작 (JOB_MST 스키마)");
 
-                        // [LGLS] SC 자동완주 설정 읽기 (ENV_IOSCH.INI [CNF] SC_AUTO_COMPLETE, 기본 1)
-                        m_bScAutoComplete = (cDefApi.GsReadInitProfileCnf("SC_AUTO_COMPLETE", 1) != 0);
+                        // [LGLS 2026-09-01] SC_AUTO_COMPLETE(자동완주) 스위치 폐기 (사용자 지시).
+                        //   구 경로(FeedInGate/AutoRun*/ProcessRvSeq/StepCranes 등 물리 재현)는
+                        //   EQP_SIM 도입 후 쓸 일이 없고, 현장/시뮬 공히 =0 으로만 구동해 왔다.
 
                         // [LGLS 2026-08-31] 출고 RGV 구간을 상태(30/35)로 표현할지
                         cDefApp.GM_OUT_VIA_RGV = (cDefApi.GsReadInitProfileCnf("OUT_VIA_RGV_STATE", 0) != 0);
                         if (cDefApp.GM_OUT_VIA_RGV)
                             MakeMsg_Imp("[SCH] 출고 RGV 상태화 모드 - 15 → 30 → 35 → 15 → 19 ([CNF] OUT_VIA_RGV_STATE=1)");
-                        if (m_bScAutoComplete)
-                            MakeMsg_Imp("[SCH] SC 자동완주(TASK프로그램 부재 시뮬레이션) 모드 - [CNF] SC_AUTO_COMPLETE=1");
-                        else
-                            MakeMsg("[SCH] SC 실TASK프로그램 모드 - SC_DATA_LGLS OD_RQ_YN 핸드셰이크 사용");
+                        MakeMsg("[SCH] SC 실TASK프로그램 모드 - SC_DATA_LGLS OD_RQ_YN 핸드셰이크 사용");
                         break;
                     }
                     else
@@ -356,17 +352,11 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-07-21] 물리 이관: SC_AUTO_COMPLETE=0(기본) 이면 물리 재현 없이
                     //   실핸드셰이크만 수행한다 — 이동/하역/공급은 전부 EQP_SIM(설비)이 담당하고,
                     //   IO_TASK 는 지시(_OD)와 상태 전이만. (자동완주=1 은 구 DB 재현 경로 보존용)
-                    if (m_bScAutoComplete)
-                        FeedInGate();   // [구 경로] 입고대 파렛트 공급/이송 재현 (실경로에선 EQP_SIM 투입)
-
                     // ── 구동 지시 : 대기 작업 + 유휴 설비 → 명령 발행 (대기 → 중)
                     SyncDualCvDirection();       // [LGLS 2026-08-30] 겸용대 방향 정합(실경로, 양방향)
                     DriveCV();      // 10 → 15
-                    if (!m_bScAutoComplete)
-                    {
-                        DriveSC();      // 입고 15 / 출고 20 → 25
-                        DriveRGV();     // 15 → 35 (RGV 도착지를 HS_TRACK_NO 에 기록)
-                    }
+                    DriveSC();      // 입고 15 / 출고 20 → 25
+                    DriveRGV();     // 15 → 35 (RGV 도착지를 HS_TRACK_NO 에 기록)
 
                     // [LGLS 2026-08-30] 구동지시 폐기 - "지시 → 수락" 전이 단계를 없앴다.
                     //   설비가 명령을 실제로 소비했는지는 Complete* 가 OD_RQ_YN='N' 으로 계속
@@ -383,20 +373,8 @@ namespace TSK_COMM_IOSCH
                     //   35+ 사이클을 정체·잔재 0 으로 완주해 실증했다.
                     CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
                     PromotePendingDirection();  // [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격
-                    if (!m_bScAutoComplete)
-                    {
-                        CompleteSC();       // 25 → 29(입고 최종) / 10(출고 → CV 처리 인계)
-                        CompleteRGVReal();  // 35 → 20 (RTV COMPLETE_RD 소비, SC 처리 인계)
-                    }
-                    else
-                    {
-                        AutoRunSC();    // [구 경로] SC 자동완주 : 20 → 21 → 25 → 29/10 (타이머 기반)
-                        AutoRunRGV();   // [구 경로] RGV 자동완주(입고 전용) : 30 → 31 → 35 → 20
-                        ProcessRvSeq();     // [구 경로] RV(SC/RTV) 적재·하역 4단계 시퀀스 재현
-                        ProcessCvClear();
-                        ProcessCvMove();    // [구 경로] 라인CV 지연 이동 재현
-                        StepCranes();       // [구 경로] 크레인/RTV 주행 1칸 애니메이션
-                    }
+                    CompleteSC();       // 25 → 29(입고 최종) / 10(출고 → CV 처리 인계)
+                    CompleteRGVReal();  // 35 → 20 (RTV COMPLETE_RD 소비, SC 처리 인계)
                     // [LGLS 2026-08-23] 종전에는 이 호출이 구경로(else) 블록 안에 있어서 **실경로에서는 한 번도 돌지 않았다.**
                     //   고아 복구는 재기동으로 대기열이 날아간 실경로에서 더 절실하다(작업 1663 = 103 트랙에 화물이 있는데
                     //   대기열에 없어 84분 방치). 양쪽 경로에서 돌린다 - 구경로 전용 구조(m_dicCvMove)는 함수 안에서 가린다.
@@ -410,11 +388,8 @@ namespace TSK_COMM_IOSCH
                     //   ※물리 게이트에 걸리면 대기 상태로 남는다 — 그건 실제로 못 가는 상황이라
                     //     상태로 드러나는 편이 맞다(보류를 시간으로 뚫지 않는다는 원칙과 일관).
                     DriveCV();                              // 출고 인계분 10 → 15 즉시
-                    if (!m_bScAutoComplete)
-                    {
-                        DriveSC();                          // 입고 인계분 20 → 25 즉시
-                        DriveRGV();                         // 30 → 35 즉시
-                    }
+                    DriveSC();                          // 입고 인계분 20 → 25 즉시
+                    DriveRGV();                         // 30 → 35 즉시
 
                     // [LGLS 2026-08-31] RecoverOutOrphans 폐기 - 신규 상태 체계에서는 고아가 생기지 않는다.
                     //   반출 소유권(도착지)이 HS_TRACK_NO 로 DB 에 남아 재기동해도 그대로 이어진다.
@@ -422,8 +397,6 @@ namespace TSK_COMM_IOSCH
                     LandRgvDrop();      // 39 + HS_TRACK_NO 일치 → RGV 도착지 기록 → 15
                     LandScDrop();       // 출고 29 + HS_TRACK_NO 일치 → SC 도착지 기록 → 15
                     DeleteSemiFinished();  // [LGLS 2026-08-31] 반자동은 19/29 에서 바로 삭제(상위 보고 없음)
-                    if (m_bScAutoComplete)
-                        ProcessOutStn();      // [구 경로] RTV 반출 물리 시퀀스 재현
 
                     // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
                     ReportOutStationArrival();  // [LGLS 2026-08-30] 출고대 신호 ON → 상위 도착보고(22)
@@ -434,7 +407,7 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-07-22] 표시용 작업구분 보강(실경로): 클라이언트는 CV_DATA/SC_DATA_LGLS 의
                     //   JOB_TYP_RD 로 입고/출고 색을 칠하는데, 실경로의 설비 관측(CvThread/VehThread)은
                     //   작업구분까지 알 수 없으므로 스케줄러가 작업 정보로 채운다. (표시 전용 — 제어 미사용)
-                    if (!m_bScAutoComplete) SyncDisplayTyp();
+                    SyncDisplayTyp();
 
                     // [LGLS] 한 사이클을 예외 없이 완주 → 스케줄러 정상 가동 하트비트
                     Heartbeat(true);
@@ -545,126 +518,6 @@ namespace TSK_COMM_IOSCH
         }
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────
-        // C/V 구동
-        //   기존 cThread_CV.CHECK_CV_RETREADY + UPDATE_CV_DATA + UPDATE_JOB_DATA 패턴.
-        //   조건 : CV_DATA(설비) 가 팔레트 적재/Ready/AUTO/유휴(OD_RQ_YN='N') 이고,
-        //          해당 위치(TRACK_NO=CV처리 설비위치)에 구동대기('10') 작업이 있으면
-        //          → CV 명령(_OD) 발행(OD_RQ_YN='Y') + JOB_STATUS '10'→'11'
-        //   [LGLS] CV 처리 설비위치 : 입고(1)=START_POS(1xx), 출고(2)=DEST_POS(1xx) - CV_POS_EXPR 참조
-        // ─────────────────────────────────────────────────────────────────
-        // [LGLS] 입고대 파렛트 공급(EQP_SIM AutoFeed 대체). C/V#11 입고대(122)가 비어있을 때 입고 대기(10) 작업의
-        //   파렛트(작업번호)를 IO_TASK 가 직접 올려 DriveCV 게이트(SENSOR0=1)를 충족. 단일 슬롯(122 점유 중이면 대기).
-        //   이후 AutoRunRGV 가 22→21 이송·RTV 픽업·클리어를 구동한다.
-        private void FeedInGate()
-        {
-            try
-            {
-                // [LGLS] 입고대 readback 갱신 — CV처리 READ_UPD_DT>WRITE_UPD_DT 게이트 충족(설비 readback 재현).
-                //   122(C/V#11)는 WCS 브리지가 담당하므로 READ_UPD_DT만. 126(C/V#13)은 IO_TASK 소유(비브리지)라
-                //   설비 accept(OD_RQ_YN/CMD_RQ_YN→'N')까지 재현해야 RunCV(11→15) 진행됨.
-                {
-                    _pBdb.mComMain.CommandType = CommandType.Text;
-                    _pBdb.mComMain.Parameters.Clear();
-                    _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                    string strSqlRf1 = "";
-                    strSqlRf1 += CRLF + " UPDATE CV_DATA                          ";
-                    strSqlRf1 += CRLF + "    SET READ_UPD_DT      = " + DbLang.SYSDATE;
-                    strSqlRf1 += CRLF + "  WHERE WH_TYP           = :WH           ";
-                    strSqlRf1 += CRLF + "    AND MC_NO            = '122'         ";
-                    strSqlRf1 += CRLF + "    AND SENSOR0_DATA_RD  = '1'           ";
-                    DbNonQry(strSqlRf1);
-                    // [LGLS] 비브리지 스테이션 126·130(입고대)·124·129(출고대): 설비 ready/accept 재현 — DriveCV(발행 OD_RQ_YN='N')·RunCV(11→15)·CompleteCV 게이트 충족.
-                    _pBdb.mComMain.Parameters.Clear();
-                    _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                    string strSqlRf2 = "";
-                    strSqlRf2 += CRLF + " UPDATE CV_DATA                          ";
-                    strSqlRf2 += CRLF + "    SET READ_UPD_DT      = " + DbLang.SYSDATE + ",";
-                    strSqlRf2 += CRLF + "        OD_RQ_YN         = 'N',          ";
-                    strSqlRf2 += CRLF + "        CMD_RQ_YN        = 'N',          ";
-                    strSqlRf2 += CRLF + "        AUTO_MODE_RD     = '1'           ";
-                    strSqlRf2 += CRLF + "  WHERE WH_TYP           = :WH           ";
-                    strSqlRf2 += CRLF + "    AND MC_NO           IN ('124','126','129','130') ";
-                    DbNonQry(strSqlRf2);
-                }
-                DateTime now = DateTime.Now;
-
-                // [LGLS] status-15(CV_RUN) 입고작업 입고대→픽업트랙 이송(입력 컨베이어). "등장" 후 IN_DWELL 경과 시. CompleteCV(15→30)가 입고대 lugg=0000 요구하므로 CV처리에서 이송. (122→121, 124→123, 130→131)  [LGLS 2026-08-24 현장기준] C/V#12=입고(124) / C/V#13=출고(126)
-                {
-                    string qs = "";
-                    qs += CRLF + " SELECT JM.LUGG_NO, JM.START_POS FROM JOB_MST JM ";
-                    qs += CRLF + "  WHERE JM.WH_TYP = :WH AND JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = :ST15 AND JM.START_POS IN ('122','124','130') ";
-                    _pBdb.mComMain.CommandType = CommandType.Text;
-                    _pBdb.mComMain.Parameters.Clear();
-                    _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                    _pBdb.mComMain.Parameters.Add("ST15", DbLang.VARCHAR).Value = ST_CV_RUN;
-                    if (DbQry(qs) > 0)
-                    {
-                        DataTable ds = _pBdb.mDtMain.Copy();
-                        for (int i = 0; i < ds.Rows.Count; i++)
-                        {
-                            string lg = GetVal(ds.Rows[i], "LUGG_NO");
-                            string sp = GetVal(ds.Rows[i], "START_POS");
-                            string pick = RgvPickupTrack(sp);
-                            if (IsCvPaused(sp)) continue;                      // [LGLS 2026-07-19] 입고대 일시정지 — 이송 보류
-                            if (IsTrackEmpty(sp)) continue;                    // 이미 이송됨
-                            if (!IsTrackEmpty(pick)) continue;                 // [LGLS] 픽업트랙에 선행 화물이 있으면 대기(덮어쓰기=유실 방지)
-                            DateTime fd; if (!m_dicInFeedDt.TryGetValue(lg, out fd)) fd = now.AddMilliseconds(-IN_DWELL_MS);
-                            if ((now - fd).TotalMilliseconds < IN_DWELL_MS) continue;   // 입고대 등장 체류(dwell) 확보
-                            WriteCvSensor(sp, "0", "0");
-                            WriteCvSensor(pick, "1", lg, "1");
-                            MakeMsg(string.Format("[SCH][CV] 입고대 {0}→{1} 이송 - 작업 {2}", sp, pick, lg));
-                        }
-                    }
-                }
-
-                // [LGLS] 출고 배출 진행 중이면 입고대 **신규 공급**만 보류(충돌·0000 플리커 방지).
-                //   위의 이송(22→21)은 오히려 출고대를 비워주므로 막으면 안 된다 —
-                //   막으면 입고 파렛트가 입고대에 갇히고 출고대 반출은 그 입고대가 비기를 기다려 **교착**한다.
-                if (m_dicOutStn.Count > 0) return;
-                // [LGLS] status-10 입고작업 공급 (입고대별 단일 슬롯)
-                string q = "";
-                q += CRLF + " SELECT JM.LUGG_NO, JM.START_POS FROM JOB_MST JM ";
-                q += CRLF + "  WHERE JM.WH_TYP = :WH_TYP AND JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = :ST ";
-                q += CRLF + "  ORDER BY JM.LUGG_NO ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                _pBdb.mComMain.Parameters.Add("ST", DbLang.VARCHAR).Value = ST_CV_WAIT;
-                if (DbQry(q) <= 0) return;
-                DataTable dt = _pBdb.mDtMain.Copy();
-                var fedSp = new HashSet<string>();
-                for (int i = 0; i < dt.Rows.Count; i++)
-                {
-                    string lugg = GetVal(dt.Rows[i], "LUGG_NO");
-                    string sp   = GetVal(dt.Rows[i], "START_POS");
-                    if (sp != "122" && sp != "124" && sp != "130") continue;   // [LGLS] 로직3(122)·로직1(124)·로직2(130) 입고대만 IO_TASK 공급  [LGLS 2026-08-24 현장기준] C/V#12=입고(124) / C/V#13=출고(126)
-                    if (IsCvPaused(sp)) { fedSp.Add(sp); continue; }   // [LGLS 2026-07-19] 입고대 일시정지 — 공급 보류
-                    if (string.IsNullOrEmpty(lugg) || lugg == "0" || lugg == "0000") continue;   // 빈 작업번호(0000 팬텀) 방지
-                    if (fedSp.Contains(sp)) continue;           // 입고대별 틱당 1건
-                    string pick = RgvPickupTrack(sp);
-                    if (!IsTrackEmpty(sp) || !IsTrackEmpty(pick)) { fedSp.Add(sp); continue; }   // 입고대+픽업 비었을 때만(단일 슬롯)
-
-                    // [LGLS 2026-08-21] 겸용 입출고대가 출고 모드로 서 있으면 입고(0) 로 되돌린다.
-                    //   출고 전환(RequestCvDirection(...,"1"))만 있고 복귀 경로가 없어, 한 번 출고가
-                    //   나가면 계속 출고로 남았다. 설비가 방향을 무시하고 입고대에 파렛트를 올려 주던
-                    //   동안에는 드러나지 않았으나, 방향을 지키면 입고가 영영 시작되지 못한다.
-                    //   여기(공급 직전)가 맞는 자리다 — 화물이 올라오기 전에 방향이 서 있어야 한다.
-                    if (GetCvStockMode(sp) == "1")
-                    {
-                        if (RequestCvDirection(sp, "0"))
-                            MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 전환 지시 - 입고(0) (작업 {1} 공급 대기)", sp, lugg));
-                        fedSp.Add(sp);
-                        continue;                                // 방향이 설비에 반영된 뒤 다음 폴링에 공급
-                    }
-
-                    WriteCvSensor(sp, "1", lugg, "1");          // [LGLS] 입고대에 파렛트(작업번호) 등장
-                    m_dicInFeedDt[lugg] = now;                  // 피드 시각(등장 dwell 계산)
-                    fedSp.Add(sp);
-                }
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH][CV] FeedInGate 오류: " + ex.Message); }
-        }
 
         #region DriveCV
         /// <summary>
@@ -1813,154 +1666,6 @@ namespace TSK_COMM_IOSCH
         //     잔류하면 후속 작업이 막히기 때문). 실제 SC TASK프로그램 도입 시
         //     SC_AUTO_COMPLETE=0 으로 바꾸면 기존 DriveSC/RunSC/CompleteSC 경로가 동작한다.
         // ─────────────────────────────────────────────────────────────────
-        #region AutoRunSC
-        private void AutoRunSC()
-        {
-            try
-            {
-                string strSql = "";
-                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.JOB_STATUS,                  ";
-                strSql += CRLF + "        JM.START_POS, JM.DEST_POS,                              ";
-                strSql += CRLF + "        JM.START_LOCATION, JM.DEST_LOCATION                     ";
-                strSql += CRLF + "   FROM JOB_MST JM                                              ";
-                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                                 ";
-                strSql += CRLF + "    AND JM.JOB_STATUS IN ('" + ST_SC_WAIT + "','" + ST_SC_CMD + "','" + ST_SC_RUN + "') ";
-
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int nCnt = DbQry(strSql);
-                if (nCnt <= 0) return;
-
-                DataTable dt = _pBdb.mDtMain.Copy();
-                DateTime now = DateTime.Now;
-
-                for (int i = 0; i < dt.Rows.Count; i++)
-                {
-                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
-                    string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
-                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
-                    string status   = GetVal(dt.Rows[i], "JOB_STATUS");
-                    string startPos = GetVal(dt.Rows[i], "START_POS");
-                    string destPos  = GetVal(dt.Rows[i], "DEST_POS");
-                    string startLoc = GetVal(dt.Rows[i], "START_LOCATION");
-                    string destLoc  = GetVal(dt.Rows[i], "DEST_LOCATION");
-                    // [LGLS] 랙 저장 bay = LOCATION "BB-LLL-DD" 첫 2자리(입고=목적지, 출고=출발지). SC POS_H(레일위치)로 직접 사용.
-                    string rackLoc  = (jobTyp == "1") ? destLoc : startLoc;
-                    string rackBay  = (!string.IsNullOrEmpty(rackLoc) && rackLoc.Length >= 2) ? rackLoc.Substring(0, 2) : "0";
-                    string rtn = "";
-
-                    if (status == ST_SC_WAIT)
-                    {
-                        // [LGLS 2026-07-19] SC suspend 게이트(SC 대화상자): 1=입고정지, 2=출고정지, 3=입출고정지 — 해당 방향 지시 금지
-                        string _scNo = (jobTyp == "1") ? destPos : startPos;
-                        if (!ScSuspendAllows(_scNo, jobTyp)) continue;
-                        // [LGLS 2026-07-19] SC 작업대(라인 트랙) 일시정지 게이트: 입고=픽업트랙(짝수), 출고=하역트랙(짝수) — 정지 시 SC 지시 안 함
-                        {
-                            string _wT;
-                            if (jobTyp == "1") { string _d = RgvDropTrack(destPos); int _n; _wT = int.TryParse(_d, out _n) ? (_n + 1).ToString() : _d; }
-                            else _wT = RgvOutDropTrack(startPos);
-                            if (IsCvPaused(_wT)) continue;
-                            // [LGLS 2026-08-04] 출고: 출고 H/S 라인에 화물이 감지되면 전 크레인 공통으로 SC 출고 지시 금지.
-                            //   (지시해버리면 크레인이 화물을 싣고 H/S 앞에서 하역하지 못한 채 대기하게 됨)
-                            //   짝수(SC 하역)뿐 아니라 홀수(RTV 픽업)까지 본다 — 어느 쪽이든 비어야 내보낼 수 있다.
-                            if (jobTyp == "2" && IsOutHsOccupied(_wT)) continue;
-                            // [LGLS 2026-07-20] SC1 특례: SC1 은 입고 드롭과 출고 반출이 라인 트랙(C/V#2=103/104)을 공유한다.
-                            //   아래 중 하나라도 걸리면 SC1 출고 지시를 보류한다(동시 진행 시 정면 경합/교착).
-                            if (jobTyp == "2" && startPos == "901")
-                            {
-                                //  ① SC1행 입고 작업을 RTV 가 이미 받았다(대기 30 / 지시 31 / 운반 35)
-                                if (HasSc1InboundOnRtv()) continue;
-                                //  ② 공유 라인(트랙 103/104)에 진행 중인 입고 화물이 올라와 있다
-                                if (HasInboundCargoOnTracks("'103','104'")) continue;
-                            }
-                        }
-                        // [LGLS] 입고: 화물이 16(픽업트랙)에 도착한 뒤에만 SC 지시(15에서 조기지시 방지)
-                        if (jobTyp == "1") { string _dT = RgvDropTrack(destPos); int _pn2; string _pT = int.TryParse(_dT, out _pn2) ? (_pn2 + 1).ToString() : _dT; if (IsTrackEmpty(_pT)) continue; }
-                        // 대기(20) → 지시(21) : 즉시 발행 + 지시시각 기록
-                        if (UpdateJobStatus(ST_SC_CMD, luggNo, ref rtn))
-                        {
-                            m_dicScIssueDt[luggNo] = now;
-                            // [LGLS] 지시=RUN. 입고(1)는 빈 크레인이 먼저 H/S(입력 컨베이어 하단, POS_H_RD=0)로 이동
-                            //   (아직 픽업 전 → 팔레트 '0', 적재완료 '0', 목적지 인자 '0' 으로 POS_H_RD=0 강제).
-                            //   출고(2)는 기존 동작(크레인 위치=목적지 베이) 유지.
-                            if (jobTyp == "1")
-                                UpdateScVehicle(destPos, "2", "0", startPos, "0", "0", "0", "1", "1", "", "1");  // [LGLS] 빈차 H/S 이동(입고 작업색 유지)
-                            else
-                                UpdateScVehicle(startPos, "2", "0", startPos, "4", "0", "0", "1", "1", "", "2");
-                            MakeMsg_Imp(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 지시 - 작업 {0}(TYP:{1}) From:{2} To:{3} → 상태 '{4}'",
-                                luggNo, jobTyp, startPos, destPos, ST_SC_CMD));
-                        }
-                        else
-                            MakeMsg_Error(string.Format("[SCH][SC] SC 자동완주 지시 실패({0}): {1}", luggNo, rtn));
-                        continue;
-                    }
-
-                    // 지시시각 미보유(재기동 등) 시 현재시각으로 보정
-                    if (!m_dicScIssueDt.ContainsKey(luggNo))
-                        m_dicScIssueDt[luggNo] = now;
-
-                    double elapsedMs = (now - m_dicScIssueDt[luggNo]).TotalMilliseconds;
-
-                    if (status == ST_SC_CMD && elapsedMs >= SC_AUTO_ACCEPT_MS)
-                    {
-                        // [LGLS] 입고: 라인 픽업트랙(16)에서 **적재 4단계 시퀀스**로 집어올린 뒤 랙 bay 로 출발.
-                        //   (데이터만 표시된 채 H/S 대기 →2s→ SC 화물 표시 →2s→ 라인 화물·데이터 제거 →2s→ 출발)
-                        if (jobTyp == "1")
-                        {
-                            string dropT = RgvDropTrack(destPos); int pn; string pickT = int.TryParse(dropT, out pn) ? (pn + 1).ToString() : dropT;
-                            if (RvSeqFresh(luggNo + ":SL"))
-                                UpdateScVehicle(destPos, "2", luggNo, startPos, "0", "0", "0", "1", "1", "", "1");   // 데이터만(화물감지 X), H/S(0) 정지
-                            if (!RvSeqStep(luggNo + ":SL", true, "S", destPos, pickT, luggNo, "1")) continue;
-                            UpdateScVehicle(destPos, "2", luggNo, startPos, rackBay, "1", "0", "1", "1", "", "1");   // 화물 싣고 랙 bay 로
-                        }
-                        else UpdateScVehicle(startPos, "2", luggNo, "4", "0", "1", "0", "1", "1", "", "2"); // [LGLS] 출고=H/S(0)로 반출
-                        // 지시(21) → 중(25)
-                        if (UpdateJobStatus(ST_SC_RUN, luggNo, ref rtn))
-                            MakeMsg(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 구동 중 - 작업 {0} → 상태 '{1}'", luggNo, ST_SC_RUN));
-                        else
-                            MakeMsg_Error(string.Format("[SCH][SC] SC 자동완주 구동중 전이 실패({0}): {1}", luggNo, rtn));
-                    }
-                    // [LGLS] 출고는 크레인이 출고 H/S(bay0)에 도달했을 때만 완료(랙 중간 완료 방지)
-                    // [LGLS] 출고는 라인CV 하역트랙(짝수)이 비었을 때만 완료 — 선행 화물이 아직 있으면 H/S 에서 대기
-                    //   (그냥 쓰면 선행 화물을 덮어써서 유실됨)
-                    //   ※ CanEnterLine 은 **하역 시퀀스 시작 전에만** 검사한다. 시퀀스가 하역트랙에 화물을 올린 뒤에도
-                    //     검사하면 '자기가 놓은 화물' 때문에 이 else-if 조건이 깨져, 완료 처리(m_dicCvMove 등록 = 4→3 트래킹)에
-                    //     도달하지 못하고 화물이 하역트랙에 멈춰 선다.
-                    else if (status == ST_SC_RUN && elapsedMs >= SC_AUTO_COMPLETE_MS
-                        && (jobTyp != "2" || !m_dicCraneCur.ContainsKey("S" + startPos) || m_dicCraneCur["S" + startPos] <= 0)
-                        && (jobTyp != "2" || !RvSeqFresh(luggNo + ":SU") || CanEnterLine(RgvOutDropTrack(startPos), luggNo)))
-                    {
-                        // [LGLS] 출고: 라인CV 하역트랙에 **하역 4단계 시퀀스**를 완주한 뒤 상태 전이.
-                        //   (데이터+화물 실은 채 도착 →2s→ SC 화물 사라짐 →2s→ 라인에 화물만 →2s→ SC 데이터 사라지고 라인에 데이터)
-                        //   상태 전이 뒤에는 이 분기로 되돌아올 수 없으므로 반드시 전이 '전에' 완주시킨다.
-                        if (jobTyp == "2" && !RvSeqStep(luggNo + ":SU", false, "S", startPos, RgvOutDropTrack(startPos), luggNo, "2",
-                                                        ((destPos == "126" || destPos == "122" || destPos == "129") ? destPos : "122")))
-                            continue;
-                        // 중(25) → 완료 : 입고(1)=최종 29, 출고(2)=CV 처리 인계 10
-                        string stNext = (jobTyp == "2") ? ST_CV_WAIT : ST_SC_DONE;
-                        if (UpdateJobStatus(stNext, luggNo, ref rtn))
-                        {
-                            m_dicScIssueDt.Remove(luggNo);
-                            UpdateScVehicle((jobTyp == "1") ? destPos : startPos, "1", "0", startPos, destPos, "1", "1", "0", "0", destPos, "0"); // [LGLS] 완료=하역완료,IDLE,작업색해제
-                            if (jobTyp == "1") { RvSeqReset(luggNo + ":SL"); RvSeqReset(luggNo + ":SU"); }  // [LGLS] 픽업트랙 클리어는 적재 시퀀스가 이미 수행 → 시퀀스 키만 정리
-                            // [LGLS] 출고: 라인CV 짝수(H/S 하역)→홀수(RGV 픽업측) 이동만 예약. RTV 출고대 반출은
-                            //   홀수 트랙에 실제 도착했을 때 ProcessCvMove 가 대기열(m_lstOutPend)에 넣고 ProcessOutPend 가 태운다.
-                            // [LGLS] 출고: 라인CV 짝수 트랙의 화물·데이터는 위 하역 시퀀스가 이미 기록함 → 여기선 짝수→홀수(RGV 픽업측) 이동만 예약.
-                            else if (jobTyp == "2") { string even = RgvOutDropTrack(startPos); int pn; string odd = int.TryParse(even, out pn) ? (pn - 1).ToString() : even; m_dicCvMove[even] = new CvMovePend { Due = now.AddMilliseconds(2500), Odd = odd, Lugg = luggNo, JobTyp = "2", NoClear = true, OutStn = ((destPos == "126" || destPos == "122" || destPos == "129") ? destPos : "122") }; RvSeqReset(luggNo + ":SL"); RvSeqReset(luggNo + ":SU"); }  // OutStn=출고대(로직1=126/로직3=122)
-                            if (jobTyp == "2")
-                                MakeMsg_Imp(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 완료 - 작업 {0} → CV 처리 인계 (상태 '{1}')", luggNo, stNext));
-                            else
-                                MakeMsg_Imp(string.Format("[SCH][SC] SC 자동완주(TASK프로그램 부재 시뮬레이션) 완료 - 작업 {0}(입고 최종) → 상태 '{1}' (HOST 완료보고 대상)", luggNo, stNext));
-                        }
-                        else
-                            MakeMsg_Error(string.Format("[SCH][SC] SC 자동완주 완료 전이 실패({0}): {1}", luggNo, rtn));
-                    }
-                }
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH][SC] AutoRunSC 오류: " + ex.Message); }
-        }
-        #endregion
 
         // ─────────────────────────────────────────────────────────────────
         // [LGLS] RGV(RTV) 자동완주 (입고 전용, TASK프로그램 부재 시뮬레이션)
@@ -1972,166 +1677,6 @@ namespace TSK_COMM_IOSCH
         //   ※ RGV 는 1대(RTV_NO='801'). 레이아웃 토폴로지(픽업/드롭 트랙, 화면 셀)는 고정 매핑.
         //     _OD 명령 컬럼은 소비 주체(PLC TASK프로그램)가 없어 기록하지 않고 _RD 관측치만 갱신한다.
         // ─────────────────────────────────────────────────────────────────
-        #region AutoRunRGV
-        private void AutoRunRGV()
-        {
-            try
-            {
-                string strSql = "";
-                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, JM.JOB_STATUS,                  ";
-                strSql += CRLF + "        JM.START_POS, JM.DEST_POS                               ";
-                strSql += CRLF + "   FROM JOB_MST JM                                              ";
-                strSql += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                                 ";
-                strSql += CRLF + "    AND JM.JOB_STATUS IN ('" + ST_RGV_WAIT + "','" + ST_RGV_CMD + "','" + ST_RGV_RUN + "') ";
-
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int nCnt = DbQry(strSql);
-                if (nCnt <= 0) return;
-
-                DataTable dt = _pBdb.mDtMain.Copy();
-                DateTime now = DateTime.Now;
-
-                // [LGLS] RGV는 단일 유닛: 가장 진행된 작업 1건만 처리(35>31>30). 나머지는 대기 → 주행 스텝 안정화
-                int chosenIdx = 0;
-                for (int k = 1; k < dt.Rows.Count; k++)
-                    if (string.Compare(GetVal(dt.Rows[k], "JOB_STATUS"), GetVal(dt.Rows[chosenIdx], "JOB_STATUS")) > 0) chosenIdx = k;
-
-                for (int i = 0; i < dt.Rows.Count; i++)
-                {
-                    if (i != chosenIdx) continue;   // [LGLS] 단일 RGV: 선택된 1건만
-                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
-                    string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
-                    if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
-                    string status   = GetVal(dt.Rows[i], "JOB_STATUS");
-                    string startPos = GetVal(dt.Rows[i], "START_POS");
-                    string destPos  = GetVal(dt.Rows[i], "DEST_POS");
-                    string rtn = "";
-
-                    // [LGLS] 고정 레이아웃 라우팅 : 픽업 트랙(입력 컨베이어) / 드롭 트랙(크레인 하역대)
-                    string pickupTrack = RgvPickupTrack(startPos);
-                    string dropTrack   = RgvDropTrack(destPos);
-
-                    if (status == ST_RGV_WAIT)
-                    {
-                        // [LGLS] 드롭 라인이 비고 예약도 없을 때만 RTV 를 커밋(교착 방지 — 위 m_dicLineRsv 주석 참조).
-                        //   막혀 있으면 지시하지 않고 대기 → RTV 가 자유로워져 그 라인의 출고 화물이 먼저 빠진다.
-                        if (!CanEnterLine(dropTrack, luggNo)) continue;
-                        // [LGLS 2026-07-19] RTV 상호배타: 출고대 반출 시퀀스가 RTV 사용 중(Stage 0~2)이면
-                        //   입고 지시를 보류한다 (RTV 는 1대 — 동시 점유 시 입고↔출고 색 깜빡임/동시 픽업·하역 발생).
-                        if (RtvBusyByOutbound()) continue;
-                        // [LGLS 2026-07-20] SC1 특례: SC1(901) 출고 작업이 미종결로 존재하면 SC1행 입고의 RTV 반송을 보류.
-                        //   화물은 픽업트랙(RTV 로딩 위치, 상태 30)까지는 진행하며, SC1 출고 완료 후 반송한다. (902~905행 입고는 무관)
-                        if (destPos == "901" && HasActiveSc1Outbound()) continue;
-                        // [LGLS 2026-07-19] RTV 작업정지(RTV 대화상자 suspend) — RTV 에 작업지시 안 함
-                        if (IsRtvSuspended()) continue;
-                        // [LGLS 2026-07-19] RTV 작업대(픽업/드롭 트랙) 일시정지 — RTV 지시 안 함
-                        if (IsCvPaused(pickupTrack) || IsCvPaused(dropTrack)) continue;
-                        // [LGLS 2026-08-22] 핸드셰이크 최우선 규칙 (DriveRGV 와 동일 - 이 경로에 빠져 있었다).
-                        //   내려놓을 자리(드롭 트랙)의 도착 HS 가 서지 않으면 지시하지 않는다.
-                        //   출발지 HS 는 이 시점엔 화물이 아직 픽업트랙에 없어(22 에 있음) 여기서 보지 않고,
-                        //   실제 적재 직전(아래 ST_RGV_CMD)에서 본다.
-                        if (!IsHsOn(dropTrack, "RTV_ARRIVEHS_READY_RD"))
-                        {
-                            DbgLog("RGVHS_801", string.Format("[RGV] 지시 보류 - 도착지 {0} 도착 HS 신호 없음(작업 {1})", dropTrack, luggNo));
-                            continue;
-                        }
-                        // 대기(30) → 지시(31) : [LGLS] 파렛트는 22(입고대)에 유지, 빈 RGV 가 입고대(RT#21=plc15)로 이동.
-                        //   22→21 이송은 IN_DWELL 경과 후(아래) — "22 등장"이 화면에 충분히 보이도록.
-                        if (UpdateJobStatus(ST_RGV_CMD, luggNo, ref rtn))
-                        {
-                            m_dicLineRsv[luggNo] = dropTrack;   // [LGLS] 드롭 라인 선점(드롭 완료 시 해제)
-                            m_dicRgvIssueDt[luggNo] = now;
-                            m_setInShifted.Remove(luggNo);
-                            // [LGLS] RTV 가 화물 없이 입고대 픽업트랙(RgvCell(pickupTrack))으로 이동(입고색). allowEmptyMove 로 빈차 접근 허용. (122→121=plc15, 126→125=plc4)
-                            //   화물감지는 아직 없고 **데이터(LUGG_OD)만** 실어 보낸다 — "실으러 오는 RV 는 데이터만 있어야 한다".
-                            UpdateRtvVehicle("801", "2", "0", RgvCell(pickupTrack), "1", "0", luggNo, pickupTrack, dropTrack, allowEmptyMove: true);
-                            MakeMsg_Imp(string.Format("[SCH][RGV] RGV 지시 - 작업 {0} 입고대 등장 유지 + RTV 입고대 이동 → 상태 '{1}'",
-                                luggNo, ST_RGV_CMD));
-                        }
-                        else
-                            MakeMsg_Error(string.Format("[SCH][RGV] RGV 자동완주 지시 실패({0}): {1}", luggNo, rtn));
-                        continue;
-                    }
-
-                    // 지시시각 미보유(재기동 등) 시 현재시각으로 보정
-                    if (!m_dicRgvIssueDt.ContainsKey(luggNo))
-                        m_dicRgvIssueDt[luggNo] = now;
-
-                    double elapsedMs = (now - m_dicRgvIssueDt[luggNo]).TotalMilliseconds;
-
-                    // [LGLS] 22→21 이송은 CV처리(FeedInGate)에서 이미 완료 → 여기(RGV처리)선 RTV 픽업만.
-                    if (status == ST_RGV_CMD && elapsedMs >= RGV_ACCEPT_MS)
-                    {
-                        // 지시(31) → 중(35) : [LGLS] RTV 입고대 도착 → **적재 4단계 시퀀스** 후 드롭 지점으로 이동
-                        m_setInShifted.Remove(luggNo);       // [LGLS] 이송 플래그 정리
-                        // [LGLS 2026-07-19] "도착 스냅"(순간이동) 제거 — StepCranes 주행이 실제 픽업 셀에 도착한 뒤에만 적재 시작.
-                        //   (스냅은 내부 위치만 목표로 맞춰 StepCranes 가 POS_H 를 더 이상 안 씀 → 화면 위치 불일치)
-                        { int _pc = 0; int.TryParse(RgvCell(pickupTrack), out _pc);
-                          int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
-                          if (RvSeqFresh(luggNo + ":L") && _cur != _pc) { m_dicCraneTgt["R801"] = _pc; continue; } }   // 도착까지 대기(주행은 StepCranes)
-                        // [LGLS 2026-08-22] 적재 직전 출발지 HS 확인. 시퀀스가 시작된 뒤에는 보지 않는다 —
-                        //   적재 2단계가 픽업트랙의 화물·데이터를 지워 HS 가 스스로 내려가므로,
-                        //   계속 검사하면 자기 동작 때문에 도중에 멈춰 선다(CanEnterLine 과 같은 이유).
-                        if (RvSeqFresh(luggNo + ":L") && !IsHsOn(pickupTrack, "RTV_DEPARTHS_READY_RD"))
-                        {
-                            DbgLog("RGVHS_801", string.Format("[RGV] 적재 보류 - 출발지 {0} 출발 HS 신호 없음(작업 {1})", pickupTrack, luggNo));
-                            continue;
-                        }
-                        // [LGLS] 도착 상태를 1회만 세팅: 데이터(LUGG_OD)만 있고 화물감지는 아직 없음. 픽업지점에 정지.
-                        if (RvSeqFresh(luggNo + ":L"))
-                            UpdateRtvVehicle("801", "2", "0", RgvCell(pickupTrack), "1", "0", luggNo, pickupTrack, dropTrack, allowEmptyMove: true);
-                        // 적재: →2s→ RTV 화물 표시 →2s→ 입고대 화물·데이터 제거 →2s→ 완료(아래에서 출발)
-                        if (!RvSeqStep(luggNo + ":L", true, "R", "801", pickupTrack, luggNo, "1")) continue;
-                        //   적재중(팔레트+센서 코너마커) + BLUE 운반레일(LUGG_OD). 화면 위치 = 드롭 트랙 셀.
-                        UpdateRtvVehicle("801", "2", luggNo, RgvCell(dropTrack), "1", "1", luggNo, pickupTrack, dropTrack);
-                        if (UpdateJobStatus(ST_RGV_RUN, luggNo, ref rtn))
-                            MakeMsg(string.Format("[SCH][RGV] RGV 자동완주(TASK프로그램 부재 시뮬레이션) 운반중 - 작업 {0} 드롭이동 Track:{1} → 상태 '{2}'",
-                                luggNo, dropTrack, ST_RGV_RUN));
-                        else
-                            MakeMsg_Error(string.Format("[SCH][RGV] RGV 자동완주 운반중 전이 실패({0}): {1}", luggNo, rtn));
-                    }
-                    else if (status == ST_RGV_RUN && elapsedMs >= RGV_DONE_MS)
-                    {
-                        // [LGLS] 라인 진입 가드는 **하역 시퀀스 시작 전에만** 검사한다.
-                        //   시퀀스 2단계가 바로 이 드롭트랙에 화물을 올리므로, 시작 후에도 계속 검사하면
-                        //   '자기가 놓은 화물' 때문에 CanEnterLine 이 false 가 되어 아래 완료 처리
-                        //   (m_dicCvMove 등록 = 15→16 트래킹)에 영영 도달하지 못하고 트랙에 멈춰 선다.
-                        if (RvSeqFresh(luggNo + ":U") && !CanEnterLine(dropTrack, luggNo)) continue;
-                        // [LGLS 2026-08-22] 하역 직전 도착지 HS 확인 (시퀀스 시작 전에만 - 위와 같은 이유).
-                        if (RvSeqFresh(luggNo + ":U") && !IsHsOn(dropTrack, "RTV_ARRIVEHS_READY_RD"))
-                        {
-                            DbgLog("RGVHS_801", string.Format("[RGV] 하역 보류 - 도착지 {0} 도착 HS 신호 없음(작업 {1})", dropTrack, luggNo));
-                            continue;
-                        }
-                        // 중(35) → 드롭완료 : [LGLS] RTV 드롭지점 도착 → **하역 4단계 시퀀스**
-                        //   (데이터+화물 실은 채 도착 →2s→ RTV 화물 사라짐 →2s→ 라인에 화물만 →2s→ RTV 데이터 사라지고 라인에 데이터)
-                        // [LGLS 2026-07-19] "드롭지점 도착 스냅"(순간이동) 제거 — 주행이 실제 드롭 셀에 도착해야 하역 시작.
-                        //   (기존엔 적재(~6s) 후 타이머(6.5s)가 이미 만료라 드롭이 즉시 발동, RTV 가 픽업/중간 위치에
-                        //    표시된 채 드롭 트랙(예: 로직2 7번)에 화물이 생기는 위치 불일치 발생)
-                        { int _dc = 0; int.TryParse(RgvCell(dropTrack), out _dc);
-                          int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
-                          if (RvSeqFresh(luggNo + ":U") && _cur != _dc) { m_dicCraneTgt["R801"] = _dc; continue; } }   // 도착까지 대기
-                        if (!RvSeqStep(luggNo + ":U", false, "R", "801", dropTrack, luggNo, "1")) continue;
-                        // 시퀀스가 라인 트랙에 화물+데이터를 이미 기록함 → RGV 홈복귀 IDLE 후 SC 처리('20') 인계
-                        UpdateRtvVehicle("801", "1", "0", "0", "0", "0", "0", "0", "0");
-                        { int _pn; string _pickT = int.TryParse(dropTrack, out _pn) ? (_pn + 1).ToString() : dropTrack; m_dicCvMove[dropTrack] = new CvMovePend { Due = DateTime.Now.AddMilliseconds(2500), Odd = _pickT, Lugg = luggNo, JobTyp = "1", NoClear = true }; }  // [LGLS] 입고: 15→16 자동 진행(NoClear=SC 픽업 시 클리어). SC 지시는 16 도착 후
-                        m_dicLineRsv.Remove(luggNo);   // [LGLS] 드롭 완료 → 라인 예약 해제
-                        RvSeqReset(luggNo + ":L"); RvSeqReset(luggNo + ":U");   // [LGLS] 시퀀스 키 정리(작업 재사용 대비)
-                        if (UpdateJobStatus(ST_SC_WAIT, luggNo, ref rtn))
-                        {
-                            m_dicRgvIssueDt.Remove(luggNo);
-                            MakeMsg_Imp(string.Format("[SCH][RGV] RGV 자동완주(TASK프로그램 부재 시뮬레이션) 드롭완료 - 작업 {0} → SC 처리 인계 (상태 '{1}')",
-                                luggNo, ST_SC_WAIT));
-                        }
-                        else
-                            MakeMsg_Error(string.Format("[SCH][RGV] RGV 자동완주 드롭완료 전이 실패({0}): {1}", luggNo, rtn));
-                    }
-                }
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] AutoRunRGV 오류: " + ex.Message); }
-        }
 
         // [LGLS] RGV 라우팅 헬퍼 (고정 레이아웃 토폴로지 - 현장 배치도 기준 하드코딩)
         //   픽업 트랙 : START_POS(입력 컨베이어 워크스테이션) 가 짝수면 -1 한 홀수 트랙, 홀수면 그대로.
@@ -2339,7 +1884,6 @@ namespace TSK_COMM_IOSCH
                 if (!IsTrackFreeFor(t, lugg) || m_dicCvMove.ContainsKey(t) || IsLineRsvd(t, lugg)) return false;
             return true;
         }
-        #endregion
 
         // [LGLS] RGV 드롭 시 해당 라인 컨베이어 트랙에 트래킹을 기록하여 EQP_SIM 이 파렛트를 재현하게 한다.
         //   (LUGG_NO_OD + TRACKING_WRITE_YN='Y' → WCS_TASK_CV 가 PLC R영역에 기록 → EQP_SIM GetTracking → 입고 파렛트 재현)
@@ -2972,35 +2516,6 @@ namespace TSK_COMM_IOSCH
         private bool RvSeqFresh(string key) { return !m_dicRvSeq.ContainsKey(key) && !m_setRvSeqDone.Contains(key); }
         private void RvSeqReset(string key) { m_dicRvSeq.Remove(key); m_setRvSeqDone.Remove(key); }
 
-        private void ProcessRvSeq()
-        {
-            if (m_dicRvSeq.Count == 0) return;
-            DateTime now = DateTime.Now;
-            foreach (string key in new List<string>(m_dicRvSeq.Keys))
-            {
-                RvSeq q = m_dicRvSeq[key];
-                if (now < q.Due) continue;
-                q.Phase++;
-                q.Due = now.AddMilliseconds(RV_STEP_MS);
-                if (q.IsLoad)
-                {
-                    if (q.Phase == 1) SetRvCargo(q.Kind, q.No, "1");            // RV 에 화물 표시(데이터는 이미 있음)
-                    else if (q.Phase == 2) WriteCvSensor(q.Track, "0", "0");    // 실어간 CV 의 화물·데이터 제거
-                    else { m_setRvSeqDone.Add(key); m_dicRvSeq.Remove(key); }   // 2초 더 대기 후 완료 → 호출자가 출발시킴
-                }
-                else
-                {
-                    if (q.Phase == 1) SetRvCargo(q.Kind, q.No, "0");            // RV 화물 사라짐(데이터는 유지)
-                    else if (q.Phase == 2) WriteCvCargoOnly(q.Track);           // 내린 CV 에 화물만(데이터 아직 X)
-                    else
-                    {
-                        WriteCvSensor(q.Track, "1", q.Lugg, q.JobTyp, q.Dest);  // CV 에 데이터(+출고 도착지) 생김
-                        ClearRvData(q.Kind, q.No);                              // RV 데이터 사라짐
-                        m_setRvSeqDone.Add(key); m_dicRvSeq.Remove(key);
-                    }
-                }
-            }
-        }
 
         /// <summary>RV 화물감지만 토글. 데이터/위치/이동목표는 건드리지 않는다.</summary>
         private void SetRvCargo(string kind, string no, string on)
@@ -3162,39 +2677,7 @@ namespace TSK_COMM_IOSCH
             catch (Exception ex) { MakeMsg_Error("[SCH][RGV] WriteCvSensor 오류: " + ex.Message); }
         }
 
-        // [LGLS] 라인CV 트랙 지연 정리: 예약시각 도달 시 sensor0/lugg 클리어 (트랙간 이동 후 잔류 방지)
-        private void ProcessCvClear()
-        {
-            if (m_dicCvClear.Count == 0) return;
-            DateTime now = DateTime.Now;
-            foreach (var t in new List<string>(m_dicCvClear.Keys))
-            {
-                if (now >= m_dicCvClear[t]) { WriteCvSensor(t, "0", "0"); m_dicCvClear.Remove(t); }
-            }
-        }
 
-        // [LGLS] 출고 라인CV 지연 이동: 짝수(14,H/S 하역)→홀수(13,RGV 픽업측). 2.5s후 정리
-        private void ProcessCvMove()
-        {
-            if (m_dicCvMove.Count == 0) return;
-            DateTime now = DateTime.Now;
-            foreach (var even in new List<string>(m_dicCvMove.Keys))
-            {
-                CvMovePend mv = m_dicCvMove[even];
-                if (now < mv.Due) continue;
-                // [LGLS] 목표 트랙이 비었을 때만 이동. 선행 화물이 아직 픽업 안 됐으면 그대로 대기(덮어쓰기=화물 유실 방지).
-                //   구코드는 무조건 write 해서, 13번에 멈춰있던 선행 화물을 후속 화물이 덮어쓰고
-                //   RTV Loading 때 둘 다 사라지는 버그가 있었음.
-                if (!IsTrackEmpty(mv.Odd)) continue;
-                WriteCvSensor(even, "0", "0");
-                // [LGLS] 출고면 도착지(출고대)를 홀수 트랙에 함께 기록 → 재기동해도 RecoverOutOrphans 가 살려낸다.
-                WriteCvSensor(mv.Odd, "1", mv.Lugg, mv.JobTyp, (mv.JobTyp == "2") ? mv.OutStn : "");
-                if (!mv.NoClear) m_dicCvClear[mv.Odd] = now.AddMilliseconds(2500);
-                // [LGLS] 출고 화물이 RGV 픽업 트랙에 도착 → RTV 출고대 반출 대기열에 등록(FIFO)
-                if (mv.JobTyp == "2") m_lstOutPend.Add(new OutPend { Lugg = mv.Lugg, Odd = mv.Odd, OutStn = mv.OutStn });
-                m_dicCvMove.Remove(even);
-            }
-        }
 
         // [LGLS] 출고 고아 화물 자동 복구.
         //   출고 화물이 RGV 픽업 트랙(홀수)에 놓였는데 대기열/반출 시퀀스 어디에도 없으면 아무도 가져가지 않는다.
@@ -3250,41 +2733,6 @@ namespace TSK_COMM_IOSCH
             //   실경로에서는 짝수→홀수 이동을 설비가 직접 하므로 재구성하면 안 되고, 넣어봐야 소비자가 없어 쌓이기만 한다.
             try
             {
-                if (m_bScAutoComplete)
-                {
-                string[] evenTrk = { "104", "106", "110", "114", "118" };
-                for (int k = 0; k < evenTrk.Length; k++)
-                {
-                    if (m_dicCvMove.ContainsKey(evenTrk[k])) continue;          // 이미 이동 예약됨
-                    if (IsTrackEmpty(evenTrk[k])) continue;
-                    string lg = TrackLugg(evenTrk[k]);
-                    if (string.IsNullOrEmpty(lg) || lg == "0" || lg == "0000") continue;
-                    if (m_dicOutStn.ContainsKey(lg)) continue;
-                    if (m_lstOutPend.Exists(x => x.Lugg == lg)) continue;
-                    if (IsActiveInboundJob(lg)) continue;                       // 입고 화물(SC 픽업 대기)은 대상 아님
-                    if (!IsActiveOutboundJob(lg)) continue;                     // [LGLS 2026-08-28] 삭제/완료된 작업의 잔류 트래킹 → 유령 반송지시 금지
-                    bool inSeq = false;                                         // 하역/적재 시퀀스 진행 중이면 그쪽 소유
-                    foreach (var kv in m_dicRvSeq) if (kv.Value.Track == evenTrk[k]) { inSeq = true; break; }
-                    if (inSeq) continue;
-                    string dest = "";
-                    try {
-                        string qd = "";
-                        qd += CRLF + " SELECT DEST_POS_OD        ";
-                        qd += CRLF + "   FROM CV_DATA            ";
-                        qd += CRLF + "  WHERE WH_TYP    = :WH    ";
-                        qd += CRLF + "    AND MC_NO     = :MC    ";
-                        _pBdb.mComMain.CommandType = CommandType.Text;
-                        _pBdb.mComMain.Parameters.Clear();
-                        _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                        _pBdb.mComMain.Parameters.Add("MC", DbLang.VARCHAR).Value = evenTrk[k];
-                        if (DbQry(qd) > 0) dest = GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS_OD");
-                    } catch { }
-                    if (string.IsNullOrEmpty(dest) || dest == "0" || dest == "0000") dest = JobOutDestPos(lg, "122");
-                    int en; string odd = int.TryParse(evenTrk[k], out en) ? (en - 1).ToString() : evenTrk[k];
-                    m_dicCvMove[evenTrk[k]] = new CvMovePend { Due = DateTime.Now.AddMilliseconds(2500), Odd = odd, Lugg = lg, JobTyp = "2", NoClear = true, OutStn = dest };
-                    MakeMsg_Imp(string.Format("[SCH][OUT] SC 하역트랙 좌초화물 복구 - 작업 {0} 트랙 {1} → {2} 이동 예약 (출고대 {3})", lg, evenTrk[k], odd, dest));
-                }
-                }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans(SC하역트랙) 오류: " + ex.Message); }
 
@@ -3298,30 +2746,6 @@ namespace TSK_COMM_IOSCH
             //   (정상 출고에서도 화물이 121 을 지나가는 순간 걸려 완료가 지연됐다).
             try
             {
-                if (m_bScAutoComplete)
-                {
-                // [LGLS 2026-08-28 현장기준] 출고대 = 122(C/V#11) / 126(C/V#13) / 129(C/V#14)
-                //   하역트랙은 출고대-1 : 121 / 125 / 127
-                string[] pickTrk = { "121", "125", "127" };   // [LGLS 2026-07-19] 129(C/V#14) 하역트랙 127 추가
-                string[] stnTrk  = { "122", "126", "129" };
-                for (int k = 0; k < pickTrk.Length; k++)
-                {
-                    if (IsTrackEmpty(pickTrk[k])) continue;
-                    string lg = TrackLugg(pickTrk[k]);
-                    if (string.IsNullOrEmpty(lg) || lg == "0" || lg == "0000") continue;
-                    if (m_dicOutStn.ContainsKey(lg)) continue;               // 이미 출고대 반출이 처리 중
-                    bool inSeq = false;                                     // 하역 시퀀스 진행 중이면 그쪽이 소유
-                    foreach (var kv in m_dicRvSeq) if (kv.Value.Track == pickTrk[k]) { inSeq = true; break; }
-                    if (inSeq) continue;
-                    // [LGLS 2026-07-19] 입고 작업의 이송 화물(122→121 등, RGV 픽업 대기)을 출고 좌초로 오인 금지.
-                    //   해당 작업번호가 진행 중인 입고(JOB_TYP='1')면 AutoRunRGV 소유이므로 건너뛴다.
-                    if (IsActiveInboundJob(lg)) continue;
-                    if (!IsActiveOutboundJob(lg)) continue;                  // [LGLS 2026-08-28] 삭제/완료된 작업의 잔류 트래킹 → 유령 반송지시 금지
-                    m_dicOutStn[lg] = new OutStnState { Due = DateTime.Now, Stage = 3, Lugg = lg,
-                                                      Odd = RgvOutDropTrack("901"), OutStn = stnTrk[k] };
-                    MakeMsg_Imp(string.Format("[SCH][OUT] 출고대 하역트랙 좌초화물 복구 - 작업 {0} 트랙 {1} → 배출 {2}", lg, pickTrk[k], stnTrk[k]));
-                }
-                }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][OUT] RecoverOutOrphans(출고대) 오류: " + ex.Message); }
         }
@@ -3335,78 +2759,7 @@ namespace TSK_COMM_IOSCH
             return false;
         }
 
-        // [LGLS] RTV 출고대 반출 시퀀스: 113 픽업 → RTV 반송(파랑) → 121 하역 → 21→22 → 22 정리
-        private void ProcessOutStn()
-        {
-            if (m_dicOutStn.Count == 0) return;
-            DateTime now = DateTime.Now;
-            foreach (var lg in new List<string>(m_dicOutStn.Keys))
-            {
-                OutStnState st = m_dicOutStn[lg];
-                if (now < st.Due) continue;
-                // [LGLS] 출고대 일반화 : pickup=출고대 하역트랙(122→121, 126→125), discharge=출고대 배출트랙(122/126/129), outCell=출고대 RTV위치.
-                string pickup = RgvPickupTrack(st.OutStn);   // 121(로직3) / 123(로직1)
-                string discharge = st.OutStn;                // 122(로직3) / 126(로직1) / 129(로직2)
-                string outCell = RgvCell(pickup);            // plc15(로직3) / plc2(로직1)
-                // [LGLS] Stage 0 : RTV 가 출고 라인(Odd)으로 빈차 이동해 픽업 준비
-                if (st.Stage == 0) { UpdateRtvVehicle("801", "2", "0", RgvCell(st.Odd), "2", "0", "0", st.Odd, pickup, allowEmptyMove: true); st.Due = now.AddMilliseconds(2500); st.Stage = 1; }
-                // [LGLS] Stage 1 : RTV 라인 도착 → 픽업(라인 클리어) 후 출고대로 반송
-                else if (st.Stage == 1)
-                {
-                    if (!IsTrackEmpty(pickup) || !IsTrackEmpty(discharge)) continue;   // [LGLS] 출고대 비었을 때만(충돌 방지)
-                    // [LGLS 2026-07-19] "라인 도착 스냅"(순간이동) 제거 — 주행이 실제 라인 셀에 도착해야 적재 시작.
-                    int _op; int.TryParse(RgvCell(st.Odd), out _op);
-                    { int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
-                      if (RvSeqFresh(lg + ":L") && _cur != _op) { m_dicCraneTgt["R801"] = _op; continue; } }
-                    // [LGLS] 도착 상태 1회 세팅: 데이터만(LUGG_OD), 화물감지 없음. 라인에 정지.
-                    if (RvSeqFresh(lg + ":L"))
-                        UpdateRtvVehicle("801", "2", "0", RgvCell(st.Odd), "2", "0", st.Lugg, st.Odd, pickup, allowEmptyMove: true);
-                    // [LGLS] 적재 4단계 : →2s→ RTV 화물 표시 →2s→ 라인 화물·데이터 제거 →2s→ 완료
-                    if (!RvSeqStep(lg + ":L", true, "R", "801", st.Odd, st.Lugg, "2")) continue;
-                    UpdateRtvVehicle("801", "2", st.Lugg, outCell, "2", "1", st.Lugg);
-                    st.Due = now.AddMilliseconds(3500); st.Stage = 2;
-                }
-                // [LGLS] Stage 2 : 출고대 하역트랙에 **하역 4단계 시퀀스**로 하역
-                else if (st.Stage == 2)
-                {
-                    // [LGLS 2026-07-19] 빈 트랙 검사는 하역 시퀀스 "시작 전"에만.
-                    //   (시퀀스 중간(Phase2)에 하역트랙에 화물이 놓이면, 무조건 검사 시 자기 자신이 놓은 화물에
-                    //    막혀 영구 대기 → RTV RUN 고착 + m_dicOutStn 미해제 → FeedInGate 신규 공급 전면 보류 교착)
-                    if (RvSeqFresh(lg + ":U") && !IsTrackEmpty(pickup)) continue;
-                    // [LGLS 2026-07-19] "출고대 도착 스냅"(순간이동) 제거 — 주행이 실제 출고대 셀에 도착해야 하역 시작.
-                    int _oc; int.TryParse(outCell, out _oc);
-                    { int _cur = m_dicCraneCur.ContainsKey("R801") ? m_dicCraneCur["R801"] : -1;
-                      if (RvSeqFresh(lg + ":U") && _cur != _oc) { m_dicCraneTgt["R801"] = _oc; continue; } }
-                    // (데이터+화물 실은 채 도착 →2s→ RTV 화물 사라짐 →2s→ 하역트랙에 화물만 →2s→ RTV 데이터 사라지고 데이터 생김)
-                    if (!RvSeqStep(lg + ":U", false, "R", "801", pickup, st.Lugg, "2")) continue;
-                    UpdateRtvVehicle("801", "1", "0", outCell, "0", "0", "0");
-                    st.Due = now.AddMilliseconds(2000); st.Stage = 3;
-                }
-                // [LGLS] Stage 3 : 하역트랙→배출트랙 이송(배출)
-                else if (st.Stage == 3) { if (!IsTrackEmpty(discharge)) continue; WriteCvSensor(pickup, "0", "0"); WriteCvSensor(discharge, "1", st.Lugg, "2"); st.Due = now.AddMilliseconds(2500); st.Stage = 4; }
-                // [LGLS] Stage 4 : 배출트랙 클리어(배출 완료)
-                else { WriteCvSensor(discharge, "0", "0"); m_dicOutStn.Remove(lg); RvSeqReset(lg + ":L"); RvSeqReset(lg + ":U"); }
-            }
-        }
 
-        // [LGLS] 크레인/RTV 주행 스텝: 목표 POS_H 로 1칸씩(600ms 간격) 이동시켜 화면에 주행이 보이게 한다.
-        private void StepCranes()
-        {
-            if (m_dicCraneTgt.Count == 0) return;
-            DateTime now = DateTime.Now;
-            foreach (var id in new List<string>(m_dicCraneTgt.Keys))
-            {
-                int tgt = m_dicCraneTgt[id];
-                int cur = m_dicCraneCur.ContainsKey(id) ? m_dicCraneCur[id] : 0;
-                if (cur == tgt) continue;
-                DateTime last = m_dicCraneStepDt.ContainsKey(id) ? m_dicCraneStepDt[id] : DateTime.MinValue;
-                if ((now - last).TotalMilliseconds < CRANE_STEP_MS) continue;
-                cur += (tgt > cur) ? 1 : -1;
-                m_dicCraneCur[id] = cur;
-                m_dicCraneStepDt[id] = now;
-                WriteCranePos(id, cur);
-            }
-        }
         private void WriteCranePos(string id, int pos)
         {
             try
