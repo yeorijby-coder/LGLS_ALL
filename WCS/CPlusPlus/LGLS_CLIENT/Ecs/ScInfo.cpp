@@ -61,16 +61,33 @@ COLORREF CScInfo::GetForkColor1()
 	int nJobTypTmp = CConvert::ToInt(m_pSC_DATA->V_JOB_TYP_RD);
 
 	// 설비에 작업번호가 실리지 않았어도, 작업정보상 이 호기가 작업을 물고 있으면 회색으로 빠지지 않는다.
-	if (m_pSC_DATA->V_ITN_LUGG_FK1 == _T("0") || m_pSC_DATA->V_ITN_LUGG_FK1 == _T("0000"))
+	// [LGLS 2026-08-31] ★번호와 색이 서로 다른 필드를 봐서 어긋났다★ (사용자 지적)
+	//   번호(CalcScText)는 차상 PALLET_ON_VEHICLE_RD(=V_LUGG_NO_FK1_RD)를 쓰는데
+	//   색은 포크 ITN_LUGG_FK1 만 봤다. 크레인이 포크를 비운 뒤에도 차상 값은 잠시 남으므로
+	//   ★번호는 그려지는데 색만 회색★ 이 됐다.
+	//   번호와 같은 기준으로 판단한다 : 차상 → 포크 → 작업정보 캐시 순.
+	CString strHeld = m_pSC_DATA->V_LUGG_NO_FK1_RD;   // 차상(실적재)
+	strHeld.Trim();
+	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000"))
 	{
-		if (m_pEquipment->m_pDoc->GetVehicleJobNo(m_pSC_DATA->K_SC_NO).IsEmpty())
-			return LIGHT_GRAY;
+		strHeld = m_pSC_DATA->V_ITN_LUGG_FK1;           // 포크
+		strHeld.Trim();
 	}
+	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000"))
+	{
+		strHeld = m_pEquipment->m_pDoc->GetVehicleJobNo(m_pSC_DATA->K_SC_NO);   // 작업정보 캐시
+		strHeld.Trim();
+	}
+	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000"))
+		return LIGHT_GRAY;
 
 	// 작업 구분(JOB_TYP_RD)은 실경로에서 늘 채워지지는 않는다. 비어 있으면 작업정보에서 가져온다.
 	//   (구분을 모르면 아래 switch 가 통째로 빠져 색 없이 움직이는 것처럼 보였다)
 	if (nJobTypTmp == 0)
 		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(m_pSC_DATA->K_SC_NO));
+	// [LGLS 2026-08-31] 캐시에도 없으면 크레인이 든 작업번호로 직접 찾는다(RtvInfo 와 같은 방식).
+	if (nJobTypTmp == 0)
+		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strHeld));
 
 	switch (nJobTypTmp)
 	{
