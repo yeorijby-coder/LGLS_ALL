@@ -377,17 +377,11 @@ namespace TSK_COMM_IOSCH
                     CompleteCV();   // 15 → 19(출고 최종) / 20(입고 → SC 처리 인계)
                     // [LGLS 2026-08-31] PromoteOutToRgvWait 폐기 - RGV 대기 상태(30) 자체를 없앴다.
                     //   출고는 15 에서 DriveRGV 가 바로 가져간다.
-                    CheckLostInboundCargo();   // [LGLS 2026-07-31] 입고 15 화물 유실 감지 → 재발행(10) 복구
+                    // [LGLS 2026-09-01] CheckLostInboundCargo / Sweep 3종 폐기 (사용자 지시).
+                    //   신규 상태 체계에서 잔재의 근원(도착지 착지 기록)을 없앤 뒤,
+                    //   청소 전부 꺼진 상태(SWEEP_RECOVER_ENABLE=0)로 3로직 반자동
+                    //   35+ 사이클을 정체·잔재 0 으로 완주해 실증했다.
                     CheckStalledJobs();        // [LGLS 2026-08-22] 작업 체류(설비 무응답) 감시 → 경고
-                    // [LGLS 2026-08-30] 자동 청소/복구 : SYS_MAIN 체크박스로 통째로 끌 수 있다.
-                    //   (ENV_IOSCH.INI [CNF] SWEEP_RECOVER_ENABLE)
-                    //   끄면 스케줄러가 흔적을 지우지 않으므로 디버그 중 상태를 붙잡아 둘 수 있다.
-                    if (cDefApp.GM_SWEEP_RECOVER)
-                    {
-                        SweepOrphanTraces();       // [LGLS 2026-08-22] 사라진 작업의 라인 선점/타이머 흔적 청소
-                        SweepStaleTracking();      // [LGLS 2026-08-23] 화물 없는 트랙에 남은 유령 트래킹(PLC R영역) 청소
-                        SweepStaleRtvComplete();   // [LGLS 2026-08-24] 소비자 없는 RTV 완료신호 해제(RTV 교착 방지)
-                    }
                     PromotePendingDirection();  // [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격
                     if (!m_bScAutoComplete)
                     {
@@ -1644,15 +1638,7 @@ namespace TSK_COMM_IOSCH
         }
         #endregion
 
-        #region CheckLostInboundCargo
-        // [LGLS 2026-07-31] 입고 CV 구동중(15) 작업의 화물 유실 감지·복구.
-        //   사례(작업 0221): 겸용 입고대 122 의 미지정 파렛트를 EQP_SIM '작업자 회수'가 가져간 직후
-        //   상위 트래킹 기록이 도착 → 지시는 살아 있고 화물은 없는 상태. CompleteCV 는 픽업트랙 실도착을
-        //   요구하므로 작업이 영구히 15 에 머문다(어젯밤 출고 좀비와 달리 완료 처리하면 재고가 틀어짐).
-        //   → 화물 트래킹이 전 트랙 어디에도 없는 상태가 GRACE 지속되면 '유실'로 보고 10(구동대기)으로
-        //     되돌려 재발행시킨다. 다음 파렛트가 입고대에 오면 그 파렛트에 이 작업번호가 다시 부여된다.
-        private readonly Dictionary<string, DateTime> m_dicLostSince = new Dictionary<string, DateTime>();
-        private const int LOST_CARGO_GRACE_MS = 60000;   // 설비 이송·미러 지연을 넉넉히 상회
+
 
         // [LGLS 2026-08-22] 작업 체류 감시용 상태
         private Dictionary<string, string> m_dicStallWarned = new Dictionary<string, string>();
@@ -1719,68 +1705,6 @@ namespace TSK_COMM_IOSCH
                 MakeMsg_Error("[SCH] 작업 체류 감시 오류: " + ex.Message);
             }
         }
-
-        private void CheckLostInboundCargo()
-        {
-            try
-            {
-                string q = "";
-                q += CRLF + " SELECT JM.LUGG_NO, JM.START_POS                    ";
-                q += CRLF + "   FROM JOB_MST JM                                  ";
-                q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                     ";
-                q += CRLF + "    AND JM.JOB_TYP   IN ('1','11')                  ";
-                q += CRLF + "    AND JM.JOB_STATUS = :ST_RUN                     ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_CV_RUN;
-                int nCnt = DbQry(q);
-                if (nCnt <= 0) { m_dicLostSince.Clear(); return; }
-
-                DataTable dt = _pBdb.mDtMain.Copy();
-                List<string> lstAlive = new List<string>();
-
-                for (int i = 0; i < dt.Rows.Count; i++)
-                {
-                    string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
-                    string startPos = GetVal(dt.Rows[i], "START_POS");
-                    lstAlive.Add(luggNo);
-
-                    if (LuggOnAnyTrack(luggNo))          // 어딘가에 화물이 있으면 정상 진행 중
-                    {
-                        m_dicLostSince.Remove(luggNo);
-                        continue;
-                    }
-
-                    DateTime dtSince;
-                    if (!m_dicLostSince.TryGetValue(luggNo, out dtSince))
-                    {
-                        m_dicLostSince[luggNo] = DateTime.Now;   // 무관측 시작
-                        continue;
-                    }
-                    if ((DateTime.Now - dtSince).TotalMilliseconds < LOST_CARGO_GRACE_MS) continue;
-
-                    string rtn = "";
-                    if (UpdateJobStatus(ST_CV_WAIT, luggNo, ref rtn))
-                    {
-                        m_dicLostSince.Remove(luggNo);
-                        m_dicPrevCV.Remove("CV_" + startPos);   // 재발행 허용(DriveCV 중복 발행 방지 키 해제)
-                        MakeMsg_Error(string.Format(
-                            "[SCH][CV] 작업 {0} 화물 유실 감지 - 입고대 {1}·픽업트랙 포함 전 트랙에서 {2}초간 미관측 → 상태 '{3}'(재발행 대기)로 복구",
-                            luggNo, startPos, LOST_CARGO_GRACE_MS / 1000, ST_CV_WAIT));
-                    }
-                    else
-                        MakeMsg_Error(string.Format("[SCH][CV] 화물 유실 복구 전이 실패({0}): {1}", luggNo, rtn));
-                }
-
-                // 더 이상 15 가 아닌 작업의 관측기록 정리
-                List<string> lstDrop = new List<string>();
-                foreach (var kv in m_dicLostSince) if (!lstAlive.Contains(kv.Key)) lstDrop.Add(kv.Key);
-                for (int i = 0; i < lstDrop.Count; i++) m_dicLostSince.Remove(lstDrop[i]);
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH][CV] CheckLostInboundCargo 오류: " + ex.Message); }
-        }
-        #endregion
 
         #region CompleteSC
         // [LGLS 2026-08-23] 크레인 구분 동작(포크출/호이스트/포크센터 각 3초 x 2 + 주행)의 최소 소요.
@@ -2344,231 +2268,7 @@ namespace TSK_COMM_IOSCH
             return TrackLugg(track) == Cap(lugg, 4);
         }
 
-        // [LGLS 2026-08-22] 사라진 작업의 흔적 청소.
-        //   가장 중요한 것은 출고대 반출 시퀀스(m_dicOutStn) 다 — Stage<=2 인 항목이 하나라도 남으면
-        //   RtvBusyByOutbound() 가 true 를 유지해 RGV 입고 지시가 전면 정지한다.
-        //   드롭 라인 선점(m_dicLineRsv)은 드롭 완료 때 해제한다. 그런데 작업이 완료되지 못한 채
-        //   JOB_MST 에서 없어지면(운영자 삭제, 설비 재기동으로 반송 유실) 예약이 영원히 남아
-        //   CanEnterLine 이 그 라인을 계속 막고, 결국 RGV 지시가 전면 정지한다.
-        //   실제로 작업 3건이 상태 '30' 에서 멈췄고 DB·HS 는 모두 정상이었는데
-        //   IO_TASK 재기동만으로 풀린 사례가 있다(메모리에만 남은 예약).
-        //   살아 있는 작업번호를 기준으로 30초마다 걷어낸다.
-        private DateTime m_dtLastOrphanSweep = DateTime.MinValue;
-        private const int ORPHAN_SWEEP_SEC = 30;
 
-        private void SweepOrphanTraces()
-        {
-            if ((DateTime.Now - m_dtLastOrphanSweep).TotalSeconds < ORPHAN_SWEEP_SEC) return;
-            m_dtLastOrphanSweep = DateTime.Now;
-            try
-            {
-                if (m_dicLineRsv.Count == 0 && m_dicRgvIssueDt.Count == 0 &&
-                    m_dicScIssueDt.Count == 0 && m_setInShifted.Count == 0 &&
-                    m_dicInFeedDt.Count == 0 && m_dicCvMove.Count == 0 &&
-                    m_dicOutStn.Count == 0 && m_lstOutPend.Count == 0 &&
-                    m_dicOutDoneDt.Count == 0 &&
-                    m_dicPrevCV.Count == 0 && m_dicPrevRGV.Count == 0) return;
-
-                string q = "";
-                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (DbQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
-
-                var alive = new HashSet<string>();
-                DataTable dtA = _pBdb.mDtMain;
-                for (int i = 0; i < dtA.Rows.Count; i++)
-                {
-                    string lg = GetVal(dtA.Rows[i], "LUGG_NO");
-                    if (!string.IsNullOrEmpty(lg)) alive.Add(lg);
-                }
-
-                var gone = new List<string>();
-                foreach (string k in new List<string>(m_dicLineRsv.Keys))
-                    if (!alive.Contains(k)) { m_dicLineRsv.Remove(k); gone.Add(k); }
-                foreach (string k in new List<string>(m_dicRgvIssueDt.Keys))
-                    if (!alive.Contains(k)) m_dicRgvIssueDt.Remove(k);
-                foreach (string k in new List<string>(m_dicScIssueDt.Keys))
-                    if (!alive.Contains(k)) m_dicScIssueDt.Remove(k);
-                foreach (string k in new List<string>(m_dicInFeedDt.Keys))
-                    if (!alive.Contains(k)) m_dicInFeedDt.Remove(k);
-                foreach (string k in new List<string>(m_setInShifted))
-                    if (!alive.Contains(k)) m_setInShifted.Remove(k);
-                foreach (string k in new List<string>(m_dicCvMove.Keys))
-                {
-                    CvMovePend mv = m_dicCvMove[k];
-                    if (mv != null && !string.IsNullOrEmpty(mv.Lugg) && !alive.Contains(mv.Lugg))
-                        m_dicCvMove.Remove(k);
-                }
-                // [LGLS 2026-08-31] ★중복 발행 방지 키도 청소한다★
-                //   m_dicPrevCV["CV_<트랙>"] = 작업번호 는 CompleteCV 에서만 지워진다.
-                //   작업이 완료 없이 사라지면(수동 삭제·재지정·시험 중단) 항목이 남고,
-                //   ★반자동은 작업번호(9001)를 재사용하므로 그 트랙이 영구히 막힌다★.
-                //   실측 : 9001 이 124 에서 10(구동대기)으로 무한 정체 → IO_TASK 재기동으로만 풀렸다.
-                //   키가 아니라 값(작업번호)이 살아 있는지로 판단한다.
-                foreach (string k in new List<string>(m_dicPrevCV.Keys))
-                    if (!alive.Contains(m_dicPrevCV[k])) m_dicPrevCV.Remove(k);
-                foreach (string k in new List<string>(m_dicPrevRGV.Keys))
-                    if (!alive.Contains(m_dicPrevRGV[k])) m_dicPrevRGV.Remove(k);
-
-                foreach (string k in new List<string>(m_dicRvSeq.Keys))
-                {
-                    int c = k.IndexOf(':');
-                    string lg = (c > 0) ? k.Substring(0, c) : k;
-                    if (!alive.Contains(lg)) m_dicRvSeq.Remove(k);
-                }
-                foreach (string k in new List<string>(m_setRvSeqDone))
-                {
-                    int c = k.IndexOf(':');
-                    string lg = (c > 0) ? k.Substring(0, c) : k;
-                    if (!alive.Contains(lg)) m_setRvSeqDone.Remove(k);
-                }
-
-                // 출고대 반출 시퀀스/대기열 — 여기 한 건이라도 남아 있으면 RtvBusyByOutbound() 가 계속 true 라
-                //   RGV 입고 지시가 **전면** 정지한다. 반출 중이던 작업이 사라지면 반드시 걷어내야 한다.
-                foreach (string k in new List<string>(m_dicOutStn.Keys))
-                {
-                    OutStnState st = m_dicOutStn[k];
-                    string lg = (st != null && !string.IsNullOrEmpty(st.Lugg)) ? st.Lugg : k;
-                    if (!alive.Contains(lg)) { m_dicOutStn.Remove(k); gone.Add("반출:" + lg); }
-                }
-                for (int i = m_lstOutPend.Count - 1; i >= 0; i--)
-                    if (!alive.Contains(m_lstOutPend[i].Lugg)) { gone.Add("대기열:" + m_lstOutPend[i].Lugg); m_lstOutPend.RemoveAt(i); }
-                foreach (string k in new List<string>(m_dicOutDoneDt.Keys))
-                    if (!alive.Contains(k)) m_dicOutDoneDt.Remove(k);
-
-                if (gone.Count > 0)
-                    MakeMsg_Imp("[SCH] 사라진 작업의 점유 해제 - " + string.Join(",", gone.ToArray()));
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH] SweepOrphanTraces 오류: " + ex.Message); }
-        }
-
-        // [LGLS 2026-08-23] 화물 없는 트랙에 남은 유령 트래킹 청소.
-        //   증상: 트랙 122 가 SENSOR0='0'(화물 없음)인데 LUGG_NO_RD='1783'(이미 사라진 작업)을 계속 달고 있었다.
-        //   트래킹의 원본은 PLC R영역이라 DB만 지워도 WCS_TASK_CV 가 다음 순회에 다시 미러링해 되살아난다.
-        //   → LUGG_NO_OD='0' + TRACKING_WRITE_YN='Y' 로 지시해서 WCS_TASK_CV 가 **PLC R영역에 0을 쓰게** 한다.
-        //   유령 트래킹은 겸용대 모드 전환 게이트(IsTrackLuggEmpty)와 반출 자기화물 확인을 잘못 막는다.
-        //
-        //   오검출 방지:
-        //     - 지시(LUGG_NO_OD)나 쓰기 대기(TRACKING_WRITE_YN='Y')가 걸린 트랙은 건드리지 않는다.
-        //       설비 도착 전에 미리 기록되는 '예약 트래킹'이 정상 동작이기 때문이다.
-        //     - JOB_MST 에 살아 있는 작업번호는 대상이 아니다.
-        //     - 같은 상태가 유예시간 동안 이어질 때만 지운다(폴링 경계의 순간적 불일치 배제).
-        private DateTime m_dtLastTrkSweep = DateTime.MinValue;
-        private const int TRK_SWEEP_SEC = 30;
-        private const int TRK_STALE_GRACE_MS = 30000;
-        private readonly Dictionary<string, DateTime> m_dicTrkStaleSince = new Dictionary<string, DateTime>();
-
-        private void SweepStaleTracking()
-        {
-            if ((DateTime.Now - m_dtLastTrkSweep).TotalSeconds < TRK_SWEEP_SEC) return;
-            m_dtLastTrkSweep = DateTime.Now;
-            try
-            {
-                string q = "";
-                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (DbQry(q) < 0) return;      // 조회 실패 시엔 아무것도 지우지 않는다
-                var alive = new HashSet<string>();
-                DataTable dtA = _pBdb.mDtMain;
-                for (int i = 0; i < dtA.Rows.Count; i++)
-                {
-                    string lg = GetVal(dtA.Rows[i], "LUGG_NO");
-                    if (!string.IsNullOrEmpty(lg)) alive.Add(Cap(lg, 4));
-                }
-
-                string q2 = "";
-                q2 += CRLF + " SELECT MC_NO, LUGG_NO_RD                                    ";
-                q2 += CRLF + "   FROM CV_DATA                                              ";
-                q2 += CRLF + "  WHERE WH_TYP = :WH_TYP                                     ";
-                q2 += CRLF + "    AND ISNULL(SENSOR0_DATA_RD,'0') <> '1'                   ";   // 화물 없음
-                q2 += CRLF + "    AND ISNULL(LUGG_NO_RD,'0') NOT IN ('','0','0000')        ";   // 그런데 트래킹은 있음
-                // [LGLS 2026-08-31] ★죽은 작업번호가 남은 지시값은 "지시" 가 아니다★
-                //   종전에는 LUGG_NO_OD 가 비어 있어야만 청소했는데, 삭제된 작업의 번호가 남아 있으면
-                //   그 트랙을 영영 청소하지 못했다. 살아 있는 작업의 지시만 보호한다.
-                q2 += CRLF + "    AND ( ISNULL(LUGG_NO_OD,'0') IN ('','0','0000')            ";
-                q2 += CRLF + "       OR NOT EXISTS (SELECT 1 FROM JOB_MST JX                ";
-                q2 += CRLF + "                       WHERE JX.WH_TYP  = CV_DATA.WH_TYP      ";
-                q2 += CRLF + "                         AND JX.LUGG_NO = CV_DATA.LUGG_NO_OD) ) ";
-                q2 += CRLF + "    AND ISNULL(TRACKING_WRITE_YN,'N') <> 'Y'                 ";   // 쓰기 대기 아님
-                q2 += CRLF + "    AND ISNULL(OD_RQ_YN,'N') <> 'Y'                          ";   // 명령 진행 중 아님
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                // [LGLS 2026-08-31] 죽은 작업의 지시값(LUGG_NO_OD) 청소.
-                //   위 루프는 "트래킹(LUGG_NO_RD)이 남은" 트랙만 본다. 트래킹은 이미 지워졌는데
-                //   지시값에만 죽은 번호가 남은 트랙은 대상이 아니었다.
-                //   그대로 두면 WCS_TASK_CV 가 그 값을 R 영역에 다시 써서 유령 트래킹이 되살아난다.
-                //   ★살아 있는 작업의 지시와 진행 중인 명령은 건드리지 않는다.★
-                string qod = "";
-                qod += CRLF + " UPDATE CV_DATA                                              ";
-                qod += CRLF + "    SET LUGG_NO_OD = '0'                                     ";
-                qod += CRLF + "  WHERE WH_TYP     = :WH_TYP                                 ";
-                qod += CRLF + "    AND ISNULL(LUGG_NO_OD,'0') NOT IN ('','0','0000')        ";
-                qod += CRLF + "    AND ISNULL(TRACKING_WRITE_YN,'N') <> 'Y'                 ";   // 쓰기 대기 아님
-                qod += CRLF + "    AND ISNULL(OD_RQ_YN,'N') <> 'Y'                          ";   // 명령 진행 중 아님
-                qod += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST JY                 ";
-                qod += CRLF + "                     WHERE JY.WH_TYP  = CV_DATA.WH_TYP       ";
-                qod += CRLF + "                       AND JY.LUGG_NO = CV_DATA.LUGG_NO_OD)  ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                int nOd = DbNonQry(qod);
-                if (nOd > 0)
-                    MakeMsg_Imp(string.Format("[SCH][CV] 죽은 작업의 지시값 정리 - {0}개 트랙의 LUGG_NO_OD 해제", nOd));
-
-                // ↑ [LGLS 2026-08-31] ★조기 return 앞에서 한다★
-                //   종전에 이 블록을 루프 뒤에 뒀더니, 유령 트래킹이 0건이면 아래 return 으로 빠져
-                //   지시값 청소가 영영 실행되지 않았다.
-                int n = DbQry(q2);
-                if (n <= 0) { m_dicTrkStaleSince.Clear(); return; }
-
-                DataTable dt = _pBdb.mDtMain.Copy();
-                var seen = new HashSet<string>();
-                for (int i = 0; i < dt.Rows.Count; i++)
-                {
-                    string mcNo = GetVal(dt.Rows[i], "MC_NO");
-                    string lg   = Cap(GetVal(dt.Rows[i], "LUGG_NO_RD"), 4);
-                    if (string.IsNullOrEmpty(mcNo)) continue;
-                    if (alive.Contains(lg)) continue;                 // 살아 있는 작업의 예약 트래킹 - 건드리지 않는다
-                    seen.Add(mcNo);
-
-                    DateTime since;
-                    if (!m_dicTrkStaleSince.TryGetValue(mcNo, out since))
-                    {
-                        m_dicTrkStaleSince[mcNo] = DateTime.Now;
-                        continue;
-                    }
-                    if ((DateTime.Now - since).TotalMilliseconds < TRK_STALE_GRACE_MS) continue;
-
-                    string upd = "";
-                    upd += CRLF + " UPDATE CV_DATA                                  ";
-                    upd += CRLF + "    SET LUGG_NO_OD        = '0'                  ";
-                    upd += CRLF + "      , TRACKING_WRITE_YN = 'Y'                  ";   // WCS_TASK_CV 가 PLC R영역에 0 기록
-                    upd += CRLF + "      , JOB_TYP_RD        = '0'                  ";   // 화물이 없으므로 표시색도 해제
-                    upd += CRLF + "      , OD_UPD_DT         = " + DbLang.SYSDATE + " ";
-                    upd += CRLF + "  WHERE WH_TYP = :WH_TYP AND MC_NO = :MC_NO      ";
-                    _pBdb.mComMain.CommandType = CommandType.Text;
-                    _pBdb.mComMain.Parameters.Clear();
-                    _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                    _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo;
-                    DbNonQry(upd);
-
-                    m_dicTrkStaleSince.Remove(mcNo);
-                    seen.Remove(mcNo);
-                    DbgLog("TRKSWEEP_" + mcNo, "[유령트래킹정리] 트랙 " + mcNo + " 작업번호 [" + lg + "] - 화물 없음 + 작업 없음 → PLC R영역 0 기록 지시");
-                    MakeMsg_Imp(string.Format("[SCH][CV] 유령 트래킹 정리 - 트랙 {0} 에 남은 작업번호 {1} (화물 없음, 작업도 없음) → 트래킹 0 기록", mcNo, lg));
-                }
-
-                foreach (string k in new List<string>(m_dicTrkStaleSince.Keys))   // 정상으로 돌아온 트랙은 타이머 해제
-                    if (!seen.Contains(k)) m_dicTrkStaleSince.Remove(k);
-
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH][CV] SweepStaleTracking 오류: " + ex.Message); }
-        }
 
         /// <summary>
         /// [LGLS 2026-08-23] 보류된 모드 전환(DIRW) 승격.
@@ -3758,40 +3458,6 @@ namespace TSK_COMM_IOSCH
             } catch { return false; }
         }
 
-        /// <summary>
-        /// [LGLS 2026-08-24] 미소비 RTV 완료신호 청소.
-        ///   COMPLETE_RD='1' 인데 그 작업이 반출 시퀀스(m_dicOutStn)에도, RGV 구동중(31/35) 작업에도
-        ///   없으면 소비할 주체가 없다는 뜻이다. 한계 시간 지나면 신호를 내려 RTV 를 풀어준다.
-        /// </summary>
-        private void SweepStaleRtvComplete()
-        {
-            try
-            {
-                string q = "";
-                q += CRLF + " SELECT " + DbLang.NVL + "(COMPLETE_RD,'0') AS CMP, " + DbLang.NVL + "(LUGG_OD,'0') AS LG ";
-                q += CRLF + "   FROM RTV_DATA_LGLS WHERE WH_TYP = :WH AND RTV_NO = '801' ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (DbQry(q) <= 0) return;
-                string cmp = GetVal(_pBdb.mDtMain.Rows[0], "CMP");
-                string lg  = Cap(GetVal(_pBdb.mDtMain.Rows[0], "LG"), 4);
-                if (cmp != "1") { m_dtRtvCmpSince = DateTime.MinValue; m_strRtvCmpLugg = ""; return; }
-                if (m_dicOutStn.ContainsKey(lg)) { m_dtRtvCmpSince = DateTime.MinValue; return; }   // 반출이 소비할 것
-                if (IsRgvRunningJob(lg))         { m_dtRtvCmpSince = DateTime.MinValue; return; }   // 입고 RGV 가 소비할 것
-                if (m_dtRtvCmpSince == DateTime.MinValue || m_strRtvCmpLugg != lg)
-                {
-                    m_dtRtvCmpSince = DateTime.Now; m_strRtvCmpLugg = lg;
-                    return;
-                }
-                if ((DateTime.Now - m_dtRtvCmpSince).TotalMilliseconds < RTV_CMP_STALE_MS) return;
-                RtvResetComplete();
-                m_dtRtvCmpSince = DateTime.MinValue; m_strRtvCmpLugg = "";
-                DbgLog("RTVCMP", "[RTV완료신호청소] 작업 " + lg + " - 소비 주체 없음, 신호 해제");
-                MakeMsg_Error(string.Format("[SCH][RGV] 소비되지 않은 RTV 완료신호 해제 - 작업 {0} (그대로 두면 RTV 가 계속 비유휴로 남는다)", lg));
-            }
-            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] SweepStaleRtvComplete 오류: " + ex.Message); }
-        }
 
         /// <summary>[LGLS 2026-08-24] 그 작업이 RGV 구동지시/구동중(31/35) 상태인지</summary>
         private bool IsRgvRunningJob(string lugg)
