@@ -222,7 +222,7 @@
       <Step kind="force" equip="CV" no="$inCv" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
       <Step kind="word" device="D" equip="CV" no="$inCv" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 입고 &#x27;0&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="0" isString="true" desc="JOB NO 기록 (RGV측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="PalletExist" slot="1" value="on" desc="S/C측 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 S/C측으로 이동" />
@@ -276,7 +276,7 @@
       <Step kind="force" equip="CV" no="$outCv" block="Ack" signal="LoadComplete2Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #2 ON (WCS)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
       <Step kind="word" device="D" equip="CV" no="$outCv" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="1" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (S/C측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="1" isString="true" desc="JOB NO 기록 (S/C측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="PalletExist" slot="1" value="off" desc="S/C측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="PalletExist" slot="0" value="on" desc="RGV측 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과 : JOB 이 RGV측으로 이동" />
@@ -309,7 +309,7 @@
       <Step kind="force" equip="CV" no="11" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
       <Step kind="observe" equip="CV" no="11" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
       <Step kind="word" device="D" equip="CV" no="11" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="0" isString="true" desc="JOB NO 기록 (RGV측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="11" block="Event" signal="PalletExist" slot="1" value="on" desc="입출고대 반출 위치 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="11" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
@@ -357,7 +357,7 @@
       <Step kind="force" equip="CV" no="$inCv" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
       <Step kind="word" device="D" equip="CV" no="$inCv" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 입고 &#x27;0&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="0" isString="true" desc="JOB NO 기록 (RGV측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="PalletExist" slot="1" value="on" desc="S/C측 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 S/C측으로 이동" />
@@ -411,7 +411,7 @@
       <Step kind="force" equip="CV" no="$outCv" block="Ack" signal="LoadComplete2Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #2 ON (WCS)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
       <Step kind="word" device="D" equip="CV" no="$outCv" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="1" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (S/C측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="1" isString="true" desc="JOB NO 기록 (S/C측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="PalletExist" slot="1" value="off" desc="S/C측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="PalletExist" slot="0" value="on" desc="RGV측 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과 : JOB 이 RGV측으로 이동" />
@@ -444,7 +444,7 @@
       <Step kind="force" equip="CV" no="13" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
       <Step kind="observe" equip="CV" no="13" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
       <Step kind="word" device="D" equip="CV" no="13" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="13" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="13" block="Tracking" signal="JobNo" slot="0" isString="true" desc="JOB NO 기록 (RGV측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="13" block="Event" signal="PalletExist" slot="1" value="on" desc="26 출고대 반출 위치 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="13" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
@@ -492,7 +492,7 @@
       <Step kind="force" equip="CV" no="$inCv" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
       <Step kind="word" device="D" equip="CV" no="$inCv" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 입고 &#x27;0&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="0" isString="true" desc="JOB NO 기록 (RGV측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="$inCv" block="Event" signal="PalletExist" slot="1" value="on" desc="S/C측 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="$inCv" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 S/C측으로 이동" />
@@ -546,7 +546,7 @@
       <Step kind="force" equip="CV" no="$outCv" block="Ack" signal="LoadComplete2Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #2 ON (WCS)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="LoadComplete2" value="off" desc="Load Complete #2 OFF" />
       <Step kind="word" device="D" equip="CV" no="$outCv" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="1" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (S/C측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="1" isString="true" desc="JOB NO 기록 (S/C측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="PalletExist" slot="1" value="off" desc="S/C측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="$outCv" block="Event" signal="PalletExist" slot="0" value="on" desc="RGV측 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="$outCv" block="Tracking" signal="JobNo" slot="0" isString="true" desc="PLC ID Shift 결과 : JOB 이 RGV측으로 이동" />
@@ -579,7 +579,7 @@
       <Step kind="force" equip="CV" no="14" block="Ack" signal="LoadComplete1Ack" src="CvThread.cs::CvEventCheck" desc="Load Complete Ack #1 ON (WCS)" />
       <Step kind="observe" equip="CV" no="14" block="Event" signal="LoadComplete1" value="off" desc="Load Complete #1 OFF" />
       <Step kind="word" device="D" equip="CV" no="14" block="Direction" signal="IoDirection" src="CvThread.cs::CvStatusScenario" desc="방향 확인 - 출고 &#x27;1&#x27;" />
-      <Step kind="word" device="R" equip="CV" no="14" block="Tracking" signal="JobNo" slot="0" isString="true" src="CvThread.cs::CvTrackingWrite" desc="JOB NO 기록 (RGV측 위치)" />
+      <Step kind="word" device="R" equip="CV" no="14" block="Tracking" signal="JobNo" slot="0" isString="true" desc="JOB NO 기록 (RGV측 위치) - PLC ID Shift(차량 R → CV R)" />
       <Step kind="observe" equip="CV" no="14" block="Event" signal="PalletExist" slot="0" value="off" desc="RGV측 Pallet Exist OFF (ID Shift)" />
       <Step kind="observe" equip="CV" no="14" block="Event" signal="PalletExist" slot="1" value="on" desc="29 피킹대 반출 위치 Pallet Exist ON (도착)" />
       <Step kind="word" device="R" equip="CV" no="14" block="Tracking" signal="JobNo" slot="1" isString="true" desc="PLC ID Shift 결과 : JOB 이 반출 위치로 이동" />
