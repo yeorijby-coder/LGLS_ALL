@@ -455,6 +455,15 @@ void CRtvInfo::InvokeControl()
 	//   번호·색은 작업정보(JOB_MST)에서도 온다. 그래서 작업이 삭제된 뒤에도
 	//   화면에는 번호가 그대로 남았다(9010 이 계속 보이던 현상).
 	//   (TrackInfo 의 입고대 2초 지연 처리가 쓰던 것과 같은 방식이다)
+// [LGLS 2026-08-31] ★캐시 갱신이 그리기 코드 안에서만 일어나던 순환을 끊는다★
+//   RefreshJobCache 는 GetVehicleJobNo / IsJobInJobMst 같은 접근자 안에서만
+//   호출되는데, 그 접근자는 그리기 코드에서만 쓰인다. 그런데 그리기는
+//   아래 m_bModified 로 막혀 있다 - 설비가 조용하면 캐시도 영영 갱신되지 않아
+//   버전이 오르지 않고, 지워진 작업번호가 화면에 그대로 남았다.
+//   (2초 스로틀이 안에 있으므로 매번 조회하지는 않는다)
+if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
+	m_pEquipment->m_pDoc->RefreshJobCache();
+
 	if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL &&
 		m_dwJobVerSeen != m_pEquipment->m_pDoc->m_dwJobCacheVer)
 	{
