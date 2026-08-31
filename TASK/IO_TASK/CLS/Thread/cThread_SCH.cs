@@ -773,7 +773,10 @@ namespace TSK_COMM_IOSCH
                     string qs = "";
                     qs += CRLF + " SELECT SUM(CASE WHEN JM.JOB_TYP IN ('2','12') THEN 1 ELSE 0 END) AS OUT_CNT, ";
                     qs += CRLF + "        SUM(CASE WHEN JM.JOB_TYP IN ('1','11') THEN 1 ELSE 0 END) AS IN_CNT  ";
-                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS IN ('25','35','39') THEN 1 ELSE 0 END) AS IN_RUN  ";
+                    // [LGLS 2026-08-31] 입고 15 도, RGV 가 통로에 화물을 내려놓은 뒤(HS=103/104)라면
+                    //   진행 중이다. 15 를 안 치면 대기 출고(20)가 통로를 출고로 잡아
+                    //   화물이 103→104 로 못 넘어가고 SC 지시가 영영 나가지 못한다(9029 실측).
+                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND (JM.JOB_STATUS IN ('25','35','39') OR (JM.JOB_STATUS = '15' AND JM.HS_TRACK_NO IN ('103','104'))) THEN 1 ELSE 0 END) AS IN_RUN  ";
                     qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS IN ('25','35','39','15') THEN 1 ELSE 0 END) AS OUT_RUN ";
                     qs += CRLF + "   FROM JOB_MST JM                                ";
                     qs += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
