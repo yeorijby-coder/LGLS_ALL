@@ -2041,14 +2041,28 @@ long CEcsDoc::RollbackTrans()
 }
 
 
+// [LGLS 2026-08-31] ★ADO 트랜잭션 호출을 예외로부터 보호한다★
+//   ADO 의 BeginTrans/CommitTrans/RollbackTrans 는 실패하면 _com_error 를 ★던진다★.
+//   그 예외가 MFC 메시지 핸들러 밖으로 나가면 terminate() → abort() 로 ★프로세스가 죽는다.★
+//   실측 : 반자동 TEST(700ms 타이머)의 InsertJob → CommitTrans_DLG 에서 _com_error 가 나와
+//          Ecs.exe 가 "Debug Error! abort() has been called" 로 정지했다.
+//          (크래시 리포트 Ecs20260831_154833.RPT : _Connection15::CommitTrans → _com_raise_error)
+//   m_bTrans 는 문서 단위 공유 플래그라, 연결이 끊기거나 서버 측에서 트랜잭션이 이미 끝나면
+//   플래그만 true 로 남아 다음 Commit 이 예외를 던진다. 예외를 삼키고 플래그를 정리한 뒤
+//   호출부가 반환값만 보면 되게 한다.
 long CEcsDoc::BeginTrans_DLG()
 {
 	if(IsConnectDB(m_pDlgUrmDBAccess) == FALSE){ return FALSE; };
 	
 	if (m_bTrans == false)
 	{
-		m_pDlgUrmDBAccess->m_pAdoDB->BeginTrans();
-		m_bTrans = true;
+		try
+		{
+			m_pDlgUrmDBAccess->m_pAdoDB->BeginTrans();
+			m_bTrans = true;
+		}
+		catch (_com_error&) { m_bTrans = false; return 0; }
+		catch (...)         { m_bTrans = false; return 0; }
 	}
 	
 
@@ -2061,7 +2075,9 @@ long CEcsDoc::RollbackTrans_DLG()
 	
 	if (m_bTrans == true)
 	{
-		m_pDlgUrmDBAccess->m_pAdoDB->RollbackTrans();
+		try { m_pDlgUrmDBAccess->m_pAdoDB->RollbackTrans(); }
+		catch (_com_error&) { }   // 실패해도 아래에서 m_bTrans 를 내린다 - 남으면 다음 Commit 이 또 던진다
+		catch (...)         { }
 	}
 	
 	m_bTrans = false;
@@ -2075,7 +2091,9 @@ long CEcsDoc::CommitTrans_DLG()
 
 	if (m_bTrans == true)
 	{
-		m_pDlgUrmDBAccess->m_pAdoDB->CommitTrans();
+		try { m_pDlgUrmDBAccess->m_pAdoDB->CommitTrans(); }
+		catch (_com_error&) { m_bTrans = false; return 0; }
+		catch (...)         { m_bTrans = false; return 0; }
 	}
 	
 	m_bTrans = false;

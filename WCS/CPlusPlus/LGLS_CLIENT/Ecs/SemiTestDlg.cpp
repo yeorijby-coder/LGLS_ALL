@@ -348,7 +348,15 @@ BOOL CSemiTestDlg::InsertJob(int r, BOOL bSto)
 		AddLog(r + 1, bSto ? _T("작업생성(입고)") : _T("작업생성(출고)"), _T("-"), _T("Client"), _T("CSemiTestDlg::InsertJob"), CString(_T("작업 생성 실패 ")) + strTag);
 		return FALSE;
 	}
-	m_pDoc->CommitTrans_DLG();
+	// [LGLS 2026-08-31] 커밋 실패를 확인한다. 종전에는 반환값을 보지 않았고,
+	//   ADO 가 던지는 _com_error 를 잡는 사람도 없어 프로세스가 abort() 로 죽었다.
+	if (m_pDoc->CommitTrans_DLG() == 0)
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AddLog(r + 1, bSto ? _T("작업생성(입고)") : _T("작업생성(출고)"), _T("-"), _T("Client"),
+		       _T("CSemiTestDlg::InsertJob"), CString(_T("커밋 실패 ")) + strTag);
+		return FALSE;
+	}
 
 	// 방금 만든 작업번호 조회
 	CString strMsg; int nCnt = 0;
