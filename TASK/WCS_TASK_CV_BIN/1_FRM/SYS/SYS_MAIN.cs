@@ -176,14 +176,17 @@ namespace WCS_TASK_CV
             else
                 cDefApp.GM_D_ADDR_DOC = cDefApi.GsReadInitProfileDAddrDoc();
             // 라디오는 R 라디오 아래 줄에 런타임 생성 (Designer 무변경)
-            m_rdoDDoc = new RadioButton { Text = "D:10진(문서)", AutoSize = false, Size = new System.Drawing.Size(120, 17),
-                Location = new System.Drawing.Point(rdoRHex.Left, rdoRHex.Top + 20), BackColor = System.Drawing.Color.LightYellow };
-            m_rdoDLegacy = new RadioButton { Text = "D:구환산(ez)", AutoSize = false, Size = new System.Drawing.Size(120, 17),
-                Location = new System.Drawing.Point(rdoRDec.Left, rdoRDec.Top + 20), BackColor = System.Drawing.Color.LightYellow };
+            // [LGLS 2026-09-01 재배치] 아래 줄(+20)은 다른 컨트롤과 겹쳤다(사용자 지적) -
+            //   R 라디오 오른쪽 빈 공간에 같은 줄로 나란히 둔다.
+            m_rdoDDoc = new RadioButton { Text = "D:10진(문서)", AutoSize = false, Size = new System.Drawing.Size(110, 17),
+                BackColor = System.Drawing.Color.LightYellow };
+            m_rdoDLegacy = new RadioButton { Text = "D:구환산(ez)", AutoSize = false, Size = new System.Drawing.Size(110, 17),
+                BackColor = System.Drawing.Color.LightYellow };
             // R 라디오와 그룹이 섞이지 않게 패널로 감싼다
-            var pnlD = new Panel { Location = m_rdoDDoc.Location, Size = new System.Drawing.Size(rdoRDec.Right - rdoRHex.Left, 18), BackColor = System.Drawing.Color.Transparent };
+            var pnlD = new Panel { Location = new System.Drawing.Point(rdoRDec.Right + 10, rdoRDec.Top),
+                Size = new System.Drawing.Size(228, 18), BackColor = System.Drawing.Color.Transparent };
             m_rdoDDoc.Location = new System.Drawing.Point(0, 0);
-            m_rdoDLegacy.Location = new System.Drawing.Point(rdoRDec.Left - rdoRHex.Left, 0);
+            m_rdoDLegacy.Location = new System.Drawing.Point(114, 0);
             pnlD.Controls.Add(m_rdoDDoc); pnlD.Controls.Add(m_rdoDLegacy);
             rdoRHex.Parent.Controls.Add(pnlD); pnlD.BringToFront();
             m_bDAddrLoading = true;
