@@ -18,6 +18,7 @@ namespace EQP_SIM
         private PlcIo io;
         private XgtServer server;
         private ScenarioEngine engine;
+        private ScenarioAutoRunner autoRunner;   // [LGLS 2026-09-01] 시나리오 헤드리스 검증
         private readonly Queue<string> pendingLogs = new Queue<string>();
         private readonly object logSync = new object();
 
@@ -55,6 +56,7 @@ namespace EQP_SIM
                 memory = new PlcMemory();
                 io = new PlcIo(memory, obsMap);
                 engine = new ScenarioEngine(io, config);
+                autoRunner = new ScenarioAutoRunner(engine);
                 engine.LogAdded += OnEngineLog;
 
                 string dataDir = Path.Combine(baseDir, "Data");
@@ -251,6 +253,7 @@ namespace EQP_SIM
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             try { if (server != null) server.Dispose(); } catch { }
+            try { if (autoRunner != null) autoRunner.Dispose(); } catch { }
             try { if (engine != null) engine.Dispose(); } catch { }
         }
     }
