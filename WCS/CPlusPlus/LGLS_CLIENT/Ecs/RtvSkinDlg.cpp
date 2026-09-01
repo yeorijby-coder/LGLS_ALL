@@ -201,6 +201,7 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		CString st = pRsw->GetItem(_T("ST"));
 		// [LGLS 2026-09-01] 원시값을 함께 표기 (사용자 요청) - 시나리오 문서의
 		//   "D0210 IDLE=1 확인" 과 그대로 대응되게 "1 = IDLE" 형식으로 보인다.
+		//   매핑 근거 = 구 ECS Vehicle.OnVehicleState : 0=DOWN / 1=IDLE / 2=RUN.
 		CString stMean = (st == _T("2")) ? _T("RUN") : ((st == _T("1")) ? _T("IDLE") : _T("DOWN"));
 		CString stTxt; stTxt.Format(_T("%s = %s"), (LPCTSTR)st, (LPCTSTR)stMean);
 		SetDlgItemText(IDC_RTVV_STATUS, stTxt);

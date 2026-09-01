@@ -715,8 +715,10 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 		CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
 		pRsw->MoveFirst();
 		CString st = pRsw->GetItem(_T("ST"));
-		// [LGLS 2026-09-01] 원시값 병기 - "1 = 대기" (RTV 확대창과 동일 규약, 사용자 요청)
-		CString stMean = (st == _T("2")) ? _T("운전") : ((st == _T("1")) ? _T("대기") : _T("정지"));
+		// [LGLS 2026-09-01] 원시값 병기 + 용어를 구 ECS/문서와 통일 (사용자 요청)
+		//   구 ECS Vehicle.OnVehicleState : 0=DOWN / 1=IDLE / 2=RUN (Vehicle.cs:1220)
+		//   시나리오 문서 D0160~D0210 표기도 Run/Idle/Down.
+		CString stMean = (st == _T("2")) ? _T("RUN") : ((st == _T("1")) ? _T("IDLE") : _T("DOWN"));
 		CString stTxt; stTxt.Format(_T("%s = %s"), (LPCTSTR)st, (LPCTSTR)stMean);
 		SetDlgItemText(IDC_SCV_STATUS, stTxt);
 		SetLed(IDC_SCV_LED_LOAD_CMP,        pRsw->GetItem(_T("A1")));
