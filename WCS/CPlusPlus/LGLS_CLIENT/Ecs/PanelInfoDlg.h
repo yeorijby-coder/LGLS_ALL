@@ -35,7 +35,8 @@ protected:
 	CStringArray m_arStatusCd;
 
 	int  m_nRefreshRows;
-	void EnsureRow(int i, LPCTSTR strCap);
+	void EnsureRow(int i, LPCTSTR strCap);
+	void PlaceOverlays();
 	void UpdateTitle();
 	void FillUnits();
 	void HideOverlays();
@@ -50,7 +51,8 @@ protected:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnTabChanged(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnUnitChanged();
+	afx_msg void OnUnitChanged();
+	afx_msg void OnListScrolled(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnBtnStatus();
 	afx_msg void OnBtnPri();
 	afx_msg void OnBtnCvWrite();

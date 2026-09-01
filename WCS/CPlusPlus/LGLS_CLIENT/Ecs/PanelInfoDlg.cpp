@@ -55,6 +55,7 @@ BEGIN_MESSAGE_MAP(CPanelInfoDlg, CDialog)
 	ON_WM_SIZE()
 	ON_WM_TIMER()
 	ON_NOTIFY(TCN_SELCHANGE, IDC_PANEL_INFO_TAB, OnTabChanged)
+	ON_NOTIFY(LVN_ENDSCROLL, IDC_PANEL_INFO_LIST, OnListScrolled)
 	ON_CBN_SELCHANGE(IDC_PANEL_INFO_UNIT, OnUnitChanged)
 	ON_BN_CLICKED(IDC_PI_BTN_STATUS, OnBtnStatus)
 	ON_BN_CLICKED(IDC_PI_BTN_PRI, OnBtnPri)
@@ -418,7 +419,7 @@ void CPanelInfoDlg::Refresh()
 				_T("       ,") + N + _T("(TO_01_OD,'') + '/' + ") + N + _T("(TO_02_OD,'') + '/' + ") + N + _T("(TO_03_OD,'') AS CMD_TO ")
 				_T("       ,") + N + _T("(TRANSFER_COMPLETE_LOCATION_01_RD,'') + '/' + ") + N + _T("(TRANSFER_COMPLETE_LOCATION_02_RD,'') + '/' + ") + N + _T("(TRANSFER_COMPLETE_LOCATION_03_RD,'') AS TC_LOC ")
 				_T("       ,") + N + _T("(PALLET_ID_OD,'') AS PALLET_ID_OD ")
-				_T("       ,") + N + _T("(ALARM_SET_CODE_RD,'') AS ALARM_SET_CODE_RD, ") + N + _T("(ALARM_RESET_CODE_RD,'') AS ALARM_RESET_CODE_RD ")
+				_T("       ,") + N + _T("(ALARM_SET_CODE_RD,'') AS ALARM_SET_CODE_RD, '' AS ALARM_RESET_CODE_RD ")   // 해제코드는 DB 미기록(주소만 표기)
 				_T("       ,") + N + _T("(ERR_CODE_RD,'') AS ERR_CODE_RD, ") + N + _T("(PALLET_ON_VEHICLE_RD,'') AS PALLET_ON_VEHICLE_RD ")
 				_T("   FROM %s WHERE WH_TYP = '%s' AND %s = '%s' "),
 				(LPCTSTR)strSen, (LPCTSTR)strTable, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strKey, (LPCTSTR)strUnit);
@@ -464,7 +465,13 @@ void CPanelInfoDlg::Refresh()
 	m_list.SetRedraw(TRUE);
 	m_list.Invalidate(FALSE);
 
-	// 오버레이 배치 (항상 표시 - 숨기지 않고 위치만 갱신)
+	PlaceOverlays();
+}
+
+// [LGLS 2026-09-02] 오버레이 배치 (항상 표시 - 스크롤/갱신 때 위치만 갱신)
+void CPanelInfoDlg::PlaceOverlays()
+{
+	int nTab = m_tab.GetCurSel();
 	if (nTab == TAB_JOB && m_list.GetItemCount() > JOB_ROW_PRI)
 	{
 		CString strStatus = m_list.GetItemText(JOB_ROW_STATUS, 1);
@@ -667,4 +674,10 @@ void CPanelInfoDlg::OnTabChanged(NMHDR* pNMHDR, LRESULT* pResult)
 void CPanelInfoDlg::OnUnitChanged()
 {
 	Refresh();
+}
+
+void CPanelInfoDlg::OnListScrolled(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	*pResult = 0;
+	PlaceOverlays();
 }

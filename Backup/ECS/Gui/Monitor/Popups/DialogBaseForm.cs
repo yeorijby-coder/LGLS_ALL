@@ -60,6 +60,11 @@ namespace HECS.Gui.Monitor.Popups
 
         void DialogBaseForm_VisibleChanged(object sender, EventArgs e)
         {
+            // [LGLS 2026-09-02] 숨길 때도 TopMost/Focus 를 걸던 것을 표시될 때만으로 제한
+            if (!this.Visible)
+            {
+                return;
+            }
             this.TopMost = true;
             this.BringToFront();
             this.Focus();
@@ -126,7 +131,13 @@ namespace HECS.Gui.Monitor.Popups
         //}
         private void DialogBaseForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            e.Cancel = true; //don't close 
+            e.Cancel = true; //don't close
+            // [LGLS 2026-09-02] 종전에는 X 를 눌러도 닫기만 취소하고 아무 동작이 없어
+            //   "닫기가 안 된다/느리다" 로 보였다 - 확인 버튼과 같게 숨긴다(폼 캐시는 유지).
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                this.Hide();
+            }
         }
 
 

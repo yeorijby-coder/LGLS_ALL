@@ -342,8 +342,16 @@ namespace HECS.Gui.Monitor.Popups
 
         private void buttonYes_Click(object sender, EventArgs e)
         {
+            // [LGLS 2026-09-02 임시계측] 닫기 지연 확인용 - 확인 후 제거 예정
+            var swClose = System.Diagnostics.Stopwatch.StartNew();
             timerRefresh.Stop();
             this.Hide();
+            try
+            {
+                System.IO.File.AppendAllText(@"D:\LOG\popup_timing.txt",
+                    DateTime.Now.ToString("HH:mm:ss.fff") + " CV close: hide=" + swClose.ElapsedMilliseconds + "\r\n");
+            }
+            catch { }
         }
 
 
