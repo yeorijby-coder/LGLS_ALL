@@ -1,6 +1,6 @@
-[구 ECS 실행 폴더] (2026-09-01 구성)
+﻿[구 ECS 실행 폴더] (2026-09-01 구성)
 
-원본 : Backup\ECS\bin\Debug (빌드 산출물 그대로 복사) + INI\, Resources\
+원본 : Backup\ECS\bin\Debug 을 Release(최적화)로 빌드한 산출물 (2026-09-01 교체. 종전 Debug 빌드가 느렸음) + INI\, Resources\
 실행 : 구ECS_실행.bat  (또는 HECS.exe 직접)
 
 접속 설정 (HECS.exe.config) :
