@@ -29,7 +29,8 @@ protected:
 	CButton   m_btnPri;
 	CEdit     m_edtCvJob;     // CV 탭 : 지시 작업번호
 	CButton   m_btnCvWrite;
-	CButton   m_btnForce;     // SC/RTV 탭 : 강제완료
+	CButton   m_btnForce;     // SC/RTV 탭 : 강제완료
+	CButton   m_btnAbort;     // SC/RTV 탭 : 이상종료(지시 연결 해제)
 	CButton   m_btnCvDelete;  // CV 탭 하단 : 지시 삭제
 
 	CStatic   m_lblSet1;      // 하단 바 라벨
@@ -60,6 +61,7 @@ protected:
 	afx_msg void OnBtnPri();
 	afx_msg void OnBtnCvWrite();
 	afx_msg void OnBtnCvDelete();
-	afx_msg void OnBtnForce();
+	afx_msg void OnBtnForce();
+	afx_msg void OnBtnAbort();
 	DECLARE_MESSAGE_MAP()
 };

@@ -62,6 +62,7 @@ BEGIN_MESSAGE_MAP(CPanelInfoDlg, CDialog)
 	ON_BN_CLICKED(IDC_PI_BTN_CVWRITE, OnBtnCvWrite)
 	ON_BN_CLICKED(IDC_PI_BTN_CVDELETE, OnBtnCvDelete)
 	ON_BN_CLICKED(IDC_PI_BTN_FORCE, OnBtnForce)
+	ON_BN_CLICKED(IDC_PI_BTN_ABORT, OnBtnAbort)
 END_MESSAGE_MAP()
 
 BOOL CPanelInfoDlg::OnInitDialog()
@@ -75,6 +76,10 @@ BOOL CPanelInfoDlg::OnInitDialog()
 	m_tab.SetCurSel(-1);                       // 초기 = 아무것도 선택 안 됨
 
 	m_list.SetExtendedStyle(m_list.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+	// [LGLS 2026-09-02] 리스트가 셀 위 컨트롤을 덮어 그려 마우스 오버 때만 보이던 문제 -
+	//   형제 창 영역을 클리핑해 컨트롤이 항상 보이게 한다.
+	m_list.ModifyStyle(0, WS_CLIPSIBLINGS);
+	ModifyStyle(0, WS_CLIPCHILDREN);
 	struct { LPCTSTR strHead; int nWidth; } COLS[] = {
 		{ _T("항목"),       95 }, { _T("값"),        110 }, { _T("설정"),      95 },
 		{ _T("확인"),       72 }, { _T("구ECS주소"),  72 }, { _T("실제주소"),  85 },
@@ -91,6 +96,7 @@ BOOL CPanelInfoDlg::OnInitDialog()
 	m_edtCvJob.Create(WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, rc0, this, IDC_PI_EDT_CVJOB);
 	m_btnCvWrite.Create(_T("쓰기"), WS_CHILD | BS_PUSHBUTTON, rc0, this, IDC_PI_BTN_CVWRITE);
 	m_btnForce.Create(_T("강제완료"), WS_CHILD | BS_PUSHBUTTON, rc0, this, IDC_PI_BTN_FORCE);
+	m_btnAbort.Create(_T("이상종료"), WS_CHILD | BS_PUSHBUTTON, rc0, this, IDC_PI_BTN_ABORT);
 	m_btnCvDelete.SetWindowText(_T("지시 삭제"));
 	m_lblSet1.Create(_T(""), WS_CHILD | SS_CENTERIMAGE | SS_RIGHT, rc0, this);
 	m_lblSet2.Create(_T(""), WS_CHILD | SS_CENTERIMAGE | SS_RIGHT, rc0, this);
@@ -100,6 +106,7 @@ BOOL CPanelInfoDlg::OnInitDialog()
 	m_cmbPri.SetFont(pFont);    m_btnPri.SetFont(pFont);
 	m_edtCvJob.SetFont(pFont);  m_btnCvWrite.SetFont(pFont);
 	m_btnForce.SetFont(pFont);  m_btnCvDelete.SetFont(pFont);
+	m_btnAbort.SetFont(pFont);
 	m_lblSet1.SetFont(pFont);   m_lblSet2.SetFont(pFont);
 
 	// 작업상태 콤보 : COMMON_CODE JOB_STATUS
@@ -201,6 +208,7 @@ void CPanelInfoDlg::HideOverlays()
 	m_cmbPri.ShowWindow(SW_HIDE);    m_btnPri.ShowWindow(SW_HIDE);
 	m_edtCvJob.ShowWindow(SW_HIDE);  m_btnCvWrite.ShowWindow(SW_HIDE);
 	m_btnForce.ShowWindow(SW_HIDE);  m_btnCvDelete.ShowWindow(SW_HIDE);
+	m_btnAbort.ShowWindow(SW_HIDE);
 	m_lblSet1.ShowWindow(SW_HIDE);   m_lblSet2.ShowWindow(SW_HIDE);
 }
 
@@ -218,7 +226,11 @@ void CPanelInfoDlg::PlaceOverCell(CWnd* pCtrl, int nRow, int nCol, BOOL bShow)
 	int nH = bCombo ? 160 : rcCell.Height();
 	pCtrl->MoveWindow(rcCell.left + 1, rcCell.top, rcCell.Width() - 2, nH);
 	pCtrl->ShowWindow(bShow ? SW_SHOW : SW_HIDE);
-	if (bShow) pCtrl->BringWindowToTop();
+	if (bShow)
+	{
+		pCtrl->BringWindowToTop();
+		pCtrl->Invalidate(FALSE);   // 리스트 재도장 직후에도 즉시 다시 그린다
+	}
 }
 
 // 설비 행 정의 : 항목 / DB 필드(별칭) / 관측 태그(실제주소) / 구ECS 주소종류+오프셋
@@ -501,6 +513,8 @@ void CPanelInfoDlg::PlaceOverlays()
 	else if ((nTab == TAB_SC || nTab == TAB_RTV) && m_list.GetItemCount() > VEH_ROW_FORCE)
 	{
 		PlaceOverCell(&m_btnForce, VEH_ROW_FORCE, 3, TRUE);
+		// [LGLS 2026-09-02] 이상종료(구 ECS 대응) : 지시 작업번호(파레트ID) 행의 [확인] 칸
+		PlaceOverCell(&m_btnAbort, 16, 3, TRUE);
 	}
 }
 
@@ -636,6 +650,56 @@ void CPanelInfoDlg::OnBtnForce()
 	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
 		(LPCTSTR)strStatus, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strJob);
 	if (ExecUpdate(strSql, _T("JOB_MST UPDATE : 강제완료 JOB_STATUS -> ") + strStatus, strJob, bRtv ? _T("CRtvSkinDlg") : _T("CScSkinDlg")))
+		Refresh();
+}
+
+// [LGLS 2026-09-02] 이상종료 - 구 ECS RGV/Stacker 팝업의 [이상종료]와 같은 의미.
+//   설비가 물고 있는 지시(OD)를 해제해 "설비-명령 연결이 꼬였을 때 리셋" 한다. JOB_MST 는 건드리지 않는다.
+//   구 ECS 와 동일하게 RUN(작업중)/DOWN(정지) 상태에서는 거부한다.
+void CPanelInfoDlg::OnBtnAbort()
+{
+	BOOL bRtv = (m_tab.GetCurSel() == TAB_RTV);
+	CString strUnit;
+	if (m_cmbUnit.GetCurSel() >= 0) m_cmbUnit.GetLBText(m_cmbUnit.GetCurSel(), strUnit);
+	if (strUnit.IsEmpty()) return;
+
+	CString strState = m_list.GetItemText(0, 1);
+	if (strState.Find(_T("(RUN)")) >= 0)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(작업중) 상태입니다. 작업 완료 후 이상종료 하십시오")));
+		return;
+	}
+	if (strState.Find(_T("(DOWN)")) >= 0)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("DOWN(정지) 상태에서는 이상종료 할 수 없습니다")));
+		return;
+	}
+
+	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("이상종료 하시겠습니까? (지시 연결 해제, 작업정보는 유지)")) + _T(" [") + strUnit + _T("]"), MB_YESNO) != IDYES)
+		return;
+
+	CString strSql;
+	if (bRtv)
+	{
+		// RtvSkinDlg [삭제] 의 지시 클리어와 동일
+		strSql.Format(_T("UPDATE RTV_DATA_LGLS SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0'")
+			_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00'")
+			_T(", TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
+			_T(", RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N'")
+			_T(" WHERE WH_TYP = '%s' AND RTV_NO = '%s'"),
+			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strUnit);
+	}
+	else
+	{
+		strSql.Format(_T("UPDATE SC_DATA_LGLS SET PALLET_ID_OD = '0000'")
+			_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00'")
+			_T(", TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
+			_T(", OD_RQ_YN = 'N'")
+			_T(" WHERE WH_TYP = '%s' AND MC_NO = '%s'"),
+			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strUnit);
+	}
+	if (ExecUpdate(strSql, CString(_T("이상종료 : 지시(OD) 해제 (")) + strUnit + _T(")"), _T("0"),
+			bRtv ? _T("CRtvSkinDlg") : _T("CScSkinDlg")))
 		Refresh();
 }
 

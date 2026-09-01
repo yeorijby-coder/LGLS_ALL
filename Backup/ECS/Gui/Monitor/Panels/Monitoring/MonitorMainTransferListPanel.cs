@@ -121,10 +121,32 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
             }
         }
 
+        // [LGLS 2026-09-02] 디스패처(ECSDispatcher.DoWork)를 2초마다 UI 스레드에서 돌리던 것이
+        //   클릭 처리를 수 초씩 밀리게 한 원인(popup_timing disp 최대 5.7초 실측).
+        //   DoWork 는 DB/PLC 만 다루고 UI 컨트롤을 만지지 않으므로 워커 스레드로 옮긴다.
+        private static volatile bool dispatcherBusy = false;
         private void RefreshWorkList(object sender, EventArgs e)
         {
             tickCount = tickCount + 1;
-            ECSDispatcher.DoWork();
+            if (!dispatcherBusy)
+            {
+                dispatcherBusy = true;
+                System.Threading.ThreadPool.QueueUserWorkItem(delegate(object o)
+                {
+                    var swWork = System.Diagnostics.Stopwatch.StartNew();
+                    try { ECSDispatcher.DoWork(); }
+                    catch (Exception ex) { System.Console.WriteLine("DoWork(worker) : " + ex.Message); }
+                    finally
+                    {
+                        if (swWork.ElapsedMilliseconds > 500)
+                        {
+                            try { System.IO.File.AppendAllText(@"D:\LOG\popup_timing.txt",
+                                DateTime.Now.ToString("HH:mm:ss.fff") + " DoWork=" + swWork.ElapsedMilliseconds + "ms" + Environment.NewLine); } catch { }
+                        }
+                        dispatcherBusy = false;
+                    }
+                });
+            }
             if (tickCount < 5)
             {
                 if (dataGridViewTransferList.Rows.Count == 0)
