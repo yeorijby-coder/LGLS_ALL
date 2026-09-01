@@ -916,7 +916,10 @@ LRESULT CScSkinDlg::OnMessagSwitch(WPARAM wParam, LPARAM lParam)
 	//   이 창은 단일 창을 호기 전환으로 재사용하는데, 확대 패널의 주소 라벨
 	//   (상태 D0160, M0310, D0320 ...)은 창 생성 때 1회만 만들어져 #1 것이
 	//   모든 호기에서 그대로 보였다. 값은 호기별로 갱신되는데 주소만 낡았다.
-	BOOL bScChanged = (m_pSC_DATA != NULL && m_pSC_DATA != pSC_DATA);
+	// [LGLS 2026-09-01 재수정] 패널은 OnInitDialog(데이터 도착 전, m_pSC_DATA=NULL)에서
+	//   만들어져 항상 #1 기본 라벨이었다. NULL → 첫 설정도 "바뀜" 으로 봐야
+	//   첫 데이터가 오는 순간 현재 호기 주소로 다시 그려진다.
+	BOOL bScChanged = (m_pSC_DATA != pSC_DATA);
 	m_pSC_DATA = pSC_DATA;
 	if (bScChanged) RebuildVehStatusPanel();
 
