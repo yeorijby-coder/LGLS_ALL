@@ -141,7 +141,7 @@ namespace HECS
             if (form == null)
             {
                 string[] formNameArray = formName.Split('.');
-                Util.Util.ShowMesagePopup("ȭ���� �غ�Ǿ� ���� �ʽ��ϴ�. [" + formNameArray[formNameArray.Length - 1] + "]");
+                Util.Util.ShowMesagePopup("ȭ���� �غ�Ǿ� ���� �ʽ��ϴ�. [" + formNameArray[formNameArray.Length - 1] + "]");
             }
 
         }
@@ -156,6 +156,41 @@ namespace HECS
             //LoadForm("HECS.Gui.Monitor.Forms.LoginForm");
             //LoadForm("HECS.FormTest");
             LoadForm("HECS.Gui.Monitor.Forms.MoveRequestForm");
+
+            // [LGLS 2026-09-01] 설비 팝업 사전 생성 - 종전에는 첫 클릭 때 폼 생성(그라데이션
+            //   컨트롤 + System.Web 어셈블리 JIT 로드)이 일어나 팝업이 현저히 늦게 떴다.
+            //   기동 유휴 시점에 미리 만들어 캐시에 넣는다 (MonitorAllEquipmentPanel 의 캐시 키와 동일).
+            this.BeginInvoke(new MethodInvoker(PrewarmPopupForms));
+        }
+
+        // [LGLS 2026-09-01] 설비 팝업 폼 3종 사전 생성 (핸들까지 만들어 첫 표시 JIT 비용 제거)
+        private void PrewarmPopupForms()
+        {
+            try
+            {
+                if (SimpleCache.GetObject("Popup", "ConveyorForm") == null)
+                {
+                    HECS.Gui.Monitor.Popups.ConveyorForm f = new HECS.Gui.Monitor.Popups.ConveyorForm();
+                    IntPtr h = f.Handle;
+                    SimpleCache.AddObject("Popup", "ConveyorForm", f);
+                }
+                if (SimpleCache.GetObject("Popup", "StackerForm") == null)
+                {
+                    HECS.Gui.Monitor.Popups.StackerForm f = new HECS.Gui.Monitor.Popups.StackerForm();
+                    IntPtr h = f.Handle;
+                    SimpleCache.AddObject("Popup", "StackerForm", f);
+                }
+                if (SimpleCache.GetObject("Popup", "RGVForm") == null)
+                {
+                    HECS.Gui.Monitor.Popups.RGVForm f = new HECS.Gui.Monitor.Popups.RGVForm();
+                    IntPtr h = f.Handle;
+                    SimpleCache.AddObject("Popup", "RGVForm", f);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Console.WriteLine("PrewarmPopupForms:" + ex.Message);
+            }
         }
 
 

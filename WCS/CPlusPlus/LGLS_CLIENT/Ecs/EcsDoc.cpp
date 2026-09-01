@@ -719,24 +719,60 @@ void CEcsDoc::OnCommandRangeMainFrameMANUAL(UINT nID)
 }
 
 
-void CEcsDoc::OnCommandRangeMainFrameVIEW(UINT nID)
+
+
+// [LGLS 2026-09-01] 작업정보 팝업 - 대화상자 모드 진입점 (종전 ID_VIEW_JOBLIST 처리부를 함수로 복원)
+void CEcsDoc::OpenJobListDialog()
 {
-	switch(nID)
-	{
-	case ID_VIEW_JOBLIST:
-		{
+
 			if (!Permission(_T("CViewJobListDlg"), SEL_YN))
 			{
 				AfxMessageBox(GetMsgLangDef(_T("권한이 없습니다")));
 				return;
 			}
 
-			// [LGLS 2026-09-01] 팝업(CViewJobListDlg) 대신 우측 도킹 판넬 토글.
-			//   전체 작업 판넬 + 정보(CV/SC/RTV/작업) 판넬. 구 SPL EcsSv 참고.
-			CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
-			if (pFrame != NULL)
-				pFrame->TogglePanelBars(this);
+			if (m_pViewJobListDlg == NULL)
+			{
+				m_pViewJobListDlg = new CViewJobListDlg(this);
+				this->m_pViewJobListDlg->Create(IDD_VIEW_JOBLIST1);
+			
+				CRect MainRect;
+				CRect Rect;
+				CRect PosRect;
+				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
+				this->m_pViewJobListDlg->GetWindowRect(&Rect); 
 
+				double dWidth = Rect.Width() * m_pMaxSizeX;
+				double dHeight = Rect.Height() * m_pMaxSizeX;
+
+
+				//PosRect.left = ((MainRect.right  - MainRect.left) - dWidth)  / 2; 
+				//PosRect.top  = ((MainRect.bottom - MainRect.top)  - dHeight) / 2; 
+
+				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
+				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
+				this->m_pViewJobListDlg->SetWindowPos(&m_pViewJobListDlg->wndTop, PosRect.left, PosRect.top, 
+					Rect.Width(), Rect.Height(), 
+					SWP_SHOWWINDOW);
+				
+			}
+			::SetWindowPos(m_pViewJobListDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
+			::SetWindowPos(m_pViewJobListDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
+			ShowWindow(m_pViewJobListDlg->m_hWnd, SW_SHOWNORMAL);
+}
+
+void CEcsDoc::OnCommandRangeMainFrameVIEW(UINT nID)
+{
+	switch(nID)
+	{
+	case ID_VIEW_JOBLIST:
+		{
+			// [LGLS 2026-09-01] UI모드 선택에 따라 팝업(대화상자) 또는 우측 도킹 판넬
+			CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
+			if (pFrame != NULL && pFrame->m_bUiModePanel)
+				pFrame->TogglePanelBars(this);
+			else
+				OpenJobListDialog();
 			break;
 		}
 	case ID_VIEW_HOST_EMPTY_PLT:

@@ -50,6 +50,9 @@ public:
 	CPanelJobDlg   m_PanelJobDlg;
 	CPanelInfoDlg  m_PanelInfoDlg;
 	BOOL           m_bPanelBarsCreated;
+	BOOL           m_bUiModePanel;        // [LGLS 2026-09-01] UI모드 : TRUE=판넬, FALSE=대화상자
+	void ShowPanelBars(CEcsDoc* pDoc, BOOL bShow);
+	void SetInfoPaneTitle(CString strTitle);   // 상세정보 판넬 캡션 변경
 	void TogglePanelBars(CEcsDoc* pDoc);   // 리본 [작업정보] 진입점
 	void ShowJobDetail(CString strLuggNo); // 작업 판넬 선택 -> 정보 판넬 연동
 	CCV_DATA* m_pCV_DATA;
@@ -101,6 +104,10 @@ protected:
 	afx_msg void OnStyleRibboninterface (); //ribbon2
 	afx_msg void OnRbnBtnToolbarInterface (); 
 	afx_msg void OnAppLook(UINT id);
+	afx_msg void OnUiModeDlg();            // [LGLS 2026-09-01] UI모드
+	afx_msg void OnUiModePanel();
+	afx_msg void OnUpdateUiModeDlg(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateUiModePanel(CCmdUI* pCmdUI);
 	DECLARE_MESSAGE_MAP()
 	void AddCategoryUSER();
 	UINT	m_nAppLook;

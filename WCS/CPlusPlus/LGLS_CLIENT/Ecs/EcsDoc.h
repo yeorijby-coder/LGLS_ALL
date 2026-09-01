@@ -387,6 +387,7 @@ public:
 
 public:
 	BOOL Permission(CString pWID_ID, int pEN_PERM);
+	void OpenJobListDialog();   // [LGLS 2026-09-01] 작업정보 팝업(대화상자 모드 진입점)
 	// [LGLS 2026-08-22] 구 EcsSv CEcsDoc::WriteLog 의 7번째 파라미터(BOOL bAlarm) 복원.
 	//   파일 로그가 DB 로 옮겨오면서 사라졌던 "이 로그는 알람으로도 띄운다" 표시다.
 	//   TRUE 면 WCS_CLIENT_LOG.ALARM_YN='Y' 로 남기고 경고창(CWarningDlg)에 즉시 띄운다.

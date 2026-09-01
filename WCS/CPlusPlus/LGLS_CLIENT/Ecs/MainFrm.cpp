@@ -30,6 +30,10 @@ const int iCategoryIndex_BB = 3;
 const int iCategoryIndex_CC = 4;
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
+	ON_COMMAND(ID_UIMODE_DLG, &CMainFrame::OnUiModeDlg)
+	ON_COMMAND(ID_UIMODE_PANEL, &CMainFrame::OnUiModePanel)
+	ON_UPDATE_COMMAND_UI(ID_UIMODE_DLG, &CMainFrame::OnUpdateUiModeDlg)
+	ON_UPDATE_COMMAND_UI(ID_UIMODE_PANEL, &CMainFrame::OnUpdateUiModePanel)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_VIEW_CUSTOMIZE, &CMainFrame::OnViewCustomize)
 	ON_REGISTERED_MESSAGE(AFX_WM_CREATETOOLBAR, &CMainFrame::OnToolbarCreateNew)
@@ -81,6 +85,8 @@ static UINT indicators[] =
 CMainFrame::CMainFrame()
 {
 	m_bPanelBarsCreated = FALSE;   // [LGLS 2026-09-01] 도킹 판넬
+	m_bUiModePanel = FALSE;        // 기본 = 대화상자 모드
+	m_pDoc = NULL;                 // [LGLS 2026-09-01] 종전에 초기화 누락(쓰레기 포인터)
 	// TODO: 여기에 멤버 초기화 코드를 추가합니다.
 	theApp.m_nAppLook = theApp.GetInt(_T("ApplicationLook"), ID_VIEW_APPLOOK_VS_2008);
 	m_bNotDockingJob = false;
@@ -560,6 +566,19 @@ void CMainFrame::AddCategoryWCS()
 	//CMFCRibbonButton* pBtnHUN = new CMFCRibbonButton(ID_LANGUAGE_HUNGARIAN, _T("HUNGARY"), HICONFromPATH(GetConcatPath(strAppPath, _T("hun"), strExtension)), TRUE);
 	//pBtnHUN->SetAlwaysLargeImage();
 	//pPanelLanguage->Add(pBtnHUN);
+
+	// [LGLS 2026-09-01] [UI모드] 그룹 : 작업정보를 대화상자로 열지, 우측 도킹 판넬로 열지 선택
+	{
+		CMFCRibbonPanel* pPanelUiMode = pCategory->AddPanel(_T("UI모드"));
+		CMFCRibbonButton* pBtnUiDlg = new CMFCRibbonButton(ID_UIMODE_DLG, _T("대화상자 모드"),
+			HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+		pBtnUiDlg->SetAlwaysLargeImage();
+		pPanelUiMode->Add(pBtnUiDlg);
+		CMFCRibbonButton* pBtnUiPanel = new CMFCRibbonButton(ID_UIMODE_PANEL, _T("판넬 모드"),
+			HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+		pBtnUiPanel->SetAlwaysLargeImage();
+		pPanelUiMode->Add(pBtnUiPanel);
+	}
 }
 	
 
@@ -805,10 +824,23 @@ void CMainFrame::ExcuteTheme()
 //   구 SPL EcsSv CreateDockingBar 를 MFC Feature Pack(CDockablePane)으로 재구현.
 void CMainFrame::TogglePanelBars(CEcsDoc* pDoc)
 {
+	BOOL bShow = TRUE;
+	if (m_bPanelBarsCreated)
+		bShow = !m_JobPane.IsVisible();
+	ShowPanelBars(pDoc, bShow);
+}
+
+// [LGLS 2026-09-01] 우측 도킹 판넬 생성/표시 (구 SPL EcsSv CreateDockingBar 를 CDockablePane 으로 재구현)
+void CMainFrame::ShowPanelBars(CEcsDoc* pDoc, BOOL bShow)
+{
 	if (!m_bPanelBarsCreated)
 	{
+		if (!bShow || pDoc == NULL)
+			return;
+
 		EnableDocking(CBRS_ALIGN_ANY);
 
+		m_pDoc = pDoc;
 		m_PanelJobDlg.m_pDoc  = pDoc;
 		m_PanelInfoDlg.m_pDoc = pDoc;
 		m_JobPane.m_pDlg  = &m_PanelJobDlg;   m_JobPane.m_nIDD  = IDD_PANEL_JOB;
@@ -818,7 +850,7 @@ void CMainFrame::TogglePanelBars(CEcsDoc* pDoc)
 		if (!m_JobPane.Create(_T("작업 정보"), this, CRect(0, 0, 480, 500), TRUE,
 				ID_PANE_JOB, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
 			return;
-		if (!m_InfoPane.Create(_T("설비/작업 상세"), this, CRect(0, 0, 480, 400), TRUE,
+		if (!m_InfoPane.Create(_T("상세정보"), this, CRect(0, 0, 480, 400), TRUE,
 				ID_PANE_INFO, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
 			return;
 
@@ -830,13 +862,50 @@ void CMainFrame::TogglePanelBars(CEcsDoc* pDoc)
 
 		m_bPanelBarsCreated = TRUE;
 		RecalcLayout();
-		return;   // 최초 호출 = 표시
+		return;
 	}
 
-	BOOL bShow = !m_JobPane.IsVisible();
 	m_JobPane.ShowPane(bShow, FALSE, TRUE);
 	m_InfoPane.ShowPane(bShow, FALSE, TRUE);
 	RecalcLayout();
+}
+
+// [LGLS 2026-09-01] 상세정보 판넬 캡션 변경 (탭 선택에 따라 "CV 상세정보" 등)
+void CMainFrame::SetInfoPaneTitle(CString strTitle)
+{
+	if (m_bPanelBarsCreated && ::IsWindow(m_InfoPane.m_hWnd))
+		m_InfoPane.SetWindowText(strTitle);
+}
+
+// [LGLS 2026-09-01] UI모드 : 대화상자 모드 선택 -> 판넬 숨기고 팝업 열기
+void CMainFrame::OnUiModeDlg()
+{
+	m_bUiModePanel = FALSE;
+	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
+	if (m_bPanelBarsCreated && m_JobPane.IsVisible())
+		ShowPanelBars(m_pDoc, FALSE);
+	if (m_pDoc != NULL)
+		m_pDoc->OpenJobListDialog();
+}
+
+// [LGLS 2026-09-01] UI모드 : 판넬 모드 선택 -> 팝업 숨기고 판넬 열기
+void CMainFrame::OnUiModePanel()
+{
+	m_bUiModePanel = TRUE;
+	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
+	if (m_pDoc != NULL && m_pDoc->m_pViewJobListDlg != NULL && ::IsWindow(m_pDoc->m_pViewJobListDlg->m_hWnd))
+		m_pDoc->m_pViewJobListDlg->ShowWindow(SW_HIDE);
+	ShowPanelBars(m_pDoc, TRUE);
+}
+
+void CMainFrame::OnUpdateUiModeDlg(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(!m_bUiModePanel);
+}
+
+void CMainFrame::OnUpdateUiModePanel(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(m_bUiModePanel);
 }
 
 void CMainFrame::ShowJobDetail(CString strLuggNo)
