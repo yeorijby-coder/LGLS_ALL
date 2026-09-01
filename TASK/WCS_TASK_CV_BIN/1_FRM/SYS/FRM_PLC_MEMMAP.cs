@@ -986,6 +986,43 @@ namespace WCS_TASK_CV
             return string.Format("%DW{0} (%DB{1})", w, w * 2);
         }
 
+        // ─── 최초 문서(구 ezMCS B/W/R, 16진 표기) → M/D/R 실주소 계산 ──────────
+        //   [LGLS 2026-09-01] 사용자 요청. 구 ECS 정의서(TB_OBSERVABLE)의 표기를 현행으로.
+        //   B(비트, 16진)  : B0227 → 비트 0x227=551 → %MX551 = M034.7 (워드 M034)
+        //   W(워드, 16진)  : W0100 → 워드 0x100=256 → %DW256 (%DB512)
+        //                    ※ 이는 구 환산(LEGACY) D 주소다 - 현행 확정은 문서 D표기 10진.
+        //   R(트래킹, 16진): R0102 → 0x102=258 (구 HEX 해석). 현행(DEC) 값도 병기.
+        private void btnEzCalc_Click(object sender, EventArgs e)
+        {
+            string dev = cmbEzDev.Text;
+            string t   = txtEzAddr.Text.Trim().ToUpper();
+            if (t.StartsWith(dev)) t = t.Substring(dev.Length);
+            if (t.Length == 0) { AppendLog("[원문서 계산] 주소를 입력하세요."); return; }
+            try
+            {
+                int n = Convert.ToInt32(t, 16);   // 원문서 표기는 16진
+                if (dev == "B")
+                {
+                    int w = n / 16, b = n % 16;
+                    lblEzResult.Text = string.Format("%MX{0} = M{1:000}.{2:X} (워드 %MW{3})", n, w, b, w);
+                    AppendLog(string.Format("[원문서 계산] B{0} (16진) → 비트 {1} → %MX{1} = M{2:000}.{3:X}, 읽기워드 %MW{4}", t, n, w, b, w));
+                }
+                else if (dev == "W")
+                {
+                    lblEzResult.Text = string.Format("%DW{0} (%DB{1})  [구 환산 D주소]", n, n * 2);
+                    AppendLog(string.Format("[원문서 계산] W{0} (16진) → 워드 {1} → %DW{1} (%DB{2})  ※구 환산(LEGACY). 현행 확정은 문서 D표기 10진", t, n, n * 2));
+                }
+                else   // R
+                {
+                    int nDoc = int.Parse(t);   // 표기를 10진으로도 읽어 현행값 병기
+                    lblEzResult.Text = string.Format("구HEX 워드 {0} (%RB{1}) / 현행DEC 워드 {2} (%RB{3})", n, n * 2, nDoc, nDoc * 2);
+                    AppendLog(string.Format("[원문서 계산] R{0} → 구 HEX 해석 워드 {1} (%RB{2}) / 현행 DEC 워드 {3} (%RB{4})  현재모드={5}",
+                              t, n, n * 2, nDoc, nDoc * 2, cDefApp.GsRAddrModeText()));
+                }
+            }
+            catch (Exception ex) { AppendLog("[원문서 계산] 입력 오류: " + ex.Message); }
+        }
+
         private void btnPptCalc_Click(object sender, EventArgs e)
         {
             PptCalc();

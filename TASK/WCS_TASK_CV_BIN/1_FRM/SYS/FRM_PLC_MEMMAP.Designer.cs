@@ -73,6 +73,11 @@
             this.dgvManual      = new System.Windows.Forms.DataGridView();
             this.lblPptCap      = new System.Windows.Forms.Label();
             this.cmbPptDev      = new System.Windows.Forms.ComboBox();
+            this.lblEzCap       = new System.Windows.Forms.Label();
+            this.cmbEzDev       = new System.Windows.Forms.ComboBox();
+            this.txtEzAddr      = new System.Windows.Forms.TextBox();
+            this.btnEzCalc      = new System.Windows.Forms.Button();
+            this.lblEzResult    = new System.Windows.Forms.Label();
             this.txtPptAddr     = new System.Windows.Forms.TextBox();
             this.btnPptCalc     = new System.Windows.Forms.Button();
             this.lblPptResult   = new System.Windows.Forms.Label();
@@ -271,7 +276,7 @@
                 this.dgvManual, this.pnlManualTop });
 
             this.pnlManualTop.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.pnlManualTop.Height    = 78;
+            this.pnlManualTop.Height    = 112;
             this.pnlManualTop.BackColor = System.Drawing.Color.FromArgb(45, 45, 48);
             this.pnlManualTop.Controls.AddRange(new System.Windows.Forms.Control[] {
                 this.lblManualDev, this.cmbManualDev, this.lblManualAddr, this.txtManualAddr,
@@ -279,7 +284,8 @@
                 this.lblManualWriteVal, this.txtManualWriteVal, this.btnManualWrite,
                 this.lblPptCap, this.cmbPptDev, this.txtPptAddr, this.btnPptCalc,
                 this.lblPptResult, this.lblPptLen, this.txtPptLen, this.btnPptRead,
-                this.txtPptVal, this.btnPptWrite });
+                this.txtPptVal, this.btnPptWrite,
+                this.lblEzCap, this.cmbEzDev, this.txtEzAddr, this.btnEzCalc, this.lblEzResult });
 
             SetLabel(this.lblManualDev, "Device:", 4, 12, 52);
             // 다른 탭과 동일하게 두 가지 표기 병기: 입력표기 + 실제 전송영역
@@ -320,6 +326,20 @@
             SetTextBox(this.txtPptVal, "0x0000", 572, 44, 78);
             SetButton(this.btnPptWrite, "쓰기", 656, 43, 52, System.Drawing.Color.FromArgb(180, 100, 0));
             this.btnPptWrite.Click += new System.EventHandler(this.btnPptWrite_Click);
+
+            // ── 3행: 최초 문서(구 ezMCS B/W/R, 16진 표기) → M/D/R 실주소 계산 ──
+            //   예) B0227 = 비트 0x227=551 → M034.7 %MX551 / W0100 = 워드 0x100=256 → %DW256
+            SetLabel(this.lblEzCap, "원문서표기:", 4, 82, 78);
+            this.cmbEzDev.Items.AddRange(new object[] { "B", "W", "R" });
+            this.cmbEzDev.SelectedIndex = 0;
+            this.cmbEzDev.Location  = new System.Drawing.Point(84, 78);
+            this.cmbEzDev.Size      = new System.Drawing.Size(44, 22);
+            this.cmbEzDev.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            SetTextBox(this.txtEzAddr, "0227", 132, 78, 60);
+            SetButton(this.btnEzCalc, "계산", 198, 77, 52, System.Drawing.Color.FromArgb(0, 122, 204));
+            this.btnEzCalc.Click += new System.EventHandler(this.btnEzCalc_Click);
+            SetLabel(this.lblEzResult, "-", 256, 82, 430);
+            this.lblEzResult.ForeColor = System.Drawing.Color.Gold;
 
             this.dgvManual.Dock = System.Windows.Forms.DockStyle.Fill;
             ConfigDgv(this.dgvManual);
@@ -514,6 +534,11 @@
         private System.Windows.Forms.TextBox txtManualWriteVal;
         private System.Windows.Forms.Button btnManualWrite;
         private System.Windows.Forms.Label   lblPptCap;
+        private System.Windows.Forms.Label lblEzCap;
+        private System.Windows.Forms.ComboBox cmbEzDev;
+        private System.Windows.Forms.TextBox txtEzAddr;
+        private System.Windows.Forms.Button btnEzCalc;
+        private System.Windows.Forms.Label lblEzResult;
         private System.Windows.Forms.ComboBox cmbPptDev;
         private System.Windows.Forms.TextBox txtPptAddr;
         private System.Windows.Forms.Button  btnPptCalc;
