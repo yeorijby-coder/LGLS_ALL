@@ -295,7 +295,12 @@ void CPanelInfoDlg::EnsureRow(int i, LPCTSTR strCap)
 	if (i >= m_list.GetItemCount())
 		m_list.InsertItem(i, strCap);
 	else
+	{
 		m_list.SetItemText(i, 0, strCap);
+		// 탭 전환으로 행을 재사용할 때 이전 탭의 값/주소가 남지 않게 비운다
+		for (int c = 1; c <= 6; c++)
+			m_list.SetItemText(i, c, _T(""));
+	}
 	if (i + 1 > m_nRefreshRows) m_nRefreshRows = i + 1;
 }
 
@@ -479,34 +484,35 @@ void CPanelInfoDlg::PlaceOverlays()
 	HideOverlays();
 
 	CRect rcCli; GetClientRect(&rcCli);
-	int y = rcCli.Height() - 24;
+	int y1 = rcCli.Height() - 48;   // 2줄 바 (좁은 판넬 폭에서도 다 보이게)
+	int y2 = rcCli.Height() - 24;
 	int nTab = m_tab.GetCurSel();
 
-	struct P { static void Put(CWnd& w, int x, int y2, int cx, int cy2) {
-		w.MoveWindow(x, y2, cx, cy2); w.ShowWindow(SW_SHOW); w.BringWindowToTop(); } };
+	struct P { static void Put(CWnd& w, int x, int yy, int cx, int cy2) {
+		w.MoveWindow(x, yy, cx, cy2); w.ShowWindow(SW_SHOW); w.BringWindowToTop(); } };
 
 	if (nTab == TAB_JOB)
 	{
 		m_lblSet1.SetWindowText(_T("작업상태"));
 		m_lblSet2.SetWindowText(_T("우선순위"));
-		P::Put(m_lblSet1,    2, y + 3, 50, 18);
-		P::Put(m_cmbStatus, 56, y, 130, 160);
-		P::Put(m_btnStatus, 190, y, 44, 22);
-		P::Put(m_lblSet2,  240, y + 3, 50, 18);
-		P::Put(m_cmbPri,   294, y, 48, 160);
-		P::Put(m_btnPri,   346, y, 44, 22);
+		P::Put(m_lblSet1,    2, y1 + 3, 50, 18);
+		P::Put(m_cmbStatus, 56, y1, 124, 160);
+		P::Put(m_btnStatus, 184, y1, 44, 22);
+		P::Put(m_lblSet2,    2, y2 + 3, 50, 18);
+		P::Put(m_cmbPri,    56, y2, 60, 160);
+		P::Put(m_btnPri,   120, y2, 44, 22);
 	}
 	else if (nTab == TAB_CV)
 	{
 		m_lblSet1.SetWindowText(_T("지시 작업번호"));
-		P::Put(m_lblSet1,    2, y + 3, 76, 18);
-		P::Put(m_edtCvJob,  82, y + 1, 70, 20);
-		P::Put(m_btnCvWrite, 156, y, 44, 22);
-		P::Put(m_btnCvDelete, 206, y, 70, 22);
+		P::Put(m_lblSet1,     2, y1 + 3, 76, 18);
+		P::Put(m_edtCvJob,   82, y1 + 1, 80, 20);
+		P::Put(m_btnCvWrite,  2, y2, 60, 22);
+		P::Put(m_btnCvDelete, 66, y2, 80, 22);
 	}
 	else if (nTab == TAB_SC || nTab == TAB_RTV)
 	{
-		P::Put(m_btnForce, 2, y, 80, 22);
+		P::Put(m_btnForce, 2, y2, 80, 22);
 	}
 }
 
@@ -653,9 +659,7 @@ void CPanelInfoDlg::OnSize(UINT nType, int cx, int cy)
 	if (::IsWindow(m_cmbUnit.m_hWnd))
 		m_cmbUnit.MoveWindow(cx - 92, 1, 90, 160);
 	if (::IsWindow(m_list.m_hWnd))
-		m_list.MoveWindow(0, 26, cx, cy - 26 - 26);
-	if (::IsWindow(m_btnCvDelete.m_hWnd))
-		m_btnCvDelete.MoveWindow(2, cy - 24, 90, 22);
+		m_list.MoveWindow(0, 26, cx, cy - 26 - 52);   // 하단 2줄 바 자리
 	if (::IsWindow(m_list.m_hWnd))
 		Refresh();
 }
