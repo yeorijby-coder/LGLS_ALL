@@ -579,12 +579,16 @@ namespace TSK_COMM_IOSCH
 				// [LGLS 2026-09-01] 파일/함수 2열 삽입 후 인덱스가 밀려 [5]=파일명만 표시됐다(사용자 지적).
 				//   Message 는 마지막 열이므로 인덱스 고정 대신 ★마지막 SubItem★ 을 쓰고,
 				//   파일::함수를 머리에 붙여 어디서 난 로그인지도 함께 보인다.
+				// [LGLS 2026-09-01] 마지막 열은 Message 가 아니라 Tgm(전문, 대부분 빈 값)이었다.
+				//   열 구성 : 0시각 1스레드 2구분 3작업 4상태 5파일 6함수 7Message 8Tgm
 				var it = LvCtrl.SelectedItems[0];
-				int last = it.SubItems.Count - 1;
 				string strFile = (it.SubItems.Count > 5) ? it.SubItems[5].Text : "";
 				string strFunc = (it.SubItems.Count > 6) ? it.SubItems[6].Text : "";
+				string strBody = (it.SubItems.Count > 7) ? it.SubItems[7].Text : "";
+				string strTgm  = (it.SubItems.Count > 8) ? it.SubItems[8].Text : "";
 				string strHead = (strFile.Length > 0 || strFunc.Length > 0) ? ("[" + strFile + " :: " + strFunc + "]  ") : "";
-				this.txtMsg.Text = strHead + it.SubItems[last].Text;
+				this.txtMsg.Text = strHead + strBody + (strTgm.Trim().Length > 0 ? ("
+TGM : " + strTgm) : "");
 			}
 			catch (Exception ex)
 			{
