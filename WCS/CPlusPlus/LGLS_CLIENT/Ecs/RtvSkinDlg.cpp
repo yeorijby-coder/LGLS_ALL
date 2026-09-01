@@ -199,7 +199,10 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
 		pRsw->MoveFirst();
 		CString st = pRsw->GetItem(_T("ST"));
-		CString stTxt = (st == _T("2")) ? _T("RUN") : ((st == _T("1")) ? _T("IDLE") : _T("DOWN"));
+		// [LGLS 2026-09-01] 원시값을 함께 표기 (사용자 요청) - 시나리오 문서의
+		//   "D0210 IDLE=1 확인" 과 그대로 대응되게 "1 = IDLE" 형식으로 보인다.
+		CString stMean = (st == _T("2")) ? _T("RUN") : ((st == _T("1")) ? _T("IDLE") : _T("DOWN"));
+		CString stTxt; stTxt.Format(_T("%s = %s"), (LPCTSTR)st, (LPCTSTR)stMean);
 		SetDlgItemText(IDC_RTVV_STATUS, stTxt);
 		SetLed(IDC_RTVV_LED_LOAD_CMP,        pRsw->GetItem(_T("A1")));
 		SetLed(IDC_RTVV_LED_LOAD_CMP_ACK,    pRsw->GetItem(_T("A2")));
@@ -1600,7 +1603,7 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 	mk.Value(IDC_RTVV_TITLE1, 6,   y, 110, 18);
 	mk.Value(IDC_RTVV_TITLE2, 120, y, 130, 18);
 	mk.LabelA(_T("상태"), CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_STATUS")), 256, y + 2, 30, 52);
-	mk.Value(IDC_RTVV_STATUS, 344, y, 56, 18);
+	mk.Value(IDC_RTVV_STATUS, 344, y, 90, 18);	// [LGLS 2026-09-01] "1 = IDLE" 폭
 	y += 20;
 
 	// ── 핸드셰이크 LED : 2열 x 6행 (라벨에 실주소) ────────────────
