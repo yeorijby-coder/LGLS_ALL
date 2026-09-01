@@ -300,6 +300,15 @@ namespace EQP_SIM.Sim
 
                 case VState.DstForkOut:
                     if (now < stateUntil) break;
+                    // [LGLS 2026-09-01] ★점유된 포트에는 내리지 않는다★ (실측 : 크레인이 점유된
+                    //   P4 에 출고 화물을 내려 그 자리의 입고 화물 9035 가 소멸했다 - 파렛트 겹침).
+                    //   실물도 자리가 빌 때까지 하역하지 못한다. 자리가 날 때까지 이 단계에서 대기.
+                    if (IsDestPortOccupied())
+                    {
+                        stateUntil = now.AddMilliseconds(500);
+                        StatusText = "도착지 점유 - 하역 대기";
+                        break;
+                    }
                     // 포크가 나가 화물을 놓는다 -> 이때 화물감지 OFF (하역도 여기서)
                     UnloadAtDest();
                     io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
@@ -506,6 +515,16 @@ namespace EQP_SIM.Sim
         {
             if (!IsPort(from01, from02)) return true;
             int port = ParseInt(from03);
+            var cv = engine.World.FindByPort(port);
+            if (cv == null) return false;
+            return engine.Conveyor(cv.Id).PalletAt(port) != null;
+        }
+
+        // [LGLS 2026-09-01] 도착지가 포트일 때 그 포트가 점유 중인가 (랙 셀은 항상 false)
+        private bool IsDestPortOccupied()
+        {
+            if (!IsPort(to01, to02)) return false;
+            int port = ParseInt(to03);
             var cv = engine.World.FindByPort(port);
             if (cv == null) return false;
             return engine.Conveyor(cv.Id).PalletAt(port) != null;

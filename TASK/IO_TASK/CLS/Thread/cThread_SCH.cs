@@ -982,6 +982,21 @@ namespace TSK_COMM_IOSCH
                         // [LGLS 2026-08-30] 그 작업이 쓸 라인 트랙(CV)이 에러면 S/C 지시 금지 —
                         //   에러난 CV 는 움직이지 못하므로 크레인이 화물을 들고 갇힌다.
                         if (IsCvError(_wT)) continue;
+                        // [LGLS 2026-09-01] ★출고 하차 지시 전, 같은 라인의 입고 진행 화물 확인★
+                        //   (실측 : 크레인이 P4 로 출고 하차 지시를 받은 직후 103 의 입고 화물
+                        //    9035 가 P4 로 이동해 와, 크레인이 점유된 P4 에 9036 을 내려
+                        //    9035 가 소멸 - 실장비면 충돌 사고다.)
+                        //   하차 트랙의 홀수 짝(RGV측)에 화물이 있으면 그 화물이 곧 이 트랙으로
+                        //   들어오므로 출고 지시를 보류한다.
+                        if (jobTyp == "2")
+                        {
+                            int _wTn; string _oddT = int.TryParse(_wT, out _wTn) ? (_wTn - 1).ToString() : "";
+                            if (!string.IsNullOrEmpty(_oddT) && !IsTrackEmpty(_oddT))
+                            {
+                                DbgLog("SCOUT_" + scNo, string.Format("[SC] 출고 보류 - 라인 {0} 에 입고 진행 화물(하차 트랙 {1} 로 진입 예정)", _oddT, _wT));
+                                continue;
+                            }
+                        }
                         if (jobTyp == "2" && !IsTrackEmpty(_wT))
                         {
                             // [LGLS 2026-08-31] 그 트랙에 있는 것이 ★이 작업의 화물★ 이면
