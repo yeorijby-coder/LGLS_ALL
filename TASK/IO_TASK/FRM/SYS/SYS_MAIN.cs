@@ -576,7 +576,15 @@ namespace TSK_COMM_IOSCH
 
 				ListView LvCtrl = (ListView)Ctrl;
 
-				this.txtMsg.Text = LvCtrl.SelectedItems[0].SubItems[5].Text;   // [LGLS 2026-08-21] 파일/함수 2열 삽입
+				// [LGLS 2026-09-01] 파일/함수 2열 삽입 후 인덱스가 밀려 [5]=파일명만 표시됐다(사용자 지적).
+				//   Message 는 마지막 열이므로 인덱스 고정 대신 ★마지막 SubItem★ 을 쓰고,
+				//   파일::함수를 머리에 붙여 어디서 난 로그인지도 함께 보인다.
+				var it = LvCtrl.SelectedItems[0];
+				int last = it.SubItems.Count - 1;
+				string strFile = (it.SubItems.Count > 5) ? it.SubItems[5].Text : "";
+				string strFunc = (it.SubItems.Count > 6) ? it.SubItems[6].Text : "";
+				string strHead = (strFile.Length > 0 || strFunc.Length > 0) ? ("[" + strFile + " :: " + strFunc + "]  ") : "";
+				this.txtMsg.Text = strHead + it.SubItems[last].Text;
 			}
 			catch (Exception ex)
 			{
