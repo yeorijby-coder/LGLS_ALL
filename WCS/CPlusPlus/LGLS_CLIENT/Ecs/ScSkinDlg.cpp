@@ -715,7 +715,9 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 		CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
 		pRsw->MoveFirst();
 		CString st = pRsw->GetItem(_T("ST"));
-		CString stTxt = (st == _T("2")) ? _T("운전") : ((st == _T("1")) ? _T("대기") : _T("정지"));
+		// [LGLS 2026-09-01] 원시값 병기 - "1 = 대기" (RTV 확대창과 동일 규약, 사용자 요청)
+		CString stMean = (st == _T("2")) ? _T("운전") : ((st == _T("1")) ? _T("대기") : _T("정지"));
+		CString stTxt; stTxt.Format(_T("%s = %s"), (LPCTSTR)st, (LPCTSTR)stMean);
 		SetDlgItemText(IDC_SCV_STATUS, stTxt);
 		SetLed(IDC_SCV_LED_LOAD_CMP,        pRsw->GetItem(_T("A1")));
 		SetLed(IDC_SCV_LED_LOAD_CMP_ACK,    pRsw->GetItem(_T("A2")));
@@ -2624,7 +2626,7 @@ void CScSkinDlg::BuildVehStatusPanel()
 	mk.Value(IDC_SCV_TITLE1, 6,   y, 110, 18);
 	mk.Value(IDC_SCV_TITLE2, 120, y, 130, 18);
 	mk.LabelA(_T("상태"), CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_STATUS")), 256, y + 2, 30, 52);
-	mk.Value(IDC_SCV_STATUS, 344, y, 56, 18);
+	mk.Value(IDC_SCV_STATUS, 344, y, 90, 18);
 	y += 20;
 
 	// ── 핸드셰이크 LED : 2열 x 6행 (라벨에 실주소) ────────────────
