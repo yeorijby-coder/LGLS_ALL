@@ -13,9 +13,10 @@
   블록 주소식 : base = origin + (설비번호 - numberFrom) x stride,  주소 = base + offset
 -->
 <!-- rAddrMode : R(트래킹) 문서표기 해석. HEX=구 ECS 호환(16진) / DEC=10진.
+     [확정 2026-09-01] 실PLC(테스트 베드) 대사 결과 DEC 가 맞다 (사용자 확인). 전환 기능은 유지.
      이 속성이 전 프로그램(EQP_TASK·EQP_SIM·화면·시나리오)의 단일 기준이다.
      EQP_TASK 라디오로 전환하면 이 속성도 함께 갱신된다. -->
-<PlcAddressMap version="1.4" rAddrMode="HEX" desc="PPT V1.4 (2026-08-19) / 구 ECS 운영 정의 기준">
+<PlcAddressMap version="1.4" rAddrMode="DEC" desc="PPT V1.4 (2026-08-19) / 구 ECS 운영 정의 기준">
 
   <!-- 디바이스 코드/단위 규약 -->
   <Conventions>

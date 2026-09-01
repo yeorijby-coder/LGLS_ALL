@@ -77,10 +77,12 @@ namespace WCS_TASK_CV
         //   false(DEC) = 현행 10진   : 문서 표기를 그대로 10진 워드주소로 쓴다.
         //                예) C/V#11 "0100" → 워드 100 (%RB200)
         //
-        //   ini [PLC] R_ADDR_MODE = HEX | DEC   (기본 HEX = 종전 통신 동작 유지)
+        //   ini [PLC] R_ADDR_MODE = HEX | DEC
+        //   [확정 2026-09-01] 실PLC(테스트 베드) 대사 결과 ★DEC(10진)가 맞다★ (사용자 확인).
+        //   기본값을 DEC 로 바꾼다. HEX 해석·라디오 전환 기능은 유지(확정이지만 기능 삭제 금지 - 사용자 지시).
         //   ※ R 영역에만 적용된다. M(비트)·D(워드) 주소 체계와 FEnet 프레임 규약(워드×2=바이트)은
         //     양 모드 공통이므로 건드리지 않는다.
-        public static bool GM_R_ADDR_HEX = true;
+        public static bool GM_R_ADDR_HEX = false;
 
         /// <summary>
         /// R 트래킹 문서표기(10진 자릿수 그대로의 정수) → 실제 전송 워드주소.
