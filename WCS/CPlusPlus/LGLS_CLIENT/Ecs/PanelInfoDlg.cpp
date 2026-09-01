@@ -477,42 +477,30 @@ void CPanelInfoDlg::Refresh()
 	PlaceOverlays();
 }
 
-// [LGLS 2026-09-02] 설정/확인 컨트롤을 하단 고정 바에 배치 - 스크롤/리사이즈와 무관하게 항상 표시.
-//   (종전 셀 위 오버레이 방식은 가로 스크롤 밖이거나 리사이즈 후 어긋나면 보이지 않았다)
+// [LGLS 2026-09-02] 설정/확인 컨트롤을 해당 행의 [설정]/[확인] 칸 안에 배치(사용자 확정).
+//   갱신·스크롤·리사이즈 때마다 위치를 다시 잡아 항상 칸을 따라간다.
 void CPanelInfoDlg::PlaceOverlays()
 {
 	HideOverlays();
 
-	CRect rcCli; GetClientRect(&rcCli);
-	int y1 = rcCli.Height() - 48;   // 2줄 바 (좁은 판넬 폭에서도 다 보이게)
-	int y2 = rcCli.Height() - 24;
 	int nTab = m_tab.GetCurSel();
-
-	struct P { static void Put(CWnd& w, int x, int yy, int cx, int cy2) {
-		w.MoveWindow(x, yy, cx, cy2); w.ShowWindow(SW_SHOW); w.BringWindowToTop(); } };
-
-	if (nTab == TAB_JOB)
+	if (nTab == TAB_JOB && m_list.GetItemCount() > JOB_ROW_PRI)
 	{
-		m_lblSet1.SetWindowText(_T("작업상태"));
-		m_lblSet2.SetWindowText(_T("우선순위"));
-		P::Put(m_lblSet1,    2, y1 + 3, 50, 18);
-		P::Put(m_cmbStatus, 56, y1, 124, 160);
-		P::Put(m_btnStatus, 184, y1, 44, 22);
-		P::Put(m_lblSet2,    2, y2 + 3, 50, 18);
-		P::Put(m_cmbPri,    56, y2, 60, 160);
-		P::Put(m_btnPri,   120, y2, 44, 22);
+		PlaceOverCell(&m_cmbStatus, JOB_ROW_STATUS, 2, TRUE);
+		PlaceOverCell(&m_btnStatus, JOB_ROW_STATUS, 3, TRUE);
+		PlaceOverCell(&m_cmbPri,    JOB_ROW_PRI, 2, TRUE);
+		PlaceOverCell(&m_btnPri,    JOB_ROW_PRI, 3, TRUE);
 	}
-	else if (nTab == TAB_CV)
+	else if (nTab == TAB_CV && m_list.GetItemCount() > CV_ROW_WRITE)
 	{
-		m_lblSet1.SetWindowText(_T("지시 작업번호"));
-		P::Put(m_lblSet1,     2, y1 + 3, 76, 18);
-		P::Put(m_edtCvJob,   82, y1 + 1, 80, 20);
-		P::Put(m_btnCvWrite,  2, y2, 60, 22);
-		P::Put(m_btnCvDelete, 66, y2, 80, 22);
+		PlaceOverCell(&m_edtCvJob,   CV_ROW_WRITE, 2, TRUE);
+		PlaceOverCell(&m_btnCvWrite, CV_ROW_WRITE, 3, TRUE);
+		// 지시 삭제는 행 아래(지시 목적지 행)의 [확인] 칸
+		PlaceOverCell(&m_btnCvDelete, CV_ROW_WRITE + 2, 3, TRUE);
 	}
-	else if (nTab == TAB_SC || nTab == TAB_RTV)
+	else if ((nTab == TAB_SC || nTab == TAB_RTV) && m_list.GetItemCount() > VEH_ROW_FORCE)
 	{
-		P::Put(m_btnForce, 2, y2, 80, 22);
+		PlaceOverCell(&m_btnForce, VEH_ROW_FORCE, 3, TRUE);
 	}
 }
 
@@ -659,7 +647,7 @@ void CPanelInfoDlg::OnSize(UINT nType, int cx, int cy)
 	if (::IsWindow(m_cmbUnit.m_hWnd))
 		m_cmbUnit.MoveWindow(cx - 92, 1, 90, 160);
 	if (::IsWindow(m_list.m_hWnd))
-		m_list.MoveWindow(0, 26, cx, cy - 26 - 52);   // 하단 2줄 바 자리
+		m_list.MoveWindow(0, 26, cx, cy - 26);
 	if (::IsWindow(m_list.m_hWnd))
 		Refresh();
 }
