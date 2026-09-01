@@ -587,8 +587,7 @@ namespace TSK_COMM_IOSCH
 				string strBody = (it.SubItems.Count > 7) ? it.SubItems[7].Text : "";
 				string strTgm  = (it.SubItems.Count > 8) ? it.SubItems[8].Text : "";
 				string strHead = (strFile.Length > 0 || strFunc.Length > 0) ? ("[" + strFile + " :: " + strFunc + "]  ") : "";
-				this.txtMsg.Text = strHead + strBody + (strTgm.Trim().Length > 0 ? ("
-TGM : " + strTgm) : "");
+				this.txtMsg.Text = strHead + strBody + (strTgm.Trim().Length > 0 ? ("\r\nTGM : " + strTgm) : "");
 			}
 			catch (Exception ex)
 			{
