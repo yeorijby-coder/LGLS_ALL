@@ -738,6 +738,69 @@ namespace TSK_HostCom
                     m_BDb.CommitTrans();
                     return 1;
                 }
+                else if (strEQP_TYP == "RTV")
+                {
+                    // [LGLS 2026-09-01] RTV 에러도 E 보고 대상.
+                    //   RTV 는 별도 ERR_CODE_RD 워드가 없어 알람 발생 보고 코드(D0211)를
+                    //   CV_TASK VehThread 가 RTV_DATA_LGLS.ERR_CODE_RD + HOST_ERR_SEND_YN='N' 으로 기록한다.
+                    //   DeviceClass=3 은 2010 명세에 없는 확장(명세는 1=S/C, 2=작업대) — WMS 협의 필요.
+                    m_BDb.ParamsClear();
+
+                    m_strSql = "";
+                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, A.ERR_CODE_RD) AS MC_ERR_CD  ";
+                    m_strSql += modDefApp.CRLF + "      , A.*                                                       ";
+                    m_strSql += modDefApp.CRLF + "   FROM RTV_DATA_LGLS A                                           ";
+                    m_strSql += modDefApp.CRLF + "   LEFT OUTER JOIN EQP_ECD_MST B                                  ";
+                    m_strSql += modDefApp.CRLF + "     ON A.ERR_CODE_RD         = B.EQP_ERR_CD                      ";
+                    m_strSql += modDefApp.CRLF + "    AND B.EQP_TYP             = " + m_BDb.ParamsAdd("EQP_TYP", strEQP_TYP);
+                    m_strSql += modDefApp.CRLF + "  WHERE A.WH_TYP              = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND A.HOST_ERR_SEND_YN     = 'N'           ";
+                    nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+                    if (nSelCnt < 0)
+                    {
+                        return -2;
+                    }
+                    if (nSelCnt == 0)
+                    {
+                        return -1;
+                    }
+
+                    strDeviceNo = "" + m_BDb.dtMain.Rows[0]["RTV_NO"].ToString();
+                    strErrorCode = "" + m_BDb.dtMain.Rows[0]["MC_ERR_CD"].ToString();
+                    strLuggNo = "" + m_BDb.dtMain.Rows[0]["PALLET_ON_VEHICLE_RD"].ToString();
+                    if (strLuggNo.Trim().Length == 0 || strLuggNo.Trim() == "0")
+                        strLuggNo = "" + m_BDb.dtMain.Rows[0]["PALLET_ID_OD"].ToString();
+                    strErrorKind = "0";         // 기계적 에러
+                    strDeviceClass = "3";       // RTV
+                    strBank = "00";
+                    strBay = "000";
+                    strLevel = "00";
+
+                    // 2.MES SEND STATUS ('N' -> 'Y') UPDATE
+                    m_BDb.BeginTrans();
+                    m_BDb.ParamsClear();
+
+                    m_strSql = "";
+                    m_strSql += modDefApp.CRLF + " UPDATE RTV_DATA_LGLS                 ";
+                    m_strSql += modDefApp.CRLF + "    SET HOST_ERR_SEND_YN = 'Y'         ";
+                    m_strSql += modDefApp.CRLF + "  WHERE WH_TYP           = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND RTV_NO           = " + m_BDb.ParamsAdd("RTV_NO", strDeviceNo);
+                    m_strSql += modDefApp.CRLF + "    AND HOST_ERR_SEND_YN = 'N'         ";
+                    int nRtnR = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                    if (nRtnR < 0)
+                    {
+                        m_BDb.RollbackTrans();
+                        return -2;
+                    }
+                    if (nRtnR == 0)
+                    {
+                        m_BDb.RollbackTrans();
+                        return -1;
+                    }
+
+                    m_BDb.CommitTrans();
+                    return 1;
+                }
             }
             catch (Exception ex)
             {
@@ -1416,7 +1479,7 @@ namespace TSK_HostCom
         //설명		    : 에러 보고  
         private void GetErrorReport()
         {
-            string[] strMC_TYP = new string[] { "CV", "SC" };
+            string[] strMC_TYP = new string[] { "CV", "SC", "RTV" };   // [LGLS 2026-09-01] RTV 에러도 E 보고
 
             int nCount = strMC_TYP.Length;
             for (int i = 0; i < nCount; i++)
@@ -1476,6 +1539,7 @@ namespace TSK_HostCom
             int nDevNo = ToInt(strDeviceNo);
             if (strDeviceClass == "1" && nDevNo > 900) nDevNo -= 900;                       // S/C 호기번호
             else if (strDeviceClass == "2") nDevNo = ToInt(CSrvWork.McNoToWmsStation(strDeviceNo));  // 작업대 코드(미대응 트랙은 원값)
+            else if (strDeviceClass == "3" && nDevNo > 800) nDevNo -= 800;                  // [LGLS 2026-09-01] RTV 801 → 001
             strTemp = string.Format("E{0:0}{1:000}{2:0}{3:0000}{4:0000}{5:00}{6:000}{7:00}",
                 ToInt(strDeviceClass), nDevNo, ToInt(strErrorKind),
                 ToInt(strErrorCode), ToInt(strLuggNo),

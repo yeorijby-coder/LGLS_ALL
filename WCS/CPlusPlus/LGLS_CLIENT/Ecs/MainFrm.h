@@ -78,7 +78,6 @@ public:
 	void AddCategoryWCS();
 	void AddCategoryMANUAL();
 	void AddCategoryLOG();
-	void AddCategoryALARM();   // [LGLS 2026-08-22] 알람(작업 체류 경고) 강제 표시
 	void AddCategorySTATUS();
 	CString GetConcatPath(CString pstrAppPath, CString pstrFileName, CString pstrExtension);
 

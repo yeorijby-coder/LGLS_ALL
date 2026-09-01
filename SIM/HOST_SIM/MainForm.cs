@@ -308,6 +308,14 @@ namespace HOST_SIM
             {
                 if (frame.Body.Length != 23) return;
                 char errKind = (char)frame.Body[6];
+                char devClass = (char)frame.Body[2];
+                // [LGLS 2026-09-01] DeviceClass=3(RTV) 확장 — 재지정 대상이 아니므로 로그만 남긴다
+                if (devClass == '3')
+                {
+                    Log("SYS", string.Format("RTV 에러보고: RTV{0} 코드={1} JOB={2}",
+                        frame.BodyText(3, 3), frame.BodyText(7, 4), frame.BodyText(11, 4)));
+                    return;
+                }
                 int devNo; int.TryParse(frame.BodyText(3, 3), out devNo);
                 int sc = devNo > 900 ? devNo - 900 : devNo;        // 명세 001~005 (구 901~905 호환)
                 string lugg = frame.BodyText(11, 4);

@@ -533,6 +533,10 @@ namespace WCS_TASK_CV
                     if (oc != null) ReadShort(oc, ref code);
                     WriteBit(oSetAck, true);
                     v.Cache["ALM_SET_ACKED"] = "1";
+                    // [LGLS 2026-09-01] RTV 는 SC 와 달리 별도 ERR_CODE_RD 워드가 없다(원문서 미정의).
+                    //   알람 발생 보고의 코드(D0211)를 설비 에러코드로 삼아 아래 DB 반영부에서
+                    //   ERR_CODE_RD + HOST_ERR_SEND_YN='N' 으로 기록 → HOST_TASK 가 E 전문으로 올린다.
+                    if (m_strKind != "SC" && code != 0) v.Cache["__almErrCode"] = code.ToString("0000");
                     System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 발생 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
                 }
                 else if (!almSet && prevSet)
@@ -553,6 +557,8 @@ namespace WCS_TASK_CV
                     if (oc != null) ReadShort(oc, ref code);
                     WriteBit(oResetAck, true);
                     v.Cache["ALM_RESET_ACKED"] = "1";
+                    // [LGLS 2026-09-01] 알람 해제 → RTV 에러코드 정상(0000) 복귀 (E 재보고는 하지 않는다)
+                    if (m_strKind != "SC") v.Cache["__almErrClr"] = "1";
                     System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 해제 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
                 }
                 else if (!almReset && prevReset)
@@ -645,6 +651,21 @@ namespace WCS_TASK_CV
                 if ((loc1 ?? "").Trim() == "00" && int.TryParse((loc3 ?? "").Trim(), out rtvPort)
                     && m_dicRtvPosH.ContainsKey(rtvPort))
                     chg("POS_H_RD", m_dicRtvPosH[rtvPort]);
+
+                // [LGLS 2026-09-01] RTV 에러도 에러보고(E) 대상 — 알람 핸드셰이크에서 캐시한 코드를 반영.
+                //   (알람 블록은 chg 정의보다 앞서 돌므로 캐시로 넘겨받는다)
+                string strAlmErr;
+                if (v.Cache.TryGetValue("__almErrCode", out strAlmErr))
+                {
+                    v.Cache.Remove("__almErrCode");
+                    bNewErr = ((Cached(v, "ERR_CODE_RD") ?? "") != strAlmErr);
+                    chg("ERR_CODE_RD", strAlmErr);
+                }
+                else if (v.Cache.ContainsKey("__almErrClr"))
+                {
+                    v.Cache.Remove("__almErrClr");
+                    chg("ERR_CODE_RD", "0000");
+                }
             }
 
             // 반송 완료: 하역 완료(UNLOAD_COMPLETE — 본 스레드가 Ack 하므로 반드시 1회 관측됨) 또는
@@ -675,7 +696,8 @@ namespace WCS_TASK_CV
                 set.Append(", HOST_SEND_YN = 'N'");
             }
             // [LGLS 2026-08-30] 새 설비에러는 에러보고(E) 로도 올린다 — 이중입고(54)/공출고(58) 재지정 절차의 출발점.
-            if (m_strKind == "SC" && bNewErr)
+            // [LGLS 2026-09-01] RTV 도 대상 (RTV_DATA_LGLS 에 HOST_ERR_SEND_YN 신설, DeviceClass=3)
+            if (bNewErr)
             {
                 set.Append(", HOST_ERR_SEND_YN = 'N'");
             }

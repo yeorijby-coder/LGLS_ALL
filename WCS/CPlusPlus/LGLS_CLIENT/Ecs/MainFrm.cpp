@@ -376,8 +376,7 @@ void CMainFrame::InitializeRibbonMenu(EN_LANG penLang)
 	//m_wndRibbonBar.SetApplicationButton(&m_MainButton, CSize(45, 45));
 	AddCategoryWCS();
 	AddCategoryMANUAL();
-	AddCategoryLOG();
-	AddCategoryALARM();		// [LGLS 2026-08-22]
+	AddCategoryLOG();		// [LGLS 2026-09-01] 안에 [알람] 패널 포함(독립 카테고리 폐지)
 	//AddCategoryUSER();
 	//AddCategorySTATUS();
 	//RenameRibbonText();	//test
@@ -641,6 +640,14 @@ void CMainFrame::AddCategoryLOG()
 	pBtnWCS_LOG->SetAlwaysLargeImage();
 	pPanelLog->Add(pBtnWCS_LOG);
 
+	// [LGLS 2026-09-01] [알람] 그룹을 LOG 카테고리 안 별도 패널로 이동(독립 카테고리 폐지).
+	//   작업 체류 경보창(CWarningDlg) 수동 표시 경로.
+	CMFCRibbonPanel* pPanelAlarm = pCategory->AddPanel(_T("알람"));
+	CMFCRibbonButton* pBtnAlarm = new CMFCRibbonButton(ID_ALARM_SHOW, _T("알람"),
+		HICONFromPATH(GetConcatPath(strAppPath, _T("eqphislog"), strExtension)), TRUE);
+	pBtnAlarm->SetAlwaysLargeImage();
+	pPanelAlarm->Add(pBtnAlarm);
+
 	//CMFCRibbonButton* pBtnEQP_LOG = new CMFCRibbonButton(ID_LOG_EQP, _T("EQP_LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("eqplog"), strExtension)), TRUE);
 	//pBtnEQP_LOG->SetAlwaysLargeImage();
 	//pPanelLog->Add(pBtnEQP_LOG);
@@ -734,25 +741,19 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
  	pBtnLogClientLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("client_log"), (int)penLang));
 	CMFCRibbonButton* pBtnLogWcsLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(4);
  	pBtnLogWcsLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("wcs_log"), (int)penLang));
-	// [LGLS 2026-08-22] [알람] 탭 다국어. LOG 다음 카테고리(인덱스 4).
-	//   탭 이름 / 패널 이름 / 버튼 이름을 rc_resource\mainframe_alarm\alarm.ini 에서 읽는다.
-	//   빈 값이면 기존 캡션을 그대로 둔다(빈 문자열 대입 금지).
-	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_alarm\\"), _T("alarm"), strExtension);
-	CMFCRibbonCategory* pCategoryAlarm = m_wndRibbonBar.GetCategory(4);
-	if (pCategoryAlarm != NULL)
+	// [LGLS 2026-09-01] [알람] 다국어 : LOG 카테고리(인덱스 3)의 두 번째 패널.
+	//   패널 이름 / 버튼 이름을 rc_resource\mainframe_alarm\alarm.ini 에서 읽는다.
+	//   키 값이면 캡션을 그대로 둔다(빈 문자열 대입 금지).
+	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\\\rc_resource\\\\mainframe_alarm\\\\"), _T("alarm"), strExtension);
+	CMFCRibbonPanel_Wrap* pPanelAlarm = (CMFCRibbonPanel_Wrap*)pCategory3->GetPanel(1);
+	if (pPanelAlarm != NULL)
 	{
-		CString strAlarmCat = CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang);
-		if (!strAlarmCat.IsEmpty()) pCategoryAlarm->SetName(strAlarmCat);
+		CString strAlarmCap = CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang);
+		if (!strAlarmCap.IsEmpty()) pPanelAlarm->SetName(strAlarmCap);
 
-		CMFCRibbonPanel_Wrap* pPanelAlarm = (CMFCRibbonPanel_Wrap*)pCategoryAlarm->GetPanel(0);
-		if (pPanelAlarm != NULL)
-		{
-			if (!strAlarmCat.IsEmpty()) pPanelAlarm->SetName(strAlarmCat);
-
-			CMFCRibbonButton* pBtnAlarm = (CMFCRibbonButton*)pPanelAlarm->GetElement(0);
-			CString strAlarmBtn = CLib::GetIniStringFromPath(strFullPath, _T("alarm"), (int)penLang);
-			if (pBtnAlarm != NULL && !strAlarmBtn.IsEmpty()) pBtnAlarm->SetText(strAlarmBtn);
-		}
+		CMFCRibbonButton* pBtnAlarm = (CMFCRibbonButton*)pPanelAlarm->GetElement(0);
+		CString strAlarmBtn = CLib::GetIniStringFromPath(strFullPath, _T("alarm"), (int)penLang);
+		if (pBtnAlarm != NULL && !strAlarmBtn.IsEmpty()) pBtnAlarm->SetText(strAlarmBtn);
 	}
 
 // 	CMFCRibbonButton* pBtnLogEqpLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(1);
@@ -797,27 +798,6 @@ void CMainFrame::ExcuteTheme()
 	RecalcLayout ();
 	RedrawWindow (NULL, NULL, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
 	theApp.WriteInt (_T("ApplicationLook"), m_nAppLook);
-}
-
-void CMainFrame::AddCategoryALARM()
-{
-	// [LGLS 2026-08-22] LOG 옆 [알람] 탭. 작업 체류 경고창(CWarningDlg)을 강제로 띄운다.
-	//   평소에는 창 스스로 10초 주기로 JOB_MST 를 살펴 체류가 생기면 나타나지만,
-	//   운전자가 목록을 바로 보고 싶을 때가 있어 수동 표시 경로를 둔다.
-	TCHAR chrFileName[500];
-	GetModuleFileName(NULL, chrFileName, MAX_PATH);
-	CString strAppPath = _T("");
-	strAppPath.Format(_T("%s"), chrFileName);
-	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_log\\");
-	CString strExtension = _T(".png");
-
-	CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("알람"), IDB_LOGO_ECS, IDB_LOGO_ECS);
-	CMFCRibbonPanel* pPanelAlarm = pCategory->AddPanel(_T("알람"));
-
-	CMFCRibbonButton* pBtnAlarm = new CMFCRibbonButton(ID_ALARM_SHOW, _T("알람"),
-		HICONFromPATH(GetConcatPath(strAppPath, _T("eqphislog"), strExtension)), TRUE);
-	pBtnAlarm->SetAlwaysLargeImage();
-	pPanelAlarm->Add(pBtnAlarm);
 }
 
 void CMainFrame::AddCategoryUSER()
