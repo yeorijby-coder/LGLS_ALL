@@ -2398,6 +2398,14 @@ void CEcsDoc::RefreshJobCache()
 				//          29 를 안 보니 GetVehicleJobNo/JobTyp 가 빈 값이 되고,
 				//          GetForkColor1 이 LIGHT_GRAY 로 빠져나갔다.
 				//          반면 화면의 작업번호는 설비값(PALLET_ON_VEHICLE_RD)이라 남아 있었다.
+				// [LGLS 2026-09-01] RGV 구간(35/39)은 RTV(801) 키로 캐시한다 - RtvInfo 의
+				//   번호·색 단일 소스. 설비 차상 미러는 내려놓은 뒤에도 이전 번호를 들고 있어
+				//   "색 없이 번호만"(9024) 잔상이 났다.
+				if (strSt == _T("35") || strSt == _T("39"))
+				{
+					if (!strItem.IsEmpty())
+						m_mapVehJob.SetAt(_T("801"), strItem + _T("|") + strTypCur);
+				}
 				if (strSt == _T("25") || strSt == _T("29"))
 				{
 					CString strTyp = strTypCur;

@@ -132,8 +132,14 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 	//	pRTV_DATA->V_ACTIVE_MODE_RD != _T("0"))
 	//	return DARK_GRAY;
 
-	if (pRTV_DATA->V_AUTO_MODE_RD != _T("1") ||
-		pRTV_DATA->V_ACTIVE_MODE_RD != _T("1"))
+	// [LGLS 2026-09-01] 작업정보상 이 RTV 가 문 작업(35/39)이 있으면 IDLE 파생(ACTIVE=0)
+	//   이어도 작업색을 낸다 - 지시 직후 기동 전 창에서 번호만 뜨고 색이 빠지던 것.
+	CString strVehJob = m_pEquipment->m_pDoc->GetVehicleJobNo(pRTV_DATA->K_RTV_NO);
+	strVehJob.Trim();
+	BOOL bVehJob = (!strVehJob.IsEmpty() && strVehJob != _T("0") && strVehJob != _T("0000"));
+	if (!bVehJob &&
+		(pRTV_DATA->V_AUTO_MODE_RD != _T("1") ||
+		 pRTV_DATA->V_ACTIVE_MODE_RD != _T("1")))
 		return LIGHT_GRAY;	// [LGLS] 평상시 RTV도 SC 처럼 밝은 회색
 
 	int nJobTypTmp = CConvert::ToInt(pRTV_DATA->V_JOB_TYP_RD);
@@ -141,6 +147,8 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 	// [LGLS 2026-08-23] 실경로에서는 RTV 의 JOB_TYP_RD 가 채워지지 않는 구간이 있다.
 	//   그때 이 switch 가 통째로 빠져 색 없이 움직이는 것처럼 보인다(작업 1523 사례).
 	//   자기가 실은 작업번호로 작업정보에서 구분을 가져와 메운다.
+	if (nJobTypTmp == 0 && bVehJob)
+		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(pRTV_DATA->K_RTV_NO));
 	if (nJobTypTmp == 0 && m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
 	{
 		CString strLugg = pRTV_DATA->V_LUGG_NO_FK1_RD;
@@ -330,7 +338,10 @@ void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
 	//   지시 전에는 관측·지시값이 모두 비고, 지시 직후에는 작업색만 먼저 켜지며,
 	//   완료 뒤에는 지시값이 이전 작업 번호로 남는다(5호기 입고에서 확인).
 	//   그래서 작업번호가 비면 작업정보에서 이 호기에 물려 있는 진행 중 작업을 가져온다.
-	if (!bHasJob)
+	// [LGLS 2026-09-01] ★번호의 단일 소스 = 작업정보 캐시(35/39 로 이 RTV 가 문 작업)★
+	//   설비 차상 미러는 내려놓은 뒤에도 이전 번호를 들고 있어(폴링/유지 로직)
+	//   "색 없이 번호만" 잔상이 났다(9024). 캐시에 있으면 그것을 쓰고,
+	//   캐시에 없으면 차상값은 잔재로 보고 그리지 않는다 - 번호와 색이 항상 함께 간다.
 	{
 		CString strJob = m_pEquipment->m_pDoc->GetVehicleJobNo(pData->K_RTV_NO);
 		strJob.Trim();
@@ -339,6 +350,8 @@ void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
 			strLugg = strJob;
 			bHasJob = TRUE;
 		}
+		else
+			bHasJob = FALSE;
 	}
 
 	// [LGLS 2026-08-22] 호기 번호는 컨트롤이 이미 m_strText 로 포크 위에 그린다(레이아웃 text 속성).

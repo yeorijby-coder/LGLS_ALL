@@ -1152,6 +1152,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                     AND J6.JOB_TYP IN ('2','12')                        ";
                 strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN ('09','19','29')) ) )       ";
                 strSql += CRLF + "    AND (RD.ERR_CODE_RD = '0' OR RD.ERR_CODE_RD = '0000' OR RD.ERR_CODE_RD IS NULL)";
+                strSql += CRLF + "  ORDER BY JM.INS_DT, JM.LUGG_NO                    ";   // [LGLS 2026-09-01] 오래 기다린 작업부터(라인별 FIFO 전제)
 
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -1162,6 +1163,12 @@ namespace TSK_COMM_IOSCH
 
                 DataTable dt = _pBdb.mDtMain.Copy();
 
+                // [LGLS 2026-09-01] ★라인별 FIFO★ (기아 실측 : 로직2 입고 9002 가 30분 대기)
+                //   로직1/3 의 새 입고가 같은 S/C 라인을 반복 선점해, 라인 점유로 보류된
+                //   오래된 작업이 영영 순번을 얻지 못했다. 어떤 후보가 라인 사유로 보류되면
+                //   같은 라인을 쓰려는 ★이후(더 새로운) 후보★ 도 이번 사이클엔 보류한다 -
+                //   라인이 비는 순간 가장 오래 기다린 작업이 잡는다. (후보는 오래된 순 정렬)
+                var setBlockedLine = new HashSet<string>();
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     string rtvNo   = GetVal(dt.Rows[i], "RTV_NO");
@@ -1181,12 +1188,15 @@ namespace TSK_COMM_IOSCH
                     bool bOutRgv = (jobTyp == "2");   // [LGLS 2026-08-31] 출고도 RGV 구간을 상태로 표현한다
                     string pickupTrack = bOutRgv ? RgvPickupTrack(RgvOutDropTrack(startPos)) : RgvPickupTrack(startPos);
                     string dropTrack   = bOutRgv ? RgvPickupTrack(destPos)                   : RgvDropTrack(destPos);
-                    if (!bOutRgv && !CanEnterLine(dropTrack, luggNo)) continue;         // 드롭 라인 선점/점유 시 대기
+                    string lineKey = bOutRgv ? "" : RgvDropTrack(destPos);
+                    if (!bOutRgv && setBlockedLine.Contains(lineKey)) continue;         // 앞선(더 오래된) 작업이 이 라인 대기 중
+                    if (!bOutRgv && !CanEnterLine(dropTrack, luggNo)) { setBlockedLine.Add(lineKey); continue; }   // 드롭 라인 선점/점유 시 대기
                     // [LGLS 2026-08-30] 위 판정은 CV_DATA 미러(최대 ~16초 지연) 기반이라, RTV 가 막
                     //   내려놓은 화물을 못 보고 같은 드롭 트랙에 다음 입고를 또 보낼 수 있다(크레인 충돌).
                     //   JOB_MST 로 지연 없이 한 번 더 막는다.
                     if (!bOutRgv && HasInboundWaitingOnScLine(destPos, luggNo))
                     {
+                        setBlockedLine.Add(lineKey);
                         DbgLog("RGVLINE_" + rtvNo, string.Format("[RGV] 보류 - S/C {0} 라인에 픽업 대기 화물 있음(작업 {1})", destPos, luggNo));
                         continue;
                     }
