@@ -731,34 +731,11 @@ void CEcsDoc::OnCommandRangeMainFrameVIEW(UINT nID)
 				return;
 			}
 
-			if (m_pViewJobListDlg == NULL)
-			{
-				m_pViewJobListDlg = new CViewJobListDlg(this);
-				this->m_pViewJobListDlg->Create(IDD_VIEW_JOBLIST1);
-			
-				CRect MainRect;
-				CRect Rect;
-				CRect PosRect;
-				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-				this->m_pViewJobListDlg->GetWindowRect(&Rect); 
-
-				double dWidth = Rect.Width() * m_pMaxSizeX;
-				double dHeight = Rect.Height() * m_pMaxSizeX;
-
-
-				//PosRect.left = ((MainRect.right  - MainRect.left) - dWidth)  / 2; 
-				//PosRect.top  = ((MainRect.bottom - MainRect.top)  - dHeight) / 2; 
-
-				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-				this->m_pViewJobListDlg->SetWindowPos(&m_pViewJobListDlg->wndTop, PosRect.left, PosRect.top, 
-					Rect.Width(), Rect.Height(), 
-					SWP_SHOWWINDOW);
-				
-			}
-			::SetWindowPos(m_pViewJobListDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(m_pViewJobListDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			ShowWindow(m_pViewJobListDlg->m_hWnd, SW_SHOWNORMAL);
+			// [LGLS 2026-09-01] 팝업(CViewJobListDlg) 대신 우측 도킹 판넬 토글.
+			//   전체 작업 판넬 + 정보(CV/SC/RTV/작업) 판넬. 구 SPL EcsSv 참고.
+			CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
+			if (pFrame != NULL)
+				pFrame->TogglePanelBars(this);
 
 			break;
 		}

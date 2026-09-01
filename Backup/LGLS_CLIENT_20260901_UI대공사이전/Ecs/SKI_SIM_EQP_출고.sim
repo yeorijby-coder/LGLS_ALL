@@ -1,0 +1,1061 @@
+XM24
+__begin_config
+[General]
+Host=true
+HSMS=true
+Device ID=1
+Queue=100000
+SML=E:\project\SKI\Ecs_vs2010\Ecs\SKI_SIM_EQP.sml
+SkipSMLCheck=false
+ActiveDevice=1
+AsyncSend=false
+AsyncSendMsgQueueSize=100
+Use LSH=true
+[HSMS]
+IP=10.52.27.242
+Port=7000
+Active=true
+UseSendBuff=false
+SendBuff=0
+RecvBuff=0
+[SECS-I]
+Master=false
+Comm=1
+Baud=9600
+Parity=None
+Data Bits=8
+Stop Bits=2
+[Timeout]
+T1=1
+T2=10
+T3=45
+T4=30
+T5=10
+T6=5
+T7=10
+T8=5
+Link Test Interval=30
+Retry Limit=0
+[Log]
+Hex=false
+SECS-II=true
+Event=true
+Alarm=true
+Hour=true
+Keep Days=1
+Dir=
+Prefix=SKI
+Extension=xbin
+UseLogByMesg=false
+DontWriteLog=false
+[S9 Reply]
+S9F1=true
+S9F3=true
+S9F5=true
+S9F7=true
+__end_config
+
+__begin_sml
+<XCom 2.4>
+<S1F1 P Are You There
+>
+
+<S1F2 S On Line Data
+  <LIST 2
+    <ASCII 4 MDLN>
+    <ASCII 6 SOFTREV>
+  >
+>
+
+<S1F5 P Formatted Status Request
+  <BINARY 1 SFCD>
+>
+
+<S1F6 S Formatted Status Data
+  <LIST 2
+    <BINARY 1 SFCD>
+    <LIST n
+      <LIST 5
+        <ASCII 4 EQPID>
+        <UINT2 n TYPE>
+        <UINT2 n STATE>
+        <ASCII 4 ERCD>
+        <UINT2 n ERTXT>
+      >
+    >
+  >
+>
+
+<S1F13 P Establish Communications Request
+  <LIST 2
+    <ASCII 4 MDLN>
+    <ASCII 6 SOFTREV>
+  >
+>
+
+<S1F14 S Establish Communications Request Acknowledge
+  <LIST 2
+    <BINARY 1 COMMACK>
+    <LIST 2
+      <ASCII 4 MDLN>
+      <ASCII 6 SOFTREV>
+    >
+  >
+>
+
+<S1F101 P Equipment Status Send
+  <LIST n
+    <LIST 2
+      <ASCII 4 EQPID>
+      <UINT2 1 STATE>
+    >
+  >
+>
+
+<S1F102 S Equipment Status Send Acknowledge
+  <BINARY 1 ACK6>
+>
+
+<S2F13 P Equipment Constant Request
+  <LIST n
+    <ASCII 20 ECID>
+  >
+>
+
+<S2F14 S Equipment Constant Data
+  <LIST n
+    <LIST 2
+      <ASCII 20 ECID>
+      <ASCII 20 ECV>
+    >
+  >
+>
+
+<S2F15 P New Equipment Constant Send
+  <LIST n
+    <LIST 2
+      <ASCII 20 ECID>
+      <ASCII 20 ECV>
+    >
+  >
+>
+
+<S2F16 S New Equipment Constant Acknowledge
+  <BINARY 1 ECACK>
+>
+
+<S2F17 P Date and Time Request
+>
+
+<S2F18 S Data and Time Data
+  <ASCII 14 TIME>
+>
+
+<S2F31 P Data and Time Set Request
+  <ASCII 14 TIME>
+>
+
+<S2F32 S Data and Time Set Acknowledge
+  <BINARY 1 TIACK>
+>
+
+<S2F41 P Host Command Send (RCMD = 200-화재 발생 강제 이동 명령)
+  <LIST 5
+    <UINT2 n RCMD = 200>
+    <UINT2 n WORKTYPE = 7>
+    <UINT2 n EQ_TYPE>
+    <UINT2 n ERROR_CODE(22:SMOKE ERROR, 23:TEMP ALARM)>
+    <LIST n
+      <ASCII 9 TO_LOCATION>
+    >
+  >
+>
+
+<S2F41 P Host Command Send (RCMD = 104-랙투랙)
+  <LIST 7
+    <UINT2 n RCMD = 104>
+    <UINT2 n WORKTYPE = 4>
+    <ASCII 3 STACKER_ID>
+    <ASCII 6 TRAY_ID (Top Tray ID)>
+    <ASCII 6 TRAY_ID (Bottom Tray ID)>
+    <LIST 2
+      <ASCII 3 STAGE_NO>
+      <ASCII 9 TO_LOCATION>
+    >
+    <LIST 2
+      <ASCII 3 STAGE_NO>
+      <ASCII 9 TO_LOCATION>
+    >
+  >
+>
+
+<S2F41 P Host Command Send (RCMD = 103-TRAY 2단 적재  대기 명령 )
+  <LIST 5
+    <UINT2 n RCMD = 103>
+    <UINT2 n WORKTYPE = 3>
+    <UINT2 2 TRAY TYPE>
+    <ASCII 6 TRAY_ID>
+    <ASCII 4 TRACK_ID>
+  >
+>
+
+<S2F41 P Host Command Send (RCMD = 102-TRAY 출고)
+  <LIST 7
+    <UINT2 n RCMD = 102>
+    <UINT2 n WORKTYPE = 2>
+    <ASCII 3 STACKER_ID>
+    <UINT2 n IN_OUT_TYPE(Single, Twin, Double)>
+    <UINT2 n TIME_SPEC>
+    <LIST 5
+      <ASCII 4 TRACK_ID (1st 입고 Track)>
+      <ASCII 6 TRAY_ID (Top Tray ID)>
+      <ASCII 6 TRAY_ID (Bottom Tray ID)>
+      <ASCII 4 STAGE_NO(Only 충방전기)>
+      <ASCII 9 TO_LOCATION>
+    >
+    <LIST 5
+      <ASCII 4 TRACK_ID (2nd 입고 Track)>
+      <ASCII 6 TRAY_ID (Top Tray ID)>
+      <ASCII 6 TRAY_ID (Bottom Tray ID)>
+      <ASCII 4 STAGE_NO(Only 충방전기)>
+      <ASCII 9 TO_LOCATION>
+    >
+  >
+>
+
+<S2F41 P Host Command Send (RCMD = 100 TRAY 이동)
+  <LIST 6
+    <UINT2 n RCMD>
+    <UINT2 n WORKTYPE>
+    <UINT2 n LINE>
+    <ASCII 4 FROM TRACK>
+    <ASCII 4 TO TRACK>
+    <LIST 2
+      <LIST 7
+        <ASCII 6 TRAY ID>
+        <UINT2 n TOP_BOTTOM>
+        <UINT2 n TRAY_TYPE>
+        <UINT2 n TRAY_SIZE>
+        <ASCII 1 ROTATE>
+        <UINT2 n EMG_JOB>
+        <ASCII 4 TRACK>
+      >
+      <LIST 7
+        <ASCII 6 TRAY ID>
+        <UINT2 n TOP_BOTTOM>
+        <UINT2 n TRAY_TYPE>
+        <UINT2 n TRAY_SIZE>
+        <ASCII 1 ROTATE>
+        <UINT2 n EMG_JOB>
+        <ASCII 4 TRACK>
+      >
+    >
+  >
+>
+
+<S2F41 P Host Command Send (RCMD = 101-TRAY 입고)
+  <LIST 7
+    <UINT2 n RCMD = 101>
+    <UINT2 n WORKTYPE = 1>
+    <ASCII 3 STACKER_ID>
+    <UINT2 n IN_OUT_TYPE(Single, Twin, Double)>
+    <UINT2 n TIME_SPEC>
+    <LIST 5
+      <ASCII 4 TRACK_ID (1st 입고 Track)>
+      <ASCII 6 TRAY_ID (Top Tray ID)>
+      <ASCII 6 TRAY_ID (Bottom Tray ID)>
+      <ASCII 4 STAGE_NO(Only 충방전기)>
+      <ASCII 9 TO_LOCATION>
+    >
+    <LIST 5
+      <ASCII 4 TRACK_ID (2nd 입고 Track)>
+      <ASCII 6 TRAY_ID (Top Tray ID)>
+      <ASCII 6 TRAY_ID (Bottom Tray ID)>
+      <ASCII 4 STAGE_NO(Only 충방전기)>
+      <ASCII 9 TO_LOCATION>
+    >
+  >
+>
+
+<S2F42 S Host Command Acknowledge
+  <BINARY 1 HCACK>
+>
+
+<S5F1 P Alarm Reports Send
+  <LIST 6
+    <ASCII n EQPID>
+    <UINT2 n ALST>
+    <UINT2 n ALCD>
+    <ASCII n ALID>
+    <UINT2 n ALLVL>
+    <ASCII n ALTX>
+  >
+>
+
+<S5F2 S Alarm Report Acknowledge
+  <BINARY 1 ACKC5>
+>
+
+<S5F101 P MES Alarm Report Send
+  <LIST 2
+    <UINT2 n MID>
+    <UINT2 n MRCD>
+  >
+>
+
+<S5F102 S MES Alarm Report Acknowledge
+  <BINARY 1 ACK5>
+>
+
+<S6F11 P Event Report Send (CEID = 501 Equiment Constants Change)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID = 501>
+    <LIST 1
+      <LIST 2
+        <UINT2 n RPTID=500 (Equipment Constants 정보)>
+        <LIST n
+          <LIST 2
+            <ASCII 20 ECID>
+            <ASCII 20 ECV>
+          >
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 301 Stacker 보고)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID = 301>
+    <LIST 1
+      <LIST 2
+        <UINT2 n RPTID=220 (Stacker 정보)>
+        <LIST 1
+          <LIST 8
+            <ASCII 3 STACKER_ID>
+            <UINT2 n STACKER_STATUS>
+            <UINT2 n ERROR_CODE>
+            <ASCII 6 POS (Stacker Crane Position)>
+            <UINT2 n FHSF (PHS Front)>
+            <UINT2 n FHSR (PHS Rear)>
+            <UINT2 n LOADF (Load Front_Exist)>
+            <UINT2 n LOADF (Load Rear_Exist)>
+          >
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 303 Stacker 운영 보고)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID = 303>
+    <LIST 2
+      <LIST 2
+        <UINT2 n RPTID=230 (Stacker 정보)>
+        <LIST 9
+          <ASCII 3 STACKER_ID>
+          <UINT2 n WORK_TYPE>
+          <ASCII 14 CMD_TIME(MES 지시 시간)>
+          <ASCII 14 SC_START_TIME(Stacker Crane 구동 시작 시간)>
+          <ASCII 6 START_LOCATION (구동 시작 좌표)>
+          <ASCII 9 LOCATION_F (전 Fork Location)>
+          <ASCII 9 LOCATION_R (후 Fork Location)>
+          <ASCII 14 WORK_COMPLETE_TIME(Stacker Crane 작업 완료 시간)>
+          <ASCII 6 IN_OUT_POSITION (입출고대 좌표)>
+        >
+      >
+      <LIST 2
+        <UINT2 n RPTID=231 (Tray 정보)>
+        <LIST 2
+          <LIST 6 전 Fork Tray ID
+            <ASCII 6 TRAYID (상단 TrayID)>
+            <ASCII 6 TRAYID (하단 TrayID)>
+            <ASCII 14 PICK_TIME(화물 적재 시간)>
+            <ASCII 14 IN_HOME_POSTIME(화물 위치 도착 시간-입고 시 Home Position)>
+            <ASCII 14 IN_HOME_POSTIME(화물 위치 도착 시간-출고 시 Home Position)>
+            <ASCII 14 WORK_COMPLETE_TIME(Stacker Crane 작업 완료 시간)>
+          >
+          <LIST 6 후 Fork Tray ID
+            <ASCII 6 TRAYID (상단 TrayID)>
+            <ASCII 6 TRAYID (하단 TrayID)>
+            <ASCII 14 PICK_TIME(화물 적재 시간)>
+            <ASCII 14 IN_HOME_POSTIME(화물 위치 도착 시간-입고 시 Home Position)>
+            <ASCII 14 IN_HOME_POSTIME(화물 위치 도착 시간-출고 시 Home Position)>
+            <ASCII 14 WORK_COMPLETE_TIME(Stacker Crane 작업 완료 시간)>
+          >
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 401 Tray 입고 준비)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID = 401>
+    <LIST 1
+      <LIST 2
+        <UINT2 n RPTID=400 (Tray & Track 정보)>
+        <LIST 2
+          <LIST 3 1st 입고대
+            <ASCII 4 TRACK_ID  (입고대 TrackID)>
+            <ASCII 6 TRAYID (상단 Tray ID)>
+            <ASCII 6 TRAYID (하단 Tray ID)>
+          >
+          <LIST 3 2nd 입고대
+            <ASCII 4 TRACK_ID  (입고대 TrackID)>
+            <ASCII 6 TRAYID (상단 Tray ID)>
+            <ASCII 6 TRAYID (하단 Tray ID)>
+          >
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 205 Tray 이동 시작 보고, CEID = 206 Tray 이동 완료 보고)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID>
+    <LIST 2
+      <LIST 2
+        <UINT2 n RPTID=205 (Stacker & Track 정보)>
+        <LIST 5
+          <ASCII 3 STACKER_ID>
+          <ASCII 6 TRAYID (Top TrayID)>
+          <ASCII 6 TRAYID (Bottom TrayID)>
+          <UINT2 n WORK_TYPE>
+          <ASCII 4 ALID>
+        >
+      >
+      <LIST 2
+        <UINT2 n RPTID=206 (Location 정보)>
+        <LIST 4
+          <ASCII 4 STAGE_NO - FROM>
+          <ASCII 9 LOCATION - FROM>
+          <ASCII 3 STAGE_NO - TO>
+          <ASCII 4 LOCATION - TO>
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 102 TRAY 출발 보고)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID = 102>
+    <LIST 2
+      <LIST 2
+        <UINT2 n RPTID=100 (Track 정보)>
+        <LIST 4
+          <ASCII 4 FROM_TRACK>
+          <ASCII 4 TO_TRACK>
+          <UINT2 n WORK_TYPE>
+          <UINT2 n TO_TRACK_STATUS = 0>
+        >
+      >
+      <LIST 2
+        <UINT2 n RPTID=101 (Tray 정보)>
+        <LIST 2
+          <LIST 2
+            <ASCII 6 TRAYID>
+            <ASCII 4 ALID>
+          >
+          <LIST 2
+            <ASCII 6 TRAYID>
+            <ASCII 4 ALID>
+          >
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 101 TRAY 도착 보고)
+  <LIST 4
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID = 101>
+    <LIST 2
+      <UINT2 n RPTID=100 (Track 정보)>
+      <LIST 4
+        <ASCII 4 FROM_TRACK>
+        <ASCII 4 TO_TRACK>
+        <UINT2 n WORK_TYPE>
+        <UINT2 n TO_TRACK_STATUS>
+      >
+    >
+    <LIST 2
+      <UINT2 n RPTID=101 (Tray 정보)>
+      <LIST 2
+        <LIST 2
+          <ASCII 6 TRAYID>
+          <ASCII 4 ALID>
+        >
+        <LIST 2
+          <ASCII 6 TRAYID>
+          <ASCII 4 ALID>
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 203 Tray 출고 시작 보고, CEID = 204 Tray 출고 완료 보고)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID>
+    <LIST 2
+      <LIST 2
+        <UINT2 n RPTID=200 (Track 정보)>
+        <LIST 5
+          <ASCII 4 TRACKID (1st 입고 Track ID)>
+          <ASCII 4 TRACKID (2nd 입고 Track ID)>
+          <UINT2 n IN_OUT_TYPE>
+          <UINT2 n WORK_TYPE>
+          <ASCII 3 STACKER_ID>
+        >
+      >
+      <LIST 2
+        <UINT2 n RPTID=201 (Tray 정보 및 출고 Location 정보)>
+        <LIST 2
+          <LIST 5 Front Fork Info
+            <ASCII 6 TRAYID(상단 Tray ID)>
+            <ASCII 6 TRAYID(하단 Tray ID)>
+            <ASCII 4 STAGE_NO (Only 충방전기)>
+            <ASCII 9 LOCATION (출고 Location)>
+            <ASCII 4 ALARM_ID>
+          >
+          <LIST 5 Rear Fork Info
+            <ASCII 6 TRAYID(상단 Tray ID)>
+            <ASCII 6 TRAYID(하단 Tray ID)>
+            <ASCII 4 STAGE_NO (Only 충방전기)>
+            <ASCII 9 LOCATION (출고 Location)>
+            <ASCII 4 ALARM_ID>
+          >
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 201 Tray 입고 시작 보고, CEID = 202 Tray 입고 완료 보고)
+  <LIST 3
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID>
+    <LIST 2
+      <LIST 2
+        <UINT2 n RPTID=200 (Track 정보)>
+        <LIST 5
+          <ASCII 4 TRACKID (1st 입고 Track ID)>
+          <ASCII 4 TRACKID (2nd 입고 Track ID)>
+          <UINT2 n IN_OUT_TYPE>
+          <UINT2 n WORK_TYPE>
+          <ASCII 3 STACKER_ID>
+        >
+      >
+      <LIST 2
+        <UINT2 n RPTID=201 (Tray 정보 및 입고 Location 정보)>
+        <LIST 2
+          <LIST 5 Front Fork Info
+            <ASCII 6 TRAYID(상단 Tray ID)>
+            <ASCII 6 TRAYID(하단 Tray ID)>
+            <ASCII 4 STAGE_NO (Only 충방전기)>
+            <ASCII 9 LOCATION (입고 Location)>
+            <ASCII 4 ALARM_ID>
+          >
+          <LIST 5 Rear Fork Info
+            <ASCII 6 TRAYID(상단 Tray ID)>
+            <ASCII 6 TRAYID(하단 Tray ID)>
+            <ASCII 4 STAGE_NO (Only 충방전기)>
+            <ASCII 9 LOCATION (입고 Location)>
+            <ASCII 4 ALARM_ID>
+          >
+        >
+      >
+    >
+  >
+>
+
+<S6F11 P Event Report Send (CEID = 103 수동 TRAY 도착 보고)
+  <LIST 4
+    <UINT2 n DATA ID = 1>
+    <UINT2 n CEID = 103>
+    <LIST 2
+      <UINT2 n RPTID=100 (Track 정보)>
+      <LIST 4
+        <ASCII 4 FROM_TRACK>
+        <ASCII 4 TO_TRACK>
+        <UINT2 n WORK_TYPE>
+        <UINT2 n TO_TRACK_STATUS>
+      >
+    >
+    <LIST 2
+      <UINT2 n RPTID=101 (Tray 정보)>
+      <LIST 2
+        <LIST 2
+          <ASCII 6 TRAYID>
+          <ASCII 4 ALID>
+        >
+        <LIST 2
+          <ASCII 6 TRAYID>
+          <ASCII 4 ALID>
+        >
+      >
+    >
+  >
+>
+
+<S6F12 S Event Report Acknowledge
+  <LIST 2
+    <BINARY 1 ERACK6>
+    <LIST n
+      <LIST 2
+        <UINT2 n MRCD>
+        <ASCII 6 TRAYID>
+      >
+    >
+  >
+>
+
+__end_sml
+
+__begin_default
+sid S1F1P
+END
+sid S1F2SLIST2ASCII4ASCII6
+LIST 2
+  ASCII 4 48 0
+  ASCII 6 48 0
+END
+sid S1F5PBINARY1
+BINARY 1 0
+END
+sid S1F6SLIST2BINARY1LISTnLIST5ASCII4UINT2nUINT2nASCII4UINT2n
+LIST 2
+  BINARY 1 0
+  LIST 1
+    LIST 5
+      ASCII 4 48 0
+      UINT2 1 0
+      UINT2 1 0
+      ASCII 4 48 0
+      UINT2 1 0
+END
+sid S1F13PLIST2ASCII4ASCII6
+LIST 2
+  ASCII 4 48 0
+  ASCII 6 48 0
+END
+sid S1F14SLIST2BINARY1LIST2ASCII4ASCII6
+LIST 2
+  BINARY 1 0
+  LIST 2
+    ASCII 4 48 0
+    ASCII 6 48 0
+END
+sid S1F101PLISTnLIST2ASCII4UINT21
+LIST 1
+  LIST 2
+    ASCII 4 48 0
+    UINT2 1 0
+END
+sid S1F102SBINARY1
+BINARY 1 0
+END
+sid S2F13PLISTnASCII20
+LIST 1
+  ASCII 20 48 0
+END
+sid S2F14SLISTnLIST2ASCII20ASCII20
+LIST 1
+  LIST 2
+    ASCII 20 48 0
+    ASCII 20 48 0
+END
+sid S2F15PLISTnLIST2ASCII20ASCII20
+LIST 1
+  LIST 2
+    ASCII 20 48 0
+    ASCII 20 48 0
+END
+sid S2F16SBINARY1
+BINARY 1 0
+END
+sid S2F17P
+END
+sid S2F18SASCII14
+ASCII 14 48 0
+END
+sid S2F31PASCII14
+ASCII 14 48 0
+END
+sid S2F32SBINARY1
+BINARY 1 0
+END
+sid S2F41PLIST5UINT2nUINT2nUINT2nUINT2nLISTnASCII9
+LIST 5
+  UINT2 1 0
+  UINT2 1 0
+  UINT2 1 0
+  UINT2 1 0
+  LIST 1
+    ASCII 9 48 0
+END
+sid S2F41PLIST7UINT2nUINT2nASCII3ASCII6ASCII6LIST2ASCII3ASCII9LIST2ASCII3ASCII9
+LIST 7
+  UINT2 1 0
+  UINT2 1 0
+  ASCII 3 48 0
+  ASCII 6 48 0
+  ASCII 6 48 0
+  LIST 2
+    ASCII 3 48 0
+    ASCII 9 48 0
+  LIST 2
+    ASCII 3 48 0
+    ASCII 9 48 0
+END
+sid S2F41PLIST5UINT2nUINT2nUINT22ASCII6ASCII4
+LIST 5
+  UINT2 1 0
+  UINT2 1 0
+  UINT2 2 0 0
+  ASCII 6 48 0
+  ASCII 4 48 0
+END
+sid S2F41PLIST7UINT2nUINT2nASCII3UINT2nUINT2nLIST5ASCII4ASCII6ASCII6ASCII4ASCII9LIST5ASCII4ASCII6ASCII6ASCII4ASCII9
+LIST 7
+  UINT2 1 102
+  UINT2 1 2
+  ASCII 3 82 48 57
+  UINT2 1 2
+  UINT2 1 0
+  LIST 5
+    ASCII 4 49 50 49 54
+    ASCII 6 66 48 51 57 57 56
+    ASCII 6 66 48 49 54 51 48
+    ASCII 4 32 32 32 32
+    ASCII 9 82 48 57 48 50 48 50 48 50
+  LIST 5
+    ASCII 4 49 50 49 54
+    ASCII 6 66 48 51 57 57 48
+    ASCII 6 66 48 49 54 51 51
+    ASCII 4 32 32 32 32
+    ASCII 9 82 48 57 48 50 48 49 48 50
+END
+sid S2F41PLIST6UINT2nUINT2nUINT2nASCII4ASCII4LIST2LIST7ASCII6UINT2nUINT2nUINT2nASCII1UINT2nASCII4LIST7ASCII6UINT2nUINT2nUINT2nASCII1UINT2nASCII4
+LIST 6
+  UINT2 1 0
+  UINT2 1 0
+  UINT2 1 0
+  ASCII 4 48 0
+  ASCII 4 48 0
+  LIST 2
+    LIST 7
+      ASCII 6 48 0
+      UINT2 1 0
+      UINT2 1 0
+      UINT2 1 0
+      ASCII 1 48
+      UINT2 1 0
+      ASCII 4 48 0
+    LIST 7
+      ASCII 6 48 0
+      UINT2 1 0
+      UINT2 1 0
+      UINT2 1 0
+      ASCII 1 48
+      UINT2 1 0
+      ASCII 4 48 0
+END
+sid S2F41PLIST7UINT2nUINT2nASCII3UINT2nUINT2nLIST5ASCII4ASCII6ASCII6ASCII4ASCII9LIST5ASCII4ASCII6ASCII6ASCII4ASCII9
+LIST 7
+  UINT2 1 0
+  UINT2 1 0
+  ASCII 3 48 0
+  UINT2 1 0
+  UINT2 1 0
+  LIST 5
+    ASCII 4 48 0
+    ASCII 6 48 0
+    ASCII 6 48 0
+    ASCII 4 48 0
+    ASCII 9 48 0
+  LIST 5
+    ASCII 4 48 0
+    ASCII 6 48 0
+    ASCII 6 48 0
+    ASCII 4 48 0
+    ASCII 9 48 0
+END
+sid S2F42SBINARY1
+BINARY 1 0
+END
+sid S5F1PLIST6ASCIInUINT2nUINT2nASCIInUINT2nASCIIn
+LIST 6
+  ASCII 1 48
+  UINT2 1 0
+  UINT2 1 0
+  ASCII 1 48
+  UINT2 1 0
+  ASCII 1 48
+END
+sid S5F2SBINARY1
+BINARY 1 0
+END
+sid S5F101PLIST2UINT2nUINT2n
+LIST 2
+  UINT2 1 0
+  UINT2 1 0
+END
+sid S5F102SBINARY1
+BINARY 1 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST1LIST2UINT2nLISTnLIST2ASCII20ASCII20
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 1
+    LIST 2
+      UINT2 1 0
+      LIST 1
+        LIST 2
+          ASCII 20 48 0
+          ASCII 20 48 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST1LIST2UINT2nLIST1LIST8ASCII3UINT2nUINT2nASCII6UINT2nUINT2nUINT2nUINT2n
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 1
+    LIST 2
+      UINT2 1 0
+      LIST 1
+        LIST 8
+          ASCII 3 48 0
+          UINT2 1 0
+          UINT2 1 0
+          ASCII 6 48 0
+          UINT2 1 0
+          UINT2 1 0
+          UINT2 1 0
+          UINT2 1 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST2LIST2UINT2nLIST9ASCII3UINT2nASCII14ASCII14ASCII6ASCII9ASCII9ASCII14ASCII6LIST2UINT2nLIST2LIST6ASCII6ASCII6ASCII14ASCII14ASCII14ASCII14LIST6ASCII6ASCII6ASCII14ASCII14ASCII14ASCII14
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 2
+    LIST 2
+      UINT2 1 0
+      LIST 9
+        ASCII 3 48 0
+        UINT2 1 0
+        ASCII 14 48 0
+        ASCII 14 48 0
+        ASCII 6 48 0
+        ASCII 9 48 0
+        ASCII 9 48 0
+        ASCII 14 48 0
+        ASCII 6 48 0
+    LIST 2
+      UINT2 1 0
+      LIST 2
+        LIST 6
+          ASCII 6 48 0
+          ASCII 6 48 0
+          ASCII 14 48 0
+          ASCII 14 48 0
+          ASCII 14 48 0
+          ASCII 14 48 0
+        LIST 6
+          ASCII 6 48 0
+          ASCII 6 48 0
+          ASCII 14 48 0
+          ASCII 14 48 0
+          ASCII 14 48 0
+          ASCII 14 48 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST1LIST2UINT2nLIST2LIST3ASCII4ASCII6ASCII6LIST3ASCII4ASCII6ASCII6
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 1
+    LIST 2
+      UINT2 1 0
+      LIST 2
+        LIST 3
+          ASCII 4 48 0
+          ASCII 6 48 0
+          ASCII 6 48 0
+        LIST 3
+          ASCII 4 48 0
+          ASCII 6 48 0
+          ASCII 6 48 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST2LIST2UINT2nLIST5ASCII3ASCII6ASCII6UINT2nASCII4LIST2UINT2nLIST4ASCII4ASCII9ASCII3ASCII4
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 2
+    LIST 2
+      UINT2 1 0
+      LIST 5
+        ASCII 3 48 0
+        ASCII 6 48 0
+        ASCII 6 48 0
+        UINT2 1 0
+        ASCII 4 48 0
+    LIST 2
+      UINT2 1 0
+      LIST 4
+        ASCII 4 48 0
+        ASCII 9 48 0
+        ASCII 3 48 0
+        ASCII 4 48 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST2LIST2UINT2nLIST4ASCII4ASCII4UINT2nUINT2nLIST2UINT2nLIST2LIST2ASCII6ASCII4LIST2ASCII6ASCII4
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 2
+    LIST 2
+      UINT2 1 0
+      LIST 4
+        ASCII 4 48 0
+        ASCII 4 48 0
+        UINT2 1 0
+        UINT2 1 0
+    LIST 2
+      UINT2 1 0
+      LIST 2
+        LIST 2
+          ASCII 6 48 0
+          ASCII 4 48 0
+        LIST 2
+          ASCII 6 48 0
+          ASCII 4 48 0
+END
+sid S6F11PLIST4UINT2nUINT2nLIST2UINT2nLIST4ASCII4ASCII4UINT2nUINT2nLIST2UINT2nLIST2LIST2ASCII6ASCII4LIST2ASCII6ASCII4
+LIST 4
+  UINT2 1 0
+  UINT2 1 0
+  LIST 2
+    UINT2 1 0
+    LIST 4
+      ASCII 4 48 0
+      ASCII 4 48 0
+      UINT2 1 0
+      UINT2 1 0
+  LIST 2
+    UINT2 1 0
+    LIST 2
+      LIST 2
+        ASCII 6 48 0
+        ASCII 4 48 0
+      LIST 2
+        ASCII 6 48 0
+        ASCII 4 48 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST2LIST2UINT2nLIST5ASCII4ASCII4UINT2nUINT2nASCII3LIST2UINT2nLIST2LIST5ASCII6ASCII6ASCII4ASCII9ASCII4LIST5ASCII6ASCII6ASCII4ASCII9ASCII4
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 2
+    LIST 2
+      UINT2 1 0
+      LIST 5
+        ASCII 4 48 0
+        ASCII 4 48 0
+        UINT2 1 0
+        UINT2 1 0
+        ASCII 3 48 0
+    LIST 2
+      UINT2 1 0
+      LIST 2
+        LIST 5
+          ASCII 6 48 0
+          ASCII 6 48 0
+          ASCII 4 48 0
+          ASCII 9 48 0
+          ASCII 4 48 0
+        LIST 5
+          ASCII 6 48 0
+          ASCII 6 48 0
+          ASCII 4 48 0
+          ASCII 9 48 0
+          ASCII 4 48 0
+END
+sid S6F11PLIST3UINT2nUINT2nLIST2LIST2UINT2nLIST5ASCII4ASCII4UINT2nUINT2nASCII3LIST2UINT2nLIST2LIST5ASCII6ASCII6ASCII4ASCII9ASCII4LIST5ASCII6ASCII6ASCII4ASCII9ASCII4
+LIST 3
+  UINT2 1 0
+  UINT2 1 0
+  LIST 2
+    LIST 2
+      UINT2 1 0
+      LIST 5
+        ASCII 4 48 0
+        ASCII 4 48 0
+        UINT2 1 0
+        UINT2 1 0
+        ASCII 3 48 0
+    LIST 2
+      UINT2 1 0
+      LIST 2
+        LIST 5
+          ASCII 6 48 0
+          ASCII 6 48 0
+          ASCII 4 48 0
+          ASCII 9 48 0
+          ASCII 4 48 0
+        LIST 5
+          ASCII 6 48 0
+          ASCII 6 48 0
+          ASCII 4 48 0
+          ASCII 9 48 0
+          ASCII 4 48 0
+END
+sid S6F11PLIST4UINT2nUINT2nLIST2UINT2nLIST4ASCII4ASCII4UINT2nUINT2nLIST2UINT2nLIST2LIST2ASCII6ASCII4LIST2ASCII6ASCII4
+LIST 4
+  UINT2 1 0
+  UINT2 1 0
+  LIST 2
+    UINT2 1 0
+    LIST 4
+      ASCII 4 48 0
+      ASCII 4 48 0
+      UINT2 1 0
+      UINT2 1 0
+  LIST 2
+    UINT2 1 0
+    LIST 2
+      LIST 2
+        ASCII 6 48 0
+        ASCII 4 48 0
+      LIST 2
+        ASCII 6 48 0
+        ASCII 4 48 0
+END
+sid S6F12SLIST2BINARY1LISTnLIST2UINT2nASCII6
+LIST 2
+  BINARY 1 0
+  LIST 1
+    LIST 2
+      UINT2 1 0
+      ASCII 6 48 0
+END
+__end_default
+
+__begin_auto_reply
+
+__end_auto_reply
+
+__begin_scenario
+
+__end_scenario
+

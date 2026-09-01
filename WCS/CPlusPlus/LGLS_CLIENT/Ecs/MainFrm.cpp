@@ -80,6 +80,7 @@ static UINT indicators[] =
 
 CMainFrame::CMainFrame()
 {
+	m_bPanelBarsCreated = FALSE;   // [LGLS 2026-09-01] 도킹 판넬
 	// TODO: 여기에 멤버 초기화 코드를 추가합니다.
 	theApp.m_nAppLook = theApp.GetInt(_T("ApplicationLook"), ID_VIEW_APPLOOK_VS_2008);
 	m_bNotDockingJob = false;
@@ -798,6 +799,50 @@ void CMainFrame::ExcuteTheme()
 	RecalcLayout ();
 	RedrawWindow (NULL, NULL, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
 	theApp.WriteInt (_T("ApplicationLook"), m_nAppLook);
+}
+
+// [LGLS 2026-09-01] 리본 [작업정보] 진입점 : 우측 도킹 판넬 생성/토글
+//   구 SPL EcsSv CreateDockingBar 를 MFC Feature Pack(CDockablePane)으로 재구현.
+void CMainFrame::TogglePanelBars(CEcsDoc* pDoc)
+{
+	if (!m_bPanelBarsCreated)
+	{
+		EnableDocking(CBRS_ALIGN_ANY);
+
+		m_PanelJobDlg.m_pDoc  = pDoc;
+		m_PanelInfoDlg.m_pDoc = pDoc;
+		m_JobPane.m_pDlg  = &m_PanelJobDlg;   m_JobPane.m_nIDD  = IDD_PANEL_JOB;
+		m_InfoPane.m_pDlg = &m_PanelInfoDlg;  m_InfoPane.m_nIDD = IDD_PANEL_INFO;
+
+		DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_RIGHT | CBRS_FLOAT_MULTI;
+		if (!m_JobPane.Create(_T("작업 정보"), this, CRect(0, 0, 480, 500), TRUE,
+				ID_PANE_JOB, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
+			return;
+		if (!m_InfoPane.Create(_T("설비/작업 상세"), this, CRect(0, 0, 480, 400), TRUE,
+				ID_PANE_INFO, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
+			return;
+
+		m_JobPane.EnableDocking(CBRS_ALIGN_ANY);
+		m_InfoPane.EnableDocking(CBRS_ALIGN_ANY);
+		DockPane(&m_JobPane);
+		RecalcLayout();
+		m_InfoPane.DockToWindow(&m_JobPane, CBRS_ALIGN_BOTTOM);   // 작업 판넬 아래 분할
+
+		m_bPanelBarsCreated = TRUE;
+		RecalcLayout();
+		return;   // 최초 호출 = 표시
+	}
+
+	BOOL bShow = !m_JobPane.IsVisible();
+	m_JobPane.ShowPane(bShow, FALSE, TRUE);
+	m_InfoPane.ShowPane(bShow, FALSE, TRUE);
+	RecalcLayout();
+}
+
+void CMainFrame::ShowJobDetail(CString strLuggNo)
+{
+	if (m_bPanelBarsCreated && ::IsWindow(m_PanelInfoDlg.m_hWnd))
+		m_PanelInfoDlg.SetJob(strLuggNo);
 }
 
 void CMainFrame::AddCategoryUSER()

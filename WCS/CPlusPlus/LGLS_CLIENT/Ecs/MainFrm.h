@@ -4,6 +4,9 @@
 #pragma once
 
 #include "LogoBandWnd.h"
+#include "PanelDockPane.h"
+#include "PanelJobDlg.h"
+#include "PanelInfoDlg.h"
 #include "EcsDoc.h"
 
 class CMainFrame : public CFrameWndEx
@@ -40,6 +43,15 @@ public:
 	CStatusBarEx			m_wndStatusBar;
 	
 	CEcsDoc * m_pDoc;
+
+	// [LGLS 2026-09-01] 우측 도킹 판넬 2종 (구 SPL EcsSv CPanelJobDlg/CPanelInfoDlg 참고)
+	CPanelDockPane m_JobPane;
+	CPanelDockPane m_InfoPane;
+	CPanelJobDlg   m_PanelJobDlg;
+	CPanelInfoDlg  m_PanelInfoDlg;
+	BOOL           m_bPanelBarsCreated;
+	void TogglePanelBars(CEcsDoc* pDoc);   // 리본 [작업정보] 진입점
+	void ShowJobDetail(CString strLuggNo); // 작업 판넬 선택 -> 정보 판넬 연동
 	CCV_DATA* m_pCV_DATA;
 
 	HICON m_hIcon;

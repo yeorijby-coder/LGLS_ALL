@@ -277,6 +277,9 @@
 #define IDI_ICON_WCS                    547
 #define IDC_BTN_MODE                    1001
 #define IDC_TAB_ALL                     1001
+#define IDC_PANEL_JOB_LIST              2352
+#define IDC_PANEL_INFO_TAB              2353
+#define IDC_PANEL_INFO_LIST             2354
 #define IDC_BTN_INIT                    1002
 #define IDC_STATIC_TITLE                1003
 #define IDC_LIST_LOG                    1009
@@ -3451,6 +3454,8 @@
 #define ID_MANUAL_TESTCLEAR             35070
 #define ID_LOG_IO                       35050
 #define ID_ALARM_SHOW                  35090
+#define ID_PANE_JOB                    35091
+#define ID_PANE_INFO                   35092
 #define ID_LOG_EQP_HIS                  35051
 #define ID_LOG_MES                      35053
 #define ID_LOG_BCR                      35054
@@ -3495,7 +3500,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        553
 #define _APS_NEXT_COMMAND_VALUE         33032
-#define _APS_NEXT_CONTROL_VALUE         2352
+#define _APS_NEXT_CONTROL_VALUE         2355
 #define _APS_NEXT_SYMED_VALUE           114
 #endif
 #endif

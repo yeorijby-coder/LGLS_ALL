@@ -1,0 +1,668 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{1840DAC8-E7B0-4B7F-BFBA-52E2853BD925}</ProjectGuid>
+    <RootNamespace>Ecs</RootNamespace>
+    <Keyword>MFCProj</Keyword>
+    <ProjectName>Ecs</ProjectName>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfAtl>false</UseOfAtl>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>.\../Bin/Debug\</OutDir>
+    <IntDir>.\../Bin/Debug/Ecs\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>.\../Bin/Release\</OutDir>
+    <IntDir>.\../Bin/Release/Ecs\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_AFXDLL;POSTGRESQL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../Lib/EcsLib/ButtonST;../Lib/EcsLib;../Lib/XmlLib;../Lib/DciLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\../Bin/Debug/Ecs\Ecs.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../Bin/Debug/Ecs\</AssemblerListingLocation>
+      <ObjectFileName>.\../Bin/Debug/Ecs\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../Bin/Debug/Ecs\</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerOutput>All</AssemblerOutput>
+      <DisableSpecificWarnings>4005;4146;4002;4482;4244;4996;4927;4345;4520;</DisableSpecificWarnings>
+      <CallingConvention>Cdecl</CallingConvention>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OutputFile>.\../Bin/Debug\Ecs.exe</OutputFile>
+      <AdditionalDependencies>.\../Bin/Debug/XmlLib.lib;.\../Bin/Debug/DciLib.lib;.\../Bin/Debug/EcsLib.lib;.\../Bin/Debug/Quvc_dll.lib;.\../Bin/Debug/Spr32du70.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <Version>
+      </Version>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapExports>false</MapExports>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0412</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <OutputFile>.\../Bin/Debug\Ecs.bsc</OutputFile>
+    </Bscmake>
+    <PostBuildEvent>
+      <Command>@echo off
+set DirName = %date:~,4%%date:~5,2%%date:~8,2%%time:~,2%%time:~3,2%%time:~6,2%
+set PathName = "$(OutDir)"
+mkdir "$(OutDir)Ecs\mapfile\%DirName%"
+copy "$(OutDir)*.map" "$(OutDir)Ecs\mapfile\%DirName%"
+copy "$(OutDir)Ecs\*.cod" "$(OutDir)Ecs\mapfile\%DirName%"
+copy "$(OutDir)*.exe" "$(OutDir)Ecs\mapfile\%DirName%"
+copy "$(OutDir)*.pdb" "$(OutDir)Ecs\mapfile\%DirName%"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../Lib/EcsLib;../Lib/EcsLib/ButtonST;../Lib/XmlLib;../Lib/DciLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <PrecompiledHeaderOutputFile>.\../Bin/Release/Ecs\Ecs.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../Bin/Release/Ecs\</AssemblerListingLocation>
+      <ObjectFileName>.\../Bin/Release/Ecs\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../Bin/Release/Ecs\</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <AssemblerOutput>All</AssemblerOutput>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <OutputFile>.\../Bin/Release\Ecs.exe</OutputFile>
+      <AdditionalDependencies>.\../Bin/Release/XmlLib.lib;.\../Bin/Release/DciLib.lib;.\../Bin/Release/EcsLib.lib;.\../Bin/Release/Spr32d70.lib;.\../Bin/Release/Quvc_dll.lib</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x000e</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Bscmake>
+      <OutputFile>.\../Bin/Release\Ecs.bsc</OutputFile>
+    </Bscmake>
+    <PostBuildEvent>
+      <Command>@echo off
+set DirName = %date:~,4%%date:~5,2%%date:~8,2%%time:~,2%%time:~3,2%%time:~6,2%
+set PathName = "$(TargetDir)"
+mkdir "$(TargetDir)Ecs\mapfile\"%DirName%
+copy "$(TargetDir)*.map" "$(TargetDir)Ecs\mapfile\"%DirName%
+copy "$(TargetDir)Ecs\*.cod" "$(TargetDir)Ecs\mapfile\"%DirName%
+copy "$(TargetDir)*.exe" "$(TargetDir)Ecs\mapfile\"%DirName%
+copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="..\..\..\SKI완제품\헝가리 완제품\EcsDefine_CmpPro.xml" />
+    <None Include="..\..\..\SKI완제품\헝가리 완제품\EcsLayout_CmpPro.xml" />
+    <None Include="..\..\LFC_CLIENT\Bin\Debug\rc_resource\mainframe_status\Trffc10a.ico" />
+    <!--<None Include="..\..\LFC_CLIENT\Ecs\res\MAINFRAME\status\Toolbar.bmp" />-->
+    <None Include="..\Bin\Debug\rc_resource\CMAINFRAME_CONFIG_E.png" />
+    <!--<None Include="..\Bin\Debug\rc_resource\mainframe_status\Trffc10a.ico" />-->
+    <None Include="..\Bin\Debug\SLILogo.bmp" />
+    <None Include="..\siren.wav" />
+    <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram2.cd" />
+    <None Include="dialog_bin_page.txt" />
+    <None Include="Ecs.reg" />
+    <None Include="LogoUser.bmp" />
+    <None Include="msado20.tlh" />
+    <None Include="ReadMe.txt" />
+    <None Include="res\1_LOGO\1_LOGO_ECS.ico" />
+    <None Include="res\1_LOGO\2_LOGO_SKI.png" />
+    <None Include="res\1_LOGO\LOGO_SKI.png" />
+    <None Include="res\About.ico" />
+    <None Include="res\Baloon.ico" />
+    <None Include="res\butterfl.ico" />
+    <None Include="res\Butterfly.ico" />
+    <None Include="res\Cancel.ico" />
+    <None Include="res\Cancel1_32x32x16.ico" />
+    <None Include="res\Cancel3_32x32x256.ico" />
+    <None Include="res\Cancel4_32x32x2.ico" />
+    <None Include="res\CDRom.ico" />
+    <None Include="res\Classes1_32x32x16.ico" />
+    <None Include="res\classes2.ico" />
+    <None Include="res\classes3.ico" />
+    <None Include="res\classes4.ico" />
+    <None Include="res\classes5.ico" />
+    <None Include="res\classes6.ico" />
+    <None Include="res\config2.ico" />
+    <None Include="res\cwp_e.bmp" />
+    <None Include="res\cwp_k.bmp" />
+    <None Include="res\Ecs.ico" />
+    <None Include="res\Ecs.rc2" />
+    <None Include="res\EcsCv.bmp" />
+    <None Include="res\EcsDoc.ico" />
+    <None Include="res\EcsEquip.bmp" />
+    <None Include="res\EcsLogo2.bmp" />
+    <None Include="res\EcsRgv.bmp" />
+    <None Include="res\eject.ico" />
+    <None Include="res\EOapp.ico" />
+    <None Include="res\Exit.ico" />
+    <None Include="res\Explorer.ico" />
+    <None Include="res\Frog.ico" />
+    <None Include="res\Frog1.ICO" />
+    <None Include="res\Frog2.ico" />
+    <None Include="res\Frog4.ico" />
+    <None Include="res\Halloween1.ico" />
+    <None Include="res\Halloween2.ico" />
+    <None Include="res\Help.ico" />
+    <None Include="res\Help2_32x32x256.ico" />
+    <None Include="res\ico00001.ico" />
+    <None Include="res\ico00002.ico" />
+    <None Include="res\ico00003.ico" />
+    <None Include="res\ico00004.ico" />
+    <None Include="res\ico00005.ico" />
+    <None Include="res\ico00006.ico" />
+    <None Include="res\ico00007.ico" />
+    <None Include="res\ico00008.ico" />
+    <None Include="res\ico00009.ico" />
+    <None Include="res\ico00010.ico" />
+    <None Include="res\ico00011.ico" />
+    <None Include="res\ico00012.ico" />
+    <None Include="res\ico00013.ico" />
+    <None Include="res\ico00014.ico" />
+    <None Include="res\ico00016.ico" />
+    <None Include="res\ico00017.ico" />
+    <None Include="res\ico00018.ico" />
+    <None Include="res\ico00020.ico" />
+    <None Include="res\ico00021.ico" />
+    <None Include="res\ico00022.ico" />
+    <None Include="res\ico00023.ico" />
+    <None Include="res\ico00024.ico" />
+    <None Include="res\ico00025.ico" />
+    <None Include="res\ico00026.ico" />
+    <None Include="res\ico00027.ico" />
+    <None Include="res\ico00028.ico" />
+    <None Include="res\ico00029.ico" />
+    <None Include="res\ico00030.ico" />
+    <None Include="res\ico00031.ico" />
+    <None Include="res\ico00032.ico" />
+    <None Include="res\ico00033.ico" />
+    <None Include="res\ico00034.ico" />
+    <None Include="res\ico00035.ico" />
+    <None Include="res\ico00036.ico" />
+    <None Include="res\ico211.ico" />
+    <None Include="res\icon1.ico" />
+    <None Include="res\icon2.ico" />
+    <None Include="res\icon3.ico" />
+    <None Include="res\icon4.ico" />
+    <None Include="res\icon5.ico" />
+    <None Include="res\icon6.ico" />
+    <None Include="res\icon\bitmap5.bmp" />
+    <None Include="res\ICON\bulb.ico" />
+    <None Include="res\ICON\butterfly.ico" />
+    <None Include="res\ICON\cancel.ico" />
+    <None Include="res\ICON\error.ico" />
+    <None Include="res\icon\icon2.ico" />
+    <None Include="res\icon\icon3.ico" />
+    <None Include="res\icon\icon8.ico" />
+    <None Include="res\ICON\info.ico" />
+    <None Include="res\ICON\ok.ico" />
+    <None Include="res\ICON\question.ico" />
+    <None Include="res\icon\ribbon1.mfcribbon-ms" />
+    <None Include="res\ICON\warning.ico" />
+    <None Include="res\ICON\wcslogo6464.ico" />
+    <None Include="res\icon_.ico" />
+    <None Include="res\Icon_Bulb.ico" />
+    <None Include="res\Icon_home.ico" />
+    <None Include="res\Icon_Manual.ico" />
+    <None Include="res\icon_ret.ico" />
+    <None Include="res\IEDocument_48x48x256.ico" />
+    <None Include="res\job_all1.ico" />
+    <None Include="res\job_comp.ico" />
+    <None Include="res\JPEG Image.ico" />
+    <None Include="res\Key manager.ico" />
+    <None Include="res\key.ico" />
+    <None Include="res\Lamp1.ico" />
+    <None Include="res\lb_fullpack.ico" />
+    <None Include="res\LedOff.ico" />
+    <None Include="res\LedOn.ico" />
+    <None Include="res\Left6_32x32x256.ico" />
+    <None Include="res\login.bmp" />
+    <None Include="res\LogOff.ico" />
+    <None Include="res\LogoMaker.bmp" />
+    <None Include="res\LOGO\LOGO_ECS.png" />
+    <None Include="res\LOGO\LOGO_SKI.png" />
+    <None Include="res\Log\W95MBX01.ICO" />
+    <None Include="res\Log\W95MBX02.ICO" />
+    <None Include="res\Log\W95MBX03.ICO" />
+    <None Include="res\Log\W95MBX04.ICO" />
+    <None Include="res\log_alar.ico" />
+    <None Include="res\log_all1.ico" />
+    <None Include="res\log_erro.ico" />
+    <None Include="res\MAINFRAME\LANGUAGE\LANGUAGE_SET.png" />
+    <None Include="res\MAINFRAME\MONOTORING\ASSEMBLE.png" />
+    <None Include="res\MAINFRAME\MONOTORING\FLOOR1.png" />
+    <None Include="res\MAINFRAME\MONOTORING\FLOOR1FDECK.png" />
+    <None Include="res\MAINFRAME\MONOTORING\FLOORG.png" />
+    <None Include="res\MAINFRAME\MONOTORING\FLOORGFDECK.png" />
+    <None Include="res\MAINFRAME\MONOTORING\MONITORING_SET.png" />
+    <None Include="res\MAINFRAME\status\Toolbar.bmp" />
+    <None Include="res\MAINFRAME\status\Toolbar_Log.bmp" />
+    <None Include="res\MAINFRAME\status\Trffc10a.ico" />
+    <None Include="res\MAINFRAME\status\Trffc10c.ico" />
+    <None Include="res\MAINFRAME\SYSTEM\config.png" />
+    <None Include="res\MAINFRAME\SYSTEM\login.png" />
+    <None Include="res\MAINFRAME\SYSTEM\logout.png" />
+    <None Include="res\MAINFRAME\SYSTEM\sctime.png" />
+    <None Include="res\MAINFRAME\SYSTEM\SYSTEM_SET.png" />
+    <None Include="res\MAINFRAME\USER\creategroup.png" />
+    <None Include="res\MAINFRAME\USER\createuser.png" />
+    <None Include="res\MAINFRAME\USER\group.png" />
+    <None Include="res\MAINFRAME\USER\user.png" />
+    <None Include="res\MAINFRAME\USER\USER_SET.png" />
+    <None Include="res\MAINFRAME\VIEW\job.png" />
+    <None Include="res\MAINFRAME\VIEW\rack.png" />
+    <None Include="res\MAINFRAME\VIEW\search.png" />
+    <None Include="res\MAINFRAME\VIEW\semijob.png" />
+    <None Include="res\MAINFRAME\VIEW\VIEW_SET.png" />
+    <None Include="res\NETHOOD.ICO" />
+    <None Include="res\network.ico" />
+    <None Include="res\network3.ico" />
+    <None Include="res\No3_32x32x256.ico" />
+    <None Include="res\Ok.ico" />
+    <None Include="res\Ok3_32x32x256.ico" />
+    <None Include="res\Open.ico" />
+    <None Include="res\OPEN01.ico" />
+    <None Include="res\Razor_32x32x256.ico" />
+    <None Include="res\report.ico" />
+    <None Include="res\Return.ico" />
+    <None Include="res\ribbon1.mfcribbon-ms" />
+    <None Include="res\Right6_32x32x256.ico" />
+    <None Include="res\Run.ico" />
+    <None Include="res\Search.bmp" />
+    <None Include="res\Search1.ico" />
+    <None Include="res\Sound.ico" />
+    <None Include="res\SPLASH\SPLASH_ECS.png" />
+    <None Include="res\symbol_02.bmp" />
+    <None Include="res\Toolbar.bmp" />
+    <None Include="res\toolbar0.bmp" />
+    <None Include="res\toolbar1.bmp" />
+    <None Include="res\toolbar2.bmp" />
+    <None Include="res\Toolbar256.bmp" />
+    <None Include="res\Toolbar_Log.bmp" />
+    <None Include="res\Tools4.ico" />
+    <None Include="res\user.ico" />
+    <None Include="res\user2.ico" />
+    <None Include="res\usercard.ico" />
+    <None Include="res\userH.ico" />
+    <None Include="res\USER\LOGIN.png" />
+    <None Include="res\USER\PASSWORD.png" />
+    <None Include="res\Web2.ico" />
+    <None Include="res\Winzip1.ico" />
+    <None Include="res\Workgroup.ico" />
+    <None Include="res\나가기.ico" />
+    <None Include="res\버튼리소스\COPY.BMP" />
+    <None Include="res\버튼리소스\CUT.BMP" />
+    <None Include="res\버튼리소스\PASTE.BMP" />
+    <None Include="res\버튼리소스\PREVIEW.BMP" />
+    <None Include="res\버튼리소스\PRINT.BMP" />
+    <None Include="res\버튼리소스\sendfile.ico" />
+    <None Include="res\아이콘\blob.ico" />
+    <None Include="res\아이콘\Box_2.ico" />
+    <None Include="res\아이콘\close.ico" />
+    <None Include="res\아이콘\LedOff.ico" />
+    <None Include="res\아이콘\LedOn.ico" />
+    <None Include="res\저장.ico" />
+    <None Include="UserImages.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AdoDB.h" />
+    <ClInclude Include="AdoDbIO.h" />
+    <ClInclude Include="AsyncSocketEx.h" />
+    <ClInclude Include="Bcr.h" />
+    <ClInclude Include="BcrInfo.h" />
+    <ClInclude Include="BCRSkinDlg.h" />
+    <ClInclude Include="BCR_MST.h" />
+    <ClInclude Include="ByteArrayEx.h" />
+    <ClInclude Include="CellInfo.h" />
+    <ClInclude Include="CELL_DTL.h" />
+    <ClInclude Include="CmdMsg.h" />
+    <ClInclude Include="CollectDataList.h" />
+    <ClInclude Include="CollectDB.h" />
+    <ClInclude Include="Color.h" />
+    <ClInclude Include="ColorButton.h" />
+    <ClInclude Include="ComboBoxTransparent.h" />
+    <ClInclude Include="ComboBoxWrapper.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="ConfigLogDelete.h" />
+    <ClInclude Include="ConfigPptSheet.h" />
+    <ClInclude Include="ConfigStatus.h" />
+    <ClInclude Include="ConfigStdPage.h" />
+    <ClInclude Include="ConfigSub1Page.h" />
+    <ClInclude Include="ConfigSub2Page.h" />
+    <ClInclude Include="ConfigSub3Page.h" />
+    <ClInclude Include="ConnectStatus.h" />
+    <ClInclude Include="Cv.h" />
+    <ClInclude Include="CvDlg.h" />
+    <ClInclude Include="CvInfo.h" />
+    <ClInclude Include="CvSkinDlg.h" />
+    <ClInclude Include="CV_DATA.h" />
+    <ClInclude Include="DataSettingDlg.h" />
+    <ClInclude Include="Debuger.h" />
+    <ClInclude Include="DockingBar.h" />
+    <ClInclude Include="DockingPaneBar.h" />
+    <ClInclude Include="Ecs.h" />
+    <ClInclude Include="EcsDef.h" />
+    <ClInclude Include="EcsDefine.h" />
+    <ClInclude Include="EcsDoc.h" />
+    <ClInclude Include="EcsEnv.h" />
+    <ClInclude Include="EcsLayout.h" />
+    <ClInclude Include="EcsView.h" />
+    <ClInclude Include="EnCarrier.h" />
+    <ClInclude Include="Equipment.h" />
+    <ClInclude Include="ErrorMst.h" />
+    <ClInclude Include="FireMessageDlg.h" />
+    <ClInclude Include="FireParms.h" />
+    <ClInclude Include="FontManagerDialog.h" />
+    <ClInclude Include="fpspread1.h" />
+    <ClInclude Include="Global.h" />
+    <ClInclude Include="Info.h" />
+    <ClInclude Include="InterfaceSk.h" />
+    <ClInclude Include="JobCollection.h" />
+    <ClInclude Include="JOB_MST.h" />
+    <ClInclude Include="KeyHelper.h" />
+    <ClInclude Include="Lang.h" />
+    <ClInclude Include="Lib.h" />
+    <ClInclude Include="ListenerSk.h" />
+    <ClInclude Include="Log.h" />
+    <ClInclude Include="LogBcrSkinDlg.h" />
+    <ClInclude Include="LogClientSkinDlg.h" />
+    <ClInclude Include="LogEqpErrHisSkinDlg.h" />
+    <ClInclude Include="LogEqpJobHisSkinDlg.h" />
+    <ClInclude Include="LogEqpSkinDlg.h" />
+    <ClInclude Include="LogIoSkinDlg.h" />
+    <ClInclude Include="LogMesSkinDlg.h" />
+    <ClInclude Include="LogWcsLogPgr.h" />
+    <ClInclude Include="MainFrm.h" />
+    <ClInclude Include="ManualEmpty.h" />
+    <ClInclude Include="ManualJob.h" />
+    <ClInclude Include="SemiTestDlg.h" />
+    <ClInclude Include="ManualLogin.h" />
+    <ClInclude Include="ManualRtv.h" />
+    <ClInclude Include="ManualSc.h" />
+    <ClInclude Include="ManyLang.h" />
+    <ClInclude Include="EQP_ECD_MST.h" />
+    <ClInclude Include="MelsecEthernetSk.h" />
+    <ClInclude Include="MelsecSerialSk.h" />
+    <ClInclude Include="MenuXP.h" />
+    <ClInclude Include="MFCRibbonPanel_Wrap.h" />
+    <ClInclude Include="MFCToolBarEx.h" />
+    <ClInclude Include="MonitorListener.h" />
+    <ClInclude Include="MonitorServer.h" />
+    <ClInclude Include="MsgBoxLang.h" />
+    <ClInclude Include="msjexhnd.h" />
+    <ClInclude Include="MyTabCtrl.h" />
+    <ClInclude Include="NtnChart.h" />
+    <ClInclude Include="Permission.h" />
+    <ClInclude Include="RecordSetWrap.h" />
+    <ClInclude Include="ReportCtrl.h" />
+    <ClInclude Include="ReportHeader.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="RevSkinDlg.h" />
+    <ClInclude Include="RollSkinDlg.h" />
+    <ClInclude Include="Rtv.h" />
+    <ClInclude Include="RtvInfo.h" />
+    <ClInclude Include="RtvSkinDlg.h" />
+    <ClInclude Include="Sc.h" />
+    <ClInclude Include="ScCheckDelDlg.h" />
+    <ClInclude Include="ScDlg.h" />
+    <ClInclude Include="ScForceOut.h" />
+    <ClInclude Include="ScInfo.h" />
+    <ClInclude Include="ScManualDlg.h" />
+    <ClInclude Include="ScManualRet.h" />
+    <ClInclude Include="ScPair.h" />
+    <ClInclude Include="ScPairDlg.h" />
+    <ClInclude Include="ScPairManualDlg.h" />
+    <ClInclude Include="ScPairRelocationDlg.h" />
+    <ClInclude Include="ScRelocationDlg.h" />
+    <ClInclude Include="ScSkinDlg.h" />
+    <ClInclude Include="EqpSuspendDlg.h" />
+    <ClInclude Include="SC_DATA.h" />
+    <ClInclude Include="SearchDlg.h" />
+    <ClInclude Include="SizingControlBar.h" />
+    <ClInclude Include="SkinButton.h" />
+    <ClInclude Include="SkinDialog.h" />
+    <ClInclude Include="SpeadEvent.h" />
+    <ClInclude Include="Splash.h" />
+    <ClInclude Include="spreadsheet.h" />
+    <ClInclude Include="SpreadTest.h" />
+    <ClInclude Include="SSDLL.H" />
+    <ClInclude Include="SSDLLMFC.H" />
+    <ClInclude Include="SSDLLX.H" />
+    <ClInclude Include="StartupTip.h" />
+    <ClInclude Include="StaticTransparent.h" />
+    <ClInclude Include="StationInfo.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SystemConfigDlg.h" />
+    <ClInclude Include="SystemLoginDlg.h" />
+    <ClInclude Include="SystemScTimeDlg.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="TGroupBox.h" />
+    <ClInclude Include="TrackInfo.h" />
+    <ClInclude Include="TrayPicker.h" />
+    <ClInclude Include="URMDBAccess.h" />
+    <ClInclude Include="UserCreateGroupDlg.h" />
+    <ClInclude Include="UserCreateUserDlg.h" />
+    <ClInclude Include="UserGroupDlg.h" />
+    <ClInclude Include="UserUserDlg.h" />
+    <ClInclude Include="ViewHostEmptyPltDlg.h" />
+    <ClInclude Include="ViewJobListDlg.h" />
+    <ClInclude Include="ViewSearchDlg.h" />
+    <ClInclude Include="ViewUsageRackDlg.h" />
+    <ClInclude Include="WarningDlg.h" />
+    <ClInclude Include="Wc.h" />
+    <ClInclude Include="WcInfo.h" />
+    <ClInclude Include="WcSkinDlg.h" />
+    <ClInclude Include="WC_DATA.h" />
+    <ClInclude Include="_Font.h" />
+    <ClInclude Include="_Picture.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AdoDbIO.cpp" />
+    <ClCompile Include="AsyncSocketEx.cpp" />
+    <ClCompile Include="Bcr.cpp" />
+    <ClCompile Include="BcrInfo.cpp" />
+    <ClCompile Include="BCRSkinDlg.cpp" />
+    <ClCompile Include="BCR_MST.cpp" />
+    <ClCompile Include="ByteArrayEx.cpp" />
+    <ClCompile Include="CAdoDB.cpp" />
+    <ClCompile Include="CellInfo.cpp" />
+    <ClCompile Include="CELL_DTL.cpp" />
+    <ClCompile Include="CollectDataList.cpp" />
+    <ClCompile Include="CollectDB.cpp" />
+    <ClCompile Include="ColorButton.cpp" />
+    <ClCompile Include="ComboBoxTransparent.cpp" />
+    <ClCompile Include="ComboBoxWrapper.cpp" />
+    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="ConfigLogDelete.cpp" />
+    <ClCompile Include="ConfigStatus.cpp" />
+    <ClCompile Include="configsub1page.CPP" />
+    <ClCompile Include="ConnectStatus.cpp" />
+    <ClCompile Include="Cv.cpp" />
+    <ClCompile Include="CvInfo.cpp" />
+    <ClCompile Include="CvSkinDlg.cpp" />
+    <ClCompile Include="WarningDlg.cpp" />
+    <ClCompile Include="CV_DATA.cpp" />
+    <ClCompile Include="Debuger.cpp" />
+    <ClCompile Include="Ecs.cpp" />
+    <ClCompile Include="EcsDefine.cpp" />
+    <ClCompile Include="EcsDoc.cpp" />
+    <ClCompile Include="EcsLayout.cpp" />
+    <ClCompile Include="EcsView.cpp" />
+    <ClCompile Include="Equipment.cpp" />
+    <ClCompile Include="ErrorMst.cpp" />
+    <ClCompile Include="FireMessageDlg.cpp" />
+    <ClCompile Include="FireParms.cpp" />
+    <ClCompile Include="FontManagerDialog.cpp" />
+    <ClCompile Include="fpspread1.cpp" />
+    <ClCompile Include="Global.cpp" />
+    <ClCompile Include="Info.cpp" />
+    <ClCompile Include="JobCollection.cpp" />
+    <ClCompile Include="JOB_MST.cpp" />
+    <ClCompile Include="KeyHelper.cpp" />
+    <ClCompile Include="Lang.cpp" />
+    <ClCompile Include="Lib.cpp" />
+    <ClCompile Include="LogBcrSkinDlg.cpp" />
+    <ClCompile Include="LogClientSkinDlg.cpp" />
+    <ClCompile Include="LogEqpErrHisSkinDlg.cpp" />
+    <ClCompile Include="LogEqpJobHisSkinDlg.cpp" />
+    <ClCompile Include="LogEqpSkinDlg.cpp" />
+    <ClCompile Include="LogIoSkinDlg.cpp" />
+    <ClCompile Include="LogMesSkinDlg.cpp" />
+    <ClCompile Include="LogWcsLogPgr.cpp" />
+    <ClCompile Include="MainFrm.cpp" />
+    <ClCompile Include="ManualEmpty.cpp" />
+    <ClCompile Include="ManualJob.cpp" />
+    <ClCompile Include="SemiTestDlg.cpp" />
+    <ClCompile Include="ManualLogin.cpp" />
+    <ClCompile Include="ManualRtv.cpp" />
+    <ClCompile Include="ManualSc.cpp" />
+    <ClCompile Include="ManyLang.cpp" />
+    <ClCompile Include="EQP_ECD_MST.cpp" />
+    <ClCompile Include="MFCRibbonPanel_Wrap.cpp" />
+    <ClCompile Include="MFCToolBarEx.cpp" />
+    <ClCompile Include="MsgBoxLang.cpp" />
+    <ClCompile Include="msjexhnd.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="MyTabCtrl.cpp" />
+    <ClCompile Include="NtnChart.cpp" />
+    <ClCompile Include="Permission.cpp" />
+    <ClCompile Include="RecordSetWrap.cpp" />
+    <ClCompile Include="ReportCtrl.cpp" />
+    <ClCompile Include="ReportHeader.cpp" />
+    <ClCompile Include="RevSkinDlg.cpp" />
+    <ClCompile Include="RollSkinDlg.cpp" />
+    <ClCompile Include="Rtv.cpp" />
+    <ClCompile Include="RtvInfo.cpp" />
+    <ClCompile Include="RtvSkinDlg.cpp" />
+    <ClCompile Include="RTV_DATA.cpp" />
+    <ClCompile Include="Sc.cpp" />
+    <ClCompile Include="ScInfo.cpp" />
+    <ClCompile Include="ScManualRet.cpp" />
+    <ClCompile Include="ScPair.cpp" />
+    <ClCompile Include="ScSkinDlg.cpp" />
+    <ClCompile Include="EqpSuspendDlg.cpp" />
+    <ClCompile Include="SC_DATA.cpp" />
+    <ClCompile Include="SearchDlg.cpp" />
+    <ClCompile Include="SizingControlBar.cpp" />
+    <ClCompile Include="SkinButton.cpp" />
+    <ClCompile Include="SkinDialog.cpp" />
+    <ClCompile Include="SpeadEvent.cpp" />
+    <ClCompile Include="Splash.cpp" />
+    <ClCompile Include="spreadsheet.cpp" />
+    <ClCompile Include="SpreadTest.cpp" />
+    <ClCompile Include="SSDLLMFC.CPP" />
+    <ClCompile Include="StaticTransparent.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="SystemConfigDlg.cpp" />
+    <ClCompile Include="SystemLoginDlg.cpp" />
+    <ClCompile Include="SystemScTimeDlg.cpp" />
+    <ClCompile Include="TGroupBox.cpp" />
+    <ClCompile Include="TrackInfo.cpp" />
+    <ClCompile Include="URMDBAccess.cpp" />
+    <ClCompile Include="UserCreateGroupDlg.cpp" />
+    <ClCompile Include="UserCreateUserDlg.cpp" />
+    <ClCompile Include="UserGroupDlg.cpp" />
+    <ClCompile Include="UserUserDlg.cpp" />
+    <ClCompile Include="ViewHostEmptyPltDlg.cpp" />
+    <ClCompile Include="ViewJobListDlg.cpp" />
+    <ClCompile Include="ViewSearchDlg.cpp" />
+    <ClCompile Include="ViewUsageRackDlg.cpp" />
+    <ClCompile Include="Wc.cpp" />
+    <ClCompile Include="WcInfo.cpp" />
+    <ClCompile Include="WcSkinDlg.cpp" />
+    <ClCompile Include="WC_DATA.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Ecs.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\Bin\Debug\rc_resource\mainframe_status\Trffc10a.ico" />
+    <Image Include="bulb.ico" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="Ecs.rc" _x007B_560F8BBF-A69A-4320-82A3-EE167D16559E_x007D_="CeXCom" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

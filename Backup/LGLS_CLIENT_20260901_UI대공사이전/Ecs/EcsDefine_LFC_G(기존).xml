@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<ECS>
+	<Equipment class="CCv" thread="01">
+		<Tracks plcno="01">
+			<Track	number="01001">
+        <Status>
+          <StoStation name="WC 입고대" id="1001"/>
+        </Status>
+      </Track>
+      <Track	number="01002"/>	
+      <Track	number="01003">	
+        <Status>
+          <ArvStation name="SizeChecker" id="1003"/>
+        </Status>
+      </Track>
+	    <Track	number="01004"/>	
+	    <Track	number="01005"/>	
+	    <Track	number="01006"/>
+      <Track	number="01007">
+        <Status>
+          <StoStation name="DPMG 입고대" id="1007"/>
+          <RetStation name="DPMG 출고대" id="1007"/>
+        </Status>
+      </Track>
+      <Track	number="01008">
+        <Status>
+          <StoStation name="외부 입고대" id="1008"/>
+          <RetStation name="외부 출고대" id="1008"/>
+        </Status>
+      </Track>
+      <Track	number="01009"/>	
+			<Track	number="01010"/>	
+			<Track	number="01011"/>	
+			<Track	number="01012">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+      <Track	number="01013">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+      <Track	number="01014"/>
+			<Track	number="01015"/>	
+			<Track	number="01016">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+			<Track	number="01017">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+			<Track	number="01018"/>	
+			<Track	number="01019"/>	
+			<Track	number="01020"/>	
+			<Track	number="01021"/>	
+			<Track	number="01022"/>	
+			<Track	number="01023"/>	
+			<Track	number="01024"/>	
+			<Track	number="01025">
+        <Status>
+          <ArvStation name="SC #4 중간 목적지" id="1025"/>
+        </Status>
+        <Destination tid="9004" desc="H/S에서 작업 보고 할경우 1036으로 변경 요망!"/>
+      </Track>
+      <Track	number="01026"/>	
+			<Track	number="01027"/>	
+			<Track	number="01028"/>	
+			<Track	number="01029"/>	
+			<Track	number="01030"/>	
+			<Track	number="01031">
+        <Status>
+          <ScRetHS/>
+        </Status>
+      </Track>
+			<Track	number="01032"/>
+			<Track	number="01033"/>	
+			<Track	number="01034">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+			<Track	number="01035"/>	
+			<Track	number="01036">
+        <Status>
+          <ScStoHS/>
+          <ScRetHS/>
+        </Status>
+      </Track>
+			<Track	number="01037"/>	
+			<Track	number="01038"/>	
+			<Track	number="01039"/>	
+			<Track	number="01040"/>	
+			<Track	number="01041"/>	
+			<Track	number="01042"/>	
+			<Track	number="01043"/>	
+			<Track	number="01044"/>	
+			<Track	number="01045"/>	
+			<Track	number="01046"/>	
+			<Track	number="01047"/>	
+			<Track	number="01048"/>	
+			<Track	number="01049">
+        <Status>
+          <StoStation name="MGDP 출고대" id="1049"/>
+        </Status>
+      </Track>
+			<Track	number="01050"/>	
+			<Track	number="01051"/>	
+			<Track	number="01052"/>	
+			<Track	number="01053"/>	
+			<Track	number="01054">	
+        <Status>
+          <StoStation name="Roll 입고대" id="1054"/>
+        </Status>
+      </Track>
+      <Track	number="01055"/>	
+			<Track	number="01056"/>
+			<Track	number="01057"/>	
+			<Track	number="01058"/>	
+			<Track	number="01059"/>	
+			<Track	number="01060">
+        <Status>
+          <ScStoHS/>
+        </Status>
+      </Track>
+			<Track	number="01061"/>	
+		</Tracks>
+	</Equipment>
+
+  <Equipment class="CBcr" thread="01">
+		<Bcrs>
+			<Bcr plcno="001" number="001" bcrtrack="07426"/>
+		</Bcrs>
+	</Equipment>
+
+	<Equipment class="CSc" thread="01">
+		<Scs>
+			<Sc plcno="01" number="29001"/>
+			<Sc plcno="02" number="29002"/>
+			<Sc plcno="03" number="29003"/>
+			<Sc plcno="04" number="29004"/>
+		</Scs>
+	</Equipment>
+
+</ECS>

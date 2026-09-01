@@ -1,0 +1,63 @@
+#ifndef __COLOR_H__
+#define __COLOR_H__
+
+#define RED				RGB(255,  0,  0)
+#define GREEN			RGB(  0,255,  0)
+#define BLUE			RGB(  0,  0,255)
+#define BLACK			RGB(  0,  0,  0)
+#define CYAN			RGB(  0,255,255)
+#define ORANGE			RGB(255,128,  0)
+#define MAGENTA			RGB(255,  0,255)
+#define YELLOW			RGB(255,255,  0)
+#define WHITE			RGB(255,255,255)
+#define OLIVE			RGB(192,192,  0)
+#define SITE			RGB(128,  0,255)
+#define DARK_RED		RGB(128,  0,  0)
+#define DARK_GREEN		RGB(  0,128,  0)
+#define DARK_BLUE		RGB(  0,  0,128)
+#define DARK_CYAN		RGB(  0,128,128)
+#define DARK_MAGENTA	RGB(128,  0,128)
+#define DARK_YELLOW		RGB(224,224,  0)
+#define DARK_OLIVE		RGB(128,128,  0)
+#define DARK_GRAY		RGB(128,128,128)
+#define DARK_SITE		RGB( 64,  0,128)
+#define DARK_ORANGE		RGB(255, 160, 64)
+#define LIGHT_RED		RGB(255, 50, 50)
+#define LIGHT_GREEN		RGB(  0,192,  0)
+#define LIGHT_BLUE		RGB(  0,255,255)
+#define LIGHT_CYAN		RGB(  0,192,192)
+#define LIGHT_MAGENTA	RGB(192,  0,192)
+#define LIGHT_GRAY		RGB(192,192,192)
+#define LIGHT_ORANGE	RGB(255,192,  0)
+#define LIGHT_OLIVE		RGB(160,160, 80)
+#define PALE_GRAY		RGB(220,220,220)
+#define WHEAT			RGB(255,225,192)
+#define SKY_BLUE		RGB(48,192,255)
+#define PINK			RGB(255,128,255)
+#define MINT			RGB(120,180,120)
+#define LIGHT_MINT		RGB(0,191,0)
+#define VIRTUAL			RGB(255,214,76)
+//#define DEF_RACK_COLOR	RGB(150,187,187)
+#define DEF_RACK_COLOR	RGB(128,192,192)
+#define NEW_GREEN		RGB(120, 180, 120)
+
+#define STO_STN_COLOR	MAGENTA
+#define STO_HS_COLOR	RGB(255, 192, 255)
+#define RET_STN_COLOR	RGB(0, 255, 192)
+#define RET_HS_COLOR	DARK_CYAN
+
+//#define cell color
+#define	PREVIEW			RGB(211,211,211)
+#define	RSV_STO			RGB(0,255,255)
+#define	POSSIBLE_RET	RGB(0,255,0)
+#define	RSV_RET			RGB(255,255,0)
+#define	DUAL_ERR		RGB(205,92,92)
+#define	EMPTY_ERR		RGB(255,140,0)
+#define	NORMAL			RGB(255,255,255)
+#define	BAN_STO			RGB(46,139,87)
+#define	BAN_RET			RGB(128,128,0)
+#define	BAN_USER		RGB(0,0,255)
+#define	BAN_PHB			RGB(255,0,0)
+
+
+#endif	// __COLOR_H__
