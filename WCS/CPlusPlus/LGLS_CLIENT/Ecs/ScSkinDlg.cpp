@@ -912,7 +912,13 @@ LRESULT CScSkinDlg::OnMessagSwitch(WPARAM wParam, LPARAM lParam)
 		return 0;
 	}
 
+	// [LGLS 2026-09-01] ★호기 전환 시 확대 패널의 주소 라벨을 다시 만든다★ (사용자 지적)
+	//   이 창은 단일 창을 호기 전환으로 재사용하는데, 확대 패널의 주소 라벨
+	//   (상태 D0160, M0310, D0320 ...)은 창 생성 때 1회만 만들어져 #1 것이
+	//   모든 호기에서 그대로 보였다. 값은 호기별로 갱신되는데 주소만 낡았다.
+	BOOL bScChanged = (m_pSC_DATA != NULL && m_pSC_DATA != pSC_DATA);
 	m_pSC_DATA = pSC_DATA;
+	if (bScChanged) RebuildVehStatusPanel();
 
 	EN_LANG enLangTemp = (EN_LANG)lParam;
 	if(m_nLang != enLangTemp)
@@ -2531,6 +2537,19 @@ void CScSkinDlg::CompactForkStatusRow()
 		rc.OffsetRect(0, -nPitch);
 		pWnd->MoveWindow(rc);
 	}
+}
+
+// [LGLS 2026-09-01] 확대 패널 재빌드 - 호기 전환 시 주소 라벨을 현재 호기 것으로.
+void CScSkinDlg::RebuildVehStatusPanel()
+{
+	for (int i = 0; i < m_arVehCtrl.GetCount(); i++)
+	{
+		CWnd* p = (CWnd*)m_arVehCtrl.GetAt(i);
+		if (p != NULL) { if (::IsWindow(p->m_hWnd)) p->DestroyWindow(); delete p; }
+	}
+	m_arVehCtrl.RemoveAll();
+	BuildVehStatusPanel();
+	if (m_bVehExpanded) SetVehPanelExpanded(TRUE);   // 확대 중이었으면 새 컨트롤 표시
 }
 
 void CScSkinDlg::BuildVehStatusPanel()
