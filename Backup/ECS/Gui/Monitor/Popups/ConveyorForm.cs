@@ -56,7 +56,54 @@ namespace HECS.Gui.Monitor.Popups
 
         }
 
+        // [LGLS 2026-09-01] 포트 트래킹 읽기(GetPalletFromPLC = 동기 PLC 통신)를 UI 스레드에서 하던 것이
+        //   팝업 열기 5초+ 지연과 닫기 클릭 밀림의 원인. 읽기는 워커 스레드에서, 화면 반영만 UI 스레드에서 한다.
+        private volatile bool portReadBusy = false;
         private void InitPortState()
+        {
+            if (conveyorObject == null || portReadBusy)
+            {
+                return;
+            }
+            portReadBusy = true;
+            Conveyor cnvSnapshot = conveyorObject;
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate(object o)
+            {
+                Dictionary<string, string> palletIds = new Dictionary<string, string>();
+                try
+                {
+                    foreach (Port port in cnvSnapshot.Ports.Values)
+                    {
+                        palletIds[port.PortOrder] = cnvSnapshot.GetPalletFromPLC(port);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Console.WriteLine("InitPortState(worker) : " + ex.Message);
+                }
+                try
+                {
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        try
+                        {
+                            if (conveyorObject == cnvSnapshot)
+                                ApplyPortState(palletIds);
+                        }
+                        finally
+                        {
+                            portReadBusy = false;
+                        }
+                    });
+                }
+                catch (Exception)
+                {
+                    portReadBusy = false;   // 폼이 사라진 경우
+                }
+            });
+        }
+
+        private void ApplyPortState(Dictionary<string, string> palletIds)
         {
             if (conveyorObject == null)
             {
@@ -64,7 +111,8 @@ namespace HECS.Gui.Monitor.Popups
             }
             foreach (Port port in conveyorObject.Ports.Values)
             {
-                string palletId = this.conveyorObject.GetPalletFromPLC(port);
+                string palletId = null;
+                palletIds.TryGetValue(port.PortOrder, out palletId);
                 Control portControl = controlCache["labelPalletId" + string.Format("{0:0#}", int.Parse(port.PortOrder))];
                 if (portControl != null)
                 {

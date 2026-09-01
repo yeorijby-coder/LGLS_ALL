@@ -1,4 +1,6 @@
 // PanelInfoDlg.cpp : [LGLS 2026-09-01] 상세정보 도킹 판넬 (CV/SC/RTV/작업 탭)
+//   각 설비 DLG 확대 패널(CvSkinDlg/ScSkinDlg/RtvSkinDlg BuildVehStatusPanel)의 항목을 전부 표로 반영.
+//   실제주소 = observables.tsv(CLib::GetObsAddr, DLG 확대 라벨과 동일), 구ECS주소 = ezMCS W/M/R 표기 환산.
 #include "stdafx.h"
 #include "Ecs.h"
 #include "EcsDoc.h"
@@ -12,15 +14,25 @@
 
 enum { TAB_CV = 0, TAB_SC, TAB_RTV, TAB_JOB };
 
-// SC/RTV 상태·지시 워드 주소 계산 (PlcAddressMap.xml 확정값과 동일)
-//   SC  : 상태 D0160+10(n-1) / 구ECS W0100+0x10(n-1),  지시 D0320+10(n-1) / W0300+0x10(n-1),  트래킹 R0300+2(n-1)
-//   RTV : 상태 D0210 / W0150,  지시 D0370 / W0350 (To3 특례 D0345/W0345),  트래킹 R0310
-static void VehBases(BOOL bRtv, int nUnit, int& nStDoc, int& nStEz, int& nCmdDoc, int& nCmdEz, int& nTrk)
+// 구ECS 주소 종류
+enum { EZ_NONE = 0, EZ_ST, EZ_CMD, EZ_EVT, EZ_ACK, EZ_TRK };
+
+// SC/RTV 워드/비트 주소 (PlcAddressMap.xml 확정값)
+//   SC  : 상태 D160+10k(W0100+0x10k) 지시 D320+10k(W0300+0x10k) Event M768+32k(M0300) Ack M1536+16k(M0600) 트래킹 R300+2k
+//   RTV : 상태 D210(W0150) 지시 D370(W0350) Event M928(M03A0) Ack M1616(M0650) 트래킹 R310
+static CString EzAddr(BOOL bRtv, int nUnit, int nKind, int nOff)
 {
-	if (bRtv) { nStDoc = 210; nStEz = 0x150; nCmdDoc = 370; nCmdEz = 0x350; nTrk = 310; }
-	else      { int k = nUnit - 1;
-	            nStDoc = 160 + 10*k; nStEz = 0x100 + 0x10*k;
-	            nCmdDoc = 320 + 10*k; nCmdEz = 0x300 + 0x10*k; nTrk = 300 + 2*k; }
+	int k = bRtv ? 0 : (nUnit - 1);
+	CString s;
+	switch (nKind)
+	{
+	case EZ_ST:  s.Format(_T("W%04X"), (bRtv ? 0x150 : 0x100 + 0x10*k) + nOff); break;
+	case EZ_CMD: s.Format(_T("W%04X"), (bRtv ? 0x350 : 0x300 + 0x10*k) + nOff); break;
+	case EZ_EVT: s.Format(_T("M%04X"), (bRtv ? 928 : 768 + 32*k) + nOff); break;
+	case EZ_ACK: s.Format(_T("M%04X"), (bRtv ? 1616 : 1536 + 16*k) + nOff); break;
+	case EZ_TRK: s.Format(_T("R%04d"), (bRtv ? 310 : 300 + 2*k) + nOff); break;
+	}
+	return s;
 }
 
 CPanelInfoDlg::CPanelInfoDlg(CWnd* pParent /*=NULL*/)
@@ -62,14 +74,13 @@ BOOL CPanelInfoDlg::OnInitDialog()
 
 	m_list.SetExtendedStyle(m_list.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 	struct { LPCTSTR strHead; int nWidth; } COLS[] = {
-		{ _T("항목"),       95 }, { _T("값"),        120 }, { _T("설정"),      95 },
-		{ _T("확인"),       70 }, { _T("구ECS주소"),  75 }, { _T("실제주소"),  75 },
+		{ _T("항목"),       95 }, { _T("값"),        110 }, { _T("설정"),      95 },
+		{ _T("확인"),       72 }, { _T("구ECS주소"),  72 }, { _T("실제주소"),  85 },
 		{ _T("기록시명칭"), 190 },
 	};
 	for (int i = 0; i < (int)(sizeof(COLS)/sizeof(COLS[0])); i++)
 		m_list.InsertColumn(i, COLS[i].strHead, LVCFMT_LEFT, COLS[i].nWidth);
 
-	// 오버레이 컨트롤(설정/확인 열 위) - 다이얼로그 자식으로 만들고 셀 위치로 이동시킨다
 	CRect rc0(0, 0, 10, 10);
 	m_cmbStatus.Create(WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL, rc0, this, IDC_PI_CMB_STATUS);
 	m_btnStatus.Create(_T("적용"), WS_CHILD | BS_PUSHBUTTON, rc0, this, IDC_PI_BTN_STATUS);
@@ -187,7 +198,6 @@ void CPanelInfoDlg::HideOverlays()
 	m_btnForce.ShowWindow(SW_HIDE);  m_btnCvDelete.ShowWindow(SW_HIDE);
 }
 
-// 리스트의 (행, 열) 셀 위로 컨트롤 이동. 콤보는 드롭다운 높이를 더 준다.
 void CPanelInfoDlg::PlaceOverCell(CWnd* pCtrl, int nRow, int nCol, BOOL bShow)
 {
 	if (pCtrl == NULL || !::IsWindow(pCtrl->m_hWnd) || nRow < 0 || nRow >= m_list.GetItemCount())
@@ -205,13 +215,80 @@ void CPanelInfoDlg::PlaceOverCell(CWnd* pCtrl, int nRow, int nCol, BOOL bShow)
 	if (bShow) pCtrl->BringWindowToTop();
 }
 
+// 설비 행 정의 : 항목 / DB 필드(별칭) / 관측 태그(실제주소) / 구ECS 주소종류+오프셋
+struct VROW { LPCTSTR strCap; LPCTSTR strField; LPCTSTR strObs; int nEzKind; int nEzOff; };
+
+// SC/RTV 공통 (ScSkinDlg/RtvSkinDlg 확대 패널 항목 전체)
+static const VROW VEH_ROWS[] = {
+	{ _T("상태"),         _T("SUBSYSTEM_STATUS_RD"),        _T("SUBSYSTEM_STATUS"),         EZ_ST,  0 },
+	{ _T("화물감지"),     _T("SEN"),                        _T("PALLET_EXIST_FLAG"),        EZ_EVT, 0 },
+	{ _T("상차완료"),     _T("LOAD_COMPLETE_RD"),           _T("LOAD_COMPLETE"),            EZ_EVT, 16 },
+	{ _T("상차ACK"),      _T("LOAD_COMPLETE_ACK_OD"),       _T("LOAD_COMPLETE_ACK"),        EZ_ACK, 1 },
+	{ _T("하역완료"),     _T("UNLOAD_COMPLETE_RD"),         _T("UNLOAD_COMPLETE"),          EZ_EVT, 17 },
+	{ _T("하역ACK"),      _T("UNLOAD_COMPLETE_ACK_OD"),     _T("UNLOAD_COMPLETE_ACK"),      EZ_ACK, 2 },
+	{ _T("반송요청"),     _T("TRANSFER_REQUEST_OD"),        _T("TRANSFER_REQUEST"),         EZ_ACK, 0 },
+	{ _T("반송ACK"),      _T("TRANSFER_ACK_RD"),            _T("TRANSFER_ACK"),             EZ_EVT, 20 },
+	{ _T("알람SET"),      _T("ALARM_SET_REPORT_RD"),        _T("ALARM_SET_REPORT"),         EZ_EVT, 18 },
+	{ _T("알람SET ACK"),  _T("ALARM_SET_REPORT_ACK_OD"),    _T("ALARM_SET_REPORT_ACK"),     EZ_ACK, 3 },
+	{ _T("알람RST"),      _T("ALARM_RESET_REPORT_RD"),      _T("ALARM_RESET_REPORT"),       EZ_EVT, 19 },
+	{ _T("알람RST ACK"),  _T("ALARM_RESET_REPORT_ACK_OD"),  _T("ALARM_RESET_REPORT_ACK"),   EZ_ACK, 4 },
+	{ _T("현재위치"),     _T("CUR_LOC"),                    _T("SUBSYSTEM_LOCATION_01"),    EZ_ST,  6 },
+	{ _T("지시출발"),     _T("CMD_FROM"),                   _T("FROM_01"),                  EZ_CMD, 0 },
+	{ _T("지시도착"),     _T("CMD_TO"),                     _T("TO_01"),                    EZ_CMD, 3 },
+	{ _T("완료위치"),     _T("TC_LOC"),                     _T("TRANSFER_COMPLETE_LOCATION_01"), EZ_ST, 3 },
+	{ _T("파레트ID"),     _T("PALLET_ID_OD"),               _T("PALLET_ID"),                EZ_CMD, 6 },
+	{ _T("알람코드"),     _T("ALARM_SET_CODE_RD"),          _T("ALARM_SET_CODE"),           EZ_ST,  1 },
+	{ _T("알람해제코드"), _T("ALARM_RESET_CODE_RD"),        _T("ALARM_RESET_CODE"),         EZ_ST,  2 },
+	{ _T("에러코드"),     _T("ERR_CODE_RD"),                _T("ERR_CODE_RD"),              EZ_ST, 10 },
+	{ _T("차상화물"),     _T("PALLET_ON_VEHICLE_RD"),       _T("PALLET_ON_VEHICLE"),        EZ_TRK, 0 },
+};
+#define VEH_ROW_FORCE 20   // 차상화물 행(강제완료 버튼)
+
+// CV (CvSkinDlg 본체 + 확대 패널 항목 전체. 관측 태그는 슬롯(_01/_02)에 따라 달라 코드에서 조립)
+static const VROW CV_ROWS[] = {
+	{ _T("작업번호"),      _T("LUGG_NO_RD"),             NULL,                        EZ_NONE, 0 },
+	{ _T("지시 작업번호"), _T("LUGG_NO_OD"),             NULL,                        EZ_NONE, 0 },
+	{ _T("목적지"),        _T("DEST_POS_RD"),            NULL,                        EZ_NONE, 0 },
+	{ _T("지시 목적지"),   _T("DEST_POS_OD"),            NULL,                        EZ_NONE, 0 },
+	{ _T("구분"),          _T("JOB_TYP_RD"),             NULL,                        EZ_NONE, 0 },
+	{ _T("지시 구분"),     _T("JOB_TYP_OD"),             NULL,                        EZ_NONE, 0 },
+	{ _T("에러코드"),      _T("ERROR_CODE"),             NULL,                        EZ_NONE, 0 },
+	{ _T("상차완료"),      _T("LOAD_COMPLETE_RD"),       _T("LOAD_COMPLETE#"),        EZ_NONE, 0 },
+	{ _T("상차ACK"),       _T("LOAD_COMPLETE_ACK_OD"),   _T("LOAD_COMPLETE_ACK#"),    EZ_NONE, 0 },
+	{ _T("하역완료"),      _T("UNLOAD_COMPLETE_RD"),     _T("UNLOAD_COMPLETE#"),      EZ_NONE, 0 },
+	{ _T("하역ACK"),       _T("UNLOAD_COMPLETE_ACK_OD"), _T("UNLOAD_COMPLETE_ACK#"),  EZ_NONE, 0 },
+	{ _T("출고요청"),      _T("UNLOAD_REQUEST_OD"),      _T("UNLOAD_REQUEST_02"),     EZ_NONE, 0 },
+	{ _T("출고ACK"),       _T("UNLOAD_REQUEST_ACK_RD"),  _T("UNLOAD_REQUEST_ACK_02"), EZ_NONE, 0 },
+	{ _T("입고준비"),      _T("IN_READY_RD"),            _T("IN_READY_02"),           EZ_NONE, 0 },
+	{ _T("대기 IN"),       _T("WAIT_IN_RD"),             _T("WAIT_IN"),               EZ_NONE, 0 },
+	{ _T("대기 OUT"),      _T("WAIT_OUT_RD"),            _T("WAIT_OUT"),              EZ_NONE, 0 },
+	{ _T("자동운전"),      _T("AUTO_MODE_RD"),           _T("OPERATION_MODE"),        EZ_NONE, 0 },
+	{ _T("화물감지"),      _T("SENSOR0_DATA_RD"),        _T("PALLET_EXIST_FLAG#"),    EZ_NONE, 0 },
+	{ _T("입출방향"),      _T("DIRECTION_MODE_RD"),      _T("DIRECTION_MODE"),        EZ_NONE, 0 },
+	{ _T("입고 준비"),     _T("STO_READY_RD"),           NULL,                        EZ_NONE, 0 },
+	{ _T("출고 준비"),     _T("RET_READY_RD"),           NULL,                        EZ_NONE, 0 },
+	{ _T("입고 HS"),       _T("STOHS_READY_RD"),         NULL,                        EZ_NONE, 0 },
+	{ _T("출고 HS"),       _T("RETHS_READY_RD"),         NULL,                        EZ_NONE, 0 },
+};
+#define CV_ROW_WRITE 1     // 지시 작업번호 행(에디트 + 쓰기)
+
+static const struct { LPCTSTR strName; LPCTSTR strCap; } JOBF[] = {
+	{ _T("LUGG_NO"),        _T("작업번호") },   { _T("JOB_TYP"),      _T("작업구분") },
+	{ _T("JOB_STATUS"),     _T("작업상태") },   { _T("START_POS"),    _T("출발") },
+	{ _T("START_LOCATION"), _T("출발위치") },   { _T("DEST_POS"),     _T("도착") },
+	{ _T("DEST_LOCATION"),  _T("도착위치") },   { _T("LOT_NO"),       _T("LOT") },
+	{ _T("PRODUCT_ID"),     _T("제품") },       { _T("JOB_PRIORITY"), _T("우선순위") },
+	{ _T("INS_DT"),         _T("등록시각") },   { _T("UPD_DT"),       _T("수정시각") },
+};
+#define JOB_ROW_STATUS 2
+#define JOB_ROW_PRI    9
+
 void CPanelInfoDlg::Refresh()
 {
 	if (m_pDoc == NULL || !::IsWindow(m_list.m_hWnd))
 		return;
 
 	int nTab = m_tab.GetCurSel();
-	HideOverlays();
 	m_list.SetRedraw(FALSE);
 	m_list.DeleteAllItems();
 
@@ -221,6 +298,9 @@ void CPanelInfoDlg::Refresh()
 
 	if (nTab == TAB_JOB)
 	{
+		// [LGLS] 행/오버레이가 항상 보이도록, 작업이 선택되지 않아도 항목 골격은 그린다
+		CRecordSetWrap* pRsw = NULL;
+		int nCnt = -1;
 		if (!m_strJobNo.IsEmpty())
 		{
 			CString strSql;
@@ -242,38 +322,38 @@ void CPanelInfoDlg::Refresh()
 				(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pDoc->m_WH_TYP,
 				(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_strJobNo);
 			strSql = CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
-			int nCnt = -1; CString strMsg;
+			CString strMsg;
 			_RecordsetPtr pRsp = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nCnt, strMsg);
-			if (nCnt > 0)
-			{
-				CRecordSetWrap* pRsw = new CRecordSetWrap(pRsp);
-				pRsw->MoveFirst();
-				static struct { LPCTSTR strName; LPCTSTR strCap; } JOBF[] = {
-					{ _T("LUGG_NO"),        _T("작업번호") },   { _T("JOB_TYP"),      _T("작업구분") },
-					{ _T("JOB_STATUS"),     _T("작업상태") },   { _T("START_POS"),    _T("출발") },
-					{ _T("START_LOCATION"), _T("출발위치") },   { _T("DEST_POS"),     _T("도착") },
-					{ _T("DEST_LOCATION"),  _T("도착위치") },   { _T("LOT_NO"),       _T("LOT") },
-					{ _T("PRODUCT_ID"),     _T("제품") },       { _T("JOB_PRIORITY"), _T("우선순위") },
-					{ _T("INS_DT"),         _T("등록시각") },   { _T("UPD_DT"),       _T("수정시각") },
-				};
-				for (int i = 0; i < (int)(sizeof(JOBF)/sizeof(JOBF[0])); i++)
-				{
-					m_list.InsertItem(i, JOBF[i].strCap);
-					m_list.SetItemText(i, 1, pRsw->GetItem(JOBF[i].strName));
-					m_list.SetItemText(i, 6, JOBF[i].strName);
-				}
-				delete pRsw;
-			}
+			if (nCnt > 0) { pRsw = new CRecordSetWrap(pRsp); pRsw->MoveFirst(); }
 		}
+		for (int i = 0; i < (int)(sizeof(JOBF)/sizeof(JOBF[0])); i++)
+		{
+			m_list.InsertItem(i, JOBF[i].strCap);
+			m_list.SetItemText(i, 1, (pRsw != NULL) ? pRsw->GetItem(JOBF[i].strName) : _T(""));
+			m_list.SetItemText(i, 6, JOBF[i].strName);
+		}
+		if (pRsw != NULL) delete pRsw;
 	}
 	else if (nTab == TAB_CV)
 	{
 		if (!strUnit.IsEmpty())
 		{
+			CString N = m_pDoc->NVL;
 			CString strSql;
 			strSql.Format(
-				_T(" SELECT LUGG_NO_RD, LUGG_NO_OD, DEST_POS_RD, DEST_POS_OD, JOB_TYP_RD, JOB_TYP_OD ")
-				_T("       ,ERROR_CODE, AUTO_MODE_RD, STO_READY_RD, RET_READY_RD, STOHS_READY_RD, RETHS_READY_RD ")
+				_T(" SELECT PLC_NO, TRACK_NO ")
+				_T("       ,") + N + _T("(LUGG_NO_RD,'') AS LUGG_NO_RD, ") + N + _T("(LUGG_NO_OD,'') AS LUGG_NO_OD ")
+				_T("       ,") + N + _T("(DEST_POS_RD,'') AS DEST_POS_RD, ") + N + _T("(DEST_POS_OD,'') AS DEST_POS_OD ")
+				_T("       ,") + N + _T("(JOB_TYP_RD,'') AS JOB_TYP_RD, ") + N + _T("(JOB_TYP_OD,'') AS JOB_TYP_OD ")
+				_T("       ,") + N + _T("(ERROR_CODE,'') AS ERROR_CODE ")
+				_T("       ,") + N + _T("(LOAD_COMPLETE_RD,'0') AS LOAD_COMPLETE_RD, ") + N + _T("(LOAD_COMPLETE_ACK_OD,'0') AS LOAD_COMPLETE_ACK_OD ")
+				_T("       ,") + N + _T("(UNLOAD_COMPLETE_RD,'0') AS UNLOAD_COMPLETE_RD, ") + N + _T("(UNLOAD_COMPLETE_ACK_OD,'0') AS UNLOAD_COMPLETE_ACK_OD ")
+				_T("       ,") + N + _T("(UNLOAD_REQUEST_OD,'0') AS UNLOAD_REQUEST_OD, ") + N + _T("(UNLOAD_REQUEST_ACK_RD,'0') AS UNLOAD_REQUEST_ACK_RD ")
+				_T("       ,") + N + _T("(IN_READY_RD,'0') AS IN_READY_RD, ") + N + _T("(WAIT_IN_RD,'0') AS WAIT_IN_RD, ") + N + _T("(WAIT_OUT_RD,'0') AS WAIT_OUT_RD ")
+				_T("       ,") + N + _T("(AUTO_MODE_RD,'0') AS AUTO_MODE_RD, ") + N + _T("(SENSOR0_DATA_RD,'0') AS SENSOR0_DATA_RD ")
+				_T("       ,") + N + _T("(DIRECTION_MODE_RD,'') AS DIRECTION_MODE_RD ")
+				_T("       ,") + N + _T("(STO_READY_RD,'0') AS STO_READY_RD, ") + N + _T("(RET_READY_RD,'0') AS RET_READY_RD ")
+				_T("       ,") + N + _T("(STOHS_READY_RD,'0') AS STOHS_READY_RD, ") + N + _T("(RETHS_READY_RD,'0') AS RETHS_READY_RD ")
 				_T("   FROM CV_DATA WHERE WH_TYP = '%s' AND MC_NO = '%s' "),
 				(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strUnit);
 			int nCnt = -1; CString strMsg;
@@ -282,19 +362,22 @@ void CPanelInfoDlg::Refresh()
 			{
 				CRecordSetWrap* pRsw = new CRecordSetWrap(pRsp);
 				pRsw->MoveFirst();
-				static struct { LPCTSTR strName; LPCTSTR strCap; } CVF[] = {
-					{ _T("LUGG_NO_RD"),     _T("작업번호") },     { _T("LUGG_NO_OD"),   _T("지시 작업번호") },
-					{ _T("DEST_POS_RD"),    _T("목적지") },       { _T("DEST_POS_OD"),  _T("지시 목적지") },
-					{ _T("JOB_TYP_RD"),     _T("구분") },         { _T("JOB_TYP_OD"),   _T("지시 구분") },
-					{ _T("ERROR_CODE"),     _T("에러코드") },     { _T("AUTO_MODE_RD"), _T("자동모드") },
-					{ _T("STO_READY_RD"),   _T("입고 준비") },    { _T("RET_READY_RD"), _T("출고 준비") },
-					{ _T("STOHS_READY_RD"), _T("입고 HS") },      { _T("RETHS_READY_RD"), _T("출고 HS") },
-				};
-				for (int i = 0; i < (int)(sizeof(CVF)/sizeof(CVF[0])); i++)
+				CString strPlc = pRsw->GetItem(_T("PLC_NO")); strPlc.Trim();
+				CString strTrk = pRsw->GetItem(_T("TRACK_NO")); strTrk.Trim();
+				CString strOwner; strOwner.Format(_T("CONVEYOR:%d"), _ttoi(strPlc));
+				CString strSfx = (_ttoi(strTrk) % 2 == 1) ? _T("_01") : _T("_02");
+
+				for (int i = 0; i < (int)(sizeof(CV_ROWS)/sizeof(CV_ROWS[0])); i++)
 				{
-					m_list.InsertItem(i, CVF[i].strCap);
-					m_list.SetItemText(i, 1, pRsw->GetItem(CVF[i].strName));
-					m_list.SetItemText(i, 6, CVF[i].strName);
+					m_list.InsertItem(i, CV_ROWS[i].strCap);
+					m_list.SetItemText(i, 1, pRsw->GetItem(CV_ROWS[i].strField));
+					if (CV_ROWS[i].strObs != NULL)
+					{
+						CString strTag = CV_ROWS[i].strObs;
+						strTag.Replace(_T("#"), strSfx);
+						m_list.SetItemText(i, 5, CLib::GetObsAddr(strOwner, strTag));
+					}
+					m_list.SetItemText(i, 6, CV_ROWS[i].strField);
 				}
 				delete pRsw;
 			}
@@ -307,45 +390,41 @@ void CPanelInfoDlg::Refresh()
 			BOOL bRtv = (nTab == TAB_RTV);
 			CString strTable = bRtv ? _T("RTV_DATA_LGLS") : _T("SC_DATA_LGLS");
 			CString strKey   = bRtv ? _T("RTV_NO")        : _T("MC_NO");
+			CString strSen   = bRtv ? _T("SENSOR_RTV_RD") : _T("SENSOR_FK_RD");
+			CString N = m_pDoc->NVL;
 			CString strSql;
 			strSql.Format(
-				_T(" SELECT SUBSYSTEM_STATUS_RD, ALARM_SET_CODE_RD, ALARM_RESET_CODE_RD ")
-				_T("       ,TRANSFER_COMPLETE_LOCATION_01_RD + '/' + TRANSFER_COMPLETE_LOCATION_02_RD + '/' + TRANSFER_COMPLETE_LOCATION_03_RD AS TC_LOC ")
-				_T("       ,LOCATION_01_RD + '/' + LOCATION_02_RD + '/' + LOCATION_03_RD AS CUR_LOC ")
-				_T("       ,ERR_CODE_RD, PALLET_ON_VEHICLE_RD ")
-				_T("       ,FROM_01_OD + '/' + FROM_02_OD + '/' + FROM_03_OD AS CMD_FROM ")
-				_T("       ,TO_01_OD + '/' + TO_02_OD + '/' + TO_03_OD AS CMD_TO ")
-				_T("       ,PALLET_ID_OD ")
+				_T(" SELECT ") + N + _T("(SUBSYSTEM_STATUS_RD,'') AS SUBSYSTEM_STATUS_RD ")
+				_T("       ,") + N + _T("(%s,'0') AS SEN ")
+				_T("       ,") + N + _T("(LOAD_COMPLETE_RD,'0') AS LOAD_COMPLETE_RD, ") + N + _T("(LOAD_COMPLETE_ACK_OD,'0') AS LOAD_COMPLETE_ACK_OD ")
+				_T("       ,") + N + _T("(UNLOAD_COMPLETE_RD,'0') AS UNLOAD_COMPLETE_RD, ") + N + _T("(UNLOAD_COMPLETE_ACK_OD,'0') AS UNLOAD_COMPLETE_ACK_OD ")
+				_T("       ,") + N + _T("(TRANSFER_REQUEST_OD,'0') AS TRANSFER_REQUEST_OD, ") + N + _T("(TRANSFER_ACK_RD,'0') AS TRANSFER_ACK_RD ")
+				_T("       ,") + N + _T("(ALARM_SET_REPORT_RD,'0') AS ALARM_SET_REPORT_RD, ") + N + _T("(ALARM_SET_REPORT_ACK_OD,'0') AS ALARM_SET_REPORT_ACK_OD ")
+				_T("       ,") + N + _T("(ALARM_RESET_REPORT_RD,'0') AS ALARM_RESET_REPORT_RD, ") + N + _T("(ALARM_RESET_REPORT_ACK_OD,'0') AS ALARM_RESET_REPORT_ACK_OD ")
+				_T("       ,") + N + _T("(LOCATION_01_RD,'') + '/' + ") + N + _T("(LOCATION_02_RD,'') + '/' + ") + N + _T("(LOCATION_03_RD,'') AS CUR_LOC ")
+				_T("       ,") + N + _T("(FROM_01_OD,'') + '/' + ") + N + _T("(FROM_02_OD,'') + '/' + ") + N + _T("(FROM_03_OD,'') AS CMD_FROM ")
+				_T("       ,") + N + _T("(TO_01_OD,'') + '/' + ") + N + _T("(TO_02_OD,'') + '/' + ") + N + _T("(TO_03_OD,'') AS CMD_TO ")
+				_T("       ,") + N + _T("(TRANSFER_COMPLETE_LOCATION_01_RD,'') + '/' + ") + N + _T("(TRANSFER_COMPLETE_LOCATION_02_RD,'') + '/' + ") + N + _T("(TRANSFER_COMPLETE_LOCATION_03_RD,'') AS TC_LOC ")
+				_T("       ,") + N + _T("(PALLET_ID_OD,'') AS PALLET_ID_OD ")
+				_T("       ,") + N + _T("(ALARM_SET_CODE_RD,'') AS ALARM_SET_CODE_RD, ") + N + _T("(ALARM_RESET_CODE_RD,'') AS ALARM_RESET_CODE_RD ")
+				_T("       ,") + N + _T("(ERR_CODE_RD,'') AS ERR_CODE_RD, ") + N + _T("(PALLET_ON_VEHICLE_RD,'') AS PALLET_ON_VEHICLE_RD ")
 				_T("   FROM %s WHERE WH_TYP = '%s' AND %s = '%s' "),
-				(LPCTSTR)strTable, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strKey, (LPCTSTR)strUnit);
+				(LPCTSTR)strSen, (LPCTSTR)strTable, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strKey, (LPCTSTR)strUnit);
 			int nCnt = -1; CString strMsg;
 			_RecordsetPtr pRsp = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nCnt, strMsg);
 			if (nCnt > 0)
 			{
 				int nUnit = _ttoi(strUnit) - 900;   // SC 901~905 -> 1~5
-				int nStDoc, nStEz, nCmdDoc, nCmdEz, nTrk;
-				VehBases(bRtv, nUnit, nStDoc, nStEz, nCmdDoc, nCmdEz, nTrk);
+				CString strOwner = bRtv ? _T("VEHICLE:1") : _T("");
+				if (!bRtv) strOwner.Format(_T("VEHICLE:1%d"), nUnit);
 
 				CRecordSetWrap* pRsw = new CRecordSetWrap(pRsp);
 				pRsw->MoveFirst();
-				//                      필드              항목            워드오프셋(-1=주소없음, -2=R영역)
-				static struct { LPCTSTR strName; LPCTSTR strCap; int nOff; } VF[] = {
-					{ _T("SUBSYSTEM_STATUS_RD"),  _T("상태"),          0 },
-					{ _T("ALARM_SET_CODE_RD"),    _T("알람발생코드"),  1 },
-					{ _T("ALARM_RESET_CODE_RD"),  _T("알람해제코드"),  2 },
-					{ _T("TC_LOC"),               _T("반송완료위치"),  3 },
-					{ _T("CUR_LOC"),              _T("현재위치"),      6 },
-					{ _T("ERR_CODE_RD"),          _T("에러코드"),     10 },
-					{ _T("PALLET_ON_VEHICLE_RD"), _T("차상화물"),     -2 },
-					{ _T("CMD_FROM"),             _T("지시 From"),   100 },
-					{ _T("CMD_TO"),               _T("지시 To"),     103 },
-					{ _T("PALLET_ID_OD"),         _T("지시 작업번호"),106 },
-				};
-				for (int i = 0; i < (int)(sizeof(VF)/sizeof(VF[0])); i++)
+				for (int i = 0; i < (int)(sizeof(VEH_ROWS)/sizeof(VEH_ROWS[0])); i++)
 				{
-					m_list.InsertItem(i, VF[i].strCap);
-					CString strVal = pRsw->GetItem(VF[i].strName);
-					if (VF[i].strName == CString(_T("SUBSYSTEM_STATUS_RD")))
+					m_list.InsertItem(i, VEH_ROWS[i].strCap);
+					CString strVal = pRsw->GetItem(VEH_ROWS[i].strField);
+					if (i == 0)
 					{
 						strVal.Trim();
 						if (strVal == _T("0")) strVal = _T("0 (DOWN)");
@@ -353,41 +432,14 @@ void CPanelInfoDlg::Refresh()
 						else if (strVal == _T("2")) strVal = _T("2 (RUN)");
 					}
 					m_list.SetItemText(i, 1, strVal);
-
-					CString strEz, strReal;
-					int nOff = VF[i].nOff;
-					if (nOff == -2)                       // R 트래킹 (10진 확정 - 구 표기도 10진)
-					{
-						strEz.Format(_T("R%04d"), nTrk);
-						strReal.Format(_T("R%04d"), nTrk);
-					}
-					else if (nOff >= 100)                 // 지시(Command) 블록
-					{
-						int k = nOff - 100;
-						if (bRtv && k == 3)               // RTV To 특례 : To3=D0345
-						{
-							strEz = _T("W0350+,W0345");
-							strReal = _T("D0373~4,D0345");
-						}
-						else
-						{
-							strEz.Format(_T("W%04X"), nCmdEz + k);
-							strReal.Format(_T("D%04d"), nCmdDoc + k);
-						}
-					}
-					else if (nOff >= 0)                   // 상태(Status) 블록
-					{
-						if (bRtv && nOff == 10)           // RTV 는 에러코드 워드가 없다(알람코드 유래)
-						{ strEz = _T("-"); strReal = _T("-"); }
-						else
-						{
-							strEz.Format(_T("W%04X"), nStEz + nOff);
-							strReal.Format(_T("D%04d"), nStDoc + nOff);
-						}
-					}
+					CString strEz;
+					if (bRtv && VEH_ROWS[i].nEzKind == EZ_ST && VEH_ROWS[i].nEzOff == 10)
+						strEz = _T("-");   // RTV 는 에러코드 워드가 없다(알람코드 유래)
+					else
+						strEz = EzAddr(bRtv, nUnit, VEH_ROWS[i].nEzKind, VEH_ROWS[i].nEzOff);
 					m_list.SetItemText(i, 4, strEz);
-					m_list.SetItemText(i, 5, strReal);
-					m_list.SetItemText(i, 6, VF[i].strName);
+					m_list.SetItemText(i, 5, CLib::GetObsAddr(strOwner, VEH_ROWS[i].strObs));
+					m_list.SetItemText(i, 6, VEH_ROWS[i].strField);
 				}
 				delete pRsw;
 			}
@@ -397,32 +449,32 @@ void CPanelInfoDlg::Refresh()
 	m_list.SetRedraw(TRUE);
 	m_list.Invalidate(FALSE);
 
-	// 오버레이 배치
-	if (nTab == TAB_JOB && m_list.GetItemCount() >= 12)
+	// 오버레이 배치 (항상 표시)
+	HideOverlays();
+	if (nTab == TAB_JOB && m_list.GetItemCount() > JOB_ROW_PRI)
 	{
-		// 현재 상태/우선순위를 콤보 초기 선택으로
-		CString strStatus = m_list.GetItemText(2, 1);   // "[11] ..." 형태
+		CString strStatus = m_list.GetItemText(JOB_ROW_STATUS, 1);
 		for (int i = 0; i < m_arStatusCd.GetCount(); i++)
-			if (strStatus.Find(_T("[") + m_arStatusCd[i] + _T("]")) == 0)
+			if (!strStatus.IsEmpty() && strStatus.Find(_T("[") + m_arStatusCd[i] + _T("]")) == 0)
 			{ m_cmbStatus.SetCurSel(i); break; }
-		CString strPri = m_list.GetItemText(9, 1); strPri.Trim();
+		CString strPri = m_list.GetItemText(JOB_ROW_PRI, 1); strPri.Trim();
 		int nPri = _ttoi(strPri);
 		if (nPri >= 1 && nPri <= 9) m_cmbPri.SetCurSel(nPri - 1);
 
-		PlaceOverCell(&m_cmbStatus, 2, 2, TRUE);
-		PlaceOverCell(&m_btnStatus, 2, 3, TRUE);
-		PlaceOverCell(&m_cmbPri,    9, 2, TRUE);
-		PlaceOverCell(&m_btnPri,    9, 3, TRUE);
+		PlaceOverCell(&m_cmbStatus, JOB_ROW_STATUS, 2, TRUE);
+		PlaceOverCell(&m_btnStatus, JOB_ROW_STATUS, 3, TRUE);
+		PlaceOverCell(&m_cmbPri,    JOB_ROW_PRI, 2, TRUE);
+		PlaceOverCell(&m_btnPri,    JOB_ROW_PRI, 3, TRUE);
 	}
-	else if (nTab == TAB_CV && m_list.GetItemCount() >= 2)
+	else if (nTab == TAB_CV && m_list.GetItemCount() > CV_ROW_WRITE)
 	{
-		PlaceOverCell(&m_edtCvJob,   1, 2, TRUE);
-		PlaceOverCell(&m_btnCvWrite, 1, 3, TRUE);
+		PlaceOverCell(&m_edtCvJob,   CV_ROW_WRITE, 2, TRUE);
+		PlaceOverCell(&m_btnCvWrite, CV_ROW_WRITE, 3, TRUE);
 		m_btnCvDelete.ShowWindow(SW_SHOW);
 	}
-	else if ((nTab == TAB_SC || nTab == TAB_RTV) && m_list.GetItemCount() >= 7)
+	else if ((nTab == TAB_SC || nTab == TAB_RTV) && m_list.GetItemCount() > VEH_ROW_FORCE)
 	{
-		PlaceOverCell(&m_btnForce, 6, 3, TRUE);   // 차상화물 행의 [확인] 칸
+		PlaceOverCell(&m_btnForce, VEH_ROW_FORCE, 3, TRUE);
 	}
 }
 
@@ -440,9 +492,23 @@ void CPanelInfoDlg::SetJob(CString strLuggNo)
 	Refresh();
 }
 
-// ── 액션들 ─────────────────────────────────────────────────────
+// [LGLS 2026-09-01] 화면 설비 클릭 -> 해당 탭/호기 선택
+void CPanelInfoDlg::SetEquip(int nTab, CString strUnit)
+{
+	if (!::IsWindow(m_tab.m_hWnd))
+		return;
+	if (m_tab.GetCurSel() != nTab)
+	{
+		m_tab.SetCurSel(nTab);
+		FillUnits();
+		UpdateTitle();
+	}
+	strUnit.Trim();
+	if (!strUnit.IsEmpty())
+		m_cmbUnit.SelectString(-1, strUnit);
+	Refresh();
+}
 
-// 공통 실행 : 권한 + 트랜잭션 + 클라이언트 로그 + UPDATE (ViewJobListDlg 의 수정 절차와 동일)
 BOOL CPanelInfoDlg::ExecUpdate(CString strSql, CString strLogMsg, CString strLuggNo, CString strWidId)
 {
 	if (!m_pDoc->Permission(strWidId, UPD_YN))
@@ -517,7 +583,6 @@ void CPanelInfoDlg::OnBtnCvDelete()
 	if (strUnit.IsEmpty()) return;
 	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("지시값을 삭제 하시겠습니까?")) + _T(" [") + strUnit + _T("]"), MB_YESNO) != IDYES)
 		return;
-	// CvSkinDlg 의 [삭제] 와 같은 SQL - 지시(OD) 필드 클리어
 	CString strSql;
 	strSql.Format(_T("UPDATE CV_DATA SET LUGG_NO_OD = '0', DEST_POS_OD = '0', JOB_TYP_OD = '0', PULP_SENSOR_OD = '0', WRITE_UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND MC_NO = '%s'"),
 		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strUnit);
@@ -528,18 +593,17 @@ void CPanelInfoDlg::OnBtnCvDelete()
 void CPanelInfoDlg::OnBtnForce()
 {
 	BOOL bRtv = (m_tab.GetCurSel() == TAB_RTV);
-	// 차상화물(없으면 지시 작업번호)을 대상으로 반송완료 상태를 강제 기록
-	CString strJob = m_list.GetItemText(6, 1); strJob.Trim();
+	CString strJob = m_list.GetItemText(VEH_ROW_FORCE, 1); strJob.Trim();   // 차상화물
 	if (strJob.IsEmpty() || strJob == _T("0") || strJob == _T("0000"))
 	{
-		strJob = m_list.GetItemText(9, 1); strJob.Trim();
+		strJob = m_list.GetItemText(16, 1); strJob.Trim();                  // 파레트ID(지시)
 	}
 	if (strJob.IsEmpty() || strJob == _T("0") || strJob == _T("0000"))
 	{
 		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("대상 작업이 없습니다")));
 		return;
 	}
-	CString strStatus = bRtv ? _T("39") : _T("29");   // RGV 반송완료 / SC 반송완료
+	CString strStatus = bRtv ? _T("39") : _T("29");
 	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("강제완료 하시겠습니까?")) + _T(" [") + strJob + _T(" -> ") + strStatus + _T("]"), MB_YESNO) != IDYES)
 		return;
 	CString strSql;
@@ -548,8 +612,6 @@ void CPanelInfoDlg::OnBtnForce()
 	if (ExecUpdate(strSql, _T("JOB_MST UPDATE : 강제완료 JOB_STATUS -> ") + strStatus, strJob, bRtv ? _T("CRtvSkinDlg") : _T("CScSkinDlg")))
 		Refresh();
 }
-
-// ── 크기/타이머/탭 ────────────────────────────────────────────
 
 void CPanelInfoDlg::OnSize(UINT nType, int cx, int cy)
 {
@@ -570,7 +632,6 @@ void CPanelInfoDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == TIMER_PANEL_INFO && IsWindowVisible())
 	{
-		// 콤보/에디트 조작 중에는 갱신으로 방해하지 않는다
 		CWnd* pFocus = GetFocus();
 		BOOL bEditing = (pFocus == &m_edtCvJob) ||
 			(m_cmbStatus.GetDroppedState()) || (m_cmbPri.GetDroppedState());
@@ -583,6 +644,7 @@ void CPanelInfoDlg::OnTimer(UINT_PTR nIDEvent)
 void CPanelInfoDlg::OnTabChanged(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	*pResult = 0;
+	HideOverlays();
 	FillUnits();
 	UpdateTitle();
 	Refresh();

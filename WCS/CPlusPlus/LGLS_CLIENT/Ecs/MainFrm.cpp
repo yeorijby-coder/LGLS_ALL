@@ -845,6 +845,8 @@ void CMainFrame::ShowPanelBars(CEcsDoc* pDoc, BOOL bShow)
 		m_PanelInfoDlg.m_pDoc = pDoc;
 		m_JobPane.m_pDlg  = &m_PanelJobDlg;   m_JobPane.m_nIDD  = IDD_PANEL_JOB;
 		m_InfoPane.m_pDlg = &m_PanelInfoDlg;  m_InfoPane.m_nIDD = IDD_PANEL_INFO;
+		m_PanelVehDlg.m_pDoc = pDoc;
+		m_VehPane.m_pDlg = &m_PanelVehDlg;    m_VehPane.m_nIDD = IDD_PANEL_VEH;
 
 		DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_RIGHT | CBRS_FLOAT_MULTI;
 		if (!m_JobPane.Create(_T("작업 정보"), this, CRect(0, 0, 480, 500), TRUE,
@@ -853,12 +855,18 @@ void CMainFrame::ShowPanelBars(CEcsDoc* pDoc, BOOL bShow)
 		if (!m_InfoPane.Create(_T("상세정보"), this, CRect(0, 0, 480, 400), TRUE,
 				ID_PANE_INFO, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
 			return;
+		if (!m_VehPane.Create(_T("Crane && Vehicle 반송 현황"), this, CRect(0, 0, 300, 200), TRUE,
+				ID_PANE_VEH, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
+			return;
 
 		m_JobPane.EnableDocking(CBRS_ALIGN_ANY);
 		m_InfoPane.EnableDocking(CBRS_ALIGN_ANY);
 		DockPane(&m_JobPane);
 		RecalcLayout();
 		m_InfoPane.DockToWindow(&m_JobPane, CBRS_ALIGN_BOTTOM);   // 작업 판넬 아래 분할
+		m_VehPane.EnableDocking(CBRS_ALIGN_ANY);
+		RecalcLayout();
+		m_VehPane.DockToWindow(&m_InfoPane, CBRS_ALIGN_RIGHT);    // 상세정보 오른쪽 옆
 
 		m_bPanelBarsCreated = TRUE;
 		RecalcLayout();
@@ -867,6 +875,7 @@ void CMainFrame::ShowPanelBars(CEcsDoc* pDoc, BOOL bShow)
 
 	m_JobPane.ShowPane(bShow, FALSE, TRUE);
 	m_InfoPane.ShowPane(bShow, FALSE, TRUE);
+	m_VehPane.ShowPane(bShow, FALSE, TRUE);
 	RecalcLayout();
 }
 
@@ -982,6 +991,31 @@ void CMainFrame::AddCategorySTATUS()
 void CMainFrame::OnUpdateStatusCv(CCmdUI *pCmdUI)
 {
 	 //pCmdUI->Enable(!m_bOperationOn);
+}
+
+// [LGLS 2026-09-01] 도킹 판넬이 하단 커스텀 상태바(40px, 통신상태 버튼)를 침범해
+//   통신상태 표시가 가려지던 문제 - 레이아웃 후 판넬 높이를 상태바 위까지로 클램프한다.
+void CMainFrame::RecalcLayout(BOOL bNotify)
+{
+	CFrameWndEx::RecalcLayout(bNotify);
+
+	if (!m_bPanelBarsCreated || !::IsWindow(m_wndStatusBar.GetSafeHwnd()))
+		return;
+	CRect rcCli; GetClientRect(&rcCli);
+	int nBarTop = rcCli.Height() - 40;
+
+	CDockablePane* pPanes[] = { &m_JobPane, &m_InfoPane, &m_VehPane };
+	for (int i = 0; i < 3; i++)
+	{
+		CDockablePane* p = pPanes[i];
+		if (!::IsWindow(p->m_hWnd) || !p->IsVisible() || p->IsFloating())
+			continue;
+		CRect rc; p->GetWindowRect(rc); ScreenToClient(rc);
+		if (rc.bottom > nBarTop && rc.top < nBarTop)
+			p->SetWindowPos(NULL, 0, 0, rc.Width(), nBarTop - rc.top,
+				SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+	}
+	m_wndStatusBar.BringWindowToTop();   // 통신상태 버튼이 항상 보이게
 }
 
 void CMainFrame::OnSize(UINT nType, int cx, int cy)

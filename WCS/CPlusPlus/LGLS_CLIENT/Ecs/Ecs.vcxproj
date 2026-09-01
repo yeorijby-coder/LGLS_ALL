@@ -380,6 +380,7 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PanelDockPane.h" />
+    <ClInclude Include="PanelVehDlg.h" />
     <ClInclude Include="PanelJobDlg.h" />
     <ClInclude Include="PanelInfoDlg.h" />
     <ClInclude Include="AdoDB.h" />
@@ -536,6 +537,7 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
   <ItemGroup>
     <ClCompile Include="AdoDbIO.cpp" />
     <ClCompile Include="PanelDockPane.cpp" />
+    <ClCompile Include="PanelVehDlg.cpp" />
     <ClCompile Include="PanelJobDlg.cpp" />
     <ClCompile Include="PanelInfoDlg.cpp" />
     <ClCompile Include="AsyncSocketEx.cpp" />

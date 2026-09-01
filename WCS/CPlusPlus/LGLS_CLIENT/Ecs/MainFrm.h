@@ -7,6 +7,7 @@
 #include "PanelDockPane.h"
 #include "PanelJobDlg.h"
 #include "PanelInfoDlg.h"
+#include "PanelVehDlg.h"
 #include "EcsDoc.h"
 
 class CMainFrame : public CFrameWndEx
@@ -49,12 +50,15 @@ public:
 	CPanelDockPane m_InfoPane;
 	CPanelJobDlg   m_PanelJobDlg;
 	CPanelInfoDlg  m_PanelInfoDlg;
+	CPanelDockPane m_VehPane;
+	CPanelVehDlg   m_PanelVehDlg;    // Crane & Vehicle 반송 현황
 	BOOL           m_bPanelBarsCreated;
 	BOOL           m_bUiModePanel;        // [LGLS 2026-09-01] UI모드 : TRUE=판넬, FALSE=대화상자
 	void ShowPanelBars(CEcsDoc* pDoc, BOOL bShow);
 	void SetInfoPaneTitle(CString strTitle);   // 상세정보 판넬 캡션 변경
 	void TogglePanelBars(CEcsDoc* pDoc);   // 리본 [작업정보] 진입점
 	void ShowJobDetail(CString strLuggNo); // 작업 판넬 선택 -> 정보 판넬 연동
+	virtual void RecalcLayout(BOOL bNotify = TRUE);   // [LGLS] 판넬이 상태바를 침범하지 않게 클램프
 	CCV_DATA* m_pCV_DATA;
 
 	HICON m_hIcon;

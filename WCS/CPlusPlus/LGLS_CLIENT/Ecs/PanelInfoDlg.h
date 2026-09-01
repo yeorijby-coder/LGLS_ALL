@@ -1,5 +1,5 @@
 // PanelInfoDlg.h : [LGLS 2026-09-01] 상세정보 도킹 판넬 (CV/SC/RTV/작업 탭)
-//   항목/값/설정/확인/구ECS주소/실제주소/기록시명칭 7열. 탭 선택에 따라 판넬 캡션이 바뀐다.
+//   항목/값/설정/확인/구ECS주소/실제주소/기록시명칭 7열. 각 설비 DLG 확대 패널의 항목을 전부 반영.
 #pragma once
 #include "resource.h"
 
@@ -19,9 +19,10 @@ public:
 
 	void Refresh();
 	void SetJob(CString strLuggNo);
+	void SetEquip(int nTab, CString strUnit);   // 화면 설비 클릭 -> 해당 탭/호기로 전환
 
 protected:
-	// 행 위 오버레이 컨트롤 (설정/확인 열)
+	// 설정/확인 열 위 오버레이 컨트롤
 	CComboBox m_cmbStatus;    // 작업 탭 : 작업상태
 	CButton   m_btnStatus;
 	CComboBox m_cmbPri;       // 작업 탭 : 우선순위
@@ -31,7 +32,7 @@ protected:
 	CButton   m_btnForce;     // SC/RTV 탭 : 강제완료
 	CButton   m_btnCvDelete;  // CV 탭 하단 : 지시 삭제
 
-	CStringArray m_arStatusCd;   // 작업상태 콤보의 코드값
+	CStringArray m_arStatusCd;
 
 	void UpdateTitle();
 	void FillUnits();

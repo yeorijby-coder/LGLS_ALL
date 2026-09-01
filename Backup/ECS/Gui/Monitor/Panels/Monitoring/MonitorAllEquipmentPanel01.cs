@@ -24,6 +24,7 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
 
         Timer refreshTimer = new Timer();
         private int refreshCount = 0;
+        private volatile bool conveyorReadBusy = false;   // [LGLS 2026-09-01] PLC 읽기 워커 중복 방지
         private int stackerTop = 0;
         public event WidgetEventDelegate01 WidgetClick;
         private Dictionary<string, HECS.Gui.Widget.MarkPlate> markplateWidgets = new Dictionary<string, HECS.Gui.Widget.MarkPlate>();
@@ -77,9 +78,30 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
             }
 
 
-            foreach (Conveyor cnv in ECSDeviceManager.Conveyors.Values)
+            // [LGLS 2026-09-01] 컨베이어 트래킹 읽기(GetPalletFromPLC = 동기 PLC 통신)를 UI 스레드에서
+            //   매초 전 포트 수행하던 것이 화면 전체 지연(팝업 열기/닫기 밀림)의 원인이었다.
+            //   RefreshConveyor 는 UI 를 만지지 않으므로(port.PalletId 캐시 갱신뿐) 워커 스레드로 옮긴다.
+            if (!conveyorReadBusy)
             {
-                RefreshConveyor(cnv);
+                conveyorReadBusy = true;
+                System.Threading.ThreadPool.QueueUserWorkItem(delegate(object o)
+                {
+                    try
+                    {
+                        foreach (Conveyor cnv in ECSDeviceManager.Conveyors.Values)
+                        {
+                            RefreshConveyor(cnv);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Console.WriteLine("RefreshConveyor(worker) : " + ex.Message);
+                    }
+                    finally
+                    {
+                        conveyorReadBusy = false;
+                    }
+                });
             }
 
             if (ECP.Global.GlobalConstant.START_MODE != "ECS")

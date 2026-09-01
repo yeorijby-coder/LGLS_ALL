@@ -181,6 +181,7 @@
 #define IDD_SC_NEW_LOCATION2            441
 #define IDD_TEST_LOCATION1              441
 #define IDD_PANEL_INFO                  443
+#define IDD_PANEL_VEH                   552
 #define IDD_CONFIG_SUB2_PAGE1           444
 #define IDD_SC_PAIR_MANUAL              445
 #define IDD_SC_PAIR_NEW_LOCATION        446
@@ -290,6 +291,7 @@
 #define IDC_PI_BTN_CVWRITE              2362
 #define IDC_PI_BTN_CVDELETE             2363
 #define IDC_PI_BTN_FORCE                2364
+#define IDC_PANEL_VEH_LIST              2365
 #define IDC_BTN_INIT                    1002
 #define IDC_STATIC_TITLE                1003
 #define IDC_LIST_LOG                    1009
@@ -3468,6 +3470,7 @@
 #define ID_PANE_INFO                   35092
 #define ID_UIMODE_DLG                  35093
 #define ID_UIMODE_PANEL                35094
+#define ID_PANE_VEH                    35095
 #define ID_LOG_EQP_HIS                  35051
 #define ID_LOG_MES                      35053
 #define ID_LOG_BCR                      35054
@@ -3512,7 +3515,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        553
 #define _APS_NEXT_COMMAND_VALUE         33032
-#define _APS_NEXT_CONTROL_VALUE         2365
+#define _APS_NEXT_CONTROL_VALUE         2366
 #define _APS_NEXT_SYMED_VALUE           114
 #endif
 #endif

@@ -752,6 +752,19 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 
 			CTrackInfo* pTrackInfo = pDoc->GetTrackInfoNew(strEqpKey);
 			if(pTrackInfo == NULL){ return 0; };
+
+			// [LGLS 2026-09-01] 판넬 모드 : 상세정보 판넬 CV 탭으로 전환(대화상자 대신)
+			{
+				CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
+				if (pFrame != NULL && pFrame->m_bUiModePanel && pFrame->m_bPanelBarsCreated
+					&& pFrame->m_InfoPane.IsVisible())
+				{
+					CString strMcNo = strEqpKey;
+					if (pTrackInfo->m_pCV_DATA != NULL) strMcNo = pTrackInfo->m_pCV_DATA->V_MC_NO;
+					pFrame->m_PanelInfoDlg.SetEquip(0 /*TAB_CV*/, strMcNo);
+					return 0;
+				}
+			}
 			if (pDoc->m_pCvSkinDlg == NULL)
 			{
 
@@ -799,6 +812,16 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			CSC_DATA* pSC_DATA = pDoc->GetSC_DATA(strEqpKey);
 			if(pSC_DATA == NULL){ return 0; };
 
+			// [LGLS 2026-09-01] 판넬 모드 : 상세정보 판넬 SC 탭으로 전환
+			{
+				CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
+				if (pFrame != NULL && pFrame->m_bUiModePanel && pFrame->m_bPanelBarsCreated
+					&& pFrame->m_InfoPane.IsVisible())
+				{
+					pFrame->m_PanelInfoDlg.SetEquip(1 /*TAB_SC*/, strEqpKey);
+					return 0;
+				}
+			}
 			if (pDoc->m_pScSkinDlg == NULL)
 			{
 				if (!pDoc->Permission(_T("CScSkinDlg"), SEL_YN))
@@ -834,6 +857,16 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			CRTV_DATA* pRTV_DATA = pDoc->GetRTV_DATA(strEqpKey);
 			if(pRTV_DATA == NULL){ return 0; };
 
+			// [LGLS 2026-09-01] 판넬 모드 : 상세정보 판넬 RTV 탭으로 전환
+			{
+				CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
+				if (pFrame != NULL && pFrame->m_bUiModePanel && pFrame->m_bPanelBarsCreated
+					&& pFrame->m_InfoPane.IsVisible())
+				{
+					pFrame->m_PanelInfoDlg.SetEquip(2 /*TAB_RTV*/, strEqpKey);
+					return 0;
+				}
+			}
 			if (pDoc->m_pRtvSkinDlg == NULL)
 			{
 				if (!pDoc->Permission(_T("CRtvSkinDlg"), SEL_YN))
