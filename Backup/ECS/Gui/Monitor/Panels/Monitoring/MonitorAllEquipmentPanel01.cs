@@ -512,17 +512,21 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
 
             if (sender is ConveyorWidget)
             {
+                // [LGLS 2026-09-01 임시계측] 팝업 지연 구간 분해 - 확인 후 제거 예정
+                var swPop = System.Diagnostics.Stopwatch.StartNew();
+                long t1, t2, t3, t4;
                 ConveyorWidget widget = sender as ConveyorWidget ;
                 Port port = ECSDeviceManager.GetPort(widget.ElementId);
                 if(port ==null)
                 {
-                    return ; 
+                    return ;
                 }
                 Conveyor conveyor = ECSDeviceManager.GetConveyor(port.OwnerId);
                 if (conveyor == null)
                 {
                     return;
                 }
+                t1 = swPop.ElapsedMilliseconds;
 
                 ConveyorForm form = (ConveyorForm)SimpleCache.GetObject("Popup", "ConveyorForm");
                 if (form == null)
@@ -530,8 +534,18 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
                     form = new ConveyorForm();
                     SimpleCache.AddObject("Popup", "ConveyorForm", form);
                 }
+                t2 = swPop.ElapsedMilliseconds;
                 form.ConveyorObject = conveyor;
+                t3 = swPop.ElapsedMilliseconds;
                 form.Show();
+                t4 = swPop.ElapsedMilliseconds;
+                try
+                {
+                    System.IO.File.AppendAllText(@"D:\LOG\popup_timing.txt",
+                        DateTime.Now.ToString("HH:mm:ss.fff") +
+                        " CV click: dev=" + t1 + " form=" + (t2-t1) + " setObj=" + (t3-t2) + " show=" + (t4-t3) + " total=" + t4 + "\r\n");
+                }
+                catch { }
             }
             else if (sender is StackerCraneWidget)
             {

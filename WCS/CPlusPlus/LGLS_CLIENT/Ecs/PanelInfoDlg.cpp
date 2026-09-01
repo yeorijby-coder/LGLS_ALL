@@ -39,6 +39,7 @@ CPanelInfoDlg::CPanelInfoDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPanelInfoDlg::IDD, pParent)
 {
 	m_pDoc = NULL;
+	m_nRefreshRows = 0;
 }
 
 void CPanelInfoDlg::DoDataExchange(CDataExchange* pDX)
@@ -283,6 +284,16 @@ static const struct { LPCTSTR strName; LPCTSTR strCap; } JOBF[] = {
 #define JOB_ROW_STATUS 2
 #define JOB_ROW_PRI    9
 
+// [LGLS 2026-09-02] 행 재사용 - 있으면 캡션만 갱신, 없으면 추가 (전체 재작성 깜빡임 제거)
+void CPanelInfoDlg::EnsureRow(int i, LPCTSTR strCap)
+{
+	if (i >= m_list.GetItemCount())
+		m_list.InsertItem(i, strCap);
+	else
+		m_list.SetItemText(i, 0, strCap);
+	if (i + 1 > m_nRefreshRows) m_nRefreshRows = i + 1;
+}
+
 void CPanelInfoDlg::Refresh()
 {
 	if (m_pDoc == NULL || !::IsWindow(m_list.m_hWnd))
@@ -290,7 +301,8 @@ void CPanelInfoDlg::Refresh()
 
 	int nTab = m_tab.GetCurSel();
 	m_list.SetRedraw(FALSE);
-	m_list.DeleteAllItems();
+	// [LGLS 2026-09-02] 매 갱신 전체 재작성 -> 행 수가 같으면 텍스트만 갱신(오버레이 깜빡임 제거)
+	m_nRefreshRows = 0;
 
 	CString strUnit;
 	if (m_cmbUnit.GetCurSel() >= 0)
@@ -328,7 +340,7 @@ void CPanelInfoDlg::Refresh()
 		}
 		for (int i = 0; i < (int)(sizeof(JOBF)/sizeof(JOBF[0])); i++)
 		{
-			m_list.InsertItem(i, JOBF[i].strCap);
+			EnsureRow(i, JOBF[i].strCap);
 			m_list.SetItemText(i, 1, (pRsw != NULL) ? pRsw->GetItem(JOBF[i].strName) : _T(""));
 			m_list.SetItemText(i, 6, JOBF[i].strName);
 		}
@@ -369,7 +381,7 @@ void CPanelInfoDlg::Refresh()
 
 				for (int i = 0; i < (int)(sizeof(CV_ROWS)/sizeof(CV_ROWS[0])); i++)
 				{
-					m_list.InsertItem(i, CV_ROWS[i].strCap);
+					EnsureRow(i, CV_ROWS[i].strCap);
 					m_list.SetItemText(i, 1, pRsw->GetItem(CV_ROWS[i].strField));
 					if (CV_ROWS[i].strObs != NULL)
 					{
@@ -422,7 +434,7 @@ void CPanelInfoDlg::Refresh()
 				pRsw->MoveFirst();
 				for (int i = 0; i < (int)(sizeof(VEH_ROWS)/sizeof(VEH_ROWS[0])); i++)
 				{
-					m_list.InsertItem(i, VEH_ROWS[i].strCap);
+					EnsureRow(i, VEH_ROWS[i].strCap);
 					CString strVal = pRsw->GetItem(VEH_ROWS[i].strField);
 					if (i == 0)
 					{
@@ -446,11 +458,13 @@ void CPanelInfoDlg::Refresh()
 		}
 	}
 
+	// 남는 행 정리(탭 전환으로 행 수가 줄어든 경우)
+	while (m_list.GetItemCount() > m_nRefreshRows)
+		m_list.DeleteItem(m_list.GetItemCount() - 1);
 	m_list.SetRedraw(TRUE);
 	m_list.Invalidate(FALSE);
 
-	// 오버레이 배치 (항상 표시)
-	HideOverlays();
+	// 오버레이 배치 (항상 표시 - 숨기지 않고 위치만 갱신)
 	if (nTab == TAB_JOB && m_list.GetItemCount() > JOB_ROW_PRI)
 	{
 		CString strStatus = m_list.GetItemText(JOB_ROW_STATUS, 1);

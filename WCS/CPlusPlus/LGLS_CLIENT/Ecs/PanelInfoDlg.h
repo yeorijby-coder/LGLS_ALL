@@ -34,6 +34,8 @@ protected:
 
 	CStringArray m_arStatusCd;
 
+	int  m_nRefreshRows;
+	void EnsureRow(int i, LPCTSTR strCap);
 	void UpdateTitle();
 	void FillUnits();
 	void HideOverlays();
