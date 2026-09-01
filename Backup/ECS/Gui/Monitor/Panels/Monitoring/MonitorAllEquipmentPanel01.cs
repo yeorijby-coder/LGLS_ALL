@@ -25,6 +25,8 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
         Timer refreshTimer = new Timer();
         private int refreshCount = 0;
         private volatile bool conveyorReadBusy = false;   // [LGLS 2026-09-01] PLC 읽기 워커 중복 방지
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern int GetMessageTime();   // [LGLS 2026-09-02 임시계측]
         private int stackerTop = 0;
         public event WidgetEventDelegate01 WidgetClick;
         private Dictionary<string, HECS.Gui.Widget.MarkPlate> markplateWidgets = new Dictionary<string, HECS.Gui.Widget.MarkPlate>();
@@ -56,6 +58,21 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
    
 
         void refreshTimer_Tick(object sender, EventArgs e)
+        {
+            // [LGLS 2026-09-02 임시계측] 틱이 UI 스레드를 얼마나 잡는지 - 150ms 초과만 기록
+            var swTick = System.Diagnostics.Stopwatch.StartNew();
+            try { refreshTimer_TickBody(); }
+            finally
+            {
+                if (swTick.ElapsedMilliseconds > 150)
+                {
+                    try { System.IO.File.AppendAllText(@"D:\LOG\popup_timing.txt",
+                        DateTime.Now.ToString("HH:mm:ss.fff") + " tick=" + swTick.ElapsedMilliseconds + "ms" + Environment.NewLine); } catch { }
+                }
+            }
+        }
+
+        void refreshTimer_TickBody()
         {
             foreach (Vehicle vehicle in ECSDeviceManager.Vehicles.Values)
             {
@@ -513,6 +530,8 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
             if (sender is ConveyorWidget)
             {
                 // [LGLS 2026-09-01 임시계측] 팝업 지연 구간 분해 - 확인 후 제거 예정
+                //   disp = 클릭 메시지 발생 -> 핸들러 도달까지 (UI 스레드 정체 지연)
+                int dispMs = Environment.TickCount - GetMessageTime();
                 var swPop = System.Diagnostics.Stopwatch.StartNew();
                 long t1, t2, t3, t4;
                 ConveyorWidget widget = sender as ConveyorWidget ;
@@ -543,7 +562,7 @@ namespace HECS.Gui.Monitor.Panels.Monitoring
                 {
                     System.IO.File.AppendAllText(@"D:\LOG\popup_timing.txt",
                         DateTime.Now.ToString("HH:mm:ss.fff") +
-                        " CV click: dev=" + t1 + " form=" + (t2-t1) + " setObj=" + (t3-t2) + " show=" + (t4-t3) + " total=" + t4 + "\r\n");
+                        " CV click: disp=" + dispMs + " dev=" + t1 + " form=" + (t2-t1) + " setObj=" + (t3-t2) + " show=" + (t4-t3) + " total=" + t4 + "\r\n");
                 }
                 catch { }
             }

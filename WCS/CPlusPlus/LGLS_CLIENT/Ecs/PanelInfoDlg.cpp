@@ -92,12 +92,15 @@ BOOL CPanelInfoDlg::OnInitDialog()
 	m_btnCvWrite.Create(_T("쓰기"), WS_CHILD | BS_PUSHBUTTON, rc0, this, IDC_PI_BTN_CVWRITE);
 	m_btnForce.Create(_T("강제완료"), WS_CHILD | BS_PUSHBUTTON, rc0, this, IDC_PI_BTN_FORCE);
 	m_btnCvDelete.SetWindowText(_T("지시 삭제"));
+	m_lblSet1.Create(_T(""), WS_CHILD | SS_CENTERIMAGE | SS_RIGHT, rc0, this);
+	m_lblSet2.Create(_T(""), WS_CHILD | SS_CENTERIMAGE | SS_RIGHT, rc0, this);
 
 	CFont* pFont = GetFont();
 	m_cmbStatus.SetFont(pFont); m_btnStatus.SetFont(pFont);
 	m_cmbPri.SetFont(pFont);    m_btnPri.SetFont(pFont);
 	m_edtCvJob.SetFont(pFont);  m_btnCvWrite.SetFont(pFont);
 	m_btnForce.SetFont(pFont);  m_btnCvDelete.SetFont(pFont);
+	m_lblSet1.SetFont(pFont);   m_lblSet2.SetFont(pFont);
 
 	// 작업상태 콤보 : COMMON_CODE JOB_STATUS
 	if (m_pDoc != NULL)
@@ -198,6 +201,7 @@ void CPanelInfoDlg::HideOverlays()
 	m_cmbPri.ShowWindow(SW_HIDE);    m_btnPri.ShowWindow(SW_HIDE);
 	m_edtCvJob.ShowWindow(SW_HIDE);  m_btnCvWrite.ShowWindow(SW_HIDE);
 	m_btnForce.ShowWindow(SW_HIDE);  m_btnCvDelete.ShowWindow(SW_HIDE);
+	m_lblSet1.ShowWindow(SW_HIDE);   m_lblSet2.ShowWindow(SW_HIDE);
 }
 
 void CPanelInfoDlg::PlaceOverCell(CWnd* pCtrl, int nRow, int nCol, BOOL bShow)
@@ -468,34 +472,41 @@ void CPanelInfoDlg::Refresh()
 	PlaceOverlays();
 }
 
-// [LGLS 2026-09-02] 오버레이 배치 (항상 표시 - 스크롤/갱신 때 위치만 갱신)
+// [LGLS 2026-09-02] 설정/확인 컨트롤을 하단 고정 바에 배치 - 스크롤/리사이즈와 무관하게 항상 표시.
+//   (종전 셀 위 오버레이 방식은 가로 스크롤 밖이거나 리사이즈 후 어긋나면 보이지 않았다)
 void CPanelInfoDlg::PlaceOverlays()
 {
-	int nTab = m_tab.GetCurSel();
-	if (nTab == TAB_JOB && m_list.GetItemCount() > JOB_ROW_PRI)
-	{
-		CString strStatus = m_list.GetItemText(JOB_ROW_STATUS, 1);
-		for (int i = 0; i < m_arStatusCd.GetCount(); i++)
-			if (!strStatus.IsEmpty() && strStatus.Find(_T("[") + m_arStatusCd[i] + _T("]")) == 0)
-			{ m_cmbStatus.SetCurSel(i); break; }
-		CString strPri = m_list.GetItemText(JOB_ROW_PRI, 1); strPri.Trim();
-		int nPri = _ttoi(strPri);
-		if (nPri >= 1 && nPri <= 9) m_cmbPri.SetCurSel(nPri - 1);
+	HideOverlays();
 
-		PlaceOverCell(&m_cmbStatus, JOB_ROW_STATUS, 2, TRUE);
-		PlaceOverCell(&m_btnStatus, JOB_ROW_STATUS, 3, TRUE);
-		PlaceOverCell(&m_cmbPri,    JOB_ROW_PRI, 2, TRUE);
-		PlaceOverCell(&m_btnPri,    JOB_ROW_PRI, 3, TRUE);
-	}
-	else if (nTab == TAB_CV && m_list.GetItemCount() > CV_ROW_WRITE)
+	CRect rcCli; GetClientRect(&rcCli);
+	int y = rcCli.Height() - 24;
+	int nTab = m_tab.GetCurSel();
+
+	struct P { static void Put(CWnd& w, int x, int y2, int cx, int cy2) {
+		w.MoveWindow(x, y2, cx, cy2); w.ShowWindow(SW_SHOW); w.BringWindowToTop(); } };
+
+	if (nTab == TAB_JOB)
 	{
-		PlaceOverCell(&m_edtCvJob,   CV_ROW_WRITE, 2, TRUE);
-		PlaceOverCell(&m_btnCvWrite, CV_ROW_WRITE, 3, TRUE);
-		m_btnCvDelete.ShowWindow(SW_SHOW);
+		m_lblSet1.SetWindowText(_T("작업상태"));
+		m_lblSet2.SetWindowText(_T("우선순위"));
+		P::Put(m_lblSet1,    2, y + 3, 50, 18);
+		P::Put(m_cmbStatus, 56, y, 130, 160);
+		P::Put(m_btnStatus, 190, y, 44, 22);
+		P::Put(m_lblSet2,  240, y + 3, 50, 18);
+		P::Put(m_cmbPri,   294, y, 48, 160);
+		P::Put(m_btnPri,   346, y, 44, 22);
 	}
-	else if ((nTab == TAB_SC || nTab == TAB_RTV) && m_list.GetItemCount() > VEH_ROW_FORCE)
+	else if (nTab == TAB_CV)
 	{
-		PlaceOverCell(&m_btnForce, VEH_ROW_FORCE, 3, TRUE);
+		m_lblSet1.SetWindowText(_T("지시 작업번호"));
+		P::Put(m_lblSet1,    2, y + 3, 76, 18);
+		P::Put(m_edtCvJob,  82, y + 1, 70, 20);
+		P::Put(m_btnCvWrite, 156, y, 44, 22);
+		P::Put(m_btnCvDelete, 206, y, 70, 22);
+	}
+	else if (nTab == TAB_SC || nTab == TAB_RTV)
+	{
+		P::Put(m_btnForce, 2, y, 80, 22);
 	}
 }
 

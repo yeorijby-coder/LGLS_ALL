@@ -32,6 +32,9 @@ protected:
 	CButton   m_btnForce;     // SC/RTV 탭 : 강제완료
 	CButton   m_btnCvDelete;  // CV 탭 하단 : 지시 삭제
 
+	CStatic   m_lblSet1;      // 하단 바 라벨
+	CStatic   m_lblSet2;
+
 	CStringArray m_arStatusCd;
 
 	int  m_nRefreshRows;
