@@ -245,6 +245,21 @@ namespace WCS_TASK_CV
             WritePrivateProfileString("PLC", "R_ADDR_MODE", pHex ? "HEX" : "DEC", cDefApp.GM_ENV_INI);
         }
 
+        // [LGLS 2026-09-01] D 블록 해석 모드 (R 과 대칭) - [PLC] D_ADDR_MODE = DOC | LEGACY
+        public static bool GsReadInitProfileDAddrDoc()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return true;
+            StringBuilder sb = new StringBuilder(64);
+            GetPrivateProfileString("PLC", "D_ADDR_MODE", "DOC", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            return !(sb.ToString().Trim().ToUpper() == "LEGACY");
+        }
+
+        public static void GsWriteInitProfileDAddrDoc(bool pDoc)
+        {
+            WritePrivateProfileString("PLC", "D_ADDR_MODE", pDoc ? "DOC" : "LEGACY", cDefApp.GM_ENV_INI);
+        }
+
         /// <summary>
         /// [LGLS 2026-08-30] 설비 에러이력(EQP_ERR_HIS)에 남길 EQP_TYP — [CNF] SC_ERR_TYP / RTV_ERR_TYP.
         ///   Client 설비에러이력 창이 이 값으로 EQP_ECD_MST 를 조인해 메시지를 표시한다.

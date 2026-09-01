@@ -166,6 +166,33 @@ namespace WCS_TASK_CV
                 cDefApp.GM_R_ADDR_HEX = cDefApi.GsReadInitProfileRAddrHex();
             // 주소맵 파서(EQP_SIM 과 공유하는 파일)에도 같은 변환기를 꽂아 라디오와 연동한다.
             cPlcAddrMap.RTrackWordFn = cDefApp.GsRTrackWord;
+
+            // [LGLS 2026-09-01] D 블록 해석 모드 (R 과 대칭) - XML dAddrMode 단일 기준, INI 폴백
+            if (cPlcAddrMap.IsLoaded)
+            {
+                cDefApp.GM_D_ADDR_DOC = cPlcAddrMap.DAddrModeDoc;
+                cDefApi.GsWriteInitProfileDAddrDoc(cDefApp.GM_D_ADDR_DOC);
+            }
+            else
+                cDefApp.GM_D_ADDR_DOC = cDefApi.GsReadInitProfileDAddrDoc();
+            // 라디오는 R 라디오 아래 줄에 런타임 생성 (Designer 무변경)
+            m_rdoDDoc = new RadioButton { Text = "D:10진(문서)", AutoSize = false, Size = new System.Drawing.Size(120, 17),
+                Location = new System.Drawing.Point(rdoRHex.Left, rdoRHex.Top + 20), BackColor = System.Drawing.Color.LightYellow };
+            m_rdoDLegacy = new RadioButton { Text = "D:구환산(ez)", AutoSize = false, Size = new System.Drawing.Size(120, 17),
+                Location = new System.Drawing.Point(rdoRDec.Left, rdoRDec.Top + 20), BackColor = System.Drawing.Color.LightYellow };
+            // R 라디오와 그룹이 섞이지 않게 패널로 감싼다
+            var pnlD = new Panel { Location = m_rdoDDoc.Location, Size = new System.Drawing.Size(rdoRDec.Right - rdoRHex.Left, 18), BackColor = System.Drawing.Color.Transparent };
+            m_rdoDDoc.Location = new System.Drawing.Point(0, 0);
+            m_rdoDLegacy.Location = new System.Drawing.Point(rdoRDec.Left - rdoRHex.Left, 0);
+            pnlD.Controls.Add(m_rdoDDoc); pnlD.Controls.Add(m_rdoDLegacy);
+            rdoRHex.Parent.Controls.Add(pnlD); pnlD.BringToFront();
+            m_bDAddrLoading = true;
+            m_rdoDDoc.Checked = cDefApp.GM_D_ADDR_DOC;
+            m_rdoDLegacy.Checked = !cDefApp.GM_D_ADDR_DOC;
+            m_bDAddrLoading = false;
+            m_rdoDDoc.CheckedChanged += rdoDAddr_CheckedChanged;
+            m_rdoDLegacy.CheckedChanged += rdoDAddr_CheckedChanged;
+            m_rdoDDoc.Visible = m_rdoDLegacy.Visible = (m_nPlcMaker == 1);
             // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
             WcsCommon.cLogCols.Attach(lsvCOMM1);
 
@@ -767,6 +794,33 @@ namespace WCS_TASK_CV
         //   DEC = 현행       : 문서 표기를 10진 워드주소로 (C/V#11 R0100 → 워드 100)
         //   ※ 통신 중 전환하면 다음 사이클부터 새 주소로 읽고 쓴다.
         private bool m_bRAddrLoading = false;
+        private RadioButton m_rdoDDoc, m_rdoDLegacy;   // [LGLS 2026-09-01] D 해석 모드 라디오(런타임 생성)
+        private bool m_bDAddrLoading;
+
+        // [LGLS 2026-09-01] D 블록 해석 모드 전환 (R 과 대칭). XML(dAddrMode) 단일 기준.
+        //   D 는 CvThread(방향)·VehThread(상태/지시) 모두가 쓰므로 관측표 재구성을 요청하고,
+        //   완전 반영은 재기동 권장 메시지를 남긴다.
+        private void rdoDAddr_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bDAddrLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+
+            cDefApp.GM_D_ADDR_DOC = m_rdoDDoc.Checked;
+            cDefApi.GsWriteInitProfileDAddrDoc(cDefApp.GM_D_ADDR_DOC);
+            cPlcAddrMap.WriteDAddrMode(cDefApp.GM_D_ADDR_DOC);
+            try
+            {
+                if (m_thVehSc  != null) m_thVehSc.RequestReloadObservables();
+                if (m_thVehRtv != null) m_thVehRtv.RequestReloadObservables();
+            }
+            catch { }
+            string strMsg = "[D주소모드] " + cDefApp.GsDAddrModeText()
+                          + "  (예: S/C#1 상태 = D" + cPlcAddrMap.BlockBase("SC", 1, "Status").ToString("0000")
+                          + ") - 완전 반영은 재기동 권장";
+            try { PsMsgView_IMP(strMsg, 0); } catch { }
+        }
+
         private void rdoRAddr_CheckedChanged(object sender, EventArgs e)
         {
             if (m_bRAddrLoading) return;

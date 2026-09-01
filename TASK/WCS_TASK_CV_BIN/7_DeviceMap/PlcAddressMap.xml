@@ -16,8 +16,10 @@
 <!-- rAddrMode : R(트래킹) 문서표기 해석. HEX=구 ECS 호환(16진) / DEC=10진.
      [확정 2026-09-01] 실PLC(테스트 베드) 대사 결과 DEC 가 맞다 (사용자 확인). 전환 기능은 유지.
      이 속성이 전 프로그램(EQP_TASK·EQP_SIM·화면·시나리오)의 단일 기준이다.
-     EQP_TASK 라디오로 전환하면 이 속성도 함께 갱신된다. -->
-<PlcAddressMap version="1.4" rAddrMode="DEC" desc="PPT V1.4 (2026-08-19) / 구 ECS 운영 정의 기준">
+     EQP_TASK 라디오로 전환하면 이 속성도 함께 갱신된다.
+     dAddrMode : D 블록 해석. DOC=문서표기 10진(origin/stride) / LEGACY=구 ezMCS 환산(altOrigin/altStride).
+     [확정 2026-09-01] 실PLC 대사 결과 DOC 가 맞다 - LEGACY 는 전환용으로 보존(기능 삭제 금지). -->
+<PlcAddressMap version="1.4" rAddrMode="DEC" dAddrMode="DOC" desc="PPT V1.4 (2026-08-19) / 구 ECS 운영 정의 기준">
 
   <!-- 디바이스 코드/단위 규약 -->
   <Conventions>
@@ -50,7 +52,7 @@
       <Signal name="UnloadRequest2" offset="5" appliesTo="14,15" />
     </Block>
 
-    <Block name="Direction" device="D" origin="300" stride="1" length="1" legacy="D0300" desc="입출고 방향(ASCII). [확정 20260901] 실PLC = 문서표기 10진 그대로(D0300+N-1)">
+    <Block name="Direction" device="D" origin="300" stride="1" altOrigin="480" altStride="1" length="1" legacy="D0300" desc="입출고 방향(ASCII). [확정 20260901] 실PLC = 문서표기 10진 그대로(D0300+N-1)">
       <Signal name="IoDirection" offset="0" encoding="ascii" valueMap="0=IN,1=OUT" />
     </Block>
 
@@ -77,7 +79,7 @@
       <Signal name="AlarmResetReportAck" offset="4" tag="ALARM_RESET_REPORT_ACK" />
       <Signal name="TransferComplete" offset="5" tag="TRANSFER_COMPLETE_ACK" />
     </Block>
-    <Block name="Status" device="D" origin="160" stride="10" legacy="D0160" legacyStride="10" desc="설비→WCS 상태. [확정 20260901] 실PLC = 문서표기 10진(D0160=%DW160)">
+    <Block name="Status" device="D" origin="160" stride="10" altOrigin="256" altStride="16" legacy="D0160" legacyStride="10" desc="설비→WCS 상태. [확정 20260901] 실PLC = 문서표기 10진(D0160=%DW160)">
       <Signal name="SubsystemStatus" offset="0" tag="SUBSYSTEM_STATUS" />
       <Signal name="AlarmSetCode" offset="1" tag="ALARM_SET_CODE" />
       <Signal name="AlarmResetCode" offset="2" tag="ALARM_RESET_CODE" />
@@ -87,7 +89,7 @@
       <!-- [LGLS 2026-08-21] 구 ECS TB_OBSERVABLE 복원: 이중입고(54)/공출고(58) 에러코드. W010A~014A = base+10 -->
       <Signal name="ErrCode" offset="10" tag="ERR_CODE_RD" />
     </Block>
-    <Block name="Command" device="D" origin="320" stride="10" legacy="D0320" legacyStride="10" desc="WCS→설비 반송지시. [확정 20260901] 실PLC = 문서표기 10진">
+    <Block name="Command" device="D" origin="320" stride="10" altOrigin="768" altStride="16" legacy="D0320" legacyStride="10" desc="WCS→설비 반송지시. [확정 20260901] 실PLC = 문서표기 10진">
       <Signal name="From" offset="0" words="3" tag="FROM_01" />
       <Signal name="To" offset="3" words="3" tag="TO_01" />
       <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" desc="작업번호(파렛트ID) 2워드" />
@@ -115,7 +117,7 @@
       <Signal name="AlarmResetReportAck" offset="4" tag="ALARM_RESET_REPORT_ACK" />
       <Signal name="TransferComplete" offset="5" tag="TRANSFER_COMPLETE_ACK" />
     </Block>
-    <Block name="Status" device="D" origin="210" stride="10" legacy="D0210" legacyStride="10" desc="[확정 20260901] 실PLC = 문서표기 10진(D0210=%DW210)">
+    <Block name="Status" device="D" origin="210" stride="10" altOrigin="336" altStride="16" legacy="D0210" legacyStride="10" desc="[확정 20260901] 실PLC = 문서표기 10진(D0210=%DW210)">
       <Signal name="SubsystemStatus" offset="0" tag="SUBSYSTEM_STATUS" />
       <Signal name="AlarmSetCode" offset="1" tag="ALARM_SET_CODE" />
       <Signal name="AlarmResetCode" offset="2" tag="ALARM_RESET_CODE" />
@@ -123,14 +125,14 @@
       <Signal name="SubsystemLocation" offset="6" words="3" tag="SUBSYSTEM_LOCATION_01" desc="설비 현재위치" />
       <Signal name="OperationMode" offset="9" tag="OPERATION_MODE" />
     </Block>
-    <Block name="Command" device="D" origin="370" stride="10" legacy="D0370" legacyStride="10" desc="[확정 20260901] 실PLC = 문서표기 10진">
+    <Block name="Command" device="D" origin="370" stride="10" altOrigin="848" altStride="16" legacy="D0370" legacyStride="10" desc="[확정 20260901] 실PLC = 문서표기 10진">
       <Signal name="From" offset="0" words="3" tag="FROM_01" />
       <!-- ※ RGV 의 To 는 원본 정의(구 ECS TB_OBSERVABLE / EQP_SIM observables.tsv)가 연속이 아니다.
               TO_01=W0353(851), TO_02=W0354(852), TO_03=W0345(837) ← 3번째만 앞쪽 번지.
               구 ECS·시뮬레이터·실 PLC 래더가 모두 이 배치를 쓰므로 그대로 맞춘다(임의 연속화 금지). -->
       <Signal name="To1" offset="3" tag="TO_01" />
       <Signal name="To2" offset="4" tag="TO_02" />
-      <Signal name="To3" offset="-25" tag="TO_03" legacy="W0345" desc="구 ECS 운영 정의(TB_OBSERVABLE) W0345 → 10진 확정으로 D0345(=345, offset 370-25). [확정 20260901] ★실PLC 대사로 이 특례 번지 재확인 필요★. S/C#5 To3 과 동일 번지임에 주의" />
+      <Signal name="To3" offset="-25" altOffset="-11" tag="TO_03" legacy="W0345" desc="구 ECS 운영 정의(TB_OBSERVABLE) W0345 → 10진 확정으로 D0345(=345, offset 370-25). [확정 20260901] ★실PLC 대사로 이 특례 번지 재확인 필요★. S/C#5 To3 과 동일 번지임에 주의" />
       <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" desc="작업번호(파렛트ID) 2워드" />
     </Block>
     <Block name="Tracking" device="R" origin="310" stride="2" perSlotWords="2" legacy="R0310">

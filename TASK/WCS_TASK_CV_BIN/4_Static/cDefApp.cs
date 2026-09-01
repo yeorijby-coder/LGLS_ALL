@@ -84,6 +84,11 @@ namespace WCS_TASK_CV
         //     양 모드 공통이므로 건드리지 않는다.
         public static bool GM_R_ADDR_HEX = false;
 
+        // [LGLS 2026-09-01] D 블록 해석 모드 (R 과 대칭). true=DOC(문서표기 10진, 확정) / false=LEGACY(구 ezMCS 환산).
+        //   실PLC 대사로 DOC 확정 - LEGACY 는 전환용 보존(기능 삭제 금지, 사용자 지시).
+        public static bool GM_D_ADDR_DOC = true;
+        public static string GsDAddrModeText() { return GM_D_ADDR_DOC ? "문서 10진(DOC)" : "구 환산(LEGACY)"; }
+
         /// <summary>
         /// R 트래킹 문서표기(10진 자릿수 그대로의 정수) → 실제 전송 워드주소.
         /// R 주소를 다루는 모든 지점(CvThread/VehThread/메모리맵/시나리오테스트)은 이 함수만 거친다.

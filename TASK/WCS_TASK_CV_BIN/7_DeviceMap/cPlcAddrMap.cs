@@ -32,6 +32,7 @@ namespace WCS_TASK_CV
     {
         public string Name;
         public int    Offset;
+        public int    AltOffset = int.MinValue;   // [LGLS 2026-09-01] dAddrMode=LEGACY 시 대체 offset (RGV To3 특례)
         public int    Words = 1;
         public bool   IsArray;      // SignalArray (포지션 반복)
         public int    PerSlot = 1;
@@ -47,6 +48,8 @@ namespace WCS_TASK_CV
         public char   Device;        // 'M' / 'D' / 'R'
         public int    Origin;
         public int    Stride;
+        public int    AltOrigin = -1;   // [LGLS 2026-09-01] D 구 ezMCS 환산 주소 (dAddrMode=LEGACY 용)
+        public int    AltStride = -1;
         public int    ReadWords = 1;
         public int    PerSlotWords = 1;
         public int    MaxSlots = 1;
@@ -131,6 +134,7 @@ namespace WCS_TASK_CV
         private static string m_strPath = "";
         private static string m_strVersion = "";
         private static bool   m_bRAddrHex  = true;   // [LGLS 2026-08-21] XML rAddrMode (단일 기준)
+        private static bool   m_bDAddrDoc  = true;   // [LGLS 2026-09-01] XML dAddrMode (DOC=문서 10진 / LEGACY=구 환산)
 
         private static Dictionary<string, AddrGroup> m_dicGroup =
             new Dictionary<string, AddrGroup>(StringComparer.OrdinalIgnoreCase);
@@ -146,6 +150,8 @@ namespace WCS_TASK_CV
         public static string Version   { get { EnsureLoaded(); return m_strVersion; } }
         /// <summary>[LGLS 2026-08-21] XML rAddrMode : R 문서표기 해석 (true=HEX 구 ECS 호환)</summary>
         public static bool   RAddrModeHex { get { EnsureLoaded(); return m_bRAddrHex; } }
+        /// <summary>[LGLS 2026-09-01] XML dAddrMode : D 블록 해석 (true=DOC 문서 10진)</summary>
+        public static bool   DAddrModeDoc { get { EnsureLoaded(); return m_bDAddrDoc; } }
 
         /// <summary>
         /// [LGLS 2026-08-19] R(트래킹) 문서표기 → 실주소 변환 훅.
@@ -169,6 +175,31 @@ namespace WCS_TASK_CV
         /// [LGLS 2026-08-21] rAddrMode 를 XML 파일에 기록하고 재로드.
         /// EQP_TASK 라디오 전환 시 호출 - XML 이 항상 실제 동작과 일치하게 유지한다.
         /// </summary>
+        /// <summary>[LGLS 2026-09-01] dAddrMode 를 XML 에 기록하고 재로드 (R 과 대칭)</summary>
+        public static bool WriteDAddrMode(bool bDoc)
+        {
+            try
+            {
+                EnsureLoaded();
+                string strPath = m_strPath;
+                if (string.IsNullOrEmpty(strPath)) return false;
+                string strAll = System.IO.File.ReadAllText(strPath, System.Text.Encoding.UTF8);
+                string strNew = bDoc ? "DOC" : "LEGACY";
+                string strRep;
+                if (strAll.Contains("dAddrMode=\"DOC\""))
+                    strRep = strAll.Replace("dAddrMode=\"DOC\"", "dAddrMode=\"" + strNew + "\"");
+                else if (strAll.Contains("dAddrMode=\"LEGACY\""))
+                    strRep = strAll.Replace("dAddrMode=\"LEGACY\"", "dAddrMode=\"" + strNew + "\"");
+                else
+                    strRep = strAll.Replace("<PlcAddressMap ", "<PlcAddressMap dAddrMode=\"" + strNew + "\" ");
+                if (strRep != strAll) System.IO.File.WriteAllText(strPath, strRep, System.Text.Encoding.UTF8);
+                m_bDAddrDoc = bDoc;
+                Reload();
+                return true;
+            }
+            catch { return false; }
+        }
+
         public static bool WriteRAddrMode(bool bHex)
         {
             try
@@ -276,6 +307,7 @@ namespace WCS_TASK_CV
             if (root == null) throw new Exception("루트 <PlcAddressMap> 없음");
             // [LGLS 2026-08-21] R 해석 모드 - XML 이 단일 기준 (DEC/10 만 10진, 그 외 HEX)
             string strRMode = AttrS(root, "rAddrMode", "HEX").Trim().ToUpperInvariant();
+            m_bDAddrDoc = !string.Equals(AttrS(root, "dAddrMode", "DOC").Trim(), "LEGACY", StringComparison.OrdinalIgnoreCase);
             m_bRAddrHex = !(strRMode == "DEC" || strRMode == "10");
             m_strVersion = AttrS(root, "version", "");
 
@@ -299,6 +331,8 @@ namespace WCS_TASK_CV
                     b.PerSlotWords = Attr(bn, "perSlotWords", 1);
                     b.MaxSlots     = Attr(bn, "maxSlots", 1);
                     b.Length       = Attr(bn, "length", 1);
+                    b.AltOrigin    = Attr(bn, "altOrigin", -1);
+                    b.AltStride    = Attr(bn, "altStride", -1);
                     b.Legacy       = AttrS(bn, "legacy", "");
                     b.Desc         = AttrS(bn, "desc", "");
 
@@ -307,6 +341,7 @@ namespace WCS_TASK_CV
                         AddrSignal s = new AddrSignal();
                         s.Name      = AttrS(sn, "name", "");
                         s.Offset    = Attr(sn, "offset", 0);
+                        s.AltOffset = Attr(sn, "altOffset", int.MinValue);
                         s.Words     = Attr(sn, "words", 1);
                         s.AppliesTo = AttrS(sn, "appliesTo", "");
                         s.Tag       = AttrS(sn, "tag", "");
@@ -427,13 +462,22 @@ namespace WCS_TASK_CV
             return b;
         }
 
+        // [LGLS 2026-09-01] D 블록의 유효 origin/stride : dAddrMode 에 따라 DOC(origin) / LEGACY(alt) 택일.
+        //   alt 미정의 블록은 모드와 무관하게 origin 을 쓴다(전환 대상 아님).
+        private static int EffOrigin(AddrBlock b)
+        { return (b.Device == 'D' && !m_bDAddrDoc && b.AltOrigin >= 0) ? b.AltOrigin : b.Origin; }
+        private static int EffStride(AddrBlock b)
+        { return (b.Device == 'D' && !m_bDAddrDoc && b.AltStride >= 0) ? b.AltStride : b.Stride; }
+        private static int EffOffset(AddrBlock b, AddrSignal sg)
+        { return (b.Device == 'D' && !m_bDAddrDoc && sg.AltOffset != int.MinValue) ? sg.AltOffset : sg.Offset; }
+
         /// <summary>블록 시작주소 : origin + (설비번호 - numberFrom) * stride. 실패 시 -1</summary>
         public static int BlockBase(string equipType, int no, string block)
         {
             AddrBlock b = GetBlock(equipType, block);
             if (b == null) return -1;
             AddrGroup g = m_dicGroup[equipType];
-            int nBase = b.Origin + (no - g.NumberFrom) * b.Stride;
+            int nBase = EffOrigin(b) + (no - g.NumberFrom) * EffStride(b);
             // R(트래킹)은 문서표기를 R_ADDR_MODE 로 해석한다
             if (b.Device == 'R') nBase = RWord(nBase);
             return nBase;
@@ -490,7 +534,7 @@ namespace WCS_TASK_CV
                 if (slot > 0) nDoc += slot * b.PerSlotWords;
                 return RWord(nDoc);
             }
-            nBase = b.Origin + (no - g.NumberFrom) * b.Stride + s.Offset;
+            nBase = EffOrigin(b) + (no - g.NumberFrom) * EffStride(b) + EffOffset(b, s);
             if (slot > 0) nBase += slot * (s.IsArray ? s.PerSlot : 1);
             return nBase;
         }
