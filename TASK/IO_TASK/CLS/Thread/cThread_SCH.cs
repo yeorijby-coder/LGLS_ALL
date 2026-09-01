@@ -594,9 +594,20 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-08-31] 입고 15 도, RGV 가 통로에 화물을 내려놓은 뒤(HS=103/104)라면
                     //   진행 중이다. 15 를 안 치면 대기 출고(20)가 통로를 출고로 잡아
                     //   화물이 103→104 로 못 넘어가고 SC 지시가 영영 나가지 못한다(9029 실측).
-                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND (JM.JOB_STATUS IN ('25','35','39') OR (JM.JOB_STATUS = '15' AND JM.HS_TRACK_NO IN ('103','104'))) THEN 1 ELSE 0 END) AS IN_RUN  ";
+                    // [LGLS 2026-09-01] ★15 는 실물까지 확인해야 진행이다★ (교착 실측)
+                    //   HS_TRACK_NO 는 RGV ★지시 시★ 기록되는 예약이라, 화물이 아직 출발지에
+                    //   있어도 15+HS 로 잡혔다. 그 오판이 통로를 입고로 고정해 출고 실물(9004)이
+                    //   104 에 갇히고, RGV 는 라인 점유로 입고 드롭을 보류하는 상호 대기가 됐다.
+                    //   통로에 실물이 있는 쪽이 이긴다 - 15 는 (HS 트랙에 그 화물 실재)일 때만 진행.
+                    //   (SQL Server 는 집계 안에 하위쿼리를 못 넣는다 - 실물 여부는 LEFT JOIN 으로)
+                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND (JM.JOB_STATUS IN ('25','35','39') ";
+                    qs += CRLF + "                 OR (JM.JOB_STATUS = '15' AND JM.HS_TRACK_NO IN ('103','104') AND C1.MC_NO IS NOT NULL) ";
+                    qs += CRLF + "                ) THEN 1 ELSE 0 END) AS IN_RUN  ";
                     qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS IN ('25','35','39','15') THEN 1 ELSE 0 END) AS OUT_RUN ";
                     qs += CRLF + "   FROM JOB_MST JM                                ";
+                    qs += CRLF + "   LEFT JOIN CV_DATA C1 ON C1.WH_TYP = JM.WH_TYP  ";
+                    qs += CRLF + "        AND C1.MC_NO = JM.HS_TRACK_NO             ";
+                    qs += CRLF + "        AND C1.SENSOR0_DATA_RD = '1' AND C1.LUGG_NO_RD = JM.LUGG_NO ";
                     qs += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
                     qs += CRLF + "    AND ( (JM.JOB_TYP IN ('2','12') AND JM.START_POS = '901')  ";
                     qs += CRLF + "       OR (JM.JOB_TYP IN ('1','11') AND JM.DEST_POS  = '901') ) ";
