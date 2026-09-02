@@ -249,6 +249,22 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 		return DARK_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
+	// [LGLS 2026-09-02] 「번호와 색은 함께」 - 작업번호가 그려지는 칸(rcForkL1)의 배경이 이 함수(m_clrFork)다.
+	//   설비값 JOB_TYP_RD 가 비어 있으면 작업정보 캐시로 색을 정한다(GetForkColor1 과 같은 규칙).
+	//   종전에는 캐시를 보는 GetForkColor1 이 m_clrFork2(Twin 전용)로만 가서 단일포크 크레인 몸체가
+	//   번호만 있고 회색이었다(0029).
+	if (nJobTypTmp == 0 && m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
+	{
+		int nTypJm = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(pSC_DATA->K_SC_NO));
+		if (nTypJm == 0)
+		{
+			CString strHeld = pSC_DATA->V_LUGG_NO_FK1_RD; strHeld.Trim();
+			if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) { strHeld = pSC_DATA->V_ITN_LUGG_FK1; strHeld.Trim(); }
+			if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) { strHeld = m_pEquipment->m_pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO); strHeld.Trim(); }
+			nTypJm = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strHeld));
+		}
+		if (nTypJm != 0) nJobTypTmp = nTypJm;
+	}
 	switch (nJobTypTmp)
 	{
 	case enJobTypeAutoSto			: return pConfig->m_clrUSER_COLOR_STO;

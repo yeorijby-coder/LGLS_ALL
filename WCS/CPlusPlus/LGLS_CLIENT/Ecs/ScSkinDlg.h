@@ -26,6 +26,7 @@ public:
 	CSkinButton m_btnVehZoom;	// [LGLS 2026-08-01] [확대]/[축소] 토글 버튼
 	CSkinButton m_btnScResend;	// [LGLS 2026-08-12] 지시 재전송(원 대화상자)
 	BOOL    m_bVehExpanded;	// TRUE=확대(상태 패널 표시)
+	BOOL    m_bForkRowCompacted;   // [LGLS 2026-09-02] 포크 행 압축 1회 가드
 	int     m_nVehBaseH;	// 축소 상태 창 높이
 	int     m_nVehPanelH;	// 상태 패널 높이
 	void SetVehPanelExpanded(BOOL bExpand);

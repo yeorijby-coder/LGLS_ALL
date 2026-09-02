@@ -239,12 +239,23 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 	//	return DARK_GRAY;
 
 
-	if (pRTV_DATA->V_AUTO_MODE_RD != _T("1") ||
-		pRTV_DATA->V_ACTIVE_MODE_RD != _T("1"))
+	// [LGLS 2026-09-02] 「번호와 색은 함께」 - 작업번호 칸(rcForkL1)의 배경이 이 함수다.
+	//   RGV 가 작업(35/39)을 물고 있으면 IDLE 파생값과 무관하게 작업정보 색으로 칠한다(GetForkColor1 과 동일).
+	//   종전에는 설비값 JOB_TYP_RD 만 봐서 몸체가 번호만 있고 회색이었다(0031).
+	CString strVehJob2 = m_pEquipment->m_pDoc->GetVehicleJobNo(pRTV_DATA->K_RTV_NO);
+	strVehJob2.Trim();
+	BOOL bVehJob2 = (!strVehJob2.IsEmpty() && strVehJob2 != _T("0") && strVehJob2 != _T("0000"));
+	if (!bVehJob2 &&
+		(pRTV_DATA->V_AUTO_MODE_RD != _T("1") ||
+		 pRTV_DATA->V_ACTIVE_MODE_RD != _T("1")))
 
 		return LIGHT_GRAY;	// [LGLS] 평상시 RTV 밝은 회색(보이는 포크=GetForkColor2)
 
 	int nJobTypTmp = CConvert::ToInt(pRTV_DATA->V_JOB_TYP_RD);
+	if (nJobTypTmp == 0 && bVehJob2)
+		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(pRTV_DATA->K_RTV_NO));
+	if (nJobTypTmp == 0 && bVehJob2)
+		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strVehJob2));
 	switch (nJobTypTmp)
 	{
 	case enJobTypeAutoSto			: return pConfig->m_clrUSER_COLOR_STO;

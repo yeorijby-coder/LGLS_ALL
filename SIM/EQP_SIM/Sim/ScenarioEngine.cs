@@ -155,6 +155,34 @@ namespace EQP_SIM.Sim
         //   해당 설비군의 명령 소비·동작·이벤트 핸드셰이크를 처리한다.
         //   월드(파렛트/랙/PLC 메모리)는 공유 자원이므로 sync 락으로 직렬화한다
         //   (크레인이 컨베이어 파렛트를 상·하차하는 교차 접근이 있어 무락 병렬은 유실을 만든다).
+        // [LGLS 2026-09-02] 시뮬 월드에 없는 트랙의 R 트래킹 잔재 청소 (사용자 보고: 색 없는 번호 잔재).
+        //   시뮬에 정의되지 않은 트랙에는 실물이 존재할 수 없으므로 그 R 은 '0000' 이 참값이다.
+        //   CV 트래킹 영역(0 ~ 최대CV번호*10)만 대상으로 하고, 시뮬이 소유한 슬롯은 건드리지 않는다.
+        private DateTime lastRSweep = DateTime.MinValue;
+        private void SweepUnownedRTracking(DateTime now)
+        {
+            if ((now - lastRSweep).TotalMilliseconds < 2000) return;
+            lastRSweep = now;
+            var owned = new HashSet<int>();
+            int maxNo = 0;
+            foreach (var cv in conveyors.Values)
+            {
+                if (cv.Def.No < 1) continue;
+                if (cv.Def.No > maxNo) maxNo = cv.Def.No;
+                for (int i = 1; i <= cv.Def.Ports.Length; i++)
+                    owned.Add((cv.Def.No - 1) * 10 + (i - 1) * 2);
+            }
+            if (maxNo < 1) return;
+            int limit = maxNo * 10;
+            for (int w = 0; w < limit; w += 2)
+            {
+                if (owned.Contains(w)) continue;
+                string cur = (io.Memory.GetString('R', w, 2) ?? "").Trim().Trim(' ');
+                if (cur.Length > 0 && cur != "0000")
+                    io.Memory.SetString('R', w, 2, "0000");
+            }
+        }
+
         private void TickLoop(string kind)
         {
             while (running)
@@ -172,6 +200,7 @@ namespace EQP_SIM.Sim
                             if (kind == "CV")
                             {
                                 foreach (var cv in conveyors.Values) cv.Tick(now);
+                                SweepUnownedRTracking(now);   // [LGLS 2026-09-02] 미정의 트랙 R 잔재 청소
                             }
                             else if (kind == "SC")
                             {

@@ -18,6 +18,7 @@ IMPLEMENT_DYNAMIC(CScSkinDlg, CSkinDialog)
 	CScSkinDlg::CScSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CScSkinDlg::IDD, pParent)
 {
+	m_bForkRowCompacted = FALSE;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pDoc = pDoc;
@@ -2514,6 +2515,10 @@ HBRUSH CScSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 //   rc 를 고치지 않고 런타임 좌표로 처리한다(리소스 인코딩 파손 회피).
 void CScSkinDlg::CompactForkStatusRow()
 {
+	// [LGLS 2026-09-02] 호기 전환 재구성 때마다 다시 호출되면 승강/주행 행이 한 칸씩 더 올라가
+	//   서로 겹쳤다("그래도 겹침"). 창 생애 동안 1회만 수행한다.
+	if (m_bForkRowCompacted) return;
+	m_bForkRowCompacted = TRUE;
 	// [LGLS 2026-08-04] 포크상태 행은 리소스에서 삭제했다. 그 자리(빈 한 행)만큼
 	//   아래 행(수직주행/수평주행)을 위로 당긴다. 행 높이는 화물유무->포크위치 간격으로 구한다.
 	CWnd* pLblPl = GetDlgItem(IDC_LBL_SC_PROD_LOAD);		// 화물유무 (윗 행)

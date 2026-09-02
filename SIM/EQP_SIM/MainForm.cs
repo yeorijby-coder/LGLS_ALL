@@ -124,9 +124,11 @@ namespace EQP_SIM
             cvDev.Items.AddRange(new object[] { "W", "B", "R" }); cvDev.SelectedIndex = 0;
             cvAddr = new TextBox { Location = new System.Drawing.Point(102, 30), Width = 60, Text = "0150" };
             var btnC = new Button { Text = "변환", Location = new System.Drawing.Point(166, 29), Width = 48 };
-            cvOut = L("(16진 입력 → 실주소)", 220, 30);
+            var btnToMt = new Button { Text = "메모리 읽기/쓰기로", Location = new System.Drawing.Point(218, 29), Width = 118 };
+            cvOut = L("(16진 입력 → 실주소)", 342, 30);
             btnC.Click += delegate { ConvertOldAddr(); };
-            pnl.Controls.Add(cvDev); pnl.Controls.Add(cvAddr); pnl.Controls.Add(btnC);
+            btnToMt.Click += delegate { ApplyConvToMemTool(); };
+            pnl.Controls.Add(cvDev); pnl.Controls.Add(cvAddr); pnl.Controls.Add(btnC); pnl.Controls.Add(btnToMt);
         }
 
         private void MemToolRun(bool bWrite)
@@ -145,10 +147,30 @@ namespace EQP_SIM
                 else
                 {
                     int val = (dev == 'M') ? (memory.GetBit('M', addr) ? 1 : 0) : memory.GetWord(dev, addr);
-                    mtOut.Text = string.Format("{0}{1} = {2}", dev, addr, val);
+                    if (dev == 'M')
+                        mtOut.Text = string.Format("{0}{1} = {2}", dev, addr, val);
+                    else
+                    {
+                        // [LGLS 2026-09-02] 워드 16진 + 2워드(문자열/작업번호) ASCII 병기
+                        string asc = "";
+                        try { asc = (memory.GetString(dev, addr, 2) ?? "").Trim(); } catch {}
+                        mtOut.Text = string.Format("{0}{1} = {2} (0x{3:X4}){4}", dev, addr, val, val,
+                            (asc.Length > 0 ? " ASCII2=\"" + asc + "\"" : ""));
+                    }
                 }
             }
             catch (Exception ex) { mtOut.Text = "오류: " + ex.Message; }
+        }
+
+        private char mtTargetDev = 'D';   // [LGLS 2026-09-02] 변환 결과의 실주소(위 메모리도구로 넘길 값)
+        private int  mtTargetAddr = -1;
+        private void ApplyConvToMemTool()
+        {
+            if (mtTargetAddr < 0) { ConvertOldAddr(); }
+            if (mtTargetAddr < 0) return;
+            mtDev.SelectedItem = mtTargetDev.ToString();
+            mtAddr.Text = mtTargetAddr.ToString();
+            mtOut.Text = string.Format("메모리 도구에 {0}{1} 세팅됨 - 위에서 읽기/쓰기", mtTargetDev, mtTargetAddr);
         }
 
         private void ConvertOldAddr()
@@ -157,17 +179,25 @@ namespace EQP_SIM
             {
                 int n = Convert.ToInt32(cvAddr.Text.Trim(), 16);
                 char dev = cvDev.Text[0];
+                mtTargetAddr = -1;
                 if (dev == 'B')       // 비트 16진 → %MX / M워드.비트
+                {
                     cvOut.Text = string.Format("B{0} -> %MX{1} = M{2:000}.{3:X} (비트 {1})",
                         cvAddr.Text.Trim().ToUpper(), n, n / 16, n % 16);
+                    mtTargetDev = 'M'; mtTargetAddr = n;   // M 은 절대 비트번호
+                }
                 else if (dev == 'W')  // 워드 16진 → 구환산 %DW = 같은 수의 10진
+                {
                     cvOut.Text = string.Format("W{0} -> D{1} (구환산 %DW{1} / %DB{2})",
                         cvAddr.Text.Trim().ToUpper(), n, n * 2);
+                    mtTargetDev = 'D'; mtTargetAddr = n;
+                }
                 else                  // R : 10진 확정(구 문서도 10진) - 참고로 16진 해석값 병기
                 {
                     int nDec = Convert.ToInt32(cvAddr.Text.Trim(), 10);
                     cvOut.Text = string.Format("R{0} -> R{1} (10진 확정) / 16진 해석 시 R{2}",
                         cvAddr.Text.Trim(), nDec, n);
+                    mtTargetDev = 'R'; mtTargetAddr = nDec;
                 }
             }
             catch (Exception ex) { cvOut.Text = "오류: " + ex.Message; }
