@@ -85,18 +85,20 @@ namespace WCS_TASK_CV
             pnlLeft.Controls.Add(m_chkAllHeader);
 
             // 위 : 검색 조건
-            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 34 };
-            var lblT = new Label { Text = "텍스트", Location = new Point(6, 9), AutoSize = true };
-            m_txtText = new TextBox { Location = new Point(56, 6), Width = 320 };
-            var lblA = new Label { Text = "주소값", Location = new Point(390, 9), AutoSize = true };
-            m_txtAddr = new TextBox { Location = new Point(440, 6), Width = 160 };
+            // [LGLS 2026-09-03] IO_TASK 와 같은 형태 - 라벨을 에디트 "위"에 두어 라벨 길이가
+            //   에디트 폭을 잠식하지 않게 한다(종전 왼쪽 배치는 라벨이 길면 입력칸이 잘렸다).
+            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 52 };
+            var lblT = new Label { Text = "메시지 검색", Location = new Point(8, 4), AutoSize = true };
+            m_txtText = new TextBox { Location = new Point(8, 22), Width = 360 };
+            var lblA = new Label { Text = "주소값 검색", Location = new Point(384, 4), AutoSize = true };
+            m_txtAddr = new TextBox { Location = new Point(384, 22), Width = 200 };
             m_txtText.TextChanged += delegate { m_strLastSig = null; Refresh_(); };
             m_txtAddr.TextChanged += delegate { m_strLastSig = null; Refresh_(); };
-            m_chkPause = new CheckBox { Text = "갱신 정지", Location = new Point(615, 8), AutoSize = true };
-            m_chkTail = new CheckBox { Text = "끝으로 스크롤", Location = new Point(700, 8), AutoSize = true, Checked = true };
-            var btnClear = new Button { Text = "조건 지우기", Location = new Point(810, 5), Size = new Size(90, 24) };
+            m_chkPause = new CheckBox { Text = "갱신 정지", Location = new Point(600, 24), AutoSize = true };
+            m_chkTail = new CheckBox { Text = "끝으로 스크롤", Location = new Point(690, 24), AutoSize = true, Checked = true };
+            var btnClear = new Button { Text = "조건 지우기", Location = new Point(806, 20), Size = new Size(90, 24) };
             btnClear.Click += delegate { m_txtText.Text = ""; m_txtAddr.Text = ""; };
-            m_lblCount = new Label { Location = new Point(910, 9), AutoSize = true, Text = "0 / 0" };
+            m_lblCount = new Label { Location = new Point(908, 25), AutoSize = true, Text = "0 / 0" };
             pnlTop.Controls.AddRange(new Control[] { lblT, m_txtText, lblA, m_txtAddr, m_chkPause, m_chkTail, btnClear, m_lblCount });
 
             // 가운데 : 결과

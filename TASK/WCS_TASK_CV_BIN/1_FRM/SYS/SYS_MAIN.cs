@@ -214,6 +214,9 @@ namespace WCS_TASK_CV
             btnIni.BringToFront();
             // [LGLS 2026-09-02] [로그 필터] - 메인 로그(lsvCOMM1)를 그대로 참조하는 헤더/텍스트/주소 필터 창.
             //   둘째 줄(y=28) 오른쪽 끝 빈 자리(시나리오 테스트 1080 이후). INI 옆은 [정리]/[시나리오]가 차지해 겹침 발생.
+            //   표시 여부는 INI [VIEW] LOG_FILTER_BTN (Y=표시 기본 / N=숨김) 로 제어한다.
+            if (cDefApi.GsReadInitProfileLogFilterBtn())
+            {
             var btnLogFilter = new Button { Text = "로그 필터", Size = new System.Drawing.Size(96, 23),
                 Location = new System.Drawing.Point(1088, 28),
                 Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold),
@@ -231,6 +234,7 @@ namespace WCS_TASK_CV
             };
             this.pnlTop.Controls.Add(btnLogFilter);
             btnLogFilter.BringToFront();
+            }
             // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
             WcsCommon.cLogCols.Attach(lsvCOMM1);
 
