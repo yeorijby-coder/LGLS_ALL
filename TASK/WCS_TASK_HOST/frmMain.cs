@@ -30,6 +30,20 @@ namespace TSK_HostCom
             //this.pnlTop.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlTop_Gradient);
             this.pnlMsg.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlMsg_Gradient);
             this.pnlMsg2.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlMsg2_Gradient);
+
+            // [LGLS 2026-09-02] 환경 INI(EcsComA.ini) 바로 열기 - 우상단 빈 자리
+            var btnIni = new System.Windows.Forms.Button { Text = "INI 열기",
+                Size = new System.Drawing.Size(72, 22),
+                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right,
+                Location = new System.Drawing.Point(this.ClientSize.Width - 80, 18) };
+            btnIni.Click += delegate
+            {
+                string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+                if (!System.IO.File.Exists(strIni)) { System.Windows.Forms.MessageBox.Show("INI 파일이 없습니다 : " + strIni); return; }
+                System.Diagnostics.Process.Start("notepad.exe", "\"" + strIni + "\"");
+            };
+            this.Controls.Add(btnIni);
+            btnIni.BringToFront();
         }
 
         // 판넬들에 덮여서 안보임

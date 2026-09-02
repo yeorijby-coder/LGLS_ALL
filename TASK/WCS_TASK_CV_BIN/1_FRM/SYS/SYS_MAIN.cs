@@ -196,6 +196,20 @@ namespace WCS_TASK_CV
             m_rdoDDoc.CheckedChanged += rdoDAddr_CheckedChanged;
             m_rdoDLegacy.CheckedChanged += rdoDAddr_CheckedChanged;
             m_rdoDDoc.Visible = m_rdoDLegacy.Visible = (m_nPlcMaker == 1);
+
+            // [LGLS 2026-09-02] 환경 INI(WCS_DB.INI) 바로 열기 - [정리] 버튼 왼쪽 빈 자리(둘째 줄, 겹침 없음)
+            var btnIni = new Button { Text = "INI 열기", Size = new System.Drawing.Size(72, 23),
+                Location = new System.Drawing.Point(808, 28),
+                Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.LightCyan };
+            btnIni.Click += delegate
+            {
+                string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WCS_DB.INI");
+                if (!System.IO.File.Exists(strIni)) { MessageBox.Show("INI 파일이 없습니다 : " + strIni); return; }
+                System.Diagnostics.Process.Start("notepad.exe", "\"" + strIni + "\"");
+            };
+            this.pnlTop.Controls.Add(btnIni);
+            btnIni.BringToFront();
             // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
             WcsCommon.cLogCols.Attach(lsvCOMM1);
 

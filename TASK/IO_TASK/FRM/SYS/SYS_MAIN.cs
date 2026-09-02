@@ -56,6 +56,19 @@ namespace TSK_COMM_IOSCH
             //MainThread가 시작되었다는것을 나타내는 Bool값.
 			cDefApp.GM_STAT_MAIN = true;
 
+			// [LGLS 2026-09-02] 환경 INI(ENV_IOSCH.INI) 바로 열기 - 우상단 날짜 라벨 왼쪽 빈 자리
+			var btnIni = new Button { Text = "INI 열기", Size = new System.Drawing.Size(72, 22),
+				Anchor = AnchorStyles.Top | AnchorStyles.Right,
+				Location = new System.Drawing.Point(label1.Left - 82, label1.Top - 5) };
+			btnIni.Click += delegate
+			{
+				string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ENV_IOSCH.INI");
+				if (!System.IO.File.Exists(strIni)) { MessageBox.Show("INI 파일이 없습니다 : " + strIni); return; }
+				System.Diagnostics.Process.Start("notepad.exe", "\"" + strIni + "\"");
+			};
+			pnlTop.Controls.Add(btnIni);
+			btnIni.BringToFront();
+
 
 			// [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
 			WcsCommon.cLogCols.Attach(lsvR);
