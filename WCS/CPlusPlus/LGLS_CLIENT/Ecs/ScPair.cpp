@@ -166,14 +166,15 @@ void CScPair::RefreshScWaitCount()
 		CDciControl* pCtrl = m_pDoc->GetDciControl_FindAllLayout(strCid);
 		if (pCtrl == NULL) continue;
 
+		// [LGLS 2026-09-03] 0 건일 때도 항상 표시(사용자 요청) - 동작 여부를 화면에서 알 수 있게
 		CString strTxt;
-		if (nCnt[nSc - 1] > 0)
-			strTxt.Format(_T("출고대기 %d"), nCnt[nSc - 1]);
+		strTxt.Format(_T("출고대기 %d"), nCnt[nSc - 1]);
+		COLORREF clrTxt = (nCnt[nSc - 1] > 0) ? RGB(128, 0, 192) : RGB(150, 150, 150);
 
-		if (pCtrl->m_strText != strTxt)
+		if (pCtrl->m_strText != strTxt || pCtrl->m_clrFgColor != clrTxt)
 		{
 			pCtrl->m_strText = strTxt;
-			pCtrl->m_clrFgColor = RGB(128, 0, 192);
+			pCtrl->m_clrFgColor = clrTxt;
 			pCtrl->InvalidateControl(m_pDoc->m_hWndView, TRUE);
 		}
 	}
