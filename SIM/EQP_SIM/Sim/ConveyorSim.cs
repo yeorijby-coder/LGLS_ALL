@@ -236,6 +236,19 @@ namespace EQP_SIM.Sim
         {
             string name = "PALLET_EXIST0" + ObsNo(idx);
             if (HasObs(name)) io.SetString(Def.Id, name, id ?? "");
+            // [LGLS 2026-09-02] XML 관측(maxSlots)에 없는 슬롯도 WCS 는 같은 R 트래킹 테이블을
+            //   연속으로 읽는다(RTrackReadBase = (CV번호-1)*10, 슬롯당 2워드). 관측 유무와 무관하게
+            //   R 을 직접 동기화해 "파렛트 없는 트랙의 잔재 작업번호"(색 없는 번호 표시 +
+            //   RGV 도착지 잔재 오판으로 인한 지시 보류)가 생기지 않게 한다.
+            if (engine.WcsSupport && Def.No >= 1)
+            {
+                int n = ObsNo(idx);
+                if (n >= 1)
+                {
+                    int rAddr = (Def.No - 1) * 10 + (n - 1) * 2;
+                    io.Memory.SetString('R', rAddr, 2, string.IsNullOrEmpty(id) ? "0000" : id);
+                }
+            }
         }
 
         private string GetTracking(int idx)
