@@ -38,6 +38,27 @@ protected:
 
 	CStringArray m_arStatusCd;
 
+	// [LGLS 2026-09-03] 탭별 명령 버튼 바 (CvSkinDlg/ScSkinDlg/RtvSkinDlg 명령 이식)
+	CButton m_btnCmd[32];
+	int     m_nBarRows;
+
+	void BuildCmdBar();
+	void LayoutCmdBar(int cx, int cy);
+	void ShowCmdBar();
+	CString GetCurUnit();
+	CString QueryOne(CString strSql, LPCTSTR strCol);
+	BOOL GetCvCtx(CString& strMc, CString& strPlc);
+	BOOL GetVehCtx(BOOL bRtv, CString& strNo, CString& strPlc);
+	BOOL ExecUpdateEx(CString strSql, CString strLogMsg, CString strLuggNo, CString strWidId, int nPerm);
+	void DoCvCopy(BOOL bCut);
+	void DoCvPaste();
+	void DoCvTrackPause();
+	void DoCvMzMove();
+	void DoVehCmd(BOOL bRtv, LPCTSTR strCmdId, LPCTSTR strAskMsg);
+	void DoScSuspend(int nKind);
+	void DoScDuplSto();
+	void DoRtvSuspend();
+
 	int  m_nRefreshRows;
 	void EnsureRow(int i, LPCTSTR strCap);
 	void PlaceOverlays();
@@ -63,5 +84,6 @@ protected:
 	afx_msg void OnBtnCvDelete();
 	afx_msg void OnBtnForce();
 	afx_msg void OnBtnAbort();
+	afx_msg void OnCmdBtn(UINT nID);
 	DECLARE_MESSAGE_MAP()
 };

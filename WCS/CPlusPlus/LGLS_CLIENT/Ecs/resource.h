@@ -293,6 +293,8 @@
 #define IDC_PI_BTN_FORCE                2364
 #define IDC_PANEL_VEH_LIST              2365
 #define IDC_PI_BTN_ABORT                2366
+#define IDC_PI_CMD_BASE                 2400
+#define IDC_PI_CMD_LAST                 2431
 #define IDC_BTN_INIT                    1002
 #define IDC_STATIC_TITLE                1003
 #define IDC_LIST_LOG                    1009

@@ -208,7 +208,22 @@ namespace WCS_TASK_CV
             {
                 string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WCS_DB.INI");
                 if (!System.IO.File.Exists(strIni)) { MessageBox.Show("INI 파일이 없습니다 : " + strIni); return; }
-                System.Diagnostics.Process.Start("notepad.exe", "\"" + strIni + "\"");
+                // [LGLS 2026-09-03] 32비트 프로세스가 "notepad.exe" 를 부르면 WOW64 리다이렉션으로
+                //   SysWOW64 의 32비트 메모장이 뜨는데, Win11 새 메모장은 64비트 전용이라
+                //   Microsoft.UI.Windowing.Core.dll 오류가 난다. 실제 64비트 메모장을 직접 지정한다.
+                //   (Sysnative 는 32비트 프로세스에서만 유효한 리다이렉션 우회 경로)
+                try
+                {
+                    string strNotepad = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                        (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess) ? "Sysnative" : "System32",
+                        "notepad.exe");
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strNotepad, "\"" + strIni + "\"") { UseShellExecute = false });
+                }
+                catch
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strIni) { UseShellExecute = true });
+                }
             };
             this.pnlTop.Controls.Add(btnIni);
             btnIni.BringToFront();

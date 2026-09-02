@@ -480,7 +480,22 @@ namespace WCS_TASK_CV
                 string strPath = cPlcAddrMap.FilePath;
                 if (!System.IO.File.Exists(strPath))
                 { MessageBox.Show("파일이 없습니다.\r\n" + strPath, "주소맵 XML"); return; }
-                System.Diagnostics.Process.Start("notepad.exe", "\"" + strPath + "\"");
+                // [LGLS 2026-09-03] 32비트 프로세스가 "notepad.exe" 를 부르면 WOW64 리다이렉션으로
+                //   SysWOW64 의 32비트 메모장이 뜨는데, Win11 새 메모장은 64비트 전용이라
+                //   Microsoft.UI.Windowing.Core.dll 오류가 난다. 실제 64비트 메모장을 직접 지정한다.
+                //   (Sysnative 는 32비트 프로세스에서만 유효한 리다이렉션 우회 경로)
+                try
+                {
+                    string strNotepad = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                        (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess) ? "Sysnative" : "System32",
+                        "notepad.exe");
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strNotepad, "\"" + strPath + "\"") { UseShellExecute = false });
+                }
+                catch
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strPath) { UseShellExecute = true });
+                }
                 AppendLog("[주소맵 XML] 메모장으로 열었습니다. 편집 후 [다시 읽기]를 누르세요.");
             }
             catch (Exception ex) { MessageBox.Show("메모장 실행 실패: " + ex.Message, "주소맵 XML"); }
