@@ -14,10 +14,15 @@ namespace TSK_COMM_IOSCH
     {
         private const int COL_THREAD = 1;
         private const int COL_KIND   = 2;
+        private const int COL_JOBNO  = 3;
+        private const int COL_STATUS = 4;
         private const string KEY_NONE = "(없음)";
+        private const string STAT_ALL = "(전체)";
 
         private ListView m_src;                          // 메인 화면의 로그 ListView (소스)
         private Dictionary<string, bool> m_head = new Dictionary<string, bool>();   // 헤더 → 체크 여부
+        private Dictionary<string, bool> m_stat = new Dictionary<string, bool>();   // 등장한 작업상태 집합
+        private bool   m_statUpd  = false;               // 작업상태 콤보 갱신 중
         private object m_lastFirst = null;               // 마지막 갱신 시 소스 첫/끝 항목 (변경 감지)
         private object m_lastLast  = null;
         private int    m_lastCnt   = -1;
@@ -29,6 +34,9 @@ namespace TSK_COMM_IOSCH
             InitializeComponent();
             m_src = pSrc;
             BuildColumns();
+            m_statUpd = true;
+            try { cboStat.Items.Add(STAT_ALL); cboStat.SelectedIndex = 0; }
+            finally { m_statUpd = false; }
         }
 
         #region 열 구성 (소스 ListView 와 동일)
@@ -73,6 +81,7 @@ namespace TSK_COMM_IOSCH
             {
                 if (m_src == null || m_src.IsDisposed) { Close(); return; }
                 RefreshHeaders();
+                RefreshStatus();
                 RefreshList();
             }
             catch (Exception) { }
@@ -104,17 +113,67 @@ namespace TSK_COMM_IOSCH
             m_dirty = true;
         }
 
-        private bool Pass(ListViewItem it, string pFind)
+        // 현재 표시된 로그의 "작업상태" 열([NN]텍스트)에 등장한 값을 모아 콤보를 갱신한다.
+        //   - 첫 항목은 항상 (전체), 사용자가 고른 선택은 유지한다.
+        private void RefreshStatus()
+        {
+            bool added = false;
+            foreach (ListViewItem it in m_src.Items)
+            {
+                string s = SubText(it, COL_STATUS).Trim();
+                if (s.Length == 0) continue;
+                if (!m_stat.ContainsKey(s)) { m_stat[s] = true; added = true; }
+            }
+            if (!added) return;
+
+            List<string> keys = new List<string>(m_stat.Keys);
+            keys.Sort(StringComparer.Ordinal);
+
+            string sel = (cboStat.SelectedItem as string) ?? STAT_ALL;
+            m_statUpd = true;
+            try
+            {
+                cboStat.BeginUpdate();
+                cboStat.Items.Clear();
+                cboStat.Items.Add(STAT_ALL);
+                foreach (string k in keys) cboStat.Items.Add(k);
+                int idx = cboStat.Items.IndexOf(sel);
+                cboStat.SelectedIndex = (idx >= 0) ? idx : 0;
+                cboStat.EndUpdate();
+            }
+            finally { m_statUpd = false; }
+        }
+
+        // 메시지 검색 대상 : 구분 / 파일 / 함수 / Message / Tgm
+        private static bool MsgHit(ListViewItem it, string pFind)
+        {
+            int[] cols = new int[] { COL_KIND, 5, 6, 7, 8 };
+            for (int i = 0; i < cols.Length; i++)
+            {
+                string s = SubText(it, cols[i]);
+                if (s.Length > 0 && s.IndexOf(pFind, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
+        }
+
+        // 헤더 체크 AND 작업상태 AND 메시지검색 AND 작업번호검색 (모두 만족해야 표시)
+        private bool Pass(ListViewItem it, string pFind, string pJob, string pStat)
         {
             bool on;
             if (!m_head.TryGetValue(HeadKey(it), out on) || !on) return false;
-            if (pFind.Length == 0) return true;
-            for (int i = 0; i < it.SubItems.Count; i++)
+
+            if (pStat.Length > 0 && pStat != STAT_ALL)
             {
-                string s = it.SubItems[i].Text;
-                if (s != null && s.IndexOf(pFind, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (!string.Equals(SubText(it, COL_STATUS).Trim(), pStat, StringComparison.OrdinalIgnoreCase))
+                    return false;
             }
-            return false;
+            if (pFind.Length > 0 && !MsgHit(it, pFind)) return false;
+            if (pJob.Length > 0)
+            {
+                string j = SubText(it, COL_JOBNO);
+                if (j.IndexOf(pJob, StringComparison.OrdinalIgnoreCase) < 0) return false;
+            }
+            return true;
         }
 
         // 소스가 바뀌었거나(추가/삭제/Clear) 필터 조건이 바뀌면 목록을 다시 만든다.
@@ -130,6 +189,8 @@ namespace TSK_COMM_IOSCH
             m_lastCnt = cnt; m_lastFirst = first; m_lastLast = last; m_dirty = false;
 
             string find = txtFind.Text.Trim();
+            string job  = txtJob.Text.Trim();
+            string stat = (cboStat.SelectedItem as string) ?? STAT_ALL;
             int shown = 0;
 
             lsvF.BeginUpdate();
@@ -138,7 +199,7 @@ namespace TSK_COMM_IOSCH
                 lsvF.Items.Clear();
                 foreach (ListViewItem it in m_src.Items)
                 {
-                    if (!Pass(it, find)) continue;
+                    if (!Pass(it, find, job, stat)) continue;
                     ListViewItem n = new ListViewItem(it.Text);
                     for (int i = 1; i < it.SubItems.Count; i++) n.SubItems.Add(it.SubItems[i].Text);
                     n.BackColor = it.BackColor;
@@ -168,6 +229,21 @@ namespace TSK_COMM_IOSCH
 
         private void txtFind_TextChanged(object sender, EventArgs e)
         {
+            m_dirty = true;
+        }
+
+        private void cboStat_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (m_statUpd) return;
+            m_dirty = true;
+        }
+
+        // 검색어 / 작업상태 선택을 한 번에 초기화한다 (헤더 체크는 건드리지 않는다).
+        private void btnClear_Click(object sender, EventArgs e)
+        {
+            txtFind.Text = "";
+            txtJob.Text = "";
+            if (cboStat.Items.Count > 0) cboStat.SelectedIndex = 0;
             m_dirty = true;
         }
 

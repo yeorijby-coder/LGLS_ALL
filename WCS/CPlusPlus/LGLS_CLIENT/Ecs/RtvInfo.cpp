@@ -116,6 +116,25 @@ COLORREF CRtvInfo::GetForkColor1()
 	//return BLACK;
 }
 
+BOOL CRtvInfo::IsRtvDown(CRTV_DATA* pRTV_DATA)
+{
+	// [LGLS 2026-09-03] RTV DOWN 판정(사용자 요청) : 자동이 아니거나 상태신호가 없으면 DOWN.
+	//   SC 는 ONLINE/AUTO/ACTIVE 로 판정해 DARK_GRAY 를 쓰는데(ScInfo::GetForkColor1),
+	//   RTV 에는 ONLINE 신호가 없어 AUTO_MODE 와 SUBSYSTEM_STATUS(UCSTATUS) 로 본다.
+	if (pRTV_DATA == NULL)
+		return FALSE;
+
+	CString strAuto = pRTV_DATA->V_AUTO_MODE_RD;   strAuto.Trim();
+	CString strStat = pRTV_DATA->V_UCSTATUS_RD;    strStat.Trim();
+
+	if (strAuto == _T("0"))
+		return TRUE;
+	if (strStat.IsEmpty() || strStat == _T("0"))
+		return TRUE;
+
+	return FALSE;
+}
+
 COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 {
 	CConfig* pConfig = m_pEquipment->m_pDoc->m_pConfig;
@@ -123,6 +142,10 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 
 	if (pRTV_DATA->V_ERR_CODE_RD != _T("0") && pRTV_DATA->V_ERR_CODE_RD != _T("0000") && pRTV_DATA->V_ERR_CODE_RD != _T(""))
 		return pConfig->m_clrUSER_COLOR_ERROR;
+
+	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
+	if (IsRtvDown(pRTV_DATA))
+		return DARK_GRAY;
 
 	//if (pRTV_DATA->V_ERR_STA_FK2_RD != _T("0"))
 	//	return pConfig->m_clrUSER_COLOR_ERROR;
@@ -229,6 +252,10 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 
 	if (pRTV_DATA->V_ERR_CODE_RD != _T("0") && pRTV_DATA->V_ERR_CODE_RD != _T("0000") && pRTV_DATA->V_ERR_CODE_RD != _T(""))
 		return pConfig->m_clrUSER_COLOR_ERROR;
+
+	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
+	if (IsRtvDown(pRTV_DATA))
+		return DARK_GRAY;
 
 	//if (pRTV_DATA->V_ERR_STA_FK2_RD != _T("0"))
 	//	return pConfig->m_clrUSER_COLOR_ERROR;

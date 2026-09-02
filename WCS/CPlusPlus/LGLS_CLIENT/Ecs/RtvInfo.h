@@ -90,6 +90,7 @@ public:
 	COLORREF GetRailColor();
 	COLORREF GetPostColor();
 
+	BOOL IsRtvDown(CRTV_DATA* pRTV_DATA);   // [LGLS 2026-09-03] DOWN ÆÇÁ¤
 	COLORREF GetForkColor1(CRTV_DATA* pRTV_DATA);
 	COLORREF GetForkColor2(CRTV_DATA* pRTV_DATA);
 	COLORREF GetRailColor(CRTV_DATA* pRTV_DATA);
