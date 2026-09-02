@@ -34,6 +34,7 @@
             this.ColumnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLogAddr = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colLogFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colLogFunc = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ColumnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -128,6 +129,7 @@
             this.ColumnHeader1,
             this.ColumnHeader2,
             this.ColumnHeader3,
+            this.colLogAddr,
             this.colLogFile,
             this.colLogFunc,
             this.ColumnHeader4,
@@ -160,6 +162,9 @@
             // 
             // colLogFile / colLogFunc   [LGLS 2026-08-21] 호출 위치 (헤더 우클릭으로 표시/숨김)
             // 
+            // [LGLS 2026-09-02] 주소 열 (PLC 읽기/쓰기 주소값)
+            this.colLogAddr.Text = "주소";
+            this.colLogAddr.Width = 90;
             this.colLogFile.Text = "파일";
             this.colLogFile.Width = 110;
             this.colLogFunc.Text = "함수";
@@ -857,6 +862,7 @@
         internal System.Windows.Forms.CheckBox checkBox2;
         internal System.Windows.Forms.RadioButton rdoRHex;   // [LGLS 2026-08-19] R주소=구ECS(16진)
         internal System.Windows.Forms.RadioButton rdoRDec;   // [LGLS 2026-08-19] R주소=현행(10진)
+        internal System.Windows.Forms.ColumnHeader colLogAddr; // [LGLS 2026-09-02] PLC 주소값
         private System.Windows.Forms.ColumnHeader colLogFile; // [LGLS 2026-08-21] 로그 호출 파일
         private System.Windows.Forms.ColumnHeader colLogFunc; // [LGLS 2026-08-21] 로그 호출 함수
         internal System.Windows.Forms.ListView lsvCOMM1;

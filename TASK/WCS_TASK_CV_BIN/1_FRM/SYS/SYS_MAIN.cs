@@ -42,6 +42,7 @@ namespace WCS_TASK_CV
         private bool m_bHex = true;
         private bool m_bAscii = false;
         private int m_nPlcMaker = 1;       // PLC 제조사 (ini [PLC] MAKER : 1=XGT, 0=Melsec)
+        private FRM_LOG_FILTER m_frmLogFilter;   // [LGLS 2026-09-02] 로그 필터 창(단일 인스턴스)
         public bool IsHex { get { return m_bHex; } set { m_bHex = value; } }
         public bool IsAscii { get { return m_bAscii; } set { m_bAscii = value; } }
 
@@ -211,6 +212,25 @@ namespace WCS_TASK_CV
             };
             this.pnlTop.Controls.Add(btnIni);
             btnIni.BringToFront();
+            // [LGLS 2026-09-02] [로그 필터] - 메인 로그(lsvCOMM1)를 그대로 참조하는 헤더/텍스트/주소 필터 창.
+            //   둘째 줄(y=28) 오른쪽 끝 빈 자리(시나리오 테스트 1080 이후). INI 옆은 [정리]/[시나리오]가 차지해 겹침 발생.
+            var btnLogFilter = new Button { Text = "로그 필터", Size = new System.Drawing.Size(96, 23),
+                Location = new System.Drawing.Point(1088, 28),
+                Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.Honeydew };
+            btnLogFilter.Click += delegate
+            {
+                try
+                {
+                    if (m_frmLogFilter == null || m_frmLogFilter.IsDisposed)
+                        m_frmLogFilter = new FRM_LOG_FILTER(this);
+                    m_frmLogFilter.Show();
+                    m_frmLogFilter.BringToFront();
+                }
+                catch (Exception ex) { MessageBox.Show("로그 필터 열기 실패: " + ex.Message); }
+            };
+            this.pnlTop.Controls.Add(btnLogFilter);
+            btnLogFilter.BringToFront();
             // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
             WcsCommon.cLogCols.Attach(lsvCOMM1);
 
@@ -633,47 +653,47 @@ namespace WCS_TASK_CV
         //@@@.PsMsgView[화면에 로깅...]
 		public void PsMsgView(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, "", pFile, pFunc);
         }
 		public void PsMsgView_Error(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, "", pFile, pFunc);
         }
 		public void PsMsgView_IMP(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, "", pFile, pFunc);
         }
 		public void PsMsgView(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, "", pFile, pFunc);
         }
 		public void PsMsgView_Error(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, "", pFile, pFunc);
         }
 		public void PsMsgView_IMP(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, "", pFile, pFunc);
         }
         public void PsMsgView(string pMsg, string pObjID, string pCommTyp, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, "", pFile, pFunc);
         }
         public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, "", pFile, pFunc);
         }
-		public void PsMsgView(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+		public void PsMsgView(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_NOR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_NOR, nThGbn, pAddr, pFile, pFunc);
         }
-		public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+		public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_ERR, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_ERR, nThGbn, pAddr, pFile, pFunc);
         }
-		public void PsMsgView_IMP(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+		public void PsMsgView_IMP(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
-			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_IMP, nThGbn, pFile, pFunc);
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_IMP, nThGbn, pAddr, pFile, pFunc);
         }
         private void PsMsgView(string pMsg, 
                                string pObjID, 
@@ -681,6 +701,7 @@ namespace WCS_TASK_CV
                                string pTgm, 
                   cDefApp.eLogMsgType pMsgTyp,
 							   int nThGbn,
+                               string pAddr = "",     // [LGLS 2026-09-02] PLC 주소값 (없으면 빈칸)
                                string pFile = "",
                                string pFunc = "")
         {
@@ -700,6 +721,7 @@ namespace WCS_TASK_CV
                 ListViewItem vItem = new ListViewItem(LogMsg.Time, 0);
                 vItem.SubItems.Add(LogMsg.ID);
                 vItem.SubItems.Add(LogMsg.Com);
+                vItem.SubItems.Add(pAddr ?? "");   // [LGLS 2026-09-02] 주소 열
                 // [LGLS 2026-08-21] 호출 위치 (Message 앞 2열 - 헤더 우클릭으로 표시/숨김)
                 vItem.SubItems.Add(WcsCommon.cLogCols.ShortFile(pFile));
                 vItem.SubItems.Add(pFunc ?? "");
@@ -752,9 +774,9 @@ namespace WCS_TASK_CV
         {
             try
             {
-                 // [LGLS 2026-08-21] 파일/함수 2열 삽입으로 Msg=5, Tgm=6
-                 this.txtMsg.Text = this.lsvCOMM1.SelectedItems[0].SubItems[5].Text;
-                 this.txtTgm.Text = this.lsvCOMM1.SelectedItems[0].SubItems[6].Text;
+                 // [LGLS 2026-09-02] 주소 열 삽입으로 Msg=6, Tgm=7 (열 순서: 시각/스레드/Cmd/주소/파일/함수/Msg/Tgm)
+                 this.txtMsg.Text = this.lsvCOMM1.SelectedItems[0].SubItems[6].Text;
+                 this.txtTgm.Text = this.lsvCOMM1.SelectedItems[0].SubItems[7].Text;
             }
             catch(Exception ex)
             {

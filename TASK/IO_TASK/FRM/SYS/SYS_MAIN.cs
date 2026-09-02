@@ -42,6 +42,7 @@ namespace TSK_COMM_IOSCH
 		private MainClass m_Maindefine = new MainClass();
 		private string m_strRtnMsg = ""; //리턴 문자열.
         private Object thisLock = new object();
+        private frmLogFilter m_frmLogFilter = null;   // [LGLS 2026-09-02] 로그 필터 폼 (단일 인스턴스)
 
 		#region@@@.생성자
 		public SYS_MAIN()
@@ -68,6 +69,26 @@ namespace TSK_COMM_IOSCH
 			};
 			pnlTop.Controls.Add(btnIni);
 			btnIni.BringToFront();
+
+			// [LGLS 2026-09-02] 로그 필터 폼 - INI 열기 버튼 왼쪽
+			var btnFilter = new Button { Text = "로그 필터", Size = new System.Drawing.Size(72, 22),
+				Anchor = AnchorStyles.Top | AnchorStyles.Right,
+				Location = new System.Drawing.Point(btnIni.Left - 78, btnIni.Top) };
+			btnFilter.Click += delegate
+			{
+				if (m_frmLogFilter == null || m_frmLogFilter.IsDisposed)
+				{
+					m_frmLogFilter = new frmLogFilter(lsvR);
+					m_frmLogFilter.Show(this);
+				}
+				else
+				{
+					if (m_frmLogFilter.WindowState == FormWindowState.Minimized) m_frmLogFilter.WindowState = FormWindowState.Normal;
+					m_frmLogFilter.Activate();
+				}
+			};
+			pnlTop.Controls.Add(btnFilter);
+			btnFilter.BringToFront();
 
 
 			// [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴

@@ -26,6 +26,7 @@ public:
 
 protected:
 	virtual void AutoRunProc();
+	void RefreshScWaitCount();   // [LGLS 2026-09-02] 크레인별 출고 대기(20) 건수 표시
 	virtual void CommandProc();
 
 public:

@@ -373,11 +373,11 @@ namespace WCS_TASK_CV
          * 화면 표시용
          */
         #region
-        private void MakeMsg(string msg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        private void MakeMsg(string msg, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                m_frmMain.PsMsgView(msg, m_strPlc_No.ToString(), "", "", nThGbn, pFile, pFunc);
+                m_frmMain.PsMsgView(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
             }
             catch (Exception ex)
             {
@@ -385,11 +385,11 @@ namespace WCS_TASK_CV
             }
         }
 
-        private void MakeMsg_Error(string msg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        private void MakeMsg_Error(string msg, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), "", "", nThGbn, pFile, pFunc);
+                m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
                 // [LGLS 진단] 에러는 DB 로그에도 남긴다 (파일/화면 로그 확인 불가 환경 대비)
                 try { InsertWcsLogPgr("", "[ERR] " + msg); } catch { }
@@ -400,11 +400,11 @@ namespace WCS_TASK_CV
             }
         }
 
-        private void MakeMsg_Imp(string msg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        private void MakeMsg_Imp(string msg, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
             {
-                m_frmMain.PsMsgView_IMP(msg, m_strPlc_No.ToString(), "", "", nThGbn, pFile, pFunc);
+                m_frmMain.PsMsgView_IMP(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
             }
             catch (Exception ex)
@@ -958,7 +958,7 @@ namespace WCS_TASK_CV
                         throw new Exception("READ 실패 ADDR[" + nAddress + "] LEN[" + (nReadTrack * 10)
                                             + "] ERR[" + m_msQPlc.GetErrorMsg()
                                             + "] TX[" + m_msQPlc.SndHexString
-                                            + "] RX[" + m_msQPlc.RcvHexString + "]");
+                                            + "] RX[" + m_msQPlc.RcvHexString + "] ADDR_TX[" + m_msQPlc.LastAddrText + "]");
                     }
 
                     int nReadLen = 20;
@@ -1511,14 +1511,14 @@ namespace WCS_TASK_CV
                         {
                             m_strLogMsg = strTitle + " TRACK_NO : [" + TRACK_NO + "] 방향지시(" +
                                           ((nCMD_RQ_PARM == 1) ? "출고" : "입고") + ") 실패";
-                            MakeMsg_Error(m_strLogMsg + " " + m_msQPlc.GetErrorMsg(), m_nthNo);
+                            MakeMsg_Error(m_strLogMsg + " " + m_msQPlc.GetErrorMsg(), m_nthNo, m_msQPlc.LastAddrText);
                             InsertWcsLogPgr(TRACK_NO, m_strLogMsg);
                             return false;
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 방향지시 " +
                                       ((nCMD_RQ_PARM == 1) ? "출고(1)" : "입고(0)") + " → D워드 " + nDirAddr;
-                        MakeMsg_Imp(m_strLogMsg, m_nthNo);
+                        MakeMsg_Imp(m_strLogMsg, m_nthNo, m_msQPlc.LastAddrText);
                         if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg))
                         {
                             return false;
@@ -1570,13 +1570,13 @@ namespace WCS_TASK_CV
                         {
                             if (this.m_msQPlc.IsHex)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
                             if (this.m_msQPlc.IsAscii)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
 
                             m_strLogMsg = strTitle + "트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 실패";
@@ -1589,14 +1589,14 @@ namespace WCS_TASK_CV
 
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 성공";
@@ -1627,13 +1627,13 @@ namespace WCS_TASK_CV
                         {
                             if (this.m_msQPlc.IsHex)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
                             if (this.m_msQPlc.IsAscii)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
 
                             m_strLogMsg = strTitle + " TRACK_NO : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 실패";
@@ -1646,14 +1646,14 @@ namespace WCS_TASK_CV
 
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 서공";
@@ -1684,13 +1684,13 @@ namespace WCS_TASK_CV
                         {
                             if (this.m_msQPlc.IsHex)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
                             if (this.m_msQPlc.IsAscii)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
 
                             m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 실패";
@@ -1703,14 +1703,14 @@ namespace WCS_TASK_CV
 
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 성공";
@@ -1743,13 +1743,13 @@ namespace WCS_TASK_CV
                         {
                             if (this.m_msQPlc.IsHex)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
                             if (this.m_msQPlc.IsAscii)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
 
                             m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 실패";
@@ -1762,14 +1762,14 @@ namespace WCS_TASK_CV
 
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 성공";
@@ -1801,13 +1801,13 @@ namespace WCS_TASK_CV
                         {
                             if (this.m_msQPlc.IsHex)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
                             if (this.m_msQPlc.IsAscii)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
 
                             m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 실패";
@@ -1820,14 +1820,14 @@ namespace WCS_TASK_CV
 
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 성공";
@@ -1859,13 +1859,13 @@ namespace WCS_TASK_CV
                         {
                             if (this.m_msQPlc.IsHex)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
                             if (this.m_msQPlc.IsAscii)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
 
                             m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 실패";
@@ -1878,14 +1878,14 @@ namespace WCS_TASK_CV
 
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 성공";
@@ -1921,13 +1921,13 @@ namespace WCS_TASK_CV
                         {
                             if (this.m_msQPlc.IsHex)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
                             if (this.m_msQPlc.IsAscii)
                             {
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                                MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                             }
 
                             m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 실패";
@@ -1940,14 +1940,14 @@ namespace WCS_TASK_CV
 
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [" + CMD_RQ_ID + "] 커맨드 지시 성공";
@@ -2097,13 +2097,13 @@ namespace WCS_TASK_CV
                     {
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 작업번호 : [" + LUGG_NO_OD + "] 도착지 : [" + DEST_POS_OD + "] 작업구분 : [" + JOB_TYP_OD + "] CV 지시 실패";
@@ -2116,13 +2116,13 @@ namespace WCS_TASK_CV
                     }
                     if (this.m_msQPlc.IsHex)
                     {
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                     }
                     if (this.m_msQPlc.IsAscii)
                     {
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                     }
 
                     m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 작업번호 : [" + LUGG_NO_OD + "] 도착지 : [" + DEST_POS_OD + "] 작업구분 : [" + JOB_TYP_OD + "] CV 지시 성공";
@@ -2784,13 +2784,13 @@ namespace WCS_TASK_CV
                     {
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " D1 = [" + nSIM_MODE + "] 쓰기 실패";
@@ -2803,14 +2803,14 @@ namespace WCS_TASK_CV
 
                     if (this.m_msQPlc.IsHex)
                     {
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                     }
 
                     if (this.m_msQPlc.IsAscii)
                     {
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                     }
 
                     m_strLogMsg = strTitle + " D1 = [" + nSIM_MODE + "] 쓰기 성공";
@@ -2934,13 +2934,13 @@ namespace WCS_TASK_CV
                     {
                         if (this.m_msQPlc.IsHex)
                         {
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
                         if (this.m_msQPlc.IsAscii)
                         {
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Error(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
 
                         m_strLogMsg = strTitle + " D8 = [" + nRET_STATUS + "] 쓰기 실패";
@@ -2953,14 +2953,14 @@ namespace WCS_TASK_CV
 
                     if (this.m_msQPlc.IsHex)
                     {
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                     }
 
                     if (this.m_msQPlc.IsAscii)
                     {
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo);
-                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 SEND [" + m_msQPlc.SndAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                        MakeMsg_Imp(strTitle + "트랙정보변경요청 RECEIVE [" + m_msQPlc.RcvAsciiString + "]", m_nthNo, m_msQPlc.LastAddrText);
                     }
 
                     //쓰기 한 값 db에 넣기.
@@ -3185,10 +3185,10 @@ namespace WCS_TASK_CV
 
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, mLo, mCnt, ref bm))
-                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] M 실패 - 종전 개별 READ 로 전환", m_nthNo); return; }
+                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] M 실패 - 종전 개별 READ 로 전환", m_nthNo, m_msQPlc.LastAddrText); return; }
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D, dLo, dCnt, ref bd))
-                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] D 실패 - 종전 개별 READ 로 전환", m_nthNo); return; }
+                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] D 실패 - 종전 개별 READ 로 전환", m_nthNo, m_msQPlc.LastAddrText); return; }
                 if (bDoR && !m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R, rLo, rCnt, ref br))
                 { bDoR = false; br = null; }            // R 만 실패하면 R 은 개별 READ 로 둔다
@@ -3335,7 +3335,7 @@ namespace WCS_TASK_CV
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
                                    mWordAddr, nEvWords, ref byRxBuff))
                 {
-                    MakeMsg_Error(strTitle + " M비트 읽기 실패", m_nthNo);
+                    MakeMsg_Error(strTitle + " M비트 읽기 실패", m_nthNo, m_msQPlc.LastAddrText);
                     return false;
                 }
 
@@ -3371,7 +3371,7 @@ namespace WCS_TASK_CV
                     cv.UnloadComp1Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
                         strTitle + " Unload Complete #1 ACK ON → %MX" + (ackBase + aUC1));
-                    MakeMsg_Imp(strTitle + " Unload Complete #1 감지, ACK %MX" + (ackBase + aUC1) + " ON", m_nthNo);
+                    MakeMsg_Imp(strTitle + " Unload Complete #1 감지, ACK %MX" + (ackBase + aUC1) + " ON", m_nthNo, m_msQPlc.LastAddrText);
                 }
                 else if (!unloadComp1 && cv.UnloadComp1Acked)
                 {
@@ -3387,7 +3387,7 @@ namespace WCS_TASK_CV
                     cv.LoadComp1Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
                         strTitle + " Load Complete #1 ACK ON → %MX" + (ackBase + aLC1));
-                    MakeMsg_Imp(strTitle + " Load Complete #1 감지, ACK %MX" + (ackBase + aLC1) + " ON", m_nthNo);
+                    MakeMsg_Imp(strTitle + " Load Complete #1 감지, ACK %MX" + (ackBase + aLC1) + " ON", m_nthNo, m_msQPlc.LastAddrText);
                 }
                 else if (!loadComp1 && cv.LoadComp1Acked)
                 {
@@ -3403,7 +3403,7 @@ namespace WCS_TASK_CV
                     cv.UnloadComp2Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
                         strTitle + " Unload Complete #2 ACK ON → %MX" + (ackBase + aUC2));
-                    MakeMsg_Imp(strTitle + " Unload Complete #2 감지, ACK %MX" + (ackBase + aUC2) + " ON", m_nthNo);
+                    MakeMsg_Imp(strTitle + " Unload Complete #2 감지, ACK %MX" + (ackBase + aUC2) + " ON", m_nthNo, m_msQPlc.LastAddrText);
                 }
                 else if (!unloadComp2 && cv.UnloadComp2Acked)
                 {
@@ -3419,7 +3419,7 @@ namespace WCS_TASK_CV
                     cv.LoadComp2Acked = true;
                     InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
                         strTitle + " Load Complete #2 ACK ON → %MX" + (ackBase + aLC2));
-                    MakeMsg_Imp(strTitle + " Load Complete #2 감지, ACK %MX" + (ackBase + aLC2) + " ON", m_nthNo);
+                    MakeMsg_Imp(strTitle + " Load Complete #2 감지, ACK %MX" + (ackBase + aLC2) + " ON", m_nthNo, m_msQPlc.LastAddrText);
                 }
                 else if (!loadComp2 && cv.LoadComp2Acked)
                 {
@@ -3444,14 +3444,14 @@ namespace WCS_TASK_CV
                         cv.UnloadReq2Sent = true;
                         InsertWcsLogPgr(m_nFrTrackNo.ToString("000"),
                             strTitle + " Unload Request #2 발행 → %MX" + (ackBase + aUR2));
-                        MakeMsg_Imp(strTitle + " W.O 감지, Unload Request #2 %MX" + (ackBase + aUR2) + " ON (Ack대기 %MX" + (mBase + ofsURA) + ")", m_nthNo);
+                        MakeMsg_Imp(strTitle + " W.O 감지, Unload Request #2 %MX" + (ackBase + aUR2) + " ON (Ack대기 %MX" + (mBase + ofsURA) + ")", m_nthNo, m_msQPlc.LastAddrText);
                     }
                     else if (!workOrder && cv.UnloadReq2Sent)
                     {
                         // 설비 W.O 해제(피킹 반출 완료) → REQ 해제
                         if (!WriteMBit(ackBase + aUR2, false)) return false;
                         cv.UnloadReq2Sent = false;
-                        MakeMsg(strTitle + " W.O 해제, Unload Request #2 %MX" + (ackBase + aUR2) + " OFF (Ack=" + (unloadReq2Ack ? "ON" : "off") + ")", m_nthNo);
+                        MakeMsg(strTitle + " W.O 해제, Unload Request #2 %MX" + (ackBase + aUR2) + " OFF (Ack=" + (unloadReq2Ack ? "ON" : "off") + ")", m_nthNo, m_msQPlc.LastAddrText);
                     }
                 }
 
@@ -3537,8 +3537,8 @@ namespace WCS_TASK_CV
                     {
                         if (m_msQPlc.IsHex)
                         {
-                            MakeMsg_Error(strTitle + " R 쓰기 TX [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                            MakeMsg_Error(strTitle + " R 쓰기 RX [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                            MakeMsg_Error(strTitle + " R 쓰기 TX [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                            MakeMsg_Error(strTitle + " R 쓰기 RX [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                         }
                         InsertWcsLogPgr(mcNo, strTitle + " R" + rAddr + " JOB[" + luggNo + "] 쓰기 실패", luggNo.ToString());
                         return false;
@@ -3546,12 +3546,12 @@ namespace WCS_TASK_CV
 
                     if (m_msQPlc.IsHex)
                     {
-                        MakeMsg_Imp(strTitle + " R 쓰기 TX [" + m_msQPlc.SndHexString + "]", m_nthNo);
-                        MakeMsg_Imp(strTitle + " R 쓰기 RX [" + m_msQPlc.RcvHexString + "]", m_nthNo);
+                        MakeMsg_Imp(strTitle + " R 쓰기 TX [" + m_msQPlc.SndHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
+                        MakeMsg_Imp(strTitle + " R 쓰기 RX [" + m_msQPlc.RcvHexString + "]", m_nthNo, m_msQPlc.LastAddrText);
                     }
 
                     MakeMsg_Imp(strTitle + " TRACK[" + mcNo + "] R" + rAddr
-                                + " JOB[" + luggNo + "] DEST[" + destPos + "] 쓰기 성공", m_nthNo);
+                                + " JOB[" + luggNo + "] DEST[" + destPos + "] 쓰기 성공", m_nthNo, m_msQPlc.LastAddrText);
                     InsertWcsLogPgr(mcNo, strTitle + " R" + rAddr + " JOB[" + luggNo + "] 쓰기 성공", luggNo.ToString());
 
                     // DB TRACKING_WRITE_YN 초기화
@@ -3628,7 +3628,7 @@ namespace WCS_TASK_CV
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
                                    M_ALARM_SET / 16, 1, ref byRxBuff))
                 {
-                    MakeMsg_Error(strTitle + " M알람 읽기 실패", m_nthNo);
+                    MakeMsg_Error(strTitle + " M알람 읽기 실패", m_nthNo, m_msQPlc.LastAddrText);
                     return false;
                 }
 
@@ -3771,7 +3771,7 @@ namespace WCS_TASK_CV
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
                                    mWordAddr, 2, ref byMBuff))
                 {
-                    MakeMsg_Error(strTitle + " M상태 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo);
+                    MakeMsg_Error(strTitle + " M상태 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo, m_msQPlc.LastAddrText);
                     return false;
                 }
 
@@ -3789,7 +3789,7 @@ namespace WCS_TASK_CV
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                    dirWordAddr, 1, ref byDBuff))
                 {
-                    MakeMsg_Error(strTitle + " 방향워드 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo);
+                    MakeMsg_Error(strTitle + " 방향워드 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo, m_msQPlc.LastAddrText);
                     return false;
                 }
                 int nDir = byDBuff[0] | (byDBuff[1] << 8);
@@ -3804,7 +3804,7 @@ namespace WCS_TASK_CV
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R,
                                    nRBase, nRCntW, ref byRBuff))
                 {
-                    MakeMsg_Error(strTitle + " R트래킹 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo);
+                    MakeMsg_Error(strTitle + " R트래킹 읽기 실패: " + m_msQPlc.GetErrorMsg(), m_nthNo, m_msQPlc.LastAddrText);
                     return false;
                 }
 

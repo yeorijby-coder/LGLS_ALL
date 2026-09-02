@@ -154,6 +154,12 @@
     <Compile Include="FRM\SYS\SYS_MAIN.Designer.cs">
       <DependentUpon>SYS_MAIN.cs</DependentUpon>
     </Compile>
+    <Compile Include="FRM\SYS\frmLogFilter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRM\SYS\frmLogFilter.Designer.cs">
+      <DependentUpon>frmLogFilter.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="FRM\SYS\SYS_MAIN.resx">

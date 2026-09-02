@@ -115,6 +115,68 @@ void CScPair::AutoRunProc()
 		//m_pInfo->InvokeControl(pSC_DATA->m_pControl);
 		m_pRsw->MoveNext();	
 	}
+
+	// [LGLS 2026-09-02] 크레인별 출고 대기 작업 건수 표시(사용자 요청)
+	//   레이아웃 컨트롤 id=90000901~90000905 (S/C #1~5 행, 랙 왼쪽 칸)
+	//   대상 = 출고작업(JOB_TYP='2') 중 작업상태 [20] S/C 구동 대기, 크레인은 출발지(START_POS 901~905)로 판정
+	RefreshScWaitCount();
+}
+
+void CScPair::RefreshScWaitCount()
+{
+	if (m_pDoc == NULL) return;
+
+	CString strSql;
+	strSql.Format(
+		_T(" SELECT START_POS, COUNT(*) AS CNT ")
+		_T("   FROM JOB_MST ")
+		_T("  WHERE WH_TYP = '%s' ")
+		_T("    AND JOB_TYP = '2' ")
+		_T("    AND JOB_STATUS = '20' ")
+		_T("    AND START_POS IN ('901','902','903','904','905') ")
+		_T("  GROUP BY START_POS "),
+		(LPCTSTR)m_pDoc->m_WH_TYP);
+
+	int nRowCnt = -1;
+	CString strMessage;
+	_RecordsetPtr pRsp = m_pDoc->GetSelectQryRecordsetPtr(strSql, nRowCnt, strMessage);
+	if (nRowCnt < 0) return;
+
+	int nCnt[5] = { 0, 0, 0, 0, 0 };
+	if (nRowCnt > 0)
+	{
+		CRecordSetWrap* pRsw = new CRecordSetWrap(pRsp);
+		pRsw->MoveFirst();
+		for (int nRow = 0; nRow < nRowCnt; nRow++)
+		{
+			CString strPos = pRsw->GetItem(_T("START_POS"));
+			strPos.Trim();
+			int nSc = _ttoi(strPos) - 900;
+			if (nSc >= 1 && nSc <= 5)
+				nCnt[nSc - 1] = _ttoi(pRsw->GetItem(_T("CNT")));
+			pRsw->MoveNext();
+		}
+		delete pRsw;
+	}
+
+	for (int nSc = 1; nSc <= 5; nSc++)
+	{
+		CString strCid;
+		strCid.Format(_T("9000090%d"), nSc);
+		CDciControl* pCtrl = m_pDoc->GetDciControl_FindAllLayout(strCid);
+		if (pCtrl == NULL) continue;
+
+		CString strTxt;
+		if (nCnt[nSc - 1] > 0)
+			strTxt.Format(_T("출고대기 %d"), nCnt[nSc - 1]);
+
+		if (pCtrl->m_strText != strTxt)
+		{
+			pCtrl->m_strText = strTxt;
+			pCtrl->m_clrFgColor = RGB(128, 0, 192);
+			pCtrl->InvalidateControl(m_pDoc->m_hWndView, TRUE);
+		}
+	}
 }
 
 void CScPair::CommandProc()

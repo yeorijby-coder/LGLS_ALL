@@ -130,6 +130,8 @@ namespace WCS_TASK_CV
             int devAddr = wordAddr;
             if (IsBitDevice(deviceCode))
                 devAddr = wordAddr * 16;
+            // [LGLS 2026-09-02] 로그 주소열용 기록 (예: D490, M512, R200)
+            LastAddrText = Q3EDeviceName(deviceCode) + devAddr;
 
             int dataLen = (writeData == null) ? 0 : writeData.Length;
             // 요구데이터길이 = 감시타이머(2)+커맨드(2)+서브커맨드(2)+디바이스(3)+코드(1)+점수(2)+데이터
@@ -158,6 +160,23 @@ namespace WCS_TASK_CV
                 Buffer.BlockCopy(writeData, 0, frame, 21, dataLen);
 
             return frame;
+        }
+
+        // [LGLS 2026-09-02] 로그 표시용 디바이스 이름 (통신에 사용하지 않음)
+        private static string Q3EDeviceName(byte deviceCode)
+        {
+            switch (deviceCode)
+            {
+                case 0x90: return "M";
+                case 0xA8: return "D";
+                case 0xAF: return "R";
+                case 0xA0: return "B";
+                case 0xB4: return "W";
+                case 0x9C: return "X";
+                case 0x9D: return "Y";
+                case 0x92: return "L";
+                default:   return "0x" + deviceCode.ToString("X2") + ":";
+            }
         }
 
         private bool IsBitDevice(byte deviceCode)

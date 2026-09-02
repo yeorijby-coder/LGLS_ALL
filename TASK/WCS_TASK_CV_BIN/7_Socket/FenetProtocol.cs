@@ -99,6 +99,11 @@ namespace WCS_TASK_CV
         public bool   IsHex         { get { return _Hex;            } set { _Hex            = value; } }
         public bool   IsAscii       { get { return _Ascii;          } set { _Ascii          = value; } }
         public string SndHexString  { get { return _strSndHexString; } set { _strSndHexString = value; } }
+
+        // [LGLS 2026-09-02] 로그 "주소" 열 표시용 - 마지막으로 프레임에 실은 디바이스 주소 문자열
+        //   (예: %DB980, %RB200, %MB64 / Melsec: D490, M512). 프레임 생성 시 기록만 하며 통신 로직에는 영향 없음.
+        private string _strLastAddrText = "";
+        public string LastAddrText { get { return _strLastAddrText; } protected set { _strLastAddrText = value ?? ""; } }
         public string RcvHexString  { get { return _strRcvHexString; } set { _strRcvHexString = value; } }
         public string SndAsciiString{ get { return _strSndAsciiString;} set { _strSndAsciiString = value; } }
         public string RcvAsciiString{ get { return _strRcvAsciiString;} set { _strRcvAsciiString = value; } }
@@ -450,6 +455,8 @@ namespace WCS_TASK_CV
             else
                 strAddr = (wordAddr * 2).ToString();    // V1.1 : 바이트주소(×2)
             byte[] addrBytes = Encoding.ASCII.GetBytes(strAddr);
+            // [LGLS 2026-09-02] 로그 주소열용 기록 (전송 문자열과 동일 표기)
+            LastAddrText = "%" + devChar + (cDefApp.GM_ADDR_V09 ? "W" : "B") + strAddr;
 
             // DATACOUNT: 연속 접근(0x14)은 바이트 수 단위 (워드 수 * 2)
             // [BIN판] XGT 공식 규격대로 2진수 리틀엔디언으로 인코딩 (ECS CLgXgtFEnetIfSk 와 동일)
