@@ -116,7 +116,7 @@
             //
             this.lblStat.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblStat.AutoSize = true;
-            this.lblStat.Location = new System.Drawing.Point(716, 58);
+            this.lblStat.Location = new System.Drawing.Point(716, 54);
             this.lblStat.Name = "lblStat";
             this.lblStat.Text = "작업상태";
             //
@@ -125,9 +125,9 @@
             this.cboStat.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.cboStat.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboStat.DropDownWidth = 260;
-            this.cboStat.Location = new System.Drawing.Point(790, 54);
+            this.cboStat.Location = new System.Drawing.Point(716, 70);
             this.cboStat.Name = "cboStat";
-            this.cboStat.Size = new System.Drawing.Size(212, 20);
+            this.cboStat.Size = new System.Drawing.Size(286, 20);
             this.cboStat.TabIndex = 4;
             this.cboStat.SelectedIndexChanged += new System.EventHandler(this.cboStat_SelectedIndexChanged);
             //
@@ -135,16 +135,16 @@
             //
             this.lblFind.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblFind.AutoSize = true;
-            this.lblFind.Location = new System.Drawing.Point(716, 86);
+            this.lblFind.Location = new System.Drawing.Point(716, 94);
             this.lblFind.Name = "lblFind";
             this.lblFind.Text = "메시지 검색";
             //
             // txtFind
             //
             this.txtFind.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtFind.Location = new System.Drawing.Point(790, 82);
+            this.txtFind.Location = new System.Drawing.Point(716, 110);
             this.txtFind.Name = "txtFind";
-            this.txtFind.Size = new System.Drawing.Size(212, 21);
+            this.txtFind.Size = new System.Drawing.Size(140, 21);
             this.txtFind.TabIndex = 5;
             this.txtFind.TextChanged += new System.EventHandler(this.txtFind_TextChanged);
             //
@@ -152,16 +152,16 @@
             //
             this.lblJob.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblJob.AutoSize = true;
-            this.lblJob.Location = new System.Drawing.Point(716, 114);
+            this.lblJob.Location = new System.Drawing.Point(862, 94);
             this.lblJob.Name = "lblJob";
             this.lblJob.Text = "작업번호 검색";
             //
             // txtJob
             //
             this.txtJob.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtJob.Location = new System.Drawing.Point(790, 110);
+            this.txtJob.Location = new System.Drawing.Point(862, 110);
             this.txtJob.Name = "txtJob";
-            this.txtJob.Size = new System.Drawing.Size(212, 21);
+            this.txtJob.Size = new System.Drawing.Size(140, 21);
             this.txtJob.TabIndex = 6;
             this.txtJob.TextChanged += new System.EventHandler(this.txtFind_TextChanged);
             //

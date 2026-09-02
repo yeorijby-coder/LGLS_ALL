@@ -71,6 +71,9 @@ namespace TSK_COMM_IOSCH
 			btnIni.BringToFront();
 
 			// [LGLS 2026-09-02] 로그 필터 폼 - INI 열기 버튼 왼쪽
+			// [LGLS 2026-09-03] ENV_IOSCH.INI [VIEW] LOG_FILTER_BTN=Y/N 으로 표시 여부를 정한다 (없으면 표시).
+			if (cDefApi.GsReadInitProfileViewYN("LOG_FILTER_BTN", true))
+			{
 			var btnFilter = new Button { Text = "로그 필터", Size = new System.Drawing.Size(72, 22),
 				Anchor = AnchorStyles.Top | AnchorStyles.Right,
 				Location = new System.Drawing.Point(btnIni.Left - 78, btnIni.Top) };
@@ -89,6 +92,7 @@ namespace TSK_COMM_IOSCH
 			};
 			pnlTop.Controls.Add(btnFilter);
 			btnFilter.BringToFront();
+			}
 
 
 			// [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
