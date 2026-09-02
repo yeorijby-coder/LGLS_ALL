@@ -79,6 +79,7 @@ namespace EQP_SIM
                                  " (관측값 " + obsMap.Count + "점)";
                 lblStatus.Text = "가동 중 — ECS 접속 대기";
 
+                BuildMemToolPanel();   // [LGLS 2026-09-02] 수동 메모리 쓰기/읽기 + 구ECS 주소 변환
                 timerUi.Start();
             }
             catch (Exception ex)
@@ -86,6 +87,90 @@ namespace EQP_SIM
                 MessageBox.Show(this, "초기화 실패: " + ex.Message, "EQP_SIM",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        // ── [LGLS 2026-09-02] 수동 메모리 도구 (사용자 요청) ──────────────────────
+        //   ① 특정 영역 강제 쓰기/읽기 : D(워드,10진) / M(비트) / R(워드,10진)
+        //   ② 구ECS 표기(B/W/R, 16진) → 실주소 변환 (CV_TASK 메모리맵 계산기와 동일 공식)
+        private ComboBox mtDev; private TextBox mtAddr; private TextBox mtVal; private Label mtOut;
+        private ComboBox cvDev; private TextBox cvAddr; private Label cvOut;
+        private void BuildMemToolPanel()
+        {
+            var pnl = new Panel { Dock = DockStyle.Bottom, Height = 58, BackColor = System.Drawing.Color.WhiteSmoke };
+            Controls.Add(pnl);
+            pnl.BringToFront();
+
+            Func<string,int,int,Label> L = delegate(string t, int x, int y)
+            { var l = new Label { Text = t, Location = new System.Drawing.Point(x, y + 4), AutoSize = true }; pnl.Controls.Add(l); return l; };
+
+            // ① 강제 쓰기/읽기
+            L("메모리", 6, 4);
+            mtDev = new ComboBox { Location = new System.Drawing.Point(52, 4), Width = 46, DropDownStyle = ComboBoxStyle.DropDownList };
+            mtDev.Items.AddRange(new object[] { "D", "M", "R" }); mtDev.SelectedIndex = 0;
+            mtAddr = new TextBox { Location = new System.Drawing.Point(102, 4), Width = 60, Text = "210" };
+            L("값", 166, 4);
+            mtVal = new TextBox { Location = new System.Drawing.Point(186, 4), Width = 60, Text = "1" };
+            var btnW = new Button { Text = "쓰기", Location = new System.Drawing.Point(252, 3), Width = 48 };
+            var btnR = new Button { Text = "읽기", Location = new System.Drawing.Point(304, 3), Width = 48 };
+            mtOut = L("(D=워드10진, M=비트, R=워드10진)", 358, 4);
+            btnW.Click += delegate { MemToolRun(true); };
+            btnR.Click += delegate { MemToolRun(false); };
+            pnl.Controls.Add(mtDev); pnl.Controls.Add(mtAddr); pnl.Controls.Add(mtVal);
+            pnl.Controls.Add(btnW); pnl.Controls.Add(btnR);
+
+            // ② 구ECS 주소 변환
+            L("구ECS", 6, 30);
+            cvDev = new ComboBox { Location = new System.Drawing.Point(52, 30), Width = 46, DropDownStyle = ComboBoxStyle.DropDownList };
+            cvDev.Items.AddRange(new object[] { "W", "B", "R" }); cvDev.SelectedIndex = 0;
+            cvAddr = new TextBox { Location = new System.Drawing.Point(102, 30), Width = 60, Text = "0150" };
+            var btnC = new Button { Text = "변환", Location = new System.Drawing.Point(166, 29), Width = 48 };
+            cvOut = L("(16진 입력 → 실주소)", 220, 30);
+            btnC.Click += delegate { ConvertOldAddr(); };
+            pnl.Controls.Add(cvDev); pnl.Controls.Add(cvAddr); pnl.Controls.Add(btnC);
+        }
+
+        private void MemToolRun(bool bWrite)
+        {
+            try
+            {
+                char dev = mtDev.Text[0];
+                int addr = Convert.ToInt32(mtAddr.Text.Trim(), 10);
+                if (bWrite)
+                {
+                    int val = Convert.ToInt32(mtVal.Text.Trim(), 10);
+                    if (dev == 'M') memory.SetBit('M', addr, val != 0);
+                    else memory.SetWord(dev, addr, (ushort)val);
+                    mtOut.Text = string.Format("{0}{1} <- {2} 기록됨", dev, addr, val);
+                }
+                else
+                {
+                    int val = (dev == 'M') ? (memory.GetBit('M', addr) ? 1 : 0) : memory.GetWord(dev, addr);
+                    mtOut.Text = string.Format("{0}{1} = {2}", dev, addr, val);
+                }
+            }
+            catch (Exception ex) { mtOut.Text = "오류: " + ex.Message; }
+        }
+
+        private void ConvertOldAddr()
+        {
+            try
+            {
+                int n = Convert.ToInt32(cvAddr.Text.Trim(), 16);
+                char dev = cvDev.Text[0];
+                if (dev == 'B')       // 비트 16진 → %MX / M워드.비트
+                    cvOut.Text = string.Format("B{0} -> %MX{1} = M{2:000}.{3:X} (비트 {1})",
+                        cvAddr.Text.Trim().ToUpper(), n, n / 16, n % 16);
+                else if (dev == 'W')  // 워드 16진 → 구환산 %DW = 같은 수의 10진
+                    cvOut.Text = string.Format("W{0} -> D{1} (구환산 %DW{1} / %DB{2})",
+                        cvAddr.Text.Trim().ToUpper(), n, n * 2);
+                else                  // R : 10진 확정(구 문서도 10진) - 참고로 16진 해석값 병기
+                {
+                    int nDec = Convert.ToInt32(cvAddr.Text.Trim(), 10);
+                    cvOut.Text = string.Format("R{0} -> R{1} (10진 확정) / 16진 해석 시 R{2}",
+                        cvAddr.Text.Trim(), nDec, n);
+                }
+            }
+            catch (Exception ex) { cvOut.Text = "오류: " + ex.Message; }
         }
 
         private void OnEngineLog(string msg)

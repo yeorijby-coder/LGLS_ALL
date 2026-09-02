@@ -86,8 +86,14 @@
       <Signal name="TransferCompleteLocation" offset="3" words="3" tag="TRANSFER_COMPLETE_LOCATION_01" />
       <Signal name="SubsystemLocation" offset="6" words="3" tag="SUBSYSTEM_LOCATION_01" desc="설비 현재위치(열/연/단)" />
       <Signal name="OperationMode" offset="9" tag="OPERATION_MODE" />
-      <!-- [LGLS 2026-08-21] 구 ECS TB_OBSERVABLE 복원: 이중입고(54)/공출고(58) 에러코드. W010A~014A = base+10 -->
-      <Signal name="ErrCode" offset="10" tag="ERR_CODE_RD" />
+    </Block>
+    <!-- [LGLS 2026-09-02] 크레인 에러코드(이중입고54/공출고58)를 전용 블록으로 분리.
+         종전 Status off10 은 DOC(stride10)에서 다음 호기 상태주소(D170=SC2 상태)와 겹쳐
+         하트비트 상태 1 이 앞 호기의 "에러코드 0001" 로 오독돼 전 크레인 에러가 났다.
+         구표기 W010A+0x10k(alt 266/16). DOC 주소는 시뮬 시험용 예약영역 D1160+10k -
+         문서 확정표에 없는 항목이라 ★실PLC 에러코드 주소 재확인 필요★ -->
+    <Block name="ErrCode" device="D" origin="1160" stride="10" altOrigin="266" altStride="16">
+      <Signal name="ErrCode" offset="0" tag="ERR_CODE_RD" />
     </Block>
     <Block name="Command" device="D" origin="320" stride="10" altOrigin="768" altStride="16" legacy="D0320" legacyStride="10" desc="WCS→설비 반송지시. [확정 20260901] 실PLC = 문서표기 10진">
       <Signal name="From" offset="0" words="3" tag="FROM_01" />

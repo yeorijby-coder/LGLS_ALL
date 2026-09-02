@@ -1562,7 +1562,7 @@ namespace WCS_TASK_CV
 
                         int nWriteLen = 1;
 
-                        if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                        if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                            (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                            nADDR_NO + 9,
                                                            nWriteLen,
@@ -1619,7 +1619,7 @@ namespace WCS_TASK_CV
 
                         int nWriteLen = 1;
 
-                        if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                        if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                            (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                            nADDR_NO + 4,
                                                            nWriteLen,
@@ -1676,7 +1676,7 @@ namespace WCS_TASK_CV
 
                         int nWriteLen = 1;
 
-                        if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                        if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                            (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                            nADDR_NO + 6,
                                                            nWriteLen,
@@ -1735,7 +1735,7 @@ namespace WCS_TASK_CV
 
                         int nWriteLen = 1;
 
-                        if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                        if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                            (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                            nADDR_NO + 6,
                                                            nWriteLen,
@@ -1793,7 +1793,7 @@ namespace WCS_TASK_CV
 
                         int nWriteLen = 1;
 
-                        if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                        if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                            (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                            nADDR_NO + 2,
                                                            nWriteLen,
@@ -1851,7 +1851,7 @@ namespace WCS_TASK_CV
 
                         int nWriteLen = 1;
 
-                        if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                        if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                            (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                            nADDR_NO + 5,
                                                            nWriteLen,
@@ -1913,7 +1913,7 @@ namespace WCS_TASK_CV
 
                         int nWriteLen = 1;
 
-                        if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                        if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                            (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                            nADDR_NO + 5,
                                                            nWriteLen,
@@ -2089,7 +2089,7 @@ namespace WCS_TASK_CV
                     //int nWriteLen = 5;
                     int nWriteLen = 3;
 
-                    if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                    if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                        (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                        nADDR_NO,
                                                        nWriteLen,
@@ -2776,7 +2776,7 @@ namespace WCS_TASK_CV
 
                     int nWriteLen = 1;
 
-                    if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                    if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                        (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                        nADDR_NO + 1,
                                                        nWriteLen,
@@ -2926,7 +2926,7 @@ namespace WCS_TASK_CV
 
                     int nWriteLen = 1;
 
-                    if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                    if (cDefApp.GM_CV_DTRACK_WRITE && m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                                        (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D,
                                                        nADDR_NO + 8,
                                                        nWriteLen,

@@ -2545,6 +2545,9 @@ void CScSkinDlg::CompactForkStatusRow()
 // [LGLS 2026-09-01] 확대 패널 재빌드 - 호기 전환 시 주소 라벨을 현재 호기 것으로.
 void CScSkinDlg::RebuildVehStatusPanel()
 {
+	// [LGLS 2026-09-02] 호기 전환 반복 시 창이 길어지고 라벨이 겹치던 문제 - 먼저 접고 재구성한다.
+	BOOL bWasExpanded = m_bVehExpanded;
+	if (m_bVehExpanded) SetVehPanelExpanded(FALSE);
 	for (int i = 0; i < m_arVehCtrl.GetCount(); i++)
 	{
 		CWnd* p = (CWnd*)m_arVehCtrl.GetAt(i);
@@ -2552,7 +2555,7 @@ void CScSkinDlg::RebuildVehStatusPanel()
 	}
 	m_arVehCtrl.RemoveAll();
 	BuildVehStatusPanel();
-	if (m_bVehExpanded) SetVehPanelExpanded(TRUE);   // 확대 중이었으면 새 컨트롤 표시
+	if (bWasExpanded) SetVehPanelExpanded(TRUE);   // 확대 중이었으면 새 컨트롤 표시
 }
 
 void CScSkinDlg::BuildVehStatusPanel()
@@ -2566,14 +2569,13 @@ void CScSkinDlg::BuildVehStatusPanel()
 			return;
 		int i;
 		for (i = 0; i < m_arVehCtrl.GetCount(); i++)  { CWnd* p = (CWnd*)m_arVehCtrl.GetAt(i);  if (p != NULL) delete p; }
-		for (i = 0; i < m_arLglsCtrl.GetCount(); i++) { CWnd* p = (CWnd*)m_arLglsCtrl.GetAt(i); if (p != NULL) delete p; }
 		m_arVehCtrl.RemoveAll();
-		m_arLglsCtrl.RemoveAll();
 	}
 
 	CompactForkStatusRow();		// [LGLS] 포크 상태 행 제거		// 1회만 생성
 
 	// [LGLS 2026-08-01] 도착위치 아래에 [적재 용기](JOB_MST.LOT_NO) / [제품 정보](JOB_MST.PRODUCT_ID) 두 행 추가
+	if (m_arLglsCtrl.GetCount() == 0)   // [LGLS 2026-09-02] 구간 이동은 1회만(재구성 반복 시 겹침 방지)
 	{
 		const int nGrps[] = { IDC_GRP_SC_JOB_STATUS, IDC_GRP_SC_JOB_STATUS_ITEM,
 		                      IDC_GRP_SC_JOB_STATUS_VALUE, IDC_GRP_SC_JOB_STATUS_COMMAND };
@@ -2589,7 +2591,7 @@ void CScSkinDlg::BuildVehStatusPanel()
 	const int PH    = 222;						// [LGLS 2026-08-06] 화면 안에 들어가게 압축
 	const int STRIP = 30;						// [확대]/[축소] 버튼 띠 높이(px)
 	int nTop = rcCli.Height();					// 기존 컨트롤 아래(빈 영역)에서 시작
-	m_nVehBaseH  = rcWin.Height();				// 축소 상태 창 높이(원래 DLG 그대로)
+	if (m_nVehBaseH <= 0) m_nVehBaseH = rcWin.Height();	// [LGLS 2026-09-02] 1회만 측정(재구성 누적 방지)				// 축소 상태 창 높이(원래 DLG 그대로)
 	m_nVehPanelH = PH;
 
 	CFont* pFont = GetFont();

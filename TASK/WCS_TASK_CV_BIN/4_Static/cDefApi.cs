@@ -246,7 +246,15 @@ namespace WCS_TASK_CV
         }
 
         // [LGLS 2026-09-01] D 블록 해석 모드 (R 과 대칭) - [PLC] D_ADDR_MODE = DOC | LEGACY
-        public static bool GsReadInitProfileDAddrDoc()
+                // [LGLS 2026-09-02] 구 트랙테이블 D 지시 쓰기 스위치 - [PLC] CV_DTRACK_WRITE = ON | OFF (기본 OFF)
+        public static bool GsReadInitProfileCvDtrackWrite()
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(16);
+            GetPrivateProfileString("PLC", "CV_DTRACK_WRITE", "OFF", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            return sb.ToString().Trim().ToUpper() == "ON";
+        }
+
+public static bool GsReadInitProfileDAddrDoc()
         {
             if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
                 return true;

@@ -166,6 +166,10 @@ namespace EQP_SIM.Sim
 
         public void Tick(DateTime now)
         {
+            // [LGLS 2026-09-02] 상태워드 하트비트 - 잔재 메모리/외부 덮어쓰기(구 트랙테이블 D 충돌 등)가 있어도
+            //   매 틱 현재 상태를 다시 기록해 항상 참값을 유지한다 (IDLE=1, 동작중=2).
+            io.SetShort(Def.Id, "SUBSYSTEM_STATUS", (ushort)(state == VState.Idle ? 1 : 2));
+
             switch (state)
             {
                 case VState.Idle:

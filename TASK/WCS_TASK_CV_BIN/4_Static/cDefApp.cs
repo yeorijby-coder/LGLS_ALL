@@ -87,6 +87,9 @@ namespace WCS_TASK_CV
         // [LGLS 2026-09-01] D 블록 해석 모드 (R 과 대칭). true=DOC(문서표기 10진, 확정) / false=LEGACY(구 ezMCS 환산).
         //   실PLC 대사로 DOC 확정 - LEGACY 는 전환용 보존(기능 삭제 금지, 사용자 지시).
         public static bool GM_D_ADDR_DOC = true;
+        // [LGLS 2026-09-02] 구 트랙테이블(트랙x10) D영역 지시 쓰기 - V1.1 확정 주소(크레인 D160~/RGV D210/방향 D300~)와
+        //   정면 충돌(RGV 상태를 0으로 덮어씀)해 기본 차단. 구 방식 PLC 필요 시 INI [PLC] CV_DTRACK_WRITE=ON.
+        public static bool GM_CV_DTRACK_WRITE = false;
         public static string GsDAddrModeText() { return GM_D_ADDR_DOC ? "문서 10진(DOC)" : "구 환산(LEGACY)"; }
 
         /// <summary>

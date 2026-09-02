@@ -175,6 +175,7 @@ namespace WCS_TASK_CV
             }
             else
                 cDefApp.GM_D_ADDR_DOC = cDefApi.GsReadInitProfileDAddrDoc();
+                cDefApp.GM_CV_DTRACK_WRITE = cDefApi.GsReadInitProfileCvDtrackWrite();   // [LGLS 2026-09-02]
             // 라디오는 R 라디오 아래 줄에 런타임 생성 (Designer 무변경)
             // [LGLS 2026-09-01 재배치] 아래 줄(+20)은 다른 컨트롤과 겹쳤다(사용자 지적) -
             //   R 라디오 오른쪽 빈 공간에 같은 줄로 나란히 둔다.
