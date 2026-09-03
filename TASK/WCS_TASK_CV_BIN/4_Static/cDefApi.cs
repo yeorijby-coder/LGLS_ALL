@@ -278,6 +278,21 @@ public static bool GsReadInitProfileDAddrDoc()
             return sVal != "N";
         }
 
+        /// <summary>
+        /// [LGLS 2026-09-04] 메인 화면 [시나리오 테스트] 버튼 표시 여부.  [VIEW] SCENARIO_BTN = Y | N
+        ///   INI 없음 / 키 없음 / 빈 값 이면 기본 표시(Y). "N" 일 때만 숨긴다.
+        /// </summary>
+        public static bool GsReadInitProfileScenarioBtn()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return true;
+            StringBuilder sb = new StringBuilder(16);
+            GetPrivateProfileString("VIEW", "SCENARIO_BTN", "Y", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            string sVal = sb.ToString().Trim().ToUpper();
+            if (sVal.Length == 0) return true;
+            return sVal != "N";
+        }
+
         public static void GsWriteInitProfileDAddrDoc(bool pDoc)
         {
             WritePrivateProfileString("PLC", "D_ADDR_MODE", pDoc ? "DOC" : "LEGACY", cDefApp.GM_ENV_INI);

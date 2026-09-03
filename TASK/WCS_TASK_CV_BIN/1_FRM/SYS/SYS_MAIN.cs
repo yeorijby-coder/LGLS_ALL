@@ -54,6 +54,9 @@ namespace WCS_TASK_CV
             // [LGLS 2026-07-27] CV_TASK [시나리오 테스트] 버튼 (동적 추가) — EQP_SIM 시나리오 테스트의 역할 반대판
             try
             {
+                // [LGLS 2026-09-04] 표시 여부는 INI [VIEW] SCENARIO_BTN (Y=표시 기본 / N=숨김)
+                if (cDefApi.GsReadInitProfileScenarioBtn())
+                {
                 var btnScenario = new System.Windows.Forms.Button();
                 btnScenario.Name = "btnScenarioTest";
                 btnScenario.Text = "시나리오 테스트";
@@ -64,6 +67,7 @@ namespace WCS_TASK_CV
                 btnScenario.Click += btnScenarioTest_Click;
                 this.pnlTop.Controls.Add(btnScenario);
                 btnScenario.BringToFront();
+                }
 
                 // [LGLS 2026-07-28] [정리] 버튼 — 꼬인 출고 잔류(JOB_STATUS=15) + 유령 CV 파렛트 DB 정리
                 var btnCleanup = new System.Windows.Forms.Button();
