@@ -92,6 +92,15 @@ LRESULT CConfigLogDelete::OnSpreadLClick(WPARAM wParam, LPARAM lParam)
 
 		//로그명 가져오기 (CDX_CD, CCD_NM_KOR, CCD_CD 순서)
 		CLib::BindSpreadCommonCode(_T("LOG_PGR_NM"), strTableName, m_strTABLE_NAME, m_pDoc);
+
+		// [LGLS 2026-09-03] 어느 행을 골랐는지 알 수 있게 : 선택 행의 주기를 에디트에 넣고
+		//   그룹 제목에 선택한 로그명을 붙인다(사용자 요청).
+		CString strCycle = m_SpreadSheet.GetValueTXT(3, m_nActiveRow); strCycle.Trim();
+		m_edtConfigLogDeleteDay.SetWindowText(strCycle);
+		if (m_strGrpCaptionBase.IsEmpty()) m_grpConfigLogDelete.GetWindowText(m_strGrpCaptionBase);
+		CString strCap; strCap.Format(_T("%s  -  [%s]  현재 %s일"), (LPCTSTR)m_strGrpCaptionBase, (LPCTSTR)strTableName, (LPCTSTR)strCycle);
+		m_grpConfigLogDelete.SetWindowText(strCap);
+		m_grpConfigLogDelete.Invalidate();
 	}
 
 	//CJobItem *pJobItem = GetSelectedJob(pCell->Row);
@@ -120,6 +129,7 @@ BOOL CConfigLogDelete::OnInitDialog()
 
 	}
 	InitializeResource(pEn);
+	m_grpConfigLogDelete.GetWindowText(m_strGrpCaptionBase);   // [LGLS 2026-09-03]
 
 	m_edtConfigLogDeleteDay.SetWindowText(_T(""));
 
@@ -475,6 +485,8 @@ void CConfigLogDelete::OnBnClickedBtnConfigLogDeleteUpdate()
 		m_pDoc->CommitTrans_DLG();
 		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
 		m_edtConfigLogDeleteDay.SetWindowText(_T(""));
+		if (!m_strGrpCaptionBase.IsEmpty()) m_grpConfigLogDelete.SetWindowText(m_strGrpCaptionBase);   // [LGLS 2026-09-03]
+		m_nActiveRow = 0; m_strTABLE_NAME = _T("");
 		InitializeSpread(TRUE);
 		return;
 	}

@@ -36,6 +36,7 @@ public:
 	int m_nActiveRow;
 
 	CString m_strTABLE_NAME;
+	CString m_strGrpCaptionBase;   // [LGLS 2026-09-03] 그룹 제목 원문(선택 로그명 표시용)
 
 public:
 	CURMDBAccess* m_pDB;
