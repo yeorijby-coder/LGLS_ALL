@@ -374,6 +374,14 @@ namespace WCS_TASK_CV
          */
         #region
         // [LGLS 2026-09-04] 로그 주소열 표기 (FenetProtocol 전송 표기와 동일 : V1.1 = %MB바이트주소, V0.9 = %MW워드주소)
+        // [LGLS 2026-09-04] 메시지 본문에서 PLC 주소 추출 (%MX550, %DB622 ...). 없으면 빈 문자열
+        private static string LglsAddrFromMsg(string msg)
+        {
+            if (string.IsNullOrEmpty(msg)) return "";
+            System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(msg, @"%[A-Z]{1,2}\d+(?:\.[0-9A-F]+)?");
+            return m.Success ? m.Value : "";
+        }
+
         private static string LglsAddrText(char cDev, int nWordAddr)
         {
             return "%" + cDev + (cDefApp.GM_ADDR_V09 ? "W" + nWordAddr.ToString() : "B" + (nWordAddr * 2).ToString());
@@ -384,6 +392,8 @@ namespace WCS_TASK_CV
             try
             {
                 // [LGLS 2026-09-04] 주소가 없으면 직전 PLC 송수신 주소를 남긴다
+                //   [2026-09-04] 메시지 본문에 주소(%MX550 등)가 있으면 그것을 우선한다 (직전 송수신 주소와 다를 수 있음)
+                if (string.IsNullOrEmpty(pAddr)) pAddr = LglsAddrFromMsg(msg);
                 if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
             }
@@ -398,6 +408,8 @@ namespace WCS_TASK_CV
             try
             {
                 // [LGLS 2026-09-04] 주소가 없으면 직전 PLC 송수신 주소를 남긴다
+                //   [2026-09-04] 메시지 본문에 주소(%MX550 등)가 있으면 그것을 우선한다 (직전 송수신 주소와 다를 수 있음)
+                if (string.IsNullOrEmpty(pAddr)) pAddr = LglsAddrFromMsg(msg);
                 if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
@@ -415,6 +427,8 @@ namespace WCS_TASK_CV
             try
             {
                 // [LGLS 2026-09-04] 주소가 없으면 직전 PLC 송수신 주소를 남긴다
+                //   [2026-09-04] 메시지 본문에 주소(%MX550 등)가 있으면 그것을 우선한다 (직전 송수신 주소와 다를 수 있음)
+                if (string.IsNullOrEmpty(pAddr)) pAddr = LglsAddrFromMsg(msg);
                 if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView_IMP(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
@@ -3659,7 +3673,7 @@ namespace WCS_TASK_CV
                     if (!WriteMBit(M_ALARM_SET_ACK, true)) return false;
                     cvGlobal.AlarmSetAcked = true;
                     InsertWcsLogPgr("000", strTitle + " 알람 SET 보고 감지 → ACK M" + M_ALARM_SET_ACK + " ON");
-                    MakeMsg_Imp(strTitle + " 알람 SET 감지 M" + M_ALARM_SET + ", ACK M" + M_ALARM_SET_ACK + " ON", m_nthNo);
+                    MakeMsg_Imp(strTitle + " 알람 SET 감지 %MX" + M_ALARM_SET + ", ACK %MX" + M_ALARM_SET_ACK + " ON", m_nthNo);
                 }
                 else if (!alarmSet && cvGlobal.AlarmSetAcked)
                 {
@@ -3674,7 +3688,7 @@ namespace WCS_TASK_CV
                     if (!WriteMBit(M_ALARM_RST_ACK, true)) return false;
                     cvGlobal.AlarmRstAcked = true;
                     InsertWcsLogPgr("000", strTitle + " 알람 RST 보고 감지 → ACK M" + M_ALARM_RST_ACK + " ON");
-                    MakeMsg_Imp(strTitle + " 알람 RST 감지 M" + M_ALARM_RST + ", ACK M" + M_ALARM_RST_ACK + " ON", m_nthNo);
+                    MakeMsg_Imp(strTitle + " 알람 RST 감지 %MX" + M_ALARM_RST + ", ACK %MX" + M_ALARM_RST_ACK + " ON", m_nthNo);
                 }
                 else if (!alarmRst && cvGlobal.AlarmRstAcked)
                 {
@@ -3934,7 +3948,7 @@ namespace WCS_TASK_CV
                             InsertWcsLogPgr(nCvNo.ToString("000"), strTitle + " 트랙 " + nCvNo + " R트래킹 JOB NO 변경 [" + (cv.V11_JOBNO ?? "") + "] -> [" + strJobNo + "]", strLogLugg);
                         }
                     if ((cv.AUTO_MODE_RD ?? "") != AUTO_MODE)
-                        MakeMsg_Imp(strTitle + " MC_NO[" + nCvNo + "] Op Mode = " + AUTO_MODE, m_nthNo);
+                        MakeMsg_Imp(strTitle + " MC_NO[" + nCvNo + "] Op Mode = " + AUTO_MODE + " (%MX" + (mBase + 8) + ")", m_nthNo);   // [2026-09-04] 주소열용
 
                     cv.AUTO_MODE_RD = AUTO_MODE;
                     cv.V11_DIR = STOCK;
