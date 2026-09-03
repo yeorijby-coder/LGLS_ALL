@@ -476,15 +476,16 @@ int CLogClientSkinDlg::SetSpeadData(int nRowCheck, BOOL bSearch = FALSE)
 			{
 				CString strColValue = pRsw->GetItem(arrColName[nIdxCol]);
 
-				strColValue += _T("    ");
+				// [LGLS 2026-09-03] 표시값에 공백 4칸을 붙이던 것 제거 - 가운데 정렬이 왼쪽으로 밀려 보였다(폭 계산에만 반영)
+				int nPadLen = strColValue.GetLength() + 4;
 				//if (strColValue.GetLength() < 6)
 				//	continue;
 
 				int nPreSize = CConvert::ToInt(arrColSize[nIdxCol]);
 
-				if ((strColValue.GetLength()*1.5 > nPreSize) && (nPreSize != 0))
+				if ((nPadLen*1.5 > nPreSize) && (nPreSize != 0))
 				{
-					int nSize = strColValue.GetLength()*1.5;
+					int nSize = (int)(nPadLen*1.5);
 					arrColSize[nIdxCol]= CConvert::ToString(nSize);
 				}
 				SetColumnText(nIdxCol, nIdxRow, strColValue);				// 번역됨

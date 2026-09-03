@@ -137,12 +137,14 @@ BOOL CEqpSuspendDlg::OnInitDialog()
 			if (strKey == _T("ALL")) { m_cbxEqpSuspendEqpTyp.GetLBText(i, strAllTxt); break; }
 		}
 		m_cbxEqpSuspendEqpTyp.ResetContent();
+		m_cbxEqpSuspendEqpTyp.m_Key.RemoveAll();   // 인덱스 기반 키 맵도 비운다
 		const TCHAR* szKeys[] = { _T("ALL"), _T("EQP"), _T("HOST"), _T("SCH") };
 		const TCHAR* szTxts[] = { NULL,      _T("EQP"), _T("HOST"), _T("SCH") };
 		for (int j = 0; j < 4; j++)
 		{
-			m_cbxEqpSuspendEqpTyp.SetItemDataEx(j, szKeys[j]);
-			m_cbxEqpSuspendEqpTyp.AddString(szTxts[j] != NULL ? szTxts[j] : (LPCTSTR)strAllTxt);
+			// 정렬(CBS_SORT) 콤보는 AddString 이 끼워 넣는 위치가 달라지므로 실제 인덱스에 키를 붙인다
+			int nIdx = m_cbxEqpSuspendEqpTyp.AddString(szTxts[j] != NULL ? szTxts[j] : (LPCTSTR)strAllTxt);
+			if (nIdx >= 0) m_cbxEqpSuspendEqpTyp.SetItemDataEx(nIdx, szKeys[j]);
 		}
 		m_cbxEqpSuspendEqpTyp.SetCurSel(0);
 	}
@@ -468,15 +470,16 @@ void CEqpSuspendDlg::OnBnClickedBtnEqpSuspendSearch()
 			{
 				CString strColValue = pRsw->GetItem(arrColName[nIdxCol]);
 
-				strColValue += _T("    ");
+				// [LGLS 2026-09-03] 표시값에 공백 4칸을 붙이던 것 제거 - 가운데 정렬이 왼쪽으로 밀려 보였다(폭 계산에만 반영)
+				int nPadLen = strColValue.GetLength() + 4;
 				//if (strColValue.GetLength() < 6)
 				//	continue;
 
 				int nPreSize = CConvert::ToInt(arrColSize[nIdxCol]);
 
-				if ((strColValue.GetLength()*1.5 > nPreSize) && (nPreSize != 0))
+				if ((nPadLen*1.5 > nPreSize) && (nPreSize != 0))
 				{
-					int nSize = strColValue.GetLength()*1.5;
+					int nSize = (int)(nPadLen*1.5);
 					arrColSize[nIdxCol]= CConvert::ToString(nSize);
 				}
 				SetColumnText(nIdxCol, nIdxRow, strColValue);				// 번역됨

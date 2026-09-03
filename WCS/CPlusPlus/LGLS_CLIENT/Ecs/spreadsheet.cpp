@@ -1224,7 +1224,7 @@ void CSpreadSheet::FinishLoadSpread()
 				int nType = GetCellType(c, 1);
 				if (nType == SS_TYPE_BUTTON)
 					continue;
-				m_Spread.SetCellTypeRange(c, 1, c, SS_LAST, &sCenter);
+				m_Spread.SetCellTypeRange(c, 1, c, nMaxRow, &sCenter);
 			}
 		}
 	}
