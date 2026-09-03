@@ -48,7 +48,7 @@ TDESC = OrderedDict([
 # 컬럼 설명(핵심)
 CDESC = {
  'WH_TYP': '창고 구분(10 = LG 생명과학 1동)', 'LUGG_NO': '작업(화물) 번호 4자리', 'JOB_TYP': '작업 구분 1=입고 2=출고 3=피킹출고 4=랙투랙 5=호기간이동 6=이동 1x=반자동',
- 'JOB_STATUS': '작업 상태 99신규 10/11/15 CV 20/21/25 SC 30/31/35 RGV 09/19/29 완료', 'START_POS': '출발지(설비번호 : 트랙 1xx / 크레인 90x)', 'DEST_POS': '도착지(설비번호)',
+ 'JOB_STATUS': '작업 상태 99 신규 10/15 CV 20/25 SC 30/35 RGV 39 RGV완료 19/29 완료 09 이력이관', 'START_POS': '출발지(설비번호 : 트랙 1xx / 크레인 90x)', 'DEST_POS': '도착지(설비번호)',
  'START_LOCATION': '출발 셀(뱅크-베이-레벨)', 'DEST_LOCATION': '도착 셀(뱅크-베이-레벨)', 'PRODUCT_ID': '제품 정보', 'LOT_NO': '적재 용기(파렛트)',
  'JOB_PRIORITY': '우선순위(기본 100)', 'HS_TRACK_NO': 'RGV 인계 트랙(H/S)', 'SC_NO': '크레인 번호', 'FK_NO': '포크 번호', 'DEL_YN': '삭제 여부',
  'INS_DT': '생성 일시', 'UPD_DT': '갱신 일시', 'UPD_USER_ID': '갱신자', 'INS_USER_ID': '생성자', 'REMARKS': '비고/설명',
@@ -64,11 +64,14 @@ CDESC = {
  'USER_ID': '사용자 ID', 'USER_NM': '사용자명', 'USER_PW': '비밀번호', 'GRP_ID': '그룹 ID', 'WIN_ID': '화면 ID', 'UPD_YN': '수정 권한', 'EXE_YN': '실행 권한', 'INS_YN': '입력 권한', 'SEL_YN': '조회 권한',
  'BANK': '뱅크', 'BAY': '베이', 'LEVEL': '레벨', 'CELL_STATUS': '셀 상태', 'CELL_SC_NO': '담당 크레인',
 }
+EXCLUDE = ['AUTO_SC_WORK','BCR_MST','CELL_DTL','CHG_LANG','DEST_DEF','EVENT_LOG','WAIT_TRACK','WC_DATA','WC_HIS','HOST_EMPTY_PLT','DUAL']
+SPARE = re.compile(r'^(SPARE|RESERVE|DUMMY)\d*$', re.I)
 rows = [l.split('|') for l in open(os.path.join(SCRATCH, 'schema.txt'), encoding='cp949', errors='replace').read().splitlines() if '|' in l and not l.startswith('TABLE_NAME') and not set(l.strip()) <= set('-|')]
 by = OrderedDict()
 for r in rows:
     if len(r) < 8: continue
     t = r[0].strip()
+    if t.upper() in EXCLUDE or SPARE.match(r[2].strip()): continue
     by.setdefault(t.upper(), []).append([c.strip() for c in r])
 tinfo = {}
 for l in open(os.path.join(SCRATCH, 'tables.txt'), encoding='cp949', errors='replace').read().splitlines():
@@ -82,6 +85,7 @@ for i, t in enumerate(by.keys(), 1):
     nm, desc = TDESC.get(t, ('', ''))
     lst.append([i, t, nm, len(by[t]), tinfo.get(t, ''), desc])
 table(d, ['No', '테이블', '한글명', '컬럼수', '행수(현재)', '설명'], lst, widths=[0.9, 4.2, 3.2, 1.3, 1.6, 6.5], font=8)
+para(d, '※ 이 현장에서 쓰지 않는 테이블(%s)과 예비 컬럼은 제외했다.' % ', '.join(EXCLUDE), color=GRAY, size=9)
 d.add_page_break()
 d.add_heading('2. 테이블 정의', 1)
 for t, cols in by.items():

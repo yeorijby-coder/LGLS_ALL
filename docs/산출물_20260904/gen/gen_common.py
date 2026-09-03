@@ -44,7 +44,7 @@ def new_doc(title, subtitle=None, landscape=False):
     r = p.add_run('WCS Renewal (구 ECS 대체)   |   작성일 %s   |   Ver 1.1' % DATE); r.font.size = Pt(10); r.font.color.rgb = GRAY
     d.add_page_break()
     d.add_heading('문서 이력', 1)
-    table(d, ['버전', '일자', '작성', '내용'], [['1.0', '2026-09-03', AUTHOR, '최초 작성'], ['1.1', DATE, AUTHOR, '검토 반영']], widths=[1.5, 2.5, 3.0, 9.0])
+    table(d, ['버전', '일자', '작성', '내용'], [['1.0', '2026-09-03', AUTHOR, '최초 작성'], ['1.1', DATE, AUTHOR, '기타 수정']], widths=[1.5, 2.5, 3.0, 9.0])
     d.add_page_break()
     return d
 

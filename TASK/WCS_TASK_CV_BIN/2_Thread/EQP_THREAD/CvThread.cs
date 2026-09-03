@@ -377,6 +377,8 @@ namespace WCS_TASK_CV
         {
             try
             {
+                // [LGLS 2026-09-04] 주소가 없으면 직전 PLC 송수신 주소를 남긴다
+                if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
             }
             catch (Exception ex)
@@ -389,6 +391,8 @@ namespace WCS_TASK_CV
         {
             try
             {
+                // [LGLS 2026-09-04] 주소가 없으면 직전 PLC 송수신 주소를 남긴다
+                if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
                 // [LGLS 진단] 에러는 DB 로그에도 남긴다 (파일/화면 로그 확인 불가 환경 대비)
@@ -404,6 +408,8 @@ namespace WCS_TASK_CV
         {
             try
             {
+                // [LGLS 2026-09-04] 주소가 없으면 직전 PLC 송수신 주소를 남긴다
+                if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView_IMP(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
             }

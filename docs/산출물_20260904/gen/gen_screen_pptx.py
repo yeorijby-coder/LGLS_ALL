@@ -53,7 +53,7 @@ def add_table(slide, x, y, w, rows, colw, size=11):
     return t
 
 s = prs.slides.add_slide(blank); title(s, 'Document history')
-add_table(s, 0.7, 1.4, 11.9, [['Vers.', 'Date', 'Author', 'Approver', 'Notes'], ['V1.0', '2026-09-03', 'LGLS WCS Renewal', '', '최초 작성'], ['V1.1', DATE, 'LGLS WCS Renewal', '', '검토 반영 - 미사용 메뉴 정리, 캡처 갱신']], [1.2, 1.8, 2.6, 1.8, 4.5])
+add_table(s, 0.7, 1.4, 11.9, [['Vers.', 'Date', 'Author', 'Approver', 'Notes'], ['V1.0', '2026-09-03', 'LGLS WCS Renewal', '', '최초 작성'], ['V1.1', DATE, 'LGLS WCS Renewal', '', '미사용 메뉴 정리, 캡처 갱신']], [1.2, 1.8, 2.6, 1.8, 4.5])
 footer(s)
 
 groups = []
@@ -79,7 +79,7 @@ def screen_slide(g, name, sh, path, overview, notes):
         sc = min(maxw / (w / 96.0), maxh / (h / 96.0)); dw, dh = w / 96.0 * sc, h / 96.0 * sc
         s.shapes.add_picture(p, Inches(0.6 + (8.4 - dw) / 2), Inches(1.3 + (5.5 - dh) / 2), Inches(dw), Inches(dh))
     else:
-        tb(s, 0.6, 3.6, 8.4, 0.8, '화면 설명 참조', 14, False, GRAY, PP_ALIGN.CENTER)
+        pass
     lines = [('■ 메뉴 Path', True, 13, NAVY), (path, False, 11, GRAY), ('', False, 6, GRAY), ('■ 프로그램 개요', True, 13, NAVY), (overview, False, 11, GRAY)]
     if notes:
         lines += [('', False, 6, GRAY), ('■ 특기사항', True, 13, NAVY)] + [('· ' + n, False, 10, GRAY) for n in notes]

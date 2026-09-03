@@ -13,7 +13,7 @@ rows = [
  ['2', '데이터베이스', 'LglsMCS', '구 ECS(HECS) 참조 DB - 구 ECS 를 병행 운용할 때만 복원'],
  ['3', '데이터 파일', 'LGLS_MCS_IO.mdf', '서버 기본 DATA 폴더 (예: C:\\Program Files\\Microsoft SQL Server\\MSSQLxx\\MSSQL\\DATA)'],
  ['3', '로그 파일', 'LGLS_MCS_IO_log.ldf', '복구 모델 : SIMPLE 권장(로그 테이블 트래픽 많음)'],
- ['4', '백업 파일', 'LGLS_MCS_IO_20260902_clean.bak', 'DB_BACKUP 폴더. 로그 테이블 비운 정리본(4.8MB). 원본 641MB 는 LGLS_MCS_IO_20260902.bak'],
+ ['4', '백업 파일', 'LGLS_MCS_IO_20260904_clean.bak', 'DB_BACKUP 폴더. 이 현장에서 쓰지 않는 테이블(AUTO_SC_WORK, BCR_MST, CELL_DTL, CHG_LANG, DEST_DEF, EVENT_LOG, WAIT_TRACK, WC_DATA, WC_HIS, HOST_EMPTY_PLT)을 빼고 시험 데이터를 비운 정리본(4.8MB). 백업 안의 DB 이름은 LGLS_MCS_IO_DEPLOY 이므로 복원 시 대상 이름을 LGLS_MCS_IO 로 지정한다'],
  ['4', '백업 파일', 'LglsMCS_20260902.bak', '구 ECS DB'],
  ['5', '인증 방식', 'SQL Server 및 Windows 인증(혼합)', '서버 속성 > 보안 에서 변경 후 SQL 서비스 재시작'],
  ['6', 'WCS 접속 계정', 'LGLS_IO / LGLS_IO', '운전 화면(Ecs.ini [DB_2])이 쓰는 계정. TASK 는 각 INI [DB] 의 계정'],
@@ -31,7 +31,7 @@ rows = [
 table(d, ['순번', '항목', '정보', '설 명'], rows, widths=[1.2, 3.6, 5.2, 8.0], font=8.5)
 d.add_heading('2. 복원 절차 요약', 1)
 numbered(d, ['백업 파일을 서버 로컬 경로로 복사 (SQL 서비스 계정이 읽을 수 있는 경로, 네트워크 경로 지양)',
-             'SSMS > 데이터베이스 > 복원 : LGLS_MCS_IO_20260902_clean.bak (파일 경로는 서버 DATA 폴더로 재배치)',
+             'SSMS > 데이터베이스 > 복원 : LGLS_MCS_IO_20260904_clean.bak - 대상 데이터베이스 이름을 LGLS_MCS_IO 로 입력하고, 파일 경로는 서버 DATA 폴더로 재배치',
              '혼합 인증으로 변경 후 서비스 재시작, 전용 로그인/사용자 생성(db_owner)',
              'TCP 1433 고정, 방화벽 허용, 클라이언트 PC 에서 sqlcmd -S 서버IP,1433 -U 계정 으로 접속 확인',
              '각 프로그램 INI 의 [DB] 접속 정보 변경 (설치 및 구동 안내서 참조)'])

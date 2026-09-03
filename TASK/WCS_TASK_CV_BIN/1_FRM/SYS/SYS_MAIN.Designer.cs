@@ -688,8 +688,8 @@
             // chkStopLog
             // 
             this.chkStopLog.AutoSize = true;
-            this.chkStopLog.Checked = true;
-            this.chkStopLog.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkStopLog.Checked = false;   // [LGLS 2026-09-04] 기동 시 로그 표시(주소 열 확인용)
+            this.chkStopLog.CheckState = System.Windows.Forms.CheckState.Unchecked;
             this.chkStopLog.Location = new System.Drawing.Point(485, 6);
             this.chkStopLog.Name = "chkStopLog";
             this.chkStopLog.Size = new System.Drawing.Size(74, 16);

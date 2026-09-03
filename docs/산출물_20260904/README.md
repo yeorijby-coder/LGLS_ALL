@@ -11,12 +11,14 @@
 | 05_WCS_운전_지침서.docx | 화면별 메뉴 PATH/개요/화면/특기사항/화면설명 + 예외 처리 |
 | 06_WCS_화면설계서.pptx | 표지/Document history/Contents/화면별 캡처+설명 (24장) |
 
-## 09-03 판에서 바뀐 점
+## 09-03 판에서 바뀐 점 (문서 이력 : 기타 수정)
 
 - 작업 상태 코드에서 11/21/31 을 제외하고 실제 스케줄러 전이 순서로 정리.
 - 상위 M 전문(입출고 모드 전환) 방향을 WMS → WCS 로 정정.
 - Ecs.ini 로 숨긴 메뉴·버튼(사용자, 반자동 TEST, INI 열기, UI 모드, 공PLT, 제품정보, 확대, 로그 필터)은 문서에서 제외.
 - 시뮬레이터 관련 내용 제외.
+- 테이블 정의서 : 이 현장에서 쓰지 않는 테이블 10개(AUTO_SC_WORK, BCR_MST, CELL_DTL, CHG_LANG, DEST_DEF, EVENT_LOG, WAIT_TRACK, WC_DATA, WC_HIS, HOST_EMPTY_PLT)와 예비 컬럼 제외 → 27 테이블.
+- DB 백업 : 위 테이블을 뺀 정리본 `DB_BACKUP/LGLS_MCS_IO_20260904_clean.bak` (`make_clean_backup_20260904.sql` 로 생성).
 - 화면 캡처(`shots/`)를 숨김 설정이 적용된 상태로 다시 찍음.
 
 `gen/` 의 파이썬(python-docx / python-pptx)으로 다시 만들 수 있다 : `python gen_*.py`

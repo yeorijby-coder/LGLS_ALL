@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Net.Sockets;
 using log4net;
@@ -746,6 +747,13 @@ namespace WCS_TASK_CV
             {
 
                 if (chkStopLog.Checked) return;
+
+                // [LGLS 2026-09-04] 주소 열 : 호출부가 주소를 안 넘겼으면 메시지 본문의 PLC 주소(%MX1377, %DW100 등)를 뽑아 채운다.
+                if (string.IsNullOrEmpty(pAddr) && !string.IsNullOrEmpty(pMsg))
+                {
+                    Match mAddr = Regex.Match(pMsg, @"%[A-Z]{1,2}\d+(?:\.[0-9A-F]+)?");
+                    if (mAddr.Success) pAddr = mAddr.Value;
+                }
 
                 cDefApp.stutLogMsgInfo LogMsg ;
                 LogMsg.Time = DateTime.Now.ToString( "yyyy/MM/dd HH:mm:ss:ffffff");

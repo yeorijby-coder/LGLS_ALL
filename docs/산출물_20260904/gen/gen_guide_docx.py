@@ -35,8 +35,9 @@ for g, name, sh, path, overview, notes, ctrls in SCREENS:
     d.add_heading('%d.%d %s' % (gi, si, name), 2)
     para(d, '메뉴 PATH', bold=True); para(d, path, indent=0.5)
     para(d, '프로그램 개요', bold=True); para(d, overview, indent=0.5)
-    if sh:
-        para(d, '화면', bold=True); image(d, shot(sh), width_cm=15.5 if 'main' not in sh else 17.0)
+    para(d, '화면', bold=True)
+    if sh: image(d, shot(sh), width_cm=15.5 if 'main' not in sh else 17.0)
+    else: d.add_paragraph()
     if notes:
         para(d, '※ 특기사항', bold=True); bullets(d, notes)
     if ctrls:
