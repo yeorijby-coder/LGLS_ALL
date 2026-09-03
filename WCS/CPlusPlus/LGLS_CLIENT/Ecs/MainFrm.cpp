@@ -504,9 +504,13 @@ void CMainFrame::AddCategoryWCS()
 	pBtnJob->SetAlwaysLargeImage();
 	pPanelView->Add(pBtnJob);
 
-	CMFCRibbonButton* pBtnEmptyPlt = new CMFCRibbonButton(ID_VIEW_HOST_EMPTY_PLT, _T("공PLT작업"), HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
-	pBtnEmptyPlt->SetAlwaysLargeImage();
-	pPanelView->Add(pBtnEmptyPlt);
+	// [LGLS 2026-09-03] 공PLT작업 : Ecs.ini [MENU] EMPTYPLT_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
+	if (::GetPrivateProfileInt(_T("MENU"), _T("EMPTYPLT_MENU"), 1, ECS_INI_FILE) != 0)
+	{
+		CMFCRibbonButton* pBtnEmptyPlt = new CMFCRibbonButton(ID_VIEW_HOST_EMPTY_PLT, _T("공PLT작업"), HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+		pBtnEmptyPlt->SetAlwaysLargeImage();
+		pPanelView->Add(pBtnEmptyPlt);
+	}
 
 	CMFCRibbonButton* pBtnSearch = new CMFCRibbonButton(ID_VIEW_SEARCH, _T("SEARCH"), HICONFromPATH(GetConcatPath(strAppPath, _T("search"), strExtension)), TRUE);
 	pBtnSearch->SetAlwaysLargeImage();
@@ -730,11 +734,18 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 	pPanel_Wrap_View->SetName(CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang));
 	CMFCRibbonButton* pButton_Rack = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(0);
 	pButton_Rack->SetText(CLib::GetIniStringFromPath(strFullPath, _T("job-info"), (int)penLang));
-	CMFCRibbonButton* pButton_emptyplt = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(1);
-	pButton_emptyplt->SetText(_T("공PLT작업"));
-	CMFCRibbonButton* pButton_Search = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(2);
+	// [LGLS 2026-09-03] 공PLT작업 버튼이 INI 로 빠지면 뒤 버튼의 인덱스가 하나 당겨진다.
+	int nEmptyPlt = (::GetPrivateProfileInt(_T("MENU"), _T("EMPTYPLT_MENU"), 1, ECS_INI_FILE) != 0) ? 1 : 0;
+	if (nEmptyPlt == 1)
+	{
+		CMFCRibbonButton* pButton_emptyplt = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(1);
+		if (pButton_emptyplt != NULL)
+			pButton_emptyplt->SetText(_T("공PLT작업"));
+	}
+	CMFCRibbonButton* pButton_Search = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(1 + nEmptyPlt);
 
-	pButton_Search->SetText(CLib::GetIniStringFromPath(strFullPath, _T("search"), (int)penLang));
+	if (pButton_Search != NULL)
+		pButton_Search->SetText(CLib::GetIniStringFromPath(strFullPath, _T("search"), (int)penLang));
 
 	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_monitor\\"), _T("monitor"), strExtension);
 	CMFCRibbonPanel_Wrap* pPanel_Wrap_Monitor = (CMFCRibbonPanel_Wrap*)pCategory->GetPanel(2);
