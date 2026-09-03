@@ -46,6 +46,17 @@ EXE/
 
 TASK 쪽은 각 INI 의 [VIEW] LOG_FILTER_BTN 으로 [로그 필터] 버튼을 켜고 끈다.
 
+## 서버(VS 미설치) 구동 요건
+
+- **운전 화면(WCS_CLIENT/Ecs.exe)은 Release 빌드**다(디버그 런타임 의존 없음). 서버에는
+  **Microsoft Visual C++ 2015-2022 Redistributable (x86)** 를 설치해야 한다
+  (mfc140u.dll / vcruntime140.dll / msvcp140.dll / UCRT). FarPoint 스프레드(SPR32DU70.DLL)는 폴더에 들어 있다.
+- **TASK 3종과 SIM 2종은 .NET Framework 4.8** 로 돈다(IO/HOST 는 4.0 대상이지만 4.8 위에서 동작).
+  Windows Server 2019 이상은 기본 포함, 없으면 .NET Framework 4.8 런타임 설치.
+- 현장 서버에서는 **EQP_SIM / HOST_SIM 은 띄우지 않는다**(시뮬레이터).
+- DB 는 서버의 MS-SQL 을 쓰도록 각 INI 의 [DB] 접속 정보(IP,1433 / 계정)를 바꾼다. DB 이관은 `DB_BACKUP/서버_구축_절차.md`.
+- 위 표의 시뮬값(127.0.0.1 등)을 현장값으로 바꾼다.
+
 ## 참고
 
 - 다국어 폰트는 한국어(kor)만 담았다. 중국어 화면을 쓸 경우

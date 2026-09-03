@@ -540,9 +540,13 @@ void CMainFrame::AddCategoryWCS()
 		pBtnViewTrackNo->SetAlwaysLargeImage();
 		pPanelMonitor->Add(pBtnViewTrackNo);
 
-		CMFCRibbonButton* pBtnViewProd = new CMFCRibbonButton(ID_MONITORING_VIEW_PRODINFO, _T("제품정보"), HICONFromPATH(GetConcatPath(strAppPath, _T("p"), strExtension)), TRUE);
-		pBtnViewProd->SetAlwaysLargeImage();
-		pPanelMonitor->Add(pBtnViewProd);
+		// [LGLS 2026-09-03] 제품정보 : Ecs.ini [MENU] PRODINFO_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
+		if (::GetPrivateProfileInt(_T("MENU"), _T("PRODINFO_MENU"), 1, ECS_INI_FILE) != 0)
+		{
+			CMFCRibbonButton* pBtnViewProd = new CMFCRibbonButton(ID_MONITORING_VIEW_PRODINFO, _T("제품정보"), HICONFromPATH(GetConcatPath(strAppPath, _T("p"), strExtension)), TRUE);
+			pBtnViewProd->SetAlwaysLargeImage();
+			pPanelMonitor->Add(pBtnViewProd);
+		}
 
 		//CMFCRibbonButton* pBtn2f = new CMFCRibbonButton(ID_MONITORING_2F, _T("2F"), HICONFromPATH(GetConcatPath(strAppPath, _T("2f"), strExtension)), TRUE);
 		//pBtn2f->SetAlwaysLargeImage();

@@ -30,6 +30,7 @@ public:
 	afx_msg void OnBnClickedBtnRtvManual();   // [LGLS 2026-09-03] 수동지시
 	void LglsRelayoutJobStatus();      // [LGLS 2026-09-03] 작업상태 두 열 배치
 	BOOL m_bJobStatusRelayout;
+	BOOL m_bSuspendPlaced;
 	CRtvSkinDlg(CWnd* pParent = NULL);   // 표준 생성자입니다.
 	CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);   // 표준 생성자입니다.
 	virtual ~CRtvSkinDlg();

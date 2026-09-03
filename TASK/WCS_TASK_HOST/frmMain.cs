@@ -35,7 +35,8 @@ namespace TSK_HostCom
             var btnIni = new System.Windows.Forms.Button { Text = "INI 열기",
                 Size = new System.Drawing.Size(72, 22),
                 Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right,
-                Location = new System.Drawing.Point(this.ClientSize.Width - 80, 18) };
+                // [LGLS 2026-09-03] 우측 패널의 [닫기](btnExit) 왼쪽에 나란히 - 겹침 해소
+                Location = new System.Drawing.Point(this.btnExit.Left - 80, this.btnExit.Top + 11) };
             btnIni.Click += delegate
             {
                 string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
@@ -57,7 +58,7 @@ namespace TSK_HostCom
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strIni) { UseShellExecute = true });
                 }
             };
-            this.Controls.Add(btnIni);
+            this.pnlMsg2.Controls.Add(btnIni);   // [LGLS 2026-09-03] 닫기 버튼과 같은 패널
             btnIni.BringToFront();
         }
 

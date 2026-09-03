@@ -30,7 +30,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
@@ -116,7 +116,7 @@ copy "$(OutDir)*.pdb" "$(OutDir)Ecs\mapfile\%DirName%"</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_AFXDLL;POSTGRESQL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../Lib/EcsLib;../Lib/EcsLib/ButtonST;../Lib/XmlLib;../Lib/DciLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <StringPooling>true</StringPooling>
@@ -136,7 +136,8 @@ copy "$(OutDir)*.pdb" "$(OutDir)Ecs\mapfile\%DirName%"</Command>
       <OptimizeReferences>
       </OptimizeReferences>
       <OutputFile>.\../Bin/Release\Ecs.exe</OutputFile>
-      <AdditionalDependencies>.\../Bin/Release/XmlLib.lib;.\../Bin/Release/DciLib.lib;.\../Bin/Release/EcsLib.lib;.\../Bin/Release/Spr32d70.lib;.\../Bin/Release/Quvc_dll.lib</AdditionalDependencies>
+      <AdditionalDependencies>.\../Bin/Release/XmlLib.lib;.\../Bin/Release/DciLib.lib;.\../Bin/Release/EcsLib.lib;.\../Bin/Debug/Spr32du70.lib;.\../Bin/Release/Quvc_dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <Midl>

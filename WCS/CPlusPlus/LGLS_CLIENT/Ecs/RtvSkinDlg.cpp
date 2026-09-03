@@ -18,6 +18,7 @@ CRtvSkinDlg::CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CRtvSkinDlg::IDD, pParent)
 {
 	m_bJobStatusRelayout = FALSE;   // [LGLS 2026-09-03]
+	m_bSuspendPlaced = FALSE;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pDoc = pDoc;
@@ -483,9 +484,23 @@ void CRtvSkinDlg::RedrawImage()
 		//   위에서부터 남기고 나머지 명령 버튼은 숨긴다.
 		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>RTV 창을 여는 두 번째 경로
 		{ CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
-		{ CWnd* pS = GetDlgItem(IDC_BTN_RTV_SUSPEND); if (pS) pS->ShowWindow(SW_SHOW); }
-		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_BTN_RTV_SUSPEND, IDC_LGLS_RTV_ZOOM };
-		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 6, szL, 0, FALSE);
+		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
+		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 5, szL, 0, FALSE);
+		// [LGLS 2026-09-03] 확대 아래 빈 자리(사용자 지정)에 일시정지 상태 에디트 + [일시정지] 버튼을 함께 둔다
+		{
+			CWnd* pZoom = GetDlgItem(IDC_LGLS_RTV_ZOOM);
+			CWnd* pEdt  = GetDlgItem(IDC_EDT_RTV_SUSPEND);
+			CWnd* pBtn  = GetDlgItem(IDC_BTN_RTV_SUSPEND);
+			if (pZoom && pEdt && pBtn)
+			{
+				CRect rz, re; pZoom->GetWindowRect(&rz); ScreenToClient(&rz); pEdt->GetWindowRect(&re); ScreenToClient(&re);
+				int y = rz.bottom + 6;
+				pEdt->MoveWindow(rz.left, y, rz.Width(), re.Height());
+				pBtn->MoveWindow(rz.left, y + re.Height() + 4, rz.Width(), rz.Height());
+				pEdt->ShowWindow(SW_SHOW); pBtn->ShowWindow(SW_SHOW);
+				m_bSuspendPlaced = TRUE;
+			}
+		}
 		UINT nHide[] = { IDC_BTN_RTV_ESTOP, IDC_BTN_RTV_ACTIVE, IDC_BTN_RTV_STOP, IDC_BTN_RTV_RESET_ERROR,
 		                 IDC_BTN_RTV_CALL_TO_HOME };
 		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
@@ -1488,9 +1503,7 @@ void CRtvSkinDlg::CompactJobStatusArea()
 		pSusEdt->GetWindowRect(&rcEdt); ScreenToClient(&rcEdt);
 		pSusBtn->GetWindowRect(&rcBtn); ScreenToClient(&rcBtn);
 
-		int nTop = rcGrp.top + 24;						// COMMAND 라벨 바로 아래
-		rcEdt.OffsetRect(0, nTop - rcEdt.top);
-		pSusEdt->MoveWindow(rcEdt);
+		// [LGLS 2026-09-03] 일시정지 상태 에디트/버튼은 명령 열(확대 아래)에 배치한다 - 여기서 옮기지 않음
 
 		// [LGLS 2026-09-03] 일시정지 버튼은 명령 열(StackCommandButtons)에서 배치한다 - 여기서는 건드리지 않음
 	}
@@ -1857,7 +1870,7 @@ void CRtvSkinDlg::LglsRelayoutJobStatus()
 		if (pL) pL->MoveWindow(nRLbl, y, nLblW, rcLbl.Height());
 		if (pV) pV->MoveWindow(nREd,  y + (rcLbl.Height() - nEdH) / 2, nREdW, nEdH);
 	}
-	const int nHide[] = { IDC_GRP_RTV_JOB_STATUS_ITEM, IDC_GRP_RTV_JOB_STATUS_FK1, IDC_GRP_RTV_JOB_STATUS_COMMAND, IDC_EDT_RTV_SUSPEND,
+	const int nHide[] = { IDC_GRP_RTV_JOB_STATUS_ITEM, IDC_GRP_RTV_JOB_STATUS_FK1, IDC_GRP_RTV_JOB_STATUS_COMMAND,
 	                      IDC_EDIT_RTV_JOB_JOB_NO2, IDC_CBX_RTV_JOB_JOB_TYP2, IDC_CBX_RTV_JOB_START_POS2, IDC_CBX_RTV_JOB_DEST_POS2 };
 	for (i = 0; i < (int)(sizeof(nHide)/sizeof(nHide[0])); i++) { CWnd* pH = GetDlgItem(nHide[i]); if (pH) pH->ShowWindow(SW_HIDE); }
 	int nNewBottom = nTop0 + nPitch * 5 + 6;
