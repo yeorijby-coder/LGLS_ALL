@@ -79,6 +79,19 @@ BEGIN_MESSAGE_MAP(CManualSc, CSkinDialog)
 	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
+// [LGLS 2026-09-03] 호기 콤보에서 크레인 번호(1~5)를 얻는다 : 항목데이터 우선, 없으면 문자열 앞자리
+static int LglsScIdxOf(CComboBoxWrapper& cbx)
+{
+	int nSel = cbx.GetCurSel();
+	if (nSel < 0) return 0;
+	int d = (int)cbx.GetItemData(nSel);
+	if (d >= 1 && d <= 5) return d;
+	CString str; cbx.GetWindowText(str); str.Trim();
+	int n = _ttoi(str);
+	if (n >= 901) n -= 900;
+	return (n >= 1 && n <= 5) ? n : 0;
+}
+
 BOOL CManualSc::OnInitDialog()
 {
 	CSkinDialog::OnInitDialog();
@@ -122,8 +135,9 @@ BOOL CManualSc::OnInitDialog()
 	m_cbxScManualScNo.GetWindowText(strCOMBO_SC_NO);
 	strSC_NO.Format(_T("%03s"), strCOMBO_SC_NO);
 	//CLib::GetComBoBoxData(m_cbxScManualScNo, strSC_NO, 10);
-	CLib::BindCombo_SC_HS_DEF(m_cbxStartPosFork1, m_pDoc, (int)pEn, strSC_NO, _T(""));
-	CLib::BindCombo_SC_HS_DEF(m_cbxDestPosFork1, m_pDoc, (int)pEn, strSC_NO,  _T(""));
+	// [LGLS 2026-09-03] H/S 는 SC_HS_DEF 대신 CV_DATA(해당 크레인 측 C/V 트랙)에서 채운다
+	CLib::BindCombo_SC_HS_TRACK(m_cbxStartPosFork1, m_pDoc, (int)pEn, LglsScIdxOf(m_cbxScManualScNo));
+	CLib::BindCombo_SC_HS_TRACK(m_cbxDestPosFork1,  m_pDoc, (int)pEn, LglsScIdxOf(m_cbxScManualScNo));
 
 	m_edtManualScStartPosFk1.EnableMask(_T("dd ddd dd"),_T("__-___-__"), _T(' '));
 	m_edtManualScStartPosFk1.SetWindowText(_T("01-001-01"));
@@ -650,8 +664,9 @@ void CManualSc::OnCbnSelchangeCmbScManualJobTyp()
 	
 	strScJobTyp = m_cbxScManualJobTyp.GetItemKey(m_cbxScManualJobTyp.GetCurSel());
 
-	CLib::BindCombo_SC_HS_DEF(m_cbxStartPosFork1, m_pDoc, 0, strScNo, strScJobTyp); //(int)pEn
-	CLib::BindCombo_SC_HS_DEF(m_cbxDestPosFork1, m_pDoc, 0, strScNo, strScJobTyp);
+	// [LGLS 2026-09-03] H/S 는 CV_DATA 기준(SC_HS_DEF 미사용)
+	CLib::BindCombo_SC_HS_TRACK(m_cbxStartPosFork1, m_pDoc, 0, LglsScIdxOf(m_cbxScManualScNo));
+	CLib::BindCombo_SC_HS_TRACK(m_cbxDestPosFork1,  m_pDoc, 0, LglsScIdxOf(m_cbxScManualScNo));
 
 	
 	UpdateData(TRUE);

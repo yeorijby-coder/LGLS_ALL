@@ -562,12 +562,18 @@ void CScSkinDlg::RedrawImage()
 	// [LGLS 2026-08-13] 명령 버튼 크기 통일(비트맵 110x27) + 세로 재배치
 	{
 		SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-		UINT nCol1[] = { IDC_BTN_SC_CONFIRM, IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP,
-		                 IDC_BTN_SC_ERROR_RESET, IDC_BTN_SC_DELTE, IDC_BTN_SC_MANUAL_RET,
-		                 IDC_LGLS_SC_RESEND, IDC_LGLS_SC_ZOOM };
-		UINT nCol2[] = { IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
-		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, 9, szL, 1, FALSE);
-		StackCommandButtons(this, IDC_GRP_SC_JOB_STATUS_COMMAND, nCol2, 3, szL, 1, FALSE);
+		// [LGLS 2026-09-03] 사용자 지시 : 지시 재전송 / 지시 삭제 / 지시 완료 / 확대 네 개만 위에서부터 남기고
+		//   나머지 명령 버튼은 숨긴다(핸들러/기능은 그대로 두어 판넬 등 다른 경로에는 영향 없음).
+		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_DELTE, IDC_BTN_SC_CONFIRM, IDC_LGLS_SC_ZOOM };
+		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, 4, szL, 1, FALSE);
+		UINT nHide[] = { IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP, IDC_BTN_SC_ERROR_RESET,
+		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_SC_MANUAL, IDC_BTN_DUPL_STO,
+		                 IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
+		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
+		{
+			CWnd* pHide = GetDlgItem(nHide[h]);
+			if (pHide != NULL) pHide->ShowWindow(SW_HIDE);
+		}
 	}
 }
 void CScSkinDlg::OnSize(UINT nType, int cx, int cy)

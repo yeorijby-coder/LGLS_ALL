@@ -1309,6 +1309,86 @@ bool CLib::BindCombo_CELL_SC_NO(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDo
 // 
 // }
 
+// [LGLS 2026-09-03] RGV(RTV) 수동 화면의 출발지/도착지를 트랙번호로 표시한다.
+//   기존에는 COMMON_CODE(RTVDepHS/RTVArrHS)의 1~6 이 떠서 실제 지시값
+//   (DEPART_TRACK / ARRIVE_TRACK 은 103,107,... 같은 트랙번호)과 맞지 않았다.
+//   RGV 가 서는 곳은 트랙 이름에 "RGV" 가 붙은 라인이다.
+bool CLib::BindCombo_RTV_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG)
+{
+	if (pDoc == NULL)                 return false;
+	if (pDoc->IsConnectDB() == FALSE) return false;
+
+	CString strSql;
+	int nRowCnt = 0, j = 0;
+	CString strMessage;
+	cbx.ResetContent();
+
+	strSql.Format(_T(" SELECT MC_NO, MC_NO_NM              \n")
+		_T("   FROM CV_DATA                             \n")
+		_T("  WHERE WH_TYP = '%s'                       \n")
+		_T("    AND MC_NO_NM LIKE '%%RGV%%'              \n")
+		_T("  ORDER BY MC_NO                            \n"), pDoc->m_WH_TYP);
+
+	_RecordsetPtr pRsptr = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	pRsw->MoveFirst();
+
+	for (int i = 0; i < nRowCnt; i++)
+	{
+		CString strMcNo = pRsw->GetItem(_T("MC_NO"));
+		CString strNm   = pRsw->GetItem(_T("MC_NO_NM"));
+		CString strDisp = strMcNo + _T(" (") + strNm + _T(")");
+
+		cbx.AddString(strDisp);
+		cbx.SetItemDataEx(j++, strMcNo);
+		pRsw->MoveNext();
+	}
+
+	cbx.SetCurSel(0);
+	delete pRsw;
+	return true;
+}
+
+// [LGLS 2026-09-03] 크레인 수동 화면의 H/S(출발/도착위치) 를 CV_DATA 에서 채운다.
+//   SC_HS_DEF 는 901/902 두 대 뿐이고 값도 실제 배치와 달라 콤보가 비거나 엉뚱했다.
+//   트랙 이름에 "(S/C#N측)" 이 붙은 C/V 의 두 트랙(RGV측/S/C측)을 그 크레인의 H/S 로 본다.
+//   항목키 = 트랙번호(MC_NO).
+bool CLib::BindCombo_SC_HS_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, int nScIdx)
+{
+	if (pDoc == NULL)                 return false;
+	if (pDoc->IsConnectDB() == FALSE) return false;
+	cbx.ResetContent();
+	if (nScIdx < 1)                   return false;
+
+	CString strSql;
+	int nRowCnt = 0, j = 0;
+	CString strMessage;
+
+	strSql.Format(_T(" SELECT MC_NO, MC_NO_NM                                              \n")
+		_T("   FROM CV_DATA                                                             \n")
+		_T("  WHERE WH_TYP = '%s'                                                       \n")
+		_T("    AND LEFT(MC_NO_NM, CHARINDEX(' ', MC_NO_NM + ' ')) IN                     \n")
+		_T("        (SELECT DISTINCT LEFT(MC_NO_NM, CHARINDEX(' ', MC_NO_NM + ' '))      \n")
+		_T("           FROM CV_DATA WHERE WH_TYP = '%s' AND MC_NO_NM LIKE '%%S/C#%d측%%') \n")
+		_T("  ORDER BY MC_NO                                                            \n"),
+		pDoc->m_WH_TYP, pDoc->m_WH_TYP, nScIdx);
+
+	_RecordsetPtr pRsptr = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	pRsw->MoveFirst();
+	for (int i = 0; i < nRowCnt; i++)
+	{
+		CString strMcNo = pRsw->GetItem(_T("MC_NO"));
+		CString strNm   = pRsw->GetItem(_T("MC_NO_NM"));
+		cbx.AddString(strMcNo + _T(" (") + strNm + _T(")"));
+		cbx.SetItemDataEx(j++, strMcNo);
+		pRsw->MoveNext();
+	}
+	cbx.SetCurSel(0);
+	delete pRsw;
+	return true;
+}
+
 bool CLib::BindCombo_SC_HS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, CString strSC_NO, CString strJOB_TYP)
 {
    if(pDoc   == NULL)                     return false;

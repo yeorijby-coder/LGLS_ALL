@@ -719,7 +719,7 @@ void CPanelInfoDlg::OnBtnAbort()
 		strSql.Format(_T("UPDATE RTV_DATA_LGLS SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0'")
 			_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00'")
 			_T(", TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
-			_T(", RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N'")
+			_T(", RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N', DEPART_TRACK = '', ARRIVE_TRACK = ''")
 			_T(" WHERE WH_TYP = '%s' AND RTV_NO = '%s'"),
 			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strUnit);
 	}
@@ -1172,7 +1172,8 @@ void CPanelInfoDlg::DoVehCmd(BOOL bRtv, LPCTSTR strCmdIdIn, LPCTSTR strAskMsg)
 			strClr.Format(_T(" UPDATE RTV_DATA_LGLS SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0' ")
 				_T(" , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' ")
 				_T(" , TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00' ")
-				_T(" , RTV_DEST_OD = '', RTV_PASSCV_OD = '' ")
+				// [LGLS 2026-09-03] 잔여 요청 플래그(OD_RQ_YN)까지 비워 스케줄러가 새 지시를 낼 수 있게 한다
+				_T(" , RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N', DEPART_TRACK = '', ARRIVE_TRACK = '' ")
 				_T(" WHERE WH_TYP = '%s' AND RTV_NO = '%s'"),
 				(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strNo);
 			strSql = strSql + _T(" ") + strClr;

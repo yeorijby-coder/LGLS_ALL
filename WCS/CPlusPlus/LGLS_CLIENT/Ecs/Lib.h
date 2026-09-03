@@ -155,6 +155,10 @@ public:
 	static bool BindCombo_SC_HS_DEF_DEST(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, CString strSC_NO);
 	static bool BindCombo_SC_HS_DEF_DEST_SPREAD(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, CString strSC_NO);
 	static BOOL BindCombo_SC_NO_MANUAL(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDoc *pDoc, int nEN_LANG, CString strAGING_TYP, CString strSC_NO);
+	// [LGLS 2026-09-03] RGV 정차 트랙(출발지/도착지) - 트랙번호로 표시
+	static bool BindCombo_RTV_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG);
+	// [LGLS 2026-09-03] 크레인 N호기의 H/S 트랙(해당 S/C측 C/V 의 두 트랙) - CV_DATA 이름 기준
+	static bool BindCombo_SC_HS_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, int nScIdx);
 	static BOOL BindCombo_RTV_NO(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG);
 	static bool SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc);
 	static bool BindSpreadCommonCode(CString pCDX_CD, CString pCCD_NM_XXX, CString& pCCD_CD, CEcsDoc *pDoc);

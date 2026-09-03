@@ -477,12 +477,17 @@ void CRtvSkinDlg::RedrawImage()
 	// [LGLS 2026-08-13] 명령 버튼 크기 통일(비트맵 110x27) + 세로 재배치
 	{
 		SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-		UINT nCol1[] = { IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_ESTOP, IDC_BTN_RTV_ACTIVE, IDC_BTN_RTV_STOP,
-		                 IDC_BTN_RTV_RESET_ERROR, IDC_BTN_RTV_CALL_TO_HOME, IDC_BTN_RTV_DELETE,
-		                 IDC_LGLS_RTV_RESEND, IDC_LGLS_RTV_ZOOM };
-		UINT nCol2[] = { IDC_BTN_RTV_SUSPEND };
-		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 9, szL, 0, FALSE);
-		StackCommandButtons(this, IDC_GRP_RTV_JOB_STATUS_COMMAND, nCol2, 1, szL, 0, TRUE);
+		// [LGLS 2026-09-03] 사용자 지시 : 지시 재전송 / 지시 삭제 / 지시 완료(강제완료) / 확대 네 개만
+		//   위에서부터 남기고 나머지 명령 버튼은 숨긴다.
+		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_LGLS_RTV_ZOOM };
+		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 4, szL, 0, FALSE);
+		UINT nHide[] = { IDC_BTN_RTV_ESTOP, IDC_BTN_RTV_ACTIVE, IDC_BTN_RTV_STOP, IDC_BTN_RTV_RESET_ERROR,
+		                 IDC_BTN_RTV_CALL_TO_HOME, IDC_BTN_RTV_MANUAL, IDC_BTN_RTV_SUSPEND };
+		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
+		{
+			CWnd* pHide = GetDlgItem(nHide[h]);
+			if (pHide != NULL) pHide->ShowWindow(SW_HIDE);
+		}
 	}
 
 }
@@ -979,6 +984,10 @@ void CRtvSkinDlg::UpdateRtvData(int nBtnJob)
 			_T("      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' \n")
 			_T("      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' \n")
 			_T("      , RTV_DEST_OD = '', RTV_PASSCV_OD = '' \n")
+			// [LGLS 2026-09-03] 요청 플래그/트랙까지 비운다 - 내용 없는 OD_RQ_YN='Y' 가 남아
+			//   스케줄러가 새 지시를 못 내리던 것(사용자 지시 : 삭제 버튼으로 풀 수 있게).
+			_T("      , OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N' \n")
+			_T("      , DEPART_TRACK = '', ARRIVE_TRACK = '' \n")
 			_T("  WHERE WH_TYP = '%s' \n")
 			_T("    AND RTV_NO = '%s'   "), strWhTyp, strRtvNo);
 		isSuccess = m_pDoc->ExcuteQueryString_DLG(strSqlClr);
@@ -1480,6 +1489,7 @@ void CRtvSkinDlg::CompactJobStatusArea()
 
 		rcBtn.OffsetRect(0, (rcEdt.bottom + 8) - rcBtn.top);
 		pSusBtn->MoveWindow(rcBtn);
+		pSusBtn->ShowWindow(SW_HIDE);   // [LGLS 2026-09-03] 명령 버튼 정리로 숨김 유지
 	}
 
 	// ── ② ERROR INFORMATION 그룹을 위로 당기고 창 축소 ────────────

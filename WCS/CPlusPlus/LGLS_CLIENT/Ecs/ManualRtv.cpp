@@ -56,14 +56,14 @@ void CManualRtv::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CMB_RTV_DEP_FORK1,			m_cbxDepFork1);
 	DDX_Control(pDX, IDC_CMB_RTV_DEP_FORK2,			m_cbxDepFork2);
 
-	DDX_Control(pDX, IDC_CHK_RTV_FORK1,				m_btnFork1);
+	// [LGLS 2026-09-03] 1 FORK 체크박스 제거(포크1 고정) - DDX_Control(pDX, IDC_CHK_RTV_FORK1,				m_btnFork1);
 	DDX_Control(pDX, IDC_CHK_RTV_FORK2,				m_btnFork2);
 	DDX_Control(pDX, IDC_CHK_RTV_FORK12,			m_btnFork1Fork2);
 
 	DDX_Control(pDX, IDC_GRP_RTV_MANUAL_INFO,		m_grpRtvInfo);
 	DDX_Control(pDX, IDC_GRP_RTV_FORK1,				m_grpRtvManaulFork1);
 	DDX_Control(pDX, IDC_GRP_RTV_FORK2,				m_grpRtvManaulFork2);
-	DDX_Control(pDX, IDC_GRP_RTV_MANUAL_COMMAND,	m_grpRtvManualCommand);
+	// [LGLS 2026-09-03] 명령 그룹박스를 리소스에서 뺐다(DDX 어설션 방지) - DDX_Control(pDX, IDC_GRP_RTV_MANUAL_COMMAND,	m_grpRtvManualCommand);
 }
 
 
@@ -71,7 +71,7 @@ BEGIN_MESSAGE_MAP(CManualRtv, CSkinDialog)
 	ON_BN_CLICKED(IDCANCEL, &CManualRtv::OnBnClickedCancel)
 	//	ON_WM_CLOSE()
 	ON_WM_CLOSE()
-	ON_BN_CLICKED(IDC_CHK_RTV_FORK1, &CManualRtv::OnBnClickedChkRtvFork1)
+	// [LGLS 2026-09-03] 1 FORK 체크박스 제거 - ON_BN_CLICKED(IDC_CHK_RTV_FORK1, &CManualRtv::OnBnClickedChkRtvFork1)
 	ON_BN_CLICKED(IDC_CHK_RTV_FORK2, &CManualRtv::OnBnClickedChkRtvFork2)
 	ON_BN_CLICKED(IDC_BTN_RTV_MANUAL_SAVE, &CManualRtv::OnBnClickedBtnRtvManualSave)
 	ON_BN_CLICKED(IDC_CHK_RTV_FORK12, &CManualRtv::OnBnClickedChkRtvFork12)
@@ -90,13 +90,17 @@ BOOL CManualRtv::OnInitDialog()
 		RelocationControls();
 		m_bInitialized = TRUE;		
 	}
-	m_strRtvFork = _T("0");
+	// [LGLS 2026-09-03] RGV 는 싱글 포크 - 포크1 고정, 1 FORK 체크박스와 명령 그룹은 화면에서 뺐다
+	m_strRtvFork = _T("1");
 	CLib::BindCombo_RTV_NO(m_cbxRtvNo,  m_pDoc,(int)pEn);
 	m_cbxRtvNo.SetCurSel(0);
-	CLib::BindCombo(m_cbxArrFork1, _T("RTVArrHS"), m_pDoc,(int)pEn);
-	CLib::BindCombo(m_cbxArrFork2, _T("RTVArrHS"), m_pDoc,(int)pEn);
-	CLib::BindCombo(m_cbxDepFork1, _T("RTVDepHS"), m_pDoc,(int)pEn);
-	CLib::BindCombo(m_cbxDepFork2, _T("RTVDepHS"), m_pDoc,(int)pEn);
+	// [LGLS 2026-09-03] 출발지/도착지를 트랙번호로 표시(구 COMMON_CODE 1~6 대신 실제 RGV 정차 트랙)
+	CLib::BindCombo_RTV_TRACK(m_cbxArrFork1, m_pDoc,(int)pEn);
+	CLib::BindCombo_RTV_TRACK(m_cbxArrFork2, m_pDoc,(int)pEn);
+	CLib::BindCombo_RTV_TRACK(m_cbxDepFork1, m_pDoc,(int)pEn);
+	CLib::BindCombo_RTV_TRACK(m_cbxDepFork2, m_pDoc,(int)pEn);
+	m_cbxArrFork1.EnableWindow(TRUE);
+	m_cbxDepFork1.EnableWindow(TRUE);
 
 
 	// [LGLS] RTV는 Fork1만 사용 ? Fork2 컨트롤 숨김, Fork1 고정
@@ -107,7 +111,8 @@ BOOL CManualRtv::OnInitDialog()
 	m_btnFork2.ShowWindow(SW_HIDE);
 	m_btnFork1Fork2.ShowWindow(SW_HIDE);
 	m_grpRtvManaulFork2.ShowWindow(SW_HIDE);
-	m_btnFork1.SetCheck(1);
+	// [LGLS 2026-09-03] 1 FORK 체크박스는 리소스에서 뺐다(포크1 고정) - 창 열 때 어설션 원인
+	if (::IsWindow(m_btnFork1.GetSafeHwnd())) m_btnFork1.SetCheck(1);
 	m_cbxArrFork1.EnableWindow(TRUE);
 	m_cbxDepFork1.EnableWindow(TRUE);
 
@@ -231,7 +236,7 @@ void CManualRtv::RenameResource( EN_LANG m_enLang)
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtvmanual\\"), _T("dlg_rtvmanual"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("command"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_MANUAL_COMMAND, strValue);
+	// [LGLS 2026-09-03] 명령 그룹박스 제거 - if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_MANUAL_COMMAND, strValue);
 }
 
 void CManualRtv::OnClose()
@@ -247,7 +252,7 @@ void CManualRtv::OnBnClickedChkRtvFork1()
 
 	UpdateData(TRUE);
 
-	if (m_btnFork1.GetCheck() == 1)
+	if (::IsWindow(m_btnFork1.GetSafeHwnd()) && m_btnFork1.GetCheck() == 1)
 	{
 		m_strRtvFork = _T("1");
 		//Enable 처리
@@ -282,13 +287,13 @@ void CManualRtv::OnBnClickedChkRtvFork2()
 		m_cbxDepFork2.EnableWindow(TRUE);
 		m_cbxArrFork1.EnableWindow(FALSE);
 		m_cbxDepFork1.EnableWindow(FALSE);
-		m_btnFork1.EnableWindow(FALSE);
+		if (::IsWindow(m_btnFork1.GetSafeHwnd())) m_btnFork1.EnableWindow(FALSE);
 		m_btnFork1Fork2.EnableWindow(FALSE);
 	}else{
 		m_strRtvFork = _T("0");
 		m_cbxArrFork2.EnableWindow(FALSE);
 		m_cbxDepFork2.EnableWindow(FALSE);
-		m_btnFork1.EnableWindow(TRUE);
+		if (::IsWindow(m_btnFork1.GetSafeHwnd())) m_btnFork1.EnableWindow(TRUE);
 		m_btnFork1Fork2.EnableWindow(TRUE);
 	}
 	UpdateData(FALSE);
@@ -307,7 +312,7 @@ void CManualRtv::OnBnClickedChkRtvFork12()
 		m_cbxDepFork2.EnableWindow(TRUE);
 		m_cbxArrFork1.EnableWindow(TRUE);
 		m_cbxDepFork1.EnableWindow(TRUE);
-		m_btnFork1.EnableWindow(FALSE);
+		if (::IsWindow(m_btnFork1.GetSafeHwnd())) m_btnFork1.EnableWindow(FALSE);
 		m_btnFork2.EnableWindow(FALSE);
 	}else{
 		m_strRtvFork = _T("0");
@@ -315,7 +320,7 @@ void CManualRtv::OnBnClickedChkRtvFork12()
 		m_cbxDepFork1.EnableWindow(FALSE);
 		m_cbxArrFork2.EnableWindow(FALSE);
 		m_cbxDepFork2.EnableWindow(FALSE);
-		m_btnFork1.EnableWindow(TRUE);
+		if (::IsWindow(m_btnFork1.GetSafeHwnd())) m_btnFork1.EnableWindow(TRUE);
 		m_btnFork2.EnableWindow(TRUE);
 	}
 	UpdateData(FALSE);
@@ -336,10 +341,12 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 	UpdateData(TRUE);
 
 	m_cbxRtvNo.GetWindowText(strRtvNo);
-	m_cbxArrFork1.GetWindowText(strArrFork1);
-	m_cbxArrFork2.GetWindowText(strArrFork2);
-	m_cbxDepFork1.GetWindowText(strDepFork1);
-	m_cbxDepFork2.GetWindowText(strDepFork2);
+	// [LGLS 2026-09-03] 표시는 "103 (이름)" 이므로 지시값은 항목키(트랙번호)에서 가져온다.
+	strArrFork1 = m_cbxArrFork1.GetItemKey(m_cbxArrFork1.GetCurSel());
+	strArrFork2 = m_cbxArrFork2.GetItemKey(m_cbxArrFork2.GetCurSel());
+	strDepFork1 = m_cbxDepFork1.GetItemKey(m_cbxDepFork1.GetCurSel());
+	strDepFork2 = m_cbxDepFork2.GetItemKey(m_cbxDepFork2.GetCurSel());
+	strArrFork1.Trim(); strArrFork2.Trim(); strDepFork1.Trim(); strDepFork2.Trim();
 
 	strRtvNo = m_cbxRtvNo.GetItemKey(m_cbxRtvNo.GetCurSel());
 
