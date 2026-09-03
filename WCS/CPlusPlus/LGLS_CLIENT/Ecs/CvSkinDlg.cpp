@@ -576,6 +576,8 @@ void CCvSkinDlg::RedrawImage()
 	// [LGLS 2026-08-05] 확대 버튼도 같은 스킨 + 아이콘(비트맵만 주면 글자가 안 그려진다)
 	m_btnCvZoom.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnCvZoom.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("arrow-down"), strExtension)), NULL, 5, 5);
+	// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
+	if (!(::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0)) m_btnCvZoom.ShowWindow(SW_HIDE);
 
 
 	m_btnCvSenserProd0.SetIcon(Global.GetIcon(Global.ICO_CV_ON));

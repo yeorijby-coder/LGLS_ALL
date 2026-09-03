@@ -484,11 +484,14 @@ void CRtvSkinDlg::RedrawImage()
 		//   위에서부터 남기고 나머지 명령 버튼은 숨긴다.
 		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>RTV 창을 여는 두 번째 경로
 		{ CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
+		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
+		BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
 		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
-		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 5, szL, 0, FALSE);
+		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, bZoom ? 5 : 4, szL, 0, FALSE);
+		if (!bZoom) { CWnd* pZ = GetDlgItem(IDC_LGLS_RTV_ZOOM); if (pZ) pZ->ShowWindow(SW_HIDE); }
 		// [LGLS 2026-09-03] 확대 아래 빈 자리(사용자 지정)에 일시정지 상태 에디트 + [일시정지] 버튼을 함께 둔다
 		{
-			CWnd* pZoom = GetDlgItem(IDC_LGLS_RTV_ZOOM);
+			CWnd* pZoom = GetDlgItem(bZoom ? IDC_LGLS_RTV_ZOOM : IDC_BTN_RTV_MANUAL);   // 확대 숨김이면 그 위 버튼 기준
 			CWnd* pEdt  = GetDlgItem(IDC_EDT_RTV_SUSPEND);
 			CWnd* pBtn  = GetDlgItem(IDC_BTN_RTV_SUSPEND);
 			if (pZoom && pEdt && pBtn)

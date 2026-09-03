@@ -567,8 +567,11 @@ void CScSkinDlg::RedrawImage()
 		//   나머지 명령 버튼은 숨긴다(핸들러/기능은 그대로 두어 판넬 등 다른 경로에는 영향 없음).
 		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>크레인 창을 여는 두 번째 경로
 		{ CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
+		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
+		BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
 		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_DELTE, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
-		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, 5, szL, 1, FALSE);
+		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, bZoom ? 5 : 4, szL, 1, FALSE);
+		if (!bZoom) { CWnd* pZ = GetDlgItem(IDC_LGLS_SC_ZOOM); if (pZ) pZ->ShowWindow(SW_HIDE); }
 		UINT nHide[] = { IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP, IDC_BTN_SC_ERROR_RESET,
 		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_DUPL_STO,
 		                 IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
