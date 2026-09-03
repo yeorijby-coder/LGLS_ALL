@@ -645,7 +645,10 @@ CString CEqpSuspendDlg::GetQrySelect_Main()
 		_T("   FROM EQP_MST EM LEFT OUTER JOIN COMMON_CODE CCD_WH_TYP										\n")
 		_T("     ON CCD_WH_TYP.WH_TYP LIKE '%%%s%%' AND CCD_WH_TYP.CDX_CD = 'WH_TYP' AND EM.WH_TYP = CCD_WH_TYP.CCD_CD	\n")
 		_T("  WHERE EM.WH_TYP = '%s' AND EM.EQP_TYP = 'CV' AND EM.PLC_NO = '11'						\n"), m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP);
-	strSql += strUnion;
+	// [LGLS 2026-09-03] EQP 대표 행은 설비 구분이 ALL 또는 EQP 일 때만 붙인다
+	//   (SCH/HOST 를 골라도 EQP 행이 같이 나오던 것 - 사용자 지적)
+	if (strEQP_TYP == _T("") || strEQP_TYP == _T("ALL") || strEQP_TYP == _T("EQP"))
+		strSql += strUnion;
 	strSql += _T("   ORDER BY 2 \n");
 
 
