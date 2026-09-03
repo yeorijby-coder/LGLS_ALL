@@ -1208,6 +1208,26 @@ void CSpreadSheet::PrepareLoadSpread()
 
 void CSpreadSheet::FinishLoadSpread()
 {
+	// [LGLS 2026-09-03] 시트 정의(헤더 목록)에 없는 열은 기본 셀 타입(편집형=왼쪽 정렬)으로 남아
+	//   첫 열(창고 타입)만 왼쪽에 붙어 보였다. 편집형으로 남은 열만 가운데 정렬 정적 셀로 바꾼다.
+	//   (버튼/체크박스/콤보 셀은 건드리지 않는다)
+	if (::IsWindow(m_Spread.m_hWnd))
+	{
+		SS_COORD nMaxCol = m_Spread.GetMaxCols();
+		SS_COORD nMaxRow = m_Spread.GetMaxRows();
+		if (nMaxRow >= 1)
+		{
+			SS_CELLTYPE sCenter = {0};
+			m_Spread.SetTypeStaticText(&sCenter, SS_TEXT_CENTER | SS_TEXT_VCENTER);
+			for (SS_COORD c = 1; c <= nMaxCol; c++)
+			{
+				int nType = GetCellType(c, 1);
+				if (nType == SS_TYPE_BUTTON)
+					continue;
+				m_Spread.SetCellTypeRange(c, 1, c, SS_LAST, &sCenter);
+			}
+		}
+	}
 	SetFontEntireSheet();
 	AutoResizeColumn();
 
@@ -1239,7 +1259,9 @@ void CSpreadSheet::SetColWidth(SS_COORD Col, DOUBLE nWidth)
 	if ( !::IsWindow(m_Spread.m_hWnd) )
 		return;
 
-	m_Spread.SetColWidth(Col, nWidth);
+	// [LGLS 2026-09-03] 그리드 창들이 데이터 글자수로 폭을 주는데, 폭이 글자에 딱 맞으면
+	//   가운데 정렬이어도 왼쪽에 붙어 보인다(창고 타입 열). 양옆 여백 2자를 더한다.
+	m_Spread.SetColWidth(Col, nWidth + 2);
 }
 
 void CSpreadSheet::SetAdjustRowHeight()

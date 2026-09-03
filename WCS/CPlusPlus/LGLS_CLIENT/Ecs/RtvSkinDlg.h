@@ -27,6 +27,7 @@ public:
 	void CompactJobStatusArea();	// [LGLS 2026-08-01] 빈 공간 제거(사용자 지시 사진)
 	void SetVehPanelExpanded(BOOL bExpand);
 	afx_msg void OnBnClickedVehZoom();
+	afx_msg void OnBnClickedBtnRtvManual();   // [LGLS 2026-09-03] 수동지시
 	CRtvSkinDlg(CWnd* pParent = NULL);   // 표준 생성자입니다.
 	CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);   // 표준 생성자입니다.
 	virtual ~CRtvSkinDlg();

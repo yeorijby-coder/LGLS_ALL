@@ -20,7 +20,9 @@ public:
 	// [LGLS 2026-08-01] 설비 통신상태 패널(IDC_SCV_*)을 런타임 생성 - rc 에 컨트롤이 없어 값이 안 보이던 문제
 	void BuildVehStatusPanel();
 	void RebuildVehStatusPanel();	// [LGLS 2026-09-01] 호기 전환 시 주소 라벨 재생성
-	void CompactForkStatusRow();		// [LGLS] 포크 상태 행 제거 + 아래 행 끌어올림
+	void CompactForkStatusRow();
+	void LglsRelayoutJobStatus();      // [LGLS 2026-09-03] 작업상태 두 열 배치
+	BOOL m_bJobStatusRelayout;         // [LGLS 2026-09-03] 재배치 1회		// [LGLS] 포크 상태 행 제거 + 아래 행 끌어올림
 	CPtrArray m_arVehCtrl;
 	CPtrArray m_arLglsCtrl;		// [LGLS 2026-08-01] 적재 용기/제품 정보 행(확대·축소와 무관하게 항상 표시)
 	CSkinButton m_btnVehZoom;	// [LGLS 2026-08-01] [확대]/[축소] 토글 버튼

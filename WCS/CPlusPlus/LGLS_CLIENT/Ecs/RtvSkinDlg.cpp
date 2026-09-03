@@ -104,6 +104,7 @@ BEGIN_MESSAGE_MAP(CRtvSkinDlg, CSkinDialog)
 	ON_BN_CLICKED(IDC_LGLS_RTV_RESEND, &CRtvSkinDlg::OnBnClickedRtvvResend)	// [LGLS 2026-08-12] 원 대화상자 버튼(동일 기능)
 		ON_BN_CLICKED(IDC_RTVV_OK, &CRtvSkinDlg::OnBnClickedRtvvOk)
 	ON_BN_CLICKED(IDC_LGLS_RTV_ZOOM, &CRtvSkinDlg::OnBnClickedVehZoom)
+	ON_BN_CLICKED(IDC_BTN_RTV_MANUAL, &CRtvSkinDlg::OnBnClickedBtnRtvManual)   // [LGLS 2026-09-03]
 END_MESSAGE_MAP()
 
 
@@ -479,10 +480,12 @@ void CRtvSkinDlg::RedrawImage()
 		SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
 		// [LGLS 2026-09-03] 사용자 지시 : 지시 재전송 / 지시 삭제 / 지시 완료(강제완료) / 확대 네 개만
 		//   위에서부터 남기고 나머지 명령 버튼은 숨긴다.
-		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_LGLS_RTV_ZOOM };
-		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 4, szL, 0, FALSE);
+		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>RTV 창을 여는 두 번째 경로
+		{ CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
+		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
+		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 5, szL, 0, FALSE);
 		UINT nHide[] = { IDC_BTN_RTV_ESTOP, IDC_BTN_RTV_ACTIVE, IDC_BTN_RTV_STOP, IDC_BTN_RTV_RESET_ERROR,
-		                 IDC_BTN_RTV_CALL_TO_HOME, IDC_BTN_RTV_MANUAL, IDC_BTN_RTV_SUSPEND };
+		                 IDC_BTN_RTV_CALL_TO_HOME, IDC_BTN_RTV_SUSPEND };
 		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
 		{
 			CWnd* pHide = GetDlgItem(nHide[h]);
@@ -1797,4 +1800,10 @@ void CRtvSkinDlg::OnBnClickedRtvvOk()
 {
 	m_pDoc->m_pRtvSkinDlg = NULL;
 	delete this;
+}
+
+// [LGLS 2026-09-03] [수동지시] : 리본 MANUAL > RTV 와 같은 창을 연다
+void CRtvSkinDlg::OnBnClickedBtnRtvManual()
+{
+	if (m_pDoc != NULL) m_pDoc->OnCommandRangeMainFrameMANUAL(ID_MANUAL_RTV);
 }

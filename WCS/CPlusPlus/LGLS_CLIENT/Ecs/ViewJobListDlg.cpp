@@ -534,7 +534,8 @@ void CViewJobListDlg::CreateAutoRefreshCheck()
 	m_chkAutoRefresh.Create(m_pDoc->GetMsgLangDef(_T("자동 갱신")),
 							WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
 							rc, this, IDC_LGLS_JL_AUTOREFRESH);
-	m_chkAutoRefresh.SetFont(GetFont());
+	// [LGLS 2026-09-03] 글자 크기를 옆 [CV 도착보고] 버튼과 같게(사용자 요청)
+	m_chkAutoRefresh.SetFont(pBtn->GetFont() != NULL ? pBtn->GetFont() : GetFont());
 	m_chkAutoRefresh.SetCheck(BST_UNCHECKED);
 	// [LGLS 2026-08-30] 그룹박스보다 뒤(Z순서 아래)에 만들어지면 클릭이 그룹박스에 먹혀 눌리지 않는다.
 	//   맨 앞으로 올려 마우스 입력을 받게 한다.

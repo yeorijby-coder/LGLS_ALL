@@ -19,6 +19,7 @@ IMPLEMENT_DYNAMIC(CScSkinDlg, CSkinDialog)
 	: CSkinDialog(CScSkinDlg::IDD, pParent)
 {
 	m_bForkRowCompacted = FALSE;
+	m_bJobStatusRelayout = FALSE;   // [LGLS 2026-09-03]
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pDoc = pDoc;
@@ -564,10 +565,12 @@ void CScSkinDlg::RedrawImage()
 		SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
 		// [LGLS 2026-09-03] 사용자 지시 : 지시 재전송 / 지시 삭제 / 지시 완료 / 확대 네 개만 위에서부터 남기고
 		//   나머지 명령 버튼은 숨긴다(핸들러/기능은 그대로 두어 판넬 등 다른 경로에는 영향 없음).
-		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_DELTE, IDC_BTN_SC_CONFIRM, IDC_LGLS_SC_ZOOM };
-		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, 4, szL, 1, FALSE);
+		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>크레인 창을 여는 두 번째 경로
+		{ CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
+		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_DELTE, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
+		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, 5, szL, 1, FALSE);
 		UINT nHide[] = { IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP, IDC_BTN_SC_ERROR_RESET,
-		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_SC_MANUAL, IDC_BTN_DUPL_STO,
+		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_DUPL_STO,
 		                 IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
 		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
 		{
@@ -1058,7 +1061,8 @@ void CScSkinDlg::OnBnClickedBtnScCallToHome()
 //사용안함
 void CScSkinDlg::OnBnClickedBtnScManual()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	// [LGLS 2026-09-03] 리본 MANUAL > 크레인 과 같은 창(크레인 수동지시)을 연다
+	if (m_pDoc != NULL) m_pDoc->OnCommandRangeMainFrameMANUAL(ID_MANUAL_SC);
 }
 
 
@@ -2596,6 +2600,8 @@ void CScSkinDlg::BuildVehStatusPanel()
 		                      nGrps, sizeof(nGrps)/sizeof(nGrps[0]), m_arLglsCtrl);
 	}
 
+	LglsRelayoutJobStatus();   // [LGLS 2026-09-03] 작업상태 두 열 배치(1회)
+
 	CRect rcCli; GetClientRect(&rcCli);
 	CRect rcWin; GetWindowRect(&rcWin);
 
@@ -2847,4 +2853,78 @@ void CScSkinDlg::OnBnClickedScvOk()
 {
 	m_pDoc->m_pScSkinDlg = NULL;
 	delete this;
+}
+
+// [LGLS 2026-09-03] 작업상태 영역 두 열 배치 (사용자 요청)
+//   왼쪽 열 : 작업번호 / 작업구분 / 작업상태 / 적재용기 / 제품정보
+//   오른쪽 열: 출발지 / 출발위치 / 도착지 / 도착위치
+//   [명령] 그룹(작업상태 쪽)은 지우고 항목/값 소그룹도 숨긴다. 값 칸 폭은 열 폭에 맞춘다.
+void CScSkinDlg::LglsRelayoutJobStatus()
+{
+	if (m_bJobStatusRelayout) return;
+	CWnd* pGrp   = GetDlgItem(IDC_GRP_SC_JOB_STATUS);
+	CWnd* pLblNo = GetDlgItem(IDC_LBL_SC_JOB_JOB_NO);
+	CWnd* pEdNo  = GetDlgItem(IDC_EDT_SC_JOB_JOB_NO);
+	CWnd* pLblTy = GetDlgItem(IDC_LBL_SC_JOB_JOB_TYP);
+	if (pGrp == NULL || pLblNo == NULL || pEdNo == NULL || pLblTy == NULL) return;
+	m_bJobStatusRelayout = TRUE;
+
+	CRect rcGrp, rcLbl, rcEd, rcTy;
+	pGrp->GetWindowRect(&rcGrp);   ScreenToClient(&rcGrp);
+	pLblNo->GetWindowRect(&rcLbl); ScreenToClient(&rcLbl);
+	pEdNo->GetWindowRect(&rcEd);   ScreenToClient(&rcEd);
+	pLblTy->GetWindowRect(&rcTy);  ScreenToClient(&rcTy);
+	int nPitch = rcTy.top - rcLbl.top; if (nPitch <= 0) nPitch = rcLbl.Height() + 6;
+	int nGap   = rcEd.left - rcLbl.right;  if (nGap < 4) nGap = 6;
+
+	int nInnerL = rcGrp.left + 8, nInnerR = rcGrp.right - 8;
+	int nColW   = (nInnerR - nInnerL) / 2;
+	int nLblW   = rcLbl.Width();
+	int nEdH    = rcEd.Height();
+	int nTop0   = rcLbl.top;
+
+	// 왼쪽 열
+	int nLLbl = rcLbl.left;
+	int nLEd  = nLLbl + nLblW + nGap;
+	int nLEdW = (nInnerL + nColW - 4) - nLEd;
+	// 오른쪽 열
+	int nRLbl = nInnerL + nColW + 2;
+	int nREd  = nRLbl + nLblW + nGap;
+	int nREdW = nInnerR - nREd;
+
+	const int nLeftL[]  = { IDC_LBL_SC_JOB_JOB_NO,  IDC_LBL_SC_JOB_JOB_TYP,  IDC_LBL_SC_JOB_JOB_STATUS, IDC_LGLS_SC_LOT_LBL, IDC_LGLS_SC_PRD_LBL };
+	const int nLeftV[]  = { IDC_EDT_SC_JOB_JOB_NO,  IDC_CBX_SC_JOB_JOB_TYP,  IDC_CBX_SC_JOB_JOB_STATUS, IDC_LGLS_SC_LOT_VAL, IDC_LGLS_SC_PRD_VAL };
+	const int nRightL[] = { IDC_LBL_SC_JOB_START_POS, IDC_LBL_SC_JOB_START_LOC, IDC_LBL_SC_JOB_DEST_POS, IDC_LBL_SC_JOB_DEST_LOC };
+	const int nRightV[] = { IDC_CBX_SC_JOB_START_POS, IDC_EDT_SC_JOB_START_LOC, IDC_CBX_SC_JOB_DEST_POS, IDC_EDT_SC_JOB_DEST_LOC };
+	int i;
+	for (i = 0; i < 5; i++)
+	{
+		CWnd* pL = GetDlgItem(nLeftL[i]); CWnd* pV = GetDlgItem(nLeftV[i]);
+		int y = nTop0 + nPitch * i;
+		if (pL) pL->MoveWindow(nLLbl, y, nLblW, rcLbl.Height());
+		if (pV) pV->MoveWindow(nLEd,  y + (rcLbl.Height() - nEdH) / 2, nLEdW, nEdH);
+	}
+	for (i = 0; i < 4; i++)
+	{
+		CWnd* pL = GetDlgItem(nRightL[i]); CWnd* pV = GetDlgItem(nRightV[i]);
+		int y = nTop0 + nPitch * i;
+		if (pL) pL->MoveWindow(nRLbl, y, nLblW, rcLbl.Height());
+		if (pV) pV->MoveWindow(nREd,  y + (rcLbl.Height() - nEdH) / 2, nREdW, nEdH);
+	}
+
+	// 소그룹(항목/값/명령) 숨김
+	const int nHideGrp[] = { IDC_GRP_SC_JOB_STATUS_ITEM, IDC_GRP_SC_JOB_STATUS_VALUE, IDC_GRP_SC_JOB_STATUS_COMMAND };
+	for (i = 0; i < 3; i++) { CWnd* pG = GetDlgItem(nHideGrp[i]); if (pG) pG->ShowWindow(SW_HIDE); }
+
+	// 바깥 그룹과 창을 줄인다 (9행 -> 5행)
+	int nNewBottom = nTop0 + nPitch * 5 + 6;
+	int nShrink = rcGrp.bottom - nNewBottom;
+	if (nShrink > 0)
+	{
+		rcGrp.bottom = nNewBottom;
+		pGrp->MoveWindow(rcGrp);
+		CRect rcWin; GetWindowRect(&rcWin);
+		SetWindowPos(NULL, 0, 0, rcWin.Width(), rcWin.Height() - nShrink, SWP_NOMOVE | SWP_NOZORDER);
+	}
+	Invalidate();
 }

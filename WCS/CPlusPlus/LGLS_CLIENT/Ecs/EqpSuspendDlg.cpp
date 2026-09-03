@@ -126,6 +126,26 @@ BOOL CEqpSuspendDlg::OnInitDialog()
 
 	CLib::BindCombo(m_cbxEqpSuspendWhTyp, _T("WH_TYP"), m_pDoc, (int)pEn);
 	CLib::BindCombo(m_cbxEqpSuspendEqpTyp, _T("EQP_TYP"), m_pDoc, (int)pEn, TRUE);
+	// [LGLS 2026-09-03] 설비 구분은 ALL / EQP / HOST / SCH 만 표시(사용자 요청).
+	//   공통코드(EQP_TYP)에 SCH 가 없어 콤보에 빠지던 것을 보강하고, HOST 선택 시 HOST2 도 함께 조회한다.
+	{
+		CString strAllTxt = _T("ALL");
+		int nAll = m_cbxEqpSuspendEqpTyp.GetCount();
+		for (int i = 0; i < nAll; i++)
+		{
+			CString strKey = m_cbxEqpSuspendEqpTyp.GetItemKey(i); strKey.Trim();
+			if (strKey == _T("ALL")) { m_cbxEqpSuspendEqpTyp.GetLBText(i, strAllTxt); break; }
+		}
+		m_cbxEqpSuspendEqpTyp.ResetContent();
+		const TCHAR* szKeys[] = { _T("ALL"), _T("EQP"), _T("HOST"), _T("SCH") };
+		const TCHAR* szTxts[] = { NULL,      _T("EQP"), _T("HOST"), _T("SCH") };
+		for (int j = 0; j < 4; j++)
+		{
+			m_cbxEqpSuspendEqpTyp.SetItemDataEx(j, szKeys[j]);
+			m_cbxEqpSuspendEqpTyp.AddString(szTxts[j] != NULL ? szTxts[j] : (LPCTSTR)strAllTxt);
+		}
+		m_cbxEqpSuspendEqpTyp.SetCurSel(0);
+	}
 	CLib::BindCombo(m_cbxEqpSusepndConnectedYn, _T("CONNECTED_YN"), m_pDoc, (int)pEn, TRUE);
 	
 	#pragma region 스프레드 초기화 
@@ -270,7 +290,7 @@ void CEqpSuspendDlg::RenameResource( EN_LANG m_enLang)
 
 	CString strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_eqpsuspend\\"), _T("dlg_eqpsuspend"), strExtension);
 	CString strValue = CLib::GetIniStringFromPath(strFullPath, _T("dlgname"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetWindowText(strValue);
+	if (!strValue.IsEmpty()) SetWindowText(strValue + _T(" [EQP_MST]"));   // [LGLS 2026-09-03] 다른 그리드 창처럼 테이블명 표기
 
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_eqpsuspend\\"), _T("dlg_eqpsuspend"), strExtension);
@@ -599,12 +619,15 @@ CString CEqpSuspendDlg::GetQrySelect_Main()
 			  _T("								 AND CCD_WH_TYP.CDX_CD = 'WH_TYP'																				\n")	
 			  _T("								 AND EM.WH_TYP = CCD_WH_TYP.CCD_CD																				\n")	
 			  _T("  WHERE EM.WH_TYP = '%s'											\n")
-			  _T("    AND EM.EQP_TYP NOT IN ('CV','SC','RTV','BCR','WC')					\n"), m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP);   // [LGLS 2026-07-22] 설비별 행 제외(아래 대표 1행으로 대체)				    
+			  _T("    AND EM.EQP_TYP IN ('EQP','HOST','HOST2','SCH') /* [LGLS 2026-09-03] EQP/HOST(HOST2 포함)/SCH 만 */					\n"), m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP);   // [LGLS 2026-07-22] 설비별 행 제외(아래 대표 1행으로 대체)				    
 	
 	
 	if ((strEQP_TYP != "") && (strEQP_TYP != _T("ALL")))
 	{	
-		strSql += _T("AND EM.EQP_TYP ='") + strEQP_TYP + _T("' \n");	
+		if (strEQP_TYP == _T("HOST"))
+			strSql += _T("AND EM.EQP_TYP IN ('HOST','HOST2') \n");   // [LGLS 2026-09-03] HOST 는 HOST2 까지
+		else
+			strSql += _T("AND EM.EQP_TYP ='") + strEQP_TYP + _T("' \n");	
 	}
 	
 	if ((strCONNECTED_YN != "") && (strCONNECTED_YN != _T("ALL")))
