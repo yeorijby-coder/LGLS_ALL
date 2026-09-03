@@ -57,6 +57,16 @@ TASK 쪽은 각 INI 의 [VIEW] LOG_FILTER_BTN 으로 [로그 필터] 버튼을 �
 - DB 는 서버의 MS-SQL 을 쓰도록 각 INI 의 [DB] 접속 정보(IP,1433 / 계정)를 바꾼다. DB 이관은 `DB_BACKUP/서버_구축_절차.md`.
 - 위 표의 시뮬값(127.0.0.1 등)을 현장값으로 바꾼다.
 
+## Prerequisites/ (설치 파일, Microsoft 공식 배포본)
+
+| 파일 | 용도 | 비고 |
+|---|---|---|
+| `vc_redist.x86.exe` | VC++ 2015-2022 재배포 패키지 x86 (운전 화면용) | aka.ms/vs/17/release/vc_redist.x86.exe |
+| `ndp48-x86-x64-allos-enu.exe` | .NET Framework 4.8 오프라인 설치(인터넷 없는 서버) | 121MB - GitHub 100MB 제한으로 저장소에는 올리지 않음(로컬 폴더에만) |
+| `ndp48-web.exe` | .NET Framework 4.8 웹 설치(인터넷 되는 서버) | |
+
+설치 순서 : .NET 4.8 → vc_redist.x86 → (재부팅 요구 시 재부팅) → 각 프로그램 폴더 복사 → INI 수정.
+
 ## 참고
 
 - 다국어 폰트는 한국어(kor)만 담았다. 중국어 화면을 쓸 경우

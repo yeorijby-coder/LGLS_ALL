@@ -39,6 +39,8 @@ packages/
 
 # [LGLS 2026-09-03] 배포용 실행본 모음(EXE/)은 예외로 커밋한다
 !EXE/**
+# 100MB 초과(GitHub 제한) - 오프라인 .NET 설치본은 로컬에만 둔다
+EXE/Prerequisites/ndp48-x86-x64-allos-enu.exe
 
 # 로그 / 런타임 상태
 *.log
