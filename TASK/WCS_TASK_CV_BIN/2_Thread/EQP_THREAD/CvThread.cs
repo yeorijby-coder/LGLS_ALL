@@ -373,6 +373,12 @@ namespace WCS_TASK_CV
          * 화면 표시용
          */
         #region
+        // [LGLS 2026-09-04] 로그 주소열 표기 (FenetProtocol 전송 표기와 동일 : V1.1 = %MB바이트주소, V0.9 = %MW워드주소)
+        private static string LglsAddrText(char cDev, int nWordAddr)
+        {
+            return "%" + cDev + (cDefApp.GM_ADDR_V09 ? "W" + nWordAddr.ToString() : "B" + (nWordAddr * 2).ToString());
+        }
+
         private void MakeMsg(string msg, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
@@ -3827,7 +3833,9 @@ namespace WCS_TASK_CV
                 int nInStation  = cPlcAddrMap.InStation("CV", cvMachineNo);
                 int nOutStation = cPlcAddrMap.OutStation("CV", cvMachineNo);
 
-                MakeMsg("상태값 DB저장", m_nthNo);
+                // [LGLS 2026-09-04] 주소열에 이 설비가 읽은 M/D/R 세 영역 주소를 모두 남긴다
+                //   (일괄 읽기 캐시에서 잘라 쓸 때는 개별 READ 가 없어 LastAddrText 가 R 만 남으므로 주소를 직접 만든다)
+                MakeMsg("상태값 DB저장", m_nthNo, LglsAddrText('M', mWordAddr) + " " + LglsAddrText('D', dirWordAddr) + " " + LglsAddrText('R', nRBase));
 
                 for (int s = 0; s < nSlots; s++)
                 {

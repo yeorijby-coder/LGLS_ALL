@@ -164,7 +164,7 @@
             // 
             // [LGLS 2026-09-02] 주소 열 (PLC 읽기/쓰기 주소값)
             this.colLogAddr.Text = "주소";
-            this.colLogAddr.Width = 90;
+            this.colLogAddr.Width = 190;   // [LGLS 2026-09-04] M/D/R 세 주소 표시
             this.colLogFile.Text = "파일";
             this.colLogFile.Width = 110;
             this.colLogFunc.Text = "함수";
