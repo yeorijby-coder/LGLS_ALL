@@ -1183,8 +1183,10 @@ void CSpreadSheet::ResizeAllColumn()
 		if ( !m_Spread.GetMaxTextColWidth(nCol, &dColWidth) )
 			continue;
 
-		if ( dColWidth > pHeader->m_nHeadColWidth )
-			m_Spread.SetColWidth(nCol, dColWidth+m_nResizeIndent);
+		// [LGLS 2026-09-03] 잰 글자 폭에 딱 맞추면 가운데 정렬이어도 여백이 0이라 왼쪽에 붙어 보인다
+		//   (창고 타입 열). 양옆 여백 3자를 더한다.
+		if ( dColWidth + 3 > pHeader->m_nHeadColWidth )
+			m_Spread.SetColWidth(nCol, dColWidth+m_nResizeIndent+3);
 	}
 }
 

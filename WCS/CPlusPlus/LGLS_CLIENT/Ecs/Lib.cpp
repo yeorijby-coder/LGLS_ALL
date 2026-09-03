@@ -1313,6 +1313,16 @@ bool CLib::BindCombo_CELL_SC_NO(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDo
 //   기존에는 COMMON_CODE(RTVDepHS/RTVArrHS)의 1~6 이 떠서 실제 지시값
 //   (DEPART_TRACK / ARRIVE_TRACK 은 103,107,... 같은 트랙번호)과 맞지 않았다.
 //   RGV 가 서는 곳은 트랙 이름에 "RGV" 가 붙은 라인이다.
+// [LGLS 2026-09-03] 그리드 열 폭은 글자수로 주는데 한글을 1자로 세면 실제 폭보다 좁아
+//   가운데 정렬 글자가 왼쪽으로 넘쳐 붙는다(창고 타입 열). 전각 문자는 2자로 센다.
+int CLib::DispLen(const CString& str)
+{
+	int n = 0;
+	for (int i = 0; i < str.GetLength(); i++)
+		n += ((unsigned)str.GetAt(i) > 0x7F) ? 2 : 1;
+	return n;
+}
+
 bool CLib::BindCombo_RTV_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG)
 {
 	if (pDoc == NULL)                 return false;

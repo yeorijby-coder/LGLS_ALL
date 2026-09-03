@@ -157,6 +157,8 @@ public:
 	static BOOL BindCombo_SC_NO_MANUAL(CComboBoxWrapper& cbx, CString strCDX_CD, CEcsDoc *pDoc, int nEN_LANG, CString strAGING_TYP, CString strSC_NO);
 	// [LGLS 2026-09-03] RGV 정차 트랙(출발지/도착지) - 트랙번호로 표시
 	static bool BindCombo_RTV_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG);
+	// [LGLS 2026-09-03] 표시 폭 기준 글자수(한글 등 전각은 2자) - 그리드 열 폭 계산용
+	static int DispLen(const CString& str);
 	// [LGLS 2026-09-03] 크레인 N호기의 H/S 트랙(해당 S/C측 C/V 의 두 트랙) - CV_DATA 이름 기준
 	static bool BindCombo_SC_HS_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, int nScIdx);
 	static BOOL BindCombo_RTV_NO(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG);
