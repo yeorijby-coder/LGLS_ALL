@@ -100,7 +100,8 @@ LRESULT CConfigLogDelete::OnSpreadLClick(WPARAM wParam, LPARAM lParam)
 		if (m_strGrpCaptionBase.IsEmpty()) m_grpConfigLogDelete.GetWindowText(m_strGrpCaptionBase);
 		CString strCap; strCap.Format(_T("%s  -  [%s]  현재 %s일"), (LPCTSTR)m_strGrpCaptionBase, (LPCTSTR)strTableName, (LPCTSTR)strCycle);
 		m_grpConfigLogDelete.SetWindowText(strCap);
-		m_grpConfigLogDelete.Invalidate();
+		// 그룹박스만 다시 그리면 그 위의 [설정] 버튼이 지워져 보였다 - 자식까지 함께 다시 그린다
+		RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);
 	}
 
 	//CJobItem *pJobItem = GetSelectedJob(pCell->Row);
@@ -130,6 +131,10 @@ BOOL CConfigLogDelete::OnInitDialog()
 	}
 	InitializeResource(pEn);
 	m_grpConfigLogDelete.GetWindowText(m_strGrpCaptionBase);   // [LGLS 2026-09-03]
+	{	// [LGLS 2026-09-03] 다른 그리드 창처럼 제목에 테이블명 표기
+		CString strTitle; GetWindowText(strTitle);
+		if (strTitle.Find(_T("[DEL_HIS_SETTING]")) < 0) SetWindowText(strTitle + _T(" [DEL_HIS_SETTING]"));
+	}
 
 	m_edtConfigLogDeleteDay.SetWindowText(_T(""));
 

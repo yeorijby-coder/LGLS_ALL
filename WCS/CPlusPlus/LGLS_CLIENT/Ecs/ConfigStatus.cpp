@@ -178,6 +178,9 @@ void CConfigStatus::LoadColor()
 	m_btnManual		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_MANUAL		: LIGHT_GRAY;
 	m_btnDisConnect	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_DISCONNECT	: LIGHT_GRAY;
 	m_btnWcPass		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_WC_PASS		: LIGHT_GRAY;
+	// [LGLS 2026-09-03] 이 현장에는 WC(작업대 컨트롤러) 패스 모드가 없다 - 범례에서 비활성(사용자 요청)
+	m_btnWcPass.EnableWindow(FALSE);
+	m_lblCvWcPass.EnableWindow(FALSE);
 	m_btnCvSearch	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_CV_SEARCH	: LIGHT_GRAY;
 	// [LGLS 2026-07-19] 반자동 작업 색상
 	m_btnSemiSto	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_SEMI_STO		: LIGHT_GRAY;

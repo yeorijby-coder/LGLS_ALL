@@ -17,6 +17,7 @@ IMPLEMENT_DYNAMIC(CRtvSkinDlg, CSkinDialog)
 CRtvSkinDlg::CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CRtvSkinDlg::IDD, pParent)
 {
+	m_bJobStatusRelayout = FALSE;   // [LGLS 2026-09-03]
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pDoc = pDoc;
@@ -482,10 +483,11 @@ void CRtvSkinDlg::RedrawImage()
 		//   위에서부터 남기고 나머지 명령 버튼은 숨긴다.
 		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>RTV 창을 여는 두 번째 경로
 		{ CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
-		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
-		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 5, szL, 0, FALSE);
+		{ CWnd* pS = GetDlgItem(IDC_BTN_RTV_SUSPEND); if (pS) pS->ShowWindow(SW_SHOW); }
+		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_BTN_RTV_SUSPEND, IDC_LGLS_RTV_ZOOM };
+		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, 6, szL, 0, FALSE);
 		UINT nHide[] = { IDC_BTN_RTV_ESTOP, IDC_BTN_RTV_ACTIVE, IDC_BTN_RTV_STOP, IDC_BTN_RTV_RESET_ERROR,
-		                 IDC_BTN_RTV_CALL_TO_HOME, IDC_BTN_RTV_SUSPEND };
+		                 IDC_BTN_RTV_CALL_TO_HOME };
 		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
 		{
 			CWnd* pHide = GetDlgItem(nHide[h]);
@@ -1490,9 +1492,7 @@ void CRtvSkinDlg::CompactJobStatusArea()
 		rcEdt.OffsetRect(0, nTop - rcEdt.top);
 		pSusEdt->MoveWindow(rcEdt);
 
-		rcBtn.OffsetRect(0, (rcEdt.bottom + 8) - rcBtn.top);
-		pSusBtn->MoveWindow(rcBtn);
-		pSusBtn->ShowWindow(SW_HIDE);   // [LGLS 2026-09-03] 명령 버튼 정리로 숨김 유지
+		// [LGLS 2026-09-03] 일시정지 버튼은 명령 열(StackCommandButtons)에서 배치한다 - 여기서는 건드리지 않음
 	}
 
 	// ── ② ERROR INFORMATION 그룹을 위로 당기고 창 축소 ────────────
@@ -1550,6 +1550,7 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 		                      nGrps, sizeof(nGrps)/sizeof(nGrps[0]), m_arLglsCtrl);
 	}		// 1회만 생성
 
+	LglsRelayoutJobStatus();   // [LGLS 2026-09-03] 작업상태 두 열 배치(1회) - 아래 압축보다 먼저
 	CompactJobStatusArea();		// [LGLS 2026-08-01] 빈 공간 정리 후 패널을 붙인다
 
 	CRect rcCli; GetClientRect(&rcCli);
@@ -1806,4 +1807,60 @@ void CRtvSkinDlg::OnBnClickedRtvvOk()
 void CRtvSkinDlg::OnBnClickedBtnRtvManual()
 {
 	if (m_pDoc != NULL) m_pDoc->OnCommandRangeMainFrameMANUAL(ID_MANUAL_RTV);
+}
+
+// [LGLS 2026-09-03] 작업상태 영역 두 열 배치 (크레인 창과 동일, 사용자 요청)
+//   왼쪽 : 작업번호/작업구분/작업상태/적재용기/제품정보, 오른쪽 : 출발지/출발위치/도착지/도착위치
+//   항목/FORK1/명령 소그룹은 숨기고, RTV SUSPEND 상태 에디트도 명령 그룹과 함께 숨긴다.
+void CRtvSkinDlg::LglsRelayoutJobStatus()
+{
+	if (m_bJobStatusRelayout) return;
+	CWnd* pGrp   = GetDlgItem(IDC_GRP_RTV_JOB_STATUS);
+	CWnd* pLblNo = GetDlgItem(IDC_LBL_RTV_JOB_JOB_NO);
+	CWnd* pEdNo  = GetDlgItem(IDC_EDIT_RTV_JOB_JOB_NO);
+	CWnd* pLblTy = GetDlgItem(IDC_LBL_RTV_JOB_JOB_TYP);
+	if (pGrp == NULL || pLblNo == NULL || pEdNo == NULL || pLblTy == NULL) return;
+	m_bJobStatusRelayout = TRUE;
+
+	CRect rcGrp, rcLbl, rcEd, rcTy;
+	pGrp->GetWindowRect(&rcGrp);   ScreenToClient(&rcGrp);
+	pLblNo->GetWindowRect(&rcLbl); ScreenToClient(&rcLbl);
+	pEdNo->GetWindowRect(&rcEd);   ScreenToClient(&rcEd);
+	pLblTy->GetWindowRect(&rcTy);  ScreenToClient(&rcTy);
+	int nPitch = rcTy.top - rcLbl.top; if (nPitch <= 0) nPitch = rcLbl.Height() + 6;
+	int nGap   = rcEd.left - rcLbl.right;  if (nGap < 4) nGap = 6;
+	int nInnerL = rcGrp.left + 8, nInnerR = rcGrp.right - 8;
+	int nColW   = (nInnerR - nInnerL) / 2;
+	int nLblW   = rcLbl.Width();
+	int nEdH    = rcEd.Height();
+	int nTop0   = rcLbl.top;
+	int nLLbl = rcLbl.left;
+	int nLEd  = nLLbl + nLblW + nGap;
+	int nLEdW = (nInnerL + nColW - 4) - nLEd;
+	int nRLbl = nInnerL + nColW + 2;
+	int nREd  = nRLbl + nLblW + nGap;
+	int nREdW = nInnerR - nREd;
+	const int nLeftL[]  = { IDC_LBL_RTV_JOB_JOB_NO, IDC_LBL_RTV_JOB_JOB_TYP, IDC_LBL_RTV_JOB_JOB_STATUS, IDC_LGLS_RTV_LOT_LBL, IDC_LGLS_RTV_PRD_LBL };
+	const int nLeftV[]  = { IDC_EDIT_RTV_JOB_JOB_NO, IDC_CBX_RTV_JOB_JOB_TYP, IDC_CBX_RTV_JOB_JOB_STATUS, IDC_LGLS_RTV_LOT_VAL, IDC_LGLS_RTV_PRD_VAL };
+	const int nRightL[] = { IDC_LBL_RTV_JOB_START_POS, IDC_LBL_RTV_JOB_START_LOC, IDC_LBL_RTV_JOB_DEST_POS, IDC_LBL_RTV_JOB_DEST_LOC };
+	const int nRightV[] = { IDC_CBX_RTV_JOB_START_POS, IDC_EDT_RTV_JOB_START_LOC, IDC_CBX_RTV_JOB_DEST_POS, IDC_EDT_RTV_JOB_DEST_LOC };
+	int i;
+	for (i = 0; i < 5; i++)
+	{
+		CWnd* pL = GetDlgItem(nLeftL[i]); CWnd* pV = GetDlgItem(nLeftV[i]); int y = nTop0 + nPitch * i;
+		if (pL) pL->MoveWindow(nLLbl, y, nLblW, rcLbl.Height());
+		if (pV) pV->MoveWindow(nLEd,  y + (rcLbl.Height() - nEdH) / 2, nLEdW, nEdH);
+	}
+	for (i = 0; i < 4; i++)
+	{
+		CWnd* pL = GetDlgItem(nRightL[i]); CWnd* pV = GetDlgItem(nRightV[i]); int y = nTop0 + nPitch * i;
+		if (pL) pL->MoveWindow(nRLbl, y, nLblW, rcLbl.Height());
+		if (pV) pV->MoveWindow(nREd,  y + (rcLbl.Height() - nEdH) / 2, nREdW, nEdH);
+	}
+	const int nHide[] = { IDC_GRP_RTV_JOB_STATUS_ITEM, IDC_GRP_RTV_JOB_STATUS_FK1, IDC_GRP_RTV_JOB_STATUS_COMMAND, IDC_EDT_RTV_SUSPEND,
+	                      IDC_EDIT_RTV_JOB_JOB_NO2, IDC_CBX_RTV_JOB_JOB_TYP2, IDC_CBX_RTV_JOB_START_POS2, IDC_CBX_RTV_JOB_DEST_POS2 };
+	for (i = 0; i < (int)(sizeof(nHide)/sizeof(nHide[0])); i++) { CWnd* pH = GetDlgItem(nHide[i]); if (pH) pH->ShowWindow(SW_HIDE); }
+	int nNewBottom = nTop0 + nPitch * 5 + 6;
+	if (rcGrp.bottom > nNewBottom) { rcGrp.bottom = nNewBottom; pGrp->MoveWindow(rcGrp); }   // 창 축소는 CompactJobStatusArea 가 이어서
+	Invalidate();
 }
