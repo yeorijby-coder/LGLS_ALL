@@ -30,6 +30,7 @@ const int iCategoryIndex_BB = 3;
 const int iCategoryIndex_CC = 4;
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
+	ON_COMMAND(ID_CONFIG_INI_OPEN, &CMainFrame::OnConfigIniOpen)
 	ON_COMMAND(ID_UIMODE_DLG, &CMainFrame::OnUiModeDlg)
 	ON_COMMAND(ID_UIMODE_PANEL, &CMainFrame::OnUiModePanel)
 	ON_UPDATE_COMMAND_UI(ID_UIMODE_DLG, &CMainFrame::OnUpdateUiModeDlg)
@@ -468,6 +469,16 @@ void CMainFrame::AddCategoryWCS()
 	pBtnConfigStatus->SetAlwaysLargeImage();
 	pPanelConfig->Add(pBtnConfigStatus);
 
+	// [LGLS 2026-09-03] [INI 열기] : 접속/화면 설정 파일(Ecs.ini)을 메모장으로 연다.
+	//   Ecs.ini [MENU] INI_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
+	if (::GetPrivateProfileInt(_T("MENU"), _T("INI_MENU"), 1, ECS_INI_FILE) != 0)
+	{
+		CMFCRibbonButton* pBtnIniOpen = new CMFCRibbonButton(ID_CONFIG_INI_OPEN, _T("INI 열기"),
+			HICONFromPATH(GetConcatPath(strAppPath, _T("iniopen"), strExtension)), TRUE);
+		pBtnIniOpen->SetAlwaysLargeImage();
+		pPanelConfig->Add(pBtnIniOpen);
+	}
+
 	// [LGLS 2026-08-12] 사용자 메뉴는 Ecs.ini [MENU] USER_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
 	if (::GetPrivateProfileInt(_T("MENU"), _T("USER_MENU"), 1, ECS_INI_FILE) != 0)
 	{
@@ -568,6 +579,8 @@ void CMainFrame::AddCategoryWCS()
 	//pPanelLanguage->Add(pBtnHUN);
 
 	// [LGLS 2026-09-01] [UI모드] 그룹 : 작업정보를 대화상자로 열지, 우측 도킹 판넬로 열지 선택
+	// [LGLS 2026-09-03] Ecs.ini [MENU] UIMODE_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
+	if (::GetPrivateProfileInt(_T("MENU"), _T("UIMODE_MENU"), 1, ECS_INI_FILE) != 0)
 	{
 		CMFCRibbonPanel* pPanelUiMode = pCategory->AddPanel(_T("UI모드"));
 		CMFCRibbonButton* pBtnUiDlg = new CMFCRibbonButton(ID_UIMODE_DLG, _T("대화상자 모드"),
@@ -915,6 +928,36 @@ void CMainFrame::OnUpdateUiModeDlg(CCmdUI* pCmdUI)
 void CMainFrame::OnUpdateUiModePanel(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_bUiModePanel);
+}
+
+void CMainFrame::OnConfigIniOpen()
+{
+	// [LGLS 2026-09-03] 접속/화면 설정 파일(Ecs.ini)을 메모장으로 연다.
+	//   32비트 프로세스가 "notepad.exe" 를 부르면 WOW64 리다이렉션으로 SysWOW64 의
+	//   32비트 메모장이 뜨는데, Win11 새 메모장은 64비트 전용이라 실행되지 않는다.
+	//   Sysnative 로 실제 64비트 메모장을 직접 지정한다.
+	CString strIni = ECS_INI_FILE;
+	if (::GetFileAttributes(strIni) == INVALID_FILE_ATTRIBUTES)
+	{
+		AfxMessageBox(_T("INI 파일이 없습니다 : ") + strIni);
+		return;
+	}
+
+	TCHAR szWin[MAX_PATH] = {0};
+	::GetWindowsDirectory(szWin, MAX_PATH);
+
+	BOOL bWow64 = FALSE;
+	::IsWow64Process(::GetCurrentProcess(), &bWow64);
+
+	CString strNotepad;
+	strNotepad.Format(_T("%s\%s\notepad.exe"), szWin, bWow64 ? _T("Sysnative") : _T("System32"));
+
+	CString strParam;
+	strParam.Format(_T("\"%s\""), (LPCTSTR)strIni);
+
+	HINSTANCE hRet = ::ShellExecute(GetSafeHwnd(), _T("open"), strNotepad, strParam, NULL, SW_SHOWNORMAL);
+	if ((INT_PTR)hRet <= 32)
+		::ShellExecute(GetSafeHwnd(), _T("open"), strIni, NULL, NULL, SW_SHOWNORMAL);
 }
 
 void CMainFrame::ShowJobDetail(CString strLuggNo)

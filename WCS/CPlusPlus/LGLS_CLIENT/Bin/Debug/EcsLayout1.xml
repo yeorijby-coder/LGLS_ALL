@@ -131,8 +131,8 @@
 			<Control id="" l="20" b="5" r="21" t="6" text="10" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" fontsize="14" border="1" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="10" gr="10" gb="10"/>
 			<Control id="" l="6" b="18" r="7" t="19" text="CV#12" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="10" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="40" gr="10" gb="10"/>
 			<Control id="" l="6" b="17" r="7" t="18" text="CV#13" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="40" gr="10" gb="10"/>
-			<Control id="" l="0" b="17" r="5" t="18" text="103 제품 입고대" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="ff0000" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="40" gr="10" gb="10"/>
-			<Control id="" l="0" b="18" r="5" t="19" text="104 원부자재불출대" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="00cf00" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="40" gr="10" gb="10"/>
+			<Control id="" l="0" b="17" r="5" t="18" text="104 원부자재불출대" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="ff0000" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="40" gr="10" gb="10"/>
+			<Control id="" l="0" b="18" r="5" t="19" text="103 제품 입고대" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="00cf00" enable="1" visible="1" fontsize="12" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="40" gr="10" gb="10"/>
 		</CDciStaticCtrl>
 	</Group>
 	<Group gname="CV" gid="1" show="1">

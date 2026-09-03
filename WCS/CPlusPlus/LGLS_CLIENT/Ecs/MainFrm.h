@@ -108,6 +108,7 @@ protected:
 	afx_msg void OnStyleRibboninterface (); //ribbon2
 	afx_msg void OnRbnBtnToolbarInterface (); 
 	afx_msg void OnAppLook(UINT id);
+	afx_msg void OnConfigIniOpen();   // [LGLS 2026-09-03] 리본 [INI 열기]
 	afx_msg void OnUiModeDlg();            // [LGLS 2026-09-01] UI모드
 	afx_msg void OnUiModePanel();
 	afx_msg void OnUpdateUiModeDlg(CCmdUI* pCmdUI);

@@ -3473,6 +3473,7 @@
 #define ID_PANE_INFO                   35092
 #define ID_UIMODE_DLG                  35093
 #define ID_UIMODE_PANEL                35094
+#define ID_CONFIG_INI_OPEN             35095
 #define ID_PANE_VEH                    35095
 #define ID_LOG_EQP_HIS                  35051
 #define ID_LOG_MES                      35053
