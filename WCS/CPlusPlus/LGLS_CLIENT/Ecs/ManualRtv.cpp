@@ -355,6 +355,36 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 	if (m_strRtvFork == _T("0")){ AfxMessageBox(m_pDoc->GetMsgLangDef(_T("포크를 선택하세요"))); return;}
 	if (strRtvNo == _T("")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RTV 호기를 선택하세요"))); return;}
 
+	// [LGLS 2026-09-03] 가드 : 출발지=도착지 는 의미 없는 지시, 그리고 스케줄러가 이미 낸 지시
+	//   (OD_RQ_YN=Y)를 수동 지시가 덮어쓰면 그 작업이 영영 완료되지 않는다(실측 3059 사례).
+	{
+		CString strDep = (m_strRtvFork == _T("2")) ? strDepFork2 : strDepFork1;
+		CString strArr = (m_strRtvFork == _T("2")) ? strArrFork2 : strArrFork1;
+		if (!strDep.IsEmpty() && strDep == strArr)
+		{
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출발지와 도착지가 같습니다")));
+			return;
+		}
+		CString strChk;
+		strChk.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(OD_RQ_YN,'N') AS OD_RQ_YN, ") + m_pDoc->NVL + _T("(LUGG_OD,'') AS LUGG_OD \n")
+			_T("   FROM RTV_DATA_LGLS WHERE WH_TYP = '%s' AND RTV_NO = '%s' "), strWhTyp, strRtvNo);
+		int nCnt = 0; CString strErr;
+		_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nCnt, strErr);
+		if (nCnt > 0)
+		{
+			CRecordSetWrap rsw(pRs); rsw.MoveFirst();
+			CString strRq = rsw.GetItem(_T("OD_RQ_YN")); strRq.Trim();
+			CString strLg = rsw.GetItem(_T("LUGG_OD"));  strLg.Trim();
+			if (strRq == _T("Y"))
+			{
+				CString strMsg;
+				strMsg.Format(_T("이 RTV 에 진행 중인 지시(작업 %s)가 있습니다.\n먼저 RTV 상태창의 [지시 삭제] 로 정리한 뒤 지시하세요."), (LPCTSTR)strLg);
+				AfxMessageBox(strMsg);
+				return;
+			}
+		}
+	}
+
 	m_pDoc->BeginTrans_DLG();
 
 	if (m_strRtvFork == _T("1"))
@@ -369,7 +399,8 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 			_T("      , LUGG_OD = '9998'     \n")
 			_T("	  , OD_RQ_YN = 'Y'			    \n")
 			_T("  WHERE WH_TYP = '%s'					\n")
-			_T("    AND RTV_NO = '%s'			"), strDepFork1, strArrFork1, strWhTyp, strRtvNo);
+			_T("    AND RTV_NO = '%s'			\n")
+			_T("    AND OD_RQ_YN = 'N'         "), strDepFork1, strArrFork1, strWhTyp, strRtvNo);
 
 	}else if(m_strRtvFork == _T("2")){
 
@@ -383,7 +414,8 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 			_T("      , LUGG_OD = '9998'     \n")
 			_T("	  , OD_RQ_YN = 'Y'			    \n")
 			_T("  WHERE WH_TYP = '%s'					\n")
-			_T("    AND RTV_NO = '%s'			"), strDepFork2, strArrFork2, strWhTyp, strRtvNo);
+			_T("    AND RTV_NO = '%s'			\n")
+			_T("    AND OD_RQ_YN = 'N'         "), strDepFork2, strArrFork2, strWhTyp, strRtvNo);
 	}else{
 
 		if (strDepFork1 == _T("")){ AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출발지 포크1을 선택하세요"))); return;}
@@ -398,7 +430,8 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 			_T("      , LUGG_OD = '9998'     \n")
 			_T("	  , OD_RQ_YN = 'Y'			    \n")
 			_T("  WHERE WH_TYP = '%s'					\n")
-			_T("    AND RTV_NO = '%s'			"), strDepFork1, strArrFork1, strWhTyp, strRtvNo /* [LGLS] 단일포크: 포크1 좌표 사용 */);
+			_T("    AND RTV_NO = '%s'			\n")
+			_T("    AND OD_RQ_YN = 'N'         "), strDepFork1, strArrFork1, strWhTyp, strRtvNo /* [LGLS] 단일포크: 포크1 좌표 사용 */);
 	}
 
 

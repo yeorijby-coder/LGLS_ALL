@@ -483,6 +483,29 @@ void CManualSc::OnBnClickedBtnScManualSave()
 	}
 
 
+	// [LGLS 2026-09-03] 가드 : 스케줄러가 이미 낸 지시(OD_RQ_YN=Y)를 수동 지시가 덮어쓰면
+	//   그 작업이 영영 완료되지 않는다(RGV 3059 실측 사례). 크레인도 같은 규칙.
+	{
+		CString strChk;
+		strChk.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(OD_RQ_YN,'N') AS OD_RQ_YN, ") + m_pDoc->NVL + _T("(PALLET_ID_OD,'') AS PALLET_ID_OD ")
+			_T(" FROM SC_DATA_LGLS WHERE WH_TYP = '%s' AND MC_NO = '%s' "), (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strScNo);
+		int nCnt = 0; CString strErr;
+		_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nCnt, strErr);
+		if (nCnt > 0)
+		{
+			CRecordSetWrap rsw(pRs); rsw.MoveFirst();
+			CString strRq = rsw.GetItem(_T("OD_RQ_YN"));     strRq.Trim();
+			CString strPl = rsw.GetItem(_T("PALLET_ID_OD")); strPl.Trim();
+			if (strRq == _T("Y"))
+			{
+				CString strMsg;
+				strMsg.Format(_T("이 크레인에 진행 중인 지시(파레트 %s)가 있습니다. 먼저 SC 상태창의 [지시 삭제] 로 정리한 뒤 지시하세요."), (LPCTSTR)strPl);
+				AfxMessageBox(strMsg);
+				return;
+			}
+		}
+	}
+
 	m_pDoc->BeginTrans_DLG();
 
 	CString strLOG_LUGG_NO = _T("9999");
@@ -514,7 +537,8 @@ void CManualSc::OnBnClickedBtnScManualSave()
 	strSql+= _T("    ,WRITE_FLAG_OD       ='0'								\n");
 	strSql+= _T("    ,USER_COMMAND_OD     ='0'								\n");
 	strSql+= _T("  WHERE WH_TYP = '") + m_pDoc->m_WH_TYP + _T("'            \n");
-	strSql+= _T("    AND MC_NO = '") + strScNo + _T("'"                        );
+	strSql+= _T("    AND MC_NO = '") + strScNo + _T("' ");
+	strSql+= _T("    AND OD_RQ_YN = 'N' ");   // [LGLS 2026-09-03] 진행 중 지시 덮어쓰기 방지(경쟁 상황 방어)
 
 	BOOL isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
 
