@@ -57,6 +57,29 @@ TASK 쪽은 각 INI 의 [VIEW] LOG_FILTER_BTN 으로 [로그 필터] 버튼을 �
 - DB 는 서버의 MS-SQL 을 쓰도록 각 INI 의 [DB] 접속 정보(IP,1433 / 계정)를 바꾼다. DB 이관은 `DB_BACKUP/서버_구축_절차.md`.
 - 위 표의 시뮬값(127.0.0.1 등)을 현장값으로 바꾼다.
 
+## 키오스크(운전 화면 전용 PC) 구동 요건
+
+키오스크에는 **WCS_CLIENT 폴더만** 복사한다. MS-SQL / .NET / Visual Studio 모두 필요 없다.
+
+1. `EXE/WCS_CLIENT` 폴더를 통째로 복사 (Release 실행 파일, DLL, 리소스, 폰트 포함)
+2. `EXE/Prerequisites/vc_redist.x86.exe` 설치 (VC++ 2015-2022 x86) - 이것 하나만
+3. `WCS_CLIENT/Ecs.ini` 의 `[DB_2]` 를 서버로 변경
+
+```
+[DB_2]
+DRIVER=SQL Server          ; Windows 기본 내장 ODBC 드라이버 - 추가 설치 불필요
+SERVER=서버IP,1433         ; 인스턴스 이름(서버IP\인스턴스) 보다 IP,포트 형식이 간단
+USERID=LGLS_IO             ; 서버에 만든 SQL 로그인(혼합 인증)
+USERPASSWORD=LGLS_IO
+DATABASE=LGLS_MCS_IO
+```
+
+- 서버 쪽은 `DB_BACKUP/서버_구축_절차.md` 3·4번 (혼합 인증, TCP 1433 고정, 방화벽 1433 인바운드) 이 되어 있어야 한다.
+- 확인 : Ecs.exe 하단 상태바의 EQUIP / HOST / SCH 가 초록이면 DB 를 정상으로 읽는 것(서버의 TASK 가 돌고 있어야 초록).
+- 접속이 안 되면 키오스크의 **ODBC 데이터 원본 관리자(32비트)** 에서 "SQL Server" 드라이버로 서버 연결 테스트 -
+  네트워크/인증 문제를 먼저 가린다.
+- 키오스크에는 EQP_SIM / HOST_SIM / TASK 를 두지 않는다. 화면·알림창·판넬·설비 대화상자 모두 서버 DB 만 보고 동작한다.
+
 ## Prerequisites/ (설치 파일, Microsoft 공식 배포본)
 
 | 파일 | 용도 | 비고 |
