@@ -493,10 +493,15 @@ void CRtvSkinDlg::RedrawImage()
 			CWnd* pBtn  = GetDlgItem(IDC_BTN_RTV_SUSPEND);
 			if (pZoom && pEdt && pBtn)
 			{
-				CRect rz, re; pZoom->GetWindowRect(&rz); ScreenToClient(&rz); pEdt->GetWindowRect(&re); ScreenToClient(&re);
-				int y = rz.bottom + 6;
-				pEdt->MoveWindow(rz.left, y, rz.Width(), re.Height());
-				pBtn->MoveWindow(rz.left, y + re.Height() + 4, rz.Width(), rz.Height());
+				CRect rz, re, rg; pZoom->GetWindowRect(&rz); ScreenToClient(&rz); pEdt->GetWindowRect(&re); ScreenToClient(&re);
+				CWnd* pCmdGrp = GetDlgItem(IDC_GRP_FK_FK_STATUS_COMMAND);
+				if (pCmdGrp) { pCmdGrp->GetWindowRect(&rg); ScreenToClient(&rg); } else { rg = rz; rg.bottom = rz.bottom + 6 + re.Height() + 4 + rz.Height() + 8; }
+				// [LGLS 2026-09-03] 명령 그룹박스의 맨 아래에 붙인다(사용자 지정) : 버튼이 바닥, 그 위에 상태 에디트
+				int yBtn = rg.bottom - 8 - rz.Height();
+				int yEdt = yBtn - 4 - re.Height();
+				if (yEdt < rz.bottom + 4) { yEdt = rz.bottom + 4; yBtn = yEdt + re.Height() + 4; }
+				pEdt->MoveWindow(rz.left, yEdt, rz.Width(), re.Height());
+				pBtn->MoveWindow(rz.left, yBtn, rz.Width(), rz.Height());
 				pEdt->ShowWindow(SW_SHOW); pBtn->ShowWindow(SW_SHOW);
 				m_bSuspendPlaced = TRUE;
 			}
