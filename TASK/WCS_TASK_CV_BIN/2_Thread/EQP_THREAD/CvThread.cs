@@ -3937,8 +3937,15 @@ namespace WCS_TASK_CV
 
                     // 캐시 갱신 및 주요 변화 로그
                     if ((cv.SENSOR0_DATA_RD ?? "") != SENSOR0)
+                    {
                         MakeMsg_Imp(strTitle + " MC_NO[" + nCvNo + "] PalletExist " + (SENSOR0 == "1" ? "ON" : "OFF")
                                     + " (%MX" + (mBase + palletOfs + s) + ")", m_nthNo);
+                        // [LGLS 2026-09-04] 피킹 작업대(129 출고 / 130 재입고)는 물리적으로 한 자리라, PLC 가 재하 감지를
+                        //   129→130 으로 넘기는 시점을 현장에서 확인할 수 있도록 DB 이력(WCS_LOG_PGR)에도 남긴다.
+                        if (nCvNo == 129 || nCvNo == 130)
+                            InsertWcsLogPgr(nCvNo.ToString("000"), strTitle + " 트랙 " + nCvNo + " 재하 감지 " + (SENSOR0 == "1" ? "ON" : "OFF")
+                                            + " (%MX" + (mBase + palletOfs + s) + ") 트래킹[" + strJobNo + "]", strJobNo);
+                    }
                     if ((cv.V11_JOBNO ?? "") != strJobNo)
                         {
                             // [LGLS 2026-08-23] 작업번호가 사라지는 로그([1718] -> [0])도 그 작업으로 조회되도록
