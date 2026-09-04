@@ -1184,7 +1184,6 @@ namespace TSK_COMM_IOSCH
                 //   오래된 작업이 영영 순번을 얻지 못했다. 어떤 후보가 라인 사유로 보류되면
                 //   같은 라인을 쓰려는 ★이후(더 새로운) 후보★ 도 이번 사이클엔 보류한다 -
                 //   라인이 비는 순간 가장 오래 기다린 작업이 잡는다. (후보는 오래된 순 정렬)
-                PurgeStaleLineRsv();   // [LGLS 2026-09-04] 사라진 작업의 라인 예약 정리
                 var setBlockedLine = new HashSet<string>();
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
@@ -1318,7 +1317,6 @@ namespace TSK_COMM_IOSCH
                     //   39 인 작업과 그 도착지가 그대로 남아 고아가 생길 자리가 없다.
                     bool ok = UpdateRtvData(rtvNo, jobTyp, luggNo, pickupTrack, dropTrack, ref rtn)
                               && UpdateJobStatusHs(ST_RGV_RUN, luggNo, dropTrack, ref rtn);
-                    if (ok) m_dicLineRsv[luggNo] = dropTrack;   // [LGLS] 드롭 라인 선점(완료 시 해제)
 
                     if (ok)
                     {
@@ -1757,18 +1755,12 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-08-30] C/V#11 도 방향전환형 겸용대다(입출고 겸용대, 트랙 121/122).
         private static readonly string[] DUAL_LINE_CV11 = { "121", "122" };
 
-        // [LGLS] 라인 예약: 입고 RGV 처리가 화물을 싣기 전(30→31)에 드롭 라인을 선점한다.
-        //   RTV 는 1대뿐인데 입고 처리와 출고대 반출이 조율 없이 RTV 를 점유하면
-        //   "입고가 RTV 를 든 채 라인 비기를 대기 → 그 라인의 출고 화물은 RTV(출고대 반출)를 대기" 로 **교착**한다.
-        //   → 라인이 비고 예약도 없을 때만 RTV 를 커밋하고, 드롭 전까지 예약을 유지한다.
-        //     이러면 RTV 를 든 입고는 항상 드롭 가능(=RTV 반드시 해제)하므로 순환 대기가 성립하지 않는다.
-        private readonly Dictionary<string, string> m_dicLineRsv = new Dictionary<string, string>();   // lugg → 예약 드롭 트랙
         /// <summary>
         /// [LGLS 2026-08-30] 그 크레인의 드롭 라인에서 S/C 픽업을 기다리는 입고 화물이 이미 있는가.
         ///   ★크레인 충돌 방지의 최종 기준★
         ///   기존 점유 판정(IsTrackFreeFor)은 CV_DATA 미러를 읽는데, 이 미러는 WCS_TASK_CV 의
-        ///   15설비 순회 때문에 최대 ~16초 지연된다. RTV 가 화물을 내려놓는 순간 라인 예약
-        ///   (m_dicLineRsv)은 풀리지만 미러는 아직 '비어있음'이라, 그 창에서 다음 입고가 같은
+        ///   15설비 순회 때문에 최대 ~16초 지연된다. RTV 가 화물을 내려놓아도 미러는 아직
+        ///   '비어있음'이라, 그 창에서 다음 입고가 같은
         ///   드롭 트랙으로 또 지시돼 앞 화물 위로 겹친다(실측: 트랙 103 의 0119 위로 0117 진입).
         ///   JOB_MST 는 지연이 없다 — 라인에 내려진 입고는 SC 가 집어갈 때까지 20/21/25 에 머문다.
         ///   라인(103/104)은 CanEnterLine 규약상 이미 1파렛트 단위이므로 이 직렬화는 설계와 일치한다.
@@ -1795,38 +1787,6 @@ namespace TSK_COMM_IOSCH
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
-        }
-
-        /// <summary>
-        /// [LGLS 2026-09-04] JOB_MST 에 더 이상 없는 작업(운전 화면/수작업 삭제 등)의 드롭 라인 예약을 지운다.
-        ///   (JOB_MST 에 없거나, 상태가 35 가 아닌 것 - 운전자가 삭제/상태 변경/RTV 지시 삭제한 경우)
-        ///   예약은 도착 확인(RGV 완료) 때만 풀리므로, 작업이 중간에 삭제되면 그 S/C 라인은 영영 막힌 채
-        ///   다음 입고가 아무 로그 없이 보류됐다(실측 : 4553 삭제 후 4556 이 S/C#4 로 못 감).
-        /// </summary>
-        private void PurgeStaleLineRsv()
-        {
-            try
-            {
-                if (m_dicLineRsv.Count == 0) return;
-                string q = "";
-                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP AND JOB_STATUS = :ST_RUN ";   // [LGLS 2026-09-04] 예약은 RGV 구동중(35)인 동안만 의미가 있다
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_RGV_RUN;
-                int n = DbQry(q);
-                if (n < 0) return;
-                var live = new HashSet<string>();
-                for (int i = 0; i < _pBdb.mDtMain.Rows.Count; i++) live.Add(GetVal(_pBdb.mDtMain.Rows[i], "LUGG_NO"));
-                var stale = new List<string>();
-                foreach (var kv in m_dicLineRsv) if (!live.Contains(kv.Key)) stale.Add(kv.Key);
-                foreach (string lugg in stale)
-                {
-                    DbgLog("RSVPURGE_" + lugg, string.Format("[RGV] 라인 예약 해제 - 작업 {0} 이 RGV 구동중(35)이 아님/삭제됨(예약 트랙 {1})", lugg, m_dicLineRsv[lugg]));
-                    m_dicLineRsv.Remove(lugg);
-                }
-            }
-            catch { }
         }
 
         /// <summary>[LGLS 2026-09-04] 도착트랙에 "RGV 완료(39) + HS_TRACK_NO = 트랙" 인 다른 작업이 있으면 그 작업번호, 없으면 "".</summary>
@@ -1876,12 +1836,6 @@ namespace TSK_COMM_IOSCH
             catch { return false; }
         }
 
-        private bool IsLineRsvd(string track, string exceptLugg)
-        {
-            foreach (var kv in m_dicLineRsv)
-                if (kv.Value == track && kv.Key != exceptLugg) return true;
-            return false;
-        }
         /// <summary>트랙의 현재 작업번호(LUGG_NO_RD). 없으면 "".</summary>
         private string TrackLugg(string track)
         {
@@ -1980,9 +1934,9 @@ namespace TSK_COMM_IOSCH
         private bool CanEnterLine(string entryTrack, string lugg)
         {
             if (Array.IndexOf(SHARED_LINE_CV2, entryTrack) < 0)
-                return IsTrackFreeFor(entryTrack, lugg) && !IsLineRsvd(entryTrack, lugg);
+                return IsTrackFreeFor(entryTrack, lugg);
             foreach (string t in SHARED_LINE_CV2)
-                if (!IsTrackFreeFor(t, lugg) || m_dicCvMove.ContainsKey(t) || IsLineRsvd(t, lugg)) return false;
+                if (!IsTrackFreeFor(t, lugg) || m_dicCvMove.ContainsKey(t)) return false;
             return true;
         }
 
@@ -3310,7 +3264,6 @@ namespace TSK_COMM_IOSCH
                     if (UpdateJobStatus(stNextRgv, luggNo, ref rtn))
                     {
                         RtvResetComplete();
-                        m_dicLineRsv.Remove(luggNo);
                         m_dicPrevRGV.Remove("RGV_801");
                         MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RTV 반송 완료 → 상태 '{1}' (도착지 기록 대기)",
                                     luggNo, stNextRgv));
