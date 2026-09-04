@@ -406,7 +406,7 @@
             // ── Form ─────────────────────────────────────────────────────────
             this.Controls.AddRange(new System.Windows.Forms.Control[] {
                 this.tabMain, this.splLog, this.txtLog, this.pnlConn });
-            this.Text            = "LS XGT PLC 메모리 맵 읽기/쓰기 [LG생명과학]";
+            this.Text            = "LS XGT PLC 메모리 맵 읽기/쓰기 [LG화학]";
             this.Size            = new System.Drawing.Size(1000, 680);
             this.MinimumSize     = new System.Drawing.Size(800, 500);
             this.StartPosition   = System.Windows.Forms.FormStartPosition.CenterScreen;

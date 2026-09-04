@@ -463,7 +463,7 @@ namespace XgtPlcSimulator
             // ── Form ──────────────────────────────────────────────────────────
             this.Controls.AddRange(new System.Windows.Forms.Control[] {
                 this.splitMain, this.pnlConn });
-            this.Text          = "LS XGT PLC 시뮬레이터 [LG생명과학]";
+            this.Text          = "LS XGT PLC 시뮬레이터 [LG화학]";
             this.Size          = new System.Drawing.Size(1100, 760);
             this.MinimumSize   = new System.Drawing.Size(800, 600);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

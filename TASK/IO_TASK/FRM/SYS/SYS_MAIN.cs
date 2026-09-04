@@ -33,7 +33,7 @@ namespace TSK_COMM_IOSCH
 	public partial class SYS_MAIN : Form
 	{
 		private string m_StrConnecString; //DataBase Connection 문자열.
-        // LG생명과학 자동 반송 Scheduler THREAD
+        // LG화학 자동 반송 Scheduler THREAD
         // (기존 설비 스레드 cThread_CV/cThread_SC/cThread_R 은 현장 구성에서 제외됨 - 참고용으로만 보존)
         private cThread_SCH[] m_Thread_SCH = new cThread_SCH[1];
 
@@ -166,7 +166,7 @@ namespace TSK_COMM_IOSCH
 			//CrossThread Check False.
 			CheckForIllegalCrossThreadCalls = false;
 
-            // LG생명과학 자동 반송 Scheduler THREAD (단일 스케줄러)
+            // LG화학 자동 반송 Scheduler THREAD (단일 스케줄러)
             int schId = (int)cDefApp.eThGbn.SCH_GR01;
             m_Thread_SCH[0] = new cThread_SCH(schId);
             m_Thread_SCH[0].ConnectionString = m_StrConnecString;
@@ -252,7 +252,7 @@ namespace TSK_COMM_IOSCH
 			try
 			{
 				#region IOTASK
-                // --- LG생명과학 자동 반송 Scheduler 상태 표시 ---
+                // --- LG화학 자동 반송 Scheduler 상태 표시 ---
                 int schId = (int)cDefApp.eThGbn.SCH_GR01;
                 if (m_Thread_SCH[0] == null) { Thread_Timer.Enabled = true; return; }
 
@@ -428,7 +428,7 @@ namespace TSK_COMM_IOSCH
 			try
 			{
 				string strCtrlName = "";
-                if (nId == (int)cDefApp.eThGbn.SCH_GR01) // LG생명과학 자동 반송 Scheduler
+                if (nId == (int)cDefApp.eThGbn.SCH_GR01) // LG화학 자동 반송 Scheduler
                     strCtrlName = "lsvR";
 				else
 					strCtrlName = "";

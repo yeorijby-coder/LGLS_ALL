@@ -129,10 +129,10 @@ namespace TSK_COMM_IOSCH
             CV_GR06 = 6, CV_GR07 = 7, CV_GR08 = 8, CV_GR09 = 9, CV_GR10 = 10,
             CV_GR11 = 11, CV_GR12 = 12, CV_GR13 = 13, CV_GR14 = 14, CV_GR15 = 15,
             SC_GR22 = 22,
-            SCH_GR01 = 50   // LG생명과학 자동 반송 Scheduler
+            SCH_GR01 = 50   // LG화학 자동 반송 Scheduler
         };  // @.eThGbn[0 ,1:CV, 2:RTV, 3:SC, 4:SCH]
 
-        // LG생명과학 창고 자동 반송 설비 수량
+        // LG화학 창고 자동 반송 설비 수량
         public const int LG_SC_COUNT  = 5;   // S/C #1~#5
         public const int LG_CV_COUNT  = 15;  // C/V #1~#15
         public const int LG_RGV_COUNT = 1;   // RGV #1

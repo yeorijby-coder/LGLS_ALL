@@ -28,7 +28,7 @@ def tb(slide, x, y, w, h, text, size=14, bold=False, color=GRAY, align=PP_ALIGN.
 page = [0]
 def footer(slide):
     page[0] += 1
-    tb(slide, 0.5, 7.0, 4, 0.35, 'LG 생명과학 1동 WCS  |  화면설계서', 10, False, GRAY)
+    tb(slide, 0.5, 7.0, 4, 0.35, 'LG 화학 1동 WCS  |  화면설계서', 10, False, GRAY)
     tb(slide, 12.2, 7.0, 0.8, 0.35, str(page[0]), 10, False, GRAY, PP_ALIGN.RIGHT)
 
 def title(slide, text):
@@ -36,7 +36,7 @@ def title(slide, text):
 
 s = prs.slides.add_slide(blank); page[0] += 1
 bg = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height); bg.fill.solid(); bg.fill.fore_color.rgb = NAVY; bg.line.fill.background()
-tb(s, 1.0, 2.4, 11, 0.8, 'LG 생명과학 1동 자동창고', 22, False, RGBColor(0xCA, 0xDC, 0xFC))
+tb(s, 1.0, 2.4, 11, 0.8, 'LG 화학 1동 자동창고', 22, False, RGBColor(0xCA, 0xDC, 0xFC))
 tb(s, 1.0, 3.2, 11, 1.2, 'WCS 화면설계서', 48, True, WHITE)
 tb(s, 1.0, 4.6, 11, 0.6, 'WCS Renewal (구 ECS 대체)   ·   Ver 1.1   ·   %s' % DATE, 16, False, RGBColor(0xCA, 0xDC, 0xFC))
 

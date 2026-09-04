@@ -33,7 +33,7 @@ def new_doc(title, subtitle=None, landscape=False):
     sec.left_margin = sec.right_margin = Cm(2.0); sec.top_margin = sec.bottom_margin = Cm(2.0)
     for _ in range(6): d.add_paragraph()
     p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run('LG 생명과학 1동 자동창고'); r.font.size = Pt(16); r.font.color.rgb = GRAY
+    r = p.add_run('LG 화학 1동 자동창고'); r.font.size = Pt(16); r.font.color.rgb = GRAY
     p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = p.add_run(title); r.font.size = Pt(28); r.bold = True; r.font.color.rgb = NAVY
     if subtitle:

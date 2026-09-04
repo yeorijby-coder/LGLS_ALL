@@ -1,6 +1,6 @@
-﻿// 작성자   : LG생명과학 WCS Scheduler
+﻿// 작성자   : LG화학 WCS Scheduler
 // 작성일   : 2026-06-23 (2026-06-27 기존 JOB_MST 스키마 통합)
-// 개요     : PPT 시나리오(ECS-분석-PLC사양및시나리오_LG생명과학_V0.9) 기반 자동 반송 Scheduler
+// 개요     : PPT 시나리오(ECS-분석-PLC사양및시나리오_LG화학_V0.9) 기반 자동 반송 Scheduler
 //
 //  ※ 이번 현장 구성 (단순 반송):
 //     - MES/CEID 통신 없음, CELL(로케이션) 관리 없음, 바코드/공파레트 없음
@@ -30,7 +30,7 @@ using Samoh_Lib;
 namespace TSK_COMM_IOSCH
 {
     /// <summary>
-    /// LG생명과학 물류창고 자동 반송 Scheduler Thread (JOB_MST 스키마)
+    /// LG화학 물류창고 자동 반송 Scheduler Thread (JOB_MST 스키마)
     /// - [LGLS] 신규 접수 : WCS_TASK_HOST INSERT(JOB_STATUS='99') → 입고 '10' / 출고 '20' 라우팅
     /// - 상태 체계(2026-08-31 확정) :
     ///     입고 : 99 → 10 → 15 → 35 → 39 → 15 → 25 → 29 → 09
@@ -304,7 +304,7 @@ namespace TSK_COMM_IOSCH
                 {
                     if (DBOpen())
                     {
-                        MakeMsg("[SCH] DB Open 완료 - LG생명과학 Scheduler 시작 (JOB_MST 스키마)");
+                        MakeMsg("[SCH] DB Open 완료 - LG화학 Scheduler 시작 (JOB_MST 스키마)");
 
                         // [LGLS 2026-09-01] SC_AUTO_COMPLETE(자동완주) 스위치 폐기 (사용자 지시).
                         //   구 경로(FeedInGate/AutoRun*/ProcessRvSeq/StepCranes 등 물리 재현)는

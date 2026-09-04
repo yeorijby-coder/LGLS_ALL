@@ -1,7 +1,7 @@
-# LGLS.SIM — LG생명과학 ECS 시뮬레이터 (EQP_SIM / HOST_SIM)
+# LGLS.SIM — LG화학 ECS 시뮬레이터 (EQP_SIM / HOST_SIM)
 
-참조 시스템: `C:\Users\USER\Downloads\일반비_LG생명과학(2011_04_13)` (이하 **ECS**)
-분석 근거: ECS/ECP 소스, `ECS-분석-PLC사양및시나리오_LG생명과학_V1.0_20260708.pptx`, LglsMCS DB
+참조 시스템: `C:\Users\USER\Downloads\일반비_LG화학(2011_04_13)` (이하 **ECS**)
+분석 근거: ECS/ECP 소스, `ECS-분석-PLC사양및시나리오_LG화학_V1.0_20260708.pptx`, LglsMCS DB
 
 ```
 ┌──────────┐  WMS 전문(TCP)    ┌───────┐  XGT FEnet(TCP)   ┌──────────┐

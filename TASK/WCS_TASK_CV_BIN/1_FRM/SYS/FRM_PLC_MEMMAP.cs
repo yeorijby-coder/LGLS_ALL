@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace WCS_TASK_CV
 {
-    // PPT [ECS-분석-PLC사양및시나리오_LG생명과학_V0.9] 메모리 맵 기반 읽기/쓰기 폼
+    // PPT [ECS-분석-PLC사양및시나리오_LG화학_V0.9] 메모리 맵 기반 읽기/쓰기 폼
     // LS XGT PLC Fenet 프로토콜 사용 (DB 연결 불필요)
     public partial class FRM_PLC_MEMMAP : Form
     {
