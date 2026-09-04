@@ -349,6 +349,7 @@ namespace TSK_COMM_IOSCH
                     CompleteCV();       // 15 → 19(출고 최종) / 입고는 15 유지(RGV 가 가져간다)
                     CompleteSC();       // 25 → 29 (입고 최종 / 출고 1차 - 랙 셀 해제)
                     CompleteRGVReal();  // 35 → 39 (RTV COMPLETE_RD 소비)
+                    CompleteRGVManual(); // [LGLS 2026-09-04] 수동지시(9998) 완료 정리 - 종료 이벤트/이력
 
                     // ── ② 착지 처리 : 도착 신호 대신 ★화물 위치★ 로 판정해 다음 구간에 인계
                     LandRgvDrop();      // 39 + HS_TRACK_NO 에 화물 → 15 (CV/SC 인계)
@@ -3244,6 +3245,41 @@ namespace TSK_COMM_IOSCH
                 return n > 0;
             }
             catch { return false; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-04] 운전 화면 RTV 수동지시(작업번호 9998)의 종료 처리.
+        ///   수동지시는 JOB_MST 에 없어 CompleteRGVReal 이 잡지 못했고, RTV 의 COMPLETE_RD=1 / LUGG_OD=9998 이
+        ///   그대로 남아 화면에 "9998 진행 중" 으로 영영 보였다. 완료를 감지하면 지시 흔적을 지우고 이력(알람창)에 남긴다.
+        /// </summary>
+        private void CompleteRGVManual()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT DEPART_TRACK, ARRIVE_TRACK FROM RTV_DATA_LGLS ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND RTV_NO = '801'         ";
+                q += CRLF + "    AND COMPLETE_RD = '1' AND LUGG_OD = '9998'    ";
+                q += CRLF + "    AND OD_RQ_YN = 'N' AND TRANSFER_REQUEST_OD = 'N' ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return;
+                string dep = GetVal(_pBdb.mDtMain.Rows[0], "DEPART_TRACK");
+                string arr = GetVal(_pBdb.mDtMain.Rows[0], "ARRIVE_TRACK");
+                RtvResetComplete();
+                string strUpd = "";
+                strUpd += CRLF + " UPDATE RTV_DATA_LGLS SET DEPART_TRACK = '', ARRIVE_TRACK = '', PALLET_ID_OD = '' ";
+                strUpd += CRLF + "  WHERE WH_TYP = :WH_TYP AND RTV_NO = '801' AND LUGG_OD = '0' ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                DbNonQry(strUpd);
+                string msg = string.Format("[RGV] 수동지시(9998) 반송 완료 - {0} → {1}, RTV 지시 정보 정리", dep, arr);
+                DbgLog("RGVMAN_" + DateTime.Now.Ticks, msg);
+                MakeMsg_Imp("[SCH]" + msg);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][RGV] CompleteRGVManual 오류: " + ex.Message); }
         }
 
         private void CompleteRGVReal()
