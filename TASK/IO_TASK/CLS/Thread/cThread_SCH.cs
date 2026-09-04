@@ -1183,6 +1183,7 @@ namespace TSK_COMM_IOSCH
                 //   오래된 작업이 영영 순번을 얻지 못했다. 어떤 후보가 라인 사유로 보류되면
                 //   같은 라인을 쓰려는 ★이후(더 새로운) 후보★ 도 이번 사이클엔 보류한다 -
                 //   라인이 비는 순간 가장 오래 기다린 작업이 잡는다. (후보는 오래된 순 정렬)
+                PurgeStaleLineRsv();   // [LGLS 2026-09-04] 사라진 작업의 라인 예약 정리
                 var setBlockedLine = new HashSet<string>();
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
@@ -1780,6 +1781,36 @@ namespace TSK_COMM_IOSCH
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-04] JOB_MST 에 더 이상 없는 작업(운전 화면/수작업 삭제 등)의 드롭 라인 예약을 지운다.
+        ///   예약은 도착 확인(RGV 완료) 때만 풀리므로, 작업이 중간에 삭제되면 그 S/C 라인은 영영 막힌 채
+        ///   다음 입고가 아무 로그 없이 보류됐다(실측 : 4553 삭제 후 4556 이 S/C#4 로 못 감).
+        /// </summary>
+        private void PurgeStaleLineRsv()
+        {
+            try
+            {
+                if (m_dicLineRsv.Count == 0) return;
+                string q = "";
+                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                int n = DbQry(q);
+                if (n < 0) return;
+                var live = new HashSet<string>();
+                for (int i = 0; i < _pBdb.mDtMain.Rows.Count; i++) live.Add(GetVal(_pBdb.mDtMain.Rows[i], "LUGG_NO"));
+                var stale = new List<string>();
+                foreach (var kv in m_dicLineRsv) if (!live.Contains(kv.Key)) stale.Add(kv.Key);
+                foreach (string lugg in stale)
+                {
+                    DbgLog("RSVPURGE_" + lugg, string.Format("[RGV] 라인 예약 해제 - 작업 {0} 이 JOB_MST 에 없음(예약 트랙 {1})", lugg, m_dicLineRsv[lugg]));
+                    m_dicLineRsv.Remove(lugg);
+                }
+            }
+            catch { }
         }
 
         private bool IsLineRsvd(string track, string exceptLugg)
