@@ -151,6 +151,7 @@ namespace EQP_SIM.Sim
         ///   "내가 집은 파렛트가 그 포트에 더 이상 없는지"로 판정한다.
         /// </summary>
         private DateTime srcWaitFrom = DateTime.MinValue;   // 출발지 클리어 대기 시작 시각(타임아웃용)
+        private DateTime srcCargoWaitFrom = DateTime.MinValue;   // [LGLS 2026-09-04] 출발지 화물 대기 시작 시각(타임아웃용)
 
         private bool SourceCleared()
         {
@@ -252,6 +253,7 @@ namespace EQP_SIM.Sim
 
                     if (TryLoadAtSource(now))
                     {
+                        srcCargoWaitFrom = DateTime.MinValue;
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", from01);   // [LGLS] 출발지 도착 위치 확정
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", from02);
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", from03);
@@ -266,6 +268,25 @@ namespace EQP_SIM.Sim
                     }
                     else
                     {
+                        // [LGLS 2026-09-04] 출발지에 화물이 없으면 무한 대기하지 않는다(실측 : 빈 트랙에서 RTV 수동지시 → 영영 정지).
+                        //   일정 시간 기다린 뒤 지시를 포기하고 IDLE 로 돌아가며, 화물 없음 상태를 남긴다.
+                        if (srcCargoWaitFrom == DateTime.MinValue) srcCargoWaitFrom = now;
+                        if ((now - srcCargoWaitFrom).TotalMilliseconds >= engine.SrcCargoTimeoutMs)
+                        {
+                            engine.Log(Def.Id + " ※ 출발지 " + FromText() + " 에 화물 없음 " + engine.SrcCargoTimeoutMs + "ms - 지시 포기, IDLE 복귀 (JOB " + palletId + ")");
+                            srcCargoWaitFrom = DateTime.MinValue;
+                            io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");
+                            io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
+                            io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", from01);
+                            io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", from02);
+                            io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", from03);
+                            io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 1);
+                            engine.RaiseEvent(Def.Id, "TRANSFER_ACK", null, 1500);   // 반송 종료 보고(화물 없이 종료)
+                            carrying = null;
+                            state = VState.Idle;
+                            StatusText = "IDLE (출발지 화물 없음으로 지시 포기)";
+                            break;
+                        }
                         stateUntil = now.AddMilliseconds(500);            // 파렛트 대기 (재시도)
                     }
                     break;

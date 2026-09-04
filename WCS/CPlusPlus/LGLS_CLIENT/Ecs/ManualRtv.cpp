@@ -399,6 +399,23 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 				AfxMessageBox(_T("스케줄러가 RGV 반송 중인 작업(상태 35)이 있습니다.\n그 작업이 끝난 뒤 지시하세요."));
 				return;
 			}
+			// [LGLS 2026-09-04] 출발 트랙에 화물이 없으면 RTV 가 출발지에서 영영 기다린다(실측 : 빈 103 → 115 지시로 정지).
+			{
+				CString strDepT = (m_strRtvFork == _T("2")) ? strDepFork2 : strDepFork1;
+				CString strQ; strQ.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(SENSOR0_DATA_RD,'0') AS SEN FROM CV_DATA WHERE WH_TYP = '%s' AND MC_NO = '%s' "), strWhTyp, strDepT);
+				int nC2 = 0; CString strE2;
+				_RecordsetPtr pRs2 = m_pDoc->GetSelectQryRecordsetPtr_DLG(strQ, nC2, strE2);
+				if (nC2 > 0)
+				{
+					CRecordSetWrap rsw2(pRs2); rsw2.MoveFirst();
+					CString strSen = rsw2.GetItem(_T("SEN")); strSen.Trim();
+					if (strSen != _T("1"))
+					{
+						AfxMessageBox(_T("출발 트랙에 화물(재하 감지)이 없습니다.") + CString(_T("\n")) + _T("화물이 있는 트랙을 출발지로 지정하세요."));
+						return;
+					}
+				}
+			}
 		}
 	}
 
