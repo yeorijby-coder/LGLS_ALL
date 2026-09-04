@@ -518,6 +518,13 @@ namespace TSK_HostCom
         /// <summary>
         /// [LGLS 2026-08-30] 랙 위치(Bank/Bay/Level)로 쓸 수 있는 값인지 — 공백/NULL/전부 0 은 위치 아님.
         /// </summary>
+        /// <summary>[LGLS 2026-09-05] 화물번호가 비었는가(빈 문자열 / 0 / 0000).</summary>
+        private bool IsEmptyLugg(string v)
+        {
+        	v = (v ?? "").Trim();
+        	return (v.Length == 0 || v == "0" || v == "0000");
+        }
+
         private static bool IsRackPos(string strBank, string strBay, string strLevel)
         {
             if (strBank == null || strBay == null || strLevel == null) return false;
@@ -641,6 +648,41 @@ namespace TSK_HostCom
                         if (strPov.Trim().Length > 0) strLuggNo = strPov;
                     }
 
+                    // ─────────────────────────────────────────────────────────────
+                    // [LGLS 2026-09-05] ★에러보고의 작업번호·셀을 실제 작업 기준으로 바로잡는다★
+                    //   종전 : 작업번호 = LUGG_NO_FK1_RD, 셀 = 크레인 관측 위치.
+                    //   그런데 실경로(VehThread)는 *_FK1_RD 를 채우지 않아 낡은 값이 그대로 올라갔고
+                    //   (실측 : 실제 작업 4800 인데 0220 을 보고), 상위가 그 번호로 재지정을 내리면
+                    //   WCS 가 "그런 작업 없음"으로 NAK 했다. 또 셀이 크레인 현재 위치라 목적 셀과 달라
+                    //   "동일 호기가 아님" 으로도 반려됐다.
+                    //   → 실린 화물번호로 작업을 찾아, 이중입고는 도착 셀 / 공출고는 출발 셀을 보고한다.
+                    {
+                        string strLuggFix = "" + m_BDb.dtMain.Rows[0]["PALLET_ON_VEHICLE_RD"].ToString();
+                        if (IsEmptyLugg(strLuggFix)) strLuggFix = "" + m_BDb.dtMain.Rows[0]["ITN_LUGG_FK1"].ToString();
+                        if (IsEmptyLugg(strLuggFix)) strLuggFix = "" + m_BDb.dtMain.Rows[0]["LUGG_NO_FK1_OD"].ToString();
+                        if (IsEmptyLugg(strLuggFix)) strLuggFix = strLuggNo;
+                        strLuggFix = strLuggFix.Trim();
+                        if (!IsEmptyLugg(strLuggFix))
+                        {
+                            strLuggNo = strLuggFix;
+                            bool bDual = (strErrorCode == "0054" || strErrorCode == "0055");
+                            m_BDb.ParamsClear();
+                            string strQ = "";
+                            strQ += modDefApp.CRLF + " SELECT START_LOCATION, DEST_LOCATION FROM JOB_MST ";
+                            strQ += modDefApp.CRLF + "  WHERE WH_TYP  = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                            strQ += modDefApp.CRLF + "    AND LUGG_NO = " + m_BDb.ParamsAdd("LUGG_NO", strLuggFix);
+                            if (m_BDb.ExcuteQry_Par(ref strQ) > 0)
+                            {
+                                string strLoc = "" + m_BDb.dtMain.Rows[0][bDual ? "DEST_LOCATION" : "START_LOCATION"].ToString();
+                                string[] arrLoc = strLoc.Split('-');
+                                if (arrLoc.Length == 3 && IsRackPos(arrLoc[0], arrLoc[1], arrLoc[2]))
+                                {
+                                    strBank = arrLoc[0]; strBay = arrLoc[1]; strLevel = arrLoc[2];
+                                }
+                            }
+                        }
+                    }
+                    // ─────────────────────────────────────────────────────────────
                     strErrorKind = "0";         // 기계적 에러 
                     strDeviceClass = "1";       // SC
 

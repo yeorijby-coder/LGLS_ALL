@@ -1487,14 +1487,16 @@ namespace TSK_HostCom
 
                     m_BDb.ParamsClear();
 
-                    m_strSql = modDefApp.CRLF + "  UPDATE LUGG_MST ";
+                    // [LGLS 2026-09-05] 종전에는 존재하지 않는 테이블 LUGG_MST(컬럼 LUGGNO)를 갱신해
+                    //   출고 재지정이 항상 실패했다. 입고 재지정과 같이 JOB_MST 를 갱신한다.
+                    m_strSql = modDefApp.CRLF + "  UPDATE JOB_MST ";
                     m_strSql += modDefApp.CRLF + "    SET START_LOCATION = " + m_BDb.ParamsAdd("START_LOCATION", strStartLoc);
                     // [LGLS 2026-08-30] 위와 동일 - 06 = 공출고 재지정
                     m_strSql += modDefApp.CRLF + "      , JOB_STATUS    = '" + modDefApp.JOB_ST_EMPTY_RETRY + "'";
                     m_strSql += modDefApp.CRLF + "      , UPD_DT        = " + modDateTime.SYSDATE;
                     m_strSql += modDefApp.CRLF + "      , UPD_USER_ID   = 'HOST_TASK'";
                     m_strSql += modDefApp.CRLF + "  WHERE WH_TYP        = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
-                    m_strSql += modDefApp.CRLF + "    AND LUGGNO        = " + m_BDb.ParamsAdd("LUGGNO", strLuggNo);
+                    m_strSql += modDefApp.CRLF + "    AND LUGG_NO       = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNo);
                     m_iSelCnt = m_BDb.ExcuteNonQry_Par(ref m_strSql);
                     if (m_iSelCnt < 0)
                     {

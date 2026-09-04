@@ -3513,7 +3513,7 @@ namespace TSK_COMM_IOSCH
 
                     _pBdb.BeginTrans();
                     string rtn = "";
-                    bool ok = UpdateScData(scNo, jobTyp, luggNo, f1, f2, f3, t1, t2, t3, ref rtn)
+                    bool ok = UpdateScData(scNo, jobTyp, luggNo, f1, f2, f3, t1, t2, t3, ref rtn, true)
                               && UpdateJobStatus(ST_SC_RUN, luggNo, ref rtn);
                     if (ok)
                     {
@@ -3571,6 +3571,11 @@ namespace TSK_COMM_IOSCH
                     u += CRLF + "  WHERE WH_TYP      = :WH_TYP                    ";
                     u += CRLF + "    AND LUGG_NO     = :LUGG_NO                   ";
                     u += CRLF + "    AND JOB_STATUS <> :NEW_ST2                   ";
+                    // [LGLS 2026-09-05] ★재지정 지시를 덮어쓰지 않는다★
+                    //   상위가 재지정(R 전문)을 내리면 HOST_TASK 가 상태를 06/05 로 바꾼다. 그런데 크레인 에러는
+                    //   ★새 지시를 받아야 비로소 해제★ 되므로, 그 사이 이 함수가 08/07 로 되돌리면
+                    //   ResumeRedirectedJobs 가 재개할 대상을 영영 찾지 못한다(실측 : 작업 4756 이 08 에 고착).
+                    u += CRLF + "    AND JOB_STATUS NOT IN ('" + ST_RETRY_DUAL_STORE + "','" + ST_RETRY_EMPTY_RETR + "') ";
                     _pBdb.mComMain.CommandType = CommandType.Text;
                     _pBdb.mComMain.Parameters.Clear();
                     _pBdb.mComMain.Parameters.Add("NEW_ST",  DbLang.VARCHAR).Value = want;
@@ -3974,7 +3979,8 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-07-21] 물리 이관: Vehicle 반송지시 기록 — EQP_TASK VehThread 가 PLC 로 반영한다.
         //   (From/To 는 2자리 3필드: 포트=00/00/pp, 셀=통로/Bay/Level)
         private bool UpdateScData(string strScNo, string strJobTyp, string strLuggNo,
-                                  string f1, string f2, string f3, string t1, string t2, string t3, ref string strRtn)
+                                  string f1, string f2, string f3, string t1, string t2, string t3, ref string strRtn,
+                                  bool bAllowRedirectErr = false)
         {
             try
             {
@@ -4001,7 +4007,13 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "  WHERE WH_TYP         = :WH_TYP                ";
                 strSql += CRLF + "    AND SC_NO          = :SC_NO                 ";
                 strSql += CRLF + "    AND OD_RQ_YN       = 'N'                    ";
-                strSql += CRLF + "    AND ERR_CODE_RD    = '0000'                 ";
+                // [LGLS 2026-09-05] 평소에는 무에러일 때만 지시한다. 다만 ★재지정★ 은 예외다 :
+                //   이중입고(54/55)·공출고(58/59)는 크레인이 새 지시를 받아야 비로소 에러가 풀리므로,
+                //   에러가 남아 있다는 이유로 재지정 지시를 막으면 영영 회복하지 못한다(닭과 달걀).
+                if (bAllowRedirectErr)
+                    strSql += CRLF + "    AND (ERR_CODE_RD IN ('0','00','0000','') OR ERR_CODE_RD IS NULL OR ERR_CODE_RD IN ('54','0054','55','0055','58','0058','59','0059')) ";
+                else
+                    strSql += CRLF + "    AND ERR_CODE_RD    = '0000'                 ";
 
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();

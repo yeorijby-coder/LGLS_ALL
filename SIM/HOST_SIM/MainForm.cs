@@ -31,7 +31,7 @@ namespace HOST_SIM
 
         // [LGLS] 이중입고/공출고 재지정: 마지막 E 에러보고 정보 (버튼 핸들러에서 사용)
         private string redirLuggD, redirCellD; private int redirScD;   // 이중입고(ErrorKind=1)
-        private string redirLuggE; private int redirScE;               // 공출고(ErrorKind=3)
+        private string redirLuggE, redirCellE; private int redirScE;   // 공출고(ErrorKind=3)
 
         /// <summary>SC가 입고 작업을 받을 수 있는 상태인지 (명세 S 상태: 0=가능, 1=불가)</summary>
         private bool IsScIngoAvailable(int sc)
@@ -332,7 +332,7 @@ namespace HOST_SIM
                 }
                 else if (errKind == '3')     // 공출고
                 {
-                    redirLuggE = lugg; redirScE = sc;
+                    redirLuggE = lugg; redirCellE = cell; redirScE = sc;
                     SafeUI(() => { btnRedirectEmpty.Enabled = true;
                         lblStatus.Text = string.Format("공출고 발생: JOB {0} SC{1} — [공출고 재지정] 가능", lugg, sc); });
                     Log("SYS", string.Format("★공출고(ErrorKind=3): JOB={0} SC{1} → 재지정 버튼 활성화", lugg, sc));
@@ -359,21 +359,14 @@ namespace HOST_SIM
         private void btnRedirectEmpty_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(redirLuggE)) return;
-            lock (logicLock)
-            {
-                CycleLogic target = null;
-                foreach (var lg in logics)
-                    if (lg.Phase == CyclePhase.WaitOutgoDone && lg.CurrentLuggageNo == redirLuggE) { target = lg; break; }
-                if (target == null)
-                    foreach (var lg in logics)
-                        if (lg.Phase == CyclePhase.WaitOutgoDone) { target = lg; break; }
-                if (target != null)
-                {
-                    Log("ORD", string.Format("[공출고 재지정] JOB={0} 출고 강제완료 → 입고 재생성", target.CurrentLuggageNo));
-                    target.OnComplete(WmsMessage.JOB_OUTGO, '2', target.CurrentLuggageNo);
-                }
-                else Log("ERR", "[공출고 재지정] 대상 출고 로직을 찾지 못함");
-            }
+            // [LGLS 2026-09-05] 종전에는 내부 사이클만 강제 완료하고 ECS 에 아무것도 보내지 않아,
+            //   WCS 쪽 작업이 공출고 에러 상태(07)에 그대로 남았다. 이중입고와 같이 R 전문(R_Kind=2)으로
+            //   ★다른 출발 셀★ 을 내려 준다. 같은 S/C 호기 안에서 레벨만 바꾼다(명세 : 동일 호기여야 함).
+            string newCell = NextLevelCell(redirCellE);
+            string stn = redirScE.ToString();
+            byte[] body = WmsMessage.BuildRedirect('2', redirLuggE, stn, redirCellE, stn, newCell, '2', redirScE.ToString());
+            ecsChannel.Send(body, "공출고 재지정 JOB=" + redirLuggE);
+            Log("ORD", string.Format("[공출고 재지정] JOB={0} SC{1}: {2} → {3} (R_Kind=2)", redirLuggE, redirScE, redirCellE, newCell));
             btnRedirectEmpty.Enabled = false;
             redirLuggE = null;
             SafeUI(UpdateLogicLabels);
