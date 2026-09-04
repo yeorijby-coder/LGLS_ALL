@@ -1610,15 +1610,14 @@ namespace TSK_COMM_IOSCH
                 //   (작업 1726 - 구동중 전이 3초 만에 입고 최종). 구분 동작은 최소 18초가 걸리므로
                 //   구동중(25) 전이 후 최소 경과시간을 둔다.
                 strSql += CRLF + "    AND DATEDIFF(second, JM.UPD_DT, " + DbLang.SYSDATE + ") >= " + SC_MIN_RUN_SEC.ToString() + " ";
-                // [LGLS 2026-07-24] 완료 판정: 완료신호(COMPLETE_RD<>0) OR 지속완결(유휴+포크빔+스트로브 내려감+경과).
-                //   VehThread 의 COMPLETE_RD 는 UNLOAD_COMPLETE 단발이라, 포화 시 CompleteSC 폴링 창을 놓치면
-                //   신호가 소실돼 25 에 영구 정체한다. SC 가 유휴(UCSTATUS_RD='1')+포크 빔(ITN_LUGG_FK1 빔)+
-                //   지시 스트로브 내려감(TRANSFER_REQUEST_OD='N')이고 25 전이 후 3초 경과면 이송 완결로 인정(백업).
-                strSql += CRLF + "    AND ( ( SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ) ";
-                strSql += CRLF + "       OR ( SD.UCSTATUS_RD = '1'                              ";
-                strSql += CRLF + "            AND SD.TRANSFER_REQUEST_OD = 'N'                   ";
-                strSql += CRLF + "            AND ISNULL(SD.ITN_LUGG_FK1,'0') IN ('0','00','0000','') ";
-                strSql += CRLF + "            AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= 3 ) ) ";
+                // [LGLS 2026-09-04] 완료 판정은 ★설비 완료신호만★ 본다(시간 경과 추정 제거 - 사용자 확정).
+                //   종전 주석의 "COMPLETE_RD 는 단발이라 놓치면 소실" 은 사실이 아니다 :
+                //     · PLC 비트(Unload Complete)는 사양대로 핸드셰이크 펄스지만,
+                //     · VehThread 가 그것을 관측해 DB COMPLETE_RD='1' 로 ★래치★ 하고(중복기록 방지 __cmpSeen),
+                //       그 값은 ★그 설비에 새 지시가 소비될 때★ 비로소 '0' 이 된다(VehThread.ConsumeCommands).
+                //   그리고 DriveSC 는 같은 크레인에 25 작업이 남아 있으면 신규 지시를 내지 않으므로,
+                //   앞 작업의 완료신호가 새 지시에 지워질 창 자체가 없다. → 시간 백업이 필요 없다.
+                strSql += CRLF + "    AND SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ";
 
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
