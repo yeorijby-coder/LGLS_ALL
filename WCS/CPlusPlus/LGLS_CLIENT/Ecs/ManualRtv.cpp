@@ -366,8 +366,12 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 			return;
 		}
 		CString strChk;
-		strChk.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(OD_RQ_YN,'N') AS OD_RQ_YN, ") + m_pDoc->NVL + _T("(LUGG_OD,'') AS LUGG_OD \n")
-			_T("   FROM RTV_DATA_LGLS WHERE WH_TYP = '%s' AND RTV_NO = '%s' "), strWhTyp, strRtvNo);
+		// [LGLS 2026-09-04] 가드 확장(사용자 지시) : 지시 잔존뿐 아니라 RTV 가 구동 중이거나 화물을 싣고 있거나
+		//   스케줄러 작업이 RGV 구동중(35)이면 수동 지시를 막는다(실측 : 수동 9998 이 끼어들어 순환 정지).
+		strChk.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(OD_RQ_YN,'N') AS OD_RQ_YN, ") + m_pDoc->NVL + _T("(LUGG_OD,'') AS LUGG_OD, \n")
+			_T("        ") + m_pDoc->NVL + _T("(SUBSYSTEM_STATUS_RD,'') AS RTV_STA, ") + m_pDoc->NVL + _T("(PALLET_ON_VEHICLE_RD,'') AS POV, \n")
+			_T("        (SELECT COUNT(1) FROM JOB_MST J WHERE J.WH_TYP = '%s' AND J.JOB_STATUS = '35') AS RUN35 \n")
+			_T("   FROM RTV_DATA_LGLS WHERE WH_TYP = '%s' AND RTV_NO = '%s' "), strWhTyp, strWhTyp, strRtvNo);
 		int nCnt = 0; CString strErr;
 		_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nCnt, strErr);
 		if (nCnt > 0)
@@ -380,6 +384,19 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 				CString strMsg;
 				strMsg.Format(_T("이 RTV 에 진행 중인 지시(작업 %s)가 있습니다.\n먼저 RTV 상태창의 [지시 삭제] 로 정리한 뒤 지시하세요."), (LPCTSTR)strLg);
 				AfxMessageBox(strMsg);
+				return;
+			}
+			CString strSta = rsw.GetItem(_T("RTV_STA")); strSta.Trim();
+			CString strPov = rsw.GetItem(_T("POV"));     strPov.Trim();
+			CString strRun = rsw.GetItem(_T("RUN35"));   strRun.Trim();
+			if (strSta != _T("1") || (!strPov.IsEmpty() && strPov != _T("0") && strPov != _T("0000")))
+			{
+				AfxMessageBox(_T("RTV 가 구동 중이거나 화물을 싣고 있습니다.\n대기(IDLE) 상태가 된 뒤 지시하세요."));
+				return;
+			}
+			if (strRun != _T("") && strRun != _T("0"))
+			{
+				AfxMessageBox(_T("스케줄러가 RGV 반송 중인 작업(상태 35)이 있습니다.\n그 작업이 끝난 뒤 지시하세요."));
 				return;
 			}
 		}
@@ -435,6 +452,20 @@ void CManualRtv::OnBnClickedBtnRtvManualSave()
 	}
 
 
+	// [LGLS 2026-09-04] 설비 통신(VehThread)은 TRANSFER_REQUEST_OD='Y' + FROM/TO/PALLET_ID_OD 로 지시를 읽는다.
+	//   종전 수동 지시는 DEPART/ARRIVE_TRACK + OD_RQ_YN 만 써서 아무도 소비하지 못한 채 RTV 를 잠갔다.
+	//   스케줄러(UpdateRtvData)와 같은 형식 : From/To = 00/00/트랙 끝 두 자리.
+	{
+		CString strDepT = (m_strRtvFork == _T("2")) ? strDepFork2 : strDepFork1;
+		CString strArrT = (m_strRtvFork == _T("2")) ? strArrFork2 : strArrFork1;
+		CString strExtra;
+		strExtra.Format(_T("      , RTV_PASSCV_OD = '%s', RTV_DEST_OD = '%s', PALLET_ID_OD = '9998' \n")
+			_T("      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '%s' \n")
+			_T("      , TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '%s' \n")
+			_T("      , TRANSFER_REQUEST_OD = 'Y' \n"),
+			(LPCTSTR)strDepT, (LPCTSTR)strArrT, (LPCTSTR)strDepT.Right(2), (LPCTSTR)strArrT.Right(2));
+		strSql.Replace(_T("	  , OD_RQ_YN = 'Y'"), strExtra + _T("	  , OD_RQ_YN = 'Y'"));
+	}
 	BOOL isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
 
 	if(isSuccess == TRUE)
