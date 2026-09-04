@@ -1785,6 +1785,7 @@ namespace TSK_COMM_IOSCH
 
         /// <summary>
         /// [LGLS 2026-09-04] JOB_MST 에 더 이상 없는 작업(운전 화면/수작업 삭제 등)의 드롭 라인 예약을 지운다.
+        ///   (JOB_MST 에 없거나, 상태가 35 가 아닌 것 - 운전자가 삭제/상태 변경/RTV 지시 삭제한 경우)
         ///   예약은 도착 확인(RGV 완료) 때만 풀리므로, 작업이 중간에 삭제되면 그 S/C 라인은 영영 막힌 채
         ///   다음 입고가 아무 로그 없이 보류됐다(실측 : 4553 삭제 후 4556 이 S/C#4 로 못 감).
         /// </summary>
@@ -1794,10 +1795,11 @@ namespace TSK_COMM_IOSCH
             {
                 if (m_dicLineRsv.Count == 0) return;
                 string q = "";
-                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
+                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP AND JOB_STATUS = :ST_RUN ";   // [LGLS 2026-09-04] 예약은 RGV 구동중(35)인 동안만 의미가 있다
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_RGV_RUN;
                 int n = DbQry(q);
                 if (n < 0) return;
                 var live = new HashSet<string>();
@@ -1806,7 +1808,7 @@ namespace TSK_COMM_IOSCH
                 foreach (var kv in m_dicLineRsv) if (!live.Contains(kv.Key)) stale.Add(kv.Key);
                 foreach (string lugg in stale)
                 {
-                    DbgLog("RSVPURGE_" + lugg, string.Format("[RGV] 라인 예약 해제 - 작업 {0} 이 JOB_MST 에 없음(예약 트랙 {1})", lugg, m_dicLineRsv[lugg]));
+                    DbgLog("RSVPURGE_" + lugg, string.Format("[RGV] 라인 예약 해제 - 작업 {0} 이 RGV 구동중(35)이 아님/삭제됨(예약 트랙 {1})", lugg, m_dicLineRsv[lugg]));
                     m_dicLineRsv.Remove(lugg);
                 }
             }
