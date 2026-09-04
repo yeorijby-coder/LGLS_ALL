@@ -1617,7 +1617,22 @@ namespace TSK_COMM_IOSCH
                 //       그 값은 ★그 설비에 새 지시가 소비될 때★ 비로소 '0' 이 된다(VehThread.ConsumeCommands).
                 //   그리고 DriveSC 는 같은 크레인에 25 작업이 남아 있으면 신규 지시를 내지 않으므로,
                 //   앞 작업의 완료신호가 새 지시에 지워질 창 자체가 없다. → 시간 백업이 필요 없다.
-                strSql += CRLF + "    AND SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ";
+                //   [LGLS 2026-09-05 추가] 다만 완료신호가 실제로 유실되는 경로가 있었다(VehThread 가 Ack 를
+                //   올리기만 하고 내리지 않아 설비가 다음 이벤트를 즉시 지움 - 같은 날 수정).
+                //   그런 유실 대비 백업(유휴+포크빔+스트로브 내려감+경과)은 ★[환경설정] > [시간 기반 자동 처리]★
+                //   가 선택돼 있을 때만 쓴다. 해제 상태면 설비 완료신호로만 처리한다(기본).
+                if (AutoTimeProcEnabled())
+                {
+                    strSql += CRLF + "    AND ( ( SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ) ";
+                    strSql += CRLF + "       OR ( SD.UCSTATUS_RD = '1'                              ";
+                    strSql += CRLF + "            AND SD.TRANSFER_REQUEST_OD = 'N'                   ";
+                    strSql += CRLF + "            AND ISNULL(SD.ITN_LUGG_FK1,'0') IN ('0','00','0000','') ";
+                    strSql += CRLF + "            AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= 3 ) ) ";
+                }
+                else
+                {
+                    strSql += CRLF + "    AND SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ";
+                }
 
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -1786,6 +1801,38 @@ namespace TSK_COMM_IOSCH
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
             } catch { return false; }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-09-05] 시간 기반 자동 처리 사용 여부
+        //   운전 화면 리본 [환경설정] > [시간 기반 자동 처리] 버튼이 켜고 끈다.
+        //   저장 위치 : COMMON_CODE (CDX_CD='SCH_OPT', CCD_CD='AUTO_TIME', CCD_CD_YN='Y'/'N')
+        //   ★기본은 사용 안 함★ - 행이 없거나 조회에 실패하면 자동 처리하지 않는다.
+        //   설비 신호 없이 경과시간으로 완료를 추정하는 처리는 모두 이 게이트를 통과해야 한다.
+        // ─────────────────────────────────────────────────────────────────
+        private bool     m_bAutoTimeProc = false;
+        private DateTime m_dtAutoTimeRead = DateTime.MinValue;
+        private const int AUTO_TIME_CACHE_SEC = 5;
+        private bool AutoTimeProcEnabled()
+        {
+            try
+            {
+                if ((DateTime.Now - m_dtAutoTimeRead).TotalSeconds < AUTO_TIME_CACHE_SEC) return m_bAutoTimeProc;
+                m_dtAutoTimeRead = DateTime.Now;
+                string q = "";
+                q += CRLF + " SELECT CCD_CD_YN FROM COMMON_CODE                                     ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND CDX_CD = 'SCH_OPT' AND CCD_CD = 'AUTO_TIME' ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) { m_bAutoTimeProc = false; return false; }
+                bool bNew = ((GetVal(_pBdb.mDtMain.Rows[0], "CCD_CD_YN") ?? "").Trim().ToUpper() == "Y");
+                if (bNew != m_bAutoTimeProc)
+                    MakeMsg_Imp("[SCH] 시간 기반 자동 처리 " + (bNew ? "사용" : "사용 안 함") + " (운전 화면 설정 변경 감지)");
+                m_bAutoTimeProc = bNew;
+                return m_bAutoTimeProc;
+            }
+            catch { return m_bAutoTimeProc; }
         }
 
         /// <summary>[LGLS 2026-09-04] 도착트랙에 "RGV 완료(39) + HS_TRACK_NO = 트랙" 인 다른 작업이 있으면 그 작업번호, 없으면 "".</summary>
@@ -3067,7 +3114,8 @@ namespace TSK_COMM_IOSCH
                             string jTyp2   = GetVal(dt.Rows[i], "JOB_TYP");
                             string dest2   = (GetVal(dt.Rows[i], "DEST_POS") ?? "").Trim();
                             int elapsed; int.TryParse(GetVal(dt.Rows[i], "ELAPSED"), out elapsed);
-                            if ((jTyp2 == "2" || jTyp2 == "12") && dest2 == "122" && elapsed >= 20 &&
+                            if (AutoTimeProcEnabled() &&
+                                (jTyp2 == "2" || jTyp2 == "12") && dest2 == "122" && elapsed >= 20 &&
                                 IsTrackEmpty("121") && IsTrackEmpty("122"))
                             {
                                 string rtnF = "";

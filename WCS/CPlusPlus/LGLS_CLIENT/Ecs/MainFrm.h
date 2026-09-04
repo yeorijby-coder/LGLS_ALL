@@ -108,7 +108,15 @@ protected:
 	afx_msg void OnStyleRibboninterface (); //ribbon2
 	afx_msg void OnRbnBtnToolbarInterface (); 
 	afx_msg void OnAppLook(UINT id);
-	afx_msg void OnConfigIniOpen();   // [LGLS 2026-09-03] 리본 [INI 열기]
+	afx_msg void OnConfigIniOpen();
+	// [LGLS 2026-09-05] [환경설정] > [시간 기반 자동 처리] 토글
+	//   선택 = 스케줄러가 설비 신호 없이 경과시간으로 완료를 추정하는 처리를 사용한다.
+	//   상태는 DB(COMMON_CODE : CDX_CD='SCH_OPT', CCD_CD='AUTO_TIME')에 두어 IO_TASK 가 함께 본다.
+	afx_msg void OnConfigAutoTime();
+	afx_msg void OnUpdateConfigAutoTime(CCmdUI* pCmdUI);
+	BOOL  ReadAutoTimeFlag();
+	BOOL  m_bAutoTimeProc;
+	DWORD m_dwAutoTimeRead;   // [LGLS 2026-09-03] 리본 [INI 열기]
 	afx_msg void OnUiModeDlg();            // [LGLS 2026-09-01] UI모드
 	afx_msg void OnUiModePanel();
 	afx_msg void OnUpdateUiModeDlg(CCmdUI* pCmdUI);

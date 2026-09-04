@@ -457,6 +457,17 @@ namespace WCS_TASK_CV
             }
         }
 
+        /// <summary>
+        /// [LGLS 2026-09-05] 이벤트 비트를 따라 Ack 비트를 올리고 내린다(사양 슬라이드 : ON → Ack ON → OFF → Ack OFF).
+        ///   상태가 바뀔 때만 쓴다(매 주기 PLC 쓰기 방지).
+        /// </summary>
+        private void AckFollow(VehDef v, string strAckTag, string strCacheKey, bool bEventOn)
+        {
+            string strNow = bEventOn ? "1" : "0";
+            if ((Cached(v, strCacheKey) ?? "0") == strNow) return;
+            if (WriteBit(O(v, strAckTag), bEventOn)) v.Cache[strCacheKey] = strNow;
+        }
+
         private ObsDef O(VehDef v, string name)
         {
             ObsDef d;
@@ -501,8 +512,15 @@ namespace WCS_TASK_CV
             ReadBit(O(v, "TRANSFER_ACK"), ref transferAck);
 
             // 이벤트 자동 Ack (PLC 가 이벤트+Ack 모두 리셋 — 슬라이드5 규약)
-            if (loadCmp) WriteBit(O(v, "LOAD_COMPLETE_ACK"), true);
-            if (unloadCmp) WriteBit(O(v, "UNLOAD_COMPLETE_ACK"), true);
+            // [LGLS 2026-09-05] ★핸드셰이크는 양방향이다★ : 이벤트 ON → Ack ON, 이벤트 OFF → Ack OFF.
+            //   종전에는 Ack 를 올리기만 하고 내리지 않아 그 비트가 계속 ON 으로 남았다.
+            //   그러면 설비는 다음 완료 이벤트를 올리자마자 "이미 Ack 됨" 으로 보고 즉시 내려버려,
+            //   WCS 가 그 이벤트를 한 번도 관측하지 못한다 → 완료신호 유실.
+            //   (실측 2026-09-05 : 작업 4722 가 크레인 유휴·포크 빔 상태로 25 에 10분 이상 정체.
+            //    S/C·RGV 전 호기의 LOAD/UNLOAD_COMPLETE_ACK 가 ON 으로 굳어 있었다.)
+            //   CV(CvEventCheck)는 이미 해제까지 하고 있었고, 차량(S/C·RGV)만 빠져 있었다.
+            AckFollow(v, "LOAD_COMPLETE_ACK",   "__lcAck", loadCmp);
+            AckFollow(v, "UNLOAD_COMPLETE_ACK", "__ucAck", unloadCmp);
             // [LGLS 2026-07-25] Transfer Complete Ack. 근거: PPT V1.1 슬라이드22 메모리맵(Bit: Ack & Command)
             //   RGV #1 Ack base M101.0(%MX1616) + 5 = M101.5 %MX1621(=0x655). (슬라이드17 시나리오 다이어그램엔 생략됨)
             //   설비 Transfer Complete(TRANSFER_ACK 0x3B4=M059.4) 관측 시 WCS Ack 발행. observables.tsv VEHICLE:1 0655 와 일치.

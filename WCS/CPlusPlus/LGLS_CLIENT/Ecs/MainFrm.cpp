@@ -31,6 +31,8 @@ const int iCategoryIndex_CC = 4;
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_COMMAND(ID_CONFIG_INI_OPEN, &CMainFrame::OnConfigIniOpen)
+	ON_COMMAND(ID_CONFIG_AUTO_TIME, &CMainFrame::OnConfigAutoTime)
+	ON_UPDATE_COMMAND_UI(ID_CONFIG_AUTO_TIME, &CMainFrame::OnUpdateConfigAutoTime)
 	ON_COMMAND(ID_UIMODE_DLG, &CMainFrame::OnUiModeDlg)
 	ON_COMMAND(ID_UIMODE_PANEL, &CMainFrame::OnUiModePanel)
 	ON_UPDATE_COMMAND_UI(ID_UIMODE_DLG, &CMainFrame::OnUpdateUiModeDlg)
@@ -88,6 +90,8 @@ CMainFrame::CMainFrame()
 	m_bPanelBarsCreated = FALSE;   // [LGLS 2026-09-01] 도킹 판넬
 	m_bUiModePanel = FALSE;        // 기본 = 대화상자 모드
 	m_pDoc = NULL;                 // [LGLS 2026-09-01] 종전에 초기화 누락(쓰레기 포인터)
+	m_bAutoTimeProc = FALSE;       // [LGLS 2026-09-05] 시간 기반 자동 처리(첫 갱신 전 기본 = 사용 안 함)
+	m_dwAutoTimeRead = 0;
 	// TODO: 여기에 멤버 초기화 코드를 추가합니다.
 	theApp.m_nAppLook = theApp.GetInt(_T("ApplicationLook"), ID_VIEW_APPLOOK_VS_2008);
 	m_bNotDockingJob = false;
@@ -468,6 +472,20 @@ void CMainFrame::AddCategoryWCS()
 	CMFCRibbonButton* pBtnConfigStatus = new CMFCRibbonButton(IDD_CONFIG_STATUS, _T("CONF"), HICONFromPATH(GetConcatPath(strAppPath, _T("configstatus"), strExtension)), TRUE);
 	pBtnConfigStatus->SetAlwaysLargeImage();
 	pPanelConfig->Add(pBtnConfigStatus);
+
+	// [LGLS 2026-09-05] [시간 기반 자동 처리] : 스케줄러가 설비 신호 대신 경과시간으로 완료를 추정하는
+	//   처리의 사용 여부를 켜고 끈다. 선택 = 사용, 해제 = 사용 안 함(설비 신호로만 처리).
+	//   상태는 DB(COMMON_CODE SCH_OPT/AUTO_TIME)에 있어 IO_TASK 가 같은 값을 본다.
+	//   Ecs.ini [MENU] AUTOTIME_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
+	if (::GetPrivateProfileInt(_T("MENU"), _T("AUTOTIME_MENU"), 1, ECS_INI_FILE) != 0)
+	{
+		CMFCRibbonButton* pBtnAutoTime = new CMFCRibbonButton(ID_CONFIG_AUTO_TIME, _T("시간기반 자동처리"),
+			HICONFromPATH(GetConcatPath(strAppPath, _T("autotime"), strExtension)), TRUE);
+		pBtnAutoTime->SetAlwaysLargeImage();
+		pBtnAutoTime->SetToolTipText(_T("시간 기반 자동 처리"));
+		pBtnAutoTime->SetDescription(_T("설비 완료 신호가 오지 않아도 경과시간으로 완료를 추정할지 선택합니다."));
+		pPanelConfig->Add(pBtnAutoTime);
+	}
 
 	// [LGLS 2026-09-03] [INI 열기] : 접속/화면 설정 파일(Ecs.ini)을 메모장으로 연다.
 	//   Ecs.ini [MENU] INI_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
@@ -943,6 +961,61 @@ void CMainFrame::OnUpdateUiModeDlg(CCmdUI* pCmdUI)
 void CMainFrame::OnUpdateUiModePanel(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_bUiModePanel);
+}
+
+// [LGLS 2026-09-05] 시간 기반 자동 처리 사용 여부를 DB 에서 읽는다.
+//   행이 없거나 조회 실패면 FALSE(사용 안 함) - "모르면 자동 처리하지 않는다" 가 안전한 쪽이다.
+BOOL CMainFrame::ReadAutoTimeFlag()
+{
+	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
+	if (m_pDoc == NULL) return FALSE;
+	try
+	{
+		CString strSql;
+		strSql.Format(_T(" SELECT CCD_CD_YN FROM COMMON_CODE \n")
+			_T("  WHERE WH_TYP = '%s' AND CDX_CD = 'SCH_OPT' AND CCD_CD = 'AUTO_TIME' "), m_pDoc->m_WH_TYP);
+		int nCnt = 0; CString strErr;
+		_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nCnt, strErr);
+		if (nCnt <= 0) return FALSE;
+		CRecordSetWrap rsw(pRs); rsw.MoveFirst();
+		CString strYn = rsw.GetItem(_T("CCD_CD_YN")); strYn.Trim();
+		return (strYn == _T("Y")) ? TRUE : FALSE;
+	}
+	catch (...) { return FALSE; }
+}
+
+// [LGLS 2026-09-05] [시간 기반 자동 처리] 토글. 확인 후 DB 값을 뒤집는다.
+void CMainFrame::OnConfigAutoTime()
+{
+	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
+	if (m_pDoc == NULL) return;
+	BOOL bNew = !ReadAutoTimeFlag();
+	CString strMsg = bNew
+		? _T("시간 기반 자동 처리를 [사용] 합니다.\n\n설비 완료 신호가 오지 않아도 경과시간으로 완료를 추정합니다.\n계속하시겠습니까?")
+		: _T("시간 기반 자동 처리를 [사용 안 함] 으로 바꿉니다.\n\n설비 완료 신호로만 처리합니다. 신호가 오지 않으면 작업이 그 상태에 남습니다.\n계속하시겠습니까?");
+	if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return;
+	CString strSql;
+	strSql.Format(_T(" UPDATE COMMON_CODE SET CCD_CD_YN = '%s' \n")
+		_T("  WHERE WH_TYP = '%s' AND CDX_CD = 'SCH_OPT' AND CCD_CD = 'AUTO_TIME' "),
+		bNew ? _T("Y") : _T("N"), m_pDoc->m_WH_TYP);
+	m_pDoc->ExcuteQueryString_DLG(strSql);
+	m_pDoc->GetQueryInsertClientLog(_T("CMainFrame"), _T(""), _T(""), _T(""),
+		CString(_T("CONFIG AUTO TIME -> ")) + (bNew ? _T("Y") : _T("N")));
+	m_dwAutoTimeRead = 0;
+	m_bAutoTimeProc = ReadAutoTimeFlag();
+}
+
+// [LGLS 2026-09-05] 버튼 선택 표시. 다른 화면에서 바꿨을 수도 있어 10초마다 DB 를 다시 읽는다.
+void CMainFrame::OnUpdateConfigAutoTime(CCmdUI* pCmdUI)
+{
+	DWORD dwNow = ::GetTickCount();
+	if (m_dwAutoTimeRead == 0 || (dwNow - m_dwAutoTimeRead) > 10000)
+	{
+		m_dwAutoTimeRead = dwNow;
+		m_bAutoTimeProc = ReadAutoTimeFlag();
+	}
+	pCmdUI->SetCheck(m_bAutoTimeProc ? 1 : 0);
+	pCmdUI->Enable(TRUE);
 }
 
 void CMainFrame::OnConfigIniOpen()
