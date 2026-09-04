@@ -133,12 +133,11 @@
     </Block>
     <Block name="Command" device="D" origin="370" stride="10" altOrigin="848" altStride="16" legacy="D0370" legacyStride="10" desc="[확정 20260901] 실PLC = 문서표기 10진">
       <Signal name="From" offset="0" words="3" tag="FROM_01" />
-      <!-- ※ RGV 의 To 는 원본 정의(구 ECS TB_OBSERVABLE / EQP_SIM observables.tsv)가 연속이 아니다.
-              TO_01=W0353(851), TO_02=W0354(852), TO_03=W0345(837) ← 3번째만 앞쪽 번지.
-              구 ECS·시뮬레이터·실 PLC 래더가 모두 이 배치를 쓰므로 그대로 맞춘다(임의 연속화 금지). -->
-      <Signal name="To1" offset="3" tag="TO_01" />
-      <Signal name="To2" offset="4" tag="TO_02" />
-      <Signal name="To3" offset="-25" altOffset="-11" tag="TO_03" legacy="W0345" desc="구 ECS 운영 정의(TB_OBSERVABLE) W0345 → 10진 확정으로 D0345(=345, offset 370-25). [확정 20260901] ★실PLC 대사로 이 특례 번지 재확인 필요★. S/C#5 To3 과 동일 번지임에 주의" />
+      <!-- [정정 2026-09-04] 구 ECS TB_OBSERVABLE 의 RGV TO_03=W0345 는 오기(誤記)다. RGV 블록은 From 350~352 / To 353~355 / JobNo 356~357
+           이 자연스럽고, W0345 는 S/C#5 To3 와 같은 번지라 지시가 겹친다. 10진 확정 배치(D0370 기준)에서는 D345 = S/C#3 To3 가 되어
+           2026-09-04 04:11 S/C#3 출고지시(To=…/10)가 RGV 지시(To=…/03)를 덮어써 RGV 가 트랙 110 에 하역하는 사고가 재현됐다.
+           → 연속 배치(offset 5 = D375)로 정정. ★실PLC 대사 시 RGV To3 = D375 확인 필요★ -->
+      <Signal name="To3" offset="5" tag="TO_03" legacy="W0355" desc="[정정 2026-09-04] RGV To 3번째 워드(트랙). 구 정의 W0345 는 S/C To3 와 충돌하는 오기" />
       <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" desc="작업번호(파렛트ID) 2워드" />
     </Block>
     <Block name="Tracking" device="R" origin="310" stride="2" perSlotWords="2" legacy="R0310">

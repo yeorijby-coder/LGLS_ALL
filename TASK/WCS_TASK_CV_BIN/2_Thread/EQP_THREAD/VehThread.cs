@@ -425,6 +425,7 @@ namespace WCS_TASK_CV
                     {
                         try { PollObservations(v); bAnyOk = true; }
                         catch (Exception exv) { LogDb("[VEH_" + m_strKind + "] 관측 실패: " + exv.Message); }
+                        try { ConsumeOperatorCommands(v); } catch (Exception exCmd) { LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 처리 실패: " + exCmd.Message); }
                         try { ConsumeCommands(v); }
                         catch (Exception exc) { LogDb("[VEH_" + m_strKind + "] 지시 소비 실패: " + exc.Message); }
                     }
@@ -711,6 +712,44 @@ namespace WCS_TASK_CV
             strSqlObs += CRLF + "  WHERE WH_TYP        = '" + Esc(m_strWhTyp) + "'   ";
             strSqlObs += CRLF + "    AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
             DbExec(strSqlObs);
+        }
+
+        // ---------- 운전 화면 명령(CMD_RQ_ID / CMD_RQ_YN) 소비 ----------
+        // [LGLS 2026-09-04] 크레인/RGV 상태창의 [지시 삭제](DELFK1/DELFK2/DELFK12)는 CMD_RQ_YN='Y' 로만 남고
+        //   설비 통신이 소비하지 않아 영영 'Y' 였다(운전자 눈에는 "삭제해도 안 지워짐").
+        //   구 EQP_TASK 역할대로 여기서 소비한다 :
+        //   · DELFK* : 설비에 낸 반송지시 취소 - TRANSFER_REQUEST 스트로브 OFF + _OD 지시값 비움 + OD_RQ_YN/TRANSFER_REQUEST_OD='N'
+        //   · FCMP   : 스케줄러(IO_TASK cThread_SC)가 직접 소비하므로 건드리지 않는다
+        //   · 그 외(CTH/PAUSE/RESET …) : 이 설비 규약(XGT 메모리)에 대응 신호가 없어 소비만 하고 이력에 남긴다
+        private void ConsumeOperatorCommands(VehDef v)
+        {
+            string strSql = "";
+            strSql += CRLF + " SELECT CMD_RQ_ID FROM " + m_strTable + "                       ";
+            strSql += CRLF + "  WHERE WH_TYP = '" + Esc(m_strWhTyp) + "' AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
+            strSql += CRLF + "    AND CMD_RQ_YN = 'Y'                                           ";
+            DataTable dt = DbQuery(strSql);
+            if (dt.Rows.Count == 0) return;
+            string cmd = ("" + dt.Rows[0]["CMD_RQ_ID"]).Trim().ToUpper();
+            if (cmd.Length == 0 || cmd == "FCMP") return;
+
+            string act;
+            string extra = "";
+            if (cmd.StartsWith("DELFK"))
+            {
+                WriteBit(O(v, "TRANSFER_REQUEST"), false);
+                extra = ", OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N', PALLET_ID_OD = '', "
+                      + "FROM_01_OD = '', FROM_02_OD = '', FROM_03_OD = '', TO_01_OD = '', TO_02_OD = '', TO_03_OD = ''";
+                if (m_strKind == "RTV") extra += ", DEPART_TRACK = '', ARRIVE_TRACK = ''";
+                act = "지시 삭제(반송지시 취소, 스트로브 OFF)";
+            }
+            else act = "명령 접수(설비 규약에 대응 신호 없음 - 이력만 기록)";
+
+            string strUpd = "";
+            strUpd += CRLF + " UPDATE " + m_strTable + " SET CMD_RQ_YN = 'N', WRITE_UPD_DT = GETDATE()" + extra;
+            strUpd += CRLF + "  WHERE WH_TYP = '" + Esc(m_strWhTyp) + "' AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
+            strUpd += CRLF + "    AND CMD_RQ_YN = 'Y' AND CMD_RQ_ID = '" + Esc(cmd) + "'                   ";
+            DbExec(strUpd);
+            LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 " + cmd + " → " + act);
         }
 
         // ---------- 지시(_od) → Vehicle 명령 메모리 ----------
