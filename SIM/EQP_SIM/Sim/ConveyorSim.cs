@@ -355,6 +355,27 @@ namespace EQP_SIM.Sim
             return true;
         }
 
+        /// <summary>
+        /// [LGLS 2026-09-04] C/V#14 출고 #29 의 화물을 C/V#15 재입고 #30 으로 인계 (PLC 가 재하 비트를 옮기는 동작 재현).
+        ///   #30 자리에 화물/트래킹이 없을 때만. 재하만 ON 하고 트래킹은 비워 둔다. 성공 시 true.
+        /// </summary>
+        private bool HandoverToPicking(string fromJob)
+        {
+            ConveyorSim cv15;
+            try { cv15 = engine.Conveyor("CONVEYOR:15"); } catch { return false; }
+            if (cv15 == null || cv15.Def.IngoPath == null) return false;
+            int inPort = cv15.Def.IngoPath[0];
+            int idx = cv15.Def.OrderOf(inPort);
+            if (idx <= 0 || cv15.Pallets.ContainsKey(idx) || !string.IsNullOrEmpty(cv15.GetTracking(idx))) return false;
+            var q = new SimPallet { Id = "", Dir = FlowDir.Ingo, ArrivedAt = DateTime.Now, SensedAt = DateTime.Now,
+                                    MoveReadyAt = DateTime.Now.AddMilliseconds(engine.MoveMs) };
+            cv15.Pallets[idx] = q;
+            cv15.SetExist(idx, true);                       // Pallet Exist #30 ON  (사양 : #29 OFF 보다 먼저)
+            cv15.UpdateWaitOut();
+            engine.Log(cv15.Def.Id + " P" + inPort + " 피킹 인계 : #29(JOB " + fromJob + ") 재하 → #30 재하 ON (트래킹 없음), 이어서 #29 OFF");
+            return true;
+        }
+
         /// <summary>차량(RGV/SC)이 포트에 파렛트를 내려놓음</summary>
         public void PlacePallet(int port, string palletId, FlowDir dir)
         {
@@ -661,8 +682,13 @@ namespace EQP_SIM.Sim
                         {
                             p.Discharged = true;
                             p.DischargedAt = now;
-                            SetExist(outIdx, false);
                             PulseEvent("UNLOAD_COMPLETE", outIdx);
+                            // [LGLS 2026-09-04] 피킹 작업대(C/V#14 출고 #29 ↔ C/V#15 재입고 #30)는 물리적으로 한 자리.
+                            //   PLC 사양(슬라이드 13) 순서 : Unload Complete #2 핸드셰이크 → Pallet Exist #30 ON → Pallet Exist #29 OFF
+                            //   ("출고 영역 #29 bit 만 지움"). 트래킹(작업번호)은 복사하지 않는다 - 재입고는 상위의 새 지시로 시작.
+                            if (Def.No == 14 && !HandoverToPicking(p.Id))
+                                engine.Log(Def.Id + " P" + outPort + " 피킹 인계 불가(C/V#15 #30 자리 점유) - 지게차 반출로 처리");
+                            SetExist(outIdx, false);
                             engine.Log(Def.Id + " P" + outPort + " 출고 화물 배출 (지게차, JOB " + p.Id +
                                        ", 신호ON후 " + ((int)(now - p.OutSignalAt).TotalMilliseconds) + "ms)");
                             UpdateWaitOut();
