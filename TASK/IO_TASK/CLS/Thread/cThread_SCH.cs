@@ -1206,7 +1206,7 @@ namespace TSK_COMM_IOSCH
                     string dropTrack   = bOutRgv ? RgvPickupTrack(destPos)                   : RgvDropTrack(destPos);
                     string lineKey = bOutRgv ? "" : RgvDropTrack(destPos);
                     if (!bOutRgv && setBlockedLine.Contains(lineKey)) continue;         // 앞선(더 오래된) 작업이 이 라인 대기 중
-                    if (!bOutRgv && !CanEnterLine(dropTrack, luggNo)) { setBlockedLine.Add(lineKey); continue; }   // 드롭 라인 선점/점유 시 대기
+                    if (!bOutRgv && !CanEnterLine(dropTrack, luggNo)) { setBlockedLine.Add(lineKey); continue; }   // 드롭 라인 점유 시 대기 (CV_DATA 기준)
                     // [LGLS 2026-08-30] 위 판정은 CV_DATA 미러(최대 ~16초 지연) 기반이라, RTV 가 막
                     //   내려놓은 화물을 못 보고 같은 드롭 트랙에 다음 입고를 또 보낼 수 있다(크레인 충돌).
                     //   JOB_MST 로 지연 없이 한 번 더 막는다.
