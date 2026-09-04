@@ -427,7 +427,7 @@ namespace WCS_TASK_CV
                         catch (Exception exv) { LogDb("[VEH_" + m_strKind + "] 관측 실패: " + exv.Message); }
                         try { ConsumeOperatorCommands(v); } catch (Exception exCmd) { LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 처리 실패: " + exCmd.Message); }
                         try { ConsumeCommands(v); }
-                        catch (Exception exc) { LogDb("[VEH_" + m_strKind + "] 지시 소비 실패: " + exc.Message); }
+                        catch (Exception exc) { LogDb("[VEH_" + m_strKind + "] 지시 소비 실패: " + exc.Message + " @ " + (exc.StackTrace ?? "").Replace("\r\n", " | ")); }
                     }
 
                     // [LGLS 2026-08-22] 통신 연속 실패 감시 (CvThread 와 같은 규칙).
@@ -780,6 +780,9 @@ namespace WCS_TASK_CV
             string t2 = ("" + dt.Rows[0]["TO_02_OD"]).Trim();
             string t3 = ("" + dt.Rows[0]["TO_03_OD"]).Trim();
 
+            // [LGLS 2026-09-04] 관측 정의 누락 진단 - 어떤 태그가 없는지 이력에 남긴다
+            foreach (string tg in new[] { "PALLET_ID", "FROM_01", "FROM_02", "FROM_03", "TO_01", "TO_02", "TO_03", "TRANSFER_REQUEST" })
+                if (O(v, tg) == null) throw new Exception(v.OwnerId + " 관측 정의 없음: " + tg + " (보유: " + string.Join(",", new List<string>(v.Obs.Keys).ToArray()) + ")");
             bool ok = WriteString(O(v, "PALLET_ID"), pid)
                    && WriteString(O(v, "FROM_01"), f1)
                    && WriteString(O(v, "FROM_02"), f2)

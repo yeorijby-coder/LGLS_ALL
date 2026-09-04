@@ -137,6 +137,8 @@
            이 자연스럽고, W0345 는 S/C#5 To3 와 같은 번지라 지시가 겹친다. 10진 확정 배치(D0370 기준)에서는 D345 = S/C#3 To3 가 되어
            2026-09-04 04:11 S/C#3 출고지시(To=…/10)가 RGV 지시(To=…/03)를 덮어써 RGV 가 트랙 110 에 하역하는 사고가 재현됐다.
            → 연속 배치(offset 5 = D375)로 정정. ★실PLC 대사 시 RGV To3 = D375 확인 필요★ -->
+      <Signal name="To1" offset="3" tag="TO_01" />
+      <Signal name="To2" offset="4" tag="TO_02" />
       <Signal name="To3" offset="5" tag="TO_03" legacy="W0355" desc="[정정 2026-09-04] RGV To 3번째 워드(트랙). 구 정의 W0345 는 S/C To3 와 충돌하는 오기" />
       <Signal name="JobNo" offset="6" words="2" tag="PALLET_ID" desc="작업번호(파렛트ID) 2워드" />
     </Block>
