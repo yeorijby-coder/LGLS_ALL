@@ -1282,6 +1282,19 @@ namespace TSK_COMM_IOSCH
                         DbgLog("RGVERR_" + rtvNo, string.Format("[RGV] 보류 - 도착지 CV {0} 에러(작업 {1})", dropTrack, luggNo));
                         continue;
                     }
+                    // [LGLS 2026-09-04] (사용자 확정) 도착지에 "RGV 완료(39)됐지만 아직 착지 기록이 안 된 작업" 이 있으면
+                    //   지시하지 않는다. 39 + HS_TRACK_NO = 도착트랙 이 그 상태다. 미러(CV_DATA) 지연과 무관하게
+                    //   JOB_MST 만으로 판정하므로 같은 트랙 중복 하역이 원천 차단된다. 운전자가 알 수 있게 알람 이력에 남긴다.
+                    {
+                        string pendLugg = RgvDoneNotLanded(dropTrack, luggNo);
+                        if (!string.IsNullOrEmpty(pendLugg))
+                        {
+                            string msgPend = string.Format("[RGV] 지시 보류 - 도착지 {0} 에 RGV 완료(39) 후 착지 기록 대기 작업 {1} 있음 (지시하려던 작업 {2})", dropTrack, pendLugg, luggNo);
+                            DbgLog("RGVPEND_" + dropTrack, msgPend);
+                            MakeMsg_Imp("[SCH]" + msgPend);
+                            continue;
+                        }
+                    }
                     if (!IsHsOn(pickupTrack, "RTV_DEPARTHS_READY_RD"))
                     {
                         DbgLog("RGVHS_" + rtvNo, string.Format("[RGV] 보류 - 출발지 {0} 출발 HS 신호 없음(작업 {1})", pickupTrack, luggNo));
@@ -1813,6 +1826,53 @@ namespace TSK_COMM_IOSCH
                 }
             }
             catch { }
+        }
+
+        /// <summary>[LGLS 2026-09-04] 도착트랙에 "RGV 완료(39) + HS_TRACK_NO = 트랙" 인 다른 작업이 있으면 그 작업번호, 없으면 "".</summary>
+        private string RgvDoneNotLanded(string dropTrack, string exceptLugg)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT LUGG_NO FROM JOB_MST                                   ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND JOB_STATUS = :ST_DONE               ";
+                q += CRLF + "    AND HS_TRACK_NO = :TRK AND LUGG_NO <> :LUGG                  ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')                        ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_DONE", DbLang.VARCHAR).Value = ST_RGV_DONE;
+                _pBdb.mComMain.Parameters.Add("TRK",     DbLang.VARCHAR).Value = dropTrack ?? "";
+                _pBdb.mComMain.Parameters.Add("LUGG",    DbLang.VARCHAR).Value = exceptLugg ?? "";
+                if (DbQry(q) <= 0) return "";
+                return GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO");
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-04] RGV 도착트랙에 화물(재하 ON)은 있는데 트래킹이 비어 있으면 작업번호 기록을 요청한다.
+        ///   LUGG_NO_OD + TRACKING_WRITE_YN='Y' → WCS_TASK_CV 가 PLC R영역에 쓴다(CV 구동지시 OD_RQ_YN 은 건드리지 않음).
+        ///   요청을 냈으면 true.
+        /// </summary>
+        private bool RequestArrivalTrackingWrite(string track, string luggNo)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " UPDATE CV_DATA SET LUGG_NO_OD = :LUGG, TRACKING_WRITE_YN = 'Y' ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND MC_NO = :TRK                        ";
+                q += CRLF + "    AND SENSOR0_DATA_RD = '1'                                   ";
+                q += CRLF + "    AND (LUGG_NO_RD IS NULL OR LTRIM(RTRIM(LUGG_NO_RD)) IN ('','0','0000')) ";
+                q += CRLF + "    AND (TRACKING_WRITE_YN IS NULL OR TRACKING_WRITE_YN <> 'Y')  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = luggNo;
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("TRK",    DbLang.VARCHAR).Value = track;
+                return DbNonQry(q) > 0;
+            }
+            catch { return false; }
         }
 
         private bool IsLineRsvd(string track, string exceptLugg)
@@ -3033,6 +3093,14 @@ namespace TSK_COMM_IOSCH
                     string landTrk = LuggLandedTrack(hs, luggNo);
                     if (string.IsNullOrEmpty(landTrk))
                     {
+                        // [LGLS 2026-09-04] (사용자 확정) 39 + HS_TRACK_NO 와 CV_DATA 를 묶어, 도착트랙에 화물은 있는데
+                        //   작업번호(트래킹)가 비어 있으면 WCS 가 그 트랙에 작업번호를 기록한다(PLC 담당자 : 하역 후 번호는 ECS 가 써 준다).
+                        //   설비가 번호를 함께 옮겨 준 경우(트래킹 = 작업번호)는 위 LuggLandedTrack 에서 이미 착지로 잡힌다.
+                        if (RequestArrivalTrackingWrite(hs, luggNo))
+                        {
+                            MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RGV 도착지 {1} 화물 감지 - 트랙에 작업번호 기록 요청", luggNo, hs));
+                            continue;
+                        }
                         DbgLog("LANDRGV_" + luggNo, "[착지대기] " + luggNo + " RGV 도착지 " + hs + " 에 아직 화물 없음");
                         // [LGLS 2026-09-01] ★겸용 출고대(122) 직행 드롭의 최종 구간 특례★ (9007 실측)
                         //   RGV 가 121 에 내려놓으면 벨트가 즉시 121→122 로 옮기고, 출고대 신호
