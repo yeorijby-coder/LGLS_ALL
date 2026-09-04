@@ -364,9 +364,12 @@ namespace HOST_SIM
             //   ★다른 출발 셀★ 을 내려 준다. 같은 S/C 호기 안에서 레벨만 바꾼다(명세 : 동일 호기여야 함).
             string newCell = NextLevelCell(redirCellE);
             string stn = redirScE.ToString();
-            byte[] body = WmsMessage.BuildRedirect('2', redirLuggE, stn, redirCellE, stn, newCell, '2', redirScE.ToString());
+            // [LGLS 2026-09-05] 출고 재지정은 ★출발 셀★ 이 바뀌는 것이다. WCS(CSrvWork case "2")는
+            //   전문의 START 필드를 새 출발 셀로 읽어 기존 START_LOCATION 과 비교한다.
+            //   종전처럼 START 에 옛 셀을 넣으면 "재지정 받은 LOCATION이 기존과 같습니다" 로 반려된다(응답 N08).
+            byte[] body = WmsMessage.BuildRedirect('2', redirLuggE, stn, newCell, stn, redirCellE, '2', redirScE.ToString());
             ecsChannel.Send(body, "공출고 재지정 JOB=" + redirLuggE);
-            Log("ORD", string.Format("[공출고 재지정] JOB={0} SC{1}: {2} → {3} (R_Kind=2)", redirLuggE, redirScE, redirCellE, newCell));
+            Log("ORD", string.Format("[공출고 재지정] JOB={0} SC{1}: 출발셀 {2} → {3} (R_Kind=2)", redirLuggE, redirScE, redirCellE, newCell));
             btnRedirectEmpty.Enabled = false;
             redirLuggE = null;
             SafeUI(UpdateLogicLabels);
