@@ -608,13 +608,19 @@ void CMainFrame::AddCategoryWCS()
 	// [LGLS 2026-09-03] Ecs.ini [MENU] UIMODE_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
 	if (::GetPrivateProfileInt(_T("MENU"), _T("UIMODE_MENU"), 1, ECS_INI_FILE) != 0)
 	{
+		// [LGLS 2026-09-05] 이 시점의 strAppPath 는 직전 패널(창고 모니터링)의 mainframe_monitor 폴더다.
+		//   종전에는 그대로 job.png 를 찾다 실패해 아이콘이 없는 텍스트 버튼으로 표시됐다.
+		//   UI모드 아이콘은 mainframe_view 에 있으므로 경로를 다시 지정한다.
+		strAppPath.Format(_T("%s"), chrFileName);
+		strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_view\\");
 		CMFCRibbonPanel* pPanelUiMode = pCategory->AddPanel(_T("UI모드"));
+		// [LGLS 2026-09-05] UI모드 전용 아이콘 (종전에는 두 버튼이 같은 job.png 를 썼다)
 		CMFCRibbonButton* pBtnUiDlg = new CMFCRibbonButton(ID_UIMODE_DLG, _T("대화상자 모드"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+			HICONFromPATH(GetConcatPath(strAppPath, _T("uimode_dlg"), strExtension)), TRUE);
 		pBtnUiDlg->SetAlwaysLargeImage();
 		pPanelUiMode->Add(pBtnUiDlg);
 		CMFCRibbonButton* pBtnUiPanel = new CMFCRibbonButton(ID_UIMODE_PANEL, _T("판넬 모드"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+			HICONFromPATH(GetConcatPath(strAppPath, _T("uimode_panel"), strExtension)), TRUE);
 		pBtnUiPanel->SetAlwaysLargeImage();
 		pPanelUiMode->Add(pBtnUiPanel);
 	}
