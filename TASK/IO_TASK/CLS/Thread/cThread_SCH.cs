@@ -350,6 +350,7 @@ namespace TSK_COMM_IOSCH
                     CompleteSC();       // 25 → 29 (입고 최종 / 출고 1차 - 랙 셀 해제)
                     CompleteRGVReal();  // 35 → 39 (RTV COMPLETE_RD 소비)
                     CompleteRGVManual(); // [LGLS 2026-09-04] 수동지시(9998) 완료 정리 - 종료 이벤트/이력
+                    CompleteSCManual();  // [LGLS 2026-09-05] SC 수동지시(9999) 완료 정리 - RTV 와 대칭
 
                     // ── ② 착지 처리 : 도착 신호 대신 ★화물 위치★ 로 판정해 다음 구간에 인계
                     LandRgvDrop();      // 39 + HS_TRACK_NO 에 화물 → 15 (CV/SC 인계)
@@ -3281,6 +3282,68 @@ namespace TSK_COMM_IOSCH
                 MakeMsg_Imp("[SCH]" + msg);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RGV] CompleteRGVManual 오류: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-05] 운전 화면 SC 수동지시(작업번호 9999)의 종료 처리.
+        ///   수동지시는 JOB_MST 에 없어 CompleteSC 가 잡지 못한다. 완료(COMPLETE_RD)를 감지하면
+        ///   지시 흔적을 지우고 이력에 남긴다. CompleteRGVManual(RTV 9998) 과 대칭이다.
+        ///   ※ ManualSc 가 VehThread 소비 컬럼(TRANSFER_REQUEST_OD/FROM_/TO_)을 채우도록 고친
+        ///     2026-09-05 이후에야 이 완료가 실제로 발생한다(그 전에는 지시 자체가 나가지 않았다).
+        /// </summary>
+        private void CompleteSCManual()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT SC_NO FROM SC_DATA_LGLS                          ";
+                q += CRLF + "  WHERE WH_TYP            = :WH_TYP                      ";
+                q += CRLF + "    AND LUGG_NO_FK1_OD    = '9999'                       ";
+                q += CRLF + "    AND COMPLETE_RD IS NOT NULL                          ";
+                q += CRLF + "    AND COMPLETE_RD NOT IN ('0','00','0000','')          ";
+                q += CRLF + "    AND OD_RQ_YN          = 'N'                          ";
+                q += CRLF + "    AND TRANSFER_REQUEST_OD = 'N'                        ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string scNo = GetVal(dt.Rows[i], "SC_NO");
+
+                    // 지시 흔적 정리 : 남겨 두면 다음 작업을 받은 크레인에 9999 가 붙어 보이고
+                    //   잔존 COMPLETE_RD 가 다음 완료 판정에 섞인다(ClearScOd 와 같은 취지).
+                    string u = "";
+                    u += CRLF + " UPDATE SC_DATA_LGLS                                  ";
+                    u += CRLF + "    SET LUGG_NO_FK1_OD     = '0000'                   ";
+                    u += CRLF + "      , PALLET_ID_OD       = '0000'                   ";
+                    u += CRLF + "      , JOB_TYP_OD         = '0'                      ";
+                    u += CRLF + "      , JOB_TYP_RD         = '0'                      ";
+                    u += CRLF + "      , COMPLETE_RD        = '0'                      ";
+                    u += CRLF + "      , ITN_LUGG_FK1       = '0'                      ";
+                    u += CRLF + "      , PALLET_ON_VEHICLE_RD = ''                     ";
+                    u += CRLF + "      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' ";
+                    u += CRLF + "      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' ";
+                    u += CRLF + "      , START_BANK_FK1_OD  = '0', START_BAY_FK1_OD  = '0'  ";
+                    u += CRLF + "      , START_LEVEL_FK1_OD = '0', START_HSPOS_FK1_OD = '0'  ";
+                    u += CRLF + "      , DEST_BANK_FK1_OD   = '0', DEST_BAY_FK1_OD   = '0'  ";
+                    u += CRLF + "      , DEST_LEVEL_FK1_OD  = '0', DEST_HSPOS_FK1_OD = '0'  ";
+                    u += CRLF + "  WHERE WH_TYP = :WH_TYP AND SC_NO = :SC_NO           ";
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
+                    DbNonQry(u);
+
+                    m_dicPrevSC.Remove("SC_" + scNo);
+                    string msg = string.Format("[SC] 수동지시(9999) 반송 완료 - S/C #{0}, 지시 정보 정리", scNo);
+                    DbgLog("SCMAN_" + scNo, msg);
+                    MakeMsg_Imp("[SCH]" + msg);
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][SC] CompleteSCManual 오류: " + ex.Message); }
         }
 
         private void CompleteRGVReal()

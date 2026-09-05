@@ -399,6 +399,29 @@ BOOL CManualSc::IsInvalidRackToRackData()
 	return TRUE;
 }
 
+// [LGLS 2026-09-05] Vehicle 반송 좌표 인코딩
+//   IO_TASK cThread_SCH.VehPortLoc / VehCellLoc 과 같은 규약을 쓴다.
+//     포트 : ("00", "00", 트랙 % 100)
+//     셀   : (홀수뱅크 "01" / 짝수뱅크 "02", Bay % 100, Level % 100)
+static void VehPortLoc(LPCTSTR szTrack, CString& a, CString& b, CString& c)
+{
+	int t = _ttoi(szTrack);
+	a = _T("00");
+	b = _T("00");
+	c.Format(_T("%02d"), t % 100);
+}
+
+static void VehCellLoc(LPCTSTR szBank, LPCTSTR szBay, LPCTSTR szLev,
+                       CString& a, CString& b, CString& c)
+{
+	int bank = _ttoi(szBank);
+	int bay  = _ttoi(szBay);
+	int lev  = _ttoi(szLev);
+	a = (bank % 2 == 1) ? _T("01") : _T("02");
+	b.Format(_T("%02d"), bay % 100);
+	c.Format(_T("%02d"), lev % 100);
+}
+
 void CManualSc::OnBnClickedBtnScManualSave()
 {
 	CString strSql = _T("");
@@ -482,6 +505,26 @@ void CManualSc::OnBnClickedBtnScManualSave()
 		strDestLocLevFork1 = _T("0");
 	}
 
+	// [LGLS 2026-09-05] VehThread 가 실제로 소비하는 좌표를 함께 만든다.
+	//   종전에는 START_/DEST_*_FK1_OD 만 기록해 지시가 설비에 나가지 않았고,
+	//   OD_RQ_YN='Y' 만 남아 그 크레인이 물렸다(자동/수동 모두 불가).
+	CString strF1, strF2, strF3, strT1, strT2, strT3;
+	if (strJobTyp == _T("1"))          // 입고 : 라인 포트 -> 셀
+	{
+		VehPortLoc(strStartHsFork1, strF1, strF2, strF3);
+		VehCellLoc(strDestLocBankFork1, strDestLocBayFork1, strDestLocLevFork1, strT1, strT2, strT3);
+	}
+	else if (strJobTyp == _T("2"))     // 출고 : 셀 -> 라인 포트
+	{
+		VehCellLoc(strStartLocBankFork1, strStartLocBayFork1, strStartLocLevFork1, strF1, strF2, strF3);
+		VehPortLoc(strDestHsFokr1, strT1, strT2, strT3);
+	}
+	else                               // 그 외(3) : 포트 -> 포트
+	{
+		VehPortLoc(strStartHsFork1, strF1, strF2, strF3);
+		VehPortLoc(strDestHsFokr1, strT1, strT2, strT3);
+	}
+
 
 	// [LGLS 2026-09-03] 가드 : 스케줄러가 이미 낸 지시(OD_RQ_YN=Y)를 수동 지시가 덮어쓰면
 	//   그 작업이 영영 완료되지 않는다(RGV 3059 실측 사례). 크레인도 같은 규칙.
@@ -524,6 +567,17 @@ void CManualSc::OnBnClickedBtnScManualSave()
 	strSql+= _T("    SET OD_RQ_YN = 'Y'												 \n");
 	strSql+= _T("    ,JOB_TYP_OD          = '") + strJobTyp + _T("'					 \n");
 	strSql+= _T("    ,LUGG_NO_FK1_OD      = '9999'									 \n");
+	// [LGLS 2026-09-05] 아래 8개가 WCS_TASK_CV(VehThread.ConsumeCommands)가 읽는 값이다.
+	//   TRANSFER_REQUEST_OD 가 트리거이고, 나머지가 실제 반송 좌표다.
+	strSql+= _T("    ,PALLET_ID_OD       = '9999'                                   \n");
+	strSql+= _T("    ,FROM_01_OD         = '") + strF1 + _T("'                                   \n");
+	strSql+= _T("    ,FROM_02_OD         = '") + strF2 + _T("'                                   \n");
+	strSql+= _T("    ,FROM_03_OD         = '") + strF3 + _T("'                                   \n");
+	strSql+= _T("    ,TO_01_OD           = '") + strT1 + _T("'                                   \n");
+	strSql+= _T("    ,TO_02_OD           = '") + strT2 + _T("'                                   \n");
+	strSql+= _T("    ,TO_03_OD           = '") + strT3 + _T("'                                   \n");
+	strSql+= _T("    ,TRANSFER_REQUEST_OD = 'Y'                                   \n");
+	strSql+= _T("    ,COMPLETE_RD        = '0'                                   \n");
 	strSql+= _T("    ,START_BANK_FK1_OD   = '") + strStartLocBankFork1 + _T("'		 \n");
 	strSql+= _T("    ,START_BAY_FK1_OD    = '") + strStartLocBayFork1 + _T("'		 \n");
 	strSql+= _T("    ,START_LEVEL_FK1_OD  = '") + strStartLocLevFork1 + _T("'		 \n");

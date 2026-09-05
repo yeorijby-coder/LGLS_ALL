@@ -71,3 +71,6 @@ Thumbs.db
 
 # 폐기 트리 (2026-08-14 C# 클라이언트 시도, 보관만)
 WCS/_TRASH_CSharp_LGLS_CLIENT_20260814/
+
+# Claude Code 개인 설정 (커밋하지 않는다)
+.claude/settings.local.json
