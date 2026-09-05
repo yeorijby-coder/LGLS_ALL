@@ -92,6 +92,17 @@ static int LglsScIdxOf(CComboBoxWrapper& cbx)
 	return (n >= 1 && n <= 5) ? n : 0;
 }
 
+// [LGLS 2026-09-06] 콤보에서 SC_DATA_LGLS.MC_NO(901~905) 를 얻는다.
+//   항목데이터는 DB 항목이면 901~905, 소스 보강 항목이면 1~5 로 섞여 있다.
+//   LglsScIdxOf() 가 양쪽을 호기(1~5)로 정규화하므로 여기에 900 을 더한다.
+//   ※ 종전에는 GetItemData() 를 그대로 MC_NO 로 써서 "4호기" 선택 시
+//     MC_NO='4' 가 되어 조회/갱신이 0건이 되었다(지시 "실패").
+static int LglsScMcNoOf(CComboBoxWrapper& cbx)
+{
+	int nIdx = LglsScIdxOf(cbx);
+	return (nIdx >= 1 && nIdx <= 5) ? (900 + nIdx) : 0;
+}
+
 BOOL CManualSc::OnInitDialog()
 {
 	CSkinDialog::OnInitDialog();
@@ -119,7 +130,7 @@ BOOL CManualSc::OnInitDialog()
 	{
 		bool bHasSc[6] = { false, false, false, false, false, false };
 		int nScCnt = m_cbxScManualScNo.GetCount();
-		for (int i = 0; i < nScCnt; i++) { int d = (int)m_cbxScManualScNo.GetItemData(i); if (d >= 1 && d <= 5) bHasSc[d] = true; }
+		for (int i = 0; i < nScCnt; i++) { int d = (int)m_cbxScManualScNo.GetItemData(i); if (d >= 901 && d <= 905) d -= 900; if (d >= 1 && d <= 5) bHasSc[d] = true; }   // [LGLS 2026-09-06] DB 항목(901~905)도 보유로 센다 - 같은 호기가 두 번 뜨던 것 방지
 		for (int nSc = 1; nSc <= 5; nSc++)
 		{
 			if (!bHasSc[nSc])
@@ -340,7 +351,7 @@ BOOL CManualSc::IsInvalidRetToRetData()
 	m_cbxStartPosFork1.GetWindowText(strStartHsFork1);
 	m_cbxDestPosFork1.GetWindowText(strDestHsFork1);
 
-	int nScNo = m_cbxScManualScNo.GetItemData(m_cbxScManualScNo.GetCurSel());
+	int nScNo = LglsScMcNoOf(m_cbxScManualScNo);
 	strScNo = CConvert::ToString(nScNo);
 
 	if (strScGrpNo == _T("PCH"))
@@ -460,8 +471,15 @@ void CManualSc::OnBnClickedBtnScManualSave()
 	strDestLocLevFork1 = strDestLocFork1.Mid(5,2);
 
 
-	nScNo = m_cbxScManualScNo.GetItemData(m_cbxScManualScNo.GetCurSel());
+	nScNo = LglsScMcNoOf(m_cbxScManualScNo);
 	strScNo = CConvert::ToString(nScNo);
+	if (nScNo <= 0)
+	{
+		// [LGLS 2026-09-06] 호기를 특정하지 못하면 MC_NO 가 0 이 되어 0건 UPDATE 가 된다.
+		//   조용히 "실패" 로 끝나던 것을 원인이 보이도록 막는다.
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("호기를 선택하세요")));
+		return;
+	}
 
 	strJobTyp = m_cbxScManualJobTyp.GetItemKey(m_cbxScManualJobTyp.GetCurSel());
 	strJobTyp.Trim();
@@ -616,7 +634,7 @@ BOOL CManualSc::SelectScStatus()
 
 
 	UpdateData(TRUE);
-	int nScNo = m_cbxScManualScNo.GetItemData(m_cbxScManualScNo.GetCurSel());
+	int nScNo = LglsScMcNoOf(m_cbxScManualScNo);
 	strScNo = CConvert::ToString(nScNo);
 
 	strSql = _T("");
@@ -646,7 +664,7 @@ BOOL CManualSc::UpdateScData()
 	UpdateData(TRUE);
 	m_cbxScManualScNo.GetWindowText(strScNo);
 
-	int nScNo = m_cbxScManualScNo.GetItemData(m_cbxScManualScNo.GetCurSel());
+	int nScNo = LglsScMcNoOf(m_cbxScManualScNo);
 	strScNo = CConvert::ToString(nScNo);
 
 	strSql.Format(_T(" UPDATE SC_DATA_LGLS	                                        \n")
@@ -702,7 +720,7 @@ void CManualSc::OnCbnSelchangeCmbScManualScGrpNo()
 	{
 		bool bHasSc[6] = { false, false, false, false, false, false };
 		int nScCnt = m_cbxScManualScNo.GetCount();
-		for (int i = 0; i < nScCnt; i++) { int d = (int)m_cbxScManualScNo.GetItemData(i); if (d >= 1 && d <= 5) bHasSc[d] = true; }
+		for (int i = 0; i < nScCnt; i++) { int d = (int)m_cbxScManualScNo.GetItemData(i); if (d >= 901 && d <= 905) d -= 900; if (d >= 1 && d <= 5) bHasSc[d] = true; }   // [LGLS 2026-09-06] DB 항목(901~905)도 보유로 센다 - 같은 호기가 두 번 뜨던 것 방지
 		for (int nSc = 1; nSc <= 5; nSc++)
 		{
 			if (!bHasSc[nSc]) { CString s2; s2.Format(_T("%d호기"), nSc); int ix = m_cbxScManualScNo.AddString(s2); m_cbxScManualScNo.SetItemData(ix, nSc); }
