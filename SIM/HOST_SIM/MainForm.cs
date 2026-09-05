@@ -359,17 +359,26 @@ namespace HOST_SIM
         private void btnRedirectEmpty_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(redirLuggE)) return;
-            // [LGLS 2026-09-05] 종전에는 내부 사이클만 강제 완료하고 ECS 에 아무것도 보내지 않아,
-            //   WCS 쪽 작업이 공출고 에러 상태(07)에 그대로 남았다. 이중입고와 같이 R 전문(R_Kind=2)으로
-            //   ★다른 출발 셀★ 을 내려 준다. 같은 S/C 호기 안에서 레벨만 바꾼다(명세 : 동일 호기여야 함).
-            string newCell = NextLevelCell(redirCellE);
-            string stn = redirScE.ToString();
-            // [LGLS 2026-09-05] 출고 재지정은 ★출발 셀★ 이 바뀌는 것이다. WCS(CSrvWork case "2")는
-            //   전문의 START 필드를 새 출발 셀로 읽어 기존 START_LOCATION 과 비교한다.
-            //   종전처럼 START 에 옛 셀을 넣으면 "재지정 받은 LOCATION이 기존과 같습니다" 로 반려된다(응답 N08).
-            byte[] body = WmsMessage.BuildRedirect('2', redirLuggE, stn, newCell, stn, redirCellE, '2', redirScE.ToString());
-            ecsChannel.Send(body, "공출고 재지정 JOB=" + redirLuggE);
-            Log("ORD", string.Format("[공출고 재지정] JOB={0} SC{1}: 출발셀 {2} → {3} (R_Kind=2)", redirLuggE, redirScE, redirCellE, newCell));
+            // [LGLS 2026-09-05] ★공출고는 재지정이 없다★ (IMS 담당자 확인, 구 ECS 소스도 R 전문을 ACK 만 하고 쓰지 않는다)
+            //   운용 규약 : IMS 도 삭제, ECS(WCS) 도 삭제. 양쪽 모두 ★사용자가 확인한 뒤★ 삭제한다.
+            //   삭제를 지시하는 전문은 규격에 없으므로(O/R/M/S/E/F), 두 번의 수동 조작이다.
+            //   이 버튼은 IMS 쪽 삭제를 흉내낸다 - 해당 사이클의 출고 작업을 취소하고 다음 사이클로 넘어간다.
+            //   WCS 쪽 작업은 운전 화면 [작업정보] 에서 운전자가 삭제해야 한다.
+            lock (logicLock)
+            {
+                CycleLogic target = null;
+                foreach (var lg in logics)
+                    if (lg.Phase == CyclePhase.WaitOutgoDone && lg.CurrentLuggageNo == redirLuggE) { target = lg; break; }
+                if (target == null)
+                    foreach (var lg in logics)
+                        if (lg.Phase == CyclePhase.WaitOutgoDone) { target = lg; break; }
+                if (target != null)
+                {
+                    Log("ORD", string.Format("[공출고 작업 삭제] JOB={0} IMS 측 작업 취소 - WCS 측은 운전 화면 [작업정보] 에서 삭제하세요", target.CurrentLuggageNo));
+                    target.OnComplete(WmsMessage.JOB_OUTGO, '2', target.CurrentLuggageNo);
+                }
+                else Log("ERR", "[공출고 작업 삭제] 대상 출고 로직을 찾지 못함");
+            }
             btnRedirectEmpty.Enabled = false;
             redirLuggE = null;
             SafeUI(UpdateLogicLabels);

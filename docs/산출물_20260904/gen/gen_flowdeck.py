@@ -359,45 +359,53 @@ footer(s, '피킹 작업대 흐름')
 
 # ══════════ 8. 예외 처리 ══════════
 s = prs.slides.add_slide(blank)
-head(s, '예외 처리 흐름', '설비 에러는 상위에 보고하고, 상위의 재지정을 받아 이어서 진행한다.')
+head(s, '예외 처리 흐름', '이중입고는 상위가 위치를 재지정하고, 공출고는 재지정 없이 양쪽에서 작업을 삭제한다.')
 
-tb(s, 0.7, 1.25, 5.9, 0.4, '■ 이중입고 (에러 54) — 입고 목적 셀에 이미 화물', 13, True, NAVY)
+tb(s, 0.7, 1.20, 5.9, 0.4, '■ 이중입고 (에러 54) — 입고 목적 셀에 이미 화물', 13, True, NAVY)
+tb(s, 0.9, 1.62, 5.7, 0.32, '→ 상위가 R 전문으로 다른 셀을 내려 준다 (재지정 있음)', 10.5, True, BLUE)
 seq1 = ['① 크레인이 셀에 넣지 못하고 에러 54 발생 (화물은 실은 채)',
-        '② 설비 통신이 에러를 DB 에 기록 → 상위 E 전문 보고',
-        '③ 운전자가 크레인 에러 해제',
-        '④ 상위가 새 셀로 재지정 (O 전문)',
-        '⑤ 크레인 재지시 → 정상 입고 완료']
-for i, t in enumerate(seq1):
-    tb(s, 0.9, 1.7 + i * 0.42, 5.7, 0.4, t, 11, False, GRAY)
+        '② WCS 가 E 전문 보고 (ErrorKind=1, 작업번호 · 도착 셀)',
+        '③ 상위가 같은 호기의 다른 셀로 R 전문(R_Kind=1) 재지정',
+        '④ WCS 가 작업을 재지정 상태로 바꾸고 새 셀로 크레인 재지시',
+        '⑤ 크레인이 새 지시를 받아 정상 입고 완료']
+for i2, t in enumerate(seq1):
+    tb(s, 0.9, 2.05 + i2 * 0.40, 5.7, 0.38, t, 11, False, GRAY)
 
-tb(s, 6.95, 1.25, 5.9, 0.4, '■ 공출고 (에러 58) — 출고 출발 셀이 비어 있음', 13, True, NAVY)
+tb(s, 6.95, 1.20, 5.9, 0.4, '■ 공출고 (에러 58) — 출고 출발 셀이 비어 있음', 13, True, NAVY)
+tb(s, 7.15, 1.62, 5.7, 0.32, '→ 재지정이 없다. 양쪽에서 작업을 삭제한다', 10.5, True, AMBER)
 seq2 = ['① 크레인이 셀에서 집지 못하고 에러 58 발생 (빈 포크)',
-        '② 설비 통신이 에러를 DB 에 기록 → 상위 E 전문 보고',
-        '③ 운전자가 크레인 에러 해제 · 필요 시 지시 삭제',
-        '④ 상위가 다른 셀로 재지정 (O 전문)',
-        '⑤ 크레인 재지시 → 정상 출고 완료']
-for i, t in enumerate(seq2):
-    tb(s, 7.15, 1.7 + i * 0.42, 5.7, 0.4, t, 11, False, GRAY)
+        '② WCS 가 E 전문 보고 (ErrorKind=3, 작업번호 · 출발 셀)',
+        '③ 상위(IMS)가 그 작업을 삭제한다 (담당자 확인 후)',
+        '④ 운전자가 WCS [작업정보] 에서 같은 작업을 삭제 (확인 후)',
+        '⑤ 재고가 실제로 있는 셀로 상위가 새 출고를 지시']
+for i2, t in enumerate(seq2):
+    tb(s, 7.15, 2.05 + i2 * 0.40, 5.7, 0.38, t, 11, False, GRAY)
 
-tb(s, 0.7, 4.0, 12.1, 0.4, '■ 그 밖의 정체와 조치', 13, True, NAVY)
+box(s, 0.7, 4.12, 12.15, 0.86,
+    [('설비 에러 해제는 운전 화면의 기능이 아니다', 11.5, True, NAVY),
+     ('구 ECS 에도 S/C · RGV 에러를 해제하는 화면 기능은 없다. 설비에서 알람이 해제되면 설비가 AlarmResetReport 로 알리고 ECS 는 Ack 만 한다.', 10.5, False, GRAY),
+     ('(참고) 구 ECS 소스에서 R 전문은 ACK 만 하고 실제 위치 변경 코드가 없다. 재지정 동작은 현행 WCS 에서 구현했다.', 10.5, False, GRAY)],
+    LIGHT, NAVY, GRAY, 10.5, MSO_SHAPE.ROUNDED_RECTANGLE, False)
+
+tb(s, 0.7, 5.10, 12.1, 0.4, '■ 그 밖의 정체와 조치', 13, True, NAVY)
 rows = [['상황', '조치'],
         ['같은 상태에 오래 머묾 (정체 알림창)', '설비 대화상자에서 상태 확인 → 지시 재전송 / 지시 삭제'],
         ['RGV 가 지시를 받지 않음', 'RTV 상태창 [지시 삭제] 로 요청 플래그까지 비운다'],
         ['설비 완료 신호가 오지 않아 상태가 남음', '[환경설정] > [시간기반 자동처리] 를 선택하면 경과시간으로 완료를 추정한다'],
         ['상태바 EQUIP / HOST / SCH 빨강', '해당 서버 프로그램 재기동 (지시는 DB 에 남아 이어서 진행된다)']]
-shp = s.shapes.add_table(len(rows), 2, Inches(0.7), Inches(4.45), Inches(12.1), Inches(0.4 * len(rows)))
+shp = s.shapes.add_table(len(rows), 2, Inches(0.7), Inches(5.45), Inches(12.1), Inches(0.29 * len(rows)))
 t = shp.table
 t.columns[0].width = Inches(4.3); t.columns[1].width = Inches(7.8)
-for i, row in enumerate(rows):
-    for j, v in enumerate(row):
-        c = t.cell(i, j); c.text = ''
-        p = c.text_frame.paragraphs[0]; r = p.add_run(); r.text = v
-        r.font.size = Pt(10.5); r.font.name = FONT
+for i2, row in enumerate(rows):
+    for j2, v in enumerate(row):
+        c = t.cell(i2, j2); c.text = ''
+        p2 = c.text_frame.paragraphs[0]; r = p2.add_run(); r.text = v
+        r.font.size = Pt(10); r.font.name = FONT
         c.fill.solid()
-        if i == 0:
+        if i2 == 0:
             c.fill.fore_color.rgb = NAVY; r.font.color.rgb = WHITE; r.font.bold = True
         else:
-            c.fill.fore_color.rgb = WHITE if i % 2 else LIGHT
+            c.fill.fore_color.rgb = WHITE if i2 % 2 else LIGHT
             r.font.color.rgb = RGBColor(0x22, 0x22, 0x22)
 footer(s, '예외 처리 흐름')
 

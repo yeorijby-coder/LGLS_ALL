@@ -152,7 +152,7 @@
             this.btnRedirectDouble.Click += new System.EventHandler(this.btnRedirectDouble_Click);
             this.btnRedirectEmpty.Location = new System.Drawing.Point(220, 90);
             this.btnRedirectEmpty.Size = new System.Drawing.Size(200, 28);
-            this.btnRedirectEmpty.Text = "[공출고 재지정 처리]";
+            this.btnRedirectEmpty.Text = "[공출고 작업 삭제]";
             this.btnRedirectEmpty.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
             this.btnRedirectEmpty.ForeColor = System.Drawing.Color.DarkBlue;
             this.btnRedirectEmpty.Enabled = false;
