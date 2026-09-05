@@ -113,6 +113,32 @@ namespace EQP_SIM.Sim
 
         public string StatusText { get; private set; }
 
+        /// <summary>
+        /// [LGLS 2026-09-05] 설비(현장 조작반) 에러 해제.
+        ///   이중입고(54)는 상위 재지정으로 풀리지만, 공출고(58)는 재지정이 없고 작업을 삭제하므로
+        ///   ★설비에서 사람이 에러를 푸는 것★ 외에는 풀 길이 없다(스케줄러는 에러난 크레인에 지시하지 않는다).
+        ///   현장의 그 조작을 흉내낸다. 해제되면 true.
+        /// </summary>
+        public bool ClearError()
+        {
+            if (state != VState.Error) return false;
+            io.SetShort(Def.Id, "ERR_CODE_RD", 0);
+            pendingErrCode = 0;
+            bool bHadCargo = (carrying != null && io.GetBool(Def.Id, "PALLET_EXIST_FLAG"));
+            if (!bHadCargo)
+            {
+                // 공출고 : 포크가 비어 있다. 실을 화물이 없으므로 데이터도 내린다.
+                io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");
+                io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
+                carrying = null;
+            }
+            io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 1);   // IDLE
+            state = VState.Idle;
+            StatusText = bHadCargo ? "에러 해제 (화물 실은 채 대기)" : "에러 해제 (IDLE)";
+            engine.Log(Def.Id + " 설비 에러 해제" + (bHadCargo ? " - 화물을 실은 채 대기한다" : " - 포크 빔, IDLE 복귀"));
+            return true;
+        }
+
         public VehicleSim(VehicleDef def, PlcIo io, ScenarioEngine engine)
         {
             Def = def;

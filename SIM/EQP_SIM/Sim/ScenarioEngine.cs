@@ -105,6 +105,18 @@ namespace EQP_SIM.Sim
         public IEnumerable<ConveyorSim> AllConveyors { get { return conveyors.Values; } }
         public IEnumerable<VehicleSim> AllVehicles { get { return vehicles.Values; } }
 
+        /// <summary>[LGLS 2026-09-05] 설비(현장 조작반) 에러 해제 - 에러 상태인 차량을 모두 푼다. 해제한 대수를 돌려준다.</summary>
+        public int ClearVehicleErrors()
+        {
+            lock (sync)
+            {
+                int n = 0;
+                foreach (var v in vehicles.Values) if (v.ClearError()) n++;
+                if (n == 0) Log("[설비 에러 해제] 에러 상태인 설비가 없습니다");
+                return n;
+            }
+        }
+
         public void Start(string dataDir, SimConfig config)
         {
             this.dataDir = dataDir;

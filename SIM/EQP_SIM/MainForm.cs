@@ -306,6 +306,13 @@ namespace EQP_SIM
             if (chkInjectEmpty.Checked) lblStatus.Text = "공출고 에러 예약됨 — 다음 출고 크레인에서 발생(ERR 58)";
         }
 
+        // [LGLS 2026-09-05] [설비 에러 해제] : 현장 조작반에서 사람이 크레인 에러를 푸는 동작을 흉내낸다.
+        private void btnClearErr_Click(object sender, EventArgs e)
+        {
+            int n = engine.ClearVehicleErrors();
+            lblStatus.Text = (n > 0) ? ("설비 에러 해제 - " + n + "대") : "에러 상태인 설비가 없습니다";
+        }
+
         private void btnFeed11_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:11"); }
 
         // [LGLS 2026-08-24] 가운데 투입 버튼 = "24 입고대"(C/V#12).

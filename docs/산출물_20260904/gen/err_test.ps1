@@ -54,7 +54,7 @@ $detail = @()
 foreach ($kind in @('DOUBLE', 'EMPTY')) {
   $errCode = if ($kind -eq 'DOUBLE') { '0054' } else { '0058' }
   $chkMatch = if ($kind -eq 'DOUBLE') { '*이중입고 에러*' } else { '*공출고 에러*' }
-  $btnMatch = if ($kind -eq 'DOUBLE') { '*이중입고 재지정*' } else { '*공출고 재지정*' }
+  $btnMatch = if ($kind -eq 'DOUBLE') { '*이중입고 재지정*' } else { '*공출고 작업 삭제*' }
   $name = if ($kind -eq 'DOUBLE') { '이중입고(54)' } else { '공출고(58)' }
   W ""
   W "──────── $name 시험 ────────"
@@ -94,7 +94,7 @@ foreach ($kind in @('DOUBLE', 'EMPTY')) {
       if ($kind -eq 'DOUBLE') { $ngD++ } else { $ngE++ }; continue
     }
     $sc = Q "SELECT TOP 1 SC_NO FROM SC_DATA_LGLS WHERE ERR_CODE_RD='$errCode'"
-    $lugg = Q "SELECT TOP 1 ISNULL(LUGG_NO_FK1_OD,'') FROM SC_DATA_LGLS WHERE ERR_CODE_RD='$errCode'"
+    $lugg = Q "SELECT TOP 1 LTRIM(RTRIM(COALESCE(NULLIF(PALLET_ON_VEHICLE_RD,''), NULLIF(ITN_LUGG_FK1,''), NULLIF(LUGG_NO_FK1_OD,''), ''))) FROM SC_DATA_LGLS WHERE ERR_CODE_RD='$errCode'"
     W "  #$i 에러 발생 : S/C$sc  작업 $lugg"
 
     # HOST_SIM 재지정 버튼 활성화 대기 후 클릭
@@ -108,8 +108,27 @@ foreach ($kind in @('DOUBLE', 'EMPTY')) {
       }
       Start-Sleep -Milliseconds 1500
     }
-    if (-not $clicked) { W "  #$i NG : 재지정 버튼이 활성화되지 않음"; $detail += "$kind #$i NG(재지정버튼)"
+    if (-not $clicked) { W "  #$i NG : 상위 처리 버튼이 활성화되지 않음"; $detail += "$kind #$i NG(상위버튼)"
       if ($kind -eq 'DOUBLE') { $ngD++ } else { $ngE++ }; continue }
+
+    # 공출고는 재지정이 없다. 상위(IMS)가 삭제하고, WCS 쪽은 운전자가 [작업정보] 에서 삭제한다.
+    #   운전 화면 조작을 자동화할 수 없으므로, Client 가 실행하는 것과 같은 삭제를 대행한다.
+    if ($kind -eq 'EMPTY' -and $lugg -ne '') {
+      Start-Sleep -Seconds 3
+      Q "DELETE FROM JOB_MST WHERE WH_TYP='10' AND LUGG_NO='$lugg'" | Out-Null
+      $left = Q "SELECT COUNT(*) FROM JOB_MST WHERE WH_TYP='10' AND LUGG_NO='$lugg'"
+      if ($left -eq '0') { W "    WCS 작업 $lugg 삭제 (운전자 조작 대행)" }
+      else { W "    (주의) WCS 작업 $lugg 이 삭제되지 않았다" }
+
+      # 크레인 에러는 설비에서 사람이 푼다. 스케줄러는 에러난 크레인에 새 지시를 주지 않으므로
+      #   재지정이 없는 공출고에서는 이 조작이 없으면 에러가 영영 남는다.
+      Start-Sleep -Seconds 2
+      $btnClr = FindCtl 'EQP_SIM' '*설비 에러 해제*'
+      if ($btnClr -ne [IntPtr]::Zero) {
+        [ErrT.ET]::PostMessage($btnClr, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        W "    EQP_SIM [설비 에러 해제] (현장 조작반 대행)"
+      } else { W "    (주의) EQP_SIM [설비 에러 해제] 버튼을 찾지 못함" }
+    }
 
     # 에러 해제 대기 (재지시로 크레인이 다시 움직이면 해제된다)
     $sqlClear = "SELECT CASE WHEN EXISTS(SELECT 1 FROM SC_DATA_LGLS WHERE ERR_CODE_RD='$errCode') THEN 0 ELSE 1 END"
@@ -119,7 +138,7 @@ foreach ($kind in @('DOUBLE', 'EMPTY')) {
     }
 
     $sec = [int]((Get-Date) - $t0).TotalSeconds
-    W "  #$i OK : 재지정 후 정상 복귀 ($sec 초)"
+    W ("  #$i OK : " + $(if($kind -eq 'DOUBLE'){'재지정 후 정상 복귀'}else{'삭제 후 정상 복귀'}) + " ($sec 초)")
     $detail += "$kind #$i OK ${sec}s"
     if ($kind -eq 'DOUBLE') { $okD++ } else { $okE++ }
     Start-Sleep -Seconds 12

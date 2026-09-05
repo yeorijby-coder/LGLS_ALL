@@ -17,6 +17,7 @@
             this.chkAutoFeed = new System.Windows.Forms.CheckBox();
             this.chkInjectDouble = new System.Windows.Forms.CheckBox();
             this.chkInjectEmpty = new System.Windows.Forms.CheckBox();
+            this.btnClearErr = new System.Windows.Forms.Button();
             this.btnFeed11 = new System.Windows.Forms.Button();
             this.btnFeed12 = new System.Windows.Forms.Button();
             this.btnFeed15 = new System.Windows.Forms.Button();
@@ -47,6 +48,7 @@
             this.pnlTop.Controls.Add(this.chkAutoFeed);
             this.pnlTop.Controls.Add(this.chkInjectDouble);
             this.pnlTop.Controls.Add(this.chkInjectEmpty);
+            this.pnlTop.Controls.Add(this.btnClearErr);
             this.pnlTop.Controls.Add(this.btnFeed11);
             this.pnlTop.Controls.Add(this.btnFeed12);
             this.pnlTop.Controls.Add(this.btnFeed15);
@@ -82,6 +84,17 @@
             this.chkInjectEmpty.Text = "공출고 에러 (다음 출고 크레인)";
             this.chkInjectEmpty.ForeColor = System.Drawing.Color.DarkBlue;
             this.chkInjectEmpty.CheckedChanged += new System.EventHandler(this.chkInjectEmpty_CheckedChanged);
+            // [LGLS 2026-09-05] [설비 에러 해제] - 현장 조작반에서 사람이 에러를 푸는 동작.
+            //   공출고(58)는 재지정이 없어 작업을 삭제하는데, 그러면 스케줄러가 에러난 크레인에
+            //   새 지시를 주지 않아 에러가 영영 남는다. 그 상황을 현장처럼 풀어 준다.
+            this.btnClearErr.Location = new System.Drawing.Point(430, 52);
+            this.btnClearErr.Name = "btnClearErr";
+            this.btnClearErr.Size = new System.Drawing.Size(120, 23);
+            this.btnClearErr.Text = "설비 에러 해제";
+            this.btnClearErr.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnClearErr.BackColor = System.Drawing.Color.LightYellow;
+            this.btnClearErr.UseVisualStyleBackColor = false;
+            this.btnClearErr.Click += new System.EventHandler(this.btnClearErr_Click);
             //
             // btnFeed11 / 12 / 15
             //
@@ -193,6 +206,7 @@
         private System.Windows.Forms.CheckBox chkAutoFeed;
         private System.Windows.Forms.CheckBox chkInjectDouble;
         private System.Windows.Forms.CheckBox chkInjectEmpty;
+        private System.Windows.Forms.Button btnClearErr;
         private System.Windows.Forms.Button btnFeed11;
         private System.Windows.Forms.Button btnFeed12;
         private System.Windows.Forms.Button btnFeed15;
