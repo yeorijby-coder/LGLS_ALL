@@ -569,10 +569,17 @@ void CScSkinDlg::RedrawImage()
 		{ CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
 		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
 		BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
-		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_DELTE, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
-		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, bZoom ? 5 : 4, szL, 1, FALSE);
+		// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - 설비 인터페이스에 반송지시 취소 신호가 없다.
+		//   구 ECS 운영 DB(TB_OBSERVABLE) 기준 S/C·RGV 의 ECS→PLC 쓰기 태그는
+		//   FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack 뿐이고 취소·삭제 태그가 없다.
+		//   구 ECS 도 IO_TRANSFER_REQUEST 를 true 로만 썼고 false 로 내린 곳이 한 군데도 없다.
+		//   시나리오 규약(PPT 슬라이드6)도 "Cmd Strobe Reset - Reseted By PLC When Cmd Start" 라
+		//   PLC 가 지시를 집어든 뒤에는 되돌릴 방법이 없다.
+		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
+		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, bZoom ? 4 : 3, szL, 1, FALSE);
 		if (!bZoom) { CWnd* pZ = GetDlgItem(IDC_LGLS_SC_ZOOM); if (pZ) pZ->ShowWindow(SW_HIDE); }
-		UINT nHide[] = { IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP, IDC_BTN_SC_ERROR_RESET,
+		UINT nHide[] = { IDC_BTN_SC_DELTE,
+		                 IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP, IDC_BTN_SC_ERROR_RESET,
 		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_DUPL_STO,
 		                 IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
 		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)

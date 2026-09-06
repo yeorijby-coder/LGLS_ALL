@@ -486,8 +486,12 @@ void CRtvSkinDlg::RedrawImage()
 		{ CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
 		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
 		BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
-		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_DELETE, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
-		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, bZoom ? 5 : 4, szL, 0, FALSE);
+		// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - S/C 와 같은 이유다.
+		//   RGV(VEHICLE:1) 의 구 ECS 태그도 29개뿐이고 취소·삭제 신호가 없다
+		//   (ECS→PLC 쓰기 = FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack).
+		//   구 ECS RGVForm 도 IO_TRANSFER_REQUEST 를 true 로만 썼다(재전송뿐, 철회 없음).
+		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
+		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, bZoom ? 4 : 3, szL, 0, FALSE);
 		if (!bZoom) { CWnd* pZ = GetDlgItem(IDC_LGLS_RTV_ZOOM); if (pZ) pZ->ShowWindow(SW_HIDE); }
 		// [LGLS 2026-09-03] 확대 아래 빈 자리(사용자 지정)에 일시정지 상태 에디트 + [일시정지] 버튼을 함께 둔다
 		{
@@ -510,7 +514,7 @@ void CRtvSkinDlg::RedrawImage()
 			}
 		}
 		UINT nHide[] = { IDC_BTN_RTV_ESTOP, IDC_BTN_RTV_ACTIVE, IDC_BTN_RTV_STOP, IDC_BTN_RTV_RESET_ERROR,
-		                 IDC_BTN_RTV_CALL_TO_HOME };
+		                 IDC_BTN_RTV_CALL_TO_HOME, IDC_BTN_RTV_DELETE };
 		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
 		{
 			CWnd* pHide = GetDlgItem(nHide[h]);

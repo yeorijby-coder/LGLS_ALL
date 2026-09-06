@@ -3997,7 +3997,18 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "    SET JOB_TYP_OD  = :JOB_TYP_OD               ";
                 strSql += CRLF + "      , DEST_POS_OD = :DEST_POS_OD              ";
                 strSql += CRLF + "      , LUGG_NO_OD  = :LUGG_NO_OD               ";
-                strSql += CRLF + "      , TRACKING_WRITE_YN = 'Y'                 ";   // [LGLS] WCS_TASK_CV가 트래킹(JOB번호)을 PLC R영역에 기록하도록 지시
+                // [LGLS 2026-09-06] ★트래킹은 그 트랙에 화물이 실제로 있을 때만 쓴다★
+                //   구 ECS 규약 그대로다 - ECSDispatcher.cs:574 `if (fromPort.IsPalletExist == true)`
+                //   안에서만 `conveyor.SetPallet(fromPort, ...)` 로 R영역에 기록했고, ★출발 포트★ 에만 썼다.
+                //   종전에는 무조건 'Y' 라, 출고 지시(대상 트랙 = 도착지인 출고대)에서 **화물이 아직 없는
+                //   출고대 R영역에 작업번호가 미리 찍혔다**(실측 : 트랙 104 에 쓰는 순간 126 에도 같이 기록).
+                //   그 유령 트래킹 때문에 아래 세 곳에 우회 코드가 쌓여 있었다 :
+                //     · DriveCV   - "목적지·하역트랙이 비어야 출고 지시 발행"(무지시 파렛트 오배정/교착 방지)
+                //     · CompleteCV- "도착 예약 트래킹을 도착으로 오인한 조기 완료 방지"
+                //     · CompleteCV- 출고 완료 판정을 트래킹 대신 출고대 신호(RET_READY_RD)로 전환
+                //   출고대 트래킹은 원래 PLC 몫이다(PlcAddressMap 출고대 스텝은 전부 observe -
+                //   "PLC ID Shift(차량 R → CV R)"). 화물 없는 트랙에는 쓰지 않는다.
+                strSql += CRLF + "      , TRACKING_WRITE_YN = (CASE WHEN SENSOR0_DATA_RD = '1' THEN 'Y' ELSE TRACKING_WRITE_YN END) ";
                 strSql += CRLF + "      , OD_RQ_YN    = 'Y'                       ";
                 strSql += CRLF + "      , OD_USER_ID  = '" + OD_USER + "'         ";
                 strSql += CRLF + "      , OD_UPD_DT   = " + DbLang.SYSDATE + "     ";

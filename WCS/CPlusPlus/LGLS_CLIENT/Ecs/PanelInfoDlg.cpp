@@ -49,16 +49,23 @@ enum {
 	CMD_COUNT
 };
 
+// [LGLS 2026-09-06] TAB_HIDDEN : 어떤 탭에도 속하지 않는다 = 화면에 만들지 않는다.
+//   enum 첨자가 버튼 ID(IDC_PI_CMD_BASE + i)라 항목을 지우면 ID 가 밀린다 - 탭만 뺀다.
+#define TAB_HIDDEN (-1)
+
 static const struct { int nTab; LPCTSTR strCap; } CMDS[] = {
 	{ TAB_CV,  _T("복사") },        { TAB_CV,  _T("잘라내기") },  { TAB_CV,  _T("붙여넣기") },
 	{ TAB_CV,  _T("트랙 일시정지") }, { TAB_CV, _T("MZ 이동") },
 	{ TAB_SC,  _T("ACTIVE") },      { TAB_SC,  _T("정지") },      { TAB_SC,  _T("에러리셋") },
 	{ TAB_SC,  _T("홈복귀") },      { TAB_SC,  _T("비상정지") },
 	{ TAB_SC,  _T("입고금지") },    { TAB_SC,  _T("출고금지") },  { TAB_SC,  _T("입출고금지") },
-	{ TAB_SC,  _T("이중입고") },    { TAB_SC,  _T("지시 삭제") },
+	{ TAB_SC,  _T("이중입고") },
+	// [LGLS 2026-09-06] [지시 삭제] 제외 - 설비 인터페이스에 반송지시 취소 신호가 없다(아래 주석 참조)
+	{ TAB_HIDDEN, _T("지시 삭제") },
 	{ TAB_RTV, _T("ACTIVE") },      { TAB_RTV, _T("정지") },      { TAB_RTV, _T("에러리셋") },
 	{ TAB_RTV, _T("홈복귀") },      { TAB_RTV, _T("비상정지") },
-	{ TAB_RTV, _T("사용중지/해제") }, { TAB_RTV, _T("강제완료(설비)") }, { TAB_RTV, _T("지시 삭제") },
+	{ TAB_RTV, _T("사용중지/해제") }, { TAB_RTV, _T("강제완료(설비)") },
+	{ TAB_HIDDEN, _T("지시 삭제") },
 };
 
 #define CMD_BTN_W   92
