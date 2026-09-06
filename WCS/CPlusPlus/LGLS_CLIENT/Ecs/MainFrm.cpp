@@ -473,20 +473,6 @@ void CMainFrame::AddCategoryWCS()
 	pBtnConfigStatus->SetAlwaysLargeImage();
 	pPanelConfig->Add(pBtnConfigStatus);
 
-	// [LGLS 2026-09-05] [시간 기반 자동 처리] : 스케줄러가 설비 신호 대신 경과시간으로 완료를 추정하는
-	//   처리의 사용 여부를 켜고 끈다. 선택 = 사용, 해제 = 사용 안 함(설비 신호로만 처리).
-	//   상태는 DB(COMMON_CODE SCH_OPT/AUTO_TIME)에 있어 IO_TASK 가 같은 값을 본다.
-	//   Ecs.ini [MENU] AUTOTIME_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
-	if (::GetPrivateProfileInt(_T("MENU"), _T("AUTOTIME_MENU"), 1, ECS_INI_FILE) != 0)
-	{
-		CMFCRibbonButton* pBtnAutoTime = new CMFCRibbonButton(ID_CONFIG_AUTO_TIME, _T("시간기반 자동처리"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("autotime"), strExtension)), TRUE);
-		pBtnAutoTime->SetAlwaysLargeImage();
-		pBtnAutoTime->SetToolTipText(_T("시간 기반 자동 처리"));
-		pBtnAutoTime->SetDescription(_T("설비 완료 신호가 오지 않아도 경과시간으로 완료를 추정할지 선택합니다."));
-		pPanelConfig->Add(pBtnAutoTime);
-	}
-
 	// [LGLS 2026-09-03] [INI 열기] : 접속/화면 설정 파일(Ecs.ini)을 메모장으로 연다.
 	//   Ecs.ini [MENU] INI_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
 	if (::GetPrivateProfileInt(_T("MENU"), _T("INI_MENU"), 1, ECS_INI_FILE) != 0)
@@ -623,6 +609,33 @@ void CMainFrame::AddCategoryWCS()
 			HICONFromPATH(GetConcatPath(strAppPath, _T("uimode_panel"), strExtension)), TRUE);
 		pBtnUiPanel->SetAlwaysLargeImage();
 		pPanelUiMode->Add(pBtnUiPanel);
+	}
+
+	// [LGLS 2026-09-06] [처리] 그룹 : 스케줄러의 처리 방식과 관련된 메뉴를 모은다.
+	//   Ecs.ini [MENU] PROCESS_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
+	//   그룹 안의 버튼은 각자의 키로 따로 숨길 수 있다(예: AUTOTIME_MENU).
+	//   표시할 버튼이 하나도 없으면 빈 그룹이 생기지 않도록 패널 자체를 만들지 않는다.
+	{
+		BOOL bProcessGrp = (::GetPrivateProfileInt(_T("MENU"), _T("PROCESS_MENU"),  1, ECS_INI_FILE) != 0);
+		BOOL bAutoTime   = (::GetPrivateProfileInt(_T("MENU"), _T("AUTOTIME_MENU"), 1, ECS_INI_FILE) != 0);
+		if (bProcessGrp && bAutoTime)
+		{
+			// 아이콘(autotime.png)은 mainframe_config 폴더에 있다. 직전 패널에서 넘어온
+			//   strAppPath 는 mainframe_view 라 그대로 쓰면 아이콘을 못 찾는다(UI모드에서 겪은 문제).
+			strAppPath.Format(_T("%s"), chrFileName);
+			strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
+			CMFCRibbonPanel* pPanelProcess = pCategory->AddPanel(_T("처리"));
+
+			// [시간 기반 자동 처리] : 스케줄러가 설비 신호 대신 경과시간으로 완료를 추정하는
+			//   처리의 사용 여부를 켜고 끈다. 선택 = 사용, 해제 = 사용 안 함(설비 신호로만 처리).
+			//   상태는 DB(COMMON_CODE SCH_OPT/AUTO_TIME)에 있어 IO_TASK 가 같은 값을 본다.
+			CMFCRibbonButton* pBtnAutoTime = new CMFCRibbonButton(ID_CONFIG_AUTO_TIME, _T("시간기반 자동처리"),
+				HICONFromPATH(GetConcatPath(strAppPath, _T("autotime"), strExtension)), TRUE);
+			pBtnAutoTime->SetAlwaysLargeImage();
+			pBtnAutoTime->SetToolTipText(_T("시간 기반 자동 처리"));
+			pBtnAutoTime->SetDescription(_T("설비 완료 신호가 오지 않아도 경과시간으로 완료를 추정할지 선택합니다."));
+			pPanelProcess->Add(pBtnAutoTime);
+		}
 	}
 }
 	

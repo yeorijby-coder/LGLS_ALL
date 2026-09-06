@@ -1567,13 +1567,15 @@ namespace TSK_COMM_IOSCH
                         luggNo, status, GetVal(dt.Rows[i], "IDLE_SEC"),
                         GetVal(dt.Rows[i], "START_POS"), GetVal(dt.Rows[i], "DEST_POS")));
 
-                    // [LGLS 2026-09-06] SC 구동중(25) 체류는 완료신호 유실이 원인일 수 있다
+                    // [LGLS 2026-09-06] 구동중 체류는 완료신호 유실이 원인일 수 있다
                     //   (VehThread 가 Ack 를 PLC 에 쓴 직후 COMPLETE_RD 커밋 전에 죽는 좁은 창).
                     //   ★작업당 딱 1회★ 시간 기반 자동 처리를 허용해 스스로 빠져나오게 하고,
                     //   그러고도 다시 체류하면 자동 처리하지 않고 그대로 세워 둔다(사용자 확정).
                     //   - 세워 두는 이유 : 두 번째부터는 신호 유실이 아니라 설비/작업 자체의
                     //     문제일 가능성이 높다. 자동으로 계속 밀어내면 원인이 가려진다.
-                    if (status == ST_SC_RUN)
+                    //   [LGLS 2026-09-06] S/C(25) 와 RTV(35) 둘 다 대상이다. RTV 도 COMPLETE_RD 를
+                    //     같은 방식으로 래치하므로 유실 위험이 동일하다(RtvCompleteFor 참조).
+                    if (status == ST_SC_RUN || status == ST_RGV_RUN)
                     {
                         if (m_setAutoTimeUsed.Contains(luggNo))
                         {
@@ -1616,6 +1618,7 @@ namespace TSK_COMM_IOSCH
         //             신호가 계속 죽어 있으면 작업마다 1회씩 복구되어 결함이 영영 가려지므로,
         //             호기 단위로도 한 번만 허용하고 그 뒤에는 멈춰 세운다.
         //             그 호기가 완료신호로 정상 완료하면 신호가 살아난 것이므로 해제한다.
+        //             [LGLS 2026-09-06] S/C(901~905) 와 RTV(801) 를 같은 집합에 담는다 - 번호가 겹치지 않는다.
         //   RefuseLogged : 같은 작업에 대한 거부 메시지를 한 번만 남기기 위한 표시.
         private readonly HashSet<string> m_setAutoTimeGrant   = new HashSet<string>();
         private readonly HashSet<string> m_setAutoTimeUsed    = new HashSet<string>();
@@ -2998,6 +3001,39 @@ namespace TSK_COMM_IOSCH
         //   스케줄러는 _RD 에러코드를 감시하여 신규 알람만 1회 로깅한다.
         // ─────────────────────────────────────────────────────────────────
         #region MonitorAlarm
+        // [LGLS 2026-09-06] 체류 1회 자동 처리에서 쓰는 RTV 호기 식별자(현장 RGV 는 1대).
+        private const string RTV_NO = "801";
+
+        /// <summary>
+        /// [LGLS 2026-09-06] 완료신호 없이 "물리적으로 끝난 정황" 판정 (RTV 판).
+        ///   CompleteSC 의 시간 기반 분기와 같은 취지 : 유휴 + 지시 없음 + 차상 화물 없음 + 최소 경과.
+        ///   이 조건이 서지 않으면 아직 반송 중이므로 절대 완료로 보지 않는다.
+        /// </summary>
+        private bool RtvIdleEmptyFor(string lugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                                        ";
+                q += CRLF + "   FROM RTV_DATA_LGLS RD                                       ";
+                q += CRLF + "  INNER JOIN JOB_MST JM ON JM.WH_TYP = RD.WH_TYP               ";
+                q += CRLF + "                       AND JM.LUGG_NO = :LG                    ";
+                q += CRLF + "  WHERE RD.WH_TYP              = :WH_TYP                       ";
+                q += CRLF + "    AND RD.RTV_NO              = '" + RTV_NO + "'              ";
+                q += CRLF + "    AND RD.OD_RQ_YN            = 'N'                           ";
+                q += CRLF + "    AND RD.TRANSFER_REQUEST_OD = 'N'                           ";
+                q += CRLF + "    AND ISNULL(RD.SUBSYSTEM_STATUS_RD,'1') = '1'               ";   // IDLE
+                q += CRLF + "    AND ISNULL(RD.PALLET_ON_VEHICLE_RD,'') IN ('','0','00','0000') ";   // 차상 비었음
+                q += CRLF + "    AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= 3            ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
         private bool RtvCompleteFor(string lugg)
         {
             try {
@@ -3471,7 +3507,43 @@ namespace TSK_COMM_IOSCH
                     string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
                     string jTyp   = GetVal(dt.Rows[i], "JOB_TYP");
                     if (jTyp == "11") jTyp = "1"; else if (jTyp == "12") jTyp = "2";
-                    if (!RtvCompleteFor(luggNo)) continue;
+
+                    // [LGLS 2026-09-06] RTV 도 COMPLETE_RD 를 래치하므로 S/C 와 같은 유실 위험이 있다.
+                    //   ① 완료신호가 있으면 그대로 완료(정상). 그 호기의 신호가 살아 있다는 뜻이므로 잠금 해제.
+                    //   ② 신호가 없으면 체류 1회 허용이 있을 때만 시간 기반으로 완료한다.
+                    bool bBySignal = RtvCompleteFor(luggNo);
+                    if (bBySignal)
+                    {
+                        m_setAutoTimeUsedSc.Remove(RTV_NO);
+                    }
+                    else
+                    {
+                        if (!AutoTimeProcEnabled())
+                        {
+                            if (!m_setAutoTimeGrant.Contains(luggNo)) continue;   // 허용 없음 - 세워 둔다
+                            if (m_setAutoTimeUsedSc.Contains(RTV_NO))
+                            {
+                                if (m_setAutoTimeRefused.Add(luggNo))
+                                    MakeMsg_Error(string.Format(
+                                        "[SCH][체류경고] 작업 {0} - RTV #{1} 은 직전에도 완료신호 없이 자동 처리했고 "
+                                        + "그 뒤 정상 완료신호가 없습니다. 자동 처리하지 않고 정지 상태로 둡니다. "
+                                        + "RTV 완료신호(UNLOAD_COMPLETE) 배선/설비를 확인하세요.", luggNo, RTV_NO));
+                                continue;
+                            }
+                        }
+                        // 물리적으로 끝난 정황이 있어야 한다 : 유휴 + 지시 없음 + 차상 화물 없음 + 경과
+                        if (!RtvIdleEmptyFor(luggNo)) continue;
+
+                        if (!AutoTimeProcEnabled())
+                        {
+                            m_setAutoTimeGrant.Remove(luggNo);
+                            m_setAutoTimeUsed.Add(luggNo);
+                            m_setAutoTimeUsedSc.Add(RTV_NO);
+                            MakeMsg_Imp(string.Format(
+                                "[SCH][체류복구] 작업 {0} - 시간 기반 자동 처리 1회 사용(완료신호 없이 완료 처리, RTV #{1}). "
+                                + "이 호기가 정상 완료신호를 낼 때까지 추가 자동 처리는 하지 않습니다.", luggNo, RTV_NO));
+                        }
+                    }
                     string rtn = "";
                     // [LGLS 2026-08-31] RGV 반송 완료 = 39. 도착지에 데이터를 기록하는 것은
                     //   LandRgvDrop() 이 도착 신호가 꺼진 것을 보고 한다(그때 15 가 된다).
