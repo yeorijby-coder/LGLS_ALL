@@ -357,6 +357,25 @@ namespace EQP_SIM
             lblStatus.Text = msg;
         }
 
+        // [LGLS 2026-09-06] 시험용 화물 생성 - 원하는 트랙/포트에 파렛트를 하나 만든다.
+        //   작업번호를 비우면 "작업번호 없는 화물" 이 된다. 크레인이 오류로 멈춰 운전원이
+        //   수동조작으로 출고 H/S 에 내려놓은 상황([H/S 배출] 시험)을 그대로 재현할 수 있다.
+        //   정상 운전 경로가 아니므로 Load Complete 는 내지 않는다 - 시험 전용이다.
+        private void btnSpawnPallet_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            string spec = txtSpawnTrack.Text;
+            string job  = txtSpawnJob.Text;
+            bool   outg = chkSpawnOut.Checked;
+            if (string.IsNullOrEmpty(spec.Trim()))
+            {
+                lblStatus.Text = "트랙/포트 번호를 입력하세요 (예: 104, 131, 13:25)";
+                return;
+            }
+            string msg;
+            engine.SpawnPallet(spec, job, outg, out msg);
+            lblStatus.Text = msg;
+        }
         // [LGLS 2026-07-24] [시나리오 테스트] — 자동 운전 정지 + PPT 시나리오 수동 재현 창
         private ScenarioTestForm scenarioForm;
         private void btnScenarioTest_Click(object sender, EventArgs e)

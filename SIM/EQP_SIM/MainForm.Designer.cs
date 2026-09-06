@@ -56,8 +56,15 @@
             this.pnlTop.Controls.Add(this.txtClearTrack);
             this.pnlTop.Controls.Add(this.btnClearPallet);
             this.pnlTop.Controls.Add(this.btnScenarioTest);
+            this.pnlTop.Controls.Add(this.lblSpawn);
+            this.pnlTop.Controls.Add(this.txtSpawnTrack);
+            this.pnlTop.Controls.Add(this.lblSpawnJob);
+            this.pnlTop.Controls.Add(this.txtSpawnJob);
+            this.pnlTop.Controls.Add(this.chkSpawnOut);
+            this.pnlTop.Controls.Add(this.btnSpawnPallet);
+            this.pnlTop.Controls.Add(this.lblSpawnHint);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTop.Height = 86;
+            this.pnlTop.Height = 118;   // [LGLS 2026-09-06] 화물 생성 행 추가
             //
             // lblServer
             //
@@ -139,6 +146,35 @@
             this.btnScenarioTest.ForeColor = System.Drawing.Color.DarkRed;
             this.btnScenarioTest.Click += new System.EventHandler(this.btnScenarioTest_Click);
             //
+            // [LGLS 2026-09-06] 시험용 화물 생성 행
+            //   원하는 트랙/포트에 파렛트를 만든다. 작업번호를 비우면 "작업번호 없는 화물" 이 되어
+            //   크레인이 수동조작으로 H/S 에 내려놓은 상황을 그대로 재현할 수 있다.
+            //
+            this.lblSpawn.Location = new System.Drawing.Point(12, 90);
+            this.lblSpawn.Size = new System.Drawing.Size(66, 20);
+            this.lblSpawn.Text = "트랙/포트";
+            this.txtSpawnTrack.Location = new System.Drawing.Point(80, 87);
+            this.txtSpawnTrack.Size = new System.Drawing.Size(62, 25);
+            this.lblSpawnJob.Location = new System.Drawing.Point(150, 90);
+            this.lblSpawnJob.Size = new System.Drawing.Size(60, 20);
+            this.lblSpawnJob.Text = "작업번호";
+            this.txtSpawnJob.Location = new System.Drawing.Point(212, 87);
+            this.txtSpawnJob.Size = new System.Drawing.Size(62, 25);
+            this.chkSpawnOut.Location = new System.Drawing.Point(284, 88);
+            this.chkSpawnOut.Size = new System.Drawing.Size(84, 22);
+            this.chkSpawnOut.Text = "출고 화물";
+            this.btnSpawnPallet.Location = new System.Drawing.Point(374, 85);
+            this.btnSpawnPallet.Size = new System.Drawing.Size(110, 27);
+            this.btnSpawnPallet.Text = "화물 생성";
+            this.btnSpawnPallet.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnSpawnPallet.BackColor = System.Drawing.Color.Honeydew;
+            this.btnSpawnPallet.UseVisualStyleBackColor = false;
+            this.btnSpawnPallet.Click += new System.EventHandler(this.btnSpawnPallet_Click);
+            this.lblSpawnHint.Location = new System.Drawing.Point(492, 90);
+            this.lblSpawnHint.Size = new System.Drawing.Size(530, 20);
+            this.lblSpawnHint.ForeColor = System.Drawing.Color.DimGray;
+            this.lblSpawnHint.Text = "작업번호를 비우면 '작업번호 없는 화물' (예: 트랙 104 + 빈 작업번호 = H/S 배출 시험)";
+            //
             // splitMain
             //
             this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -185,7 +221,7 @@
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1000, 640);
+            this.ClientSize = new System.Drawing.Size(1040, 672);   // [LGLS 2026-09-06] 화물 생성 행 + 우측 버튼 잘림 해소
             this.Controls.Add(this.splitMain);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.pnlTop);
@@ -213,6 +249,14 @@
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.TextBox txtClearTrack;
         private System.Windows.Forms.Button btnClearPallet;
+        // [LGLS 2026-09-06] 시험용 화물 생성
+        private System.Windows.Forms.Label lblSpawn = new System.Windows.Forms.Label();
+        private System.Windows.Forms.TextBox txtSpawnTrack = new System.Windows.Forms.TextBox();
+        private System.Windows.Forms.Label lblSpawnJob = new System.Windows.Forms.Label();
+        private System.Windows.Forms.TextBox txtSpawnJob = new System.Windows.Forms.TextBox();
+        private System.Windows.Forms.CheckBox chkSpawnOut = new System.Windows.Forms.CheckBox();
+        private System.Windows.Forms.Button btnSpawnPallet = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Label lblSpawnHint = new System.Windows.Forms.Label();
         private System.Windows.Forms.Button btnScenarioTest;
         private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.ListView lvDevices;

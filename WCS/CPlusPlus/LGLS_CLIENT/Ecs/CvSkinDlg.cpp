@@ -828,16 +828,24 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	strSql = GetQrySelectStatusAll(m_pTrackInfo->m_pCV_DATA, strSTOCK_MODE, strREMOTE_CONTROL, strROLL_MODE);
 
 	m_btnStockMode.SetIcon((strSTOCK_MODE == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
+	// [LGLS 2026-09-06] ★라벨 반전 수정★ CV_DATA.STOCK_MODE 는 '0'=입고 / '1'=출고 다.
+	//   근거 : IO_TASK cThread_SCH 의 겸용대 게이트 "입고 작업은 GetCvStockMode()=='0' 일 때만 발행",
+	//          WCS_TASK_CV 의 방향지시 기록 byTxBuff[0] = (PARM==1) ? '1'(출고) : '0'(입고).
+	//   종전에는 '0' 일 때 "출고모드" 로 적어 메인 화면 표시(정상)와 정반대였다.
+	//   ※ strKIND(공파렛트 요청 종류)는 원래 맞다 - 입고모드면 입고요청(1) 이므로 그대로 둔다.
 	if(strSTOCK_MODE == _T("0"))
 	{
-		m_btnStockMode.SetWindowText(_T("출고모드"));
+		m_btnStockMode.SetWindowText(_T("입고모드"));
 		strKIND = _T("1"); // 공팔레트 입고요청
 	}
 	else
 	{
-		m_btnStockMode.SetWindowText(_T("입고모드"));
+		m_btnStockMode.SetWindowText(_T("출고모드"));
 		strKIND = _T("2"); // 공팔레트 출고요청
 	}
+
+	// [LGLS 2026-09-06] [H/S 배출] 활성 조건은 방향을 알아야 정해진다 - 여기서 갱신한다.
+	UpdateHsEjectEnable(strSTOCK_MODE);
 
 
 	CString strMessage;
@@ -1837,7 +1845,12 @@ CString CCvSkinDlg::GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_M
 	CString strMessage = _T("");
 
 	strSql += CRLF + _T("SELECT TOP 1 (SELECT REMOTE_CONTROL FROM CV_DATA WHERE MC_NO = '101') AS REMOTE_CONTROL  ");	// [LGLS] TOP 1 instead of LIMIT 1
-	strSql += CRLF + _T("      ,(SELECT STOCK_MODE FROM CV_DATA WHERE MC_NO = '149') AS STOCK_MODE			");
+	// [LGLS 2026-09-06] ★현재 트랙의 방향을 읽는다★
+	//   종전에는 MC_NO='149' 를 하드코딩해 읽었다 - 다른 현장 트랙번호라 이 창고(101~132)엔
+	//   없는 행이고, 그래서 STOCK_MODE 가 항상 빈 값이었다([출고/입고 모드] 표시가 늘 고정).
+	//   CV_DATA.STOCK_MODE 규약 : '0' = 입고 / '1' = 출고 (IO_TASK·WCS_TASK_CV 와 동일).
+	strSql += CRLF + _T("      ,(SELECT STOCK_MODE FROM CV_DATA WHERE WH_TYP = ") + CLib::Quot(pCV_DATA->K_WH_TYP)
+	                 + _T(" AND MC_NO = ") + CLib::Quot(pCV_DATA->K_TRACK_NO) + _T(") AS STOCK_MODE ");
 	strSql += CRLF + _T("      ,(SELECT ROLL_MODE FROM CV_DATA WHERE MC_NO = '154') AS ROLL_MODE			");
 	strSql += CRLF + _T("  FROM CV_DATA  ");
 	strSql += CRLF + _T(" WHERE WH_TYP = ") + CLib::Quot(pCV_DATA->K_WH_TYP);
@@ -2506,6 +2519,34 @@ CString CCvSkinDlg::HsEjectCraneOf(CString strTrackNo)
 	if (t == _T("118") || t == _T("117")) return _T("905");
 	return _T("");
 }
+// [LGLS 2026-09-06] [H/S 배출] 활성 조건.
+//   ① 출고 H/S 트랙이 아니면 비활성 - 다른 트랙에서는 배출이라는 개념 자체가 없다.
+//   ② 겸용 통로 C/V#2(트랙 103/104)는 ★출고 방향일 때만★ 활성.
+//      그 라인은 S/C #1 의 입고·출고가 함께 쓰는 유일한 방향전환형 라인이라,
+//      입고 방향이면 이송이 103→104(크레인 쪽)로 흘러 화물이 RGV 측으로 나가지 못한다.
+//      그 상태에서 배출을 걸면 작업만 만들어지고 화물은 제자리에 갇힌다.
+//   STOCK_MODE : '0' = 입고 / '1' = 출고 (IO_TASK·WCS_TASK_CV 규약)
+void CCvSkinDlg::UpdateHsEjectEnable(CString strStockMode)
+{
+	CWnd* pWnd = GetDlgItem(IDC_LGLS_CV_HS_EJECT);
+	if (pWnd == NULL) return;
+
+	BOOL bEnable = FALSE;
+	if (m_pTrackInfo != NULL && m_pTrackInfo->m_pCV_DATA != NULL)
+	{
+		CString strTrackNo = m_pTrackInfo->m_pCV_DATA->K_TRACK_NO;
+		strTrackNo.Trim();
+		bEnable = !HsEjectCraneOf(strTrackNo).IsEmpty();
+
+		if (bEnable && (strTrackNo == _T("103") || strTrackNo == _T("104")))
+		{
+			CString s = strStockMode;
+			s.Trim();
+			bEnable = (s == _T("1"));
+		}
+	}
+	pWnd->EnableWindow(bEnable);
+}
 
 void CCvSkinDlg::OnBnClickedBtnCvHsEject()
 {
@@ -2529,6 +2570,19 @@ void CCvSkinDlg::OnBnClickedBtnCvHsEject()
 	{
 		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 H/S 트랙이 아닙니다.")));
 		return;
+	}
+	// [LGLS 2026-09-06] 겸용 통로(C/V#2)는 출고 방향에서만 배출이 성립한다.
+	//   버튼은 이미 비활성이지만 표시 갱신 주기(1초) 사이에 방향이 바뀔 수 있어 한 번 더 본다.
+	if (strTrackNo == _T("103") || strTrackNo == _T("104"))
+	{
+		CString strMode = _T(""), strRc = _T(""), strRoll = _T("");
+		GetQrySelectStatusAll(m_pTrackInfo->m_pCV_DATA, strMode, strRc, strRoll);
+		strMode.Trim();
+		if (strMode != _T("1"))
+		{
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("겸용 통로가 입고 방향입니다. 출고로 전환한 뒤 진행하세요.")));
+			return;
+		}
 	}
 
 	// 도착지(출고대) - 화면의 DEST POS 선택값이 출고대면 그것을, 아니면 기본 출고대(126).

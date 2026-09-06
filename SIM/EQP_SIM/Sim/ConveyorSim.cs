@@ -439,6 +439,42 @@ namespace EQP_SIM.Sim
             return had;
         }
 
+        /// <summary>
+        /// [LGLS 2026-09-06] 시험용 화물 생성 - 지정 슬롯에 파렛트를 하나 올린다.
+        ///   jobNo 를 비우면 ★작업번호 없는 화물★ 이 된다. 크레인이 수동조작으로 H/S 에
+        ///   내려놓은 상황([H/S 배출] 시험)을 그대로 만들 수 있다.
+        ///   정상 운전 경로가 아니므로 Load Complete 이벤트는 내지 않는다
+        ///   (설비가 실어 준 것이 아니라 시험자가 놓은 것이다 - ForceClearOrder 와 같은 취지).
+        /// </summary>
+        public bool SpawnPalletAt(int idx, string jobNo, FlowDir dir, out string msg)
+        {
+            msg = "";
+            if (idx <= 0 || idx > Def.Orders.Length) { msg = "슬롯 번호 범위 밖: " + idx; return false; }
+            if (Pallets.ContainsKey(idx)) { msg = Def.Id + " 슬롯 " + idx + " 에 이미 화물이 있습니다"; return false; }
+            if (!string.IsNullOrEmpty(GetTracking(idx)))
+            { msg = Def.Id + " 슬롯 " + idx + " 에 트래킹(작업번호)이 남아 있습니다 - 먼저 [화물 제거]"; return false; }
+
+            string id = (jobNo ?? "").Trim();
+            var p = new SimPallet
+            {
+                Id = id,
+                Dir = dir,
+                ArrivedAt = DateTime.Now,
+                SensedAt = DateTime.Now,
+                MoveReadyAt = DateTime.Now.AddMilliseconds(engine.MoveMs),
+                HoldUntil = DateTime.Now.AddMilliseconds(engine.WaitOutHoldMs)
+            };
+            Pallets[idx] = p;
+            SetExist(idx, true);
+            if (id.Length > 0) SetTracking(idx, id);
+            UpdateWaitOut();
+
+            msg = Def.Id + " 슬롯 " + idx + " 화물 생성 - "
+                + (id.Length > 0 ? "작업번호 " + id : "작업번호 없음")
+                + " / " + (dir == FlowDir.Outgo ? "출고" : "입고");
+            return true;
+        }
+
         public SimPallet PalletAt(int port)
         {
             int idx = Def.OrderOf(port);

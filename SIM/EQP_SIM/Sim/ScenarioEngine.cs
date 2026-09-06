@@ -340,12 +340,43 @@ namespace EQP_SIM.Sim
         /// </summary>
         public bool RemovePallet(string spec, out string msg)
         {
+            ConveyorSim target; int order;
+            if (!ResolveSlot(spec, out target, out order, out msg)) return false;
+            return RemovePalletAt(target, order, out msg);
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-06] 시험용 화물 생성 - 원하는 트랙/포트에 파렛트를 하나 올린다.
+        ///   spec   : RemovePallet 과 같은 표기 ("31" 포트 / "131" 트랙 / "13:25" 설비:포트)
+        ///   jobNo  : 비우면 ★작업번호 없는 화물★. 크레인이 수동조작으로 출고 H/S 에
+        ///            내려놓은 상황([H/S 배출] 시험)을 그대로 만들 수 있다.
+        ///   bOutgo : true = 출고 화물, false = 입고 화물
+        /// </summary>
+        public bool SpawnPallet(string spec, string jobNo, bool bOutgo, out string msg)
+        {
+            ConveyorSim target; int order;
+            if (!ResolveSlot(spec, out target, out order, out msg)) return false;
+
+            bool ok;
+            lock (sync)
+            {
+                ok = target.SpawnPalletAt(order, jobNo, bOutgo ? FlowDir.Outgo : FlowDir.Ingo, out msg);
+            }
+            if (!ok) { Log("[시험] 화물 생성 실패 - " + msg); return false; }
+
+            Log("[시험] " + msg);
+            SaveState();
+            return true;
+        }
+
+        /// <summary>[LGLS 2026-09-06] spec 문자열 → 설비 + 슬롯 (제거·생성이 함께 쓴다)</summary>
+        private bool ResolveSlot(string spec, out ConveyorSim target, out int order, out string msg)
+        {
             msg = "";
+            target = null;
+            order = 0;
             if (string.IsNullOrEmpty(spec)) { msg = "트랙 번호를 입력하세요"; return false; }
             spec = spec.Trim().ToUpper().Replace("CV", "").Replace("C/V", "").Replace("#", "");
-
-            ConveyorSim target = null;
-            int order = 0;
 
             int colon = spec.IndexOf(':');
             if (colon > 0)
@@ -381,11 +412,28 @@ namespace EQP_SIM.Sim
                         int o = cv.OrderOfTrack(n);
                         if (o > 0) { target = cv; order = o; break; }
                     }
+                    // [LGLS 2026-09-06] 미러(ini [WCS_MIRROR]) 미설정 설비 폴백 : 트랙 = 100 + 포트.
+                    //   이 현장은 C/V#1~#15 전 설비가 이 규칙이다(C/V#2 포트3/4 = 트랙 103/104,
+                    //   C/V#13 포트25/26 = 125/126, C/V#15 포트30/31/32 = 130/131/132).
+                    //   종전에는 통로 C/V 를 포트 번호로만 지정할 수 있어 트랙 104 가 안 먹혔다.
+                    if (target == null && n > 100 && n < 200)
+                    {
+                        int port = n - 100;
+                        foreach (var cv in AllConveyors)
+                        {
+                            int o = cv.Def.OrderOf(port);
+                            if (o > 0) { target = cv; order = o; break; }
+                        }
+                    }
                     if (target == null)
                     { msg = "트랙 " + n + " 을 가진 설비 없음 (통로 C/V 는 포트 번호로 지정)"; return false; }
                 }
             }
+            return true;
+        }
 
+        private bool RemovePalletAt(ConveyorSim target, int order, out string msg)
+        {
             string what;
             bool had = target.ForceClearOrder(order, out what);
             if (!had)

@@ -283,6 +283,8 @@ public:
 	afx_msg void OnBnClickedBtnCvHsEject();	// [LGLS 2026-09-06] [H/S 배출]
 	// [LGLS 2026-09-06] 출고 H/S 트랙 -> 그 라인의 크레인 번호. 아니면 "".
 	CString HsEjectCraneOf(CString strTrackNo);
+	// [LGLS 2026-09-06] [H/S 배출] 활성 조건 갱신. strStockMode = '1' 출고 / '0' 입고.
+	void UpdateHsEjectEnable(CString strStockMode);
 
 	CString GetQrySelectStatusAll(CCV_DATA* pCV_DATA, CString& pSTOCK_MODE, CString& pREMOTE_CONTROL, CString& pROLL_MODE);
 	void SetCvStatus(CString pLUGG_NO, CString pJOB_TYP, CString pDEST_POS, CString pPULP_SENSOR, CString pTRACK_PAUSE, CString pWAIT_SC_JOB_RET, CString pCMD);
