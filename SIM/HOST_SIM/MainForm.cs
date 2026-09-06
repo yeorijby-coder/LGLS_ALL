@@ -56,6 +56,11 @@ namespace HOST_SIM
         public MainForm()
         {
             InitializeComponent();
+
+            // [LGLS 2026-09-06] 실행 파일에 박힌 응용 아이콘을 창/작업표시줄에도 쓴다.
+            //   (ApplicationIcon 은 EXE 아이콘만 바꾸고 폼 아이콘은 기본값으로 남는다)
+            try { this.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
+            catch { }
         }
 
         private void MainForm_Load(object sender, EventArgs e)
