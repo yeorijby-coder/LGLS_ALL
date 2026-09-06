@@ -3978,7 +3978,8 @@ namespace TSK_COMM_IOSCH
                         continue;
                     }
 
-                    string luggNo = ScRunningJob(scNo);
+                    string jobTyp, hsTrack;
+                    string luggNo = ScRunningJob(scNo, out jobTyp, out hsTrack);
                     if (luggNo.Length == 0)
                     {
                         MakeMsg_Error(string.Format(
@@ -3986,6 +3987,9 @@ namespace TSK_COMM_IOSCH
                     }
                     else
                     {
+                        // 출고는 H/S 에 놓인 화물에 작업번호를 먼저 찍는다(상태를 넘기기 전에).
+                        StampHsTrackingForOut(luggNo, jobTyp, hsTrack);
+
                         string rtn = "";
                         if (UpdateJobStatus(ST_SC_DONE, luggNo, ref rtn))
                         {
@@ -4073,26 +4077,69 @@ namespace TSK_COMM_IOSCH
             catch (Exception ex) { MakeMsg_Error("[SCH][강제완료] ForceCompleteRtv 오류: " + ex.Message); }
         }
 
-        /// <summary>그 크레인이 맡고 있는 구동중(25) 작업번호. 없으면 "".</summary>
-        private string ScRunningJob(string scNo)
+        /// <summary>그 크레인이 맡고 있는 구동중(25) 작업. 없으면 "" 반환.</summary>
+        private string ScRunningJob(string scNo, out string jobTyp, out string hsTrack)
         {
+            jobTyp = ""; hsTrack = "";
             try
             {
                 string q = "";
-                q += CRLF + " SELECT TOP 1 JM.LUGG_NO FROM JOB_MST JM        ";
-                q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                 ";
-                q += CRLF + "    AND JM.JOB_STATUS = :ST_RUN                 ";
-                q += CRLF + "    AND " + SC_POS_EXPR + " = :SC_NO            ";
-                q += CRLF + "  ORDER BY JM.UPD_DT                            ";
+                q += CRLF + " SELECT TOP 1 JM.LUGG_NO, JM.JOB_TYP, JM.START_POS   ";
+                q += CRLF + "      , " + DbLang.NVL + "(JM.HS_TRACK_NO,'') AS HS   ";
+                q += CRLF + "   FROM JOB_MST JM                                    ";
+                q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                       ";
+                q += CRLF + "    AND JM.JOB_STATUS = :ST_RUN                       ";
+                q += CRLF + "    AND " + SC_POS_EXPR + " = :SC_NO                  ";
+                q += CRLF + "  ORDER BY JM.UPD_DT                                  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_SC_RUN;
                 _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
                 if (DbQry(q) <= 0) return "";
+                jobTyp  = (GetVal(_pBdb.mDtMain.Rows[0], "JOB_TYP") ?? "").Trim();
+                hsTrack = (GetVal(_pBdb.mDtMain.Rows[0], "HS") ?? "").Trim();
+                // H/S 가 비어 있으면(지시 시점에 기록되지 않았을 수 있다) 크레인 번호로 되짚는다.
+                if (hsTrack.Length == 0 && (jobTyp == "2" || jobTyp == "12"))
+                    hsTrack = RgvOutDropTrack((GetVal(_pBdb.mDtMain.Rows[0], "START_POS") ?? "").Trim());
                 return (GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO") ?? "").Trim();
             }
             catch { return ""; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-06] 출고 강제완료 : H/S 에 놓인 화물에 작업번호를 함께 찍는다.
+        ///   운전원이 손으로 내려놓은 화물이라 트래킹이 비어 있다. 그대로 두면 LandScDrop 이
+        ///   "내 화물이 아직 안 왔다"고 보고 작업이 29 에 갇힌다(실측 : 0379 가 이 상태로 잔류).
+        ///   종전에는 C/V 상태창 [작업 적기] 로 따로 찍어 줘야 했다 - 두 번 조작할 이유가 없어
+        ///   강제완료가 함께 처리한다.
+        ///   하역트랙(짝수)에 없으면 설비가 이미 홀수(RGV 픽업) 로 옮긴 뒤일 수 있어 그쪽도 본다.
+        ///   ※입고는 대상이 아니다 - 도착지가 랙 셀이라 CV 트래킹이라는 것이 없다.
+        /// </summary>
+        private void StampHsTrackingForOut(string luggNo, string jobTyp, string hsTrack)
+        {
+            if (jobTyp != "2" && jobTyp != "12") return;
+            if (string.IsNullOrEmpty(hsTrack)) return;
+            try
+            {
+                string[] cand = new string[] { hsTrack, RgvPickupTrack(hsTrack) };
+                foreach (string trk in cand)
+                {
+                    if (string.IsNullOrEmpty(trk)) continue;
+                    if (IsTrackEmpty(trk)) continue;                 // 화물이 없는 트랙엔 쓰지 않는다
+                    if (TrackLugg(trk).Trim() == luggNo) return;      // 이미 내 번호가 붙어 있다
+                    if (RequestArrivalTrackingWrite(trk, luggNo))
+                    {
+                        MakeMsg_Imp(string.Format(
+                            "[SCH][강제완료] 작업 {0} - H/S 트랙 {1} 의 화물에 작업번호 기록 요청", luggNo, trk));
+                        return;
+                    }
+                }
+                MakeMsg_Error(string.Format(
+                    "[SCH][강제완료] 작업 {0} - H/S 트랙 {1} 에서 번호를 붙일 화물을 찾지 못했습니다. "
+                    + "화물 위치를 확인하고 C/V 상태창 [작업 적기] 로 직접 기록하세요.", luggNo, hsTrack));
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][강제완료] StampHsTrackingForOut 오류: " + ex.Message); }
         }
 
         /// <summary>RTV 가 맡고 있는 구동중(35) 작업번호. 없으면 "". (RTV 는 1대)</summary>
