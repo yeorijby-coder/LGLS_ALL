@@ -376,6 +376,7 @@ namespace TSK_COMM_IOSCH
                     MonitorAlarm();
                     MarkErrorJobStatus();       // [LGLS 2026-08-30] 이중입고(54)/공출고(58) → 작업상태 반영
                     ResumeRedirectedJobs();     // [LGLS 2026-08-30] 재지정(07/06) → 새 셀로 재개 지시
+                    ConsumeForceComplete();     // [LGLS 2026-09-06] 운전 화면 [강제완료](FCMP) 소비
 
                     // [LGLS 2026-07-22] 표시용 작업구분 보강(실경로): 클라이언트는 CV_DATA/SC_DATA_LGLS 의
                     //   JOB_TYP_RD 로 입고/출고 색을 칠하는데, 실경로의 설비 관측(CvThread/VehThread)은
@@ -3919,6 +3920,214 @@ namespace TSK_COMM_IOSCH
         }
 
         /// <summary>[LGLS] SC 작업 완료 시 해당 작업번호의 SC od(LUGG_NO_FK1_OD) 잔류 클리어</summary>
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-09-06] [강제완료](CMD_RQ_ID='FCMP') 소비 - S/C · RTV
+        //
+        //   쓰임새 : 설비가 반송 중 이상으로 멈췄을 때, 운전원이 화물을 ★설비가 놓아야 할
+        //            자리에 손으로 옮겨 놓은 뒤★ "그 설비 단계는 끝난 것으로 하라"고 알리는 조작.
+        //            그 다음 스텝부터는 정상 흐름을 그대로 탄다.
+        //
+        //   ★PLC 신호가 필요 없다★ - 설비에 무엇을 시키는 것이 아니라 WCS 의 작업 상태만
+        //   다음 단계로 넘기는 것이다. 그래서 [지시 삭제](설비 인터페이스에 반송지시 취소
+        //   신호가 아예 없어 성립하지 않는다)와 달리 구조적으로 가능하다.
+        //
+        //   종전에는 운전 화면이 CMD_RQ_ID='FCMP' 를 남겨도 ★소비하는 곳이 없었다★.
+        //   설비 통신(VehThread)은 "스케줄러가 소비한다"며 건너뛰고, 현행 스케줄러에는
+        //   처리가 없었다(구 cThread_SC 에만 있는데 현행 체인은 그 파일을 쓰지 않는다).
+        //   그래서 버튼을 눌러도 CMD_RQ_YN='Y' 만 남고 아무 일도 일어나지 않았다
+        //   - 2026-09-04 에 고친 [지시 삭제](DELFK) 누락과 같은 형태다.
+        //
+        //   전이는 정상 완료와 똑같다 : S/C 25 → 29, RTV 35 → 39.
+        //   안전장치 : 설비가 아직 화물을 들고 있으면 처리하지 않는다. 사람이 이미 내려놓았다는
+        //   것이 이 조작의 전제이고, 든 채로 완료시키면 그 화물을 아무도 추적하지 못한다.
+        // ─────────────────────────────────────────────────────────────────
+        private void ConsumeForceComplete()
+        {
+            ForceCompleteSc();
+            ForceCompleteRtv();
+        }
+
+        /// <summary>[강제완료] S/C : 구동중(25) 작업을 완료(29)로 넘긴다.</summary>
+        private void ForceCompleteSc()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT SD.SC_NO                                              ";
+                q += CRLF + "      , " + SC_HELD_LUGG + " AS HELD                          ";
+                q += CRLF + "   FROM SC_DATA_LGLS SD                                       ";
+                q += CRLF + "  WHERE SD.WH_TYP    = :WH_TYP                                ";
+                q += CRLF + "    AND SD.CMD_RQ_YN = 'Y'                                    ";
+                q += CRLF + "    AND SD.CMD_RQ_ID = 'FCMP'                                 ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return;
+                DataTable dt = _pBdb.mDtMain.Copy();
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string scNo = GetVal(dt.Rows[i], "SC_NO");
+                    string held = (GetVal(dt.Rows[i], "HELD") ?? "").Trim();
+
+                    // 설비가 아직 화물을 들고 있으면 처리하지 않는다(요청은 남겨 다음 주기에 재시도).
+                    if (held.Length > 0 && held != "0" && held != "0000")
+                    {
+                        DbgLog("FCMP_SC_" + scNo,
+                            "[강제완료] S/C #" + scNo + " 보류 - 아직 차상 화물(" + held + ")이 있습니다");
+                        continue;
+                    }
+
+                    string luggNo = ScRunningJob(scNo);
+                    if (luggNo.Length == 0)
+                    {
+                        MakeMsg_Error(string.Format(
+                            "[SCH][강제완료] S/C #{0} - 완료할 구동중(25) 작업이 없습니다. 요청만 해제합니다.", scNo));
+                    }
+                    else
+                    {
+                        string rtn = "";
+                        if (UpdateJobStatus(ST_SC_DONE, luggNo, ref rtn))
+                        {
+                            ClearScOd(luggNo);
+                            m_dicPrevSC.Remove("SC_" + scNo);
+                            MakeMsg_Imp(string.Format(
+                                "[SCH][강제완료] 작업 {0} S/C #{1} 강제완료 → 상태 '{2}' (운전원이 화물을 옮겨 놓음)",
+                                luggNo, scNo, ST_SC_DONE));
+                        }
+                        else
+                        {
+                            MakeMsg_Error(string.Format("[SCH][강제완료] 작업 {0} 전이 실패: {1}", luggNo, rtn));
+                            continue;   // 요청을 남겨 다음 주기에 재시도
+                        }
+                    }
+                    ClearVehCmdFlag("SC_DATA_LGLS", "SC_NO", scNo);
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][강제완료] ForceCompleteSc 오류: " + ex.Message); }
+        }
+
+        /// <summary>[강제완료] RTV : 구동중(35) 작업을 완료(39)로 넘긴다.</summary>
+        private void ForceCompleteRtv()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT RD.RTV_NO                                              ";
+                q += CRLF + "      , ISNULL(RD.PALLET_ON_VEHICLE_RD,'') AS HELD             ";
+                q += CRLF + "   FROM RTV_DATA_LGLS RD                                       ";
+                q += CRLF + "  WHERE RD.WH_TYP    = :WH_TYP                                 ";
+                q += CRLF + "    AND RD.CMD_RQ_YN = 'Y'                                     ";
+                q += CRLF + "    AND RD.CMD_RQ_ID = 'FCMP'                                  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return;
+                DataTable dt = _pBdb.mDtMain.Copy();
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string rtvNo = GetVal(dt.Rows[i], "RTV_NO");
+                    string held  = (GetVal(dt.Rows[i], "HELD") ?? "").Trim();
+
+                    if (held.Length > 0 && held != "0" && held != "0000")
+                    {
+                        DbgLog("FCMP_RTV_" + rtvNo,
+                            "[강제완료] RTV #" + rtvNo + " 보류 - 아직 차상 화물(" + held + ")이 있습니다");
+                        continue;
+                    }
+
+                    string luggNo = RtvRunningJob();
+                    if (luggNo.Length == 0)
+                    {
+                        MakeMsg_Error(string.Format(
+                            "[SCH][강제완료] RTV #{0} - 완료할 구동중(35) 작업이 없습니다. 요청만 해제합니다.", rtvNo));
+                    }
+                    else
+                    {
+                        string rtn = "";
+                        if (UpdateJobStatus(ST_RGV_DONE, luggNo, ref rtn))
+                        {
+                            RtvResetComplete();
+                            m_dicPrevRGV.Remove("RGV_801");
+                            MakeMsg_Imp(string.Format(
+                                "[SCH][강제완료] 작업 {0} RTV #{1} 강제완료 → 상태 '{2}' (운전원이 화물을 옮겨 놓음)",
+                                luggNo, rtvNo, ST_RGV_DONE));
+                        }
+                        else
+                        {
+                            MakeMsg_Error(string.Format("[SCH][강제완료] 작업 {0} 전이 실패: {1}", luggNo, rtn));
+                            continue;
+                        }
+                    }
+                    ClearVehCmdFlag("RTV_DATA_LGLS", "RTV_NO", rtvNo);
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][강제완료] ForceCompleteRtv 오류: " + ex.Message); }
+        }
+
+        /// <summary>그 크레인이 맡고 있는 구동중(25) 작업번호. 없으면 "".</summary>
+        private string ScRunningJob(string scNo)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT TOP 1 JM.LUGG_NO FROM JOB_MST JM        ";
+                q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                 ";
+                q += CRLF + "    AND JM.JOB_STATUS = :ST_RUN                 ";
+                q += CRLF + "    AND " + SC_POS_EXPR + " = :SC_NO            ";
+                q += CRLF + "  ORDER BY JM.UPD_DT                            ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_SC_RUN;
+                _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
+                if (DbQry(q) <= 0) return "";
+                return (GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO") ?? "").Trim();
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>RTV 가 맡고 있는 구동중(35) 작업번호. 없으면 "". (RTV 는 1대)</summary>
+        private string RtvRunningJob()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT TOP 1 LUGG_NO FROM JOB_MST              ";
+                q += CRLF + "  WHERE WH_TYP     = :WH_TYP                    ";
+                q += CRLF + "    AND JOB_STATUS = :ST_RUN                    ";
+                q += CRLF + "  ORDER BY UPD_DT                               ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_RGV_RUN;
+                if (DbQry(q) <= 0) return "";
+                return (GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO") ?? "").Trim();
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>운전 화면 명령 플래그 소비(CMD_RQ_YN='N').</summary>
+        private void ClearVehCmdFlag(string strTable, string strKeyCol, string strKeyVal)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " UPDATE " + strTable + "                        ";
+                q += CRLF + "    SET CMD_RQ_YN = 'N'                         ";
+                q += CRLF + "      , WRITE_UPD_DT = " + DbLang.SYSDATE + "    ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP                        ";
+                q += CRLF + "    AND " + strKeyCol + " = :KEYVAL             ";
+                q += CRLF + "    AND CMD_RQ_YN = 'Y' AND CMD_RQ_ID = 'FCMP'  ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("KEYVAL", DbLang.VARCHAR).Value = strKeyVal;
+                DbNonQry(q);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][강제완료] 명령 플래그 해제 오류: " + ex.Message); }
+        }
         private void ClearScOd(string strLuggNo)
         {
             try
