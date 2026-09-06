@@ -19,6 +19,10 @@ DARK  = (0x14, 0x1A, 0x42, 255)
 SIZES = [256, 128, 64, 48, 32, 16]
 SS = 8          # 수퍼샘플 배율
 
+# 미리보기 PNG 는 기본으로 만들지 않는다(저장소를 더럽히지 않게).
+#   확인이 필요하면 :  python SIM/make_icons.py --preview
+PREVIEW = ('--preview' in sys.argv)
+
 
 def bg(d, S):
     """네이비 라운드 사각 배경"""
@@ -80,28 +84,30 @@ def build(fn, out):
                    append_images=frames[1:])
     print('  %s  (%d bytes, %s)' % (out, os.path.getsize(out),
                                     ' '.join('%dx%d' % (s, s) for s in SIZES)))
-    # 미리보기 PNG
-    prev = fn(256 * 2).resize((256, 256), Image.LANCZOS)
-    pv = os.path.splitext(out)[0] + '_preview.png'
-    prev.save(pv)
-    return pv
+    if PREVIEW:
+        prev = fn(256 * 2).resize((256, 256), Image.LANCZOS)
+        pv = os.path.splitext(out)[0] + '_preview.png'
+        prev.save(pv)
+        print('    미리보기 : %s' % pv)
+    return out
 
 
-SP = r'C:\Users\USER\AppData\Local\Temp\claude\D--project-LGLS-Renewal\ae567b2e-9fb6-418b-b143-f780d085c599\scratchpad'
+SP = os.path.dirname(os.path.abspath(__file__))      # SIM 폴더
 print('아이콘 생성')
-p1 = build(draw_eqp,  os.path.join(SP, 'eqp_sim.ico'))
-p2 = build(draw_host, os.path.join(SP, 'host_sim.ico'))
+p1 = build(draw_eqp,  os.path.join(SP, 'EQP_SIM',  'eqp_sim.ico'))
+p2 = build(draw_host, os.path.join(SP, 'HOST_SIM', 'host_sim.ico'))
 
-# 16/32/48 실제 크기 나란히 보기
-strip = Image.new('RGBA', (16 + 32 + 48 + 64 + 40, 64), (245, 245, 248, 255))
-x = 0
-for fn in (draw_eqp, draw_host):
-    for s in (16, 32, 48):
-        im = fn(s * SS).resize((s, s), Image.LANCZOS)
-        strip.paste(im, (x, (64 - s) // 2), im)
-        x += s + 6
-    x += 10
-strip = strip.resize((strip.width * 3, strip.height * 3), Image.NEAREST)
-sp = os.path.join(SP, 'icons_sizes.png')
-strip.save(sp)
-print('  크기 비교 : %s' % sp)
+if PREVIEW:
+    # 16/32/48 실제 크기를 나란히 놓고 3배 확대해 본다
+    strip = Image.new('RGBA', (16 + 32 + 48 + 64 + 40, 64), (245, 245, 248, 255))
+    x = 0
+    for fn in (draw_eqp, draw_host):
+        for s in (16, 32, 48):
+            im = fn(s * SS).resize((s, s), Image.LANCZOS)
+            strip.paste(im, (x, (64 - s) // 2), im)
+            x += s + 6
+        x += 10
+    strip = strip.resize((strip.width * 3, strip.height * 3), Image.NEAREST)
+    sp = os.path.join(SP, 'icons_sizes.png')
+    strip.save(sp)
+    print('  크기 비교 : %s' % sp)
