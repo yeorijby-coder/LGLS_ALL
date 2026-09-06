@@ -3297,6 +3297,8 @@
 #define IDC_LGLS_RTV_ZOOM               8232
 #define IDC_LGLS_SC_RESEND              8242
 #define IDC_LGLS_RTV_RESEND             8243
+#define IDC_LGLS_CV_EJECT_GRP           8244
+#define IDC_LGLS_CV_HS_EJECT            8245
 #define IDD_LGLS_SEMI_TEST              24801
 #define IDC_LGLS_ST_FR1                 8401
 #define IDC_LGLS_ST_FR2                 8402

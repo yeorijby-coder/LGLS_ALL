@@ -200,6 +200,8 @@ public:
 	//--COMMAND
 
 	CSkinButton m_btnCvTrackPause;
+	// [LGLS 2026-09-06] [H/S 배출] - 출고 H/S 에 놓인 작업 없는 화물을 출고대로 내보낸다.
+	CSkinButton m_btnCvHsEject;
 	CEdit m_edtCvTrackPause;
 	CStaticTransparent m_lblCvTrackPause;
 
@@ -278,6 +280,9 @@ public:
 	
 	
 	afx_msg void OnBnClickedBtnCvTrackPause();
+	afx_msg void OnBnClickedBtnCvHsEject();	// [LGLS 2026-09-06] [H/S 배출]
+	// [LGLS 2026-09-06] 출고 H/S 트랙 -> 그 라인의 크레인 번호. 아니면 "".
+	CString HsEjectCraneOf(CString strTrackNo);
 
 	CString GetQrySelectStatusAll(CCV_DATA* pCV_DATA, CString& pSTOCK_MODE, CString& pREMOTE_CONTROL, CString& pROLL_MODE);
 	void SetCvStatus(CString pLUGG_NO, CString pJOB_TYP, CString pDEST_POS, CString pPULP_SENSOR, CString pTRACK_PAUSE, CString pWAIT_SC_JOB_RET, CString pCMD);

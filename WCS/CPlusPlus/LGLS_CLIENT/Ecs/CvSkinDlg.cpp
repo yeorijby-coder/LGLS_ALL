@@ -138,6 +138,7 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 
 
 	DDX_Control(pDX, IDC_BTN_CV_TRACK_PAUSE, m_btnCvTrackPause);
+	DDX_Control(pDX, IDC_LGLS_CV_HS_EJECT, m_btnCvHsEject);	// [LGLS 2026-09-06] [H/S 배출]
 	DDX_Control(pDX, IDC_EDT_CV_TRACK_PAUSE, m_edtCvTrackPause);
 	// [LGLS 2026-08-05] 이 DDX 가 주석 처리되어 있어서 [일시정지] 라벨만 회색 배경으로 그려졌다.
 	//   다른 라벨과 같이 CStaticTransparent 로 묶어 배경이 비치게 한다.
@@ -175,6 +176,7 @@ BEGIN_MESSAGE_MAP(CCvSkinDlg, CSkinDialog)
 	ON_WM_ENTERSIZEMOVE()
 	ON_WM_EXITSIZEMOVE()
 	ON_BN_CLICKED(IDC_BTN_CV_TRACK_PAUSE, &CCvSkinDlg::OnBnClickedBtnCvTrackPause)
+	ON_BN_CLICKED(IDC_LGLS_CV_HS_EJECT, &CCvSkinDlg::OnBnClickedBtnCvHsEject)	// [LGLS 2026-09-06]
 	ON_BN_CLICKED(IDC_CHK_AUTO_SEL, &CCvSkinDlg::OnBnClickedChkAutoSel)
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BTN_MZ_MOVE, &CCvSkinDlg::OnBnClickedBtnMzMove)
@@ -529,6 +531,14 @@ void CCvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvarrivehssig"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_STATUS_RTV_ARRIVEHS_READY, strValue);
+	// [LGLS 2026-09-06] [H/S 배출] 그룹/버튼 다국어
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("ejectgrp"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_CV_EJECT_GRP, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("hseject"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_CV_HS_EJECT, strValue);
 
 }
 
@@ -568,6 +578,10 @@ void CCvSkinDlg::RedrawImage()
 
 	m_btnCvTrackPause.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnCvTrackPause.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("write"), strExtension)), NULL, 5, 5);
+
+	// [LGLS 2026-09-06] [H/S 배출] - 다른 명령 버튼과 같은 스킨. 아이콘은 "밖으로 보낸다" 뜻의 arrow-left.
+	m_btnCvHsEject.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnCvHsEject.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("arrow-left"), strExtension)), NULL, 5, 5);
 
 
 	m_btnMzMove.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
@@ -659,6 +673,13 @@ void CCvSkinDlg::RelocationControls()
 	m_btnCvTrackPause.GetWindowRect(&rc2);
 	ScreenToClient(&rc2);
 	m_btnCvTrackPause.MoveWindow(rc2.left, rc2.top, sizeLarge.cx,  sizeLarge.cy);
+	// [LGLS 2026-09-06] [H/S 배출]도 다른 명령 버튼과 같은 비트맵 크기로 맞춘다.
+	if (::IsWindow(m_btnCvHsEject.m_hWnd))
+	{
+		m_btnCvHsEject.GetWindowRect(&rc2);
+		ScreenToClient(&rc2);
+		m_btnCvHsEject.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
+	}
 
 	// [LGLS 2026-08-13] MG 이동/[확대]도 다른 버튼처럼 비트맵 크기로 - 확대 버튼 잘림 해결
 	if (::IsWindow(m_btnMzMove.m_hWnd))
@@ -2441,4 +2462,250 @@ void CCvSkinDlg::InvalidateCvvData()
 	SetDlgItemText(IDC_CVV_STATUS, (pRsw->GetItem(_T("A10")) == _T("1")) ? _T("자동") : _T("수동"));
 
 	delete pRsw;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+// [LGLS 2026-09-06] [H/S 배출]
+//
+//   쓰임새 : 크레인이 입·출고 중 오류로 화물을 든 채 멈춰, 운전원이 크레인 수동조작으로
+//            **출고 H/S 에 화물을 내려놓은** 상황. 그 화물에는 작업번호가 없어 아무도
+//            가져가지 않고, 그 자리에 남으면 스케줄러의 라인 진입 가드(CanEnterLine)에
+//            걸려 그 호기의 후속 작업이 전부 대기한다. S/C #1 은 C/V#2(트랙 103/104)를
+//            입고·출고 겸용으로 쓰므로 입고까지 함께 선다 - 즉시 빼야 한다.
+//
+//   구 ECS 도 같은 수단을 가지고 있었다. ConveyorForm 의 포지션별 [Force] 버튼이
+//   Conveyor.SetPallet() 으로 R영역 트래킹에 화물번호를 직접 써 넣어, 설비에 놓인 화물을
+//   시스템이 인수하게 했다. 여기서는 그 기록에 더해 배출용 작업까지 한 번에 만든다.
+//
+//   ① 반자동 출고 작업 생성 (JOB_TYP='12', JOB_STATUS='10' = CV 구동대기)
+//      START_POS = 그 H/S 의 크레인(9xx), DEST_POS = 출고대.
+//      출고는 크레인 완료 후 '10' 으로 인계되는 것이 정상 흐름이라 딱 그 지점에 얹는다.
+//      반자동이므로 상위(WMS) 보고가 나가지 않고 완료 시 삭제된다(절대 원칙 4).
+//   ② CV_DATA 에 트래킹 기록 요청 (LUGG_NO_OD + TRACKING_WRITE_YN='Y')
+//      WCS_TASK_CV 의 CvTrackingWrite 가 PLC R영역에 작업번호를 쓴다. 그래야 DriveRGV 의
+//      "픽업트랙의 화물이 그 작업의 것인가" 판정을 통과한다.
+//      ★OD_RQ_YN 은 건드리지 않는다★ - 구동지시가 아니라 번호 부여다. 스케줄러의
+//      RequestArrivalTrackingWrite 와 같은 규약.
+//   ③ 겸용 통로(C/V#2 = 103/104)면 방향을 출고로 전환 요청한다. 방향전환형은 그 라인뿐이다.
+//
+//   이후는 자동이다 : 설비가 짝수 → 홀수로 흘리고, DriveCV 가 출고대 지시를 내고,
+//   화물이 홀수 트랙에 닿으면 DriveRGV 가 집어 출고대로 내보낸다.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 출고 H/S 트랙 -> 그 라인의 크레인 번호.
+//   짝수 = 크레인 하역트랙, 홀수(짝수-1) = RGV 픽업트랙. 둘 다 받는다
+//   (화물이 이미 픽업측으로 넘어간 뒤일 수 있다).
+//   기준 : IO_TASK cThread_SCH.cs 의 OUT_DROP_TRACK 표.
+CString CCvSkinDlg::HsEjectCraneOf(CString strTrackNo)
+{
+	CString t = strTrackNo;
+	t.Trim();
+	if (t == _T("104") || t == _T("103")) return _T("901");
+	if (t == _T("106") || t == _T("105")) return _T("902");
+	if (t == _T("110") || t == _T("109")) return _T("903");
+	if (t == _T("114") || t == _T("113")) return _T("904");
+	if (t == _T("118") || t == _T("117")) return _T("905");
+	return _T("");
+}
+
+void CCvSkinDlg::OnBnClickedBtnCvHsEject()
+{
+	if (m_pDoc == NULL || m_pTrackInfo == NULL || m_pTrackInfo->m_pCV_DATA == NULL) return;
+
+	if (!m_pDoc->Permission(_T("CViewJobListDlg"), UPD_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+
+	CString strWhTyp   = m_pDoc->m_WH_TYP;
+	CString strTrackNo = m_pTrackInfo->m_pCV_DATA->K_TRACK_NO;	// K_TRACK_NO 에는 MC_NO 가 들어온다(Cv.cpp)
+	CString strPlcNo   = m_pTrackInfo->m_pCV_DATA->K_PLC_NO;
+	CString strSql     = _T("");
+	CString strMessage = _T("");
+	int     nRowCnt    = 0;
+
+	CString strScNo = HsEjectCraneOf(strTrackNo);
+	if (strScNo.IsEmpty())
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 H/S 트랙이 아닙니다.")));
+		return;
+	}
+
+	// 도착지(출고대) - 화면의 DEST POS 선택값이 출고대면 그것을, 아니면 기본 출고대(126).
+	CString strDestPos = _T("");
+	CLib::GetComBoBoxData(m_cbxCvDestPos, strDestPos, 5);
+	strDestPos.Trim();
+	if (strDestPos != _T("122") && strDestPos != _T("126") && strDestPos != _T("129"))
+		strDestPos = _T("126");
+
+	// ── 트랙 실상태 확인(화면 캐시가 아니라 DB 를 직접 본다) ──────────────
+	strSql.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(CD.SENSOR0_DATA_RD,'0') AS SEN0	\n")
+				  _T("      , ") + m_pDoc->NVL + _T("(CD.LUGG_NO_RD,'0') AS LUGG_NO_RD	\n")
+				  _T("   FROM CV_DATA CD												\n")
+				  _T("  WHERE CD.WH_TYP = '%s'										\n")
+				  _T("    AND CD.MC_NO  = '%s'										  "),
+				  strWhTyp, strTrackNo);
+
+	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	if (nRowCnt <= 0)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("NOT FIND TRACK")));
+		return;
+	}
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	pRsw->MoveFirst();
+	CString strSen0   = pRsw->GetItem(_T("SEN0"));
+	CString strLuggRd = pRsw->GetItem(_T("LUGG_NO_RD"));
+	delete pRsw;
+	strSen0.Trim();
+	strLuggRd.Trim();
+
+	if (strSen0 != _T("1"))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("화물이 감지되지 않은 트랙입니다.")));
+		return;
+	}
+
+	// 이미 진행 중인 작업의 화물이면 배출 대상이 아니다(그 작업이 스스로 빠져나간다).
+	if (!strLuggRd.IsEmpty() && strLuggRd != _T("0") && strLuggRd != _T("0000"))
+	{
+		nRowCnt = 0;
+		strSql.Format(_T(" SELECT COUNT(1) AS CNT				\n")
+					  _T("   FROM JOB_MST						\n")
+					  _T("  WHERE WH_TYP  = '%s'				\n")
+					  _T("    AND LUGG_NO = '%s'				\n")
+					  _T("    AND JOB_STATUS NOT IN ('09','19')	  "), strWhTyp, strLuggRd);
+		_RecordsetPtr pRs2 = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+		if (nRowCnt > 0)
+		{
+			CRecordSetWrap* pRsw2 = new CRecordSetWrap(pRs2);
+			pRsw2->MoveFirst();
+			CString strCnt = pRsw2->GetItem(_T("CNT"));
+			delete pRsw2;
+			if (strCnt != _T("0"))
+			{
+				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("이 트랙의 화물은 진행 중인 작업에 속해 있습니다.")));
+				return;
+			}
+		}
+	}
+
+	// ── 확인 : 무엇을 하는지 그대로 보여준다 ─────────────────────────────
+	CString strAsk;
+	strAsk.Format(_T("%s %s → %s %s\n%s\n\n%s\n %s"),
+				  m_pDoc->GetMsgLangDef(_T("트랙")), strTrackNo,
+				  m_pDoc->GetMsgLangDef(_T("출고대")), strDestPos,
+				  m_pDoc->GetMsgLangDef(_T("반자동 출고 작업을 만들어 화물을 내보냅니다. 상위 보고는 하지 않습니다.")),
+				  m_pDoc->GetMsgLangDef(_T("비상상황에서 사용하세요")),
+				  m_pDoc->GetMsgLangDef(_T("진행하시겠습니까?")));
+	if (AfxMessageBox(strAsk, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+		return;
+
+	// ── 작업번호 채번 (반자동 대역 9001~9900) ────────────────────────────
+	nRowCnt = 0;
+	strSql.Format(_T(" SELECT RIGHT('0000' + CAST(CASE WHEN ISNULL(MAX(CAST(LUGG_NO AS INT)),9000) >= 9900 THEN 9001 ELSE ISNULL(MAX(CAST(LUGG_NO AS INT)),9000)+1 END AS VARCHAR),4) AS NEXTVAL \n")
+				  _T("   FROM JOB_MST WHERE LUGG_NO LIKE '9[0-9][0-9][0-9]' AND LUGG_NO <= '9900' "));
+	_RecordsetPtr pRs3 = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	if (nRowCnt <= 0)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+	CRecordSetWrap* pRsw3 = new CRecordSetWrap(pRs3);
+	pRsw3->MoveFirst();
+	CString strLuggNo = pRsw3->GetItem(_T("NEXTVAL"));
+	delete pRsw3;
+	strLuggNo.Trim();
+	if (strLuggNo.IsEmpty())
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+
+	m_pDoc->BeginTrans_DLG();
+
+	// ① 반자동 출고 작업 생성
+	strSql.Format(_T(" INSERT INTO JOB_MST ( WH_TYP					\n")
+				  _T("                     , LUGG_NO					\n")
+				  _T("                     , START_POS				\n")
+				  _T("                     , START_LOCATION			\n")
+				  _T("                     , DEST_POS				\n")
+				  _T("                     , DEST_LOCATION			\n")
+				  _T("                     , PRODUCT_SIZE			\n")
+				  _T("                     , JOB_TYP				\n")
+				  _T("                     , JOB_STATUS				\n")
+				  _T("                     , JOB_PRIORITY			\n")
+				  _T("                     , HS_TRACK_NO			\n")
+				  _T("                     , SC_NO					\n")
+				  _T("                     , INS_DT					\n")
+				  _T("                     , INS_USER_ID			\n")
+				  _T("                     , REMARKS )				\n")
+				  _T("              VALUES ( '%s'					\n")
+				  _T("                     , '%s'					\n")	// 작업번호(반자동 대역)
+				  _T("                     , '%s'					\n")	// 출발지 = 그 H/S 의 크레인
+				  _T("                     , '00-000-00'				\n")
+				  _T("                     , '%s'					\n")	// 도착지 = 출고대
+				  _T("                     , '00-000-00'				\n")
+				  _T("                     , '0'					\n")
+				  _T("                     , '12'					\n")	// 반자동 출고 - 상위 보고 없음, 완료 시 삭제
+				  _T("                     , '10'					\n")	// CV 구동대기 - 크레인 구간은 이미 끝났다
+				  _T("                     , '001'					\n")
+				  _T("                     , '%s'					\n")	// H/S 트랙
+				  _T("                     , '%s'					\n")	// 크레인 번호
+				  _T("                     , ") + m_pDoc->SYSDATE + _T("	\n")
+				  _T("                     , '%s'					\n")
+				  _T("                     , 'H/S 배출' )			  "),
+				  strWhTyp, strLuggNo, strScNo, strDestPos, strTrackNo, strScNo, m_pDoc->m_strId);
+
+	if (m_pDoc->ExcuteQueryString_DLG(strSql) != TRUE)
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+
+	// ② PLC R영역 트래킹에 작업번호 기록 요청 (OD_RQ_YN 은 건드리지 않는다)
+	strSql.Format(_T(" UPDATE CV_DATA							\n")
+				  _T("    SET LUGG_NO_OD        = '%s'			\n")
+				  _T("      , DEST_POS_OD       = '%s'			\n")
+				  _T("      , TRACKING_WRITE_YN = 'Y'			\n")
+				  _T("      , WRITE_UPD_DT      = ") + m_pDoc->SYSDATE + _T("	\n")
+				  _T("  WHERE WH_TYP = '%s'						\n")
+				  _T("    AND MC_NO  = '%s'						  "),
+				  strLuggNo, strDestPos, strWhTyp, strTrackNo);
+
+	if (m_pDoc->ExcuteQueryString_DLG(strSql) != TRUE)
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+
+	// ③ 겸용 통로(C/V#2 = 103/104)만 방향을 출고(1)로. 방향 지시는 대표 트랙 103 으로 낸다.
+	//    (설비 단위 방향 워드라 103/104 가 함께 바뀐다 - IO_TASK RequestCvDirection 과 동일 규약)
+	if (strTrackNo == _T("103") || strTrackNo == _T("104"))
+	{
+		strSql.Format(_T(" UPDATE CV_DATA						\n")
+					  _T("    SET CMD_RQ_ID   = 'DIR'			\n")
+					  _T("      , CMD_RQ_PARM = '1'				\n")	// 1 = 출고
+					  _T("      , CMD_RQ_YN   = 'Y'				\n")
+					  _T("      , WRITE_UPD_DT = ") + m_pDoc->SYSDATE + _T("	\n")
+					  _T("  WHERE WH_TYP = '%s'					\n")
+					  _T("    AND MC_NO  = '103'				\n")
+					  _T("    AND (CMD_RQ_YN <> 'Y' OR CMD_RQ_ID = 'DIR')  "), strWhTyp);
+		m_pDoc->ExcuteQueryString_DLG(strSql);	// 실패해도 배출 자체는 유효하다(다음 폴링에 스케줄러가 맞춘다)
+	}
+
+	CString strLogMsg;
+	strLogMsg.Format(_T("H/S 배출 -> 트랙 : %s, 크레인 : %s, 작업번호 : %s, 출고대 : %s"),
+					 strTrackNo, strScNo, strLuggNo, strDestPos);
+	m_pDoc->GetQueryInsertClientLog(_T("CCvSkinDlg"), strLuggNo, _T(""), _T(""), strLogMsg);
+
+	m_pDoc->CommitTrans_DLG();
+
+	CString strDone;
+	strDone.Format(_T("%s\n%s : %s"),
+				   m_pDoc->GetMsgLangDef(_T("배출 작업을 생성했습니다.")),
+				   m_pDoc->GetMsgLangDef(_T("작업번호")), strLuggNo);
+	AfxMessageBox(strDone);
 }
