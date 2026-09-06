@@ -4048,7 +4048,8 @@ namespace TSK_COMM_IOSCH
                         continue;
                     }
 
-                    string luggNo = RtvRunningJob();
+                    string dropTrack;
+                    string luggNo = RtvRunningJob(out dropTrack);
                     if (luggNo.Length == 0)
                     {
                         MakeMsg_Error(string.Format(
@@ -4056,8 +4057,22 @@ namespace TSK_COMM_IOSCH
                     }
                     else
                     {
+                        // [LGLS 2026-09-06] ★도착트랙을 함께 남긴다★
+                        //   39 이후 LandRgvDrop 이 HS_TRACK_NO 로 도착 트랙을 찾아, 화물은 있는데
+                        //   작업번호가 비어 있으면(운전원이 손으로 내려놓았으니 당연히 비어 있다)
+                        //   그 트랙에 작업번호를 찍고 15 로 내린다. 이 값이 없으면 그 처리가 통째로
+                        //   건너뛰어져 작업이 39 에 갇힌다.
+                        //   (출고 강제완료는 SC 단계라 StampHsTrackingForOut 이 직접 찍는다 -
+                        //    RGV 단계는 LandRgvDrop 이 이미 그 일을 하므로 트랙만 알려주면 된다.)
                         string rtn = "";
-                        if (UpdateJobStatus(ST_RGV_DONE, luggNo, ref rtn))
+                        bool okRtv = (dropTrack.Length > 0)
+                                   ? UpdateJobStatusHs(ST_RGV_DONE, luggNo, dropTrack, ref rtn)
+                                   : UpdateJobStatus(ST_RGV_DONE, luggNo, ref rtn);
+                        if (dropTrack.Length == 0)
+                            MakeMsg_Error(string.Format(
+                                "[SCH][강제완료] 작업 {0} - RTV 도착트랙을 확정하지 못했습니다. "
+                                + "착지 기록이 자동으로 되지 않으니 C/V 상태창 [작업 적기] 로 직접 기록하세요.", luggNo));
+                        if (okRtv)
                         {
                             RtvResetComplete();
                             m_dicPrevRGV.Remove("RGV_801");
@@ -4142,24 +4157,44 @@ namespace TSK_COMM_IOSCH
             catch (Exception ex) { MakeMsg_Error("[SCH][강제완료] StampHsTrackingForOut 오류: " + ex.Message); }
         }
 
-        /// <summary>RTV 가 맡고 있는 구동중(35) 작업번호. 없으면 "". (RTV 는 1대)</summary>
-        private string RtvRunningJob()
+        /// <summary>RTV 가 맡고 있는 구동중(35) 작업. 없으면 "" 반환. (RTV 는 1대)</summary>
+        private string RtvRunningJob(out string dropTrack)
         {
+            dropTrack = "";
             try
             {
                 string q = "";
-                q += CRLF + " SELECT TOP 1 LUGG_NO FROM JOB_MST              ";
-                q += CRLF + "  WHERE WH_TYP     = :WH_TYP                    ";
-                q += CRLF + "    AND JOB_STATUS = :ST_RUN                    ";
-                q += CRLF + "  ORDER BY UPD_DT                               ";
+                q += CRLF + " SELECT TOP 1 LUGG_NO, JOB_TYP, DEST_POS         ";
+                q += CRLF + "      , " + DbLang.NVL + "(HS_TRACK_NO,'') AS HS  ";
+                q += CRLF + "   FROM JOB_MST                                  ";
+                q += CRLF + "  WHERE WH_TYP     = :WH_TYP                     ";
+                q += CRLF + "    AND JOB_STATUS = :ST_RUN                     ";
+                q += CRLF + "  ORDER BY UPD_DT                                ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_RGV_RUN;
                 if (DbQry(q) <= 0) return "";
+                dropTrack = (GetVal(_pBdb.mDtMain.Rows[0], "HS") ?? "").Trim();
+                // 지시 시점에 기록되지 않았으면(수동 투입 등) 작업 정보로 되짚는다.
+                if (dropTrack.Length == 0)
+                    dropTrack = RtvDropTrackOf((GetVal(_pBdb.mDtMain.Rows[0], "JOB_TYP") ?? "").Trim(),
+                                               (GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS") ?? "").Trim());
                 return (GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO") ?? "").Trim();
             }
             catch { return ""; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-06] RTV 가 화물을 내려놓는 트랙. DriveRGV 의 dropTrack 계산과 같은 규약이다.
+        ///   입고 : 도착지 = 크레인(9xx) → 그 호기의 라인 드롭트랙
+        ///   출고 : 도착지 = 출고대(1xx) → 그 출고대의 픽업(하역) 트랙
+        /// </summary>
+        private string RtvDropTrackOf(string jobTyp, string destPos)
+        {
+            if (string.IsNullOrEmpty(destPos)) return "";
+            bool bOut = (jobTyp == "2" || jobTyp == "12");
+            return bOut ? RgvPickupTrack(destPos) : RgvDropTrack(destPos);
         }
 
         /// <summary>[LGLS 2026-09-06] 그 크레인의 완료신호를 '0' 으로 되돌린다(잔존 신호 오소비 방지).</summary>
