@@ -3991,6 +3991,13 @@ namespace TSK_COMM_IOSCH
                         {
                             ClearScOd(luggNo);
                             m_dicPrevSC.Remove("SC_" + scNo);
+                            // [LGLS 2026-09-06] ★뒤늦은 완료신호를 미리 흘려보낸다★
+                            //   강제완료는 "설비가 완료신호를 못 냈다"는 상황에서 쓴다. 그런데 설비가
+                            //   나중에 정신을 차려 COMPLETE_RD 를 올리면, 그 신호는 이미 끝난 이 작업이
+                            //   아니라 ★그 크레인의 다음 작업★ 을 조기 완료시킨다(CompleteSC 는
+                            //   COMPLETE_RD<>'0' 인 25 작업을 완료로 본다).
+                            //   정상 완료 경로가 신호를 소비한 직후 '0' 으로 리셋하는 것과 같은 이유다.
+                            ResetScComplete(scNo);
                             MakeMsg_Imp(string.Format(
                                 "[SCH][강제완료] 작업 {0} S/C #{1} 강제완료 → 상태 '{2}' (운전원이 화물을 옮겨 놓음)",
                                 luggNo, scNo, ST_SC_DONE));
@@ -4106,6 +4113,23 @@ namespace TSK_COMM_IOSCH
                 return (GetVal(_pBdb.mDtMain.Rows[0], "LUGG_NO") ?? "").Trim();
             }
             catch { return ""; }
+        }
+
+        /// <summary>[LGLS 2026-09-06] 그 크레인의 완료신호를 '0' 으로 되돌린다(잔존 신호 오소비 방지).</summary>
+        private void ResetScComplete(string scNo)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " UPDATE SC_DATA_LGLS SET COMPLETE_RD = '0' ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND SC_NO = :SC_NO ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
+                DbNonQry(q);
+            }
+            catch { }
         }
 
         /// <summary>운전 화면 명령 플래그 소비(CMD_RQ_YN='N').</summary>
