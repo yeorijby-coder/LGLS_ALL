@@ -1566,6 +1566,27 @@ namespace TSK_COMM_IOSCH
                         "[SCH][체류경고] 작업 {0} 이(가) 상태 '{1}' 로 {2}초째 진행되지 않습니다 ({3} → {4}). 설비 응답을 확인하세요.",
                         luggNo, status, GetVal(dt.Rows[i], "IDLE_SEC"),
                         GetVal(dt.Rows[i], "START_POS"), GetVal(dt.Rows[i], "DEST_POS")));
+
+                    // [LGLS 2026-09-06] SC 구동중(25) 체류는 완료신호 유실이 원인일 수 있다
+                    //   (VehThread 가 Ack 를 PLC 에 쓴 직후 COMPLETE_RD 커밋 전에 죽는 좁은 창).
+                    //   ★작업당 딱 1회★ 시간 기반 자동 처리를 허용해 스스로 빠져나오게 하고,
+                    //   그러고도 다시 체류하면 자동 처리하지 않고 그대로 세워 둔다(사용자 확정).
+                    //   - 세워 두는 이유 : 두 번째부터는 신호 유실이 아니라 설비/작업 자체의
+                    //     문제일 가능성이 높다. 자동으로 계속 밀어내면 원인이 가려진다.
+                    if (status == ST_SC_RUN)
+                    {
+                        if (m_setAutoTimeUsed.Contains(luggNo))
+                        {
+                            MakeMsg_Error(string.Format(
+                                "[SCH][체류경고] 작업 {0} - 시간 기반 자동 처리를 이미 1회 사용했습니다. "
+                                + "자동 처리하지 않고 정지 상태로 둡니다. 설비와 작업을 확인하세요.", luggNo));
+                        }
+                        else if (m_setAutoTimeGrant.Add(luggNo))
+                        {
+                            MakeMsg_Imp(string.Format(
+                                "[SCH][체류복구] 작업 {0} - 완료신호 유실 가능성. 시간 기반 자동 처리를 1회 허용합니다.", luggNo));
+                        }
+                    }
                 }
 
                 // 정상 진행으로 돌아선 작업은 경고 이력에서 제거
@@ -1573,6 +1594,10 @@ namespace TSK_COMM_IOSCH
                 foreach (string k in m_dicStallWarned.Keys)
                     if (!lstAlive.Contains(k)) lstDrop.Add(k);
                 foreach (string k in lstDrop) m_dicStallWarned.Remove(k);
+
+                // [LGLS 2026-09-06] 사라진(완료/삭제된) 작업의 1회 허용 이력도 함께 정리한다.
+                //   JOB_MST 에 없는 작업번호를 계속 들고 있을 이유가 없다.
+                CleanupAutoTimeSets();
             }
             catch (Exception ex)
             {
@@ -1585,6 +1610,45 @@ namespace TSK_COMM_IOSCH
         //   이보다 빨리 오는 '완료' 는 이전 작업의 잔류 신호로 본다.
         private const int SC_MIN_RUN_SEC = 8;
 
+        // [LGLS 2026-09-06] 체류 시 1회 한정 시간 기반 자동 처리 (사용자 확정)
+        //   Grant   : 지금 1회 허용된 작업 / Used : 이미 1회 써버린 작업(다시는 자동 처리하지 않는다)
+        //   UsedSc  : 그 호기가 자동 처리를 쓴 뒤 아직 ★정상 완료신호★ 를 한 번도 못 낸 상태.
+        //             신호가 계속 죽어 있으면 작업마다 1회씩 복구되어 결함이 영영 가려지므로,
+        //             호기 단위로도 한 번만 허용하고 그 뒤에는 멈춰 세운다.
+        //             그 호기가 완료신호로 정상 완료하면 신호가 살아난 것이므로 해제한다.
+        //   RefuseLogged : 같은 작업에 대한 거부 메시지를 한 번만 남기기 위한 표시.
+        private readonly HashSet<string> m_setAutoTimeGrant   = new HashSet<string>();
+        private readonly HashSet<string> m_setAutoTimeUsed    = new HashSet<string>();
+        private readonly HashSet<string> m_setAutoTimeUsedSc  = new HashSet<string>();
+        private readonly HashSet<string> m_setAutoTimeRefused = new HashSet<string>();
+
+        /// <summary>[LGLS 2026-09-06] JOB_MST 에 없는 작업번호를 허용/사용 이력에서 지운다.</summary>
+        private void CleanupAutoTimeSets()
+        {
+            try
+            {
+                if (m_setAutoTimeGrant.Count == 0 && m_setAutoTimeUsed.Count == 0) return;
+                string q = "";
+                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                var setAlive = new HashSet<string>();
+                if (DbQry(q) > 0)
+                {
+                    DataTable dt = _pBdb.mDtMain.Copy();
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                        setAlive.Add(GetVal(dt.Rows[i], "LUGG_NO"));
+                }
+                m_setAutoTimeGrant.RemoveWhere(k => !setAlive.Contains(k));
+                m_setAutoTimeUsed.RemoveWhere(k => !setAlive.Contains(k));
+                m_setAutoTimeRefused.RemoveWhere(k => !setAlive.Contains(k));
+                // m_setAutoTimeUsedSc 는 호기 단위라 작업 소멸로 지우지 않는다.
+                //   그 호기가 정상 완료신호를 낼 때(CompleteSC)만 해제된다.
+            }
+            catch { }
+        }
+
         private void CompleteSC()
         {
             try
@@ -1592,7 +1656,11 @@ namespace TSK_COMM_IOSCH
                 // 구동중(25) 작업 중, 해당 S/C(SC_NO=SC처리 설비위치)의 완료신호(COMPLETE_RD<>0)
                 // 이고 명령이 소비(OD_RQ_YN='N')되었으면 완료.  [슬라이드17 Transfer Complete]
                 string strSql = "";
-                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, SD.SC_NO                     ";
+                strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, SD.SC_NO,                    ";
+                // [LGLS 2026-09-06] 이 행이 ★설비 완료신호★ 로 걸린 것인지(1) 시간 기반으로 걸린 것인지(0).
+                strSql += CRLF + "        CASE WHEN SD.COMPLETE_RD IS NOT NULL                       ";
+                strSql += CRLF + "              AND SD.COMPLETE_RD NOT IN ('0','00','0000','')       ";
+                strSql += CRLF + "             THEN '1' ELSE '0' END AS BY_SIGNAL                    ";
                 strSql += CRLF + "   FROM JOB_MST JM                                           ";
                 strSql += CRLF + "  INNER JOIN SC_DATA_LGLS SD                                       ";
                 strSql += CRLF + "     ON SD.WH_TYP = JM.WH_TYP AND SD.SC_NO = " + SC_POS_EXPR + " ";   // [LGLS]
@@ -1622,7 +1690,12 @@ namespace TSK_COMM_IOSCH
                 //   올리기만 하고 내리지 않아 설비가 다음 이벤트를 즉시 지움 - 같은 날 수정).
                 //   그런 유실 대비 백업(유휴+포크빔+스트로브 내려감+경과)은 ★[환경설정] > [시간 기반 자동 처리]★
                 //   가 선택돼 있을 때만 쓴다. 해제 상태면 설비 완료신호로만 처리한다(기본).
-                if (AutoTimeProcEnabled())
+                // [LGLS 2026-09-06] 시간 기반 분기는 두 경우에 연다 :
+                //   ① [환경설정] > [시간 기반 자동 처리] 가 켜져 있을 때 (종전 동작 - 상시)
+                //   ② 체류경고로 그 작업에 1회 허용이 떨어졌을 때 (CheckStalledJobs)
+                //   어느 행이 어느 분기로 걸렸는지는 BY_SIGNAL 로 구분해 아래 루프에서 판정한다.
+                bool bAutoTime = AutoTimeProcEnabled();
+                if (bAutoTime || m_setAutoTimeGrant.Count > 0)
                 {
                     strSql += CRLF + "    AND ( ( SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ) ";
                     strSql += CRLF + "       OR ( SD.UCSTATUS_RD = '1'                              ";
@@ -1650,6 +1723,38 @@ namespace TSK_COMM_IOSCH
                     if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
                     string scNo   = GetVal(dt.Rows[i], "SC_NO");
                     string rtn = "";
+
+                    bool bBySignal = (GetVal(dt.Rows[i], "BY_SIGNAL") == "1");
+
+                    // [LGLS 2026-09-06] 완료신호로 정상 완료했다면 그 호기의 신호는 살아 있는 것이다.
+                    //   자동 처리 사용 표시를 풀어, 다음에 한 번 더 구제받을 수 있게 한다.
+                    if (bBySignal) m_setAutoTimeUsedSc.Remove(scNo);
+
+                    // 설비 완료신호가 아니라 ★시간 기반★ 으로 걸린 행이면,
+                    //   [시간 기반 자동 처리] 가 켜져 있거나 그 작업에 1회 허용이 있어야 한다.
+                    if (!bBySignal && !bAutoTime)
+                    {
+                        if (!m_setAutoTimeGrant.Contains(luggNo)) continue;   // 허용 없음 - 그대로 세워 둔다
+
+                        // 그 호기가 직전에도 자동 처리로 빠져나갔고 그 뒤 정상 완료신호가 한 번도
+                        //   없었다면, 신호 자체가 죽어 있다는 뜻이다. 더 밀어내지 않고 세워 둔다.
+                        if (m_setAutoTimeUsedSc.Contains(scNo))
+                        {
+                            if (m_setAutoTimeRefused.Add(luggNo))
+                                MakeMsg_Error(string.Format(
+                                    "[SCH][체류경고] 작업 {0} - S/C #{1} 은 직전에도 완료신호 없이 자동 처리했고 "
+                                    + "그 뒤 정상 완료신호가 없습니다. 자동 처리하지 않고 정지 상태로 둡니다. "
+                                    + "크레인 완료신호(UNLOAD_COMPLETE) 배선/설비를 확인하세요.", luggNo, scNo));
+                            continue;
+                        }
+
+                        m_setAutoTimeGrant.Remove(luggNo);
+                        m_setAutoTimeUsed.Add(luggNo);
+                        m_setAutoTimeUsedSc.Add(scNo);
+                        MakeMsg_Imp(string.Format(
+                            "[SCH][체류복구] 작업 {0} - 시간 기반 자동 처리 1회 사용(완료신호 없이 완료 처리, S/C #{1}). "
+                            + "이 호기가 정상 완료신호를 낼 때까지 추가 자동 처리는 하지 않습니다.", luggNo, scNo));
+                    }
 
                     // [LGLS] 출고(2)는 CV 처리로 인계, 입고(1)는 최종 완료(29 → HOST F보고)
                     // [LGLS 2026-08-31] 29 = 크레인이 완료했다 (입고/출고 공통).

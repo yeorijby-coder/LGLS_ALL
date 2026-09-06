@@ -330,6 +330,22 @@ void CManualRtv::OnBnClickedChkRtvFork12()
 
 void CManualRtv::OnBnClickedBtnRtvManualSave()
 {
+	// [LGLS 2026-09-06] MANUAL 수동 조작은 비상 상황 전용이다(RTV 수동 지시).
+	//   자동 운전 중 실수로 눌리면 설비/작업이 엉키므로 실행 전 확인을 받는다.
+	{
+		// 다국어 : msg_box.ini 는 값에 줄바꿈을 담을 수 없어 두 줄을 각각 키로 둔다.
+		CString strEmr1 = _T("비상상황에서 사용하세요");
+		CString strEmr2 = _T("진행하시겠습니까?");
+		if (m_pDoc != NULL)
+		{
+			strEmr1 = m_pDoc->GetMsgLangDef(strEmr1);
+			strEmr2 = m_pDoc->GetMsgLangDef(strEmr2);
+		}
+		if (AfxMessageBox(strEmr1 + _T("\n ") + strEmr2,
+		                  MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+			return;
+	}
+
 	CString strSql=_T("");
 	CString strRtvNo = _T("");
 	CString strArrFork1=_T("");
