@@ -313,6 +313,12 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		SetDlgItemText(IDC_EDT_RTV_JOB_DEST_LOC,   pRsw2->GetItem(_T("DEST_LOCATION")));
 		SetDlgItemText(IDC_LGLS_RTV_LOT_VAL,       pRsw2->GetItem(_T("LOT_NO")));		// [LGLS] 적재 용기
 		SetDlgItemText(IDC_LGLS_RTV_PRD_VAL,       pRsw2->GetItem(_T("PRODUCT_ID")));	// [LGLS] 제품 정보	// 도착지
+		// [LGLS 2026-09-07] 확대(통신상태) 패널의 작업정보 항목에도 같은 값을 채운다.
+		//   컨트롤을 이제 실제로 만들었으므로(BuildVehStatusPanel) 여기서 채우면 화면에 나온다.
+		SetDlgItemText(IDC_RTVV_REQ_NO,    pRsw2->GetItem(_T("LUGG_NO")));
+		SetDlgItemText(IDC_RTVV_START_POS, pRsw2->GetItem(_T("START_POS")));
+		SetDlgItemText(IDC_RTVV_DEST_POS,  pRsw2->GetItem(_T("DEST_POS")));
+		SetDlgItemText(IDC_RTVV_PROD_ID,   pRsw2->GetItem(_T("PRODUCT_ID")));
 		delete pRsw2;
 	}
 	else
@@ -326,6 +332,10 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		SetDlgItemText(IDC_EDT_RTV_JOB_DEST_LOC,   _T(""));
 		SetDlgItemText(IDC_LGLS_RTV_LOT_VAL,       _T(""));
 		SetDlgItemText(IDC_LGLS_RTV_PRD_VAL,       _T(""));
+		SetDlgItemText(IDC_RTVV_REQ_NO,    _T(""));
+		SetDlgItemText(IDC_RTVV_START_POS, _T(""));
+		SetDlgItemText(IDC_RTVV_DEST_POS,  _T(""));
+		SetDlgItemText(IDC_RTVV_PROD_ID,   _T(""));
 	}
 }
 
@@ -1581,7 +1591,7 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 	CRect rcCli; GetClientRect(&rcCli);
 	CRect rcWin; GetWindowRect(&rcWin);
 
-	const int PH    = 222;						// [LGLS 2026-08-06] 화면 안에 들어가게 압축
+	const int PH    = 296;   // [LGLS 2026-09-07] 작업정보 3행 추가분						// [LGLS 2026-08-06] 화면 안에 들어가게 압축
 	const int STRIP = 30;						// [확대]/[축소] 버튼 띠 높이(px)
 	int nTop = rcCli.Height();					// 기존 컨트롤 아래(빈 영역)에서 시작
 	m_nVehBaseH  = rcWin.Height();				// 축소 상태 창 높이(원래 DLG 그대로)
@@ -1692,11 +1702,42 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 	y += 2 * 18 + 2;
 
 	// ── 파렛트 / 알람코드 ──────────────────────────────────────────
-	mk.LabelA(_T("파렛트ID"), CLib::GetObsAddr(strOwner, _T("PALLET_ID")), 6, y + 2, 58, 56);
+	// ── 파렛트 / 알람코드 ──────────────────────────────────────────
+	// [LGLS 2026-09-07] 값은 PALLET_ON_VEHICLE_RD(차상 화물)인데 주소 라벨만 PALLET_ID
+	//   (지시 화물)로 적혀 있었다. 값에 맞춰 이름과 주소를 정정한다.
+	mk.LabelA(_T("차상화물"), CLib::GetObsAddr(strOwner, _T("PALLET_ON_VEHICLE")), 6, y + 2, 58, 56);
 	mk.Value(IDC_RTVV_PALLET_ID, 126, y, 110, 18);
 	mk.LabelA(_T("알람코드"), CLib::GetObsAddr(strOwner, _T("ALARM_SET_CODE")), nCol1, y + 2, 58, 56);
 	mk.Value(IDC_RTVV_ALARM_CODE, nCol1 + 120, y, 110, 18);
 	y += 20;
+
+	// ── 작업정보 (구 ECS 팝업의 요청번호/자재코드/팔렛/출발·도착위치/입출고) ──
+	// [LGLS 2026-09-07] 종전에는 ID 와 값 설정 코드만 있고 컨트롤을 만들지 않아
+	//   화면에 나오지 않았다. 구 ECS 팝업에 있던 항목이므로 되살린다.
+	//   영역 표기 : PLC 신호는 실주소(파랑), DB 값은 테이블.컬럼.
+	{
+		struct JOBDEF { LPCTSTR name; int id; CString area; };
+		// 출처가 길어 라벨이 잘리므로 표 위에 한 줄로 묶고, 항목에는 컬럼명만 적는다.
+		mk.Label(_T("작업정보 (JOB_MST · RTV_DATA_LGLS)"), 6, y + 1, 240, 16);
+		y += 17;
+		JOBDEF jobs[] = {
+			{ _T("지시화물"), IDC_RTVV_PALLET,    CLib::GetObsAddr(strOwner, _T("PALLET_ID")) },
+			{ _T("입출고"),   IDC_RTVV_IO_TAG,    CString(_T("JOB_TYP_OD")) },
+			{ _T("요청번호"), IDC_RTVV_REQ_NO,    CString(_T("LUGG_NO")) },
+			{ _T("제품정보"), IDC_RTVV_PROD_ID,   CString(_T("PRODUCT_ID")) },
+			{ _T("출발위치"), IDC_RTVV_START_POS, CString(_T("START_POS")) },
+			{ _T("도착위치"), IDC_RTVV_DEST_POS,  CString(_T("DEST_POS")) },
+		};
+		for (int i = 0; i < sizeof(jobs)/sizeof(jobs[0]); i++)
+		{
+			int col = i % 2, row = i / 2;
+			int x = (col == 0) ? 6 : nCol1;
+			int yy = y + row * 18;
+			mk.LabelA(jobs[i].name, jobs[i].area, x, yy + 2, 56, 78);
+			mk.Value(jobs[i].id, x + 138, yy, 92, 18);
+		}
+		y += 3 * 18 + 2;
+	}
 
 	// ── 버튼(맨 아래) ──────────────────────────────────────────────
 	mk.Button(IDC_RTVV_RESEND, _T("지시 재전송"), 6, y, 112, 22);
