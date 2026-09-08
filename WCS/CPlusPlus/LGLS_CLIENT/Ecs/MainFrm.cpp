@@ -392,7 +392,7 @@ void CMainFrame::InitializeRibbonMenu(EN_LANG penLang)
 	AddCategoryLOG();		// [LGLS 2026-09-01] 안에 [알람] 패널 포함(독립 카테고리 폐지)
 	//AddCategoryUSER();
 	//AddCategorySTATUS();
-	AddCategoryCOMM();	// [LGLS 2026-09-08] [통신] 탭(오른쪽 끝)
+	AddCommToTabs();	// [LGLS 2026-09-08] 리본 오른쪽 끝 [통신] 표시(항상 보임)
 	//RenameRibbonText();	//test
 }
 
@@ -1166,9 +1166,9 @@ CLglsRibbonComm::CLglsRibbonComm()
 	: m_clrState(RGB(0, 0, 0)), m_hOn(NULL), m_hOff(NULL) {}
 
 CLglsRibbonComm::CLglsRibbonComm(UINT nID, LPCTSTR lpszText, HICON hOn, HICON hOff)
-	: CMFCRibbonButton(nID, lpszText, hOff, TRUE), m_clrState(LGLS_COMM_NG), m_hOn(hOn), m_hOff(hOff)
+	: CMFCRibbonButton(nID, lpszText, hOff, FALSE, hOff), m_clrState(LGLS_COMM_NG), m_hOn(hOn), m_hOff(hOff)
 {
-	SetAlwaysLargeImage();
+	// [LGLS 2026-09-08] 탭 줄에 놓을 것이므로 큰 아이콘(SetAlwaysLargeImage)은 쓰지 않는다.
 }
 
 // [LGLS 2026-09-08] 색 대신 ★아이콘★ 을 갈아 끼운다.
@@ -1238,41 +1238,43 @@ void CLglsRibbonBar::RecalcLayout()
 	}
 }
 
-// [LGLS 2026-09-08] [통신] 탭(대메뉴) + [통신] 그룹 + 상태 3종. 탭은 리본 오른쪽 끝에 놓는다.
-void CMainFrame::AddCategoryCOMM()
+// [LGLS 2026-09-08] ★리본 탭 줄 오른쪽 끝★ 에 [통신] 표시를 붙인다. (사용자 확정)
+//   별도 탭(카테고리)으로 만들었더니 그 탭을 눌러야만 보였고, 탭이 두 번 그려졌다.
+//   AddToTabs 는 어느 탭을 보고 있든 항상 같은 자리에 남는다 - 이쪽이 맞다.
+void CMainFrame::AddCommToTabs()
 {
 	if (!IsStatusOnRibbon()) return;
 
-	CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("통신"), IDB_LOGO_ECS, IDB_LOGO_ECS);
-	if (pCategory == NULL) return;
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath;
+	strAppPath.Format(_T("%s"), chrFileName);
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
+	HICON hOn  = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_on16"),  _T(".png")));
+	HICON hOff = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_off16"), _T(".png")));
 
-	CMFCRibbonPanel* pPanel = pCategory->AddPanel(_T("통신"), 0, RUNTIME_CLASS(CLglsRibbonPanel));
-	if (pPanel != NULL)
+	m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("통신 ")));
+
+	struct D2 { UINT id; LPCTSTR s; LPCTSTR d; };
+	D2 defs[] = { { ID_STATUS_CV_1, _T("EQUIP  "), _T("설비 통신 (WCS_TASK_CV)") },
+	              { ID_STATUS_HOST, _T("HOST  "),  _T("상위 통신 (WCS_TASK_HOST)") },
+	              { ID_STATUS_SCH,  _T("SCH"),    _T("스케줄러 (IO_TASK)") } };
+	// 탭 줄에서는 아이콘만 그려지고 글자는 빠진다. 그래서 이름은 라벨로 따로 붙인다.
+	for (int i = 0; i < 3; i++)
 	{
-		TCHAR chrFileName[500];
-		GetModuleFileName(NULL, chrFileName, MAX_PATH);
-		CString strAppPath;
-		strAppPath.Format(_T("%s"), chrFileName);
-		strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
-		HICON hOn  = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_on"),  _T(".png")));
-		HICON hOff = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_off"), _T(".png")));
+		CLglsRibbonComm* p = new CLglsRibbonComm(defs[i].id, _T(""), hOn, hOff);
+		p->SetToolTipText(defs[i].d);
+		p->SetDescription(defs[i].d);
+		m_wndRibbonBar.AddToTabs(p);
+		m_arRbnComm.Add(p);
 
-		struct D2 { UINT id; LPCTSTR s; LPCTSTR d; };
-		D2 defs[] = { { ID_STATUS_CV_1, _T("EQUIP"), _T("설비 통신 (WCS_TASK_CV)") },
-		              { ID_STATUS_HOST, _T("HOST"),  _T("상위 통신 (WCS_TASK_HOST)") },
-		              { ID_STATUS_SCH,  _T("SCH"),   _T("스케줄러 (IO_TASK)") } };
-		for (int i = 0; i < 3; i++)
-		{
-			CLglsRibbonComm* p = new CLglsRibbonComm(defs[i].id, defs[i].s, hOn, hOff);
-			p->SetToolTipText(defs[i].d);
-			p->SetDescription(defs[i].d);
-			pPanel->Add(p);
-			m_arRbnComm.Add(p);
-		}
+		CMFCRibbonLabel* pNm = new CMFCRibbonLabel(defs[i].s);
+		pNm->SetToolTipText(defs[i].d);
+		m_wndRibbonBar.AddToTabs(pNm);
 	}
 
-	m_wndRibbonBar.SetRightCategory(pCategory);	// 탭을 오른쪽 끝으로
-	m_wndRibbonBar.SetRightPanel((CLglsRibbonPanel*)pPanel);	// 그룹도 오른쪽 끝으로
+	// 마지막 항목이 창 오른쪽 끝에 붙어 잘리지 않도록 여백을 둔다.
+	m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("    ")));
 }
 
 void CMainFrame::SetCommColor(UINT nID, COLORREF clr)

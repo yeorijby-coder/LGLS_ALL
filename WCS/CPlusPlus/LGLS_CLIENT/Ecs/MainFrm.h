@@ -182,7 +182,7 @@ public:
 	// [LGLS 2026-09-08] 리본에 붙인 통신상태 요소들(카테고리마다 한 벌 - 어느 탭에서도 보인다)
 	CObArray m_arRbnComm;
 	BOOL IsStatusOnRibbon();
-	void AddCategoryCOMM();	// [통신] 탭(오른쪽 끝) + [통신] 그룹
+	void AddCommToTabs();	// 리본 탭 줄 오른쪽 끝에 [통신] 표시(탭과 무관하게 항상 보인다)
 	void SetCommColor(UINT nID, COLORREF clr);
 	BOOL IsStatusBarOnTop();
 	void LayoutStatusBar(int cx, int cy);
