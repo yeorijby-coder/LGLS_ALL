@@ -1225,6 +1225,7 @@ void CLglsRibbonBar::RecalcLayout()
 
 	// ── [통신] 그룹을 리본 오른쪽 끝으로 (COMM_MODE=2) ──
 	//   활성 탭의 그룹만 자리(rect)가 잡힌다. 비활성 탭의 것은 비어 있으므로 건너뛴다.
+	BOOL bMoved = FALSE;
 	for (int i = 0; i < m_arRightPanels.GetCount(); i++)
 	{
 		CLglsRibbonPanel* pPn = (CLglsRibbonPanel*)m_arRightPanels.GetAt(i);
@@ -1239,7 +1240,15 @@ void CLglsRibbonBar::RecalcLayout()
 		rcNew.OffsetRect(nDxP, 0);
 		pPn->LglsMoveTo(&dc, rcNew);
 		if (pOldFont != NULL) dc.SelectObject(pOldFont);
+		bMoved = TRUE;
 	}
+
+	// [LGLS 2026-09-08] ★옮기고 나면 반드시 리본 전체를 다시 그린다★
+	//   기본 배치가 끝난 자리(왼쪽)에 이미 그려진 그림이 남아, 기동 직후 [통신] 그룹이
+	//   두 군데 보였다(사용자 지적). 탭을 한 번 누르면 전체 다시 그리기가 일어나 사라졌다.
+	//   RecalcLayout 은 그리기(WM_PAINT)에서 불리지 않으므로 되돌이 걱정은 없다.
+	if (bMoved)
+		Invalidate(FALSE);
 }
 
 // [LGLS 2026-09-08] 통신상태 표시 방식.  Ecs.ini [MENU] COMM_MODE
