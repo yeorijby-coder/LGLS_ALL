@@ -1295,7 +1295,16 @@ void CMainFrame::AddCommPanel(CMFCRibbonCategory* pCategory)
 //   AddToTabs 는 어느 탭을 보고 있든 항상 같은 자리에 남는다 - 이쪽이 맞다.
 void CMainFrame::AddCommToTabs()
 {
-	if (!IsStatusOnRibbon() || GetCommMode() != 1) return;
+	if (!IsStatusOnRibbon()) return;
+
+	if (GetCommMode() == 2)
+	{
+		// [LGLS 2026-09-08] 모드 2 : 상태는 아래 [통신] 그룹에 있고,
+		//   탭 줄 오른쪽 끝에는 그 그룹이 무엇인지 알리는 이름만 둔다. (사용자 요청)
+		m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("통신")));
+		m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("     ")));	// 오른쪽 여백
+		return;
+	}
 
 	TCHAR chrFileName[500];
 	GetModuleFileName(NULL, chrFileName, MAX_PATH);
