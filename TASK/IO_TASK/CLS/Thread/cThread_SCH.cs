@@ -3257,6 +3257,88 @@ namespace TSK_COMM_IOSCH
         }
 
         /// <summary>
+        /// [LGLS 2026-09-08] 트래킹 없이 ★물리 상태만으로★ 출고 착지를 인정한다. (사용자 실측)
+        ///   정상 완료 시의 상태값과 똑같은데도 LandScDrop 이 넘어가지 못하던 경우를 살린다 :
+        ///   크레인은 작업을 완료했고, 차상에 화물이 없고, 출고 H/S 에는 화물만 감지된 상태.
+        ///   ★네 가지가 모두 설 때만 인정한다★ (하나라도 어긋나면 남의 화물일 수 있다)
+        ///     (1) 어느 설비도 이 작업 화물을 차상에 들고 있지 않다
+        ///     (2) 하역트랙(짝수) 또는 그 홀수 짝에 화물이 있다
+        ///     (3) 그 트랙의 트래킹이 비어 있다(남의 번호가 붙어 있으면 남의 화물이다)
+        ///     (4) 그 도착지를 기다리는 29 출고 작업이 나 하나뿐이다
+        ///   ※ 정상 트래킹 경로를 앞지르지 않도록 29 진입 후 5초는 기다린다.
+        /// </summary>
+        private string LandedByCargoOnly(string hs, string luggNo, int nElapsed)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(hs) || string.IsNullOrEmpty(luggNo)) return "";
+                if (nElapsed < 5) return "";                      // 정상 경로에 먼저 기회를 준다
+                if (AnyVehicleHolding(luggNo)) return "";         // (1)
+                if (OutDoneJobCountOn(hs) != 1) return "";        // (4)
+
+                string[] cand = new string[] { hs, RgvPickupTrack(hs) };
+                foreach (string trk in cand)
+                {
+                    if (string.IsNullOrEmpty(trk)) continue;
+                    if (IsTrackEmpty(trk)) continue;              // (2) 화물이 있어야 한다
+                    string tl = (TrackLugg(trk) ?? "").Trim();    // (3)
+                    if (tl.Length > 0 && tl != "0" && tl != "00" && tl != "0000" && tl != luggNo) continue;
+                    return trk;
+                }
+                return "";
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>[LGLS 2026-09-08] 어떤 설비든 이 작업 화물을 ★차상에★ 들고 있는가(관측값만 본다).</summary>
+        private bool AnyVehicleHolding(string luggNo)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT ( (SELECT COUNT(*) FROM SC_DATA_LGLS                     ";
+                q += CRLF + "            WHERE WH_TYP = :WH_TYP                               ";
+                q += CRLF + "              AND (ITN_LUGG_FK1 = :LG OR ITN_LUGG_FK2 = :LG      ";
+                q += CRLF + "                   OR PALLET_ON_VEHICLE_RD = :LG))               ";
+                q += CRLF + "        + (SELECT COUNT(*) FROM RTV_DATA_LGLS                    ";
+                q += CRLF + "            WHERE WH_TYP = :WH_TYP                               ";
+                q += CRLF + "              AND PALLET_ON_VEHICLE_RD = :LG) ) AS CNT           ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = luggNo;
+                if (DbQry(q) <= 0) return true;                   // 못 읽으면 안전하게 "들고 있다"
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            }
+            catch { return true; }
+        }
+
+        /// <summary>[LGLS 2026-09-08] 그 도착지를 기다리는 29 출고 작업 수.</summary>
+        private int OutDoneJobCountOn(string hs)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT FROM JOB_MST                  ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP                         ";
+                q += CRLF + "    AND JOB_TYP    IN ('2','12')                      ";
+                q += CRLF + "    AND JOB_STATUS  = :ST_DONE                        ";
+                q += CRLF + "    AND " + DbLang.NVL + "(HS_TRACK_NO,'') = :HS      ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')             ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_DONE", DbLang.VARCHAR).Value = ST_SC_DONE;
+                _pBdb.mComMain.Parameters.Add("HS",      DbLang.VARCHAR).Value = hs;
+                if (DbQry(q) <= 0) return 0;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n;
+            }
+            catch { return 0; }
+        }
+
+        /// <summary>
         /// [LGLS 2026-08-31] 반자동/수동 작업 완결 처리.  (사용자 지시 : HOST_TASK 에서 IO_TASK 로 이관)
         ///   ★반자동은 상위에 보고하지 않는다★ - 09(완료)를 거치지 않고 19/29 에서 바로 지운다.
         ///     입고 계열 : 29(크레인 완료) = 최종
@@ -3385,7 +3467,8 @@ namespace TSK_COMM_IOSCH
             try
             {
                 string q = "";
-                q += CRLF + " SELECT JM.LUGG_NO, " + DbLang.NVL + "(JM.HS_TRACK_NO,'') AS HS ";
+                q += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, " + DbLang.NVL + "(JM.HS_TRACK_NO,'') AS HS ";
+                q += CRLF + "      , DATEDIFF(second, JM.UPD_DT, GETDATE()) AS ELAPSED ";
                 q += CRLF + "   FROM JOB_MST JM                                  ";
                 q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                     ";
                 q += CRLF + "    AND JM.JOB_TYP   IN ('2','12')                  ";
@@ -3413,11 +3496,27 @@ namespace TSK_COMM_IOSCH
                     //   놓치면 작업이 29 에 영원히 갇힌다(실측 : 0426/0428 이 35분 잔류, 크레인에는
                     //   색만 남음). 화물은 남지만 신호는 사라지므로 위치로 본다.
                     //   하역트랙(짝수) 또는 그 홀수 짝 어디에든 그 작업 화물이 있으면 착지 완료다.
+                    string jobTyp = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
+                    int nElapsed; int.TryParse(GetVal(dt.Rows[i], "ELAPSED"), out nElapsed);
+
                     string landTrk = LuggLandedTrack(hs, luggNo);
                     if (string.IsNullOrEmpty(landTrk))
                     {
-                        DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 에 아직 화물 없음");
-                        continue;
+                        // [LGLS 2026-09-08] ★트래킹이 없어도 물리 상태로 착지를 인정한다★ (현장 실측)
+                        //   현장에서는 크레인이 H/S 에 내려놓아도 설비가 그 트랙 R영역에 작업번호를
+                        //   얹어 주지 않는다. 그래서 "크레인은 비었고 H/S 에 화물만 감지된 채" 로
+                        //   작업이 29 에 영원히 갇혔다 - 정상 완료와 똑같은 상태값인데도 넘어가지 못했다.
+                        //   화물 위치와 크레인 차상만으로 판정하고, 번호는 우리가 찍어 준다.
+                        landTrk = LandedByCargoOnly(hs, luggNo, nElapsed);
+                        if (string.IsNullOrEmpty(landTrk))
+                        {
+                            DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 에 아직 화물 없음");
+                            continue;
+                        }
+                        StampHsTrackingForOut(luggNo, jobTyp, landTrk);
+                        MakeMsg_Imp(string.Format(
+                            "[SCH][SC] 작업 {0} - 트래킹은 없었지만 크레인이 비었고 H/S 트랙 {1} 에 화물이 있어 "
+                            + "착지로 봅니다(작업번호를 찍고 진행).", luggNo, landTrk));
                     }
 
                     string rtn = "";
