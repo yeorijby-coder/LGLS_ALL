@@ -172,12 +172,17 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 	//   자기가 실은 작업번호로 작업정보에서 구분을 가져와 메운다.
 	if (nJobTypTmp == 0 && bVehJob)
 		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetVehicleJobTyp(pRTV_DATA->K_RTV_NO));
+	// [LGLS 2026-09-08] ★차상 관측값(PALLET_ON_VEHICLE_RD)으로 색을 칠하지 않는다★ (사용자 지적)
+	//   V_LUGG_NO_FK1_RD 는 RTV_DATA_LGLS.PALLET_ON_VEHICLE_RD 별칭이다(Rtv.cpp:131).
+	//   설비는 내려놓은 뒤에도 이 값을 이전 화물번호로 들고 있어서, 그 번호의 작업이
+	//   JOB_MST 에 살아 있는 동안(=최종 완료 전) 색이 계속 켜져 있었다.
+	//   증상 : RTV 는 반송을 끝냈는데 색만 남아 있다가 작업이 끝나는 순간 사라진다.
+	//   번호는 이미 작업정보 캐시(35/39)를 단일 소스로 쓴다(CalcRtvText) - 색도 같게 맞춘다.
+	//   지시값(LUGG_OD = V_ITN_LUGG_FK1)만 본다. 이 값은 RtvResetComplete 가 39 에서 내린다.
 	if (nJobTypTmp == 0 && m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
 	{
-		CString strLugg = pRTV_DATA->V_LUGG_NO_FK1_RD;
+		CString strLugg = pRTV_DATA->V_ITN_LUGG_FK1;
 		strLugg.Trim();
-		if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000"))
-			strLugg = pRTV_DATA->V_ITN_LUGG_FK1;
 		nJobTypTmp = CConvert::ToInt(m_pEquipment->m_pDoc->GetJobTypOfLugg(strLugg));
 	}
 
