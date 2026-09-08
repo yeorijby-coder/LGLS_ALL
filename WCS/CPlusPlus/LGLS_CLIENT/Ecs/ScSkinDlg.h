@@ -21,6 +21,8 @@ public:
 	void BuildVehStatusPanel();
 	void RebuildVehStatusPanel();	// [LGLS 2026-09-01] 호기 전환 시 주소 라벨 재생성
 	void CompactForkStatusRow();
+	void LglsMatchRowPitch();	// [LGLS 2026-09-08] 아래 두 열 행 간격을 위쪽과 같게
+	void LglsPlaceRow(int nIdLbl, int nIdVal, int nIdTop, int nPitch, int nIndex);
 	void LglsRelayoutJobStatus();      // [LGLS 2026-09-03] 작업상태 두 열 배치
 	BOOL m_bJobStatusRelayout;         // [LGLS 2026-09-03] 재배치 1회		// [LGLS] 포크 상태 행 제거 + 아래 행 끌어올림
 	CPtrArray m_arVehCtrl;
