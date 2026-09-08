@@ -31,6 +31,10 @@ public:
 	BOOL    m_bForkRowCompacted;   // [LGLS 2026-09-02] 포크 행 압축 1회 가드
 	int     m_nVehBaseH;	// 축소 상태 창 높이
 	int     m_nVehPanelH;	// 상태 패널 높이
+	// [LGLS 2026-09-08] 확대를 아래(세로)가 아니라 오른쪽(가로)으로 편다.
+	//   현장 PC 세로 해상도가 낮아 종전 방식은 하단이 잘렸다.
+	int     m_nVehBaseW;	// 축소 상태 창 폭
+	int     m_nVehPanelW;	// 오른쪽 패널 폭
 	void SetVehPanelExpanded(BOOL bExpand);
 	afx_msg void OnBnClickedVehZoom();
 	CScSkinDlg(CWnd* pParent = NULL);   // 표준 생성자입니다.

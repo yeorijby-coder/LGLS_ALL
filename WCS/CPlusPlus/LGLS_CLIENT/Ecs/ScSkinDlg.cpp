@@ -2615,11 +2615,17 @@ void CScSkinDlg::BuildVehStatusPanel()
 	CRect rcCli; GetClientRect(&rcCli);
 	CRect rcWin; GetWindowRect(&rcWin);
 
-	const int PH    = 296;   // [LGLS 2026-09-07] 작업정보 3행 추가분(+56)						// [LGLS 2026-08-06] 화면 안에 들어가게 압축
+	// [LGLS 2026-09-08] ★확대를 오른쪽으로 편다★ (현장 PC 1024x768 - 세로가 모자란다)
+	//   종전에는 창 아래에 296px 를 덧붙여 세로가 그만큼 늘었고, 낮은 해상도에서
+	//   하단이 화면 밖으로 잘렸다. 이제 세로는 그대로 두고 폭만 PW 만큼 늘린다.
+	//   패널 내용(약 296px)은 원래 창 높이 안에 충분히 들어간다.
+	const int PW    = 470;   // 오른쪽에 붙는 패널 폭(px)
 	const int STRIP = 30;						// [확대]/[축소] 버튼 띠 높이(px)
-	int nTop = rcCli.Height();					// 기존 컨트롤 아래(빈 영역)에서 시작
-	if (m_nVehBaseH <= 0) m_nVehBaseH = rcWin.Height();	// [LGLS 2026-09-02] 1회만 측정(재구성 누적 방지)				// 축소 상태 창 높이(원래 DLG 그대로)
-	m_nVehPanelH = PH;
+	int nLeft = rcCli.Width();					// 기존 컨트롤 오른쪽(빈 영역)에서 시작
+	if (m_nVehBaseH <= 0) m_nVehBaseH = rcWin.Height();	// [LGLS 2026-09-02] 1회만 측정(재구성 누적 방지)
+	if (m_nVehBaseW <= 0) m_nVehBaseW = rcWin.Width();	// 축소 상태 창 폭
+	m_nVehPanelW = PW;
+	m_nVehPanelH = 0;							// 세로는 더 이상 늘리지 않는다
 
 	CFont* pFont = GetFont();
 	struct L { static void F(CWnd* p, CFont* f) { if (f) p->SetFont(f); } };
@@ -2665,21 +2671,22 @@ void CScSkinDlg::BuildVehStatusPanel()
 		}
 	} mk = { this, pFont };
 
-	int y = nTop + 4;
-	// [LGLS 2026-08-06] 창 폭이 대화상자마다 달라(SC 좁음) 고정 좌표는 잘린다 - 동적 계산
-	int nColW = (rcCli.Width() - 12) / 2;
-	int nCol1 = 6 + nColW;
-	int nBtnX = rcCli.Width() - 118;
+	int y = 4;
+	// [LGLS 2026-09-08] 좌표는 모두 패널 왼쪽 끝(nLeft) 기준이다.
+	int nCol0 = nLeft + 6;
+	int nColW = (PW - 12) / 2;
+	int nCol1 = nCol0 + nColW;
+	int nBtnX = nLeft + PW - 118;
 
 	// [LGLS 2026-08-05] 관측표(observables.tsv)의 실주소를 라벨에 병기한다.
 	CString strOwner = _T("VEHICLE:11");
 	if (m_pSC_DATA != NULL)
 		strOwner.Format(_T("VEHICLE:1%d"), CConvert::ToInt(m_pSC_DATA->K_SC_NO) % 10);   // 901→11
 	// ── 제목 / 상태 / 버튼(우측 2줄) ─────────────────────────────
-	mk.Value(IDC_SCV_TITLE1, 6,   y, 110, 18);
-	mk.Value(IDC_SCV_TITLE2, 120, y, 130, 18);
-	mk.LabelA(_T("상태"), CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_STATUS")), 256, y + 2, 30, 52);
-	mk.Value(IDC_SCV_STATUS, 344, y, 90, 18);
+	mk.Value(IDC_SCV_TITLE1, nCol0, y, 110, 18);
+	mk.Value(IDC_SCV_TITLE2, nCol0 + 114, y, 130, 18);
+	mk.LabelA(_T("상태"), CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_STATUS")), nCol0 + 250, y + 2, 30, 52);
+	mk.Value(IDC_SCV_STATUS, nCol0 + 338, y, 90, 18);
 	y += 20;
 
 	// ── 핸드셰이크 LED : 2열 x 6행 (라벨에 실주소) ────────────────
@@ -2700,7 +2707,7 @@ void CScSkinDlg::BuildVehStatusPanel()
 	for (int i = 0; i < sizeof(leds)/sizeof(leds[0]); i++)
 	{
 		int col = i / 6, row = i % 6;
-		int x = (col == 0) ? 6 : nCol1;
+		int x = (col == 0) ? nCol0 : nCol1;
 		int yy = y + row * 18;
 		mk.LabelA(leds[i].name, CLib::GetObsAddr(strOwner, leds[i].obs), x, yy + 1, 88, 86);
 		mk.Led(leds[i].id, x + 180, yy);
@@ -2718,7 +2725,7 @@ void CScSkinDlg::BuildVehStatusPanel()
 	for (int i = 0; i < sizeof(trios)/sizeof(trios[0]); i++)
 	{
 		int col = i % 2, row = i / 2;
-		int x = (col == 0) ? 6 : nCol1;
+		int x = (col == 0) ? nCol0 : nCol1;
 		int yy = y + row * 18;
 		mk.LabelA(trios[i].name, CLib::GetObsAddr(strOwner, trios[i].obs), x, yy + 2, 58, 56);
 		mk.Value(trios[i].a, x + 120, yy, 30, 18);
@@ -2730,8 +2737,8 @@ void CScSkinDlg::BuildVehStatusPanel()
 	// ── 파렛트 / 알람코드 ──────────────────────────────────────────
 	// [LGLS 2026-09-07] 값은 PALLET_ON_VEHICLE_RD(차상 화물)인데 주소 라벨만 PALLET_ID
 	//   (지시 화물)로 적혀 있었다. 값에 맞춰 이름과 주소를 정정한다.
-	mk.LabelA(_T("차상화물"), CLib::GetObsAddr(strOwner, _T("PALLET_ON_VEHICLE")), 6, y + 2, 58, 56);
-	mk.Value(IDC_SCV_PALLET_ID, 126, y, 110, 18);
+	mk.LabelA(_T("차상화물"), CLib::GetObsAddr(strOwner, _T("PALLET_ON_VEHICLE")), nCol0, y + 2, 58, 56);
+	mk.Value(IDC_SCV_PALLET_ID, nCol0 + 120, y, 110, 18);
 	mk.LabelA(_T("알람코드"), CLib::GetObsAddr(strOwner, _T("ALARM_SET_CODE")), nCol1, y + 2, 58, 56);
 	mk.Value(IDC_SCV_ALARM_CODE, nCol1 + 120, y, 110, 18);
 	y += 20;
@@ -2743,7 +2750,7 @@ void CScSkinDlg::BuildVehStatusPanel()
 	{
 		struct JOBDEF { LPCTSTR name; int id; CString area; };
 		// 출처가 길어 라벨이 잘리므로 표 위에 한 줄로 묶고, 항목에는 컬럼명만 적는다.
-		mk.Label(_T("작업정보 (JOB_MST · SC_DATA_LGLS)"), 6, y + 1, 240, 16);
+		mk.Label(_T("작업정보 (JOB_MST · SC_DATA_LGLS)"), nCol0, y + 1, 240, 16);
 		y += 17;
 		JOBDEF jobs[] = {
 			{ _T("지시화물"), IDC_SCV_PALLET,    CLib::GetObsAddr(strOwner, _T("PALLET_ID")) },
@@ -2756,7 +2763,7 @@ void CScSkinDlg::BuildVehStatusPanel()
 		for (int i = 0; i < sizeof(jobs)/sizeof(jobs[0]); i++)
 		{
 			int col = i % 2, row = i / 2;
-			int x = (col == 0) ? 6 : nCol1;
+			int x = (col == 0) ? nCol0 : nCol1;
 			int yy = y + row * 18;
 			mk.LabelA(jobs[i].name, jobs[i].area, x, yy + 2, 56, 78);
 			mk.Value(jobs[i].id, x + 138, yy, 92, 18);
@@ -2765,8 +2772,8 @@ void CScSkinDlg::BuildVehStatusPanel()
 	}
 
 	// ── 버튼(맨 아래) ──────────────────────────────────────────────
-	mk.Button(IDC_SCV_RESEND, _T("지시 재전송"), 6, y, 112, 22);
-	mk.Button(IDC_SCV_OK,  _T("닫기"), 124, y, 80, 22);
+	mk.Button(IDC_SCV_RESEND, _T("지시 재전송"), nCol0, y, 112, 22);
+	mk.Button(IDC_SCV_OK,  _T("닫기"), nCol0 + 118, y, 80, 22);
 	y += 26;
 
 	// [LGLS 2026-08-05] [확대] 버튼은 rc(IDC_LGLS_SC_ZOOM)로 옮겼다.
@@ -2789,7 +2796,9 @@ void CScSkinDlg::SetVehPanelExpanded(BOOL bExpand)
 		if (p != NULL && ::IsWindow(p->m_hWnd)) p->ShowWindow(bExpand ? SW_SHOW : SW_HIDE);
 	}
 	CRect rc; GetWindowRect(&rc);
-	SetWindowPos(NULL, 0, 0, rc.Width(), m_nVehBaseH + (bExpand ? m_nVehPanelH : 0),
+	// [LGLS 2026-09-08] 세로가 아니라 가로를 늘린다.
+	if (m_nVehBaseW <= 0) m_nVehBaseW = rc.Width();
+	SetWindowPos(NULL, 0, 0, m_nVehBaseW + (bExpand ? m_nVehPanelW : 0), m_nVehBaseH,
 	             SWP_NOMOVE | SWP_NOZORDER);
 	RedrawWindow(NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
 	if (bExpand)
@@ -2803,13 +2812,19 @@ void CScSkinDlg::SetVehPanelExpanded(BOOL bExpand)
 		MONITORINFO mi; ::ZeroMemory(&mi, sizeof(mi)); mi.cbSize = sizeof(mi);
 		if (::GetMonitorInfo(hMon, &mi))
 		{
+			// [LGLS 2026-09-08] 오른쪽으로 펴므로 우측이 넘치면 왼쪽으로 밀어 넣는다.
+			//   (세로 보정도 남겨 둔다 - 원래 창이 이미 화면보다 클 수 있다)
 			CRect rcNow; GetWindowRect(&rcNow);
+			int nLeftNew = rcNow.left, nTopNew = rcNow.top;
+			int nOverR = rcNow.right - mi.rcWork.right;
+			if (nOverR > 0) nLeftNew = rcNow.left - nOverR;
+			if (nLeftNew < mi.rcWork.left) nLeftNew = mi.rcWork.left;
 			int nOver = rcNow.bottom - mi.rcWork.bottom;
-			if (nOver > 0)
+			if (nOver > 0) nTopNew = rcNow.top - nOver;
+			if (nTopNew < mi.rcWork.top) nTopNew = mi.rcWork.top;
+			if (nLeftNew != rcNow.left || nTopNew != rcNow.top)
 			{
-				int nTopNew = rcNow.top - nOver;
-				if (nTopNew < mi.rcWork.top) nTopNew = mi.rcWork.top;
-				SetWindowPos(NULL, rcNow.left, nTopNew, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+				SetWindowPos(NULL, nLeftNew, nTopNew, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 			}
 		}
 	}
