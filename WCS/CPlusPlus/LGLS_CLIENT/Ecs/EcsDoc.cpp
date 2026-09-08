@@ -2443,7 +2443,11 @@ void CEcsDoc::RefreshJobCache()
 				// [LGLS 2026-09-01] RGV 구간(35/39)은 RTV(801) 키로 캐시한다 - RtvInfo 의
 				//   번호·색 단일 소스. 설비 차상 미러는 내려놓은 뒤에도 이전 번호를 들고 있어
 				//   "색 없이 번호만"(9024) 잔상이 났다.
-				if (strSt == _T("35") || strSt == _T("39"))
+				// [LGLS 2026-09-08] ★39(RGV 반송 완료)는 빼다★ (사용자 지적)
+				//   39 는 CompleteRGVReal 이 RtvResetComplete() 로 RTV 지시를 이미 지운 뒤다.
+				//   RTV 는 손을 뗐는데 화면에는 번호와 색이 남아, 작업이 완전히 끝날 때까지
+				//   RTV 가 그 작업을 들고 있는 것처럼 보였다. 반송 중(35)만 RTV 에 매단다.
+				if (strSt == _T("35"))
 				{
 					if (!strItem.IsEmpty())
 						m_mapVehJob.SetAt(_T("801"), strItem + _T("|") + strTypCur);
