@@ -2957,70 +2957,9 @@ void CScSkinDlg::OnBnClickedScvOk()
 //   [명령] 그룹(작업상태 쪽)은 지우고 항목/값 소그룹도 숨긴다. 값 칸 폭은 열 폭에 맞춘다.
 void CScSkinDlg::LglsRelayoutJobStatus()
 {
-	if (m_bJobStatusRelayout) return;
-	CWnd* pGrp   = GetDlgItem(IDC_GRP_SC_JOB_STATUS);
-	CWnd* pLblNo = GetDlgItem(IDC_LBL_SC_JOB_JOB_NO);
-	CWnd* pEdNo  = GetDlgItem(IDC_EDT_SC_JOB_JOB_NO);
-	CWnd* pLblTy = GetDlgItem(IDC_LBL_SC_JOB_JOB_TYP);
-	if (pGrp == NULL || pLblNo == NULL || pEdNo == NULL || pLblTy == NULL) return;
+	// [LGLS 2026-09-09] ★두 열 배치를 Ecs.rc 로 옮겼다★ (사용자 지시)
+	//   종전에는 여기서 런타임에 좌표를 다시 잡고 창까지 줄였다. rc 를 고치면
+	//   그 계산과 이중으로 움직여 어긋나므로, rc 를 유일한 기준으로 삼는다.
+	//   쓰지 않는 소그룹(항목/값/명령)도 rc 에서 NOT WS_VISIBLE 로 감췄다.
 	m_bJobStatusRelayout = TRUE;
-
-	CRect rcGrp, rcLbl, rcEd, rcTy;
-	pGrp->GetWindowRect(&rcGrp);   ScreenToClient(&rcGrp);
-	pLblNo->GetWindowRect(&rcLbl); ScreenToClient(&rcLbl);
-	pEdNo->GetWindowRect(&rcEd);   ScreenToClient(&rcEd);
-	pLblTy->GetWindowRect(&rcTy);  ScreenToClient(&rcTy);
-	int nPitch = rcTy.top - rcLbl.top; if (nPitch <= 0) nPitch = rcLbl.Height() + 6;
-	int nGap   = rcEd.left - rcLbl.right;  if (nGap < 4) nGap = 6;
-
-	int nInnerL = rcGrp.left + 8, nInnerR = rcGrp.right - 8;
-	int nColW   = (nInnerR - nInnerL) / 2;
-	int nLblW   = rcLbl.Width();
-	int nEdH    = rcEd.Height();
-	int nTop0   = rcLbl.top;
-
-	// 왼쪽 열
-	int nLLbl = rcLbl.left;
-	int nLEd  = nLLbl + nLblW + nGap;
-	int nLEdW = (nInnerL + nColW - 4) - nLEd;
-	// 오른쪽 열
-	int nRLbl = nInnerL + nColW + 2;
-	int nREd  = nRLbl + nLblW + nGap;
-	int nREdW = nInnerR - nREd;
-
-	const int nLeftL[]  = { IDC_LBL_SC_JOB_JOB_NO,  IDC_LBL_SC_JOB_JOB_TYP,  IDC_LBL_SC_JOB_JOB_STATUS, IDC_LGLS_SC_LOT_LBL, IDC_LGLS_SC_PRD_LBL };
-	const int nLeftV[]  = { IDC_EDT_SC_JOB_JOB_NO,  IDC_CBX_SC_JOB_JOB_TYP,  IDC_CBX_SC_JOB_JOB_STATUS, IDC_LGLS_SC_LOT_VAL, IDC_LGLS_SC_PRD_VAL };
-	const int nRightL[] = { IDC_LBL_SC_JOB_START_POS, IDC_LBL_SC_JOB_START_LOC, IDC_LBL_SC_JOB_DEST_POS, IDC_LBL_SC_JOB_DEST_LOC };
-	const int nRightV[] = { IDC_CBX_SC_JOB_START_POS, IDC_EDT_SC_JOB_START_LOC, IDC_CBX_SC_JOB_DEST_POS, IDC_EDT_SC_JOB_DEST_LOC };
-	int i;
-	for (i = 0; i < 5; i++)
-	{
-		CWnd* pL = GetDlgItem(nLeftL[i]); CWnd* pV = GetDlgItem(nLeftV[i]);
-		int y = nTop0 + nPitch * i;
-		if (pL) pL->MoveWindow(nLLbl, y, nLblW, rcLbl.Height());
-		if (pV) pV->MoveWindow(nLEd,  y + (rcLbl.Height() - nEdH) / 2, nLEdW, nEdH);
-	}
-	for (i = 0; i < 4; i++)
-	{
-		CWnd* pL = GetDlgItem(nRightL[i]); CWnd* pV = GetDlgItem(nRightV[i]);
-		int y = nTop0 + nPitch * i;
-		if (pL) pL->MoveWindow(nRLbl, y, nLblW, rcLbl.Height());
-		if (pV) pV->MoveWindow(nREd,  y + (rcLbl.Height() - nEdH) / 2, nREdW, nEdH);
-	}
-
-	// 소그룹(항목/값/명령) 숨김
-	const int nHideGrp[] = { IDC_GRP_SC_JOB_STATUS_ITEM, IDC_GRP_SC_JOB_STATUS_VALUE, IDC_GRP_SC_JOB_STATUS_COMMAND };
-	for (i = 0; i < 3; i++) { CWnd* pG = GetDlgItem(nHideGrp[i]); if (pG) pG->ShowWindow(SW_HIDE); }
-
-	// 바깥 그룹과 창을 줄인다 (9행 -> 5행)
-	int nNewBottom = nTop0 + nPitch * 5 + 6;
-	int nShrink = rcGrp.bottom - nNewBottom;
-	if (nShrink > 0)
-	{
-		rcGrp.bottom = nNewBottom;
-		pGrp->MoveWindow(rcGrp);
-		CRect rcWin; GetWindowRect(&rcWin);
-		SetWindowPos(NULL, 0, 0, rcWin.Width(), rcWin.Height() - nShrink, SWP_NOMOVE | SWP_NOZORDER);
-	}
-	Invalidate();
 }
