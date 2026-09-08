@@ -387,6 +387,13 @@ public:
 
 public:
 	BOOL Permission(CString pWID_ID, int pEN_PERM);
+	// [LGLS 2026-09-08] 기본 사용자(자동 로그인)와 읽기전용 계정을 Ecs.ini [USER] 로 뺀다.
+	//   DEFAULT_ID / DEFAULT_PW : 기동 시 자동 로그인, 로그아웃 시 돌아갈 계정(기본 LGLS).
+	//                             비워 두면 자동 로그인하지 않고 로그인 창을 그대로 둔다.
+	//   VIEW_ONLY_ID            : "로그인하지 않은 것으로 볼" 읽기전용 계정(기본 LFC).
+	CString GetDefaultUserId();
+	CString GetDefaultUserPw();
+	BOOL    IsViewOnlyId(CString pstrId);
 	void OpenJobListDialog();   // [LGLS 2026-09-01] 작업정보 팝업(대화상자 모드 진입점)
 	// [LGLS 2026-08-22] 구 EcsSv CEcsDoc::WriteLog 의 7번째 파라미터(BOOL bAlarm) 복원.
 	//   파일 로그가 DB 로 옮겨오면서 사라졌던 "이 로그는 알람으로도 띄운다" 표시다.

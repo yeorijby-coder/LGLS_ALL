@@ -75,9 +75,16 @@ BOOL CSystemLoginDlg::OnInitDialog()
 	
 	if(m_pDoc->m_strId == _T(""))
 	{
-		m_edtId.SetWindowText(_T("LFC"));//ONLY_VIEW
-		m_edtPw.SetWindowText(_T("LFC"));//ONLY_VIEW
-		OnBnClickedOk();
+		// [LGLS 2026-09-08] 기본 사용자를 Ecs.ini [USER] DEFAULT_ID/PW 로 뺀다(기본 LGLS).
+		//   종전에는 "LFC" 가 박혀 있어 기동하면 늘 LFC(읽기전용)로 들어갔다.
+		//   DEFAULT_ID 를 비워 두면 자동 로그인하지 않고 로그인 창을 그대로 둔다.
+		CString strDefId = m_pDoc->GetDefaultUserId();
+		if (!strDefId.IsEmpty())
+		{
+			m_edtId.SetWindowText(strDefId);
+			m_edtPw.SetWindowText(m_pDoc->GetDefaultUserPw());
+			OnBnClickedOk();
+		}
 	}
 
 	return TRUE;  
@@ -141,7 +148,7 @@ void CSystemLoginDlg::OnBnClickedOk()
 	}
 
 	//클라이언트 최초 실행 때 로그인 여부를 false로 설정
-	if(strId == "LFC")//ONLY_VIEW
+	if(m_pDoc->IsViewOnlyId(strId) == TRUE)//ONLY_VIEW
 	{
 		m_blLogYn = FALSE;
 	}
@@ -174,7 +181,7 @@ void CSystemLoginDlg::OnBnClickedOk()
 		//m_pDoc->GetQueryInsertClientLog(_T("CSystemLoginDlg"), strLOG_LUGG_NO, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG);
 
 		CSkinDialog::OnOK();
-		if (strId != "LFC")//ONLY_VIEW
+		if (m_pDoc->IsViewOnlyId(strId) == FALSE)//ONLY_VIEW
 		{
 			m_blLogYn = TRUE;
 		}
@@ -275,8 +282,10 @@ void CSystemLoginDlg::OnBnClickedLock()
 	if(AfxMessageBox(m_pDoc->GetMsgLangDef(_T("로그아웃 하시겠습니까?")), MB_YESNO) == IDYES)
 	{
 
-		strId = _T("LFC");//ONLY_VIEW
-		strPw = _T("LFC");//ONLY_VIEW
+		// [LGLS 2026-09-08] 로그아웃하면 기본 사용자로 돌아간다(Ecs.ini [USER] DEFAULT_ID/PW).
+		strId = m_pDoc->GetDefaultUserId();
+		strPw = m_pDoc->GetDefaultUserPw();
+		if (strId.IsEmpty()) { m_pDoc->m_strId = _T(""); m_blLogYn = FALSE; CSkinDialog::OnOK(); return; }
 
 		strSql.Format(_T(" SELECT USER_ID ")
 			_T("	 FROM USER_MST ")

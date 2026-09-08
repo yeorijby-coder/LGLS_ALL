@@ -1456,9 +1456,38 @@ void CEcsDoc::AddWindowFontRegistry()  //보류4 font path 지정할것
 	Global.RegistryFont(strValue);
 }
 
+// [LGLS 2026-09-08] 기본 사용자 / 읽기전용 계정 (Ecs.ini [USER])
+//   종전에는 "LFC" 가 코드에 박혀 있어, 기동하면 항상 LFC(읽기전용)로 자동 로그인됐다.
+//   현장에서 쓰는 계정만 두고 싶을 때 INI 로 바꿀 수 있게 뺀다.
+CString CEcsDoc::GetDefaultUserId()
+{
+	TCHAR szTemp[_MAX_PATH] = {0};
+	::GetPrivateProfileString(_T("USER"), _T("DEFAULT_ID"), _T("LGLS"), szTemp, _MAX_PATH, ECS_INI_FILE);
+	CString str(szTemp); str.Trim();
+	return str;
+}
+
+CString CEcsDoc::GetDefaultUserPw()
+{
+	TCHAR szTemp[_MAX_PATH] = {0};
+	::GetPrivateProfileString(_T("USER"), _T("DEFAULT_PW"), _T("LGLS"), szTemp, _MAX_PATH, ECS_INI_FILE);
+	CString str(szTemp); str.Trim();
+	return str;
+}
+
+BOOL CEcsDoc::IsViewOnlyId(CString pstrId)
+{
+	TCHAR szTemp[_MAX_PATH] = {0};
+	::GetPrivateProfileString(_T("USER"), _T("VIEW_ONLY_ID"), _T("LFC"), szTemp, _MAX_PATH, ECS_INI_FILE);
+	CString strView(szTemp); strView.Trim();
+	pstrId.Trim();
+	if (strView.IsEmpty()) return FALSE;
+	return (pstrId.CompareNoCase(strView) == 0) ? TRUE : FALSE;
+}
+
 BOOL CEcsDoc::FreeUserInfo()
 {
-	if(IsLogin() == TRUE && m_strId != _T("LFC"))//ONLY_VIEW
+	if(IsLogin() == TRUE && IsViewOnlyId(m_strId) == FALSE)//ONLY_VIEW
 	{
 		CString strValue = _T("");
 		strValue.Format(_T("ID : %s LOGIN ALREADY. GOING TO LOGOUT?"), m_strId);
