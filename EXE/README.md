@@ -70,6 +70,10 @@ PowerShell 을 이 폴더에서 열고 :
 | PROCESS_MENU | ECS 리본 '처리' 그룹 | 1 |
 | AUTOTIME_MENU | '처리' 그룹의 '시간기반 자동처리' 버튼 | 1 |
 | ZOOM_BTN | 설비 대화상자 '[확대]' 버튼 | 1 |
+| STATUS_POS | 통신상태 표시 위치 : `RIBBON`(리본 위쪽) / `BOTTOM`(화면 아래 상태바) | RIBBON |
+| COMM_MODE | `STATUS_POS=RIBBON` 일 때의 모양 : `1`(탭 줄 오른쪽 끝 한 줄) / `2`(탭 줄 [통신] 이름표 + 리본 오른쪽 끝 [통신] 그룹) | 2 |
+| DEFAULT_ID / DEFAULT_PW | 기동 시 자동 로그인 계정([USER] 섹션). 비우면 로그인 창을 그대로 둔다 | LGLS |
+| COLLECT_INTERVAL_MS | 설비 데이터 수집 주기 ms([ETC] 섹션, 100~5000) | 300 |
 
 TASK 쪽은 각 INI 의 [VIEW] LOG_FILTER_BTN 으로 [로그 필터] 버튼을 켜고 끈다.
 
