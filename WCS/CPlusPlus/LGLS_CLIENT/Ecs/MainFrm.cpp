@@ -1162,6 +1162,38 @@ void CMainFrame::OnUpdateStatusCv(CCmdUI *pCmdUI)
 #define LGLS_COMM_OK   RGB(0, 112, 224)
 #define LGLS_COMM_NG   RGB(214, 40, 40)
 
+IMPLEMENT_DYNCREATE(CLglsRibbonTabLabel, CMFCRibbonLabel)
+
+void CLglsRibbonTabLabel::OnDraw(CDC* pDC)
+{
+	if (pDC == NULL) return;
+	CRect rc = m_rect;
+	if (rc.IsRectEmpty()) return;
+
+	// 아래(리본 그룹 영역)와 이어져 보이도록 바닥을 살짝 넘겨 칠한다 - 활성 탭과 같은 모양.
+	CRect rcFill = rc;
+	rcFill.bottom += 2;
+
+	CDrawingManager dm(*pDC);
+	dm.FillGradient(rcFill, RGB(213, 217, 222), RGB(247, 250, 252), TRUE);
+
+	CPen  pen(PS_SOLID, 1, RGB(150, 156, 165));
+	CPen* pOldPen = pDC->SelectObject(&pen);
+	pDC->MoveTo(rc.left, rc.bottom);
+	pDC->LineTo(rc.left, rc.top);
+	pDC->LineTo(rc.right - 1, rc.top);
+	pDC->LineTo(rc.right - 1, rc.bottom);
+	pDC->SelectObject(pOldPen);
+
+	int      nBk   = pDC->SetBkMode(TRANSPARENT);
+	COLORREF clrTx = pDC->SetTextColor(RGB(30, 30, 30));
+	CFont*   pOldF = pDC->SelectObject(&afxGlobalData.fontRegular);
+	pDC->DrawText(m_strText, rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	pDC->SelectObject(pOldF);
+	pDC->SetTextColor(clrTx);
+	pDC->SetBkMode(nBk);
+}
+
 IMPLEMENT_DYNCREATE(CLglsRibbonPanel, CMFCRibbonPanel)
 IMPLEMENT_DYNCREATE(CLglsRibbonComm, CMFCRibbonButton)
 
@@ -1301,7 +1333,7 @@ void CMainFrame::AddCommToTabs()
 	{
 		// [LGLS 2026-09-08] 모드 2 : 상태는 아래 [통신] 그룹에 있고,
 		//   탭 줄 오른쪽 끝에는 그 그룹이 무엇인지 알리는 이름만 둔다. (사용자 요청)
-		m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("통신")));
+		m_wndRibbonBar.AddToTabs(new CLglsRibbonTabLabel(_T("  통신  ")));
 		m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("     ")));	// 오른쪽 여백
 		return;
 	}

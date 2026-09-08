@@ -36,6 +36,19 @@ protected:
 // [LGLS 2026-09-08] 그룹(패널)을 오른쪽 끝으로 옮기기 위한 패널.
 //   Reposition() 이 protected 라 밖에서는 못 부른다. 파생 클래스는 부를 수 있으므로
 //   그것만 공개로 열어 둔다. (AddPanel 이 CRuntimeClass 를 받아 준다)
+// [LGLS 2026-09-08] 탭 줄에 놓는 이름표를 ★선택된 탭처럼★ 그린다. (사용자 요청)
+//   ECS/MANUAL/LOG 중 하나가 선택된 것과 별개로, 오른쪽 [통신] 도 늘 선택된 것처럼 보이게 한다.
+//   색은 실제 활성 탭에서 표본을 떠 맞췄다(위 247,250,252 → 아래 213,217,222).
+class CLglsRibbonTabLabel : public CMFCRibbonLabel
+{
+	DECLARE_DYNCREATE(CLglsRibbonTabLabel)
+public:
+	CLglsRibbonTabLabel() : CMFCRibbonLabel(_T("")) {}
+	CLglsRibbonTabLabel(LPCTSTR lpszText) : CMFCRibbonLabel(lpszText) {}
+protected:
+	virtual void OnDraw(CDC* pDC);
+};
+
 class CLglsRibbonPanel : public CMFCRibbonPanel
 {
 	DECLARE_DYNCREATE(CLglsRibbonPanel)
