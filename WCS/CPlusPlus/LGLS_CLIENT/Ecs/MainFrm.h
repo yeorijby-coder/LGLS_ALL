@@ -18,15 +18,29 @@ class CLglsRibbonComm : public CMFCRibbonButton
 	DECLARE_DYNCREATE(CLglsRibbonComm)
 public:
 	CLglsRibbonComm();
-	CLglsRibbonComm(UINT nID, LPCTSTR lpszText);
-	void     SetStateColor(COLORREF clr);
-	COLORREF GetStateColor() const { return m_clrState; }
+	CLglsRibbonComm(UINT nID, LPCTSTR lpszText, HICON hOn, HICON hOff);
+	// 상태색이 아니라 ★아이콘★ 을 갈아 끼운다 - 크기/글자 배치는 기본 리본 버튼 그대로 둔다.
+	void SetStateColor(COLORREF clr);
 protected:
 	COLORREF m_clrState;
-	virtual void  OnDraw(CDC* pDC);
-	virtual void  OnDrawBorder(CDC* /*pDC*/) {}
-	virtual CSize GetRegularSize(CDC* pDC);
-	virtual CSize GetCompactSize(CDC* pDC);
+	HICON    m_hOn;
+	HICON    m_hOff;
+};
+
+
+// [LGLS 2026-09-08] ★리본 탭 하나를 오른쪽 끝으로 보내는 리본바★ (사용자 요청)
+//   MFC 는 탭을 왼쪽부터 차례로 놓기만 하고 오른쪽 정렬을 지원하지 않는다.
+//   RecalcLayout 이 가상이고 CMFCRibbonCategory::GetTab() 과
+//   CMFCRibbonBaseElement::SetRect() 가 공개이므로, 기본 배치가 끝난 뒤
+//   지정한 카테고리의 탭 사각형만 오른쪽 끝으로 밀어 준다.
+class CLglsRibbonBar : public CMFCRibbonBar
+{
+public:
+	CLglsRibbonBar() : m_pRightCat(NULL) {}
+	void SetRightCategory(CMFCRibbonCategory* p) { m_pRightCat = p; }
+protected:
+	CMFCRibbonCategory* m_pRightCat;
+	virtual void RecalcLayout();
 };
 
 class CMainFrame : public CFrameWndEx
@@ -59,7 +73,7 @@ public:
 #endif
 
 public:
-	CMFCRibbonBar		    m_wndRibbonBar;
+	CLglsRibbonBar		    m_wndRibbonBar;	// [LGLS 2026-09-08] 탭 오른쪽 정렬 지원
 	CStatusBarEx			m_wndStatusBar;
 	
 	CEcsDoc * m_pDoc;
@@ -156,7 +170,7 @@ public:
 	// [LGLS 2026-09-08] 리본에 붙인 통신상태 요소들(카테고리마다 한 벌 - 어느 탭에서도 보인다)
 	CObArray m_arRbnComm;
 	BOOL IsStatusOnRibbon();
-	void AddCommPanel(CMFCRibbonCategory* pCategory);
+	void AddCategoryCOMM();	// [통신] 탭(오른쪽 끝) + [통신] 그룹
 	void SetCommColor(UINT nID, COLORREF clr);
 	BOOL IsStatusBarOnTop();
 	void LayoutStatusBar(int cx, int cy);
