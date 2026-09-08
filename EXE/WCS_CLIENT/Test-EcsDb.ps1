@@ -64,6 +64,28 @@ if (Test-Path $k) {
 } else { Write-Host "  (목록을 읽지 못함)" }
 Write-Host ""
 
+# ── 이 PC 에 실제로 있는 SQL Server 인스턴스 ────────────────────
+Write-Host "[이 PC 의 SQL Server 인스턴스]"
+$rk = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine','Registry64')
+$sub = $rk.OpenSubKey('SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL')
+if ($sub) {
+    foreach ($nm in $sub.GetValueNames()) {
+        $target = if ($nm -eq 'MSSQLSERVER') { 'localhost        (기본 인스턴스 - 인스턴스명을 쓰지 않는다)' } else { "localhost\$nm" }
+        Write-Host ("  {0,-16} -> SERVER={1}" -f $nm, $target)
+        # 이 인스턴스가 실제로 듣고 있는 TCP 포트
+        $pk = $rk.OpenSubKey("SOFTWARE\Microsoft\Microsoft SQL Server\$($sub.GetValue($nm))\MSSQLServer\SuperSocketNetLib\Tcp\IPAll")
+        if ($pk) {
+            $fixed = $pk.GetValue('TcpPort'); $dyn = $pk.GetValue('TcpDynamicPorts')
+            if ($fixed) { Write-Host "      TCP 고정 포트 = $fixed  (SERVER=localhost,$fixed 로 쓸 수 있다)" }
+            elseif ($dyn) { Write-Host "      ★TCP 동적 포트 = $dyn★  고정 1433 이 아니다 - localhost,1433 은 실패한다" }
+            else { Write-Host "      ★TCP 포트 설정 없음★ (TCP/IP 미사용일 수 있다)" }
+        }
+    }
+} else { Write-Host "  없음 - 이 PC 에는 SQL Server 가 설치돼 있지 않다" }
+Get-Service -Name 'MSSQL$*','MSSQLSERVER','SQLBrowser' -ErrorAction SilentlyContinue |
+    ForEach-Object { Write-Host ("  서비스 {0,-24} {1}" -f $_.Name, $_.Status) }
+Write-Host ""
+
 # ── 서버 도달 여부 ──────────────────────────────────────────────
 $hostOnly = ($Server -split '[\,]')[0]
 $port = 1433
