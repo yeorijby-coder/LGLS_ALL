@@ -32,6 +32,8 @@ public:
 	CString m_strDATABASE_DB;
 	CString m_strDATABASE_DRIVER;
 	CString m_strDB_TYPE;
+	// [LGLS 2026-09-08] 1 = Windows 인증(Trusted_Connection). SQL 로그인을 만들지 않아도 된다
+	int     m_nDATABASE_TRUSTED;
 
 public: 
 	int m_nUSER_LAST_LANG; 

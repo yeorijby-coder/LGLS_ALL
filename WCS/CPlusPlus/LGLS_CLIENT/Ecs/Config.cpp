@@ -24,6 +24,7 @@ CConfig::CConfig()
 CConfig::CConfig(CEcsDoc* pDoc)
 {
 	m_pDoc = pDoc;
+	m_nDATABASE_TRUSTED = 0;
 	ASSERT(m_pDoc != NULL);
 
 	GetPC_IP();
@@ -92,6 +93,8 @@ void CConfig::LoadConfigDATABASE()
 		m_strDATABASE_USERPASSWORD.Format(_T("%s"), szTemp); 
 		::GetPrivateProfileString(_T("DB_2"), _T("DATABASE"), _T("LFC") ,  szTemp, _MAX_PATH, ECS_INI_FILE);
 		m_strDATABASE_DATABASE.Format(_T("%s"), szTemp);
+		// [LGLS 2026-09-08] TRUSTED=1 이면 uid/pwd 대신 Windows 인증으로 붙는다
+		m_nDATABASE_TRUSTED = ::GetPrivateProfileInt(_T("DB_2"), _T("TRUSTED"), 0, ECS_INI_FILE);
 #endif
 }
 

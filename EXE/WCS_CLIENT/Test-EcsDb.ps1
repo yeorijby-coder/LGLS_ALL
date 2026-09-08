@@ -11,7 +11,8 @@ param(
     [string]$Server,
     [string]$User,
     [string]$Password,
-    [string]$Database
+    [string]$Database,
+    [switch]$Trusted
 )
 
 # ── 64비트에서 실행됐으면 32비트로 다시 띄운다 ─────────────────────
@@ -20,7 +21,11 @@ if ([IntPtr]::Size -eq 8) {
     if (Test-Path $ps32) {
         Write-Host "(32비트로 다시 실행)"
         $a = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$MyInvocation.MyCommand.Path)
-        foreach ($k in $PSBoundParameters.Keys) { $a += "-$k"; $a += $PSBoundParameters[$k] }
+        foreach ($k in $PSBoundParameters.Keys) {
+            $v = $PSBoundParameters[$k]
+            if ($v -is [switch]) { if ($v.IsPresent) { $a += "-$k" } }
+            else { $a += "-$k"; $a += $v }
+        }
         & $ps32 $a
         return
     }
@@ -49,7 +54,18 @@ if (-not $User)     { $User     = IniGet $Ini 'DB_2' 'USERID' }
 if (-not $Password) { $Password = IniGet $Ini 'DB_2' 'USERPASSWORD' }
 if (-not $Database) { $Database = IniGet $Ini 'DB_2' 'DATABASE' }
 
-$cs = "Driver={$Driver};Server=$Server;uid=$User;pwd=$Password;Database=$Database"
+if (-not $Trusted) {
+    $t = IniGet $Ini 'DB_2' 'TRUSTED'
+    if ($t -eq '1') { $Trusted = $true }
+    if (-not $User) { $Trusted = $true }
+}
+if ($Trusted) {
+    $cs = "Driver={$Driver};Server=$Server;Trusted_Connection=Yes;Database=$Database"
+    Write-Host "인증 : Windows 인증 (TRUSTED=1) - 실행 계정 = $env:USERDOMAIN\$env:USERNAME"
+} else {
+    $cs = "Driver={$Driver};Server=$Server;uid=$User;pwd=$Password;Database=$Database"
+    Write-Host "인증 : SQL 로그인 ($User)"
+}
 Write-Host "연결 문자열 : $($cs -replace 'pwd=[^;]*','pwd=***')"
 Write-Host ""
 

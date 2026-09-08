@@ -85,12 +85,26 @@ BOOL CAdoDB::ConnectDB() //보류6
 	m_pDoc->m_pConfig->m_strDATABASE_DATABASE);
 #elif MSSQL
 	// [LGLS] SQL Server ODBC (SQL Server 2008, LGLS_MCS_IO)
+	// [LGLS 2026-09-08] [DB_2] TRUSTED=1 이면 Windows 인증으로 붙는다.
+	//   서버에서 운전 화면을 돌릴 때 SQL 로그인을 따로 만들지 않아도 되게 하기 위함이다.
+	//   USERID 가 비어 있어도 같게 본다.
+	if (m_pDoc->m_pConfig->m_nDATABASE_TRUSTED != 0 ||
+		m_pDoc->m_pConfig->m_strDATABASE_USERID.IsEmpty())
+	{
+		strConnet.Format(_T("Driver={%s};Server=%s;Trusted_Connection=Yes;Database=%s"),
+		m_pDoc->m_pConfig->m_strDATABASE_DRIVER,
+		m_pDoc->m_pConfig->m_strDATABASE_SERVER,
+		m_pDoc->m_pConfig->m_strDATABASE_DATABASE);
+	}
+	else
+	{
 	strConnet.Format(_T("Driver={%s};Server=%s;uid=%s;pwd=%s;Database=%s"),
 	m_pDoc->m_pConfig->m_strDATABASE_DRIVER,
 	m_pDoc->m_pConfig->m_strDATABASE_SERVER, 
 	m_pDoc->m_pConfig->m_strDATABASE_USERID, 
 	m_pDoc->m_pConfig->m_strDATABASE_USERPASSWORD,
 	m_pDoc->m_pConfig->m_strDATABASE_DATABASE);
+	}
 #endif
 
 	m_strErrMsg = "";

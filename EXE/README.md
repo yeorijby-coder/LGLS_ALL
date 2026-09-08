@@ -101,6 +101,43 @@ USERPASSWORD=LGLS_IO
 DATABASE=LGLS_MCS_IO
 ```
 
+### SQL 로그인을 만들지 않고 쓰려면 (Windows 인증)
+
+운전 화면을 **서버에서 직접** 돌리는 경우, 로그인을 새로 만들 것 없이 Windows 인증으로 붙일 수 있다.
+
+```
+[DB_2]
+DRIVER=SQL Server
+SERVER=localhost\인스턴스명     ; 기본 인스턴스면 localhost
+TRUSTED=1                        ; ← 이것만 켜면 USERID/USERPASSWORD 는 무시된다
+DATABASE=LGLS_MCS_IO
+```
+
+Ecs.exe 를 실행하는 **Windows 계정**이 SQL Server 에 권한이 있어야 한다(설치한 관리자 계정이면 보통 이미 sysadmin).
+없다면 서버에서 한 번만 :
+
+```sql
+CREATE LOGIN [서버\계정] FROM WINDOWS;
+USE LGLS_MCS_IO; CREATE USER [서버\계정] FOR LOGIN [서버\계정];
+EXEC sp_addrolemember 'db_owner', '서버\계정';
+```
+
+### 접속이 안 될 때
+
+`Test-EcsDb.ps1` 을 WCS_CLIENT 폴더에서 돌리면 Ecs.exe 와 **똑같은 경로**(32비트 + ADO + ODBC)로
+붙어 보고, 인스턴스 이름 / 실제 TCP 포트 / 32비트 드라이버 목록까지 보여 준다.
+
+```powershell
+.\Test-EcsDb.ps1                 # Ecs.ini 그대로
+.\Test-EcsDb.ps1 -Trusted        # Windows 인증으로 시험
+```
+
+주의할 점 두 가지 :
+
+- 포트는 **쉼표**다. `Server=IP:1433` (콜론) 은 반드시 실패한다 → `Server=IP,1433`
+- `,1433` 은 그 인스턴스가 정말 1433 을 듣고 있을 때만 된다. SQL Express 기본값은 **동적 포트**다.
+  잘 모르겠으면 `SERVER=localhost\인스턴스명` 형식을 쓰는 편이 안전하다.
+
 - 서버 쪽은 `DB_BACKUP/서버_구축_절차.md` 3·4번 (혼합 인증, TCP 1433 고정, 방화벽 1433 인바운드) 이 되어 있어야 한다.
 - 확인 : Ecs.exe 하단 상태바의 EQUIP / HOST / SCH 가 초록이면 DB 를 정상으로 읽는 것(서버의 TASK 가 돌고 있어야 초록).
 - 접속이 안 되면 키오스크의 **ODBC 데이터 원본 관리자(32비트)** 에서 "SQL Server" 드라이버로 서버 연결 테스트 -
