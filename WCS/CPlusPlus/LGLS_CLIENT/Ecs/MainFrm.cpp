@@ -132,7 +132,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	int nWindowSizeX = rect.Width() - 4;
 	int nWindowSizeY = rect.Height() - 80;
 
-    m_wndStatusBar.MoveWindow(0, nWindowSizeY, nWindowSizeX, 40);
+    // [LGLS 2026-09-08] 최초 배치도 STATUS_POS 를 따른다.
+    LayoutStatusBar(nWindowSizeX, nWindowSizeY + 40);
 
 	//m_wndStatusBar.AddPane(ID_INDICATOR_MODE, 1);
 	
@@ -1143,6 +1144,39 @@ void CMainFrame::OnUpdateStatusCv(CCmdUI *pCmdUI)
 	 //pCmdUI->Enable(!m_bOperationOn);
 }
 
+// [LGLS 2026-09-08] 통신상태 표시를 리본 오른쪽 빈자리로 올린다. (사용자 요청)
+//   현장 화면이 1024x768 이라 하단 40px 를 통째로 쓰는 것이 아깝고, 리본 오른쪽은
+//   비어 있다. Ecs.ini [MENU] STATUS_POS 로 고른다(TOP 기본 / BOTTOM 이면 종전 그대로).
+#define LGLS_STATUS_TOP_W   300   // 위로 올렸을 때 상태바 폭(버튼 80 x 3 + 여백)
+#define LGLS_STATUS_TOP_H   34    // 〃 높이
+#define LGLS_STATUS_TOP_Y   34    // 〃 리본 위쪽에서의 거리
+#define LGLS_STATUS_TOP_MGN 26    // 〃 오른쪽 여백(마지막 버튼이 잘리지 않게)
+
+BOOL CMainFrame::IsStatusBarOnTop()
+{
+	TCHAR szTemp[64] = {0};
+	::GetPrivateProfileString(_T("MENU"), _T("STATUS_POS"), _T("TOP"), szTemp, 64, ECS_INI_FILE);
+	CString str(szTemp); str.Trim(); str.MakeUpper();
+	return (str == _T("BOTTOM")) ? FALSE : TRUE;
+}
+
+void CMainFrame::LayoutStatusBar(int cx, int cy)
+{
+	if (!::IsWindow(m_wndStatusBar.GetSafeHwnd()) || cx <= 0 || cy <= 0)
+		return;
+	if (IsStatusBarOnTop())
+	{
+		int w = LGLS_STATUS_TOP_W;
+		if (w > cx - 40) w = cx - 40;		// 창이 좁으면 줄인다
+		m_wndStatusBar.MoveWindow(cx - w - LGLS_STATUS_TOP_MGN, LGLS_STATUS_TOP_Y, w, LGLS_STATUS_TOP_H);
+	}
+	else
+	{
+		m_wndStatusBar.MoveWindow(0, cy - 40, cx, 40);
+	}
+	m_wndStatusBar.BringWindowToTop();
+}
+
 // [LGLS 2026-09-01] 도킹 판넬이 하단 커스텀 상태바(40px, 통신상태 버튼)를 침범해
 //   통신상태 표시가 가려지던 문제 - 레이아웃 후 판넬 높이를 상태바 위까지로 클램프한다.
 void CMainFrame::RecalcLayout(BOOL bNotify)
@@ -1152,6 +1186,13 @@ void CMainFrame::RecalcLayout(BOOL bNotify)
 	if (!m_bPanelBarsCreated || !::IsWindow(m_wndStatusBar.GetSafeHwnd()))
 		return;
 	CRect rcCli; GetClientRect(&rcCli);
+	LayoutStatusBar(rcCli.Width(), rcCli.Height());
+	// [LGLS 2026-09-08] 위로 올렸으면 하단을 비워 두지 않아도 된다 - 클램프는 하단일 때만.
+	if (IsStatusBarOnTop())
+	{
+		m_wndStatusBar.BringWindowToTop();
+		return;
+	}
 	int nBarTop = rcCli.Height() - 40;
 
 	CDockablePane* pPanes[] = { &m_JobPane, &m_InfoPane, &m_VehPane };
@@ -1171,9 +1212,8 @@ void CMainFrame::RecalcLayout(BOOL bNotify)
 void CMainFrame::OnSize(UINT nType, int cx, int cy)
 {
 	CFrameWndEx::OnSize(nType, cx, cy);
-	// [LGLS] resize: relocate custom status bar to current client width so comm buttons(EQUIP/HOST/SCH) stay on-screen
-	if (::IsWindow(m_wndStatusBar.GetSafeHwnd()) && cx > 0 && cy > 0)
-		m_wndStatusBar.MoveWindow(0, cy - 40, cx, 40);
+	// [LGLS] resize: relocate custom status bar so comm buttons(EQUIP/HOST/SCH) stay on-screen
+	LayoutStatusBar(cx, cy);
 }
 
 void CMainFrame::AddStatusBarPane()
@@ -1194,10 +1234,12 @@ void CMainFrame::AddStatusBarPane()
 	//InsertLabelPainToStatusBar(_T("HOST"), ID_STATUS_HOST, i+7, 90);
 
 	// [LGLS] only EQUIP (equipment TASK program) + HOST are actually communicated with
-	InsertButtonPainToStatusBar(_T("EQUIP"), ID_STATUS_CV_1, i+1, 100);
-	InsertButtonPainToStatusBar(_T("HOST"), ID_STATUS_HOST, i+2, 100);
+	// [LGLS 2026-09-08] 리본 오른쪽으로 올리면 자리가 좁으므로 버튼도 좁게 만든다.
+	int nBtnW = IsStatusBarOnTop() ? 80 : 100;
+	InsertButtonPainToStatusBar(_T("EQUIP"), ID_STATUS_CV_1, i+1, nBtnW);
+	InsertButtonPainToStatusBar(_T("HOST"), ID_STATUS_HOST, i+2, nBtnW);
 	// [LGLS] SCH = IO_TASK (scheduler) health, read from EQP_MST heartbeat (EQP_TYP='SCH').
-	InsertButtonPainToStatusBar(_T("SCH"), ID_STATUS_SCH, i+3, 100);
+	InsertButtonPainToStatusBar(_T("SCH"), ID_STATUS_SCH, i+3, nBtnW);
 		
 	//m_wndStatusBar.SetPaneInfo(ID_STATUS_SR_MODE, _T("MODE"), YELLOW, BLACK); 
 
@@ -1210,9 +1252,9 @@ void CMainFrame::AddStatusBarPane()
 	//m_wndStatusBar.SetPaneInfo(ID_STATUS_HOST, _T("HOST"), YELLOW, BLACK);
 
 	//DARK_GRAY,//RGB(255, 128, 192),
-	m_wndStatusBar.SetPaneInfo(ID_STATUS_CV_1, 12, _T("Arial Black"), BLACK, DARK_GRAY, WHITE, CMinButton::Gradient, 100, CMinButton::UPTODOWN);
-	m_wndStatusBar.SetPaneInfo(ID_STATUS_HOST, 12, _T("Arial Black"), BLACK, DARK_GRAY, WHITE, CMinButton::Gradient, 100, CMinButton::UPTODOWN);
-	m_wndStatusBar.SetPaneInfo(ID_STATUS_SCH, 12, _T("Arial Black"), BLACK, DARK_GRAY, WHITE, CMinButton::Gradient, 100, CMinButton::UPTODOWN);
+	m_wndStatusBar.SetPaneInfo(ID_STATUS_CV_1, 12, _T("Arial Black"), BLACK, DARK_GRAY, WHITE, CMinButton::Gradient, nBtnW, CMinButton::UPTODOWN);
+	m_wndStatusBar.SetPaneInfo(ID_STATUS_HOST, 12, _T("Arial Black"), BLACK, DARK_GRAY, WHITE, CMinButton::Gradient, nBtnW, CMinButton::UPTODOWN);
+	m_wndStatusBar.SetPaneInfo(ID_STATUS_SCH, 12, _T("Arial Black"), BLACK, DARK_GRAY, WHITE, CMinButton::Gradient, nBtnW, CMinButton::UPTODOWN);
 
 
 }

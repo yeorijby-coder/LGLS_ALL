@@ -132,6 +132,10 @@ public:
 //	afx_msg void OnUpdateBtnActive(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateStatusCv(CCmdUI *pCmdUI);
 
+	// [LGLS 2026-09-08] 통신상태(EQUIP/HOST/SCH) 표시 위치.
+	//   Ecs.ini [MENU] STATUS_POS = TOP(리본 오른쪽 빈자리) / BOTTOM(종전 하단 상태바).
+	BOOL IsStatusBarOnTop();
+	void LayoutStatusBar(int cx, int cy);
 	void AddStatusBarPane();
 	void InsertLabelPainToStatusBar(CString strCaption, int nID, int nPos, int nWidth);
 	void InsertButtonPainToStatusBar(CString strCaption, int nID, int nPos, int nWidth);
