@@ -627,10 +627,19 @@ namespace WCS_TASK_CV
             {
                 chg("SENSOR_FK_RD", sen);
                 chg("ITN_LUGG_FK1", lugg);
-                // 표시용 레일 위치: 셀 이동 중이면 Bay(LOCATION_02), 포트/홈이면 0
+                // 표시용 레일 위치 : Bay(LOCATION_02) 를 그대로 쓴다.
+                // [LGLS 2026-09-08] ★뱅크(LOCATION_01) 게이트를 뺐다★ (구 ECS 기준, 사용자 실측)
+                //   종전에는 뱅크가 "00"/빈값이면 위치를 0 으로 눌렀다. 그런데 크레인이 통로를
+                //   달리는 동안 설비는 뱅크를 00 으로 두고 베이만 올려 준다. 그래서 화면의
+                //   크레인이 제자리에 멈춰 있다가 셀에 닿아 포킹할 때(뱅크가 채워질 때) 한 번에
+                //   뛰었다. 구 ECS 는 게이트 없이 베이만 썼다 :
+                //     MonitorAllEquipmentPanel01.RefreshStockerVehicle
+                //       if (int.TryParse(vehicle.VehicleLocation02, out column) == false) column = 0;
+                //       stackerWidget.Top = stackerTop - (int)(column * 9.5);
+                //   같은 규약으로 되돌린다. (표시 전용 파생값 - 통신 규약은 건드리지 않는다)
                 string posH = "0";
                 int bay;
-                if (int.TryParse((loc2 ?? "").Trim(), out bay) && !((loc1 ?? "").Trim() == "00" || (loc1 ?? "").Trim() == "")) posH = bay.ToString();
+                if (int.TryParse((loc2 ?? "").Trim(), out bay)) posH = bay.ToString();
                 chg("POS_H_RD", posH);
 
                 // ── [LGLS 2026-08-21] 설비 실상태를 상위 상태보고(S)에 반영 ────────────────

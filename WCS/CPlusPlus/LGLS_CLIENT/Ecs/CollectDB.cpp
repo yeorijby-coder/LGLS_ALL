@@ -138,7 +138,15 @@ UINT CCollectDB::DoWork(LPVOID pParm)
 				::Sleep(50); //추가
 			}
 		}
-		::Sleep(1000); //1000
+		// [LGLS 2026-09-08] 설비 수집 주기. 종전 고정 1000ms 라 화면이 실 데이터보다 1초쯤 늦었다.
+		//   설비 통신(VehThread)은 0.3초 주기로 DB 를 갱신하는데 화면이 그것을 1초마다 읽어
+		//   전체가 한 박자 느리게 보였다. Ecs.ini [ETC] COLLECT_INTERVAL_MS 로 조정한다.
+		{
+			int nItv = ::GetPrivateProfileInt(_T("ETC"), _T("COLLECT_INTERVAL_MS"), 300, ECS_INI_FILE);
+			if (nItv < 100)  nItv = 100;      // 너무 낮추면 DB 부하만 는다
+			if (nItv > 5000) nItv = 5000;
+			::Sleep(nItv);
+		}
 	}
 	pThis->m_bThreadDoWork = FALSE;
 	return 0;
