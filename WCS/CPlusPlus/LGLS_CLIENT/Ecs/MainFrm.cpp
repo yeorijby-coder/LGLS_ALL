@@ -640,6 +640,7 @@ void CMainFrame::AddCategoryWCS()
 		}
 	}
 
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 모드 2 : [통신] 그룹
 }
 	
 
@@ -686,6 +687,7 @@ void CMainFrame::AddCategoryMANUAL()
 		pPanelSemiTest->Add(pBtnTestClear);
 	}
 
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 모드 2 : [통신] 그룹
 }
 
 void CMainFrame::AddCategoryLOG()
@@ -738,6 +740,7 @@ void CMainFrame::AddCategoryLOG()
 	//pBtnCLIENT_LOG->SetAlwaysLargeImage();
 	//pPanelLog->Add(pBtnCLIENT_LOG);
 
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 모드 2 : [통신] 그룹
 }
 
 void CMainFrame::RenameRibbonText(EN_LANG penLang)
@@ -1165,10 +1168,11 @@ IMPLEMENT_DYNCREATE(CLglsRibbonComm, CMFCRibbonButton)
 CLglsRibbonComm::CLglsRibbonComm()
 	: m_clrState(RGB(0, 0, 0)), m_hOn(NULL), m_hOff(NULL) {}
 
-CLglsRibbonComm::CLglsRibbonComm(UINT nID, LPCTSTR lpszText, HICON hOn, HICON hOff)
+CLglsRibbonComm::CLglsRibbonComm(UINT nID, LPCTSTR lpszText, HICON hOn, HICON hOff, BOOL bLarge)
 	: CMFCRibbonButton(nID, lpszText, hOff, FALSE, hOff), m_clrState(LGLS_COMM_NG), m_hOn(hOn), m_hOff(hOff)
 {
-	// [LGLS 2026-09-08] 탭 줄에 놓을 것이므로 큰 아이콘(SetAlwaysLargeImage)은 쓰지 않는다.
+	// 탭 줄(모드 1)은 작은 아이콘, 리본 그룹(모드 2)은 다른 그룹과 같은 큰 아이콘.
+	if (bLarge) SetAlwaysLargeImage();
 }
 
 // [LGLS 2026-09-08] 색 대신 ★아이콘★ 을 갈아 끼운다.
@@ -1197,45 +1201,84 @@ void CLglsRibbonBar::RecalcLayout()
 {
 	CMFCRibbonBar::RecalcLayout();
 
-	if (m_pRightCat == NULL || !::IsWindow(GetSafeHwnd()))
-		return;
-
-	CMFCRibbonTab* pTab = m_pRightCat->GetTab();
-	if (pTab == NULL)
-		return;
-
-	CRect rcTab = pTab->GetRect();
-	if (rcTab.IsRectEmpty())
+	if (!::IsWindow(GetSafeHwnd()))
 		return;
 
 	CRect rcCli;
 	GetClientRect(rcCli);
-	int nDx = (rcCli.right - 10) - rcTab.right;	// 오른쪽 끝에서 10px 안쪽
-	if (nDx <= 0)
-		return;									// 자리가 없으면 그대로 둔다
 
-	rcTab.OffsetRect(nDx, 0);
-	pTab->SetRect(rcTab);
-
-	// [LGLS 2026-09-08] 그룹(패널)도 같은 쪽 끝으로 옮긴다 - 탭 바로 아래에 오게.
-	//   그 카테고리가 활성일 때만 패널에 자리(rect)가 잡힌다. 비활성이면 건너뛴다.
-	if (m_pRightPanel != NULL)
+	// ── 탭을 오른쪽 끝으로 (지금은 쓰지 않는다 - 별도 [통신] 탭을 두던 시절의 장치) ──
+	if (m_pRightCat != NULL)
 	{
-		CRect rcP = m_pRightPanel->GetRect();
-		if (!rcP.IsRectEmpty())
+		CMFCRibbonTab* pTab = m_pRightCat->GetTab();
+		if (pTab != NULL)
 		{
-			int nDxP = (rcCli.right - 12) - rcP.right;
-			if (nDxP > 0)
+			CRect rcTab = pTab->GetRect();
+			int nDx = (rcCli.right - 10) - rcTab.right;
+			if (!rcTab.IsRectEmpty() && nDx > 0)
 			{
-				CClientDC dc(this);
-				CFont* pOldFont = dc.SelectObject(&afxGlobalData.fontRegular);
-				CRect rcNew = rcP;
-				rcNew.OffsetRect(nDxP, 0);
-				m_pRightPanel->LglsMoveTo(&dc, rcNew);
-				if (pOldFont != NULL) dc.SelectObject(pOldFont);
+				rcTab.OffsetRect(nDx, 0);
+				pTab->SetRect(rcTab);
 			}
 		}
 	}
+
+	// ── [통신] 그룹을 리본 오른쪽 끝으로 (COMM_MODE=2) ──
+	//   활성 탭의 그룹만 자리(rect)가 잡힌다. 비활성 탭의 것은 비어 있으므로 건너뛴다.
+	for (int i = 0; i < m_arRightPanels.GetCount(); i++)
+	{
+		CLglsRibbonPanel* pPn = (CLglsRibbonPanel*)m_arRightPanels.GetAt(i);
+		if (pPn == NULL) continue;
+		CRect rcP = pPn->GetRect();
+		if (rcP.IsRectEmpty()) continue;
+		int nDxP = (rcCli.right - 12) - rcP.right;
+		if (nDxP <= 0) continue;
+		CClientDC dc(this);
+		CFont* pOldFont = dc.SelectObject(&afxGlobalData.fontRegular);
+		CRect rcNew = rcP;
+		rcNew.OffsetRect(nDxP, 0);
+		pPn->LglsMoveTo(&dc, rcNew);
+		if (pOldFont != NULL) dc.SelectObject(pOldFont);
+	}
+}
+
+// [LGLS 2026-09-08] 통신상태 표시 방식.  Ecs.ini [MENU] COMM_MODE
+//   1 = 리본 탭 줄 오른쪽 끝 (기본)   2 = 탭마다 [통신] 그룹, 리본 오른쪽 끝
+int CMainFrame::GetCommMode()
+{
+	return ::GetPrivateProfileInt(_T("MENU"), _T("COMM_MODE"), 1, ECS_INI_FILE);
+}
+
+// [모드 2] 카테고리(탭)마다 [통신] 그룹을 하나씩 붙인다 - 어느 탭에서도 보인다.
+//   그룹 위치는 CLglsRibbonBar::RecalcLayout 이 리본 오른쪽 끝으로 옮긴다.
+void CMainFrame::AddCommPanel(CMFCRibbonCategory* pCategory)
+{
+	if (pCategory == NULL || !IsStatusOnRibbon() || GetCommMode() != 2) return;
+
+	CMFCRibbonPanel* pPanel = pCategory->AddPanel(_T("통신"), 0, RUNTIME_CLASS(CLglsRibbonPanel));
+	if (pPanel == NULL) return;
+
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath;
+	strAppPath.Format(_T("%s"), chrFileName);
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
+	HICON hOn  = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_on"),  _T(".png")));
+	HICON hOff = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_off"), _T(".png")));
+
+	struct D3 { UINT id; LPCTSTR s; LPCTSTR d; };
+	D3 defs[] = { { ID_STATUS_CV_1, _T("EQUIP"), _T("설비 통신 (WCS_TASK_CV)") },
+	              { ID_STATUS_HOST, _T("HOST"),  _T("상위 통신 (WCS_TASK_HOST)") },
+	              { ID_STATUS_SCH,  _T("SCH"),   _T("스케줄러 (IO_TASK)") } };
+	for (int i = 0; i < 3; i++)
+	{
+		CLglsRibbonComm* p = new CLglsRibbonComm(defs[i].id, defs[i].s, hOn, hOff, TRUE);
+		p->SetToolTipText(defs[i].d);
+		p->SetDescription(defs[i].d);
+		pPanel->Add(p);
+		m_arRbnComm.Add(p);
+	}
+	m_wndRibbonBar.AddRightPanel((CLglsRibbonPanel*)pPanel);
 }
 
 // [LGLS 2026-09-08] ★리본 탭 줄 오른쪽 끝★ 에 [통신] 표시를 붙인다. (사용자 확정)
@@ -1243,7 +1286,7 @@ void CLglsRibbonBar::RecalcLayout()
 //   AddToTabs 는 어느 탭을 보고 있든 항상 같은 자리에 남는다 - 이쪽이 맞다.
 void CMainFrame::AddCommToTabs()
 {
-	if (!IsStatusOnRibbon()) return;
+	if (!IsStatusOnRibbon() || GetCommMode() != 1) return;
 
 	TCHAR chrFileName[500];
 	GetModuleFileName(NULL, chrFileName, MAX_PATH);

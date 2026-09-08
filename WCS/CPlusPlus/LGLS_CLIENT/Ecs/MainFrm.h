@@ -18,7 +18,7 @@ class CLglsRibbonComm : public CMFCRibbonButton
 	DECLARE_DYNCREATE(CLglsRibbonComm)
 public:
 	CLglsRibbonComm();
-	CLglsRibbonComm(UINT nID, LPCTSTR lpszText, HICON hOn, HICON hOff);
+	CLglsRibbonComm(UINT nID, LPCTSTR lpszText, HICON hOn, HICON hOff, BOOL bLarge = FALSE);
 	// 상태색이 아니라 ★아이콘★ 을 갈아 끼운다 - 크기/글자 배치는 기본 리본 버튼 그대로 둔다.
 	void SetStateColor(COLORREF clr);
 protected:
@@ -46,12 +46,12 @@ public:
 class CLglsRibbonBar : public CMFCRibbonBar
 {
 public:
-	CLglsRibbonBar() : m_pRightCat(NULL), m_pRightPanel(NULL) {}
+	CLglsRibbonBar() : m_pRightCat(NULL) {}
 	void SetRightCategory(CMFCRibbonCategory* p) { m_pRightCat = p; }
-	void SetRightPanel(CLglsRibbonPanel* p)      { m_pRightPanel = p; }
+	void AddRightPanel(CLglsRibbonPanel* p)      { if (p != NULL) m_arRightPanels.Add(p); }
 protected:
 	CMFCRibbonCategory* m_pRightCat;
-	CLglsRibbonPanel*   m_pRightPanel;
+	CObArray            m_arRightPanels;	// 각 탭의 [통신] 그룹(활성인 것만 자리가 잡힌다)
 	virtual void RecalcLayout();
 };
 
@@ -182,7 +182,9 @@ public:
 	// [LGLS 2026-09-08] 리본에 붙인 통신상태 요소들(카테고리마다 한 벌 - 어느 탭에서도 보인다)
 	CObArray m_arRbnComm;
 	BOOL IsStatusOnRibbon();
-	void AddCommToTabs();	// 리본 탭 줄 오른쪽 끝에 [통신] 표시(탭과 무관하게 항상 보인다)
+	int  GetCommMode();		// Ecs.ini [MENU] COMM_MODE : 1 = 탭 줄 / 2 = 리본 그룹
+	void AddCommToTabs();	// 모드 1 : 리본 탭 줄 오른쪽 끝
+	void AddCommPanel(CMFCRibbonCategory* pCategory);	// 모드 2 : 탭마다 [통신] 그룹(오른쪽 끝)
 	void SetCommColor(UINT nID, COLORREF clr);
 	BOOL IsStatusBarOnTop();
 	void LayoutStatusBar(int cx, int cy);
