@@ -578,10 +578,31 @@ void CScSkinDlg::RedrawImage()
 		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
 		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, bZoom ? 4 : 3, szL, 1, FALSE);
 		if (!bZoom) { CWnd* pZ = GetDlgItem(IDC_LGLS_SC_ZOOM); if (pZ) pZ->ShowWindow(SW_HIDE); }
+		// [LGLS 2026-09-09] ★정지 버튼 3개를 다시 보이게 한다★ (사용자 요청)
+		//   입고 정지 / 출고 정지 / 작업금지 - 핸들러(OnBnClickedBtnCvStoSuspend 등)는 원래 있었고
+		//   여기서 숨기기만 하고 있었다. [입출고상태] 그룹 안에 세로로 세운다.
+		//   [입출고상태] 값 칸 바로 아래에서부터 세로로 세운다(그룹 아래쪽에 몰리지 않게).
+		UINT nSus[] = { IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
+		CWnd* pGrpSus = GetDlgItem(IDC_GRP_SC_SUSPEND);
+		CWnd* pEdtSus = GetDlgItem(IDC_EDT_SC_JOB_SC_SUSPEND);
+		if (pGrpSus != NULL && pEdtSus != NULL)
+		{
+			CRect rcG, rcE;
+			pGrpSus->GetWindowRect(&rcG); ScreenToClient(&rcG);
+			pEdtSus->GetWindowRect(&rcE); ScreenToClient(&rcE);
+			int xs = rcG.left + (rcG.Width() - szL.cx) / 2;
+			int ys = rcE.bottom + 6;
+			for (int s = 0; s < 3; s++)
+			{
+				CWnd* pB = GetDlgItem(nSus[s]);
+				if (pB == NULL) continue;
+				pB->MoveWindow(xs, ys, szL.cx, szL.cy);
+				ys += szL.cy + 1;
+			}
+		}
 		UINT nHide[] = { IDC_BTN_SC_DELTE,
 		                 IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP, IDC_BTN_SC_ERROR_RESET,
-		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_DUPL_STO,
-		                 IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
+		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_DUPL_STO };
 		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
 		{
 			CWnd* pHide = GetDlgItem(nHide[h]);

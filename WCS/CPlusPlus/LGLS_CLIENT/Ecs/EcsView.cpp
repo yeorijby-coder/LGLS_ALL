@@ -613,7 +613,9 @@ LRESULT CEcsView::OnRefreshDialog(WPARAM wParam, LPARAM lParam)
 			if (pDoc->m_pRtvSkinDlg == NULL)
 			{
 				pDoc->m_pRtvSkinDlg = new CRtvSkinDlg(pDoc);
-				pDoc->m_pRtvSkinDlg->Create(IDD_SKIN_RTV_CTRL);
+				// [LGLS 2026-09-09] IDD_SKIN_RTV_CTRL 은 옛 템플릿이라 CRtvSkinDlg 의 DDX 대상 컨트롤이 없어
+				//   dlgdata.cpp:40 어설션으로 죽었다. 클릭 경로(OnControlClick)와 같은 CTRL1 을 쓴다.
+				pDoc->m_pRtvSkinDlg->Create(IDD_SKIN_RTV_CTRL1);
 				CRect MainRect;
 				CRect Rect;
 				CRect PosRect;
