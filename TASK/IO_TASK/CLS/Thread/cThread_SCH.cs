@@ -377,6 +377,7 @@ namespace TSK_COMM_IOSCH
                     MarkErrorJobStatus();       // [LGLS 2026-08-30] 이중입고(54)/공출고(58) → 작업상태 반영
                     ResumeRedirectedJobs();     // [LGLS 2026-08-30] 재지정(07/06) → 새 셀로 재개 지시
                     ConsumeForceComplete();     // [LGLS 2026-09-06] 운전 화면 [강제완료](FCMP) 소비
+                    SweepOrphanVehicleData();   // [LGLS 2026-09-08] 작업이 사라진 뒤 설비에 남은 지시 흔적 정리
 
                     // [LGLS 2026-07-22] 표시용 작업구분 보강(실경로): 클라이언트는 CV_DATA/SC_DATA_LGLS 의
                     //   JOB_TYP_RD 로 입고/출고 색을 칠하는데, 실경로의 설비 관측(CvThread/VehThread)은
@@ -2789,6 +2790,87 @@ namespace TSK_COMM_IOSCH
                 DbNonQry(s);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RV] ClearRvData 오류: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-08] 작업 행이 사라진 뒤 설비 테이블에 남은 지시 흔적을 정리한다.
+        ///   ★후처리는 전부 JOB_MST 를 기점으로 돈다★ - CompleteRGVReal 은
+        ///   "SELECT ... FROM JOB_MST WHERE JOB_STATUS = 35" 로 시작하므로, 작업자가 진행 중인
+        ///   작업을 지우면 그 기점이 사라져 RtvResetComplete() 가 영원히 불리지 않는다.
+        ///   그 결과 RTV_DATA_LGLS 의 LUGG_OD / JOB_TYP_OD 가 남고, 운전 화면은 그 값으로
+        ///   색을 칠하므로 "작업이 아직 있는 것처럼" 보인다. SC 도 같은 구조다.
+        ///   ※ 지우는 것은 ①지시가 이미 소비되었고 ②차상에 화물이 없고 ③유휴이며
+        ///     ④그 화물번호의 작업이 JOB_MST 에 없을 때뿐이다. 화물을 들고 있으면
+        ///     그건 잔류가 아니라 사실이므로 건드리지 않는다.
+        /// </summary>
+        private void SweepOrphanVehicleData()
+        {
+            try
+            {
+                // ── RTV ─────────────────────────────────────────────────────
+                string q = "";
+                q += CRLF + " SELECT RD.RTV_NO, RD.LUGG_OD                                    ";
+                q += CRLF + "   FROM RTV_DATA_LGLS RD                                         ";
+                q += CRLF + "  WHERE RD.WH_TYP = :WH_TYP                                      ";
+                q += CRLF + "    AND ISNULL(RD.LUGG_OD,'0') NOT IN ('0','00','0000','')       ";
+                q += CRLF + "    AND RD.LUGG_OD NOT IN ('9998','9999')                        ";
+                q += CRLF + "    AND RD.OD_RQ_YN = 'N' AND RD.TRANSFER_REQUEST_OD = 'N'       ";
+                q += CRLF + "    AND ISNULL(RD.SUBSYSTEM_STATUS_RD,'1') = '1'                 ";
+                q += CRLF + "    AND ISNULL(RD.PALLET_ON_VEHICLE_RD,'') IN ('','0','00','0000') ";
+                q += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST JM                     ";
+                q += CRLF + "                     WHERE JM.WH_TYP  = RD.WH_TYP                ";
+                q += CRLF + "                       AND JM.LUGG_NO = RD.LUGG_OD)              ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) > 0)
+                {
+                    DataTable dt = _pBdb.mDtMain.Copy();
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        string rtvNo = GetVal(dt.Rows[i], "RTV_NO");
+                        string lugg  = GetVal(dt.Rows[i], "LUGG_OD");
+                        ClearRvData("R", rtvNo);
+                        RtvResetComplete();
+                        MakeMsg_Imp(string.Format(
+                            "[SCH][잔류정리] RTV #{0} 에 남아 있던 지시(작업 {1})를 지웠습니다. "
+                            + "JOB_MST 에 그 작업이 없습니다(작업 삭제 등). 화면의 색이 사라집니다.", rtvNo, lugg));
+                    }
+                }
+
+                // ── S/C ─────────────────────────────────────────────────────
+                string q2 = "";
+                q2 += CRLF + " SELECT SD.SC_NO                                                ";
+                q2 += CRLF + "      , COALESCE(NULLIF(SD.LUGG_NO_FK1_OD,''), NULLIF(SD.ITN_LUGG_FK1,'')) AS LUGG ";
+                q2 += CRLF + "   FROM SC_DATA_LGLS SD                                         ";
+                q2 += CRLF + "  WHERE SD.WH_TYP = :WH_TYP                                     ";
+                q2 += CRLF + "    AND SD.OD_RQ_YN = 'N' AND SD.TRANSFER_REQUEST_OD = 'N'      ";
+                q2 += CRLF + "    AND ISNULL(SD.PALLET_ON_VEHICLE_RD,'') IN ('','0','00','0000') ";
+                q2 += CRLF + "    AND COALESCE(NULLIF(SD.LUGG_NO_FK1_OD,''), NULLIF(SD.ITN_LUGG_FK1,'')) ";
+                q2 += CRLF + "        NOT IN ('0','00','0000','9998','9999')                  ";
+                q2 += CRLF + "    AND COALESCE(NULLIF(SD.LUGG_NO_FK1_OD,''), NULLIF(SD.ITN_LUGG_FK1,'')) IS NOT NULL ";
+                q2 += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST JM                    ";
+                q2 += CRLF + "                     WHERE JM.WH_TYP  = SD.WH_TYP               ";
+                q2 += CRLF + "                       AND JM.LUGG_NO = COALESCE(NULLIF(SD.LUGG_NO_FK1_OD,''), NULLIF(SD.ITN_LUGG_FK1,''))) ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q2) > 0)
+                {
+                    DataTable dt2 = _pBdb.mDtMain.Copy();
+                    for (int i = 0; i < dt2.Rows.Count; i++)
+                    {
+                        string scNo = GetVal(dt2.Rows[i], "SC_NO");
+                        string lugg = GetVal(dt2.Rows[i], "LUGG");
+                        ClearScOd(lugg);
+                        ResetScComplete(scNo);
+                        MakeMsg_Imp(string.Format(
+                            "[SCH][잔류정리] S/C #{0} 에 남아 있던 지시(작업 {1})를 지웠습니다. "
+                            + "JOB_MST 에 그 작업이 없습니다(작업 삭제 등). 화면의 색이 사라집니다.", scNo, lugg));
+                    }
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][잔류정리] SweepOrphanVehicleData 오류: " + ex.Message); }
         }
 
         /// <summary>CV 트랙에 '화물만' 표시(데이터 없음). 하역 3단계에서 잠깐 쓰는 과도상태.</summary>
