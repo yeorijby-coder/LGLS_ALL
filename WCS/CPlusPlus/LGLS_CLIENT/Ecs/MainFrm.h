@@ -33,13 +33,25 @@ protected:
 //   RecalcLayout 이 가상이고 CMFCRibbonCategory::GetTab() 과
 //   CMFCRibbonBaseElement::SetRect() 가 공개이므로, 기본 배치가 끝난 뒤
 //   지정한 카테고리의 탭 사각형만 오른쪽 끝으로 밀어 준다.
+// [LGLS 2026-09-08] 그룹(패널)을 오른쪽 끝으로 옮기기 위한 패널.
+//   Reposition() 이 protected 라 밖에서는 못 부른다. 파생 클래스는 부를 수 있으므로
+//   그것만 공개로 열어 둔다. (AddPanel 이 CRuntimeClass 를 받아 준다)
+class CLglsRibbonPanel : public CMFCRibbonPanel
+{
+	DECLARE_DYNCREATE(CLglsRibbonPanel)
+public:
+	void LglsMoveTo(CDC* pDC, const CRect& rc) { Reposition(pDC, rc); }
+};
+
 class CLglsRibbonBar : public CMFCRibbonBar
 {
 public:
-	CLglsRibbonBar() : m_pRightCat(NULL) {}
+	CLglsRibbonBar() : m_pRightCat(NULL), m_pRightPanel(NULL) {}
 	void SetRightCategory(CMFCRibbonCategory* p) { m_pRightCat = p; }
+	void SetRightPanel(CLglsRibbonPanel* p)      { m_pRightPanel = p; }
 protected:
 	CMFCRibbonCategory* m_pRightCat;
+	CLglsRibbonPanel*   m_pRightPanel;
 	virtual void RecalcLayout();
 };
 

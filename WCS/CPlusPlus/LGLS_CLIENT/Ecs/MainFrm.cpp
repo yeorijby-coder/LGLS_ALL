@@ -1159,6 +1159,7 @@ void CMainFrame::OnUpdateStatusCv(CCmdUI *pCmdUI)
 #define LGLS_COMM_OK   RGB(0, 112, 224)
 #define LGLS_COMM_NG   RGB(214, 40, 40)
 
+IMPLEMENT_DYNCREATE(CLglsRibbonPanel, CMFCRibbonPanel)
 IMPLEMENT_DYNCREATE(CLglsRibbonComm, CMFCRibbonButton)
 
 CLglsRibbonComm::CLglsRibbonComm()
@@ -1215,6 +1216,26 @@ void CLglsRibbonBar::RecalcLayout()
 
 	rcTab.OffsetRect(nDx, 0);
 	pTab->SetRect(rcTab);
+
+	// [LGLS 2026-09-08] 그룹(패널)도 같은 쪽 끝으로 옮긴다 - 탭 바로 아래에 오게.
+	//   그 카테고리가 활성일 때만 패널에 자리(rect)가 잡힌다. 비활성이면 건너뛴다.
+	if (m_pRightPanel != NULL)
+	{
+		CRect rcP = m_pRightPanel->GetRect();
+		if (!rcP.IsRectEmpty())
+		{
+			int nDxP = (rcCli.right - 12) - rcP.right;
+			if (nDxP > 0)
+			{
+				CClientDC dc(this);
+				CFont* pOldFont = dc.SelectObject(&afxGlobalData.fontRegular);
+				CRect rcNew = rcP;
+				rcNew.OffsetRect(nDxP, 0);
+				m_pRightPanel->LglsMoveTo(&dc, rcNew);
+				if (pOldFont != NULL) dc.SelectObject(pOldFont);
+			}
+		}
+	}
 }
 
 // [LGLS 2026-09-08] [통신] 탭(대메뉴) + [통신] 그룹 + 상태 3종. 탭은 리본 오른쪽 끝에 놓는다.
@@ -1225,7 +1246,7 @@ void CMainFrame::AddCategoryCOMM()
 	CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("통신"), IDB_LOGO_ECS, IDB_LOGO_ECS);
 	if (pCategory == NULL) return;
 
-	CMFCRibbonPanel* pPanel = pCategory->AddPanel(_T("통신"));
+	CMFCRibbonPanel* pPanel = pCategory->AddPanel(_T("통신"), 0, RUNTIME_CLASS(CLglsRibbonPanel));
 	if (pPanel != NULL)
 	{
 		TCHAR chrFileName[500];
@@ -1251,6 +1272,7 @@ void CMainFrame::AddCategoryCOMM()
 	}
 
 	m_wndRibbonBar.SetRightCategory(pCategory);	// 탭을 오른쪽 끝으로
+	m_wndRibbonBar.SetRightPanel((CLglsRibbonPanel*)pPanel);	// 그룹도 오른쪽 끝으로
 }
 
 void CMainFrame::SetCommColor(UINT nID, COLORREF clr)
