@@ -129,15 +129,18 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("0"))
 		return DARK_GRAY;
 
-	// [LGLS 2026-08-31] 이 경로도 설비의 JOB_TYP_RD 만 봐서, 번호는 그려지는데
-	//   색만 회색으로 빠지는 창이 있었다. 크레인이 든 번호로 작업정보를 찾아 보완한다.
-	CString strHeldP = pSC_DATA->V_LUGG_NO_FK1_RD;   // 차상
+	// [LGLS 2026-09-08] ★차상 관측값(PALLET_ON_VEHICLE_RD)으로 색을 칠하지 않는다★ (사용자 지적)
+	//   V_LUGG_NO_FK1_RD 는 SC_DATA_LGLS.PALLET_ON_VEHICLE_RD 별칭이다(Sc.cpp:82).
+	//   설비는 내려놓은 뒤에도 이 값을 이전 화물번호로 들고 있어서, 출고 크레인이
+	//   하역을 마쳤는데도 그 화물이 출고대에 닿아 작업이 끝날 때까지 색이 남았다.
+	//   ★작업정보 캐시(25 구동중 / 29 크레인 완료)를 단일 소스로 쓴다★ - 하역을 마쳐
+	//   29 → 15 로 넘어가는 순간(실측 10ms 내외) 크레인에서 바로 꺼진다.
+	//   RTV 도 같은 이유로 2026-09-08 에 같게 고쳤다(RtvInfo::GetForkColor1).
+	CString strHeldP = m_pEquipment->m_pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO);
 	strHeldP.Trim();
-	if (strHeldP.IsEmpty() || strHeldP == _T("0") || strHeldP == _T("0000"))
-	{ strHeldP = pSC_DATA->V_ITN_LUGG_FK1; strHeldP.Trim(); }
-	if (strHeldP.IsEmpty() || strHeldP == _T("0") || strHeldP == _T("0000"))
-	{ strHeldP = m_pEquipment->m_pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO); strHeldP.Trim(); }
 	BOOL bHeldP = (!strHeldP.IsEmpty() && strHeldP != _T("0") && strHeldP != _T("0000"));
+	if (!bHeldP)
+		return LIGHT_GRAY;		// 이 호기가 문 작업이 없다 - 설비 잔류값은 보지 않는다
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
 	// [LGLS 2026-08-31] 작업정보 우선 (설비 지시값은 기본형 1/2 라 반자동색이 늦게 든다 - 색 0.5초 튐)
@@ -388,24 +391,14 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 	if (pData == NULL || m_pEquipment == NULL || m_pEquipment->m_pDoc == NULL) return;
 
 	int nMode = m_pEquipment->m_pDoc->m_nTrackTextMode;
-	CString strLugg = pData->V_LUGG_NO_FK1_RD;
+
+	// [LGLS 2026-09-08] ★번호의 단일 소스 = 작업정보 캐시(25/29 로 이 호기가 문 작업)★
+	//   종전에는 차상 관측값(PALLET_ON_VEHICLE_RD)을 먼저 봤는데, 설비가 내려놓은 뒤에도
+	//   이전 번호를 들고 있어 하역을 마친 크레인에 번호가 계속 붙어 있었다.
+	//   색(GetForkColor1)과 같은 소스를 써야 번호와 색이 항상 함께 간다.
+	CString strLugg = m_pEquipment->m_pDoc->GetVehicleJobNo(pData->K_SC_NO);
 	strLugg.Trim();
 	BOOL bHasJob = (!strLugg.IsEmpty() && strLugg != _T("0") && strLugg != _T("0000"));
-
-	// [LGLS 2026-08-22] 설비 데이터만으로는 표시가 끊긴다.
-	//   지시 전에는 관측·지시값이 모두 비고, 지시 직후에는 작업색만 먼저 켜지며,
-	//   완료 뒤에는 지시값이 이전 작업 번호로 남는다(5호기 입고에서 확인).
-	//   그래서 작업번호가 비면 작업정보에서 이 호기에 물려 있는 진행 중 작업을 가져온다.
-	if (!bHasJob)
-	{
-		CString strJob = m_pEquipment->m_pDoc->GetVehicleJobNo(pData->K_SC_NO);
-		strJob.Trim();
-		if (!strJob.IsEmpty() && strJob != _T("0") && strJob != _T("0000"))
-		{
-			strLugg = strJob;
-			bHasJob = TRUE;
-		}
-	}
 
 	// [LGLS 2026-08-22] 호기 번호는 컨트롤이 이미 m_strText 로 포크 위에 그린다(레이아웃 text 속성).
 	//   그래서 표시할 것이 없으면 빈 문자열을 돌려주고 컨트롤이 호기를 그대로 쓰게 둔다.
