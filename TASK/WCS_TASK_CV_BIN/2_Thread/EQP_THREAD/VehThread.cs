@@ -409,12 +409,14 @@ namespace WCS_TASK_CV
                         if (!m_msQPlc.Open(ref m_strRtnMsg))
                         {
                             m_msQPlc.Close(ref m_strRtnMsg);
+                            UpdateEqpMstConn("N");
                             Thread.Sleep(2000);
                             continue;
                         }
                         m_nComFailCycle = 0;
                         m_dtLastPollOk  = DateTime.Now;
                         LogDb("[VEH_" + m_strKind + "] PLC 접속 성공 (" + m_strIp + ":" + m_nPort + ", 차량 " + m_lstVeh.Count + "대)");
+                        UpdateEqpMstConn("Y");
                     }
 
                     // [LGLS 2026-08-22] 차량 한 대의 관측 실패가 스레드 전체를 멈추지 않게 개별로 감싼다.
@@ -486,6 +488,35 @@ namespace WCS_TASK_CV
         { { 1, "1" }, { 3, "3" }, { 5, "5" }, { 7, "6" }, { 9, "8" }, { 11, "9" }, { 13, "11" }, { 15, "12" },
           { 17, "13" }, { 19, "14" }, { 21, "15" }, { 23, "2" }, { 24, "2" }, { 25, "4" }, { 26, "4" },
           { 27, "7" }, { 29, "7" }, { 30, "10" }, { 31, "10" } };
+
+        // [LGLS 2026-09-08] 운전 화면의 설비 접속정보(EQP_MST)에 실제 접속 상태/주소를 남긴다.
+        //   종전에는 SC/RTV 가 EQP_MST 를 한 번도 건드리지 않아 화면에는 늘 "미접속(N)" 이었고
+        //   IP 도 옛 값 그대로였다. 접속 규약은 손대지 않고 상태만 적는다.
+        private void UpdateEqpMstConn(string strYn)
+        {
+            try
+            {
+                string strTyp = (m_strKind == "SC") ? "SC" : "RTV";
+                string sql = "";
+                sql += CRLF + " UPDATE EQP_MST                                  ";
+                sql += CRLF + "    SET CONNECTED_YN  = :YN                      ";
+                sql += CRLF + "      , PLC_IP        = :IP                      ";
+                sql += CRLF + "      , PLC_PORT      = :PORT                    ";
+                sql += CRLF + "      , PLC_PORT_FROM = :PORT                    ";
+                sql += CRLF + "      , UPD_DT        = " + DbLang.SYSDATE + "   ";
+                sql += CRLF + "  WHERE WH_TYP        = :WH                      ";
+                sql += CRLF + "    AND EQP_TYP       = :TYP                     ";
+                m_msQPlc._pBdb.mComMain.CommandType = CommandType.Text;
+                m_msQPlc._pBdb.mComMain.Parameters.Clear();
+                m_msQPlc._pBdb.mComMain.Parameters.Add("YN",   DbLang.VARCHAR, 255).Value = strYn;
+                m_msQPlc._pBdb.mComMain.Parameters.Add("IP",   DbLang.VARCHAR, 255).Value = m_strIp;
+                m_msQPlc._pBdb.mComMain.Parameters.Add("PORT", DbLang.VARCHAR, 255).Value = Convert.ToString(m_nPort);
+                m_msQPlc._pBdb.mComMain.Parameters.Add("WH",   DbLang.VARCHAR, 255).Value = m_strWhTyp;
+                m_msQPlc._pBdb.mComMain.Parameters.Add("TYP",  DbLang.VARCHAR, 255).Value = strTyp;
+                m_msQPlc._pBdb.ExcuteNonQry(sql);
+            }
+            catch (Exception ex) { LogDb("[VEH_" + m_strKind + "] EQP_MST 접속정보 기록 오류: " + ex.Message); }
+        }
 
         private void PollObservations(VehDef v)
         {

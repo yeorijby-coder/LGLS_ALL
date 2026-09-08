@@ -809,6 +809,12 @@ namespace WCS_TASK_CV
                 strSql += CRLF + "   SET CONNECTED_YN      = :CONNECTED_YN          ";
                 strSql += CRLF + "      ,UPD_DT            = " + DbLang.SYSDATE + " ";
                 strSql += CRLF + "      ,PLC_PORT          = :PLC_PORT              ";
+                // [LGLS 2026-09-08] 실제로 붙은 주소를 그대로 적는다. (사용자 요청)
+                //   종전에는 EQP_MST 의 PLC_IP 가 비어 있거나 옛 값이라 운전 화면의
+                //   접속정보가 실제와 달랐다. 접속은 WCS_DB.INI [COMM0] 하나로 하므로
+                //   그 값을 여기에 적어 두면 화면이 늘 사실을 보여 준다.
+                strSql += CRLF + "      ,PLC_IP            = :PLC_IP                ";
+                strSql += CRLF + "      ,PLC_PORT_FROM     = :PLC_PORT              ";
                 strSql += CRLF + "WHERE  WH_TYP            = :WH_TYP                ";
                 strSql += CRLF + "AND    EQP_TYP           = :EQP_TYP               ";
                 strSql += CRLF + "AND    PLC_NO            IN (" + strIn + ")       ";
@@ -817,6 +823,7 @@ namespace WCS_TASK_CV
                 m_msQPlc._pBdb.mComMain.Parameters.Clear();
                 m_msQPlc._pBdb.mComMain.Parameters.Add("CONNECTED_YN", DbLang.VARCHAR).Value = CONNECTED_YN;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("PLC_PORT", DbLang.VARCHAR, 255).Value = Convert.ToString("" + m_nCurPort);
+                m_msQPlc._pBdb.mComMain.Parameters.Add("PLC_IP", DbLang.VARCHAR, 255).Value = Convert.ToString("" + m_strIp);
                 m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR, 255).Value = m_strWh_typ;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("EQP_TYP", DbLang.VARCHAR, 255).Value = m_strEqmt_typ;
                 return m_msQPlc._pBdb.ExcuteNonQry(strSql) >= 0;
