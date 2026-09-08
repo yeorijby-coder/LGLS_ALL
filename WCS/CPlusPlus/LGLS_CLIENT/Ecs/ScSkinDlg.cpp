@@ -2552,26 +2552,17 @@ void CScSkinDlg::CompactForkStatusRow()
 	int nPitch = rcFp.top - rcPl.top;						// 한 행 높이
 	if (nPitch <= 0) return;
 
-	const int nMove[] = {
-		IDC_LBL_SC_VERTICAL_POS,   IDC_EDT_SC_VERTICAL_POS,
-		IDC_LBL_SC_HORIZONTAL_POS, IDC_EDT_SC_HORIZONTAL_POS
-	};
-	for (int i = 0; i < sizeof(nMove)/sizeof(nMove[0]); i++)
-	{
-		CWnd* pWnd = GetDlgItem(nMove[i]);
-		if (pWnd == NULL) continue;
-		CRect rc; pWnd->GetWindowRect(&rc); ScreenToClient(&rc);
-		if (rc.top <= rcFp.top) continue;					// 포크위치 위쪽 행은 그대로
-		rc.OffsetRect(0, -nPitch);
-		pWnd->MoveWindow(rc);
-	}
+	// [LGLS 2026-09-08] ★한 칸 당기기를 없앴다★ - 이제 Ecs.rc 에 최종 위치가 그대로 들어 있다.
+	//   (포크상태 행은 리소스에서 이미 지웠고, 아래 행도 rc 좌표가 최종값이다)
+	//   런타임에서 다시 옮기면 rc 를 고칠 때마다 두 번 움직여 어긋난다.
+	(void)nPitch;
 
-	// [LGLS 2026-09-08] 이 두 열의 행 간격을 위쪽 [SC상태] 항목과 같게 맞춘다. (사용자 요청)
+	// [LGLS 2026-09-08] 행 간격은 rc 에서 맞췄다. 아래 함수는 쓰지 않는다.
 	//   위쪽은 13DLU, 여기는 16DLU 라 눈에 띄게 달랐다.
 	//   ★rc 는 손대지 않는다★ - 이 대화상자는 rc 좌표를 기준으로 런타임 재배치를 하는 곳이
 	//   여럿(CompactForkStatusRow / AddTwoRowsBelow / LglsRelayoutJobStatus)이라,
 	//   rc 를 바꾸면 그 계산이 전부 어긋난다(적재용기·제품정보 행이 사라지는 것을 확인했다).
-	LglsMatchRowPitch();
+	//LglsMatchRowPitch();	// rc 에서 맞췄으므로 사용하지 않는다
 }
 
 // [LGLS 2026-09-08] 위쪽 [SC상태] 항목 간격을 기준으로 아래 두 열의 행 간격을 다시 잡는다.
@@ -2656,15 +2647,9 @@ void CScSkinDlg::BuildVehStatusPanel()
 	CompactForkStatusRow();		// [LGLS] 포크 상태 행 제거		// 1회만 생성
 
 	// [LGLS 2026-08-01] 도착위치 아래에 [적재 용기](JOB_MST.LOT_NO) / [제품 정보](JOB_MST.PRODUCT_ID) 두 행 추가
-	if (m_arLglsCtrl.GetCount() == 0)   // [LGLS 2026-09-02] 구간 이동은 1회만(재구성 반복 시 겹침 방지)
-	{
-		const int nGrps[] = { IDC_GRP_SC_JOB_STATUS, IDC_GRP_SC_JOB_STATUS_ITEM,
-		                      IDC_GRP_SC_JOB_STATUS_VALUE, IDC_GRP_SC_JOB_STATUS_COMMAND };
-		CLib::AddTwoRowsBelow(this, IDC_LBL_SC_JOB_DEST_POS, IDC_LBL_SC_JOB_DEST_LOC, IDC_EDT_SC_JOB_DEST_LOC,
-		                      _T("적재용기"), IDC_LGLS_SC_LOT_LBL, IDC_LGLS_SC_LOT_VAL,
-		                      _T("제품정보"), IDC_LGLS_SC_PRD_LBL, IDC_LGLS_SC_PRD_VAL,
-		                      nGrps, sizeof(nGrps)/sizeof(nGrps[0]), m_arLglsCtrl);
-	}
+	// [LGLS 2026-09-08] 적재 용기 / 제품 정보는 이제 Ecs.rc 에 실물 컨트롤로 들어 있다.
+	//   런타임 추가(CLib::AddTwoRowsBelow)는 rc 좌표를 기준으로 계산해서, rc 를 고칠 때마다
+	//   두 행이 창 밖으로 밀려 사라졌다. rc 를 기준으로 삼기로 했으므로 호출하지 않는다.
 
 	LglsRelayoutJobStatus();   // [LGLS 2026-09-03] 작업상태 두 열 배치(1회)
 
@@ -2985,22 +2970,7 @@ void CScSkinDlg::LglsRelayoutJobStatus()
 	pLblNo->GetWindowRect(&rcLbl); ScreenToClient(&rcLbl);
 	pEdNo->GetWindowRect(&rcEd);   ScreenToClient(&rcEd);
 	pLblTy->GetWindowRect(&rcTy);  ScreenToClient(&rcTy);
-	// [LGLS 2026-09-08] 행 간격을 위쪽 [SC상태] 항목과 같게 맞춘다. (사용자 요청)
-	//   종전에는 이 그룹 자신의 라벨 간격(17)을 썼는데 위쪽은 13 이라 서로 달라 보였다.
-	int nPitch = 0;
-	{
-		CWnd* pRef1 = GetDlgItem(IDC_LBL_SC_JOB_NO);
-		CWnd* pRef2 = GetDlgItem(IDC_LBL_SC_JOB_TYP);
-		if (pRef1 != NULL && pRef2 != NULL)
-		{
-			CRect rc1, rc2;
-			pRef1->GetWindowRect(&rc1); ScreenToClient(&rc1);
-			pRef2->GetWindowRect(&rc2); ScreenToClient(&rc2);
-			nPitch = rc2.top - rc1.top;
-		}
-	}
-	if (nPitch <= 0) nPitch = rcTy.top - rcLbl.top;
-	if (nPitch <= 0) nPitch = rcLbl.Height() + 6;
+	int nPitch = rcTy.top - rcLbl.top; if (nPitch <= 0) nPitch = rcLbl.Height() + 6;
 	int nGap   = rcEd.left - rcLbl.right;  if (nGap < 4) nGap = 6;
 
 	int nInnerL = rcGrp.left + 8, nInnerR = rcGrp.right - 8;
