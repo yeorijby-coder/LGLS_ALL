@@ -1293,8 +1293,28 @@ namespace TSK_HostCom
             m_strSql = "";
             m_strSql += modDefApp.CRLF + " UPDATE EQP_MST                                                       ";
             m_strSql += modDefApp.CRLF + "    SET UPD_DT       = " + modDateTime.SYSDATE;
+            // [LGLS 2026-09-08] 운전 화면의 설비 접속정보에 상위 통신 주소가 비어 있었다. (사용자 지적)
+            //   HOST/HOST2 행은 아무도 IP/PORT 를 적지 않아 화면이 빈칸이었다.
+            //   실제로 쓰는 값(EcsComA.ini [Network])을 그대로 적어 둔다. 통신 규약은 손대지 않는다.
+            //   HOST2 = ★송신(클라이언트) 소켓★ - 우리가 상위로 접속해 보고를 보낸다.
+            m_strSql += modDefApp.CRLF + "      , CONNECTED_YN = 'Y'                                            ";
+            m_strSql += modDefApp.CRLF + "      , PLC_IP       = " + m_BDb.ParamsAdd("PLC_IP", modDefApp.g_strRemoteIP);
+            m_strSql += modDefApp.CRLF + "      , PLC_PORT     = " + m_BDb.ParamsAdd("PLC_PORT", modDefApp.g_iRemotePort.ToString());
             m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
             m_strSql += modDefApp.CRLF + "    AND EQP_TYP      = 'HOST2'                                        ";
+            nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+
+            //   HOST = ★수신(서버) 소켓★ - 우리가 포트를 열어 두고 상위의 접속을 받는다.
+            //   특정 상대 주소가 없으므로 IP 는 0.0.0.0(모든 주소에서 받음)으로 적는다. (사용자 요청)
+            m_BDb.ParamsClear();
+            m_strSql = "";
+            m_strSql += modDefApp.CRLF + " UPDATE EQP_MST                                                       ";
+            m_strSql += modDefApp.CRLF + "    SET UPD_DT       = " + modDateTime.SYSDATE;
+            m_strSql += modDefApp.CRLF + "      , CONNECTED_YN = 'Y'                                            ";
+            m_strSql += modDefApp.CRLF + "      , PLC_IP       = '0.0.0.0'                                      ";
+            m_strSql += modDefApp.CRLF + "      , PLC_PORT     = " + m_BDb.ParamsAdd("PLC_PORT2", modDefApp.g_iListenPort.ToString());
+            m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP2", modDefApp.WH_TYP);
+            m_strSql += modDefApp.CRLF + "    AND EQP_TYP      = 'HOST'                                         ";
             nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
             if (nRtn < 0)
             {

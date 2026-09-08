@@ -439,7 +439,9 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(784, 561);
+            // [LGLS 2026-09-08] 기본 시작 폭을 현재 쓰는 크기로 맞춘다(사용자 요청).
+            //   종전 784 는 송/수신 전문 목록이 잘려 매번 창을 늘려야 했다.
+            this.ClientSize = new System.Drawing.Size(1473, 561);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.StatusBar1);
             this.Controls.Add(this.pnlTop);

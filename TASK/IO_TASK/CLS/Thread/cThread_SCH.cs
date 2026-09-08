@@ -2911,11 +2911,14 @@ namespace TSK_COMM_IOSCH
                 m_dtLastHb = now;
 
                 string s = "";
-                s += CRLF + " UPDATE EQP_MST SET CONNECTED_YN = :CY, UPD_DT = " + DbLang.SYSDATE;
+                // [LGLS 2026-09-08] 운전 화면 접속정보에 뜻 없는 PORT 0 이 보이던 것 정리.
+                //   IO_TASK 는 소켓이 아니라 DB 로만 일한다 - 포트는 비우고 DB 서버를 IP 자리에 적는다.
+                s += CRLF + " UPDATE EQP_MST SET CONNECTED_YN = :CY, PLC_IP = :DBIP, PLC_PORT = '', UPD_DT = " + DbLang.SYSDATE;
                 s += CRLF + "  WHERE WH_TYP = :WH AND EQP_TYP = 'SCH' AND PLC_NO = '01' ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("CY", DbLang.VARCHAR).Value = healthy ? "Y" : "N";
+                _pBdb.mComMain.Parameters.Add("DBIP", DbLang.VARCHAR).Value = cDefApp.GM_PDB_IP;
                 _pBdb.mComMain.Parameters.Add("WH", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 int n = DbNonQry(s);
                 if (n == 0)
