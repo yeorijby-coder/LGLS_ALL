@@ -10,6 +10,25 @@
 #include "PanelVehDlg.h"
 #include "EcsDoc.h"
 
+// [LGLS 2026-09-08] 리본에 붙는 통신상태 표시(EQUIP/HOST/SCH).
+//   구 상태바 버튼과 같은 초록/빨강 배경을 쓰기 위해 그리기만 갈아끼운 리본 버튼이다.
+//   (아이콘으로 하면 색이 두 가지뿐이라 오히려 손이 더 간다 - 배경색이 곧 상태다)
+class CLglsRibbonComm : public CMFCRibbonButton
+{
+	DECLARE_DYNCREATE(CLglsRibbonComm)
+public:
+	CLglsRibbonComm();
+	CLglsRibbonComm(UINT nID, LPCTSTR lpszText);
+	void     SetStateColor(COLORREF clr);
+	COLORREF GetStateColor() const { return m_clrState; }
+protected:
+	COLORREF m_clrState;
+	virtual void  OnDraw(CDC* pDC);
+	virtual void  OnDrawBorder(CDC* /*pDC*/) {}
+	virtual CSize GetRegularSize(CDC* pDC);
+	virtual CSize GetCompactSize(CDC* pDC);
+};
+
 class CMainFrame : public CFrameWndEx
 {
 
@@ -134,6 +153,11 @@ public:
 
 	// [LGLS 2026-09-08] 통신상태(EQUIP/HOST/SCH) 표시 위치.
 	//   Ecs.ini [MENU] STATUS_POS = TOP(리본 오른쪽 빈자리) / BOTTOM(종전 하단 상태바).
+	// [LGLS 2026-09-08] 리본에 붙인 통신상태 요소들(카테고리마다 한 벌 - 어느 탭에서도 보인다)
+	CObArray m_arRbnComm;
+	BOOL IsStatusOnRibbon();
+	void AddCommPanel(CMFCRibbonCategory* pCategory);
+	void SetCommColor(UINT nID, COLORREF clr);
 	BOOL IsStatusBarOnTop();
 	void LayoutStatusBar(int cx, int cy);
 	void AddStatusBarPane();

@@ -638,6 +638,8 @@ void CMainFrame::AddCategoryWCS()
 			pPanelProcess->Add(pBtnAutoTime);
 		}
 	}
+
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 통신상태
 }
 	
 
@@ -683,6 +685,8 @@ void CMainFrame::AddCategoryMANUAL()
 		pBtnTestClear->SetAlwaysLargeImage();
 		pPanelSemiTest->Add(pBtnTestClear);
 	}
+
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 통신상태
 }
 
 void CMainFrame::AddCategoryLOG()
@@ -735,6 +739,7 @@ void CMainFrame::AddCategoryLOG()
 	//pBtnCLIENT_LOG->SetAlwaysLargeImage();
 	//pPanelLog->Add(pBtnCLIENT_LOG);
 
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 통신상태
 }
 
 void CMainFrame::RenameRibbonText(EN_LANG penLang)
@@ -1152,6 +1157,81 @@ void CMainFrame::OnUpdateStatusCv(CCmdUI *pCmdUI)
 #define LGLS_STATUS_TOP_Y   34    // 〃 리본 위쪽에서의 거리
 #define LGLS_STATUS_TOP_MGN 26    // 〃 오른쪽 여백(마지막 버튼이 잘리지 않게)
 
+IMPLEMENT_DYNCREATE(CLglsRibbonComm, CMFCRibbonButton)
+
+CLglsRibbonComm::CLglsRibbonComm() : m_clrState(RGB(120, 120, 120)) {}
+
+CLglsRibbonComm::CLglsRibbonComm(UINT nID, LPCTSTR lpszText)
+	: CMFCRibbonButton(nID, lpszText), m_clrState(RGB(120, 120, 120)) {}
+
+void CLglsRibbonComm::SetStateColor(COLORREF clr)
+{
+	if (m_clrState == clr) return;
+	m_clrState = clr;
+	Redraw();
+}
+
+CSize CLglsRibbonComm::GetRegularSize(CDC* /*pDC*/) { return CSize(74, 22); }
+CSize CLglsRibbonComm::GetCompactSize(CDC* pDC)     { return GetRegularSize(pDC); }
+
+void CLglsRibbonComm::OnDraw(CDC* pDC)
+{
+	if (pDC == NULL) return;
+	CRect rc = m_rect;
+	rc.DeflateRect(2, 2);
+	if (rc.IsRectEmpty()) return;
+
+	CBrush br(m_clrState);
+	pDC->FillRect(rc, &br);
+	pDC->Draw3dRect(rc, RGB(90, 90, 90), RGB(90, 90, 90));
+
+	int      nBk   = pDC->SetBkMode(TRANSPARENT);
+	COLORREF clrTx = pDC->SetTextColor(RGB(0, 0, 0));
+	CFont*   pOld  = pDC->SelectObject(&afxGlobalData.fontBold);
+	pDC->DrawText(m_strText, rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	pDC->SelectObject(pOld);
+	pDC->SetTextColor(clrTx);
+	pDC->SetBkMode(nBk);
+}
+
+// [LGLS 2026-09-08] STATUS_POS=RIBBON 이면 리본 안(각 탭의 마지막 그룹)에 붙인다.
+BOOL CMainFrame::IsStatusOnRibbon()
+{
+	TCHAR szTemp[64] = {0};
+	::GetPrivateProfileString(_T("MENU"), _T("STATUS_POS"), _T("RIBBON"), szTemp, 64, ECS_INI_FILE);
+	CString str(szTemp); str.Trim(); str.MakeUpper();
+	return (str == _T("RIBBON")) ? TRUE : FALSE;
+}
+
+// 카테고리(탭)마다 같은 그룹을 하나씩 붙인다 - 어느 탭을 보고 있어도 통신상태가 보인다.
+void CMainFrame::AddCommPanel(CMFCRibbonCategory* pCategory)
+{
+	if (pCategory == NULL || !IsStatusOnRibbon()) return;
+
+	CMFCRibbonPanel* pPanel = pCategory->AddPanel(_T("통신"));
+	if (pPanel == NULL) return;
+
+	struct D { UINT id; LPCTSTR s; };
+	D defs[] = { { ID_STATUS_CV_1, _T("EQUIP") },
+	             { ID_STATUS_HOST, _T("HOST")  },
+	             { ID_STATUS_SCH,  _T("SCH")   } };
+	for (int i = 0; i < 3; i++)
+	{
+		CLglsRibbonComm* p = new CLglsRibbonComm(defs[i].id, defs[i].s);
+		pPanel->Add(p);
+		m_arRbnComm.Add(p);
+	}
+}
+
+void CMainFrame::SetCommColor(UINT nID, COLORREF clr)
+{
+	for (int i = 0; i < m_arRbnComm.GetCount(); i++)
+	{
+		CLglsRibbonComm* p = (CLglsRibbonComm*)m_arRbnComm.GetAt(i);
+		if (p != NULL && p->GetID() == nID) p->SetStateColor(clr);
+	}
+}
+
 BOOL CMainFrame::IsStatusBarOnTop()
 {
 	TCHAR szTemp[64] = {0};
@@ -1164,6 +1244,13 @@ void CMainFrame::LayoutStatusBar(int cx, int cy)
 {
 	if (!::IsWindow(m_wndStatusBar.GetSafeHwnd()) || cx <= 0 || cy <= 0)
 		return;
+	if (IsStatusOnRibbon())
+	{
+		// 리본 안에 붙였으므로 떠 있는 상태바는 감춘다(하단 40px 도 돌려준다).
+		m_wndStatusBar.ShowWindow(SW_HIDE);
+		return;
+	}
+	m_wndStatusBar.ShowWindow(SW_SHOW);
 	if (IsStatusBarOnTop())
 	{
 		int w = LGLS_STATUS_TOP_W;
@@ -1188,9 +1275,9 @@ void CMainFrame::RecalcLayout(BOOL bNotify)
 	CRect rcCli; GetClientRect(&rcCli);
 	LayoutStatusBar(rcCli.Width(), rcCli.Height());
 	// [LGLS 2026-09-08] 위로 올렸으면 하단을 비워 두지 않아도 된다 - 클램프는 하단일 때만.
-	if (IsStatusBarOnTop())
+	if (IsStatusOnRibbon() || IsStatusBarOnTop())
 	{
-		m_wndStatusBar.BringWindowToTop();
+		if (!IsStatusOnRibbon()) m_wndStatusBar.BringWindowToTop();
 		return;
 	}
 	int nBarTop = rcCli.Height() - 40;
@@ -1872,7 +1959,8 @@ void CMainFrame::OnUpdateStatusCv1(CCmdUI *pCmdUI)
 	{
 		if(strEQP_COLOR != _T("RED"))
 		{
-			m_wndStatusBar.SetPaneInfo(ID_STATUS_CV_1, _T("EQUIP"), RED, BLACK);	// [LGLS] EQP_TASK ??????
+			m_wndStatusBar.SetPaneInfo(ID_STATUS_CV_1, _T("EQUIP"), RED, BLACK);
+			SetCommColor(ID_STATUS_CV_1, RED);	// [LGLS] EQP_TASK ??????
 			pTrackInfo->m_pCV_DATA->SetEQP_COLOR(_T("RED"));
 		}
 	}
@@ -1880,7 +1968,8 @@ void CMainFrame::OnUpdateStatusCv1(CCmdUI *pCmdUI)
 	{
 		if(strEQP_COLOR != _T("GREEN"))
 		{
-			m_wndStatusBar.SetPaneInfo(ID_STATUS_CV_1, _T("EQUIP"), GREEN, BLACK);	// [LGLS] EQP_TASK ????
+			m_wndStatusBar.SetPaneInfo(ID_STATUS_CV_1, _T("EQUIP"), GREEN, BLACK);
+			SetCommColor(ID_STATUS_CV_1, GREEN);	// [LGLS] EQP_TASK ????
 			pTrackInfo->m_pCV_DATA->SetEQP_COLOR(_T("GREEN"));
 		}
 		
@@ -2110,6 +2199,7 @@ void CMainFrame::OnUpdateStatusSch(CCmdUI *pCmdUI)
 		if (strEQP_COLOR != _T("RED"))
 		{
 			m_wndStatusBar.SetPaneInfo(ID_STATUS_SCH, _T("SCH"), RED, BLACK);
+			SetCommColor(ID_STATUS_SCH, RED);
 			pConnectStatus->SetEQP_COLOR3(_T("RED"));
 		}
 	}
@@ -2118,6 +2208,7 @@ void CMainFrame::OnUpdateStatusSch(CCmdUI *pCmdUI)
 		if (strEQP_COLOR != _T("GREEN"))
 		{
 			m_wndStatusBar.SetPaneInfo(ID_STATUS_SCH, _T("SCH"), GREEN, BLACK);
+			SetCommColor(ID_STATUS_SCH, GREEN);
 			pConnectStatus->SetEQP_COLOR3(_T("GREEN"));
 		}
 	}
@@ -2149,6 +2240,7 @@ void CMainFrame::OnUpdateStatusHost(CCmdUI *pCmdUI)
 			if(strEQP_COLOR != _T("RED"))
 			{
 				m_wndStatusBar.SetPaneInfo(ID_STATUS_HOST, _T("HOST"), RED, BLACK);
+				SetCommColor(ID_STATUS_HOST, RED);
 				pConnectStatus->SetEQP_COLOR2(_T("RED"));
 			}
 		}
@@ -2157,6 +2249,7 @@ void CMainFrame::OnUpdateStatusHost(CCmdUI *pCmdUI)
 			if(strEQP_COLOR != _T("GREEN"))
 			{
 				m_wndStatusBar.SetPaneInfo(ID_STATUS_HOST, _T("HOST"), GREEN, BLACK);
+				SetCommColor(ID_STATUS_HOST, GREEN);
 				pConnectStatus->SetEQP_COLOR2(_T("GREEN"));
 			}
 		}
