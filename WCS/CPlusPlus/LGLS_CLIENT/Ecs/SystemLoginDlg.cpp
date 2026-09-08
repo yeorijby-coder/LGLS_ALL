@@ -124,6 +124,7 @@ void CSystemLoginDlg::RelocationControls()
 
 void CSystemLoginDlg::OnBnClickedOk()
 {
+
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	CStringList strList;
 	CString strSql, strId, strPw;
@@ -177,6 +178,21 @@ void CSystemLoginDlg::OnBnClickedOk()
 		{
 			m_blLogYn = TRUE;
 		}
+		return;
+	}
+	// [LGLS 2026-09-08] "로그인에 실패했습니다" 가 DB 미접속까지 덮어 버리던 것을 갈라 준다.
+	//   GetSelectQryCnt_DLG 는 DB 에 못 붙으면 조용히 0 을 돌려주므로(EcsDoc.cpp:2030),
+	//   아이디/비밀번호가 맞아도 같은 메시지가 떴다. 원인을 구분해서 알려 준다.
+	if (m_pDoc->GetSelectQryCnt_DLG(_T(" SELECT 1 AS CONNECT_CHK ")) <= 0)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("DB 에 접속하지 못했습니다. Ecs.ini 의 [DB_2] 접속 설정을 확인하세요.")));
+		CSkinDialog::OnCancel();
+		return;
+	}
+	if (m_pDoc->GetSelectQryCnt_DLG(_T(" SELECT USER_ID FROM USER_MST ")) <= 0)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("USER_MST 에 등록된 사용자가 없습니다. 사용자 계정을 먼저 등록하세요.")));
+		CSkinDialog::OnCancel();
 		return;
 	}
 	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("로그인에 실패했습니다")));
