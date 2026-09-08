@@ -67,6 +67,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	//ON_BN_CLICKED(ID_STATUS_HOST, &CMainFrame::OnButtonHost)
 
 	ON_CONTROL_RANGE(BN_CLICKED, ID_STATUS_CV_1,ID_STATUS_SCH, &CMainFrame::OnButtonComm)
+	// [LGLS 2026-09-08] 리본 요소는 WM_COMMAND(lParam=0)로 오므로 ON_CONTROL_RANGE 로는 안 잡힌다.
+	ON_COMMAND_RANGE(ID_STATUS_CV_1, ID_STATUS_SCH, &CMainFrame::OnButtonComm)
 
 END_MESSAGE_MAP()
 
@@ -1745,19 +1747,50 @@ void CMainFrame::OnButtonComm(UINT nID)
 
 			delete pRsw;
 
-			strTemp1.Format(_T("%s (IP:%s) (PORT:%s)"), strREMARKS, strIP, strPORT);		
+			strIP.Trim();
+			strPORT.Trim();
+			strTemp1.Format(_T("%s (IP:%s) (PORT:%s)"), strREMARKS, strIP, strPORT);
 
-			strTemp2.Format(_T("PingTest를 하겠습니까? [접속정보 -> %s]"), strTemp1);
-			
-			if (AfxMessageBox(strTemp2, MB_YESNO) != IDYES)
+			// [LGLS 2026-09-08] 통신이 끊겼을 때(빨간색) 눌러 확인하는 절차. (사용자 지시)
+			//   ① 핑 테스트 하겠습니까?  예 → 그 IP 로 ping
+			//   ② 아니오 → 포트 확인 하겠습니까?  예 → 그 IP:PORT 가 열려 있는지 확인
+			//   ③ 아니오 → 접속할 수 없다는 안내
+			//   종전에는 EQP_MST.BATCH 의 BAT 파일을 실행했는데 그 값이 비어 있어
+			//   아무 일도 일어나지 않았다. 명령을 직접 띄운다(창은 열어 두고 결과를 보여 준다).
+			if (strIP.IsEmpty())
 			{
-				AfxMessageBox(_T("통신 연결 되지 않았습니다!"));
+				strTemp.Format(m_pDoc == NULL ? _T("접속 IP 가 등록되어 있지 않습니다.\r\n%s")
+				                              : _T("접속 IP 가 등록되어 있지 않습니다.\r\n%s"), strTemp1);
+				AfxMessageBox(strTemp);
 				return;
 			}
 
-			AfxMessageBox(_T("PingTest 하겠습니다.\n\nPing 비정상시 네트워크 담당자에게 확인바랍니다!\nPing 정상시 PORT가 정상적으로 OPEN 되어있는지 확인하세요"));
-			//::ShellExecute(NULL, _T("open"), _T(".\\PING_WC01.BAT"), NULL, NULL, SW_SHOW);
-			::ShellExecute(NULL, _T("open"), strBAT, NULL, NULL, SW_SHOW);		// 정상
+			strTemp2.Format(_T("통신이 끊어졌습니다.\r\n\r\n[%s]\r\n\r\n핑 테스트를 하시겠습니까?"), strTemp1);
+			if (AfxMessageBox(strTemp2, MB_YESNO | MB_ICONQUESTION) == IDYES)
+			{
+				CString strArg;
+				strArg.Format(_T("/k ping -n 4 %s"), strIP);
+				::ShellExecute(NULL, _T("open"), _T("cmd.exe"), strArg, NULL, SW_SHOWNORMAL);
+				return;
+			}
+
+			strTemp2.Format(_T("포트가 열려 있는지 확인하시겠습니까?\r\n\r\n[%s : %s]"), strIP, strPORT);
+			if (AfxMessageBox(strTemp2, MB_YESNO | MB_ICONQUESTION) == IDYES)
+			{
+				if (strPORT.IsEmpty() || strPORT == _T("0"))
+				{
+					AfxMessageBox(_T("확인할 포트가 등록되어 있지 않습니다."));
+					return;
+				}
+				CString strArg;
+				strArg.Format(_T("/k powershell -NoProfile -Command \"Test-NetConnection -ComputerName %s -Port %s -InformationLevel Detailed\""),
+				              strIP, strPORT);
+				::ShellExecute(NULL, _T("open"), _T("cmd.exe"), strArg, NULL, SW_SHOWNORMAL);
+				return;
+			}
+
+			strTemp.Format(_T("설비에 접속할 수 없습니다.\r\n\r\n[%s]\r\n\r\n네트워크/설비 담당자에게 확인하십시오."), strTemp1);
+			AfxMessageBox(strTemp, MB_OK | MB_ICONEXCLAMATION);
 		}
 		else
 		{
