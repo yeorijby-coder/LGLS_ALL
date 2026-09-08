@@ -919,6 +919,27 @@ void CViewJobListDlg::DeleteJob()
 	strPRODUCT_ID.Trim();
 
 	if(AfxMessageBox(m_pDoc->GetMsgLangDef(_T("삭제하시겠습니까? 작업번호 : ")) + strLUGG_NO, MB_YESNO) == IDNO) {	return;	}
+
+	// [LGLS 2026-09-08] 설비 구동 중(20~39) 삭제는 한 번 더 거른다. (사용자 지시)
+	//   크레인/RGV 가 이미 그 화물을 물고 움직이는 중이라, 여기서 지우면 설비는 계속
+	//   움직이는데 WCS 는 화물의 위치를 잃는다 - 완료/착지 후처리가 전부 JOB_MST 를
+	//   기점으로 돌기 때문이다. 설비 상태창 [강제완료] 로 마무리한 뒤 지우는 것이 맞다.
+	{
+		CString strChk;
+		strChk.Format(_T(" SELECT LUGG_NO FROM JOB_MST                     ")
+					  _T("  WHERE WH_TYP = '%s' AND LUGG_NO = '%s'         ")
+					  _T("    AND JOB_STATUS >= '20' AND JOB_STATUS <= '39' "), strWH_TYP, strLUGG_NO);
+		if (m_pDoc->GetSelectQryCnt_DLG(strChk) > 0)
+		{
+			CString strWarn;
+			strWarn.Format(m_pDoc->GetMsgLangDef(
+				_T("설비가 이 작업을 수행 중입니다. (작업상태 %s)")) + _T("\r\n\r\n") +
+				m_pDoc->GetMsgLangDef(_T("지금 지우면 설비는 계속 움직이는데 WCS 는 화물의 위치를 잃습니다.")) + _T("\r\n") +
+				m_pDoc->GetMsgLangDef(_T("설비 상태창의 [강제완료] 로 마무리한 뒤 삭제하십시오.")) + _T("\r\n\r\n") +
+				m_pDoc->GetMsgLangDef(_T("그래도 삭제하시겠습니까?")), (LPCTSTR)strJOB_STATUS);
+			if (AfxMessageBox(strWarn, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO) { return; }
+		}
+	}
 	
 	m_pDoc->BeginTrans_DLG();
 

@@ -3272,7 +3272,11 @@ namespace TSK_COMM_IOSCH
             try
             {
                 if (string.IsNullOrEmpty(hs) || string.IsNullOrEmpty(luggNo)) return "";
-                if (nElapsed < 5) return "";                      // 정상 경로에 먼저 기회를 준다
+                // [LGLS 2026-09-08] 대기 시간은 ENV_IOSCH.INI [CNF] LAND_BY_CARGO_SEC 로 조정한다(기본 1초).
+                //   0 을 주면 기다리지 않는다. 이 대기는 "설비가 트래킹을 얹어 줄 시간" 을 주려던 것인데,
+                //   현장 설비는 애초에 얹어 주지 않으므로 실효가 거의 없다. 안전은 아래 네 조건이 맡는다.
+                int nWaitSec = cDefApi.GsReadInitProfileCnf("LAND_BY_CARGO_SEC", 1);
+                if (nWaitSec > 0 && nElapsed < nWaitSec) return "";
                 if (AnyVehicleHolding(luggNo)) return "";         // (1)
                 if (OutDoneJobCountOn(hs) != 1) return "";        // (4)
 
