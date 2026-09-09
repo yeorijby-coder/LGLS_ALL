@@ -2,7 +2,7 @@
 <Builder id="1" l="0" b="0" r="41" t="22" text="1F" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="0" fontsize="10" selcolor="808080">
 	<Group gname="Layout" gid="5" show="1">
 		<CDciStaticCtrl>
-			<Control id="" l="29" b="1" r="41" t="3" text="LG Chemical WCS" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="48" border="1" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
+			<Control id="" l="29" b="1" r="41" t="3" text="LG Chemical ECS" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="48" border="1" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
 			<Control id="" l="0" b="19" r="16" t="21" text="범   례" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="48" border="1" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
 			<Control id="" l="0" b="10" r="9" t="11" text="CV 상태" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="32" border="1" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>
 			<Control id="" l="9" b="10" r="16" t="11" text="SC, RTV 레일" bgmode="2" fgmode="1" bgcolor="ffffff" fgcolor="000000" enable="1" visible="1" fontsize="32" border="1" pstyle="0" pwidth="1" pcolor="000000" gl="0" gt="0" gr="0" gb="0"/>

@@ -240,11 +240,13 @@ void CConfig::InitializeConfigUSER()
 	m_clrUSER_COLOR_WC_PASS = SITE;			
 	m_clrUSER_COLOR_CV_SEARCH = PINK;
 
-	m_clrUSER_COLOR_STO_SUSPEND = GREEN;	//
-	m_clrUSER_COLOR_RET_SUSPEND = BLUE;		//
-	m_clrUSER_COLOR_ALL_SUSPEND = RED;		//
-	m_clrUSER_COLOR_RAIL_ERROR = RED;		
-	m_clrUSER_COLOR_SC_INVK = PINK;			
+	// [LGLS 2026-09-09] 레일 색 : 정지 3종은 붉은 계열로 나누고(2동의 "붉으면 정지" 유지),
+	//   설비 에러만 보라로 빼 사람이 건 정지와 구분한다.
+	m_clrUSER_COLOR_STO_SUSPEND = RGB(255,  80,   0);	// 입고 금지  - 주황빨강
+	m_clrUSER_COLOR_RET_SUSPEND = RGB(255,   0, 120);	// 출고 금지  - 자홍빨강
+	m_clrUSER_COLOR_ALL_SUSPEND = RGB(200,   0,   0);	// 입출고정지 - 진빨강
+	m_clrUSER_COLOR_RAIL_ERROR  = RGB(160,   0, 220);	// 레일 에러  - 보라
+	m_clrUSER_COLOR_SC_INVK     = RGB(  0,   0, 255);	// 작업중     - 파랑 (2동 규칙)
 
 	m_clrUSER_COLOR_READY_OFF = DARK_GRAY;
 //	m_clrMES_ERROR_CD = RED;

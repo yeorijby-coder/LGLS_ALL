@@ -233,6 +233,14 @@ void CConfigStatus::OnBnClickedBtnSave()
 		
 		m_pDoc->m_pConfig->SaveConfigUSER();
 
+		// [LGLS 2026-09-09] 레이아웃에 그려 둔 범례 견본도 바뀐 색으로 다시 칠한다.
+		//   (검색 색을 노랑으로 바꾸면 메인 화면 범례의 [검색] 칸도 곧바로 노랑이 된다)
+		m_pDoc->ApplyLegendColors();
+		{
+			CWnd* pView = m_pDoc->GetViewObject();
+			if (pView != NULL) pView->Invalidate(TRUE);
+		}
+
 		Invalidate(TRUE);
 
 		// 레이아웃 수정

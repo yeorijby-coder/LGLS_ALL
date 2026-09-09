@@ -335,16 +335,23 @@ COLORREF CScInfo::GetRailColor()
 		DEBUGER_ASSERT_VALID(FALSE);
 	}
 
-	// [LGLS] fix: any suspend(in/out/all stop) -> RED; idle no-longer always-colored.
-	if (m_pSC_DATA->V_SUSPEND == _T("1") || m_pSC_DATA->V_SUSPEND == _T("2") || m_pSC_DATA->V_SUSPEND == _T("3"))
-		return RED;
+	// [LGLS 2026-09-09] 정지 사유별 레일 색 (사용자 결정)
+	//   1 입고금지 / 2 출고금지 / 3 입출고정지 - 붉은 계열로 나눈다.
+	//   설정은 [범례] 창에서 바꿀 수 있다(USER_COLOR_*_SUSPEND).
+	if (m_pSC_DATA->V_SUSPEND == _T("1")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_STO_SUSPEND;
+	if (m_pSC_DATA->V_SUSPEND == _T("2")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_RET_SUSPEND;
+	if (m_pSC_DATA->V_SUSPEND == _T("3")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_ALL_SUSPEND;
 
 	// carrying luggage -> BLUE, otherwise idle -> BLACK (was tautology "!=0 || !=0000" == always true)
+	// [LGLS 2026-09-09] 설비 에러는 정지와 다른 색(기본 보라)으로 낸다.
 	if (m_pSC_DATA->V_ERR_CODE_RD != _T("0000") && m_pSC_DATA->V_ERR_CODE_RD != _T("0") && m_pSC_DATA->V_ERR_CODE_RD != _T(""))
-		return RED;
+		return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_RAIL_ERROR;
 
 	// [LGLS 2026-07-22] m_bInvoke: JOB_TYP_RD(지시 21~완료 25 구간, 스케줄러 유지)=지시 중이면 BLUE, 아니면 BLACK
-	return (m_pSC_DATA->V_JOB_TYP_RD != _T("0") && m_pSC_DATA->V_JOB_TYP_RD != _T("")) ? BLUE : BLACK;
+	// [LGLS 2026-09-09] 작업중 레일색도 설정값을 쓴다(기본 파랑 - 2동 규칙).
+	//   종전엔 BLUE 하드코딩이라 [범례] 창의 [작업중] 설정이 화면에 안 먹었다.
+	return (m_pSC_DATA->V_JOB_TYP_RD != _T("0") && m_pSC_DATA->V_JOB_TYP_RD != _T(""))
+		   ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
 	//RAIL 색상
 }
 
@@ -355,9 +362,12 @@ COLORREF CScInfo::GetRailColor(CSC_DATA* pSC_DATA)
 		DEBUGER_ASSERT_VALID(FALSE);
 	}
 
-	// [LGLS] fix: any suspend(in/out/all stop) -> RED
-	if (pSC_DATA->V_SUSPEND == _T("1") || pSC_DATA->V_SUSPEND == _T("2") || pSC_DATA->V_SUSPEND == _T("3"))
-		return RED;
+	// [LGLS 2026-09-09] 정지 사유별 레일 색 (사용자 결정)
+	//   1 입고금지 / 2 출고금지 / 3 입출고정지 - 붉은 계열로 나눈다.
+	//   설정은 [범례] 창에서 바꿀 수 있다(USER_COLOR_*_SUSPEND).
+	if (pSC_DATA->V_SUSPEND == _T("1")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_STO_SUSPEND;
+	if (pSC_DATA->V_SUSPEND == _T("2")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_RET_SUSPEND;
+	if (pSC_DATA->V_SUSPEND == _T("3")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_ALL_SUSPEND;
 
 	// error code stored as "0" (1-char) or "0000" -> treat both as no-error
 	if (pSC_DATA->V_ERR_CODE_RD != _T("0000") && pSC_DATA->V_ERR_CODE_RD != _T("0") && pSC_DATA->V_ERR_CODE_RD != _T(""))
@@ -366,7 +376,10 @@ COLORREF CScInfo::GetRailColor(CSC_DATA* pSC_DATA)
 	}
 
 	// [LGLS 2026-07-22] m_bInvoke: JOB_TYP_RD(지시 21~완료 25 구간, 스케줄러 유지)=지시 중이면 BLUE, 아니면 BLACK
-	return (pSC_DATA->V_JOB_TYP_RD != _T("0") && pSC_DATA->V_JOB_TYP_RD != _T("")) ? BLUE : BLACK;
+	// [LGLS 2026-09-09] 작업중 레일색도 설정값을 쓴다(기본 파랑 - 2동 규칙).
+	//   종전엔 BLUE 하드코딩이라 [범례] 창의 [작업중] 설정이 화면에 안 먹었다.
+	return (pSC_DATA->V_JOB_TYP_RD != _T("0") && pSC_DATA->V_JOB_TYP_RD != _T(""))
+		   ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
 }
 
 COLORREF CScInfo::GetPostColor()

@@ -8,7 +8,7 @@
 //   (Ecs.rc 의 FILEVERSION/PRODUCTVERSION 은 리소스라 따로 맞춰야 한다)
 // ---------------------------------------------------------------------------
 #define WCS_VERSION_STR     _T("1.0")
-#define WCS_PRODUCT_NAME    _T("LGLS WCS")
+#define WCS_PRODUCT_NAME    _T("LGLS ECS")	// 최종 명칭 = ECS (2026-09-09 확정)
 
 
 #define	SYS_OFFLINE			0

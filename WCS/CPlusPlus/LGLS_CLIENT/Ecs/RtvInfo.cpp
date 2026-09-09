@@ -316,15 +316,22 @@ COLORREF CRtvInfo::GetRailColor()
 		DEBUGER_ASSERT_VALID(FALSE);
 	}
 
-	// [LGLS] any suspend -> RED (match SC/original ECS convention)
-	if (m_pRTV_DATA->V_SUSPEND == _T("1") || m_pRTV_DATA->V_SUSPEND == _T("2") || m_pRTV_DATA->V_SUSPEND == _T("3"))
-		return RED;
+	// [LGLS 2026-09-09] 정지 사유별 레일 색 (사용자 결정)
+	//   1 입고금지 / 2 출고금지 / 3 입출고정지 - 붉은 계열로 나눈다.
+	//   설정은 [범례] 창에서 바꿀 수 있다(USER_COLOR_*_SUSPEND).
+	if (m_pRTV_DATA->V_SUSPEND == _T("1")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_STO_SUSPEND;
+	if (m_pRTV_DATA->V_SUSPEND == _T("2")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_RET_SUSPEND;
+	if (m_pRTV_DATA->V_SUSPEND == _T("3")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_ALL_SUSPEND;
 
+	// [LGLS 2026-09-09] 설비 에러는 정지와 다른 색(기본 보라)으로 낸다.
 	if (m_pRTV_DATA->V_ERR_CODE_RD != _T("0") && m_pRTV_DATA->V_ERR_CODE_RD != _T("0000") && m_pRTV_DATA->V_ERR_CODE_RD != _T(""))
-		return RED;
+		return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_RAIL_ERROR;
 
 	// [LGLS 2026-07-22] m_bInvoke: JOB_TYP_RD(=RTV_DATA.JOB_TYP_OD)=지시 중이면 BLUE, 완료/삭제 클리어 시 BLACK
-	return (m_pRTV_DATA->V_JOB_TYP_RD != _T("0") && m_pRTV_DATA->V_JOB_TYP_RD != _T("")) ? BLUE : BLACK;
+	// [LGLS 2026-09-09] 작업중 레일색도 설정값을 쓴다(기본 파랑 - 2동 규칙).
+	//   종전엔 BLUE 하드코딩이라 [범례] 창의 [작업중] 설정이 화면에 안 먹었다.
+	return (m_pRTV_DATA->V_JOB_TYP_RD != _T("0") && m_pRTV_DATA->V_JOB_TYP_RD != _T(""))
+		   ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
 }
 
 COLORREF CRtvInfo::GetRailColor(CRTV_DATA* pRTV_DATA)
@@ -334,15 +341,22 @@ COLORREF CRtvInfo::GetRailColor(CRTV_DATA* pRTV_DATA)
 		DEBUGER_ASSERT_VALID(FALSE);
 	}
 
-	// [LGLS] any suspend -> RED
-	if (pRTV_DATA->V_SUSPEND == _T("1") || pRTV_DATA->V_SUSPEND == _T("2") || pRTV_DATA->V_SUSPEND == _T("3"))
-		return RED;
+	// [LGLS 2026-09-09] 정지 사유별 레일 색 (사용자 결정)
+	//   1 입고금지 / 2 출고금지 / 3 입출고정지 - 붉은 계열로 나눈다.
+	//   설정은 [범례] 창에서 바꿀 수 있다(USER_COLOR_*_SUSPEND).
+	if (pRTV_DATA->V_SUSPEND == _T("1")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_STO_SUSPEND;
+	if (pRTV_DATA->V_SUSPEND == _T("2")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_RET_SUSPEND;
+	if (pRTV_DATA->V_SUSPEND == _T("3")) return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_ALL_SUSPEND;
 
+	// [LGLS 2026-09-09] 설비 에러는 정지와 다른 색(기본 보라)으로 낸다.
 	if (pRTV_DATA->V_ERR_CODE_RD != _T("0") && pRTV_DATA->V_ERR_CODE_RD != _T("0000") && pRTV_DATA->V_ERR_CODE_RD != _T(""))
-		return RED;
+		return m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_RAIL_ERROR;
 
 	// [LGLS 2026-07-22] m_bInvoke: JOB_TYP_RD(=RTV_DATA.JOB_TYP_OD)=지시 중이면 BLUE, 완료/삭제 클리어 시 BLACK
-	return (pRTV_DATA->V_JOB_TYP_RD != _T("0") && pRTV_DATA->V_JOB_TYP_RD != _T("")) ? BLUE : BLACK;
+	// [LGLS 2026-09-09] 작업중 레일색도 설정값을 쓴다(기본 파랑 - 2동 규칙).
+	//   종전엔 BLUE 하드코딩이라 [범례] 창의 [작업중] 설정이 화면에 안 먹었다.
+	return (pRTV_DATA->V_JOB_TYP_RD != _T("0") && pRTV_DATA->V_JOB_TYP_RD != _T(""))
+		   ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
 }
 
 COLORREF CRtvInfo::GetPostColor()
