@@ -126,6 +126,24 @@ void CScPair::RefreshScWaitCount()
 {
 	if (m_pDoc == NULL) return;
 
+	// [LGLS 2026-09-09] 크레인별 출고 대기 건수 표시 여부 (Ecs.ini [MENU] SCWAIT_VIEW=1/0, 기본 1=표시)
+	//   0 으로 두면 조회도 하지 않고(1초 주기 JOB_MST 집계) 레이아웃의 표시 칸을 비운다.
+	if (::GetPrivateProfileInt(_T("MENU"), _T("SCWAIT_VIEW"), 1, ECS_INI_FILE) == 0)
+	{
+		for (int nScClr = 1; nScClr <= 5; nScClr++)
+		{
+			CString strCidClr;
+			strCidClr.Format(_T("9000090%d"), nScClr);
+			CDciControl* pCtrlClr = m_pDoc->GetDciControl_FindAllLayout(strCidClr);
+			if (pCtrlClr != NULL && pCtrlClr->m_strText != _T(""))
+			{
+				pCtrlClr->m_strText = _T("");
+				pCtrlClr->InvalidateControl(m_pDoc->m_hWndView, TRUE);
+			}
+		}
+		return;
+	}
+
 	CString strSql;
 	strSql.Format(
 		_T(" SELECT START_POS, COUNT(*) AS CNT ")

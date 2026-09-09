@@ -88,7 +88,7 @@ for i, t in enumerate(by.keys(), 1):
     nm, desc = TDESC.get(t, ('', ''))
     lst.append([i, t, nm, len(by[t]), tinfo.get(t, ''), desc])
 table(d, ['No', '테이블', '한글명', '컬럼수', '행수(현재)', '설명'], lst, widths=[0.9, 4.2, 3.2, 1.3, 1.6, 6.5], font=8)
-para(d, '※ 이 현장에서 쓰지 않는 테이블(%s)과 예비 컬럼은 제외했다.' % ', '.join(EXCLUDE), color=GRAY, size=9)
+para(d, '※ 이 현장 운전에 쓰는 테이블만 실었다.', color=GRAY, size=9)
 d.add_page_break()
 d.add_heading('2. 테이블 정의', 1)
 for t, cols in by.items():
