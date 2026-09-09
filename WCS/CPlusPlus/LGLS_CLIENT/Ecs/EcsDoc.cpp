@@ -1139,12 +1139,13 @@ BOOL CEcsDoc::IsConnectDB(CURMDBAccess* pDbAccess)
 	if(pDbAccess == NULL){ return FALSE; };
 	if(pDbAccess->m_pAdoDB == NULL){ return FALSE; };
 	if(pDbAccess->m_pAdoDB->m_bConnected == FALSE)
-	{ 
+	{
+		// [LGLS 2026-09-10] 종전에는 한 번 확인에 ConnectDB 를 두 번 불렀다.
+		//   접속이 안 되는 동안 실패 알림도 두 배로 났다. 한 번만 시도한다.
+		BOOL bOk = pDbAccess->m_pAdoDB->ConnectDB();
 		if (m_blJobListDb == FALSE)
-		{
-			m_blJobListDb = pDbAccess->m_pAdoDB->ConnectDB();
-		}
-		return pDbAccess->m_pAdoDB->ConnectDB(); 
+			m_blJobListDb = bOk;
+		return bOk;
 	};
 	return pDbAccess->m_pAdoDB->m_bConnected;
 }

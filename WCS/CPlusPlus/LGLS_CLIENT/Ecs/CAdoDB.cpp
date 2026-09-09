@@ -13,6 +13,49 @@
 
 IMPLEMENT_DYNCREATE(CAdoDB, CObject)
 
+
+// [LGLS 2026-09-10] 접속 실패 알림.
+//   종전에는 실패마다 AfxMessageBox 를 띄웠다. 모달 상자 안에서 메시지 루프가 돌고
+//   그 안에서 타이머가 또 접속을 시도해 상자가 겹겹이 쌓였다(실측 57개).
+//   실패는 항상 파일에 남기고, 상자는 5분에 한 번만 띄운다.
+static void ReportConnectFail(const CString& strMsg)
+{
+	static DWORD s_dwLastBox = 0;
+	static CCriticalSection s_cs;
+	CSingleLock lock(&s_cs, TRUE);
+
+	// 1) 파일 로그 (실행 파일 폴더\LOG)
+	try
+	{
+		CString strDir = g_strEcsPath + _T("\\LOG");
+		::CreateDirectory(strDir, NULL);
+		CTime tm = CTime::GetCurrentTime();
+		CString strPath;
+		strPath.Format(_T("%s\\ECS_CONNECT_%s.log"), (LPCTSTR)strDir, (LPCTSTR)tm.Format(_T("%Y%m%d")));
+		CStdioFile f;
+		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate | CFile::modeWrite | CFile::typeText))
+		{
+			f.SeekToEnd();
+			CString strLine;
+			strLine.Format(_T("[%s] %s\n"), (LPCTSTR)tm.Format(_T("%Y-%m-%d %H:%M:%S")), (LPCTSTR)strMsg);
+			strLine.Replace(_T("\r\n"), _T(" / "));
+			f.WriteString(strLine);
+			f.Close();
+		}
+	}
+	catch (CFileException* e) { e->Delete(); }
+	catch (...) { }
+
+	TRACE(_T("\n%s\n"), (LPCTSTR)strMsg);
+
+	// 2) 상자는 5분에 한 번만
+	DWORD dwNow = ::GetTickCount();
+	if (s_dwLastBox != 0 && (dwNow - s_dwLastBox) < 5 * 60 * 1000)
+		return;
+	s_dwLastBox = dwNow;
+	AfxMessageBox(strMsg);
+}
+
 CAdoDB::CAdoDB()
 {
 	m_pDoc = NULL;
@@ -123,14 +166,14 @@ BOOL CAdoDB::ConnectDB() //보류6
 		_bstr_t bstrErrMsg(err.ErrorMessage());
 		::WritePrivateProfileString(_T("CONNECT"), _T("CONNECT"), strConnet , ECS_INI_FILE);
 		m_strErrMsg.Format(_T("ConnectDB:%s\n%s\n%s"), (LPCTSTR)bstrSource,(LPCTSTR)bstrDescription, (LPCTSTR)bstrErrMsg );
-		AfxMessageBox(m_strErrMsg);
+		ReportConnectFail(m_strErrMsg);
 		return FALSE;
 	}
 
 	catch(...)
 	{
 		m_strErrMsg = "ConnectDB:DataBase Connect Failed!!!(Check ODBC)";
-		AfxMessageBox(m_strErrMsg);
+		ReportConnectFail(m_strErrMsg);
 		return FALSE;
 	}
 
