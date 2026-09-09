@@ -20,17 +20,44 @@ CXmlDom::~CXmlDom(void)
 }
 
 // CConvert 멤버 함수
+// [LGLS 2026-09-10] 종전에는 %s 에 (LPCSTR)e->reason 을 넘겼다.
+//   유니코드 빌드에서 %s 는 wchar_t* 를 기대하므로 ANSI 바이트열을 와이드로 훑다가
+//   프로세스가 죽었다(기동 크래시 Ecs20260910_003352.RPT).
+//   오류를 알리려던 코드가 오류를 못 알리고 죽던 자리라, parseError 가 비어 있거나
+//   COM 예외가 나는 경우까지 버티게 한다.
 void CXmlDom::SetErrorMessage(MSXML2::IXMLDOMParseErrorPtr& e, const CString& strMsg)
 {
+	long nLine = 0;
+	long nPos  = 0;
+	CString strReason;
+
+	try
+	{
+		if (e != NULL)
+		{
+			nLine = e->line;
+			nPos  = e->linepos;
+			_bstr_t bstrReason = e->reason;
+			if ((BSTR)bstrReason != NULL)
+				strReason = (LPCTSTR)bstrReason;
+		}
+	}
+	catch (_com_error&) { }
+	catch (...)         { }
+
+	strReason.Trim();
+	if (strReason.IsEmpty())
+		strReason = _T("(원인 없음 - 파일이 없거나 읽을 수 없음)");
+
 	if (strMsg.IsEmpty())
 	{
-		m_strErrorMessage.Format(_T("Source: %ld line, %ld pos\nDescription: %s"), 
-			e->line, e->linepos, (LPCSTR)e->reason);
+		m_strErrorMessage.Format(_T("Source: %ld line, %ld pos\nDescription: %s"),
+			nLine, nPos, (LPCTSTR)strReason);
 	}
 	else
 	{
-		m_strErrorMessage.Format(_T("%s\n\nSource: %ld line, %ld pos\nDescription: %s"), 
-			strMsg, e->line, e->linepos, (LPCSTR)e->reason);
+		m_strErrorMessage.Format(_T("%s\n\nSource: %ld line, %ld pos\nDescription: %s"),
+			(LPCTSTR)strMsg, nLine, nPos, (LPCTSTR)strReason);
 	}
 }
 

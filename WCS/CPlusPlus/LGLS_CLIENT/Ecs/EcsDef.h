@@ -63,8 +63,8 @@
 #define ECS_LAYOUT_FILE_CHIN_HWASUNG_ASSEMBLE  			_T(".\\EcsLayout_CHIN_Assemble.xml")
 
 //LFC Gµ¿ File Definition
-#define ECS_DEFINE_FILE									_T(".\\EcsDefine.xml")
-#define ECS_LAYOUT_FILE						  			_T(".\\EcsLayout1.xml")
+#define ECS_DEFINE_FILE									g_strEcsPath + _T("\\EcsDefine.xml")
+#define ECS_LAYOUT_FILE						  			g_strEcsPath + _T("\\EcsLayout1.xml")
 
 
 #define ECS_CODE_FILE			g_strEcsPath + _T("\\EcsCode.dat")

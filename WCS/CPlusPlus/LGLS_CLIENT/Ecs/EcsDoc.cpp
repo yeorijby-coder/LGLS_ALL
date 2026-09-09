@@ -1203,7 +1203,10 @@ BOOL CEcsDoc::Initialize()
 		CEcsLayout* pEcsLayout = new CEcsLayout();
 
 		CString strLayOutFilePath;
-		strLayOutFilePath.Format(_T(".\\EcsLayout%d.xml"), i + 1);
+		// [LGLS 2026-09-10] ".\" 는 현재 디렉터리다. 재부팅 뒤 세션 복원처럼
+		//   작업 폴더가 다르게 뜨면 레이아웃을 못 찾고, 그 오류를 알리려던
+		//   CXmlDom::SetErrorMessage 에서 죽었다(Ecs20260910_003352.RPT).
+		strLayOutFilePath.Format(_T("%s\\EcsLayout%d.xml"), g_strEcsPath, i + 1);
 
 		if (!pEcsLayout->LoadXml(strLayOutFilePath, m_strKioskNo))
 		{
