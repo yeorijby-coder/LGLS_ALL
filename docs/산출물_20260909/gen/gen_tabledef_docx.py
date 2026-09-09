@@ -6,7 +6,6 @@ from gen_common import *
 
 # 테이블 설명 (사용 여부/역할)
 TDESC = OrderedDict([
- ('ALL_TASK_LOG', ('통합 태스크 로그', 'ALL_TASK(EQP/IO/HOST 통합 프로그램)가 남기는 스레드별 운전 로그. 같은 내용이 LOG 폴더에 스레드별/날짜별 파일로 파일로도 쌓이며, 보관기간(기본 365일)이 지나면 파일과 함께 자동 삭제된다.')),
  ('JOB_MST', ('작업 마스터', '진행 중 입/출고 작업. 완료(09/19/29)되면 JOB_MST_HIS 로 이관되고 삭제된다. 스케줄러(IO_TASK)가 상태를 진행시킨다.')),
  ('JOB_MST_HIS', ('작업 이력', '작업 상태 변화 이력(상태별 1행). 운전 화면 [작업 로그] 조회 대상.')),
  ('CV_DATA', ('컨베이어 트랙 데이터', '트랙(101~132)별 PLC 읽기값(_RD)과 지시값(_OD). 설비 통신(WCS_TASK_CV)이 갱신, 스케줄러가 지시.')),
@@ -63,11 +62,9 @@ CDESC = {
  'CDX_CD': '코드군', 'CCD_CD': '코드', 'CCD_NM_KOR': '명칭(한글)', 'CCD_NM_ENG': '명칭(영문)', 'CCD_NM_CHIN': '명칭(중문)', 'CCD_EPR_ORD': '표시 순서', 'CCD_CD_YN': '사용 여부',
  'TABLE_NAME': '대상 테이블', 'CYCLE': '보존 주기', 'UNIT': '단위(DAY)', 'PGR_NM': '프로그램(스레드) 명', 'MSG': '메시지', 'LOG_MSG': '메시지',
  'USER_ID': '사용자 ID', 'USER_NM': '사용자명', 'USER_PW': '비밀번호', 'GRP_ID': '그룹 ID', 'WIN_ID': '화면 ID', 'UPD_YN': '수정 권한', 'EXE_YN': '실행 권한', 'INS_YN': '입력 권한', 'SEL_YN': '조회 권한',
- 'LOG_SEQ': '일련번호(자동 증가)', 'TASK_NM': '태스크(EQP/IO/HOST/ALL)', 'THREAD_NM': '스레드명(EQP_CV, IO_SCH, HOST_CLI 등)',
- 'LOG_LEVEL': '구분(INFO/IMP/ERROR 등)', 'MESSAGE': '내용',
  'BANK': '뱅크', 'BAY': '베이', 'LEVEL': '레벨', 'CELL_STATUS': '셀 상태', 'CELL_SC_NO': '담당 크레인',
 }
-EXCLUDE = ['AUTO_SC_WORK','BCR_MST','CELL_DTL','CHG_LANG','DEST_DEF','EVENT_LOG','WAIT_TRACK','WC_DATA','WC_HIS','HOST_EMPTY_PLT','DUAL']
+EXCLUDE = ['ALL_TASK_LOG','CELL_MST','CELL_DTL','AUTO_SC_WORK','BCR_MST','CELL_DTL','CHG_LANG','DEST_DEF','EVENT_LOG','WAIT_TRACK','WC_DATA','WC_HIS','HOST_EMPTY_PLT','DUAL']
 SPARE = re.compile(r'^(SPARE|RESERVE|DUMMY)\d*$', re.I)
 rows = [l.split('|') for l in open(os.path.join(SCRATCH, 'schema.txt'), encoding='cp949', errors='replace').read().splitlines() if '|' in l and not l.startswith('TABLE_NAME') and not set(l.strip()) <= set('-|')]
 by = OrderedDict()

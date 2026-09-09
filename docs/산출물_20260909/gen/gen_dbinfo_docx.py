@@ -5,7 +5,7 @@ from gen_common import *
 
 d = new_doc('DB 구축 정보', 'LGLS_MCS_IO (Microsoft SQL Server)')
 d.add_heading('1. DB 구축 정보', 1)
-para(d, '구 WMS(2010, Oracle) 의 "DB구축 정보" 양식을 현재 WCS 시스템의 MS-SQL 기준으로 다시 정리한 것이다. '
+para(d, '구 WMS(2010, Oracle) 의 "DB구축 정보" 양식을 현재 ECS 시스템의 MS-SQL 기준으로 다시 정리한 것이다. '
         '개발 PC 값은 현재 시험 환경, 서버 값은 이관 시 정할 값(공란은 구축 시 기입).', color=GRAY)
 rows = [
  ['1', 'DB 종류', 'Microsoft SQL Server', '개발 PC : SQL Server Express (localhost\\SQLEXPRESS). 서버 : Standard 이상 권장(Express 도 동작)'],

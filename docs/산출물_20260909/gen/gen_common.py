@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""공통 도우미 : LGLS WCS 문서 산출물 생성용 (2026-09-09 판 : 현행 스키마 재추출)"""
+"""공통 도우미 : LGLS ECS 문서 산출물 생성용 (2026-09-09 판 : 현행 스키마 재추출)"""
 import os, re
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor, Inches
@@ -16,7 +16,7 @@ os.makedirs(OUT, exist_ok=True)
 NAVY = RGBColor(0x1E, 0x27, 0x61)
 GRAY = RGBColor(0x66, 0x66, 0x66)
 DATE = '2026-09-09'
-AUTHOR = 'LGLS WCS Renewal'
+AUTHOR = 'LGLS ECS Renewal'
 
 def new_doc(title, subtitle=None, landscape=False):
     d = Document()
@@ -41,7 +41,7 @@ def new_doc(title, subtitle=None, landscape=False):
         r = p.add_run(subtitle); r.font.size = Pt(13); r.font.color.rgb = GRAY
     for _ in range(10): d.add_paragraph()
     p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run('WCS Renewal (구 ECS 대체)   |   작성일 %s   |   Ver 1.1' % DATE); r.font.size = Pt(10); r.font.color.rgb = GRAY
+    r = p.add_run('ECS Renewal   |   작성일 %s   |   Ver 1.1' % DATE); r.font.size = Pt(10); r.font.color.rgb = GRAY
     d.add_page_break()
     d.add_heading('문서 이력', 1)
     table(d, ['버전', '일자', '작성', '내용'], [['1.0', '2026-09-03', AUTHOR, '최초 작성'], ['1.1', DATE, AUTHOR, '기타 수정']], widths=[1.5, 2.5, 3.0, 9.0])

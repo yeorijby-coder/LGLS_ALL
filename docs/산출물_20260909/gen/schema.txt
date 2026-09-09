@@ -1,11 +1,5 @@
 TABLE_NAME|ORDINAL_POSITION|COLUMN_NAME|DATA_TYPE|LEN|IS_NULLABLE|DEF|PK
 ----------|----------------|-----------|---------|---|-----------|---|--
-all_task_log|1|log_seq|bigint||NO||Y
-all_task_log|2|ins_dt|datetime2||NO||
-all_task_log|3|task_nm|varchar|20|NO||
-all_task_log|4|thread_nm|varchar|30|NO||
-all_task_log|5|log_level|varchar|10|NO||
-all_task_log|6|message|nvarchar|2000|YES||
 auto_sc_work|1|wh_typ|varchar|4|YES||
 auto_sc_work|2|sc_no|varchar|10|YES||
 auto_sc_work|3|lugg_no|varchar|8|YES||

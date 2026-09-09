@@ -479,7 +479,8 @@ void CManualJob::OnBnClickedBtnManulJobInsert()
 				return ;
 			}
 
-			if(strCellScPltJobTyp != strCvScPltJobTyp)
+			// [LGLS 2026-09-09] CELL_MST 미사용이면 PLT 구분 근거가 없다 - 비교 생략
+			if(!strCellScPltJobTyp.IsEmpty() && strCellScPltJobTyp != strCvScPltJobTyp)
 			{
 				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("선택한 작업대와 선택한 로케이션은 PLT 정보가 다릅니다.")));
 				return ;
@@ -525,7 +526,8 @@ void CManualJob::OnBnClickedBtnManulJobInsert()
 				return ;
 			}
 
-			if(strCellScPltJobTyp != strCvScPltJobTyp)
+			// [LGLS 2026-09-09] CELL_MST 미사용이면 PLT 구분 근거가 없다 - 비교 생략
+			if(!strCellScPltJobTyp.IsEmpty() && strCellScPltJobTyp != strCvScPltJobTyp)
 			{
 				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("선택한 작업대와 선택한 로케이션은 PLT 정보가 다릅니다.")));
 				return ;
@@ -585,7 +587,8 @@ void CManualJob::OnBnClickedBtnManulJobInsert()
 				return ;
 			}
 
-			if(strCellScPltJobTyp != strCvScPltJobTyp)
+			// [LGLS 2026-09-09] CELL_MST 미사용이면 PLT 구분 근거가 없다 - 비교 생략
+			if(!strCellScPltJobTyp.IsEmpty() && strCellScPltJobTyp != strCvScPltJobTyp)
 			{
 				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출발 로케이션과 도착 로케이션의 PLT 정보가 다릅니다.")));
 				return ;
@@ -637,7 +640,8 @@ void CManualJob::OnBnClickedBtnManulJobInsert()
 				return ;
 			}
 
-			if(strCellScPltJobTyp != strCvScPltJobTyp)
+			// [LGLS 2026-09-09] CELL_MST 미사용이면 PLT 구분 근거가 없다 - 비교 생략
+			if(!strCellScPltJobTyp.IsEmpty() && strCellScPltJobTyp != strCvScPltJobTyp)
 			{
 				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출발 로케이션과 도착 로케이션의 PLT 정보가 다릅니다.")));
 				return ;
@@ -671,7 +675,8 @@ void CManualJob::OnBnClickedBtnManulJobInsert()
 				return ;
 			}
 
-			if(strCellScPltJobTyp != strCvScPltJobTyp)
+			// [LGLS 2026-09-09] CELL_MST 미사용이면 PLT 구분 근거가 없다 - 비교 생략
+			if(!strCellScPltJobTyp.IsEmpty() && strCellScPltJobTyp != strCvScPltJobTyp)
 			{
 				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출발 작업대와 도착 작업대의 PLT 정보가 다릅니다.")));
 				return ;
@@ -1161,6 +1166,30 @@ CString CManualJob::GetQrySelectCELLMST(CString strBANK, CString strBAY, CString
 	CString strSql = _T("");
 	int nRowCnt = 0;
 	CString strMessage = _T("");
+
+	// [LGLS 2026-09-09] 이 현장은 셀(CELL_MST) 관리를 쓰지 않는다.
+	//   Ecs.ini [CNF] USE_CELL_MST=0(기본) 이면 CELL_MST 를 조회하지 않고
+	//   SC_DEF_INF.AREA(크레인별 담당 뱅크 목록, 901="01,02" …)로 담당 크레인만 구한다.
+	//   셀 사용가능 여부/PLT 구분은 판정 근거가 없으므로 "제한 없음" 으로 둔다.
+	if (::GetPrivateProfileInt(_T("CNF"), _T("USE_CELL_MST"), 0, ECS_INI_FILE) == 0)
+	{
+		strSql = CRLF + _T("SELECT SC_NO ");
+		strSql += CRLF + _T("  FROM SC_DEF_INF ");
+		strSql += CRLF + _T(" WHERE WH_TYP = ") + CLib::Quot(m_pDoc->m_WH_TYP);
+		strSql += CRLF + _T("   AND ',' + REPLACE(AREA, ' ', '') + ',' LIKE '%,' + ")
+				+ _T("RIGHT('0' + CAST(CAST(") + CLib::Quot(strBANK) + _T(" AS INT) AS VARCHAR(2)), 2) + ',%'");
+
+		_RecordsetPtr pRsAlt = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+		CRecordSetWrap* pRswAlt = new CRecordSetWrap(pRsAlt);
+		pRswAlt->MoveFirst();
+		strSC_NO = pRswAlt->GetItem(_T("SC_NO"));
+		delete pRswAlt;
+
+		strCELL_USE_YN    = _T("Y");	// 금지랙 개념 없음
+		strSC_PLT_JOB_TYP = _T("");		// PLT 구분 비교 생략(호출부에서 빈 값이면 건너뛴다)
+		nCnt = nRowCnt;
+		return strSql;
+	}
 
 	strSql += CRLF + _T("SELECT CELL_SC_NO AS SC_NO, CELL_USE_YN, SC_PLT_JOB_TYP ");	// [LGLS 2026-07-19] 실컬럼 CELL_SC_NO
 	strSql += CRLF + _T("  FROM CELL_MST ");

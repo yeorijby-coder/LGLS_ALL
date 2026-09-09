@@ -226,6 +226,7 @@ BOOL CSemiTestDlg::ResolveLocRow(int r)
 	}
 
 	CString strSql, strMsg; int nCnt = 0;
+	// [LGLS 2026-09-09] CELL_MST 미사용(기본) : 아래 조회가 0건이면 SC_DEF_INF 로 크레인을 구한다
 	strSql.Format(_T("SELECT TOP 1 BANK, BAY, LEV, CELL_NO, CELL_SC_NO FROM CELL_MST")
 	              _T(" WHERE WH_TYP = '%s' AND CELL_USE_YN = 'Y'")
 	              _T("   AND CAST(BANK AS INT) = %d AND CAST(BAY AS INT) = %d AND CAST(LEV AS INT) = %d"),
@@ -235,6 +236,19 @@ BOOL CSemiTestDlg::ResolveLocRow(int r)
 	if (nCnt <= 0)
 	{
 		delete pRsw;
+		// [LGLS 2026-09-09] CELL_MST 를 쓰지 않는 현장이면 뱅크만으로 담당 크레인을 정한다.
+		if (::GetPrivateProfileInt(_T("CNF"), _T("USE_CELL_MST"), 0, ECS_INI_FILE) == 0)
+		{
+			int nScAlt = (nBank + 1) / 2;			// 뱅크 1,2→S/C#1 … 9,10→S/C#5
+			if (nScAlt < 1) nScAlt = 1;
+			if (nScAlt > 5) nScAlt = 5;
+			m_row[r].strBank.Format(_T("%02d"), nBank);
+			m_row[r].strBay.Format(_T("%03d"), nBay);
+			m_row[r].strLev.Format(_T("%02d"), nLev);
+			m_row[r].strScNo.Format(_T("%d"), 900 + nScAlt);
+			m_row[r].nCrane = nScAlt - 1;
+			return TRUE;
+		}
 		CString strErr; strErr.Format(_T("%02d-%03d-%02d : CELL_MST 에 없는 로케이션입니다"), nBank, nBay, nLev);
 		AddLog(r + 1, _T("-"), _T("-"), _T("Client"), _T("CSemiTestDlg::ResolveLocRow"), strErr);
 		return FALSE;

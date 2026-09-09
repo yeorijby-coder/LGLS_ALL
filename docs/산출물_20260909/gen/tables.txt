@@ -1,6 +1,5 @@
 tbl|descr|rows_
 ---|-----|-----
-all_task_log||415518
 auto_sc_work||0
 bcr_mst||0
 cell_dtl||0
@@ -36,5 +35,5 @@ user_mst||1
 wait_track||0
 wc_data||0
 wc_his||0
-wcs_client_log||33
+wcs_client_log||39
 wcs_log_pgr||477305

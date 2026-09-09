@@ -34,7 +34,6 @@ namespace ALL_TASK
         private readonly Dictionary<TaskKind, Label>  m_dicLblState = new Dictionary<TaskKind, Label>();
 
         private Label m_lblLogDir, m_lblLogKeep, m_lblLogDb, m_lblLogQue;
-        private DateTime m_dtLastDbPurge = DateTime.MinValue;
 
         public AllTaskMain()
         {
@@ -96,27 +95,12 @@ namespace ALL_TASK
                 strDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, strDir);
 
             int nKeep = IniInt("LOG", "KEEP_DAYS", 365);
-            bool bDb  = (IniInt("LOG", "DB", 1) != 0);
 
-            // DB 접속문자열은 설비 태스크의 INI([DB_2])를 그대로 쓴다 - 같은 DB 다.
-            string strConn = "";
-            try
-            {
-                string strIp = "", strDb = "", strPort = "", strUser = "", strPw = "", strMsg = "";
-                WCS_TASK_CV.cDefApi.GsGetInitPorFileDB_2(ref strIp, ref strDb, ref strPort,
-                                                         ref strUser, ref strPw, ref strMsg);
-                if (strIp.Length > 0 && strDb.Length > 0)
-                    strConn = "Server=" + strIp + ";Database=" + strDb
-                            + ";User ID=" + strUser + ";Password=" + strPw + ";";
-            }
-            catch { }
-
-            WcsCommon.cTaskLog.Start(strDir, nKeep, strConn, bDb && strConn.Length > 0);
+            WcsCommon.cTaskLog.Start(strDir, nKeep, "", false);   // [LGLS 2026-09-09] DB 적재 없음
 
             m_lblLogDir.Text  = "폴더 : " + WcsCommon.cTaskLog.RootDir;
             m_lblLogKeep.Text = "보관 : " + WcsCommon.cTaskLog.KeepDays + "일 (스레드별 폴더 / 날짜별 파일)";
-            m_lblLogDb.Text   = "DB   : " + (WcsCommon.cTaskLog.DbEnabled
-                                             ? "all_task_log 적재" : "미사용 (접속정보 없음 또는 [LOG] DB=0)");
+            m_lblLogDb.Text   = "DB   : 적재 없음 - 운전 이력은 종전대로 WCS_LOG_PGR 에 남는다";
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -275,15 +259,6 @@ namespace ALL_TASK
             {
                 RefreshState();
 
-                // 하루 한 번 DB 로그도 보관기간 지난 것을 지운다
-                if (m_dtLastDbPurge.Date != DateTime.Today)
-                {
-                    m_dtLastDbPurge = DateTime.Now;
-                    int n = WcsCommon.cTaskLog.PurgeDb();
-                    if (n > 0)
-                        WcsCommon.cTaskLog.Write("ALL", "ALL_TASK", "INFO",
-                            "all_task_log 보관기간 경과 " + n + "건 삭제");
-                }
             }
             catch { }
             tmrState.Enabled = true;
@@ -325,11 +300,8 @@ namespace ALL_TASK
             }
             finally { lsvThread.EndUpdate(); }
 
-            m_lblLogQue.Text = string.Format("큐 {0}건 / 버림 {1}건 / DB실패 {2}건{3}",
-                WcsCommon.cTaskLog.QueueCount, WcsCommon.cTaskLog.DroppedCount,
-                WcsCommon.cTaskLog.DbFailCount,
-                string.IsNullOrEmpty(WcsCommon.cTaskLog.LastDbError)
-                    ? "" : ("  (" + WcsCommon.cTaskLog.LastDbError + ")"));
+            m_lblLogQue.Text = string.Format("큐 {0}건 / 버림 {1}건",
+                WcsCommon.cTaskLog.QueueCount, WcsCommon.cTaskLog.DroppedCount);
 
             int nRun = 0;
             foreach (TaskHost th in m_lstTask) if (th.IsRunning) nRun++;

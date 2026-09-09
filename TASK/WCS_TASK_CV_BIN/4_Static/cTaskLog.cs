@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -16,7 +14,8 @@ namespace WcsCommon
     //   (cLogCols.cs 와 같이 네 프로젝트에 링크로 공유되는 파일이다)
     //
     //   파일 : <RootDir>\<스레드명>\<스레드명>_yyyyMMdd.log   (CP949, CRLF)
-    //   DB   : all_task_log  (없으면 최초 1회 자동 생성)
+    //   [LGLS 2026-09-09] DB 적재는 하지 않는다(사용자 지시). 각 태스크가 이미
+    //   WCS_LOG_PGR 에 운전 이력을 남기므로 중복이고 테이블만 늘어난다.
     //
     //   호출 측(기존 CLogging.Write / CLog.WriteLog)은 Write() 한 줄만 덧붙이면 되고,
     //   실제 파일/DB 쓰기는 이 클래스의 백그라운드 스레드가 맡는다. 로그 때문에
@@ -190,7 +189,6 @@ namespace WcsCommon
             }
 
             WriteFiles(lst);
-            if (m_bDbEnabled) WriteDb(lst);
         }
 
         private static void WriteFiles(List<Item> pLst)
@@ -240,84 +238,6 @@ namespace WcsCommon
         }
 
         // ─────────────────────────────────────────────────────────────────
-        // DB 적재
-        // ─────────────────────────────────────────────────────────────────
-
-        private static void WriteDb(List<Item> pLst)
-        {
-            try
-            {
-                using (SqlConnection con = new SqlConnection(m_strDbConn))
-                {
-                    con.Open();
-
-                    if (!m_bDbChecked)
-                    {
-                        EnsureTable(con);
-                        m_bDbChecked = true;
-                    }
-
-                    using (SqlTransaction trn = con.BeginTransaction())
-                    using (SqlCommand cmd = con.CreateCommand())
-                    {
-                        cmd.Transaction = trn;
-                        cmd.CommandText =
-                            "INSERT INTO all_task_log (ins_dt, task_nm, thread_nm, log_level, message) " +
-                            "VALUES (@dt, @task, @thread, @lvl, @msg)";
-
-                        SqlParameter pDt  = cmd.Parameters.Add("@dt",     SqlDbType.DateTime2, 3);
-                        SqlParameter pTk  = cmd.Parameters.Add("@task",   SqlDbType.VarChar,  20);
-                        SqlParameter pTh  = cmd.Parameters.Add("@thread", SqlDbType.VarChar,  30);
-                        SqlParameter pLv  = cmd.Parameters.Add("@lvl",    SqlDbType.VarChar,  10);
-                        SqlParameter pMsg = cmd.Parameters.Add("@msg",    SqlDbType.NVarChar, 2000);
-
-                        foreach (Item it in pLst)
-                        {
-                            pDt.Value  = it.Dt;
-                            pTk.Value  = it.Task;
-                            pTh.Value  = it.Thread;
-                            pLv.Value  = (it.Level.Length > 10) ? it.Level.Substring(0, 10) : it.Level;
-                            pMsg.Value = (it.Message.Length > 2000) ? it.Message.Substring(0, 2000) : it.Message;
-                            cmd.ExecuteNonQuery();
-                        }
-                        trn.Commit();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                DbFailCount += pLst.Count;
-                LastDbError = ex.Message;
-                m_bDbChecked = false;        // 다음 번에 테이블 존재 확인부터 다시
-            }
-        }
-
-        private static void EnsureTable(SqlConnection pCon)
-        {
-            string strSql =
-                "IF OBJECT_ID('all_task_log', 'U') IS NULL " +
-                "BEGIN " +
-                "  CREATE TABLE all_task_log ( " +
-                "    log_seq   bigint IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
-                "    ins_dt    datetime2(3)   NOT NULL, " +
-                "    task_nm   varchar(20)    NOT NULL, " +
-                "    thread_nm varchar(30)    NOT NULL, " +
-                "    log_level varchar(10)    NOT NULL, " +
-                "    message   nvarchar(2000) NULL " +
-                "  ); " +
-                "  CREATE INDEX ix_all_task_log_dt ON all_task_log (ins_dt); " +
-                "  CREATE INDEX ix_all_task_log_th ON all_task_log (thread_nm, ins_dt); " +
-                "END";
-
-            using (SqlCommand cmd = pCon.CreateCommand())
-            {
-                cmd.CommandText = strSql;
-                cmd.CommandTimeout = 30;
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────
         // 보관기간 경과 파일 삭제 (기본 365일). 하루 한 번만 돈다.
         // ─────────────────────────────────────────────────────────────────
 
@@ -358,30 +278,5 @@ namespace WcsCommon
             catch { }
         }
 
-        /// <summary>보관기간이 지난 DB 로그도 지운다. 호출 측(ALL_TASK)이 하루 한 번 부른다.</summary>
-        public static int PurgeDb()
-        {
-            if (!m_bDbEnabled) return 0;
-            try
-            {
-                using (SqlConnection con = new SqlConnection(m_strDbConn))
-                {
-                    con.Open();
-                    using (SqlCommand cmd = con.CreateCommand())
-                    {
-                        cmd.CommandText = "DELETE FROM all_task_log WHERE ins_dt < @lim";
-                        cmd.Parameters.Add("@lim", SqlDbType.DateTime2, 3).Value =
-                            DateTime.Today.AddDays(-m_nKeepDays);
-                        cmd.CommandTimeout = 120;
-                        return cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LastDbError = ex.Message;
-                return -1;
-            }
-        }
     }
 }
