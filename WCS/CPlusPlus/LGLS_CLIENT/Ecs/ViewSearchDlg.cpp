@@ -192,7 +192,9 @@ void CViewSearchDlg::RenameResource( EN_LANG m_enLang)
 
 	CString strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_search\\"), _T("dlg_search"), strExtension);
 	CString strValue = CLib::GetIniStringFromPath(strFullPath, _T("dlgname"), (int)m_enLang);
-	SetWindowText(_T("찾기			Ecs - 2021.02.18 (V.01)"));
+	// [LGLS 2026-09-09] 번역한 제목(dlgname)을 하드코딩이 덮어쓰고 있었다 - 번역 + 버전으로
+	if (!strValue.IsEmpty())
+		SetWindowText(strValue + _T("   -   ") WCS_PRODUCT_NAME _T(" ") WCS_VERSION_STR);
 
 	//
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_search\\"), _T("dlg_search"), strExtension);

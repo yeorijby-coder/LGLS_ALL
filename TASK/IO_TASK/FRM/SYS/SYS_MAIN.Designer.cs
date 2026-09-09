@@ -284,7 +284,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(61, 12);
             this.label1.TabIndex = 836;
-            this.label1.Text = "2021.01.30";
+            this.label1.Text = WcsCommon.cWcsVer.Short;   // [LGLS 2026-09-09] 버전 표기 단일화
             //
             // SYS_MAIN
             //
@@ -295,7 +295,7 @@
             this.Font = new System.Drawing.Font("돋움", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "SYS_MAIN";
-            this.Text = "IO_TASK_SEMI_FINISH (스케쥴러)";
+            this.Text = WcsCommon.cWcsVer.Title + " - IO_TASK (스케쥴러)";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SYS_MAIN_FormClosing);
             this.Load += new System.EventHandler(this.SYS_MAIN_Load);
             ((System.ComponentModel.ISupportInitialize)(this.picDbCn0)).EndInit();

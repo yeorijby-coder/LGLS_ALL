@@ -93,6 +93,7 @@
     <Compile Include="3_Lib\cCmLib.cs" />
     <Compile Include="4_Static\cLogCols.cs" />
     <Compile Include="4_Static\cTaskLog.cs" />
+    <Compile Include="4_Static\cWcsVer.cs" />
     <Compile Include="4_Static\DbLang.cs" />
     <Compile Include="5_DB\cDbBaseOra.cs" />
     <Compile Include="5_DB\cDbUse.cs" />

@@ -7,6 +7,7 @@ namespace TSK_HostCom
 {
 	static class modUpdate
 	{
-		 public const string __UPDATE_DATE__ = "Ver.2021.01.28";
+		 // [LGLS 2026-09-09] 버전 표기 단일화 (WcsCommon.cWcsVer)
+		 public static readonly string __UPDATE_DATE__ = WcsCommon.cWcsVer.Short;
 	}
 }

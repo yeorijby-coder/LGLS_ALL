@@ -768,7 +768,7 @@
             this.Font = new System.Drawing.Font("돋움", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "SYS_MAIN";
-            this.Text = "WCS_TASK_CV (CV 통신)";
+            this.Text = WcsCommon.cWcsVer.Title + " - WCS_TASK_CV (CV 통신)";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SYS_MAIN_FormClosing);
             this.Load += new System.EventHandler(this.SYS_MAIN_Load);
             this.splBodySkt.Panel1.ResumeLayout(false);

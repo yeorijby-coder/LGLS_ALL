@@ -119,6 +119,9 @@
     <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cTaskLog.cs">
       <Link>CLS\cTaskLog.cs</Link>
     </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cWcsVer.cs">
+      <Link>CLS\cWcsVer.cs</Link>
+    </Compile>
     <Compile Include="..\WCS_TASK_CV_BIN\4_Static\CallerInfoAttrs40.cs">
       <Link>CLS\CallerInfoAttrs40.cs</Link>
     </Compile>

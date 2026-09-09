@@ -61,7 +61,7 @@ namespace ALL_TASK
         {
             base.OnLoad(e);
 
-            this.Text = "ALL_TASK  -  EQP / IO / HOST 통합";
+            this.Text = WcsCommon.cWcsVer.Title + "  -  ALL_TASK (EQP / IO / HOST 통합)";
             CheckForIllegalCrossThreadCalls = false;   // 세 태스크가 모두 이 전제로 만들어져 있다
 
             BuildControlPanel();

@@ -1,6 +1,16 @@
 #ifndef __ECSDEF_H__
 #define __ECSDEF_H__
 
+// ---------------------------------------------------------------------------
+// [LGLS 2026-09-09] WCS 버전 - 화면 제목/버전정보의 단일 기준
+//   종전에는 프로그램마다 날짜를 박아 두어(2020.11.04 / 2021.02.18 ...) 서로
+//   달랐다. 여기 한 줄만 고치면 화면 표기가 함께 바뀐다.
+//   (Ecs.rc 의 FILEVERSION/PRODUCTVERSION 은 리소스라 따로 맞춰야 한다)
+// ---------------------------------------------------------------------------
+#define WCS_VERSION_STR     _T("1.0")
+#define WCS_PRODUCT_NAME    _T("LGLS WCS")
+
+
 #define	SYS_OFFLINE			0
 #define	SYS_LOCAL			1
 #define	SYS_REMOTE			2

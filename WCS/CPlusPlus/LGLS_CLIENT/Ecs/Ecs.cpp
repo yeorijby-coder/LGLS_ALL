@@ -165,7 +165,9 @@ BOOL CEcsApp::InitInstance()
 		return FALSE;
 
 	// 창 하나만 초기화되었으므로 이를 표시하고 업데이트합니다.
-	m_pMainWnd->SetWindowText(_T("Equipment Control System - 2020.11.04 (V.01)"));
+	// [LGLS 2026-09-09] 버전 표기 단일화 (EcsDef.h WCS_VERSION_STR)
+	m_pMainWnd->SetWindowText(WCS_PRODUCT_NAME _T(" ") WCS_VERSION_STR
+							   _T("  -  Equipment Control System"));
 	m_pMainWnd->ShowWindow(SW_SHOWMAXIMIZED);
 	m_pMainWnd->UpdateWindow();
 	// 접미사가 있을 경우에만 DragAcceptFiles를 호출합니다.

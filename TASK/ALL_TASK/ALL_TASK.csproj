@@ -111,6 +111,9 @@
     <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cTaskLog.cs">
       <Link>WCS_TASK_CV_BIN\4_Static\cTaskLog.cs</Link>
     </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cWcsVer.cs">
+      <Link>WCS_TASK_CV_BIN\4_Static\cWcsVer.cs</Link>
+    </Compile>
     <Compile Include="..\WCS_TASK_CV_BIN\4_Static\DbLang.cs">
       <Link>WCS_TASK_CV_BIN\4_Static\DbLang.cs</Link>
     </Compile>
