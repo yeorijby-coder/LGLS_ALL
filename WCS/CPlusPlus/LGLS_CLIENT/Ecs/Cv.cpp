@@ -97,36 +97,7 @@ CString CCv::GetSelectQry() //kdh20190521
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.STOCK_MODE, '0') AS STOCK_MODE														\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.SUSPEND, '0') AS SUSPEND   														\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ITEM_NO, ' ') AS ITEM_NO															\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.DRIV_PAPER_POS, '0') AS DRIV_PAPER_POS												 \n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ELEV_ASC_ERR, '0') AS ELEV_ASC_ERR													 \n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ELEV_DESC_ERR, '0') AS ELEV_DESC_ERR												\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.CLAMP_FORWARD_ERR, '0') AS CLAMP_FORWARD_ERR										\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.CLAMP_BACKWARD_ERR, '0') AS CLAMP_BACKWARD_ERR										 \n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.DRIV_FORWARD_ERR, '0') AS DRIV_FORWARD_ERR											\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.DRIV_BACKWARD_ERR, '0') AS DRIV_BACKWARD_ERR										\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.PAPER_BLOCK_SENSOR1, '0') AS PAPER_BLOCK_SENSOR1									\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.PAPER_BLOCK_SENSOR2, '0') AS PAPER_BLOCK_SENSOR2									\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.PAPER_BLOCK_SENSOR3, '0') AS PAPER_BLOCK_SENSOR3									\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.PAPER_BLOCK_SENSOR4, '0') AS PAPER_BLOCK_SENSOR4	 								\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.PAPER_FULL_SENSOR, '0') AS PAPER_FULL_SENSOR										\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.DRIV_FORWARD_POS, '0') AS DRIV_FORWARD_POS											\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.DRIV_BACKWARD_POS, '0') AS DRIV_BACKWARD_POS										\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.CRUSH_PAPER_SENSOR, '0') AS CRUSH_PAPER_SENSOR										\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.CLAMP_FORWARD_SENSOR, '0') AS CLAMP_FORWARD_SENSOR									\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.REV_ELEV_POS_DATA_ASC, '0') AS REV_ELEV_POS_DATA_ASC								\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.REV_ELEV_POS_DATA_1, '0') AS REV_ELEV_POS_DATA_1									\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.REV_ELEV_POS_DATA_2, '0') AS REV_ELEV_POS_DATA_2									\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.REV_DRIV_POS_DATA_PICKUP, '0') AS REV_DRIV_POS_DATA_PICKUP							\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.REV_DRIV_POS_DATA_REVERSE, '0') AS REV_DRIV_POS_DATA_REVERSE						\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.REV_SENSOR_DATA_HEIGHT, '0') AS REV_SENSOR_DATA_HEIGHT								\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ROLL_ELEV_POS_DATA_ASC, '0') AS ROLL_ELEV_POS_DATA_ASC								 \n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ROLL_ELEV_POS_DATA_PICKUP, '0') AS ROLL_ELEV_POS_DATA_PICKUP						\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ROLL_ELEV_POS_DATA_ROLLING, '0') AS ROLL_ELEV_POS_DATA_ROLLING						\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ROLL_CLAMP_POS_DATA_BACKWARD, '0') AS ROLL_CLAMP_POS_DATA_BACKWARD					 \n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ROLL_CLAMP_POS_DATA_FORWARD, '0') AS ROLL_CLAMP_POS_DATA_FORWARD					\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.ROLL_SENSOR_DATA_HEIGHT, '0') AS ROLL_SENSOR_DATA_HEIGHT							\n")
 				  _T("	     ,") + m_pDoc->NVL + _T("(CD.SC_PLT_JOB_TYP, '0') AS SC_PLT_JOB_TYP												\n")
-				  _T("	     ,") + m_pDoc->NVL + _T("(CD.CLAMP_BACKWARD_SENSOR, '0') AS CLAMP_BACKWARD_SENSOR								\n")
 				  _T("	     ,CASE WHEN DATEDIFF(SECOND, EM.UPD_DT, GETDATE()) > 120 THEN 121 ELSE DATEDIFF(SECOND, EM.UPD_DT, GETDATE()) END AS EQP_TIME			\n")
 				  _T("	     ,EM.CONNECTED_YN															  									\n")
 				  _T(" FROM CV_DATA CD 																										\n")
@@ -245,37 +216,8 @@ void CCv::AutoRunProc()
 			}
 		}
 
-		pCV_DATA->SetDRIV_PAPER_POS(m_pRsw->GetItem( _T("DRIV_PAPER_POS")));
-		pCV_DATA->SetELEV_ASC_ERR(m_pRsw->GetItem( _T("ELEV_ASC_ERR")));
-		pCV_DATA->SetELEV_DESC_ERR(m_pRsw->GetItem( _T("ELEV_DESC_ERR")));
-		pCV_DATA->SetCLAMP_FORWARD_ERR(m_pRsw->GetItem( _T("CLAMP_FORWARD_ERR")));
-		pCV_DATA->SetCLAMP_BACKWARD_ERR(m_pRsw->GetItem( _T("CLAMP_BACKWARD_ERR")));
-		pCV_DATA->SetDRIV_FORWARD_ERR(m_pRsw->GetItem( _T("DRIV_FORWARD_ERR")));
-		pCV_DATA->SetDRIV_BACKWARD_ERR(m_pRsw->GetItem( _T("DRIV_BACKWARD_ERR")));
-		pCV_DATA->SetPAPER_BLOCK_SENSOR1(m_pRsw->GetItem( _T("PAPER_BLOCK_SENSOR1")));
-		pCV_DATA->SetPAPER_BLOCK_SENSOR2(m_pRsw->GetItem( _T("PAPER_BLOCK_SENSOR2")));
-		pCV_DATA->SetPAPER_BLOCK_SENSOR3(m_pRsw->GetItem( _T("PAPER_BLOCK_SENSOR3")));
-		pCV_DATA->SetPAPER_BLOCK_SENSOR4(m_pRsw->GetItem( _T("PAPER_BLOCK_SENSOR4")));
-		pCV_DATA->SetPAPER_FULL_SENSOR(m_pRsw->GetItem( _T("PAPER_FULL_SENSOR")));
-		pCV_DATA->SetDRIV_FORWARD_POS(m_pRsw->GetItem( _T("DRIV_FORWARD_POS")));
-		pCV_DATA->SetDRIV_BACKWARD_POS(m_pRsw->GetItem( _T("DRIV_BACKWARD_POS")));
-		pCV_DATA->SetCRUSH_PAPER_SENSOR(m_pRsw->GetItem( _T("CRUSH_PAPER_SENSOR")));
-		pCV_DATA->SetCLAMP_FORWARD_SENSOR(m_pRsw->GetItem( _T("CLAMP_FORWARD_SENSOR")));
-		pCV_DATA->SetREV_ELEV_POS_DATA_ASC(m_pRsw->GetItem( _T("REV_ELEV_POS_DATA_ASC")));
-		pCV_DATA->SetREV_ELEV_POS_DATA_1(m_pRsw->GetItem( _T("REV_ELEV_POS_DATA_1")));
-		pCV_DATA->SetREV_ELEV_POS_DATA_2(m_pRsw->GetItem( _T("REV_ELEV_POS_DATA_2")));
-		pCV_DATA->SetREV_DRIV_POS_DATA_PICKUP(m_pRsw->GetItem( _T("REV_DRIV_POS_DATA_PICKUP")));
-		pCV_DATA->SetREV_DRIV_POS_DATA_REVERSE(m_pRsw->GetItem( _T("REV_DRIV_POS_DATA_REVERSE")));
-		pCV_DATA->SetREV_SENSOR_DATA_HEIGHT(m_pRsw->GetItem( _T("REV_SENSOR_DATA_HEIGHT")));
-		pCV_DATA->SetROLL_ELEV_POS_DATA_ASC(m_pRsw->GetItem( _T("ROLL_ELEV_POS_DATA_ASC")));
-		pCV_DATA->SetROLL_ELEV_POS_DATA_PICKUP(m_pRsw->GetItem( _T("ROLL_ELEV_POS_DATA_PICKUP")));
-		pCV_DATA->SetROLL_ELEV_POS_DATA_ROLLING(m_pRsw->GetItem( _T("ROLL_ELEV_POS_DATA_ROLLING")));
-		pCV_DATA->SetROLL_CLAMP_POS_DATA_BACKWARD(m_pRsw->GetItem( _T("ROLL_CLAMP_POS_DATA_BACKWARD")));
-		pCV_DATA->SetROLL_CLAMP_POS_DATA_FORWARD(m_pRsw->GetItem( _T("ROLL_CLAMP_POS_DATA_FORWARD")));
-		pCV_DATA->SetROLL_SENSOR_DATA_HEIGHT(m_pRsw->GetItem( _T("ROLL_SENSOR_DATA_HEIGHT")));
 
 		pCV_DATA->SetSC_PLT_JOB_TYP(m_pRsw->GetItem( _T("SC_PLT_JOB_TYP")));
-		pCV_DATA->SetCLAMP_BACKWARD_SENSOR(m_pRsw->GetItem( _T("CLAMP_BACKWARD_SENSOR")));
 
 		if (pCV_DATA->V_MC_NO == _T("104"))
 		{

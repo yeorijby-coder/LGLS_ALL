@@ -1,4 +1,4 @@
--- =====================================================================
+﻿-- =====================================================================
 -- LGLS 설비 마스터 시드 (대체 시스템 DB: PostgreSQL LGLS_TEST)
 --
 -- 원본 ECS(TB_EQUIPMENT/TB_SUBSYSTEM/TB_LOCATION/TB_ITINERARY) 분석 결과를
@@ -39,7 +39,7 @@ INSERT INTO cv_data (wh_typ, plc_no, track_no, mc_no, mc_no_nm, stn_kind,
                      auto_mode_rd, sto_ready_rd, ret_ready_rd,
                      sensor0_data_rd, od_rq_yn, od_rq_flag, cmd_rq_yn,
                      host_send_yn, host_err_send_yn, use_yn, comp_vr,
-                     tracking_write_yn, remote_control, roll_mode, stock_mode,
+                     tracking_write_yn, remote_control, stock_mode,
                      read_upd_dt, write_upd_dt)
 SELECT '10',
        lpad(v.cv::text, 2, '0'),

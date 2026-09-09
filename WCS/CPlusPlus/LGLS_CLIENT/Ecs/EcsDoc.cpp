@@ -172,8 +172,6 @@ CEcsDoc::CEcsDoc()
 
 	m_pCvSkinDlg = NULL;
 	m_pWarningDlg = NULL;
-	m_pRevSkinDlg = NULL;
-	m_pRollSkinDlg = NULL;
 	m_pScSkinDlg = NULL;
 	m_pRtvSkinDlg = NULL;
 	m_pBcrSkinDlg = NULL;
@@ -252,8 +250,6 @@ CEcsDoc::~CEcsDoc()
 	if(m_pViewJobListDlg != NULL){ delete m_pViewJobListDlg;}
 	if(m_pViewHostEmptyPltDlg != NULL){ delete m_pViewHostEmptyPltDlg;}
 	if(m_pCvSkinDlg != NULL){ delete m_pCvSkinDlg;}
-	if(m_pRevSkinDlg != NULL){ delete m_pRevSkinDlg;}
-	if(m_pRollSkinDlg != NULL){ delete m_pRollSkinDlg;}
 	if(m_pScSkinDlg != NULL){ delete m_pScSkinDlg;}
 	if(m_pRtvSkinDlg != NULL){ delete m_pRtvSkinDlg;}
 	if(m_pBcrSkinDlg != NULL){ delete m_pBcrSkinDlg;}

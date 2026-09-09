@@ -271,7 +271,9 @@ RESIDUAL = {
     'DURATION_TIME': '작업 소요 시간',
     'AGING_TIME': '숙성(에이징) 시간',
     'PAIR_LUGG_NO': '짝이 되는 작업번호(2매 적재 등)',
-    'WC_STEP': '작업대 컨트롤러 단계(이 현장 미사용)',
+    # [LGLS 2026-09-10] 실제로 쓰인다 - HOST 완료보고 재보고 방지 플래그.
+    #   WCS_TASK_HOST/CCliWork.cs 가 WC_STEP='0' 인 작업만 골라 보고하고 '1' 로 올린다.
+    'WC_STEP': 'HOST 완료보고 진행 플래그(0=미보고 / 1=보고 완료). 같은 작업이 두 번 보고되지 않게 막는다',
     'CMP_STEP': '완료 처리 단계(예비)',
     'OD_LAST_PAGE': '지시 마지막 페이지(예비)', 'OD_LAST_USER': '마지막 지시자',
     'MES_WRITE_YN': 'MES 기록 여부(이 현장 미사용)',

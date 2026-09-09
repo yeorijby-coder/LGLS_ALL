@@ -475,10 +475,7 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClInclude Include="RecordSetWrap.h" />
     <ClInclude Include="ReportCtrl.h" />
     <ClInclude Include="ReportHeader.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="RevSkinDlg.h" />
-    <ClInclude Include="RollSkinDlg.h" />
-    <ClInclude Include="Rtv.h" />
+    <ClInclude Include="Resource.h" />    <ClInclude Include="Rtv.h" />
     <ClInclude Include="RtvInfo.h" />
     <ClInclude Include="RtvSkinDlg.h" />
     <ClInclude Include="Sc.h" />
@@ -612,10 +609,7 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClCompile Include="Permission.cpp" />
     <ClCompile Include="RecordSetWrap.cpp" />
     <ClCompile Include="ReportCtrl.cpp" />
-    <ClCompile Include="ReportHeader.cpp" />
-    <ClCompile Include="RevSkinDlg.cpp" />
-    <ClCompile Include="RollSkinDlg.cpp" />
-    <ClCompile Include="Rtv.cpp" />
+    <ClCompile Include="ReportHeader.cpp" />    <ClCompile Include="Rtv.cpp" />
     <ClCompile Include="RtvInfo.cpp" />
     <ClCompile Include="RtvSkinDlg.cpp" />
     <ClCompile Include="RTV_DATA.cpp" />

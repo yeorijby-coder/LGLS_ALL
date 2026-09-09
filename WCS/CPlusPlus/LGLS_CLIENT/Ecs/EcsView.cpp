@@ -15,8 +15,6 @@
 #include "WarningDlg.h"
 #include "SystemLoginDlg.h"
 #include "CvSkinDlg.h"
-#include "RevSkinDlg.h"
-#include "RollSkinDlg.h"
 #include "ScSkinDlg.h"
 #include "RtvSkinDlg.h"
 #include "BCRSkinDlg.h"
@@ -765,7 +763,9 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 					CString strMcNo = strEqpKey;
 					if (pTrackInfo->m_pCV_DATA != NULL) strMcNo = pTrackInfo->m_pCV_DATA->V_MC_NO;
 					pFrame->m_PanelInfoDlg.SetEquip(0 /*TAB_CV*/, strMcNo);
-					return 0;
+					// [LGLS 2026-09-10] 판넬만 바꾸고 끝내지 않는다.
+					//   판넬 보기가 기본이 되면서 대화상자를 쓸 길이 막혔다는 지적.
+					//   판넬은 그대로 따라가고, 아래로 내려가 대화상자도 띄운다.
 				}
 			}
 			if (pDoc->m_pCvSkinDlg == NULL)
@@ -822,7 +822,9 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 					&& pFrame->m_InfoPane.IsVisible())
 				{
 					pFrame->m_PanelInfoDlg.SetEquip(1 /*TAB_SC*/, strEqpKey);
-					return 0;
+					// [LGLS 2026-09-10] 판넬만 바꾸고 끝내지 않는다.
+					//   판넬 보기가 기본이 되면서 대화상자를 쓸 길이 막혔다는 지적.
+					//   판넬은 그대로 따라가고, 아래로 내려가 대화상자도 띄운다.
 				}
 			}
 			if (pDoc->m_pScSkinDlg == NULL)
@@ -867,7 +869,9 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 					&& pFrame->m_InfoPane.IsVisible())
 				{
 					pFrame->m_PanelInfoDlg.SetEquip(2 /*TAB_RTV*/, strEqpKey);
-					return 0;
+					// [LGLS 2026-09-10] 판넬만 바꾸고 끝내지 않는다.
+					//   판넬 보기가 기본이 되면서 대화상자를 쓸 길이 막혔다는 지적.
+					//   판넬은 그대로 따라가고, 아래로 내려가 대화상자도 띄운다.
 				}
 			}
 			if (pDoc->m_pRtvSkinDlg == NULL)
@@ -965,84 +969,6 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			::SetWindowPos(pDoc->m_pWcSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
 			::ShowWindow(pDoc->m_pWcSkinDlg->m_hWnd, SW_SHOWNORMAL); 
 			::SendMessage(pDoc->m_pWcSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)pWC_DATA, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
-			break;
-		}
-		case CEquipment::enREV:
-		{			
-			CTrackInfo* pTrackInfo = pDoc->GetTrackInfoNew(strEqpKey);
-			if(pTrackInfo == NULL){ return 0; };
-			if (pDoc->m_pRevSkinDlg == NULL)
-			{
-
-				if (!pDoc->Permission(_T("CRevSkinDlg"), SEL_YN))
-				{
-					AfxMessageBox(pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-					return 0;
-				}
-
-				pDoc->m_pRevSkinDlg = new CRevSkinDlg(pDoc);
-				pDoc->m_pRevSkinDlg->Create(IDD_SKIN_REV_CTRL);
-
-			}
-
-			CRect MainRect;
-			CRect Rect;
-			CRect PosRect;
-			::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-			pDoc->m_pRevSkinDlg->GetWindowRect(&Rect); 
-
-			PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-			PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-
-			pDoc->m_pRevSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
-				Rect.Width(), Rect.Height(), 
-				SWP_SHOWWINDOW);
-
-			::SetWindowPos(pDoc->m_pRevSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(pDoc->m_pRevSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::ShowWindow(pDoc->m_pRevSkinDlg->m_hWnd, SW_SHOWNORMAL);
-			::SendMessage(pDoc->m_pRevSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)pTrackInfo, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
-
-			
-			break;
-		}
-		case CEquipment::enROLL:
-		{			
-			CTrackInfo* pTrackInfo = pDoc->GetTrackInfoNew(strEqpKey);
-			if(pTrackInfo == NULL){ return 0; };
-			if (pDoc->m_pRollSkinDlg == NULL)
-			{
-
-				if (!pDoc->Permission(_T("CRollSkinDlg"), SEL_YN))
-				{
-					AfxMessageBox(pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-					return 0;
-				}
-
-				pDoc->m_pRollSkinDlg = new CRollSkinDlg(pDoc);
-				pDoc->m_pRollSkinDlg->Create(IDD_SKIN_ROLL_CTRL);
-
-			}
-
-			CRect MainRect;
-			CRect Rect;
-			CRect PosRect;
-			::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-			pDoc->m_pRollSkinDlg->GetWindowRect(&Rect); 
-
-			PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-			PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-
-			pDoc->m_pRollSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
-				Rect.Width(), Rect.Height(), 
-				SWP_SHOWWINDOW);
-
-			::SetWindowPos(pDoc->m_pRollSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(pDoc->m_pRollSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::ShowWindow(pDoc->m_pRollSkinDlg->m_hWnd, SW_SHOWNORMAL);
-			::SendMessage(pDoc->m_pRollSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)pTrackInfo, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
-
-			
 			break;
 		}
 	}

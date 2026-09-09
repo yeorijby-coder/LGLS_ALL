@@ -1,4 +1,4 @@
--- =====================================================================
+﻿-- =====================================================================
 -- WCS Client(D:\project\LGLS\CPlusPlus\LGLS_CLIENT\Ecs) 지원 스키마 보강
 --   (LGLS_MCS_IO, SQL Server 2008)
 --
@@ -15,13 +15,13 @@ IF COL_LENGTH('cv_data','is_turn_rd')             IS NULL ALTER TABLE cv_data AD
 IF COL_LENGTH('cv_data','wait_time_rd')           IS NULL ALTER TABLE cv_data ADD wait_time_rd           VARCHAR(4)  DEFAULT '0';
 IF COL_LENGTH('cv_data','suspend')                IS NULL ALTER TABLE cv_data ADD suspend                VARCHAR(1)  DEFAULT '0';
 IF COL_LENGTH('cv_data','item_no')                IS NULL ALTER TABLE cv_data ADD item_no                VARCHAR(20) DEFAULT ' ';
-IF COL_LENGTH('cv_data','roll_elev_pos_data_asc') IS NULL ALTER TABLE cv_data ADD roll_elev_pos_data_asc VARCHAR(2)  DEFAULT '0';
+-- [LGLS 2026-09-10] roll_elev_pos_data_asc 는 이 현장 미사용으로 삭제됨(되살리지 않는다)
 IF COL_LENGTH('cv_data','sc_plt_job_typ')         IS NULL ALTER TABLE cv_data ADD sc_plt_job_typ         VARCHAR(1)  DEFAULT '0';
 GO
 UPDATE cv_data SET is_turn_rd='0', wait_time_rd='0', suspend='0', item_no=' ',
-                   roll_elev_pos_data_asc='0', sc_plt_job_typ='0'
+                   sc_plt_job_typ='0'
  WHERE wh_typ='10' AND (is_turn_rd IS NULL OR suspend IS NULL OR wait_time_rd IS NULL
-                        OR item_no IS NULL OR roll_elev_pos_data_asc IS NULL OR sc_plt_job_typ IS NULL);
+                        OR item_no IS NULL OR sc_plt_job_typ IS NULL);
 GO
 
 -- 2) wc_data 클라이언트 컬럼

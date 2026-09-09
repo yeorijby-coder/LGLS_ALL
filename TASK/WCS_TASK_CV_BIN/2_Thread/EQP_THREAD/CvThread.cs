@@ -1105,7 +1105,9 @@ namespace WCS_TASK_CV
                             CvDic[nCvNo].SC_LOCK_SENSOR = m_msQPlc._pBdb.mDtMain.Rows[0]["SC_LOCK_SENSOR"].ToString();
                             CvDic[nCvNo].REMOTE_CONTROL = m_msQPlc._pBdb.mDtMain.Rows[0]["REMOTE_CONTROL"].ToString();
                             CvDic[nCvNo].STOCK_MODE = m_msQPlc._pBdb.mDtMain.Rows[0]["STOCK_MODE"].ToString();
-                            CvDic[nCvNo].ROLL_MODE = m_msQPlc._pBdb.mDtMain.Rows[0]["ROLL_MODE"].ToString();
+                            // [LGLS 2026-09-10] ROLL_MODE 컬럼은 이 현장 미사용으로 DB 에서 삭제됐다.
+                            //   PLC 비트 해석은 그대로 두되(절대규칙 2), DB 왕복만 없앤다.
+                            CvDic[nCvNo].ROLL_MODE = "0";
                             CvDic[nCvNo].CVERRCD = Convert.ToInt32(0 + m_msQPlc._pBdb.mDtMain.Rows[0]["ERROR_CODE"].ToString());
                         }
                         //Hexa string 값으로 가져온다.
@@ -2303,7 +2305,6 @@ namespace WCS_TASK_CV
                 strSql += cDefApp.CRLF + "       ,SENSOR2_DATA_RD = :SENSOR2_DATA_RD                          ";
                 strSql += cDefApp.CRLF + "       ,ERROR_CODE = :ERROR_CODE                                    ";
                 strSql += cDefApp.CRLF + "       ,REMOTE_CONTROL = :REMOTE_CONTROL                            ";
-                strSql += cDefApp.CRLF + "       ,ROLL_MODE = :ROLL_MODE                                      ";
                 strSql += cDefApp.CRLF + "       ,STOCK_MODE = :STOCK_MODE                                    ";
                 strSql += cDefApp.CRLF + "       ,A_TURN_YN = :A_TURN_YN                                      ";
                 strSql += cDefApp.CRLF + "       ,B_TURN_YN = :B_TURN_YN                                      ";
@@ -2321,23 +2322,6 @@ namespace WCS_TASK_CV
                 {
                     strSql += cDefApp.CRLF + "       ,HOST_ERR_SEND_YN = 'N'                                  ";
                 }
-                strSql += cDefApp.CRLF + "       ,DRIV_PAPER_POS = :DRIV_PAPER_POS					          ";
-                strSql += cDefApp.CRLF + "       ,ELEV_ASC_ERR = :ELEV_ASC_ERR					              ";
-                strSql += cDefApp.CRLF + "       ,ELEV_DESC_ERR = :ELEV_DESC_ERR                              ";
-                strSql += cDefApp.CRLF + "       ,CLAMP_FORWARD_ERR = :CLAMP_FORWARD_ERR                      ";
-                strSql += cDefApp.CRLF + "       ,CLAMP_BACKWARD_ERR = :CLAMP_BACKWARD_ERR                    ";
-                strSql += cDefApp.CRLF + "       ,DRIV_FORWARD_ERR = :DRIV_FORWARD_ERR                        ";
-                strSql += cDefApp.CRLF + "       ,DRIV_BACKWARD_ERR = :DRIV_BACKWARD_ERR                      ";
-                strSql += cDefApp.CRLF + "       ,PAPER_BLOCK_SENSOR1 = :PAPER_BLOCK_SENSOR1                  ";
-                strSql += cDefApp.CRLF + "       ,PAPER_BLOCK_SENSOR2 = :PAPER_BLOCK_SENSOR2                  ";
-                strSql += cDefApp.CRLF + "       ,PAPER_BLOCK_SENSOR3 = :PAPER_BLOCK_SENSOR3                  ";
-                strSql += cDefApp.CRLF + "       ,PAPER_BLOCK_SENSOR4 = :PAPER_BLOCK_SENSOR4                  ";
-                strSql += cDefApp.CRLF + "       ,PAPER_FULL_SENSOR = :PAPER_FULL_SENSOR                      ";
-                strSql += cDefApp.CRLF + "       ,DRIV_FORWARD_POS = :DRIV_FORWARD_POS                        ";
-                strSql += cDefApp.CRLF + "       ,DRIV_BACKWARD_POS = :DRIV_BACKWARD_POS                      ";
-                strSql += cDefApp.CRLF + "       ,CRUSH_PAPER_SENSOR = :CRUSH_PAPER_SENSOR                    ";
-                strSql += cDefApp.CRLF + "       ,CLAMP_FORWARD_SENSOR = :CLAMP_FORWARD_SENSOR                ";
-                strSql += cDefApp.CRLF + "       ,CLAMP_BACKWARD_SENSOR = :CLAMP_BACKWARD_SENSOR              ";
                 strSql += cDefApp.CRLF + "WHERE  WH_TYP   = :WH_TYP                                           ";
                 strSql += cDefApp.CRLF + "AND    PLC_NO   = :PLC_NO                                           ";
                 strSql += cDefApp.CRLF + "AND    MC_NO    = :MC_NO                                         ";
@@ -2364,7 +2348,6 @@ namespace WCS_TASK_CV
                 m_msQPlc._pBdb.mComMain.Parameters.Add("SENSOR2_DATA_RD", DbLang.VARCHAR).Value = pSENSOR2_DATA_RD;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("ERROR_CODE", DbLang.VARCHAR).Value = pnErrorCode;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("REMOTE_CONTROL", DbLang.VARCHAR).Value = pREMOTE_CONTROL;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("ROLL_MODE", DbLang.VARCHAR).Value = pROLL_MODE;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("STOCK_MODE", DbLang.VARCHAR).Value = pSTOCK_MODE;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("A_TURN_YN", DbLang.VARCHAR).Value = pA_TURN_YN;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("B_TURN_YN", DbLang.VARCHAR).Value = pB_TURN_YN;
@@ -2372,23 +2355,6 @@ namespace WCS_TASK_CV
                 m_msQPlc._pBdb.mComMain.Parameters.Add("WAIT_SC_RET_JOB_RD", DbLang.VARCHAR).Value = pWAIT_SC_RET_JOB_RD;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("DELETE_TRACK_RD", DbLang.VARCHAR).Value = pDELETE_TRACK_RD;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("SC_LOCK_SENSOR", DbLang.VARCHAR).Value = pSC_LOCK_SENSOR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("DRIV_PAPER_POS", DbLang.VARCHAR).Value = pDRIV_PAPER_POS;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("ELEV_ASC_ERR", DbLang.VARCHAR).Value = pELEV_ASC_ERR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("ELEV_DESC_ERR", DbLang.VARCHAR).Value = pELEV_DESC_ERR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("CLAMP_FORWARD_ERR", DbLang.VARCHAR).Value = pCLAMP_FORWARD_ERR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("CLAMP_BACKWARD_ERR", DbLang.VARCHAR).Value = pCLAMP_BACKWARD_ERR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("DRIV_FORWARD_ERR", DbLang.VARCHAR).Value = pDRIV_FORWARD_ERR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("DRIV_BACKWARD_ERR", DbLang.VARCHAR).Value = pDRIV_BACKWARD_ERR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("PAPER_BLOCK_SENSOR1", DbLang.VARCHAR).Value = pPAPER_BLOCK_SENSOR1;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("PAPER_BLOCK_SENSOR2", DbLang.VARCHAR).Value = pPAPER_BLOCK_SENSOR2;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("PAPER_BLOCK_SENSOR3", DbLang.VARCHAR).Value = pPAPER_BLOCK_SENSOR3;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("PAPER_BLOCK_SENSOR4", DbLang.VARCHAR).Value = pPAPER_BLOCK_SENSOR4;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("PAPER_FULL_SENSOR", DbLang.VARCHAR).Value = pPAPER_FULL_SENSOR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("DRIV_FORWARD_POS", DbLang.VARCHAR).Value = pDRIV_FORWARD_POS;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("DRIV_BACKWARD_POS", DbLang.VARCHAR).Value = pDRIV_BACKWARD_POS;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("CRUSH_PAPER_SENSOR", DbLang.VARCHAR).Value = pCRUSH_PAPER_SENSOR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("CLAMP_FORWARD_SENSOR", DbLang.VARCHAR).Value = pCLAMP_FORWARD_SENSOR;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("CLAMP_BACKWARD_SENSOR", DbLang.VARCHAR).Value = pCLAMP_BACKWARD_SENSOR;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = m_strWh_typ;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("PLC_NO", DbLang.VARCHAR).Value = m_strPlc_No;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("MC_NO", DbLang.VARCHAR).Value = nCvNo;
