@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <StartupObject>ALL_TASK.Program</StartupObject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <ApplicationIcon>ALL_TASK.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -35,6 +36,9 @@
     <WarningLevel>4</WarningLevel>
     <NoWarn>0168;0219;0414;0162;0169;0649;0067;0108</NoWarn>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="ALL_TASK.ico" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821, processorArchitecture=MSIL">
       <HintPath>..\WCS_TASK_CV_BIN\bin\Debug\log4net.dll</HintPath>

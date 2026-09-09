@@ -16,7 +16,7 @@ namespace ALL_TASK
     //
     //   - 기동 : 원래 폼을 새로 만들어 Load 를 태운다(=단독 EXE 를 켠 것과 같다)
     //   - 정지 : TaskStop() 으로 스레드 종료 + 소켓/DB 반납 후 폼 폐기
-    //   - 로그 : WcsCommon.cTaskLog 가 스레드별 파일(날짜별/1년)과 DB(all_task_log)에 적재
+    //   - 로그 : WcsCommon.cTaskLog 가 스레드별 파일(날짜별/1년)에 적재(운전 이력은 종전 로그 테이블)
     //
     //   설정은 ALL_TASK.INI 를 쓴다(각 태스크의 INI 는 종전 그대로 각자 읽는다).
     // ─────────────────────────────────────────────────────────────────────────
@@ -38,6 +38,22 @@ namespace ALL_TASK
         public AllTaskMain()
         {
             InitializeComponent();
+            LoadAppIcon();
+        }
+
+        // 실행 파일에 넣어 둔 ALL_TASK 아이콘을 창/작업표시줄 아이콘으로 쓴다.
+        private void LoadAppIcon()
+        {
+            try
+            {
+                System.Reflection.Assembly asm = System.Reflection.Assembly.GetExecutingAssembly();
+                using (Stream st = asm.GetManifestResourceStream("ALL_TASK.ALL_TASK.ico"))
+                {
+                    if (st != null) { this.Icon = new Icon(st); return; }
+                }
+                this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            }
+            catch { }
         }
 
         // ─────────────────────────────────────────────────────────────────
