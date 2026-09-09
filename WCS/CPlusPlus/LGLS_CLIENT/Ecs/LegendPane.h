@@ -10,8 +10,11 @@
 //
 //   - 색은 CConfig(m_clrUSER_COLOR_*) 를 그대로 읽는다. 범례 대화상자에서 색을
 //     바꿔 [저장] 하면 Reload() 로 즉시 반영된다.
+//   - 크레인(S/C)/RTV 는 도면에서 CDciRvCtrl(레일+바퀴+포크)로 그려지므로 범례도
+//     같은 모양의 축소 아이콘으로 보여 준다. 레일 색/포크 색을 따로 표시한다.
 //   - 문구는 rc_resource\legend\legend.ini 의 [kor]/[eng]/[hun]/[chin] 에서 읽는다
 //     (다국어 필수 요건). ini 가 없거나 값이 비면 내장 한글 문구로 대체한다.
+//     매번 읽으면 한 번 그리는 데 파일을 30여 번 여는 셈이라 언어별로 캐시한다.
 //   - 더블클릭하면 기존 범례(색상 설정) 대화상자가 열린다.
 // ---------------------------------------------------------------------------
 
@@ -26,7 +29,7 @@ public:
 	virtual ~CLegendPane();
 
 	// 패널 폭(고정). 높이는 항목 수로 계산한다.
-	enum { PANE_WIDTH = 104 };
+	enum { PANE_WIDTH = 116 };
 
 	BOOL CreatePane(CWnd* pParent, UINT nID);
 	void SetDoc(CEcsDoc* pDoc) { m_pDoc = pDoc; }
@@ -42,7 +45,14 @@ protected:
 	CFont		m_fntItem;
 	CFont		m_fntTitle;
 
+	// 다국어 문구 캐시 (index 0 = 제목, 1.. = 항목)
+	mutable CStringArray	m_arrText;
+	mutable int				m_nTextLang;
+
 	static CString GetIniPath();
+	static void DrawRvIcon(CDC* pDC, const CRect& rcCell, COLORREF clrRail, COLORREF clrFork);
+
+	void     EnsureText() const;
 	COLORREF GetItemColor(int nIdx) const;
 	CString  GetItemText(int nIdx) const;
 

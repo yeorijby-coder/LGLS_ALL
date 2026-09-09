@@ -47,6 +47,12 @@ void CBcr::AutoRunProc()
 	if(pBcrInfo == NULL) {	return; };
 
 	m_pRsw->MoveFirst();
+	// [LGLS 2026-09-09] 설비 데이터 CString 쓰기 구간 (RTV/ScPair 와 같은 규격)
+	//   UI 스레드(상태창 타이머)의 읽기와 직렬화하지 않으면 CString 참조계수가 깨져
+	//   atlsimpstr.h:68 ASSERT(nRefs>0) / 액세스위반이 난다.
+	if(m_pDoc == NULL) return;
+	CSingleLock _lockBcr(&m_pDoc->m_csEqpData, TRUE);
+
 	for(int nIdxFor = 0; nIdxFor < nBcrCnt; nIdxFor++)
 	{
 		strBCR_NO = m_pRsw->GetItem(_T("BCR_NO"));

@@ -306,7 +306,10 @@ void CBCRSkinDlg::RelocationControls()
 
 
 void CBCRSkinDlg::InvalidateBcrData(EN_LANG pLang)
-{	
+{
+	if(m_pDoc == NULL) return;
+	CSingleLock _lockBcrRead(&m_pDoc->m_csEqpData, TRUE);   // [LGLS 2026-09-09] ¼öÁý thread write serialize (refcount assert guard)
+	
 	if(m_pDoc == NULL) return;
 	if(m_pBCR_MST == NULL) return;
 	if(m_pCV_DATA == NULL) return;

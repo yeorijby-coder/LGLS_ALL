@@ -704,7 +704,10 @@ BOOL CCvSkinDlg::PreTranslateMessage(MSG* pMsg)
 }
 
 void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
-{	
+{
+	if(m_pDoc == NULL) return;
+	CSingleLock _lockCvRead1(&m_pDoc->m_csEqpData, TRUE);   // [LGLS 2026-09-09] 수집 thread write serialize (refcount assert guard)
+	
 	if(m_pDoc == NULL) return;
 	if(m_pTrackInfo == NULL) return;
 	if(m_pTrackInfo->m_pCV_DATA == NULL) return;
@@ -783,6 +786,9 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 
 void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 {
+	if(m_pDoc == NULL) return;
+	CSingleLock _lockCvRead2(&m_pDoc->m_csEqpData, TRUE);   // [LGLS 2026-09-09] 수집 thread write serialize (refcount assert guard)
+
 	// [LGLS 2026-08-23] 표시 전용(설비에서 올라오는) 항목만 갱신한다.
 	//   조작자가 입력하는 CV상태(작업번호/도착지/작업구분)는 건드리지 않으므로
 	//   1초 주기로 계속 새로 그려도 입력 중인 값을 덮어쓰지 않는다.
@@ -2423,6 +2429,9 @@ void CCvSkinDlg::SetLedCv(int nId, CString strVal)
 // [LGLS 2026-08-05] CV_DATA 에서 패널 값을 읽어 갱신한다(확대 상태에서만).
 void CCvSkinDlg::InvalidateCvvData()
 {
+	if(m_pDoc == NULL) return;
+	CSingleLock _lockCvRead3(&m_pDoc->m_csEqpData, TRUE);   // [LGLS 2026-09-09] 수집 thread write serialize (refcount assert guard)
+
 	if (!m_bVehExpanded) return;
 	if (m_pDoc == NULL || m_pTrackInfo == NULL || m_pTrackInfo->m_pCV_DATA == NULL) return;
 	CCV_DATA* pCv = m_pTrackInfo->m_pCV_DATA;

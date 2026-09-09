@@ -3,6 +3,7 @@
 #include "LegendPane.h"
 #include "EcsDoc.h"
 #include "Config.h"
+#include "Color.h"
 #include "Lib.h"
 #include "Lang.h"
 #include "resource.h"
@@ -13,9 +14,17 @@
 
 // ---------------------------------------------------------------------------
 // 범례 항목표
-//   nKind 0 = 그룹 제목(색 없음), 1 = 색상 항목
+//   nKind 0 = 그룹 제목            (색 없음)
+//         1 = 색 견본 사각형       (C/V 트랙 계열 - 트랙 칸이 그 색으로 칠해진다)
+//         2 = rv 컨트롤 아이콘 : 레일 색  (S/C·RTV 의 레일이 그 색이 된다)
+//         3 = rv 컨트롤 아이콘 : 포크 색  (크레인/RTV 본체가 그 색이 된다)
+//         4 = 설명 문구           (견본 없음)
 //   szKey = rc_resource\legend\legend.ini 의 키, szKor = ini 가 없을 때 쓰는 값
-//   nColor = GetItemColor() 의 switch 번호 (CConfig 멤버와 1:1)
+//   nColor = GetItemColor() 의 switch 번호 (CConfig 멤버와 1:1, 90~ 는 고정색)
+//
+//   [LGLS 2026-09-09] 크레인/RTV 는 CDciRvCtrl(레일+바퀴+포크)로 그려지므로
+//   범례도 단색 칩이 아니라 같은 모양으로 보여 준다(사용자 요청).
+//   레일 색 = GetRailColor(), 포크 색 = GetForkColor1() 이 내는 값이다.
 // ---------------------------------------------------------------------------
 struct ST_LEGEND_ROW
 {
@@ -54,12 +63,20 @@ static const ST_LEGEND_ROW g_arrLegend[] =
 	{ 1, 18, _T("semi_rtr"),	_T("반자동되돌림")	},
 	{ 1, 19, _T("semi_ata"),	_T("반자동호기간")	},
 
-	{ 0,  0, _T("grp_rail"),	_T("S/C 레일")		},
-	{ 1, 20, _T("rail_sto"),	_T("입고정지")		},
-	{ 1, 21, _T("rail_ret"),	_T("출고정지")		},
-	{ 1, 22, _T("rail_all"),	_T("입출고정지")	},
-	{ 1, 23, _T("rail_err"),	_T("에러")			},
-	{ 1, 24, _T("rail_invk"),	_T("작업 중")		},
+	// 크레인(S/C) / RTV : 포크(본체) 색
+	{ 0,  0, _T("grp_veh"),		_T("크레인 / RTV")	},
+	{ 3, 90, _T("veh_idle"),	_T("작업 없음")		},
+	{ 3, 91, _T("veh_off"),		_T("미가동/수동")	},
+	{ 3, 11, _T("veh_err"),		_T("에러")			},
+	{ 4,  0, _T("veh_note"),	_T("작업 중엔 포크가 작업색") },
+
+	// 크레인(S/C) / RTV : 레일 색
+	{ 0,  0, _T("grp_rail"),	_T("S/C·RTV 레일")	},
+	{ 2, 20, _T("rail_sto"),	_T("입고정지")		},
+	{ 2, 21, _T("rail_ret"),	_T("출고정지")		},
+	{ 2, 22, _T("rail_all"),	_T("입출고정지")	},
+	{ 2, 23, _T("rail_err"),	_T("에러")			},
+	{ 2, 24, _T("rail_invk"),	_T("작업 중")		},
 };
 
 static const int LEGEND_ROW_CNT = sizeof(g_arrLegend) / sizeof(g_arrLegend[0]);
@@ -68,8 +85,12 @@ static const int LEGEND_ROW_CNT = sizeof(g_arrLegend) / sizeof(g_arrLegend[0]);
 #define LEGEND_TITLE_H		20
 #define LEGEND_GROUP_H		17
 #define LEGEND_ITEM_H		15
+#define LEGEND_RV_H			17		// rv 아이콘 줄은 조금 높게
+#define LEGEND_NOTE_H		30
 #define LEGEND_SWATCH_W		18
 #define LEGEND_SWATCH_H		10
+#define LEGEND_RV_W			28		// rv 아이콘 폭
+#define LEGEND_RV_ICON_H	13
 
 IMPLEMENT_DYNAMIC(CLegendPane, CWnd)
 
@@ -82,6 +103,7 @@ END_MESSAGE_MAP()
 CLegendPane::CLegendPane()
 {
 	m_pDoc = NULL;
+	m_nTextLang = -1;
 }
 
 CLegendPane::~CLegendPane()
@@ -118,24 +140,41 @@ BOOL CLegendPane::CreatePane(CWnd* pParent, UINT nID)
 	return TRUE;
 }
 
+static int RowHeight(int nKind)
+{
+	switch (nKind)
+	{
+	case 0:  return LEGEND_GROUP_H;
+	case 2:
+	case 3:  return LEGEND_RV_H;
+	case 4:  return LEGEND_NOTE_H;
+	default: return LEGEND_ITEM_H;
+	}
+}
+
 int CLegendPane::GetWantHeight() const
 {
 	int nH = LEGEND_PAD * 2 + LEGEND_TITLE_H;
 	for (int i = 0; i < LEGEND_ROW_CNT; i++)
-		nH += (g_arrLegend[i].nKind == 0) ? LEGEND_GROUP_H : LEGEND_ITEM_H;
+		nH += RowHeight(g_arrLegend[i].nKind);
 	return nH;
 }
 
 void CLegendPane::Reload()
 {
+	m_nTextLang = -1;			// 문구 캐시 무효화 (언어 전환 대비)
 	if (GetSafeHwnd() != NULL)
 		Invalidate(TRUE);
 }
 
 COLORREF CLegendPane::GetItemColor(int nIdx) const
 {
+	// 90~ : 설비 코드에 박혀 있는 고정색 (ScInfo/RtvInfo 의 GetForkColor1 참조)
+	if (nIdx == 90) return LIGHT_GRAY;			// 작업 없음
+	if (nIdx == 91) return DARK_GRAY;			// 미가동/수동(온라인·자동·액티브 아님)
+
 	if (m_pDoc == NULL || m_pDoc->m_pConfig == NULL)
-		return RGB(200, 200, 200);
+		return LIGHT_GRAY;
 
 	CConfig* p = m_pDoc->m_pConfig;
 	switch (nIdx)
@@ -166,22 +205,73 @@ COLORREF CLegendPane::GetItemColor(int nIdx) const
 	case 24: return p->m_clrUSER_COLOR_SC_INVK;
 	default: break;
 	}
-	return RGB(200, 200, 200);
+	return LIGHT_GRAY;
+}
+
+// 다국어 문구는 그릴 때마다 ini 를 읽으면 한 번 그리는 데 파일을 30여 번 여는 셈이라
+// 언어가 바뀔 때만 한 번 읽어 캐시한다.
+void CLegendPane::EnsureText() const
+{
+	int nLang = (m_pDoc == NULL) ? (int)EN_KOR : (int)m_pDoc->m_enLang;
+	if (m_nTextLang == nLang && m_arrText.GetSize() == LEGEND_ROW_CNT + 1)
+		return;
+
+	CString strPath = GetIniPath();
+	m_arrText.RemoveAll();
+	m_arrText.SetSize(LEGEND_ROW_CNT + 1);
+
+	CString strTitle = CLib::GetIniStringFromPath(strPath, _T("title"), nLang);
+	if (strTitle.IsEmpty()) strTitle = _T("범례");
+	m_arrText[0] = strTitle;
+
+	for (int i = 0; i < LEGEND_ROW_CNT; i++)
+	{
+		CString strValue = CLib::GetIniStringFromPath(strPath, g_arrLegend[i].szKey, nLang);
+		if (strValue.IsEmpty()) strValue = g_arrLegend[i].szKor;
+		m_arrText[i + 1] = strValue;
+	}
+	m_nTextLang = nLang;
 }
 
 CString CLegendPane::GetItemText(int nIdx) const
 {
-	// 다국어 : rc_resource\legend\legend.ini 우선, 없으면 내장 한글
-	int nLang = (m_pDoc == NULL) ? (int)EN_KOR : (int)m_pDoc->m_enLang;
-	CString strValue = CLib::GetIniStringFromPath(GetIniPath(), g_arrLegend[nIdx].szKey, nLang);
-	if (strValue.IsEmpty())
-		strValue = g_arrLegend[nIdx].szKor;
-	return strValue;
+	EnsureText();
+	return m_arrText[nIdx + 1];
 }
 
 BOOL CLegendPane::OnEraseBkgnd(CDC* /*pDC*/)
 {
 	return TRUE;		// OnPaint 에서 전부 그린다 (깜빡임 방지)
+}
+
+// ---------------------------------------------------------------------------
+// rv 컨트롤(크레인/RTV) 축소 아이콘
+//   CDciRvCtrl::UpdateControl 과 같은 구성 : 레일 선 + 양 끝 바퀴 + 가운데 포크.
+//   포크는 CDciMaster::DrawButton 과 같이 채운 뒤 3D 테두리를 두른다.
+// ---------------------------------------------------------------------------
+void CLegendPane::DrawRvIcon(CDC* pDC, const CRect& rcCell, COLORREF clrRail, COLORREF clrFork)
+{
+	int nCy = rcCell.top + rcCell.Height() / 2;
+
+	// 레일
+	CPen penRail(PS_SOLID, 1, clrRail);
+	CPen* pOldPen = pDC->SelectObject(&penRail);
+	pDC->MoveTo(rcCell.left + 3, nCy);
+	pDC->LineTo(rcCell.right - 3, nCy);
+
+	// 양 끝 바퀴
+	CBrush brRail(clrRail);
+	CBrush* pOldBrush = pDC->SelectObject(&brRail);
+	pDC->Ellipse(rcCell.left,     nCy - 3, rcCell.left + 6, nCy + 3);
+	pDC->Ellipse(rcCell.right - 6, nCy - 3, rcCell.right,   nCy + 3);
+	pDC->SelectObject(pOldBrush);
+	pDC->SelectObject(pOldPen);
+
+	// 포크(본체)
+	int nCx = rcCell.left + rcCell.Width() / 2;
+	CRect rcFork(nCx - 6, rcCell.top + 1, nCx + 6, rcCell.bottom - 1);
+	pDC->FillSolidRect(rcFork, clrFork);
+	pDC->Draw3dRect(rcFork, RGB(255, 255, 255), RGB(0, 0, 0));
 }
 
 void CLegendPane::OnPaint()
@@ -191,7 +281,6 @@ void CLegendPane::OnPaint()
 	CRect rcClient;
 	GetClientRect(&rcClient);
 
-	// 더블버퍼
 	CDC memDC;
 	CBitmap bmp, *pOldBmp;
 	memDC.CreateCompatibleDC(&dc);
@@ -214,12 +303,9 @@ void CLegendPane::OnPaint()
 	CFont* pOldFont = memDC.SelectObject(&m_fntTitle);
 	memDC.SetTextColor(RGB(0, 0, 128));
 
-	int nLang = (m_pDoc == NULL) ? (int)EN_KOR : (int)m_pDoc->m_enLang;
-	CString strTitle = CLib::GetIniStringFromPath(GetIniPath(), _T("title"), nLang);
-	if (strTitle.IsEmpty()) strTitle = _T("범례");
-
+	EnsureText();
 	CRect rcTitle(rcClient.left + LEGEND_PAD, nY, rcClient.right - LEGEND_PAD, nY + LEGEND_TITLE_H);
-	memDC.DrawText(strTitle, rcTitle, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	memDC.DrawText(m_arrText[0], rcTitle, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	memDC.SelectObject(&penBorder);
 	memDC.MoveTo(rcClient.left + LEGEND_PAD, rcTitle.bottom - 2);
@@ -231,38 +317,71 @@ void CLegendPane::OnPaint()
 		if (nY > rcClient.bottom) break;		// 창이 작으면 잘라 그린다
 
 		CString strText = GetItemText(i);
+		int nH = RowHeight(g_arrLegend[i].nKind);
 
-		if (g_arrLegend[i].nKind == 0)
+		switch (g_arrLegend[i].nKind)
 		{
-			// 그룹 제목
-			memDC.SelectObject(&m_fntTitle);
-			memDC.SetTextColor(RGB(70, 70, 70));
-			CRect rcGrp(rcClient.left + LEGEND_PAD, nY, rcClient.right - LEGEND_PAD, nY + LEGEND_GROUP_H);
-			memDC.DrawText(strText, rcGrp, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-			memDC.SelectObject(&penBorder);
-			memDC.MoveTo(rcClient.left + LEGEND_PAD, rcGrp.bottom - 1);
-			memDC.LineTo(rcClient.right - LEGEND_PAD, rcGrp.bottom - 1);
-			nY = rcGrp.bottom;
+		case 0:		// 그룹 제목
+			{
+				memDC.SelectObject(&m_fntTitle);
+				memDC.SetTextColor(RGB(70, 70, 70));
+				CRect rcGrp(rcClient.left + LEGEND_PAD, nY, rcClient.right - LEGEND_PAD, nY + nH);
+				memDC.DrawText(strText, rcGrp, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+				memDC.SelectObject(&penBorder);
+				memDC.MoveTo(rcClient.left + LEGEND_PAD, rcGrp.bottom - 1);
+				memDC.LineTo(rcClient.right - LEGEND_PAD, rcGrp.bottom - 1);
+			}
+			break;
+
+		case 4:		// 설명 문구
+			{
+				memDC.SelectObject(&m_fntItem);
+				memDC.SetTextColor(RGB(120, 120, 120));
+				CRect rcNote(rcClient.left + LEGEND_PAD + 2, nY, rcClient.right - 3, nY + nH);
+				memDC.DrawText(strText, rcNote, DT_LEFT | DT_TOP | DT_WORDBREAK);
+			}
+			break;
+
+		case 2:		// rv 아이콘 - 레일 색
+		case 3:		// rv 아이콘 - 포크 색
+			{
+				int nTop = nY + (nH - LEGEND_RV_ICON_H) / 2;
+				CRect rcCell(rcClient.left + LEGEND_PAD, nTop,
+							 rcClient.left + LEGEND_PAD + LEGEND_RV_W, nTop + LEGEND_RV_ICON_H);
+
+				COLORREF clr = GetItemColor(g_arrLegend[i].nColor);
+				if (g_arrLegend[i].nKind == 2)
+					DrawRvIcon(&memDC, rcCell, clr, LIGHT_GRAY);		// 레일이 그 색
+				else
+					DrawRvIcon(&memDC, rcCell, DARK_GRAY, clr);			// 포크가 그 색
+
+				memDC.SelectObject(&m_fntItem);
+				memDC.SetTextColor(RGB(30, 30, 30));
+				CRect rcTx(rcCell.right + 4, nY, rcClient.right - 3, nY + nH);
+				memDC.DrawText(strText, rcTx, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+			}
+			break;
+
+		default:	// 색 견본 사각형 (C/V 트랙 계열)
+			{
+				int nSwTop = nY + (nH - LEGEND_SWATCH_H) / 2;
+				CRect rcSw(rcClient.left + LEGEND_PAD + 5, nSwTop,
+						   rcClient.left + LEGEND_PAD + 5 + LEGEND_SWATCH_W, nSwTop + LEGEND_SWATCH_H);
+
+				memDC.FillSolidRect(rcSw, GetItemColor(g_arrLegend[i].nColor));
+				memDC.SelectObject(&penSwatch);
+				memDC.SelectStockObject(NULL_BRUSH);
+				memDC.Rectangle(rcSw);
+
+				memDC.SelectObject(&m_fntItem);
+				memDC.SetTextColor(RGB(30, 30, 30));
+				CRect rcTx(rcClient.left + LEGEND_PAD + LEGEND_RV_W + 4, nY, rcClient.right - 3, nY + nH);
+				memDC.DrawText(strText, rcTx, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+			}
+			break;
 		}
-		else
-		{
-			// 색 견본 + 문구
-			int nSwTop = nY + (LEGEND_ITEM_H - LEGEND_SWATCH_H) / 2;
-			CRect rcSw(rcClient.left + LEGEND_PAD + 2, nSwTop,
-					   rcClient.left + LEGEND_PAD + 2 + LEGEND_SWATCH_W, nSwTop + LEGEND_SWATCH_H);
 
-			memDC.FillSolidRect(rcSw, GetItemColor(g_arrLegend[i].nColor));
-			memDC.SelectObject(&penSwatch);
-			memDC.SelectStockObject(NULL_BRUSH);
-			memDC.Rectangle(rcSw);
-
-			memDC.SelectObject(&m_fntItem);
-			memDC.SetTextColor(RGB(30, 30, 30));
-			CRect rcTx(rcSw.right + 4, nY, rcClient.right - 3, nY + LEGEND_ITEM_H);
-			memDC.DrawText(strText, rcTx, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-
-			nY += LEGEND_ITEM_H;
-		}
+		nY += nH;
 	}
 
 	memDC.SelectObject(pOldFont);

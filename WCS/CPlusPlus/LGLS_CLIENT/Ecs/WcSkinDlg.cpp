@@ -321,7 +321,10 @@ void CWcSkinDlg::RedrawImage()
 }
 
 void CWcSkinDlg::InvalidateWcData(EN_LANG pLang)
-{	
+{
+	if(m_pDoc == NULL) return;
+	CSingleLock _lockWcRead(&m_pDoc->m_csEqpData, TRUE);   // [LGLS 2026-09-09] ¼öÁý thread write serialize (refcount assert guard)
+	
 
 	if(m_pDoc == NULL) return;
 	if(m_pWC_DATA == NULL) return;
