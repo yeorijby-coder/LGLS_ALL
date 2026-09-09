@@ -3417,6 +3417,7 @@
 #define ID_HOST_CONNECT                 32979
 #define ID_32980                        32980
 #define ID_EQUIP_PRE_VIEW               32981
+#define ID_VIEW_LEGEND                 33033
 #define ID_32982                        32982
 #define ID_32983                        32983
 #define ID_RELOAD_LAYOUT                32984
@@ -3521,7 +3522,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        554
-#define _APS_NEXT_COMMAND_VALUE         33032
+#define _APS_NEXT_COMMAND_VALUE         33034
 #define _APS_NEXT_CONTROL_VALUE         2367
 #define _APS_NEXT_SYMED_VALUE           114
 #endif

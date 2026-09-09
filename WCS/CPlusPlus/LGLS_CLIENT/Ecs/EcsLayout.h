@@ -10,9 +10,13 @@
 
 // CEcsLayout
 //
+// [LGLS 2026-09-09] 왼쪽 범례 패널이 켜져 있으면 그 폭만큼 그리기 영역을 오른쪽으로 민다.
+//   전 레이아웃 공통이라 static 으로 둔다. 설정은 CEcsView::LayoutLegend().
 class CEcsLayout : public CObject  
 {
 public:
+	static int m_nLeftInsetS;		// [LGLS 2026-09-09] 왼쪽 여백(px). 0 = 종전과 동일
+
 	CEcsLayout();
 	virtual ~CEcsLayout();
 

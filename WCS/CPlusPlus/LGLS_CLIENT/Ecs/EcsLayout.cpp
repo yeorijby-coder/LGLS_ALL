@@ -55,6 +55,7 @@ void CEcsLayout::OnInitialUpdate(CWnd* pWnd)
 
 		CRect rcClient;
 		pWnd->GetClientRect(rcClient);
+		rcClient.left += m_nLeftInsetS;		// [LGLS 2026-09-09] ¿ÞÂÊ ¹ü·Ê ÀÚ¸® È®º¸
 		m_pDCI->SetLayoutS(rcClient);
 		m_pDCI->RecalcLayout();
 		pWnd->Invalidate();
@@ -67,6 +68,8 @@ void CEcsLayout::OnInitialUpdate(CWnd* pWnd)
 	}
 	END_CATCH
 }
+
+int CEcsLayout::m_nLeftInsetS = 0;		// [LGLS 2026-09-09] ¿ÞÂÊ ¹ü·Ê Æø
 
 void CEcsLayout::OnDraw(CWnd* pWnd, CDC* pDC, int nTabType)
 {
@@ -115,7 +118,7 @@ void CEcsLayout::OnSize(CWnd* pWnd, UINT nType, int cx, int cy)
 	if ((m_pDCI == NULL) || (m_pDciCtrls == NULL))
 		return;
 
-	m_pDCI->SetLayoutS(0, 0, cx, cy);
+	m_pDCI->SetLayoutS(m_nLeftInsetS, 0, cx, cy);	// [LGLS 2026-09-09] ¿ÞÂÊ ¹ü·Ê ÀÚ¸® È®º¸
 	m_pDCI->RecalcLayout();
 	pWnd->Invalidate();
 }
