@@ -9,7 +9,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 OUT = r'D:\project\LGLS\Renewal\docs\산출물_20260909'
-SHOTS = r'C:\Users\USER\AppData\Local\Temp\claude\D--project-LGLS-Renewal\4609e0ee-85bd-49e7-8c4e-b9231f6fb7f0\scratchpad\shots_0904'
+SHOTS = r'D:\project\LGLS\Renewal\docs\산출물_20260909\shots'
 SCRATCH = r'D:\project\LGLS\Renewal\docs\산출물_20260909\gen'
 os.makedirs(OUT, exist_ok=True)
 
