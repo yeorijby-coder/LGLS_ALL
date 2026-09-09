@@ -924,25 +924,31 @@ void CMainFrame::ShowPanelBars(CEcsDoc* pDoc, BOOL bShow)
 		m_PanelVehDlg.m_pDoc = pDoc;
 		m_VehPane.m_pDlg = &m_PanelVehDlg;    m_VehPane.m_nIDD = IDD_PANEL_VEH;
 
-		DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_RIGHT | CBRS_FLOAT_MULTI;
-		if (!m_JobPane.Create(_T("작업 정보"), this, CRect(0, 0, 480, 500), TRUE,
-				ID_PANE_JOB, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
+		// [LGLS 2026-09-09] 판넬 배치 변경(사용자 요청)
+		//   작업 정보 : 상단에 가로로 넓게 도킹 (작업 목록이 열 수가 많아 가로가 필요하다)
+		//   상세정보 / Crane & Vehicle : 오른쪽에, 작업 정보 판넬 아래로 위아래 배치
+		DWORD dwStyleTop   = WS_CHILD | WS_VISIBLE | CBRS_TOP   | CBRS_FLOAT_MULTI;
+		DWORD dwStyleRight = WS_CHILD | WS_VISIBLE | CBRS_RIGHT | CBRS_FLOAT_MULTI;
+
+		if (!m_JobPane.Create(_T("작업 정보"), this, CRect(0, 0, 1200, 240), TRUE,
+				ID_PANE_JOB, dwStyleTop, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
 			return;
-		if (!m_InfoPane.Create(_T("상세정보"), this, CRect(0, 0, 480, 400), TRUE,
-				ID_PANE_INFO, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
+		if (!m_InfoPane.Create(_T("상세정보"), this, CRect(0, 0, 480, 460), TRUE,
+				ID_PANE_INFO, dwStyleRight, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
 			return;
-		if (!m_VehPane.Create(_T("Crane && Vehicle 반송 현황"), this, CRect(0, 0, 300, 200), TRUE,
-				ID_PANE_VEH, dwStyle, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
+		if (!m_VehPane.Create(_T("Crane && Vehicle 반송 현황"), this, CRect(0, 0, 480, 260), TRUE,
+				ID_PANE_VEH, dwStyleRight, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
 			return;
 
 		m_JobPane.EnableDocking(CBRS_ALIGN_ANY);
 		m_InfoPane.EnableDocking(CBRS_ALIGN_ANY);
-		DockPane(&m_JobPane);
-		RecalcLayout();
-		m_InfoPane.DockToWindow(&m_JobPane, CBRS_ALIGN_BOTTOM);   // 작업 판넬 아래 분할
 		m_VehPane.EnableDocking(CBRS_ALIGN_ANY);
+
+		DockPane(&m_JobPane);            // 상단 전폭
 		RecalcLayout();
-		m_VehPane.DockToWindow(&m_InfoPane, CBRS_ALIGN_RIGHT);    // 상세정보 오른쪽 옆
+		DockPane(&m_InfoPane);           // 오른쪽 (상단 판넬 아래로 자리잡는다)
+		RecalcLayout();
+		m_VehPane.DockToWindow(&m_InfoPane, CBRS_ALIGN_BOTTOM);   // 상세정보 아래
 
 		m_bPanelBarsCreated = TRUE;
 		RecalcLayout();
