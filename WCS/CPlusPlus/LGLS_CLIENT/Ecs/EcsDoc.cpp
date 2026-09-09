@@ -100,6 +100,18 @@ END_MESSAGE_MAP()
 //
 CString g_strEcsPath;
 
+// [LGLS 2026-09-09] 실행 파일(Ecs.exe)이 있는 폴더. 끝에 역슬래시는 붙이지 않는다
+//   (ECS_INI_FILE 등이 "\\Ecs.ini" 를 덧붙인다).
+static CString GetExeFolder()
+{
+	TCHAR szExe[MAX_PATH] = {0};
+	::GetModuleFileName(NULL, szExe, MAX_PATH);
+	CString strPath(szExe);
+	int nPos = strPath.ReverseFind(_T('\\'));
+	if (nPos > 0) strPath = strPath.Left(nPos);
+	return strPath;
+}
+
 CEcsDoc::CEcsDoc()
 {
 	m_bViewFirstLoad = FALSE;
@@ -109,9 +121,10 @@ CEcsDoc::CEcsDoc()
 	m_hWndViewRackDlg = NULL;
 	m_bExit = false;
 
-	TCHAR szPath[MAX_PATH];
-	::GetCurrentDirectory(sizeof(szPath), szPath);
-	g_strEcsPath = CString(szPath) + _T("\\");
+	// [LGLS 2026-09-09] 현재 디렉터리가 아니라 실행 파일 폴더를 쓴다.
+	//   현재 디렉터리는 파일 대화상자 한 번에 바뀌고, 바로가기로 띄우면 처음부터 다르다.
+	//   그 탓에 Ecs.ini 를 엉뚱한 폴더에서 읽어 [MENU] 설정이 안 먹는 일이 있었다.
+	g_strEcsPath = GetExeFolder();
 	m_pCollectDB = NULL;
 	m_pCollectRequest = NULL;
 	m_CollectCellInfo.m_bRequest = FALSE;
@@ -1179,10 +1192,7 @@ BOOL CEcsDoc::Initialize()
 
 	int i = 0;
 //	char szPath[_MAX_PATH] = {0};
-	TCHAR szPath[_MAX_PATH] = {0};
-	::GetCurrentDirectory(sizeof(szPath), (LPWSTR)szPath);
-
-	g_strEcsPath = szPath;
+	g_strEcsPath = GetExeFolder();   // [LGLS 2026-09-09] 실행 파일 폴더 고정
 
 	int nTabCount = ::GetPrivateProfileInt(_T("COMMON"), _T("TabCount"), 1, ECS_INI_FILE);
 	g_nPlcCount = 0;
@@ -2470,6 +2480,7 @@ void CEcsDoc::OnUpdateTrackTextMode(CCmdUI* pCmdUI)
 //   IsJobInJobMst 와 같은 2초 캐시를 쓴다.
 CString CEcsDoc::GetVehicleJobNo(LPCTSTR lpszVehNo)
 {
+	CSingleLock _lockJob(&m_csJobCache, TRUE);
 	CString strVeh(lpszVehNo == NULL ? _T("") : lpszVehNo);
 	strVeh.Trim();
 	if (strVeh.IsEmpty()) return _T("");
@@ -2488,6 +2499,7 @@ CString CEcsDoc::GetVehicleJobNo(LPCTSTR lpszVehNo)
 //   RGV 는 호기별 작업 맵의 키(901~905)가 없으므로 자기가 실은 작업번호로 찾는다.
 CString CEcsDoc::GetJobTypOfLugg(LPCTSTR lpszLugg)
 {
+	CSingleLock _lockJob(&m_csJobCache, TRUE);
 	CString strLugg(lpszLugg == NULL ? _T("") : lpszLugg);
 	strLugg.Trim();
 	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return _T("");
@@ -2501,6 +2513,7 @@ CString CEcsDoc::GetJobTypOfLugg(LPCTSTR lpszLugg)
 
 CString CEcsDoc::GetVehicleJobTyp(LPCTSTR lpszVehNo)
 {
+	CSingleLock _lockJob(&m_csJobCache, TRUE);
 	CString strVeh(lpszVehNo == NULL ? _T("") : lpszVehNo);
 	strVeh.Trim();
 	if (strVeh.IsEmpty()) return _T("");
@@ -2519,6 +2532,10 @@ CString CEcsDoc::GetVehicleJobTyp(LPCTSTR lpszVehNo)
 //   (그 탓에 크레인이 작업을 물고 있어도 색·작업번호가 비어 보였다)
 void CEcsDoc::RefreshJobCache()
 {
+	// [LGLS 2026-09-09] 설비 스레드가 저마다 부른다. 락 없이는 한 스레드의 RemoveAll 과
+	//   다른 스레드의 Lookup 이 겹쳐 해제된 CString 을 만진다(크래시).
+	//   틱 검사도 락 안에서 해야 여러 스레드가 같은 순간에 DB 를 치지 않는다.
+	CSingleLock _lockJob(&m_csJobCache, TRUE);
 	if (m_dwAliveJobTick != 0 && (::GetTickCount() - m_dwAliveJobTick) < 2000) return;
 	{
 		m_dwAliveJobTick = ::GetTickCount();
@@ -2595,6 +2612,7 @@ void CEcsDoc::RefreshJobCache()
 
 BOOL CEcsDoc::IsJobInJobMst(LPCTSTR lpszLugg)
 {
+	CSingleLock _lockJob(&m_csJobCache, TRUE);
 	if (lpszLugg == NULL) return FALSE;
 	CString strLugg(lpszLugg);
 	strLugg.Trim();

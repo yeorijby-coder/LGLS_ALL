@@ -423,6 +423,10 @@ public:
 	DWORD m_dwAliveJobTick;
 	CMapStringToString m_mapAliveJob;
 	CMapStringToString m_mapVehJob;		// 호기(901~905/801) -> 진행 중 작업번호
+	// [LGLS 2026-09-09] 작업정보 캐시 락. 설비 스레드마다 이 캐시를 읽고 갱신하는데
+	//   보호가 없어, 한쪽이 RemoveAll 하는 사이 다른 쪽이 Lookup 하다 죽었다
+	//   (크래시 덤프 6건 - IsJobInJobMst / GetVehicleJobNo / GetVehicleJobTyp).
+	CCriticalSection m_csJobCache;
 public:
 	void RefreshJobCache();	// [LGLS 2026-08-23] 작업정보 2초 캐시 갱신
 	BOOL IsJobInJobMst(LPCTSTR lpszLugg);

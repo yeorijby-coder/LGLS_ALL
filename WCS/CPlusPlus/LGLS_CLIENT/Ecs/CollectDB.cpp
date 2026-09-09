@@ -48,10 +48,15 @@ BOOL CCollectDB::IsDB_POSSIBLE()
 
 	if(m_pDB_ACCESS->m_pAdoDB->m_bConnected == FALSE)
 	{
-		delete m_pDB_ACCESS->m_pAdoDB;
-		delete m_pDB_ACCESS;
-		m_pDB_ACCESS->m_pAdoDB = NULL;
+		// [LGLS 2026-09-09] 해제한 뒤에 그 포인터로 멤버를 쓰고 있었다(use-after-free).
+		//   DB 가 끊긴 순간 수집 스레드가 여기로 들어와 죽었다
+		//   (크래시 리포트 Ecs20260904_065507.RPT : CCollectDB::IsDB_POSSIBLE+27F).
+		CURMDBAccess* pAccess = m_pDB_ACCESS;
+		CAdoDB*       pAdo    = m_pDB_ACCESS->m_pAdoDB;
 		m_pDB_ACCESS = NULL;
+		pAccess->m_pAdoDB = NULL;
+		delete pAdo;		// CURMDBAccess 소멸자는 비어 있어 여기서 직접 지운다
+		delete pAccess;
 		return FALSE;
 	}
 

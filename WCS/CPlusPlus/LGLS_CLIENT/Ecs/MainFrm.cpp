@@ -1858,6 +1858,9 @@ void CMainFrame::OnButtonCv1()
 	
 	strTemp1.Format(_T("CV_01 (IP:%s) (PORT:%04d)"),_T("10.99.43.236"),8192);
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pTrackInfo->m_pCV_DATA->V_EQP_TIME;
 	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
 
@@ -1895,6 +1898,9 @@ void CMainFrame::OnButtonSc1()
 	CString strTemp1, strTemp2;
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
 	strTemp1.Format(_T("SC_01 (IP:%s) (PORT:%04d)"),_T("10.99.43.242"),8192);
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
 
@@ -1933,6 +1939,9 @@ void CMainFrame::OnButtonSc2()
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
 	strTemp1.Format(_T("SC_02 (IP:%s) (PORT:%04d)"),_T("10.99.43.243"),8192);
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
 
@@ -1971,6 +1980,9 @@ void CMainFrame::OnButtonSc3()
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
 	strTemp1.Format(_T("SC_03 (IP:%s) (PORT:%04d)"),_T("10.99.43.244"),8192);
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
 
@@ -2009,6 +2021,9 @@ void CMainFrame::OnButtonSc4()
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
 	strTemp1.Format(_T("SC_04 (IP:%s) (PORT:%04d)"),_T("10.99.43.245"),8192);
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
 
@@ -2047,6 +2062,9 @@ void CMainFrame::OnButtonWc1()
 	CString strEQP_CONNECTED_YN = pWC_DATA->V_EQP_CONNECTED_YN;
 	strTemp1.Format(_T("WC_01 (IP:%s) (PORT:%04d)"),_T("10.99.43.249"),8198);
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pWC_DATA->V_EQP_TIME;
 	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
 
@@ -2167,6 +2185,9 @@ void CMainFrame::OnUpdateStatusCv1(CCmdUI *pCmdUI)
 		return;
 
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pTrackInfo->m_pCV_DATA->V_EQP_TIME;
 	CString strEQP_COLOR = pTrackInfo->m_pCV_DATA->V_EQP_COLOR;
 	CString strEQP_CONNECTED_YN = pTrackInfo->m_pCV_DATA->V_EQP_CONNECTED_YN;
@@ -2209,6 +2230,9 @@ void CMainFrame::OnUpdateStatusWc1(CCmdUI *pCmdUI)
 	if (pWC_DATA == NULL)
 		return;
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pWC_DATA->V_EQP_TIME;
 	CString strEQP_COLOR = pWC_DATA->V_EQP_COLOR;
 	CString strEQP_CONNECTED_YN = pWC_DATA->V_EQP_CONNECTED_YN;
@@ -2249,6 +2273,9 @@ void CMainFrame::OnUpdateStatusSc1(CCmdUI *pCmdUI)
 	if (pSC_DATA == NULL)
 		return;
 
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	CString strEQP_COLOR = pSC_DATA->V_EQP_COLOR;
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
@@ -2285,7 +2312,13 @@ void CMainFrame::OnUpdateStatusSc2(CCmdUI *pCmdUI)
 	//m_pDoc = pDoc;
 	
 	CSC_DATA* pSC_DATA = pDoc->GetSC_DATA(_T("902"));
-	
+
+	if (pSC_DATA == NULL)   // [LGLS 2026-09-09] 902 만 이 검사가 빠져 있었다
+		return;
+
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	CString strEQP_COLOR = pSC_DATA->V_EQP_COLOR;
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
@@ -2323,6 +2356,9 @@ void CMainFrame::OnUpdateStatusSc3(CCmdUI *pCmdUI)
 	
 	CSC_DATA* pSC_DATA = pDoc->GetSC_DATA(_T("903"));
 	
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	CString strEQP_COLOR = pSC_DATA->V_EQP_COLOR;
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
@@ -2360,6 +2396,9 @@ void CMainFrame::OnUpdateStatusSc4(CCmdUI *pCmdUI)
 	
 	CSC_DATA* pSC_DATA = pDoc->GetSC_DATA(_T("904"));
 	
+	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
+	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
+	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
 	CString strEQP_TIME = pSC_DATA->V_EQP_TIME;
 	CString strEQP_COLOR = pSC_DATA->V_EQP_COLOR;
 	CString strEQP_CONNECTED_YN = pSC_DATA->V_EQP_CONNECTED_YN;
