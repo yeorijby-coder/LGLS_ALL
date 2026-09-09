@@ -47,8 +47,6 @@ BEGIN_MESSAGE_MAP(CEcsView, CFormView)
 	ON_WM_MOUSEMOVE()
 	ON_WM_ERASEBKGND()
 	ON_COMMAND(ID_SEARCH, &CEcsView::OnSearch)
-	ON_COMMAND(ID_VIEW_LEGEND, &CEcsView::OnViewLegend)
-	ON_UPDATE_COMMAND_UI(ID_VIEW_LEGEND, &CEcsView::OnUpdateViewLegend)
 	ON_MESSAGE(WM_USER_REFRESH_LAYOUT, &CEcsView::OnViewLayoutInfo)
 	ON_MESSAGE(WM_USER_CONTROL_CLICK, &CEcsView::OnControlClick)
 	ON_MESSAGE(WM_USER_REFRESH_DIALOG, &CEcsView::OnRefreshDialog)
@@ -63,10 +61,6 @@ CEcsView::CEcsView()
 	m_bSearchFlag = FALSE;
 	m_nSearchCount = 0;
 	m_bTest = false;
-	// [LGLS 2026-09-09] 범례 표시 여부는 사용자별로 기억한다(기본 표시).
-	m_bShowLegend = AfxGetApp()->GetProfileInt(_T("VIEW"), _T("SHOW_LEGEND"), 1) ? TRUE : FALSE;
-	// 레이아웃(CEcsLayout)은 뷰보다 먼저 그리기 영역을 잡으므로 여백을 여기서 먼저 정한다.
-	CEcsLayout::m_nLeftInsetS = m_bShowLegend ? (CLegendPane::PANE_WIDTH + 6) : 0;
 }
 
 CEcsView::~CEcsView()
@@ -182,103 +176,9 @@ void CEcsView::OnInitialUpdate()
 
 
 
-	// [LGLS 2026-09-09] 왼쪽 범례 패널 생성. 색은 CConfig, 문구는 rc_resource\legend\legend.ini.
-	if (m_wndLegend.GetSafeHwnd() == NULL)
-	{
-		if (m_wndLegend.CreatePane(this, ID_VIEW_LEGEND))
-		{
-			m_wndLegend.SetDoc(pDoc);
-			LayoutLegend();
-		}
-	}
-
 	pDoc->UpdateRibbonLang();
 	::SetTimer(this->m_hWnd, 1000, NULL, NULL);
 	Invalidate(TRUE);
-}
-
-// ---------------------------------------------------------------------------
-// [LGLS 2026-09-09] 범례 패널 배치 / 토글 / 갱신
-//   레이아웃 도형은 왼쪽 여백(약 x<180)을 쓰지 않으므로 그 자리에 겹쳐 놓는다.
-//   화면이 좁아 겹칠 때를 대비해 리본 [뷰] > [범례] 로 끄고 켤 수 있다.
-// ---------------------------------------------------------------------------
-void CEcsView::LayoutLegend()
-{
-	// 레이아웃 그리기 영역의 왼쪽 여백을 범례 폭에 맞춘다.
-	int nInset = m_bShowLegend ? (CLegendPane::PANE_WIDTH + 6) : 0;
-	if (CEcsLayout::m_nLeftInsetS != nInset)
-	{
-		CEcsLayout::m_nLeftInsetS = nInset;
-		RecalcLayoutArea();
-	}
-
-	if (m_wndLegend.GetSafeHwnd() == NULL)
-		return;
-
-	if (!m_bShowLegend)
-	{
-		m_wndLegend.ShowWindow(SW_HIDE);
-		return;
-	}
-
-	CRect rcClient;
-	GetClientRect(&rcClient);
-
-	int nWant = m_wndLegend.GetWantHeight();
-	int nH = min(nWant, rcClient.Height() - 8);
-	if (nH < 40)
-	{
-		m_wndLegend.ShowWindow(SW_HIDE);		// 너무 좁으면 그리지 않는다
-		return;
-	}
-
-	m_wndLegend.SetWindowPos(&wndTop, 2, 4, CLegendPane::PANE_WIDTH, nH,
-							 SWP_NOACTIVATE | SWP_SHOWWINDOW);
-	m_wndLegend.Invalidate(TRUE);
-}
-
-void CEcsView::RecalcLayoutArea()
-{
-	CEcsDoc* pDoc = GetDocument();
-	if (pDoc == NULL || m_tabLayout.GetSafeHwnd() == NULL)
-		return;
-
-	CRect rcClient;
-	GetClientRect(&rcClient);
-	if (rcClient.Width() <= 0 || rcClient.Height() <= 0)
-		return;
-
-	int nSel = m_tabLayout.GetCurSel();
-	if (nSel < 0)
-		return;
-
-	CEcsLayout* pEcsLayout = pDoc->m_pEcsLayOuts[nSel];
-	if (pEcsLayout == NULL)
-		return;
-
-	pEcsLayout->OnSize(this, SIZE_RESTORED, rcClient.Width(), rcClient.Height());
-}
-
-void CEcsView::ReloadLegend()
-{
-	if (m_wndLegend.GetSafeHwnd() == NULL)
-		return;
-	m_wndLegend.SetDoc(GetDocument());
-	m_wndLegend.Reload();
-}
-
-void CEcsView::OnViewLegend()
-{
-	m_bShowLegend = !m_bShowLegend;
-	AfxGetApp()->WriteProfileInt(_T("VIEW"), _T("SHOW_LEGEND"), m_bShowLegend ? 1 : 0);
-	LayoutLegend();
-	Invalidate(TRUE);
-}
-
-void CEcsView::OnUpdateViewLegend(CCmdUI* pCmdUI)
-{
-	if (pCmdUI != NULL)
-		pCmdUI->SetCheck(m_bShowLegend ? 1 : 0);
 }
 
 void CEcsView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
@@ -503,7 +403,6 @@ void CEcsView::OnSize(UINT nType, int cx, int cy)
 {
 	CFormView::OnSize(nType, cx, cy);
 
-	LayoutLegend();		// [LGLS 2026-09-09] 범례 패널을 왼쪽에 다시 붙인다
 	
 	
 	CEcsDoc* pDoc = GetDocument();

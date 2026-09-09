@@ -39,6 +39,8 @@
 #include "UserUserDlg.h"
 #include "FireMessageDlg.h"
 #include "ConfigStatus.h"
+#include "DciRvCtrl.h"		// [LGLS 2026-09-09] 범례 rv 견본 색
+#include "DciTrackCtrl.h"	// [LGLS 2026-09-09] 범례 트랙 견본 아이템 색
 #include "ConfigLogDelete.h"
 
 
@@ -1202,6 +1204,9 @@ BOOL CEcsDoc::Initialize()
 		m_pEcsLayOuts.Add(pEcsLayout);
 	}
 
+	// [LGLS 2026-09-09] 레이아웃에 그려 둔 범례 견본에 설정 색을 칠한다.
+	ApplyLegendColors();
+
 	
 	CEcsDefine define(this);
 	if (!define.ParseXml())
@@ -1708,6 +1713,117 @@ BOOL CEcsDoc::IsPermissionDlg(CString pStr)
 // 	}
 	
 	return TRUE;
+}
+
+
+// ---------------------------------------------------------------------------
+// [LGLS 2026-09-09] 범례 색 적용
+//
+//   범례는 레이아웃(EcsLayout1.xml) 안에 표로 그려져 있고, 색 견본 칸은
+//   CID 90009xxx 로 잡아 두었다. 그 칸들을 CConfig 의 실제 설정 색으로 칠한다.
+//     90009001~020 : C/V 작업색·상태색 (사각 견본)
+//     90009101~103 : S/C·RGV 상태  = rv 컨트롤의 포크 색
+//     90009201~205 : S/C·RGV 레일  = rv 컨트롤의 레일 색
+//
+//   견본 칸 안에는 번호(1~20)가 찍히므로, 색이 어두우면 글자를 흰색으로 바꾼다.
+// ---------------------------------------------------------------------------
+static void PfSetLegendBox(CEcsDoc* pDoc, LPCTSTR pszCID, COLORREF clr)
+{
+	if (pDoc == NULL) return;
+	CString strCID = pszCID;
+	CDciControl* pCtl = pDoc->GetDciControl_FindAllLayout(strCID);
+	if (pCtl == NULL) return;
+
+	// 트랙 컨트롤(입고대/출고대/HS/일시정지)은 상태색이 바탕이 아니라 모양 아이템에 칠해진다.
+	//   (TrackInfo 가 m_items[i].m_clrItem 에 넣는 것과 같은 규격)
+	CDciTrackCtrl* pTr = dynamic_cast<CDciTrackCtrl*>(pCtl);
+	if (pTr != NULL && pTr->m_items.GetSize() > 0)
+	{
+		for (int i = 0; i < pTr->m_items.GetSize(); i++)
+			pTr->m_items[i].m_clrItem = clr;
+		pCtl->m_clrBgColor = LIGHT_GRAY;      // 트랙 바탕은 평상시 색
+		pCtl->m_nBgMode    = OPAQUE;
+		pCtl->m_clrFgColor = RGB(0, 0, 0);
+		return;
+	}
+
+	pCtl->m_clrBgColor = clr;
+	pCtl->m_nBgMode    = OPAQUE;
+
+	// 밝기(ITU-R BT.601)로 글자색을 정한다 - 어두운 배경에 검은 글자는 안 보인다.
+	int nLum = (299 * GetRValue(clr) + 587 * GetGValue(clr) + 114 * GetBValue(clr)) / 1000;
+	pCtl->m_clrFgColor = (nLum < 128) ? RGB(255, 255, 255) : RGB(0, 0, 0);
+}
+
+static void PfSetLegendRv(CEcsDoc* pDoc, LPCTSTR pszCID, COLORREF clrRail, COLORREF clrFork, BOOL bFork)
+{
+	if (pDoc == NULL) return;
+	CString strCID = pszCID;
+	CDciControl* pCtl = pDoc->GetDciControl_FindAllLayout(strCID);
+	if (pCtl == NULL) return;
+
+	CDciRvCtrl* pRv = dynamic_cast<CDciRvCtrl*>(pCtl);
+	if (pRv == NULL) return;
+
+	if (bFork)
+	{
+		// 상태 견본 : 포크(본체)만 그 색, 레일은 기본 회색
+		pRv->m_clrFork  = clrFork;
+		pRv->m_clrFork1 = clrFork;
+		pRv->m_clrFork2 = clrFork;
+		pRv->m_clrRail  = DARK_GRAY;
+	}
+	else
+	{
+		// 레일 견본 : 레일만 그 색, 포크는 기본 회색
+		pRv->m_clrRail  = clrRail;
+		pRv->m_clrFork  = LIGHT_GRAY;
+		pRv->m_clrFork1 = LIGHT_GRAY;
+		pRv->m_clrFork2 = LIGHT_GRAY;
+	}
+	pRv->SetExtraTextSafe(_T(" "), RGB(0, 0, 0));   // 견본에는 작업번호를 찍지 않는다
+}
+
+void CEcsDoc::ApplyLegendColors()
+{
+	if (m_pConfig == NULL) return;
+	CConfig* p = m_pConfig;
+
+	// --- C/V 작업 색상 (1~5) / 반자동 (6~10)
+	PfSetLegendBox(this, _T("90009001"), p->m_clrUSER_COLOR_STO);
+	PfSetLegendBox(this, _T("90009002"), p->m_clrUSER_COLOR_RET);
+	PfSetLegendBox(this, _T("90009003"), p->m_clrUSER_COLOR_MOVE);
+	PfSetLegendBox(this, _T("90009004"), p->m_clrUSER_COLOR_RTR);
+	PfSetLegendBox(this, _T("90009005"), p->m_clrUSER_COLOR_ATA);
+	PfSetLegendBox(this, _T("90009006"), p->m_clrUSER_COLOR_SEMI_STO);
+	PfSetLegendBox(this, _T("90009007"), p->m_clrUSER_COLOR_SEMI_RET);
+	PfSetLegendBox(this, _T("90009008"), p->m_clrUSER_COLOR_SEMI_MOVE);
+	PfSetLegendBox(this, _T("90009009"), p->m_clrUSER_COLOR_SEMI_RTR);
+	PfSetLegendBox(this, _T("90009010"), p->m_clrUSER_COLOR_SEMI_ATA);
+
+	// --- C/V 상태 (11~20)
+	PfSetLegendBox(this, _T("90009011"), p->m_clrUSER_COLOR_STN_STO);
+	PfSetLegendBox(this, _T("90009012"), p->m_clrUSER_COLOR_STN_RET);
+	PfSetLegendBox(this, _T("90009013"), p->m_clrUSER_COLOR_HS_STO);
+	PfSetLegendBox(this, _T("90009014"), p->m_clrUSER_COLOR_HS_RET);
+	PfSetLegendBox(this, _T("90009015"), p->m_clrUSER_COLOR_SUSPEND);
+	PfSetLegendBox(this, _T("90009016"), p->m_clrUSER_COLOR_ERROR);
+	PfSetLegendBox(this, _T("90009017"), p->m_clrUSER_COLOR_MANUAL);
+	PfSetLegendBox(this, _T("90009018"), p->m_clrUSER_COLOR_DISCONNECT);
+	PfSetLegendBox(this, _T("90009019"), p->m_clrUSER_COLOR_CV_SEARCH);
+	PfSetLegendBox(this, _T("90009020"), LIGHT_GRAY);           // 일반(작업 없음)
+
+	// --- S/C·RGV 상태 = 포크 색 (ScInfo/RtvInfo GetForkColor1 기준)
+	PfSetLegendRv(this, _T("90009101"), 0, LIGHT_GRAY,                 TRUE);   // 작업없음(정상)
+	PfSetLegendRv(this, _T("90009102"), 0, DARK_GRAY,                  TRUE);   // 미가동(수동)
+	PfSetLegendRv(this, _T("90009103"), 0, p->m_clrUSER_COLOR_ERROR,   TRUE);   // 에러
+
+	// --- S/C·RGV 레일 색 (GetRailColor 기준)
+	PfSetLegendRv(this, _T("90009201"), p->m_clrUSER_COLOR_STO_SUSPEND, 0, FALSE);  // 입고 금지
+	PfSetLegendRv(this, _T("90009202"), p->m_clrUSER_COLOR_RET_SUSPEND, 0, FALSE);  // 출고 금지
+	PfSetLegendRv(this, _T("90009203"), p->m_clrUSER_COLOR_ALL_SUSPEND, 0, FALSE);  // 입출고 정지
+	PfSetLegendRv(this, _T("90009204"), p->m_clrUSER_COLOR_RAIL_ERROR,  0, FALSE);  // 에러
+	PfSetLegendRv(this, _T("90009205"), p->m_clrUSER_COLOR_SC_INVK,     0, FALSE);  // 작업중
 }
 
 CDciControl* CEcsDoc::GetDciControl_FindAllLayout(CString& strCID)

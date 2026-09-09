@@ -327,6 +327,10 @@ public:
 
 public:
 	CDciControl*	GetDciControl(CString& strCID) ;
+
+	// [LGLS 2026-09-09] 레이아웃에 그려 둔 범례(EcsLayout1.xml) 견본 칸에
+	//   실제 설정 색(CConfig)을 칠한다. 레이아웃 로드 직후와 [범례] 저장 후 부른다.
+	void			ApplyLegendColors();
 	CEquipment*		GetEquipment(int nEquipKind, int nEquipNum) { return m_pEquipments.GetEquipment(nEquipKind, nEquipNum); }
 	CEquipment*		GetEquipmentSC(int nEquipKind, int nEquipNum) { return m_pEquipments.GetEquipmentSC(nEquipKind, nEquipNum); }
 	CEquipment*		GetEquipmentRTV(int nEquipKind, int nEquipNum) { return m_pEquipments.GetEquipmentRTV(nEquipKind, nEquipNum); }

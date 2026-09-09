@@ -6,7 +6,6 @@
 #include "resource.h"
 #include "CvInfo.h"			// test@@
 #include "afxcmn.h"
-#include "LegendPane.h"		// [LGLS 2026-09-09] 왼쪽 범례 패널
 
 class CEcsView : public CFormView
 {
@@ -116,14 +115,6 @@ public:
 	void GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_MODE, CString& pREMOTE_CONTROL, CString& pROLL_MODE);
 	CTabCtrl m_tabLayout;
 
-	// [LGLS 2026-09-09] 메인 화면 왼쪽 범례 패널
-	CLegendPane	m_wndLegend;
-	BOOL		m_bShowLegend;
-	void		LayoutLegend();
-	void		RecalcLayoutArea();
-	void		ReloadLegend();
-	afx_msg void OnViewLegend();
-	afx_msg void OnUpdateViewLegend(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // EcsView.cpp의 디버그 버전

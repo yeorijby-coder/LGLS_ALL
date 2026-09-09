@@ -426,7 +426,6 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClInclude Include="EcsEnv.h" />
     <ClInclude Include="EcsLayout.h" />
     <ClInclude Include="EcsView.h" />
-    <ClInclude Include="LegendPane.h" />
     <ClInclude Include="EnCarrier.h" />
     <ClInclude Include="Equipment.h" />
     <ClInclude Include="ErrorMst.h" />
@@ -572,7 +571,6 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClCompile Include="EcsDoc.cpp" />
     <ClCompile Include="EcsLayout.cpp" />
     <ClCompile Include="EcsView.cpp" />
-    <ClCompile Include="LegendPane.cpp" />
     <ClCompile Include="Equipment.cpp" />
     <ClCompile Include="ErrorMst.cpp" />
     <ClCompile Include="FireMessageDlg.cpp" />

@@ -524,15 +524,6 @@ void CMainFrame::AddCategoryWCS()
 	pBtnSearch->SetAlwaysLargeImage();
 	pPanelView->Add(pBtnSearch);
 
-	// [LGLS 2026-09-09] 범례 : 메인 화면 왼쪽 범례 패널을 끄고 켠다.
-	//   Ecs.ini [MENU] LEGEND_MENU=1/0 으로 버튼 자체를 숨길 수 있다(기본 1=표시).
-	//   버튼은 [뷰] 패널 맨 끝에 붙여 RenameRibbonText 의 기존 인덱스를 건드리지 않는다.
-	if (::GetPrivateProfileInt(_T("MENU"), _T("LEGEND_MENU"), 1, ECS_INI_FILE) != 0)
-	{
-		CMFCRibbonButton* pBtnLegend = new CMFCRibbonButton(ID_VIEW_LEGEND, _T("범례"), HICONFromPATH(GetConcatPath(strAppPath, _T("search"), strExtension)), TRUE);
-		pBtnLegend->SetAlwaysLargeImage();
-		pPanelView->Add(pBtnLegend);
-	}
 	//
 
 	strAppPath.Format(_T("%s"),chrFileName);
@@ -807,18 +798,6 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 	if (pButton_Search != NULL)
 		pButton_Search->SetText(CLib::GetIniStringFromPath(strFullPath, _T("search"), (int)penLang));
 
-	// [LGLS 2026-09-09] 범례 버튼(있을 때만) - legend.ini 의 [kor]/[eng]/[hun]/[chin] title
-	if (::GetPrivateProfileInt(_T("MENU"), _T("LEGEND_MENU"), 1, ECS_INI_FILE) != 0)
-	{
-		CString strLegendIni = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\legend\\"), _T("legend"), strExtension);
-		CMFCRibbonButton* pButton_Legend = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(2 + nEmptyPlt);
-		if (pButton_Legend != NULL)
-		{
-			CString strLegend = CLib::GetIniStringFromPath(strLegendIni, _T("title"), (int)penLang);
-			if (!strLegend.IsEmpty())
-				pButton_Legend->SetText(strLegend);
-		}
-	}
 
 	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_monitor\\"), _T("monitor"), strExtension);
 	CMFCRibbonPanel_Wrap* pPanel_Wrap_Monitor = (CMFCRibbonPanel_Wrap*)pCategory->GetPanel(2);

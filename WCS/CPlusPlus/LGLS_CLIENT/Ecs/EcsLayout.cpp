@@ -69,7 +69,7 @@ void CEcsLayout::OnInitialUpdate(CWnd* pWnd)
 	END_CATCH
 }
 
-int CEcsLayout::m_nLeftInsetS = 0;		// [LGLS 2026-09-09] ¿ÞÂÊ ¹ü·Ê Æø
+int CEcsLayout::m_nLeftInsetS = 0;		// [LGLS 2026-09-09] ¹ü·Ê´Â ·¹ÀÌ¾Æ¿ô ¾ÈÀ¸·Î µé¾î°¡ Ç×»ó 0
 
 void CEcsLayout::OnDraw(CWnd* pWnd, CDC* pDC, int nTabType)
 {
