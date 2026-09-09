@@ -77,3 +77,6 @@ WCS/_TRASH_CSharp_LGLS_CLIENT_20260814/
 
 # ALL_TASK 런타임 로그 (스레드별/날짜별, 1년 보관)
 TASK/ALL_TASK/bin/Debug/LOG/
+
+# 문서 생성기 파이썬 캐시
+docs/**/__pycache__/

@@ -112,6 +112,11 @@ public:
 	CPanelVehDlg   m_PanelVehDlg;    // Crane & Vehicle 반송 현황
 	BOOL           m_bPanelBarsCreated;
 	BOOL           m_bUiModePanel;        // [LGLS 2026-09-01] UI모드 : TRUE=판넬, FALSE=대화상자
+
+	// [LGLS 2026-09-09] 리본 [판넬 보기] : 판넬 3개를 각각 켜고 끈다.
+	CDockablePane* PaneOf(UINT nID);
+	afx_msg void OnPaneShow(UINT nID);
+	afx_msg void OnUpdatePaneShow(CCmdUI* pCmdUI);
 	void ShowPanelBars(CEcsDoc* pDoc, BOOL bShow);
 	void SetInfoPaneTitle(CString strTitle);   // 상세정보 판넬 캡션 변경
 	void TogglePanelBars(CEcsDoc* pDoc);   // 리본 [작업정보] 진입점
@@ -176,9 +181,6 @@ protected:
 	BOOL  m_bAutoTimeProc;
 	DWORD m_dwAutoTimeRead;   // [LGLS 2026-09-03] 리본 [INI 열기]
 	afx_msg void OnUiModeDlg();            // [LGLS 2026-09-01] UI모드
-	afx_msg void OnUiModePanel();
-	afx_msg void OnUpdateUiModeDlg(CCmdUI* pCmdUI);
-	afx_msg void OnUpdateUiModePanel(CCmdUI* pCmdUI);
 	DECLARE_MESSAGE_MAP()
 	void AddCategoryUSER();
 	UINT	m_nAppLook;

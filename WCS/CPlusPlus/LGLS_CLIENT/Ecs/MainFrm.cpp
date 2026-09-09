@@ -33,10 +33,9 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_COMMAND(ID_CONFIG_INI_OPEN, &CMainFrame::OnConfigIniOpen)
 	ON_COMMAND(ID_CONFIG_AUTO_TIME, &CMainFrame::OnConfigAutoTime)
 	ON_UPDATE_COMMAND_UI(ID_CONFIG_AUTO_TIME, &CMainFrame::OnUpdateConfigAutoTime)
-	ON_COMMAND(ID_UIMODE_DLG, &CMainFrame::OnUiModeDlg)
-	ON_COMMAND(ID_UIMODE_PANEL, &CMainFrame::OnUiModePanel)
-	ON_UPDATE_COMMAND_UI(ID_UIMODE_DLG, &CMainFrame::OnUpdateUiModeDlg)
-	ON_UPDATE_COMMAND_UI(ID_UIMODE_PANEL, &CMainFrame::OnUpdateUiModePanel)
+	// [LGLS 2026-09-09] [판넬 보기] : 판넬 3개 개별 표시 토글
+	ON_COMMAND_RANGE(ID_PANE_SHOW_JOB, ID_PANE_SHOW_VEH, &CMainFrame::OnPaneShow)
+	ON_UPDATE_COMMAND_UI_RANGE(ID_PANE_SHOW_JOB, ID_PANE_SHOW_VEH, &CMainFrame::OnUpdatePaneShow)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_VIEW_CUSTOMIZE, &CMainFrame::OnViewCustomize)
 	ON_REGISTERED_MESSAGE(AFX_WM_CREATETOOLBAR, &CMainFrame::OnToolbarCreateNew)
@@ -595,25 +594,30 @@ void CMainFrame::AddCategoryWCS()
 	//pBtnHUN->SetAlwaysLargeImage();
 	//pPanelLanguage->Add(pBtnHUN);
 
-	// [LGLS 2026-09-01] [UI모드] 그룹 : 작업정보를 대화상자로 열지, 우측 도킹 판넬로 열지 선택
-	// [LGLS 2026-09-03] Ecs.ini [MENU] UIMODE_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
+	// [LGLS 2026-09-09] [판넬 보기] 그룹 : 판넬 3개를 각각 켜고 끈다(선택=표시).
+	//   종전 [UI모드](대화상자/판넬 모드 2버튼)를 대체한다.
+	//   Ecs.ini [MENU] UIMODE_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
 	if (::GetPrivateProfileInt(_T("MENU"), _T("UIMODE_MENU"), 1, ECS_INI_FILE) != 0)
 	{
-		// [LGLS 2026-09-05] 이 시점의 strAppPath 는 직전 패널(창고 모니터링)의 mainframe_monitor 폴더다.
-		//   종전에는 그대로 job.png 를 찾다 실패해 아이콘이 없는 텍스트 버튼으로 표시됐다.
-		//   UI모드 아이콘은 mainframe_view 에 있으므로 경로를 다시 지정한다.
+		// 이 시점의 strAppPath 는 직전 패널(창고 모니터링) 폴더라 다시 지정한다.
 		strAppPath.Format(_T("%s"), chrFileName);
 		strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_view\\");
-		CMFCRibbonPanel* pPanelUiMode = pCategory->AddPanel(_T("UI모드"));
-		// [LGLS 2026-09-05] UI모드 전용 아이콘 (종전에는 두 버튼이 같은 job.png 를 썼다)
-		CMFCRibbonButton* pBtnUiDlg = new CMFCRibbonButton(ID_UIMODE_DLG, _T("대화상자 모드"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("uimode_dlg"), strExtension)), TRUE);
-		pBtnUiDlg->SetAlwaysLargeImage();
-		pPanelUiMode->Add(pBtnUiDlg);
-		CMFCRibbonButton* pBtnUiPanel = new CMFCRibbonButton(ID_UIMODE_PANEL, _T("판넬 모드"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("uimode_panel"), strExtension)), TRUE);
-		pBtnUiPanel->SetAlwaysLargeImage();
-		pPanelUiMode->Add(pBtnUiPanel);
+		CMFCRibbonPanel* pPanelPaneView = pCategory->AddPanel(_T("판넬 보기"));
+
+		CMFCRibbonButton* pBtnPaneJob = new CMFCRibbonButton(ID_PANE_SHOW_JOB, _T("작업정보"),
+			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_job"), strExtension)), TRUE);
+		pBtnPaneJob->SetAlwaysLargeImage();
+		pPanelPaneView->Add(pBtnPaneJob);
+
+		CMFCRibbonButton* pBtnPaneInfo = new CMFCRibbonButton(ID_PANE_SHOW_INFO, _T("상세정보"),
+			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_info"), strExtension)), TRUE);
+		pBtnPaneInfo->SetAlwaysLargeImage();
+		pPanelPaneView->Add(pBtnPaneInfo);
+
+		CMFCRibbonButton* pBtnPaneVeh = new CMFCRibbonButton(ID_PANE_SHOW_VEH, _T("설비반송"),
+			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_veh"), strExtension)), TRUE);
+		pBtnPaneVeh->SetAlwaysLargeImage();
+		pPanelPaneView->Add(pBtnPaneVeh);
 	}
 
 	// [LGLS 2026-09-06] [처리] 그룹 : 스케줄러의 처리 방식과 관련된 메뉴를 모은다.
@@ -968,35 +972,62 @@ void CMainFrame::SetInfoPaneTitle(CString strTitle)
 		m_InfoPane.SetWindowText(strTitle);
 }
 
-// [LGLS 2026-09-01] UI모드 : 대화상자 모드 선택 -> 판넬 숨기고 팝업 열기
-void CMainFrame::OnUiModeDlg()
+// ---------------------------------------------------------------------------
+// [LGLS 2026-09-09] [판넬 보기] : 판넬 3개를 각각 켜고 끈다.
+//   버튼이 눌린 상태(체크) = 그 판넬이 보이는 상태다.
+//   판넬은 처음 켤 때 3개를 한꺼번에 만들고(도킹 위치를 함께 잡아야 한다),
+//   그 자리에서 누르지 않은 둘은 접어 둔다.
+// ---------------------------------------------------------------------------
+CDockablePane* CMainFrame::PaneOf(UINT nID)
 {
-	m_bUiModePanel = FALSE;
+	switch (nID)
+	{
+	case ID_PANE_SHOW_JOB:  return &m_JobPane;
+	case ID_PANE_SHOW_INFO: return &m_InfoPane;
+	case ID_PANE_SHOW_VEH:  return &m_VehPane;
+	default: break;
+	}
+	return NULL;
+}
+
+void CMainFrame::OnPaneShow(UINT nID)
+{
 	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
-	if (m_bPanelBarsCreated && m_JobPane.IsVisible())
-		ShowPanelBars(m_pDoc, FALSE);
-	if (m_pDoc != NULL)
-		m_pDoc->OpenJobListDialog();
+	if (m_pDoc == NULL) return;
+
+	if (!m_bPanelBarsCreated)
+	{
+		ShowPanelBars(m_pDoc, TRUE);          // 3개 생성 + 도킹
+		if (!m_bPanelBarsCreated) return;     // 생성 실패
+
+		// 설비를 눌렀을 때 상세정보 판넬로 보내려면 판넬 모드여야 한다(EcsView 참조).
+		m_bUiModePanel = TRUE;
+
+		// 누른 것만 남기고 나머지는 접는다.
+		m_JobPane.ShowPane(nID == ID_PANE_SHOW_JOB,   FALSE, TRUE);
+		m_InfoPane.ShowPane(nID == ID_PANE_SHOW_INFO, FALSE, TRUE);
+		m_VehPane.ShowPane(nID == ID_PANE_SHOW_VEH,   FALSE, TRUE);
+		RecalcLayout();
+		return;
+	}
+
+	CDockablePane* pPane = PaneOf(nID);
+	if (pPane == NULL || !::IsWindow(pPane->GetSafeHwnd())) return;
+
+	BOOL bShow = !pPane->IsVisible();
+	pPane->ShowPane(bShow, FALSE, TRUE);
+	if (bShow) m_bUiModePanel = TRUE;
+	RecalcLayout();
 }
 
-// [LGLS 2026-09-01] UI모드 : 판넬 모드 선택 -> 팝업 숨기고 판넬 열기
-void CMainFrame::OnUiModePanel()
+void CMainFrame::OnUpdatePaneShow(CCmdUI* pCmdUI)
 {
-	m_bUiModePanel = TRUE;
-	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
-	if (m_pDoc != NULL && m_pDoc->m_pViewJobListDlg != NULL && ::IsWindow(m_pDoc->m_pViewJobListDlg->m_hWnd))
-		m_pDoc->m_pViewJobListDlg->ShowWindow(SW_HIDE);
-	ShowPanelBars(m_pDoc, TRUE);
-}
-
-void CMainFrame::OnUpdateUiModeDlg(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(!m_bUiModePanel);
-}
-
-void CMainFrame::OnUpdateUiModePanel(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(m_bUiModePanel);
+	if (pCmdUI == NULL) return;
+	CDockablePane* pPane = PaneOf(pCmdUI->m_nID);
+	BOOL bOn = (m_bPanelBarsCreated && pPane != NULL
+				&& ::IsWindow(pPane->GetSafeHwnd()) && pPane->IsVisible());
+	pCmdUI->SetCheck(bOn ? 1 : 0);
+	pCmdUI->Enable(TRUE);
 }
 
 // [LGLS 2026-09-05] 시간 기반 자동 처리 사용 여부를 DB 에서 읽는다.
