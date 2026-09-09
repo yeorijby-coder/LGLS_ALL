@@ -75,8 +75,6 @@ public:
 	LRESULT OnMessageSwitch(WPARAM wParam, LPARAM lParam);
 	//CSTATIC
 	CStaticTransparent m_lblCvJobNo;	
-	CStaticTransparent m_lblCvDestPos;
-	CStaticTransparent m_lblCvJobTyp;
 	CStaticTransparent m_lblCvFmsRpt;
 	CStaticTransparent m_lblCvTrayLev;
 	CStaticTransparent m_lblCvTrayTyp;
@@ -135,8 +133,6 @@ public:
 	CEdit m_edtCvSuspend;
 
 	CComboBoxWrapper m_cbxCvStartPos;
-	CComboBoxWrapper m_cbxCvDestPos; 
-	CComboBoxWrapper m_cbxCvJobTyp;
 	CComboBoxWrapper m_cbxCvFmsRpt;
 	CComboBoxWrapper m_cbxCvTrayLev;
 	CComboBoxWrapper m_cbxCvTrayTyp;

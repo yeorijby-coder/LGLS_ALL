@@ -60,8 +60,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	//DLG DATA ( LBL )
 
 	DDX_Control(pDX, IDC_LBL_CV_JOB_NO,                m_lblCvJobNo);
-	DDX_Control(pDX, IDC_LBL_CV_DEST_POS,		       m_lblCvDestPos);
-	DDX_Control(pDX, IDC_LBL_CV_JOB_TYP,		       m_lblCvJobTyp);
 	DDX_Control(pDX, IDC_LBL_CV_ERR_CD,			       m_lblCvErrCd);
 	DDX_Control(pDX, IDC_LBL_JOB_JOB_NO,		       m_lblCvJobJobNo);
 	DDX_Control(pDX, IDC_LGLS_CV_LOT_LBL,		   m_lblCvLotNo);
@@ -98,8 +96,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDT_CV_JOB_NO,			       m_edtCvJobNo);
 	DDX_Control(pDX, IDC_EDT_CV_ERR_CD,                m_edtCvErrorCode);
 
-	DDX_Control(pDX, IDC_CBX_CV_DEST_POS,              m_cbxCvDestPos); 
-	DDX_Control(pDX, IDC_CBX_CV_JOB_TYP,               m_cbxCvJobTyp);
 
 	//--CVSTATUS									   
 
@@ -224,7 +220,6 @@ BOOL CCvSkinDlg::OnInitDialog()
 		m_bInitialized = TRUE;	
 	}
 	InitializeResource(pEn);
-	CLib::BindCombo(m_cbxCvJobTyp, _T("JOB_TYP"), m_pDoc, (int)pEn);
 
 	int nTemp = (int)m_pDoc->m_bDebugMode;
 
@@ -373,7 +368,6 @@ void CCvSkinDlg::RenameResource( EN_LANG m_enLang)
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("destpos"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_CV_DEST_POS, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("startpos"), (int)m_enLang);
@@ -385,7 +379,6 @@ void CCvSkinDlg::RenameResource( EN_LANG m_enLang)
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobtyp"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_CV_JOB_TYP, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobtyp"), (int)m_enLang);
@@ -754,9 +747,7 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 	//m_cbxCvDestPos.SetWindowText(m_pTrackInfo->m_pCV_DATA->V_DEST_POS_RD);
 	CString strJobTyp, strDestPos;
 
-	m_cbxCvJobTyp.SetWindowText(m_pTrackInfo->m_pCV_DATA->V_JOB_TYP_RD);
 	//CV상태의 도착위치 콤보박스
-	SetBindCombo_DEST_POS_DEF(m_cbxCvDestPos, m_pTrackInfo->m_pCV_DATA->K_PLC_NO,m_pTrackInfo->m_pCV_DATA->V_DEST_POS_RD);
 
 	//상단 명칭 표시
 	m_edtTrack.SetWindowText(_T("Track No"));
@@ -775,7 +766,6 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 		m_edtCvTrackNo.SetWindowText(strTrNo2 + " (" + m_pTrackInfo->m_pCV_DATA->V_MC_NO_NM + ")");
 	}
 
-	m_cbxCvJobTyp.SetCurSelEx(m_pTrackInfo->m_pCV_DATA->V_JOB_TYP_RD);
 	m_edtCvJobNo.SetWindowText(m_pTrackInfo->m_pCV_DATA->V_LUGG_NO_RD);
 	//m_cbxCvFmsRpt.SetWindowText(_T("미정"));
 	//m_cbxCvTrayTyp.SetWindowText(_T("미정"));
@@ -1063,8 +1053,8 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 	UpdateData(TRUE);
 
 	m_edtCvJobNo.GetWindowText(strJobNo);
-	CLib::GetComBoBoxData(m_cbxCvDestPos, strDestPos, 5);
-	strJobTyp = m_cbxCvJobTyp.GetItemKey(m_cbxCvJobTyp.GetCurSel());
+	strDestPos = m_pTrackInfo->m_pCV_DATA->V_DEST_POS_RD;	// [LGLS 2026-09-10] 화면 입력란 폐지 - 설비 읽기값 사용
+	strJobTyp  = m_pTrackInfo->m_pCV_DATA->V_JOB_TYP_RD;	// [LGLS 2026-09-10] 화면 입력란 폐지 - 설비 읽기값 사용
 
 	strPulpSensor = m_pTrackInfo->m_pCV_DATA->V_PULP_SENSOR_RD;
 
@@ -1306,7 +1296,7 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 			
 			m_edtCvJobNo.GetWindowText(strJobNo);
 			//strDestPos = m_cbxCvDestPos.GetItemKey(m_cbxCvDestPos.GetCurSel());
-			strJobTyp = m_cbxCvJobTyp.GetItemKey(m_cbxCvJobTyp.GetCurSel());
+			strJobTyp  = m_pTrackInfo->m_pCV_DATA->V_JOB_TYP_RD;	// [LGLS 2026-09-10] 화면 입력란 폐지 - 설비 읽기값 사용
 
 			pCopyJob->LUGG_NO=strJobNo;
 			pCopyJob->DEST_POS=strDestPos;
@@ -1332,7 +1322,7 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 
 			m_edtCvJobNo.GetWindowText(strJobNo);
 			//strDestPos = m_cbxCvDestPos.GetItemKey(m_cbxCvDestPos.GetCurSel());
-			strJobTyp = m_cbxCvJobTyp.GetItemKey(m_cbxCvJobTyp.GetCurSel());
+			strJobTyp  = m_pTrackInfo->m_pCV_DATA->V_JOB_TYP_RD;	// [LGLS 2026-09-10] 화면 입력란 폐지 - 설비 읽기값 사용
 
 			//m_strCopyJobNo=strJobNo;
 			//m_strCopyDestPos=strDestPos;
@@ -2005,9 +1995,7 @@ void CCvSkinDlg::SetCvStatus(CString pLUGG_NO, CString pJOB_TYP, CString pDEST_P
 	CString strCcdNmKor = _T("");
 	if (pCMD == _T("WRITE"))
 	{
-		m_cbxCvJobTyp.SetCurSelEx(pJOB_TYP);
 		m_edtCvJobNo.SetWindowText(pLUGG_NO);
-		SetBindCombo_DEST_POS_DEF(m_cbxCvDestPos, m_pTrackInfo->m_pCV_DATA->K_PLC_NO, pDEST_POS);
 		SelCommonCode(pPULP_SENSOR, _T("PRODUCT_SIZE"), strCcdNmKor);
 	}
 	else if (pCMD == _T("PAUSE"))
@@ -2596,7 +2584,7 @@ void CCvSkinDlg::OnBnClickedBtnCvHsEject()
 
 	// 도착지(출고대) - 화면의 DEST POS 선택값이 출고대면 그것을, 아니면 기본 출고대(126).
 	CString strDestPos = _T("");
-	CLib::GetComBoBoxData(m_cbxCvDestPos, strDestPos, 5);
+	strDestPos = m_pTrackInfo->m_pCV_DATA->V_DEST_POS_RD;	// [LGLS 2026-09-10] 화면 입력란 폐지 - 설비 읽기값 사용
 	strDestPos.Trim();
 	if (strDestPos != _T("122") && strDestPos != _T("126") && strDestPos != _T("129"))
 		strDestPos = _T("126");
