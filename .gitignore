@@ -74,3 +74,6 @@ WCS/_TRASH_CSharp_LGLS_CLIENT_20260814/
 
 # Claude Code 개인 설정 (커밋하지 않는다)
 .claude/settings.local.json
+
+# ALL_TASK 런타임 로그 (스레드별/날짜별, 1년 보관)
+TASK/ALL_TASK/bin/Debug/LOG/

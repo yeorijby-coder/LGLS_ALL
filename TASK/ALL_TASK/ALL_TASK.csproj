@@ -1,0 +1,349 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{7F2A6C41-9D3B-4E58-A1C6-5B0E9A47D310}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>ALL_TASK</RootNamespace>
+    <AssemblyName>ALL_TASK</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <StartupObject>ALL_TASK.Program</StartupObject>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SQL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>0168;0219;0414;0162;0169;0649;0067;0108</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;SQL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>0168;0219;0414;0162;0169;0649;0067;0108</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821, processorArchitecture=MSIL">
+      <HintPath>..\WCS_TASK_CV_BIN\bin\Debug\log4net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Mono.Security">
+      <HintPath>..\WCS_TASK_CV_BIN\packages\Npgsql.2.2.7\lib\net45\Mono.Security.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Npgsql">
+      <HintPath>..\WCS_TASK_CV_BIN\packages\Npgsql.2.2.7\lib\net45\Npgsql.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Samoh_Lib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\WCS_TASK_CV_BIN\bin\Debug\Samoh_Lib.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Samoh_Socket, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\WCS_TASK_CV_BIN\bin\Debug\Samoh_Socket.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EXCOMLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d19614ad50bc8554, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\IO_TASK\bin\Debug\EXCOMLib.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="XCOMLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d44180783df80efe, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\IO_TASK\bin\Debug\XCOMLib.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Oracle.ManagedDataAccess, Version=4.122.19.1, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\IO_TASK\bin\Debug\Oracle.ManagedDataAccess.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MaterialSkin, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\WCS_TASK_HOST\bin\Debug\MaterialSkin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="WmsInfo">
+      <HintPath>..\WCS_TASK_HOST\bin\Debug\WmsInfo.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="FRM\AllTaskMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRM\AllTaskMain.Designer.cs">
+      <DependentUpon>AllTaskMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CLS\TaskHost.cs" />
+    <Compile Include="..\WCS_TASK_CV_BIN\3_Lib\cCmLib.cs">
+      <Link>WCS_TASK_CV_BIN\3_Lib\cCmLib.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cLogCols.cs">
+      <Link>WCS_TASK_CV_BIN\4_Static\cLogCols.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cTaskLog.cs">
+      <Link>WCS_TASK_CV_BIN\4_Static\cTaskLog.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\DbLang.cs">
+      <Link>WCS_TASK_CV_BIN\4_Static\DbLang.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\5_DB\cDbBaseOra.cs">
+      <Link>WCS_TASK_CV_BIN\5_DB\cDbBaseOra.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\5_DB\cDbUse.cs">
+      <Link>WCS_TASK_CV_BIN\5_DB\cDbUse.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cDefApi.cs">
+      <Link>WCS_TASK_CV_BIN\4_Static\cDefApi.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cDefApp.cs">
+      <Link>WCS_TASK_CV_BIN\4_Static\cDefApp.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\6_Log\CLogging.cs">
+      <Link>WCS_TASK_CV_BIN\6_Log\CLogging.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\2_Thread\EQP_THREAD\CvThread.cs">
+      <Link>WCS_TASK_CV_BIN\2_Thread\EQP_THREAD\CvThread.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\2_Thread\EQP_THREAD\VehThread.cs">
+      <Link>WCS_TASK_CV_BIN\2_Thread\EQP_THREAD\VehThread.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\7_Socket\cWrkWcSkt.cs">
+      <Link>WCS_TASK_CV_BIN\7_Socket\cWrkWcSkt.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\6_Log\cLogThread.cs">
+      <Link>WCS_TASK_CV_BIN\6_Log\cLogThread.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\6_Log\Log.cs">
+      <Link>WCS_TASK_CV_BIN\6_Log\Log.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\maindefine.cs">
+      <Link>WCS_TASK_CV_BIN\4_Static\maindefine.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\7_Socket\FenetProtocol.cs">
+      <Link>WCS_TASK_CV_BIN\7_Socket\FenetProtocol.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\7_Socket\MelsecQ3EProtocol.cs">
+      <Link>WCS_TASK_CV_BIN\7_Socket\MelsecQ3EProtocol.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\7_Socket\SocketClient.cs">
+      <Link>WCS_TASK_CV_BIN\7_Socket\SocketClient.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\5_DB\cCbBasePost.cs">
+      <Link>WCS_TASK_CV_BIN\5_DB\cCbBasePost.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\5_DB\cDbPostUse.cs">
+      <Link>WCS_TASK_CV_BIN\5_DB\cDbPostUse.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\SYS_MAIN.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\SYS_MAIN.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\SYS_MAIN.Designer.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\SYS_MAIN.Designer.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\FRM_SCENARIO_TEST.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\FRM_SCENARIO_TEST.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\FRM_LOG_FILTER.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\FRM_LOG_FILTER.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\FRM_PLC_MEMMAP.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\FRM_PLC_MEMMAP.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\FRM_PLC_MEMMAP.Designer.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\FRM_PLC_MEMMAP.Designer.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\FRM_XML_FIELD_SYNC.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\FRM_XML_FIELD_SYNC.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\FRM_XML_FIELD_SYNC.Designer.cs">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\FRM_XML_FIELD_SYNC.Designer.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\7_DeviceMap\cXmlFieldSync.cs">
+      <Link>WCS_TASK_CV_BIN\7_DeviceMap\cXmlFieldSync.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\7_DeviceMap\cPlcAddrMap.cs">
+      <Link>WCS_TASK_CV_BIN\7_DeviceMap\cPlcAddrMap.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\AlarmInfo.cs">
+      <Link>IO_TASK\CLS\AlarmInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cCbBasePost.cs">
+      <Link>IO_TASK\CLS\cCbBasePost.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cCmLib.cs">
+      <Link>IO_TASK\CLS\cCmLib.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cDbBaseOra.cs">
+      <Link>IO_TASK\CLS\cDbBaseOra.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cDbPostUse.cs">
+      <Link>IO_TASK\CLS\cDbPostUse.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cDbUse.cs">
+      <Link>IO_TASK\CLS\cDbUse.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cDefApi.cs">
+      <Link>IO_TASK\CLS\cDefApi.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\BaseClass.cs">
+      <Link>IO_TASK\CLS\BaseClass.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cDefApp.cs">
+      <Link>IO_TASK\CLS\cDefApp.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\CLogging.cs">
+      <Link>IO_TASK\CLS\CLogging.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\Thread\cThread_SCH.cs">
+      <Link>IO_TASK\CLS\Thread\cThread_SCH.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cVB.cs">
+      <Link>IO_TASK\CLS\cVB.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cWork.cs">
+      <Link>IO_TASK\CLS\cWork.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\DB.cs">
+      <Link>IO_TASK\CLS\DB.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\DbLang.cs">
+      <Link>IO_TASK\CLS\DbLang.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\ExceptionLogger.cs">
+      <Link>IO_TASK\CLS\ExceptionLogger.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\IOSchDB.cs">
+      <Link>IO_TASK\CLS\IOSchDB.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\JobItem.cs">
+      <Link>IO_TASK\CLS\JobItem.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\JobMng.cs">
+      <Link>IO_TASK\CLS\JobMng.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\cLogThread.cs">
+      <Link>IO_TASK\CLS\cLogThread.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\Log.cs">
+      <Link>IO_TASK\CLS\Log.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\MainClass.cs">
+      <Link>IO_TASK\CLS\MainClass.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\CLS\TextFileLogger.cs">
+      <Link>IO_TASK\CLS\TextFileLogger.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\FRM\SYS\SYS_MAIN.cs">
+      <Link>IO_TASK\FRM\SYS\SYS_MAIN.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\FRM\SYS\SYS_MAIN.Designer.cs">
+      <Link>IO_TASK\FRM\SYS\SYS_MAIN.Designer.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\FRM\SYS\frmLogFilter.cs">
+      <Link>IO_TASK\FRM\SYS\frmLogFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\IO_TASK\FRM\SYS\frmLogFilter.Designer.cs">
+      <Link>IO_TASK\FRM\SYS\frmLogFilter.Designer.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\CbaseDb.cs">
+      <Link>WCS_TASK_HOST\CbaseDb.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\cCbBasePost.cs">
+      <Link>WCS_TASK_HOST\cCbBasePost.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\CCliWork.cs">
+      <Link>WCS_TASK_HOST\CCliWork.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\cDbPostUse.cs">
+      <Link>WCS_TASK_HOST\cDbPostUse.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\CLog.cs">
+      <Link>WCS_TASK_HOST\CLog.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\CSrvWork.cs">
+      <Link>WCS_TASK_HOST\CSrvWork.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\CUserDb.cs">
+      <Link>WCS_TASK_HOST\CUserDb.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modCmLib.cs">
+      <Link>WCS_TASK_HOST\modCmLib.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modCmWork.cs">
+      <Link>WCS_TASK_HOST\modCmWork.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modDateTime.cs">
+      <Link>WCS_TASK_HOST\modDateTime.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modDefAPI.cs">
+      <Link>WCS_TASK_HOST\modDefAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modDefApp.cs">
+      <Link>WCS_TASK_HOST\modDefApp.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modStationMap.cs">
+      <Link>WCS_TASK_HOST\modStationMap.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modSpDb.cs">
+      <Link>WCS_TASK_HOST\modSpDb.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modUpdate.cs">
+      <Link>WCS_TASK_HOST\modUpdate.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\frmMain.cs">
+      <Link>WCS_TASK_HOST\frmMain.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\frmMain.Designer.cs">
+      <Link>WCS_TASK_HOST\frmMain.Designer.cs</Link>
+    </Compile>
+    <Compile Include="..\WCS_TASK_HOST\modWorkThread.cs">
+      <Link>WCS_TASK_HOST\modWorkThread.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\WCS_TASK_CV_BIN\1_FRM\SYS\SYS_MAIN.resx">
+      <Link>WCS_TASK_CV_BIN\1_FRM\SYS\SYS_MAIN.resx</Link>
+      <DependentUpon>SYS_MAIN.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\IO_TASK\FRM\SYS\SYS_MAIN.resx">
+      <Link>IO_TASK\FRM\SYS\SYS_MAIN.resx</Link>
+      <DependentUpon>SYS_MAIN.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\WCS_TASK_HOST\frmMain.resx">
+      <Link>WCS_TASK_HOST\frmMain.resx</Link>
+      <DependentUpon>frmMain.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

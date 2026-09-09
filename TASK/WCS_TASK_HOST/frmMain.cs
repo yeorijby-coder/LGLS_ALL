@@ -175,6 +175,9 @@ int i;
 			//---------------------------------------------------------------------------------
 			CheckForIllegalCrossThreadCalls = false;
 
+			// [LGLS 2026-09-09] ALL_TASK 에서 껐다 켜면 이 값이 true 로 남아 화면 로그가 죽는다.
+			modDefApp.g_blIsAppExit = false;
+
             // Log 쓰레드 시작
             // Server WMS, Client ECS 두개의 Log 쓰레드 생성
             for (i = 0; i <= 1; i++)
@@ -257,6 +260,82 @@ int i;
 		//---------------------------------------------
 		// 컨트롤 이벤트
 		//---------------------------------------------
+		// ─────────────────────────────────────────────────────────────────
+		// [LGLS 2026-09-09] ALL_TASK 에서 [HOST] 태스크를 끌 때 부른다.
+		//   frmMain_FormClosing 의 종료 절차와 같되 확인 대화상자만 뺐다.
+		// ─────────────────────────────────────────────────────────────────
+		public void TaskStop()
+		{
+			try { tmrMain.Enabled = false; tmrSTOP_REQ.Enabled = false; } catch { }
+
+			modDefApp.g_blIsAppExit = true;
+
+			try
+			{
+				if (modDefApp.g_blSrvThread == false)
+				{
+					modDefApp.g_blListenThread = false;		// ListenThread 가 리스너를 닫고 끝난다
+				}
+				else
+				{
+					modDefApp.g_blSrvThread = false;
+					if (modDefApp.g_SrvWork.m_thrThreadObj != null)
+					{
+						modCmWork.CloseSocket(ref modDefApp.g_SrvWork.m_sktSock);
+						modDefApp.g_SrvWork.m_thrThreadObj.Join(5000);
+					}
+					modDefApp.g_blListenThread = false;
+				}
+			}
+			catch { }
+
+			// 클라이언트(상위 접속) 쓰레드
+			try
+			{
+				if (modDefApp.g_CliWork != null && modDefApp.g_CliWork.m_thrThreadObj != null)
+				{
+					modDefApp.g_CliWork.m_areCliExitEvent.Set();
+					modDefApp.g_CliWork.m_thrThreadObj.Join(5000);
+					modDefApp.g_CliWork.m_thrThreadObj = null;
+				}
+			}
+			catch { }
+
+			// 리슨 스레드가 끝나며 LogThreadEnd 를 부르지만, 리슨이 아직이면 여기서 직접 끝낸다.
+			try
+			{
+				if (g_thrListenThreadObj != null) g_thrListenThreadObj.Join(3000);
+				LogThreadEnd();
+				for (int i = 0; i <= 1; i++)
+					if (g_thrLogThreadObj[i] != null) g_thrLogThreadObj[i].Join(3000);
+			}
+			catch { }
+
+			// DB 반납
+			try
+			{
+				if (modDefApp.g_CliWork != null && modDefApp.g_CliWork.m_BDb != null
+					&& modDefApp.g_CliWork.m_BDb.conMain != null)
+					modDefApp.g_CliWork.m_BDb.conMain.Close();
+			}
+			catch { }
+		}
+
+		/// <summary>ALL_TASK 상태표시용 : 살아 있는 워커 스레드 목록</summary>
+		public string[] GetThreadStates()
+		{
+			bool bLsn = (g_thrListenThreadObj != null && g_thrListenThreadObj.IsAlive);
+			bool bSrv = (modDefApp.g_SrvWork != null && modDefApp.g_SrvWork.m_thrThreadObj != null
+						 && modDefApp.g_SrvWork.m_thrThreadObj.IsAlive);
+			bool bCli = (modDefApp.g_CliWork != null && modDefApp.g_CliWork.m_thrThreadObj != null
+						 && modDefApp.g_CliWork.m_thrThreadObj.IsAlive);
+			bool bLog = (g_thrLogThreadObj[0] != null && g_thrLogThreadObj[0].IsAlive);
+			return new string[] { "HOST_LSN|" + (bLsn ? "RUN" : "STOP"),
+								  "HOST_SRV|" + (bSrv ? "RUN" : "STOP"),
+								  "HOST_CLI|" + (bCli ? "RUN" : "STOP"),
+								  "HOST_LOG|" + (bLog ? "RUN" : "STOP") };
+		}
+
 		private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
 		{
 			string strSql = null;

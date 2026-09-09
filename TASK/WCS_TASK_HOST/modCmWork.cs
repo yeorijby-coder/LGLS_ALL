@@ -13,6 +13,10 @@ namespace TSK_HostCom
 		//*** 메세지 표시 ***
 		public static void ShowMsgClient(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true, [CallerFilePath] string p_strFile = "", [CallerMemberName] string p_strFunc = "")
 		{
+			// [LGLS 2026-09-09] ALL_TASK 공용 로그 싱크(스레드별 파일 + DB)
+			try { WcsCommon.cTaskLog.Write("HOST", "HOST_CLI", p_strMsgKind,
+					WcsCommon.cLogCols.ShortFile(p_strFile) + "::" + p_strFunc + " " + p_strMsg); } catch { }
+
             try
             {
                 LogMsgInfo LogMsg = default(LogMsgInfo);
@@ -112,6 +116,10 @@ namespace TSK_HostCom
 
 		public static void ShowMsgServer(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true, [CallerFilePath] string p_strFile = "", [CallerMemberName] string p_strFunc = "")
 		{
+			// [LGLS 2026-09-09] ALL_TASK 공용 로그 싱크(스레드별 파일 + DB)
+			try { WcsCommon.cTaskLog.Write("HOST", "HOST_SRV", p_strMsgKind,
+					WcsCommon.cLogCols.ShortFile(p_strFile) + "::" + p_strFunc + " " + p_strMsg); } catch { }
+
             try
             {
                 LogMsgInfo LogMsg = default(LogMsgInfo);

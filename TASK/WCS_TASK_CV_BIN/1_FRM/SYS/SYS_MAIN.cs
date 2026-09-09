@@ -745,6 +745,11 @@ namespace WCS_TASK_CV
         {
             try
             {
+                // [LGLS 2026-09-09] ALL_TASK 공용 로그 싱크 : 스레드별 파일(날짜별/1년) + DB.
+                //   화면 로그를 꺼도(chkStopLog) 파일/DB 에는 남겨야 하므로 그보다 앞에 둔다.
+                try { WcsCommon.cTaskLog.Write("EQP", "EQP_CV", pMsgTyp.ToString(),
+                        "[" + pObjID + "] " + WcsCommon.cLogCols.ShortFile(pFile) + "::" + pFunc + " " + pMsg
+                        + (string.IsNullOrEmpty(pAddr) ? "" : (" (" + pAddr + ")"))); } catch { }
 
                 if (chkStopLog.Checked) return;
 
@@ -835,6 +840,62 @@ namespace WCS_TASK_CV
         {
             this.Close();
         }
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-09-09] ALL_TASK 에서 [EQP] 태스크를 끌 때 부른다.
+        //   통신 스레드를 세우고 소켓/DB 를 반납한다. 다시 켤 때는 ALL_TASK 가
+        //   이 폼을 새로 만들어 Load 를 처음부터 태운다.
+        // ─────────────────────────────────────────────────────────────────
+        public void TaskStop()
+        {
+            try { Thread_Timer.Enabled = false; } catch { }
+
+            cDefApp.GM_STAT_MAIN = false;
+
+            // SC / RTV 관측 스레드
+            try { if (m_thVehSc  != null) m_thVehSc.Stop();  } catch { }
+            try { if (m_thVehRtv != null) m_thVehRtv.Stop(); } catch { }
+
+            // 마스터 PLC 통신 스레드 (소켓/DB 반납은 Thread_Doing 의 EXIT_LBL 이 한다)
+            try
+            {
+                if (m_thCvThread[0] != null)
+                {
+                    m_thCvThread[0].RequestStop();
+                    System.Threading.Thread th = m_thCvThread[0].m_thThread;
+
+                    // 한 사이클(설비 15대 순회)이 10초를 넘기도 하므로 넉넉히 기다린다.
+                    if (th != null && th.IsAlive && !th.Join(20000))
+                    {
+                        // 끝내 안 끝나면 소켓을 끊어 대기를 깨우고 한 번 더 기다린다.
+                        m_thCvThread[0].ForceClose();
+                        th.Join(5000);
+                    }
+                    m_thCvThread[0].m_thThread = null;
+                    m_thCvThread[0] = null;
+                }
+            }
+            catch { }
+
+            m_thVehSc = null;
+            m_thVehRtv = null;
+        }
+
+        /// <summary>ALL_TASK 상태표시용 : 살아 있는 워커 스레드 목록</summary>
+        public string[] GetThreadStates()
+        {
+            System.Collections.Generic.List<string> lst = new System.Collections.Generic.List<string>();
+            try
+            {
+                bool bCv = (m_thCvThread[0] != null && m_thCvThread[0].m_thThread != null
+                            && m_thCvThread[0].m_thThread.IsAlive);
+                lst.Add("EQP_CV|" + (bCv ? "RUN" : "STOP"));
+                lst.Add("EQP_VEH_SC|"  + ((m_thVehSc  != null && m_thVehSc.IsAlive)  ? "RUN" : "STOP"));
+                lst.Add("EQP_VEH_RTV|" + ((m_thVehRtv != null && m_thVehRtv.IsAlive) ? "RUN" : "STOP"));
+            }
+            catch { }
+            return lst.ToArray();
+        }
+
         private void SYS_MAIN_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (cDefApp.GM_RE_START == false)

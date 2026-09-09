@@ -94,6 +94,9 @@ namespace WCS_TASK_CV
 
         public void Stop() { m_bRun = false; }
 
+        /// <summary>[LGLS 2026-09-09] ALL_TASK 스레드 상태표시용</summary>
+        public bool IsAlive { get { return (m_thThread != null && m_thThread.IsAlive); } }
+
         // ---------- 관측/지시 주소 로드 ----------
         //  [LGLS 2026-08-19] 주소맵 XML(7_DeviceMap\PlcAddressMap.xml) 단일화.
         //    · 1순위 : XML 의 SC/RGV 정의(tag 속성)로 주소표를 만든다 → observables.tsv 불필요
@@ -362,6 +365,9 @@ namespace WCS_TASK_CV
 
         private void LogDb(string msg)
         {
+            // [LGLS 2026-09-09] ALL_TASK 공용 로그 싱크(스레드별 파일 + DB)
+            try { WcsCommon.cTaskLog.Write("EQP", "EQP_VEH_" + m_strKind, "INFO", msg); } catch { }
+
             try
             {
                 string strSqlLog = "";

@@ -82,6 +82,9 @@
     <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cLogCols.cs">
       <Link>cLogCols.cs</Link>
     </Compile>
+    <Compile Include="..\WCS_TASK_CV_BIN\4_Static\cTaskLog.cs">
+      <Link>cTaskLog.cs</Link>
+    </Compile>
     <Compile Include="..\WCS_TASK_CV_BIN\4_Static\CallerInfoAttrs40.cs">
       <Link>CallerInfoAttrs40.cs</Link>
     </Compile>

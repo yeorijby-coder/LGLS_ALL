@@ -267,6 +267,28 @@ namespace WCS_TASK_CV
             catch (Exception ex) { return "정리 실패: " + ex.Message; }
             finally { if (con != null) con.Close(); }
         }
+        // [LGLS 2026-09-09] ALL_TASK 태스크 정지 : true 면 다음 순회에서 EXIT_LBL 로 빠져
+        //   소켓/DB 를 정상 반납하고 스레드가 끝난다. (Abort 를 쓰지 않는다)
+        public volatile bool m_bStop = false;
+
+        /// <summary>
+        /// 통신 스레드에 정지를 요청한다(플래그만).
+        /// 소켓/DB 는 루프가 EXIT_LBL 로 빠지면서 정상 반납한다 - 여기서 먼저 닫아 버리면
+        /// 순회 중이던 사이클이 통신/DB 실패를 무더기로 뱉는다.
+        /// 스레드가 끝내 안 끝날 때만 ForceClose() 로 끊는다.
+        /// </summary>
+        public void RequestStop()
+        {
+            m_bStop = true;
+        }
+
+        /// <summary>정지 요청에도 스레드가 안 끝날 때 소켓을 강제로 끊는다.</summary>
+        public void ForceClose()
+        {
+            try { string strMsg = ""; if (m_msQPlc != null) m_msQPlc.Close(ref strMsg); }
+            catch { }
+        }
+
         public volatile bool m_bPaused = false;   // [LGLS 2026-07-27] [시나리오 테스트] true면 자동 통신(슬롯 순회) 정지 — 시나리오 창의 강제 write와 충돌 방지
         public Thread m_thThread;
         public SYS_MAIN m_frmMain;
@@ -403,6 +425,10 @@ namespace WCS_TASK_CV
             }
         }
 
+        // [LGLS 2026-09-09] MakeMsg_Error -> InsertWcsLogPgr -> MakeMsg_Error 재귀 차단용.
+        //   스레드마다 따로 둔다(통신 스레드가 여럿일 때 서로 로그를 막지 않도록).
+        [ThreadStatic] private static bool s_bInDbErrLog;
+
         private void MakeMsg_Error(string msg, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
         {
             try
@@ -414,7 +440,16 @@ namespace WCS_TASK_CV
                 m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
                 cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
                 // [LGLS 진단] 에러는 DB 로그에도 남긴다 (파일/화면 로그 확인 불가 환경 대비)
-                try { InsertWcsLogPgr("", "[ERR] " + msg); } catch { }
+                // [LGLS 2026-09-09] 재귀 차단 : InsertWcsLogPgr 이 실패하면 그 안에서 다시
+                //   MakeMsg_Error 를 부른다. DB 가 끊기면 무한 재귀로 스택이 터져 프로세스가
+                //   통째로 죽는다(0xc00000fd). DB 기록 중에 난 에러는 화면/파일 로그까지만 남긴다.
+                if (!s_bInDbErrLog)
+                {
+                    s_bInDbErrLog = true;
+                    try { InsertWcsLogPgr("", "[ERR] " + msg); }
+                    catch { }
+                    finally { s_bInDbErrLog = false; }
+                }
             }
             catch (Exception ex)
             {
@@ -526,6 +561,7 @@ namespace WCS_TASK_CV
                     while (true)
                     {
                         // [LGLS 2026-07-27] [시나리오 테스트] 자동 통신 일시정지 — 시나리오 창이 소켓을 강제 조작하는 동안 슬롯 순회 스킵
+                        if (m_bStop) goto EXIT_LBL;      // [LGLS 2026-09-09] ALL_TASK 정지 요청
                         if (m_bPaused) { Thread.Sleep(100); continue; }
 
                         // [LGLS 2026-07-27] 마스터 PLC 1소켓 통합: 등록된 설비(슬롯)를 순회하며 각 설비의
@@ -562,6 +598,11 @@ namespace WCS_TASK_CV
 
                         for (int si = 0; si < lstOrder.Count; si++)
                         {
+                            // [LGLS 2026-09-09] 설비 하나 끝날 때마다 정지 요청을 본다.
+                            //   한 바퀴(설비 15대)가 10초를 넘어서, 루프 머리에서만 보면
+                            //   ALL_TASK 의 [정지] 가 그만큼 늦게 먹힌다.
+                            if (m_bStop) goto EXIT_LBL;
+
                             var slot = lstOrder[si];
                             m_strPlc_No   = slot.Plc;
                             m_strEqmt_typ = slot.Typ;

@@ -476,6 +476,9 @@ namespace TSK_COMM_IOSCH
 		{
 			try
 			{
+				// [LGLS 2026-09-09] ALL_TASK 공용 로그 싱크 : 스레드별 파일(날짜별/1년) + DB.
+				try { WcsCommon.cTaskLog.Write("IO", "IO_SCH", pMsgTyp.ToString(),
+						"[" + pObjID + "] " + WcsCommon.cLogCols.ShortFile(pFile) + "::" + pFunc + " " + pMsg); } catch { }
 
 				if (chkStopLog.Checked) return;
 
@@ -584,6 +587,57 @@ namespace TSK_COMM_IOSCH
 		private void tsbEnd_Click(object sender, EventArgs e)
 		{
 			this.Close();
+		}
+
+		// ─────────────────────────────────────────────────────────────────
+		// [LGLS 2026-09-09] ALL_TASK 에서 [IO] 태스크를 끌 때 부른다.
+		// ─────────────────────────────────────────────────────────────────
+		public void TaskStop()
+		{
+			try { Thread_Timer.Enabled = false; } catch { }
+
+			cDefApp.GM_STAT_MAIN = false;
+
+			int schId = (int)cDefApp.eThGbn.SCH_GR01;
+
+			// 스케줄러 스레드 (DB 반납은 Thread_Doing 이 한다)
+			try
+			{
+				if (m_Thread_SCH[0] != null)
+				{
+					m_Thread_SCH[0].RequestStop();
+					Thread th = m_Thread_SCH[0].m_Thread;
+					if (th != null && th.IsAlive) th.Join(6000);
+					m_Thread_SCH[0].m_Thread = null;
+					m_Thread_SCH[0] = null;
+				}
+			}
+			catch { }
+
+			// 로그 큐 스레드
+			try
+			{
+				if (m_thLogging[schId] != null)
+				{
+					Thread thLog = m_thLogging[schId].m_thThread;
+					m_thLogging[schId].m_thThread = null;		// LogQueThread 가 이걸 보고 끝난다
+					if (thLog != null && thLog.IsAlive) thLog.Join(2000);
+					m_thLogging[schId] = null;
+				}
+			}
+			catch { }
+		}
+
+		/// <summary>ALL_TASK 상태표시용 : 살아 있는 워커 스레드 목록</summary>
+		public string[] GetThreadStates()
+		{
+			int schId = (int)cDefApp.eThGbn.SCH_GR01;
+			bool bSch = (m_Thread_SCH[0] != null && m_Thread_SCH[0].m_Thread != null
+						 && m_Thread_SCH[0].m_Thread.IsAlive);
+			bool bLog = (m_thLogging[schId] != null && m_thLogging[schId].m_thThread != null
+						 && m_thLogging[schId].m_thThread.IsAlive);
+			return new string[] { "IO_SCH|" + (bSch ? "RUN" : "STOP"),
+								  "IO_LOG|" + (bLog ? "RUN" : "STOP") };
 		}
 
 		private void SYS_MAIN_FormClosing(object sender, FormClosingEventArgs e)

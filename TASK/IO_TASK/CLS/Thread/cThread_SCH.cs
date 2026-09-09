@@ -295,11 +295,19 @@ namespace TSK_COMM_IOSCH
         // 메인 Thread 루프 (200ms 폴링)
         // ─────────────────────────────────────────────────────────────────
         #region Thread_Doing
+        // [LGLS 2026-09-09] ALL_TASK 태스크 정지 플래그. Abort 대신 루프에서 빠져나온다.
+        public volatile bool m_bStop = false;
+
+        /// <summary>스케줄러 스레드에 정지를 요청한다.</summary>
+        public void RequestStop() { m_bStop = true; }
+
         public void Thread_Doing(object value)
         {
             // DB 연결이 성공할 때까지 재시도 (연결 전에 처리 메서드가 호출되지 않도록)
             while (!IsDBOpen)
             {
+                if (m_bStop) return;                       // [LGLS 2026-09-09] 정지 요청
+
                 try
                 {
                     if (DBOpen())
@@ -332,6 +340,13 @@ namespace TSK_COMM_IOSCH
             while (true)
             {
                 Thread.Sleep(200);
+
+                // [LGLS 2026-09-09] ALL_TASK 정지 요청 : DB 를 반납하고 스레드를 끝낸다.
+                if (m_bStop)
+                {
+                    try { DBClose(); } catch { }
+                    return;
+                }
 
                 // _pBdb null 안전 확인
                 if (_pBdb == null)
