@@ -3417,10 +3417,6 @@
 #define ID_HOST_CONNECT                 32979
 #define ID_32980                        32980
 #define ID_EQUIP_PRE_VIEW               32981
-#define ID_VIEW_LEGEND                 33033
-#define ID_PANE_SHOW_JOB               33034
-#define ID_PANE_SHOW_INFO              33035
-#define ID_PANE_SHOW_VEH               33036
 #define ID_32982                        32982
 #define ID_32983                        32983
 #define ID_RELOAD_LAYOUT                32984
@@ -3447,6 +3443,10 @@
 #define ID_SYSTEM_USAGE                 33023
 #define ID_VIEW_RACK                    33023
 #define ID_BUTTON3                      33031
+#define ID_VIEW_LEGEND                  33033
+#define ID_PANE_SHOW_JOB                33034
+#define ID_PANE_SHOW_INFO               33035
+#define ID_PANE_SHOW_VEH                33036
 #define ID_SYSTEM_CONFIG                35011
 #define ID_SYSTEM_LOGIN                 35012
 #define ID_SYSTEM_INVENTORY             35013
