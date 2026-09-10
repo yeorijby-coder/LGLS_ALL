@@ -221,47 +221,9 @@ void CDciMaster::DrawText(CDC* pDC, const CRect& rcRectL, const CString& strText
 
 	CRect rcControlS = ConvertRectS(rcRectL);
 
-	LOGFONT m_logfont;
-	CFont m_font;
-	CFont* pOldFont;
-
-	int nSize = 0;
-	int nHeight = rcControlS.Height();
-	int nWidth = rcControlS.Width();
-	nSize = nHeight;
-	if (nHeight > nWidth)
-		nSize = nWidth;
-
-	int nStrCnt = 0;
-	//if (m_strText.GetLength() < 5)
-	if (strText.GetLength() < 5)
-		nStrCnt = 1;
-	else
-		nStrCnt = (strText.GetLength() / 5) + 1;
-	//	nStrCnt = (m_strText.GetLength() / 5) + 1;
-
-	//if (m_strText.GetLength() > 20)
-	if (strText.GetLength() > 20)
-		nSize = nSize / 2;
-	else
-		nSize = nSize / nStrCnt;
-
-	memset(&m_logfont, 0, sizeof(LOGFONT));
-	m_logfont.lfQuality = PROOF_QUALITY;
-	//			m_logfont.lfHeight = r;
-	m_logfont.lfHeight = nFontSize;
-	m_logfont.lfWeight = FW_BOLD;
-	lstrcpy(m_logfont.lfFaceName, _T("Arial"));
-
-	m_font.CreateFontIndirect(&m_logfont);
-
-	pOldFont = pDC->SelectObject(&m_font);
-	
-//	pDC->DrawText(strText, ConvertRectS(rcRectL), DT_SINGLELINE|DT_CENTER|DT_VCENTER);
-	pDC->DrawText(strText, rcControlS, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-
-	if (pOldFont != NULL)
-		pDC->SelectObject(pOldFont);   // 폰트'
+	// [LGLS 2026-09-10] 칸에 맞춰 글자 크기를 정한다(랙 / RV / 리프터가 이 길로 그린다).
+	//   종전에는 위에서 칸 크기로 nSize 를 구해 놓고 쓰지 않고 nFontSize 를 그대로 썼다.
+	DrawTextFit(pDC, rcControlS, strText, nFontSize);
 
 	pDC->SetTextColor(nOldTextColor);
 	pDC->SetBkMode(nOldBkMode);
@@ -300,4 +262,74 @@ void CDciMaster::DrawButton(CDC* pDC, const CRect& rcRectL, COLORREF clrBrush, B
 // 		rcRectS.DeflateRect(0, 0, 1, 1);
 // 		pDC->Draw3dRect(rcRectS, RGB(255,255,255), RGB(192,192,192));
 	}
+}
+
+// [LGLS 2026-09-10] 칸에 맞춰 글자 크기를 정해 그린다.
+//   종전에는 컨트롤마다 칸 크기로 nSize 를 구해 놓고도 쓰지 않고 fontsize 를
+//   그대로 썼다. 화면 배율도 반영하지 않아 레이아웃을 키워도 글자는 그대로였다.
+void CDciMaster::DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strText, int nBaseFontSize)
+{
+	if (pDC == NULL || strText.IsEmpty())
+		return;
+
+	int nW = abs(rcRectS.Width());
+	int nH = abs(rcRectS.Height());
+	if (nW < 2 || nH < 2)
+		return;
+
+	int nScale = m_nScale;
+	if (nScale < 1) nScale = 1;
+	int nFont = nBaseFontSize * nScale;
+	if (nFont < 1) nFont = 1;
+
+	// 칸 안쪽 여백. 고정 2px 로 두면 큰 칸에서 글자가 테두리에 붙어 답답하다.
+	//   칸 크기의 1/8(최소 2px)을 띄운다.
+	int nPadH = nH / 8; if (nPadH < 2) nPadH = 2;
+	int nPadW = nW / 8; if (nPadW < 2) nPadW = 2;
+
+	int nMaxH = nH - nPadH;
+	if (nMaxH < 3) nMaxH = 3;
+	if (nFont > nMaxH) nFont = nMaxH;
+
+	int nMaxW = nW - nPadW;
+	if (nMaxW < 3) nMaxW = 3;
+
+	LOGFONT lf;
+	CFont font;
+	CSize sz;
+	CFont* pOldFont = NULL;
+
+	// 한 번 재보고 폭 비율로 줄인 뒤 몇 번만 다듬는다(폰트를 매번 만드는 비용을 아낀다)
+	for (int nTry = 0; nTry < 8; nTry++)
+	{
+		memset(&lf, 0, sizeof(LOGFONT));
+		lf.lfQuality = PROOF_QUALITY;
+		lf.lfHeight  = nFont;
+		lf.lfWeight  = FW_BOLD;
+		lstrcpy(lf.lfFaceName, _T("Arial"));
+
+		font.DeleteObject();
+		if (!font.CreateFontIndirect(&lf))
+			return;
+
+		pOldFont = pDC->SelectObject(&font);
+		sz = pDC->GetTextExtent(strText);
+
+		if (sz.cx <= nMaxW || nFont <= 3)
+			break;
+
+		pDC->SelectObject(pOldFont);
+		pOldFont = NULL;
+
+		int nNext = (int)((__int64)nFont * nMaxW / (sz.cx > 0 ? sz.cx : 1));
+		if (nNext >= nFont) nNext = nFont - 1;
+		if (nNext < 3)      nNext = 3;
+		nFont = nNext;
+	}
+
+	CRect rcDraw(rcRectS);
+	pDC->DrawText(strText, rcDraw, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+
+	if (pOldFont != NULL)
+		pDC->SelectObject(pOldFont);
 }

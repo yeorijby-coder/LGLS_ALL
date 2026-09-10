@@ -31,6 +31,35 @@ static void CloseRsSafe(_RecordsetPtr& rs)
 	rs = NULL;
 }
 
+// [LGLS 2026-09-10] 트랜잭션 실패를 파일에 남긴다. 대화상자는 띄우지 않는다
+//   (운전 중에 모달이 뜨면 화면이 멈춘다).
+static void ReportTransFail(LPCTSTR lpszWhat, _com_error& e)
+{
+	try
+	{
+		CString strDir = g_strEcsPath + _T("\\LOG");
+		::CreateDirectory(strDir, NULL);
+		CTime tm = CTime::GetCurrentTime();
+		CString strPath;
+		strPath.Format(_T("%s\\ECS_SQL_%s.log"), (LPCTSTR)strDir,
+			(LPCTSTR)tm.Format(_T("%Y%m%d")));
+		CStdioFile f;
+		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate |
+			CFile::modeWrite | CFile::typeText))
+		{
+			f.SeekToEnd();
+			CString strLine;
+			strLine.Format(_T("[%s] %s 실패 : hr=0x%08X %s\r\n"),
+				(LPCTSTR)tm.Format(_T("%H:%M:%S")), lpszWhat,
+				(unsigned)e.Error(), (LPCTSTR)CString((LPCTSTR)_bstr_t(e.Description())));
+			f.WriteString(strLine);
+			f.Close();
+		}
+	}
+	catch (CFileException* pe) { pe->Delete(); }
+	catch (...) { }
+}
+
 // [LGLS 2026-09-10] 접속 실패 알림.
 //   종전에는 실패마다 AfxMessageBox 를 띄웠다. 모달 상자 안에서 메시지 루프가 돌고
 //   그 안에서 타이머가 또 접속을 시도해 상자가 겹겹이 쌓였다(실측 57개).
@@ -106,18 +135,46 @@ BOOL CAdoDB::BeginTrans()
 	return true;
 }
 
+// [LGLS 2026-09-10] ADO 는 실패하면 _com_error 를 던진다. 잡는 곳이 없어
+//   그대로 올라가 프로그램이 끝났다 (크래시 2건 : 2026-08-31 05:38 / 15:48,
+//   E06D7363 @ KERNELBASE - CAdoDB::CommitTrans -> CEcsDoc::CommitTrans_DLG).
+//   실패는 FALSE 로 돌려주고 사유는 파일에 남긴다.
 BOOL CAdoDB::CommitTrans()
 {
-	m_pWmsDb->CommitTrans();
-
-	return true;
+	try
+	{
+		if (m_pWmsDb == NULL) return FALSE;
+		m_pWmsDb->CommitTrans();
+		return TRUE;
+	}
+	catch (_com_error& e)
+	{
+		ReportTransFail(_T("CommitTrans"), e);
+		return FALSE;
+	}
+	catch (...)
+	{
+		return FALSE;
+	}
 }
 
 BOOL CAdoDB::RollbackTrans()
 {
-	m_pWmsDb->RollbackTrans();
-
-	return true;
+	try
+	{
+		if (m_pWmsDb == NULL) return FALSE;
+		m_pWmsDb->RollbackTrans();
+		return TRUE;
+	}
+	catch (_com_error& e)
+	{
+		ReportTransFail(_T("RollbackTrans"), e);
+		return FALSE;
+	}
+	catch (...)
+	{
+		return FALSE;
+	}
 }
 ///////////////////////////////////////////////
 //

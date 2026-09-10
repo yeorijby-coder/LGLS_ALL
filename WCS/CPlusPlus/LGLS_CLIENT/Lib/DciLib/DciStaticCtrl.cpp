@@ -6,70 +6,6 @@
 
 
 
-// [LGLS 2026-09-09] 컨트롤 칸에 맞춰 글자 크기를 정해 그린다.
-//   기준 크기 = XML 의 fontsize x 화면 배율(CDciMaster::GetScale).
-//   그 크기가 칸을 넘치면 들어갈 때까지 줄인다. 한 줄 가운데 정렬은 종전과 같다.
-static void DrawTextFitToRect(CDC* pDC, const CString& strText, const CRect& rc, int nBaseFontSize, int nScale)
-{
-	if (strText.IsEmpty())
-		return;
-
-	int nW = abs(rc.Width());
-	int nH = abs(rc.Height());
-	if (nW < 2 || nH < 2)
-		return;
-
-	if (nScale < 1) nScale = 1;
-	int nFont = nBaseFontSize * nScale;
-	if (nFont < 1) nFont = 1;
-
-	// 칸 높이를 넘지 않게 (위아래 약간의 여백을 둔다)
-	int nMaxH = nH - 2;
-	if (nMaxH < 3) nMaxH = 3;
-	if (nFont > nMaxH) nFont = nMaxH;
-
-	LOGFONT lf;
-	CFont font;
-	CSize sz;
-	CFont* pOldFont = NULL;
-	int nMaxW = nW - 2;
-	if (nMaxW < 3) nMaxW = 3;
-
-	// 한 번 재보고 폭 비율로 한 번에 줄인 뒤, 몇 번만 다듬는다(매번 폰트를 만드는 비용을 아낀다)
-	for (int nTry = 0; nTry < 8; nTry++)
-	{
-		memset(&lf, 0, sizeof(LOGFONT));
-		lf.lfQuality = PROOF_QUALITY;
-		lf.lfHeight  = nFont;
-		lf.lfWeight  = FW_BOLD;
-		lstrcpy(lf.lfFaceName, _T("Arial"));
-
-		font.DeleteObject();
-		if (!font.CreateFontIndirect(&lf))
-			return;
-
-		pOldFont = pDC->SelectObject(&font);
-		sz = pDC->GetTextExtent(strText);
-
-		if (sz.cx <= nMaxW || nFont <= 3)
-			break;
-
-		pDC->SelectObject(pOldFont);
-		pOldFont = NULL;
-
-		int nNext = (int)((__int64)nFont * nMaxW / (sz.cx > 0 ? sz.cx : 1));
-		if (nNext >= nFont) nNext = nFont - 1;
-		if (nNext < 3)      nNext = 3;
-		nFont = nNext;
-	}
-
-	CRect rcDraw(rc);
-	pDC->DrawText(strText, rcDraw, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-
-	if (pOldFont != NULL)
-		pDC->SelectObject(pOldFont);
-}
-
 IMPLEMENT_SERIAL(CDciStaticCtrl, CDciControl, DCI_SIRIALIZE_SCHEMA)
 
 // CDciStaticCtrl
@@ -243,7 +179,7 @@ void CDciStaticCtrl::UpdateControl(CDC* pDC)
 		//   재는 동안(GetTextExtent + 폰트 생성) 수집 스레드가 m_strText 를 바꾸면
 		//   버퍼가 사라져 DrawText 안에서 죽는다.
 		CString strDraw = GetTextSafe();
-		DrawTextFitToRect(pDC, strDraw, rcControlS, m_nFontSize, m_pDCI->GetScale());
+		m_pDCI->DrawTextFit(pDC, rcControlS, strDraw, m_nFontSize);
 
 		if (pOldPen != NULL)	pDC->SelectObject(pOldPen);
 		if (pOldBrush != NULL)	pDC->SelectObject(pOldBrush);

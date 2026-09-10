@@ -225,56 +225,14 @@ void CDciControl::DrawFontText(CDC* pDC, CString strText, CRect* pRect, int nOld
 		strRealText = strText;
 
 
-	LOGFONT m_logfont;
-	CFont m_font;
-	CFont* pOldFont;
-
-	int nSize = 0;
-	int nHeight = rcControlS.Height();
-	int nWidth = rcControlS.Width();
-	nSize = nHeight;
-	if (nHeight > nWidth)
-		nSize = nWidth;
-
-	int nStrCnt = 0;
-	//if (m_strText.GetLength() < 5)
-	if (strRealText.GetLength() < 5)
-		nStrCnt = 1;
-	else
-		nStrCnt = (strRealText.GetLength() / 5) + 1;
-	//	nStrCnt = (m_strText.GetLength() / 5) + 1;
-
-	//if (m_strText.GetLength() > 20)
-	if (strRealText.GetLength() > 20)
-		nSize = nSize / 2;
-	else
-		nSize = nSize / nStrCnt;
-
-	memset(&m_logfont, 0, sizeof(LOGFONT));
-	m_logfont.lfQuality = PROOF_QUALITY;
-	//			m_logfont.lfHeight = r;
-	m_logfont.lfHeight = m_nFontSize;
-	m_logfont.lfWeight = FW_BOLD;
-	lstrcpy(m_logfont.lfFaceName, _T("Arial"));
-
-	m_font.CreateFontIndirect(&m_logfont);
-
-	pOldFont = pDC->SelectObject(&m_font);
-	
-	//pDC->DrawText(m_strText, rcControlS, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-	pDC->DrawText(strRealText, rcControlS, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-
-	if (pOldFont != NULL)
-		pDC->SelectObject(pOldPen);
-	if (pOldFont != NULL)
-		pDC->SelectObject(pOldBrush);
+	// [LGLS 2026-09-10] 칸에 맞춰 글자 크기를 정한다(트랙이 이 길로 그린다).
+	//   종전에는 칸 크기로 nSize 를 구해 놓고 쓰지 않고 m_nFontSize 를 그대로 썼고,
+	//   화면 배율도 반영하지 않아 레이아웃을 키워도 글자는 그대로였다.
+	if (m_pDCI != NULL)
+		m_pDCI->DrawTextFit(pDC, rcControlS, strRealText, m_nFontSize);
 
 	pDC->SetTextColor(nOldFgColor);
 	pDC->SetBkMode(nOldBkMode);
-
-	// restore previous font to avoid leaving the DC with a pointer to a temporary font
-	if (pOldFont != NULL)
-		pDC->SelectObject(pOldFont);
 }
 
 
