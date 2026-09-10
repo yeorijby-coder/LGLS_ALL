@@ -689,6 +689,13 @@ CString CLib::GetIniStringWH_TYP(CString pstrDefault)
 // [LGLS 2026-08-05] observables.tsv 에서 소유자(VEHICLE:11 등)+항목명으로 실주소를 찾는다.
 //   표기 : DEVICE_TYPE W->D(워드), B->M(비트), R->R + 16진 주소 (XGT 실전송 규격).
 //   파일이 없거나 항목이 없으면 빈 문자열(라벨엔 이름만 표시).
+// [LGLS 2026-09-10] 관측 정의(observables.tsv = 구 ECS TB_OBSERVABLE)를 한 번 읽어
+//   두 가지로 담아 둔다.
+//     s_map   : 실제주소 표기 (W->D, B->M, R->R)
+//     s_mapEz : 구 ECS 원본 표기 (W/B/R 그대로)
+//   CV 는 트랙 슬롯마다 주소가 갈려 계산으로 못 만든다. 원본을 그대로 쓰는 편이 맞다.
+static CMapStringToString s_mapEz;
+
 CString CLib::GetObsAddr(CString pstrOwner, CString pstrName)
 {
 	static CMapStringToString s_map;
@@ -728,12 +735,24 @@ CString CLib::GetObsAddr(CString pstrOwner, CString pstrName)
 				if (chView == '?') continue;
 				CString strVal; strVal.Format(_T("%c%s"), chView, (LPCTSTR)strAdr);
 				s_map.SetAt(strOwner + _T("|") + strName, strVal);
+				CString strEz;
+				strEz.Format(_T("%c%s"), chDev, (LPCTSTR)strAdr);	// 구 ECS 원본 표기
+				s_mapEz.SetAt(strOwner + _T("|") + strName, strEz);
 			}
 			f.Close();
 		}
 	}
 	CString strFound;
 	if (s_map.Lookup(pstrOwner + _T("|") + pstrName, strFound)) return strFound;
+	return _T("");
+}
+
+// [LGLS 2026-09-10] 구 ECS 원본 표기. GetObsAddr 를 한 번은 불러야 표가 채워진다.
+CString CLib::GetObsAddrEz(CString pstrOwner, CString pstrName)
+{
+	GetObsAddr(pstrOwner, pstrName);	// 최초 1회 적재
+	CString strFound;
+	if (s_mapEz.Lookup(pstrOwner + _T("|") + pstrName, strFound)) return strFound;
 	return _T("");
 }
 

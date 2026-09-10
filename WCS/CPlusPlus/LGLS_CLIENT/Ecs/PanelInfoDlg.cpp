@@ -452,6 +452,9 @@ void CPanelInfoDlg::Refresh()
 					{
 						CString strTag = CV_ROWS[i].strObs;
 						strTag.Replace(_T("#"), strSfx);
+						// [LGLS 2026-09-10] 구ECS주소 칸이 비어 있던 것을 채운다.
+						//   CV 는 슬롯마다 주소가 갈려 계산이 안 되므로 구 ECS 원본 표기를 그대로 쓴다.
+						m_list.SetItemText(i, 4, CLib::GetObsAddrEz(strOwner, strTag));
 						m_list.SetItemText(i, 5, CLib::GetObsAddr(strOwner, strTag));
 					}
 					m_list.SetItemText(i, 6, CV_ROWS[i].strField);

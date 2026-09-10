@@ -182,6 +182,8 @@ public:
 	// [LGLS 2026-08-01] 조회 조건 입력칸(라벨+편집) 1쌍을 런타임 생성. 스타일=nRef*, 위치=nPos*(숨긴 예비칸 활용).
 	// [LGLS 2026-08-05] observables.tsv(설비 PLC 주소표)에서 실주소를 조회 (예: D0106/M0310/R0300)
 	static CString GetObsAddr(CString pstrOwner, CString pstrName);
+	// [LGLS 2026-09-10] 구 ECS 원본 표기(W/B/R + 주소) 그대로. 실제주소로 바꾸지 않는다.
+	static CString GetObsAddrEz(CString pstrOwner, CString pstrName);
 	static void AddFilterField(CWnd* pDlg, int nLblAboveRow, int nLblRow, int nValRow,
 	                           LPCTSTR szText, int nLblId, int nEdtId, CPtrArray& arKeep);
 	static void AddTwoRowsBelow(CWnd* pDlg, int nLblAbove, int nLbl, int nVal,
