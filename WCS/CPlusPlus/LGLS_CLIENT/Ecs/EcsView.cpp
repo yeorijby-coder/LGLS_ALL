@@ -1309,7 +1309,6 @@ void CEcsView::GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_MODE, 
 
 	//strSql += CRLF + _T("SELECT (SELECT REMOTE_CONTROL FROM CV_DATA WHERE MC_NO = '101') AS REMOTE_CONTROL  ");
 	strSql += CRLF + _T("SELECT TOP 1 (SELECT STOCK_MODE FROM CV_DATA WHERE MC_NO = '149') AS STOCK_MODE			");	// [LGLS] TOP 1 instead of LIMIT 1
-	strSql += CRLF + _T("      ,(SELECT ROLL_MODE FROM CV_DATA WHERE MC_NO = '154') AS ROLL_MODE			");
 	strSql += CRLF + _T("  FROM CV_DATA  ");
 	strSql += CRLF + _T(" WHERE WH_TYP = ") + CLib::Quot(pCV_DATA->K_WH_TYP);
 	strSql += CRLF + _T("   AND PLC_NO = ") + CLib::Quot(pCV_DATA->K_PLC_NO);	// [LGLS] LIMIT removed (TOP 1 above)
@@ -1322,7 +1321,8 @@ void CEcsView::GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_MODE, 
 
 	pSTOCK_MODE = pRsw->GetItem(_T("STOCK_MODE"));
 	pREMOTE_CONTROL = _T("");
-	pROLL_MODE = pRsw->GetItem(_T("ROLL_MODE"));
+	// [LGLS 2026-09-10] ROLL_MODE 컬럼은 DB 에서 지웠다(타 현장 설비용).
+	pROLL_MODE = _T("");
 
 	delete pRsw;
 }

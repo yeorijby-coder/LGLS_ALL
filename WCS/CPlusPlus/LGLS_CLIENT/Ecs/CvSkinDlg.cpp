@@ -1774,7 +1774,6 @@ CString CCvSkinDlg::GetQrySelectJOB_MST( CCV_DATA* pCV_DATA )
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(JM.BCR_TOP,'N') AS BCR_TOP ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(JM.BCR_BOTTOM,'N') AS BCR_BOTTOM ");
 	strSql += CRLF + _T("	   ,") + _T("'[' + JM.JOB_STATUS + '] ' + ") + m_pDoc->NVL + _T("(CCD_JOB_STATUS.CCD_NM_KOR,'N') AS JOB_STATUS ");
-	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(JM.MES_ERROR_CD,'0') AS MES_ERROR_CD ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_PRODUCT_SIZE.CCD_NM_KOR,JM.PRODUCT_SIZE) AS PRODUCT_SIZE ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(JM.LOT_NO,'') AS LOT_NO ");
 	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(JM.PRODUCT_ID,'') AS PRODUCT_ID ");
@@ -1847,7 +1846,6 @@ CString CCvSkinDlg::GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_M
 	//   CV_DATA.STOCK_MODE 규약 : '0' = 입고 / '1' = 출고 (IO_TASK·WCS_TASK_CV 와 동일).
 	strSql += CRLF + _T("      ,(SELECT STOCK_MODE FROM CV_DATA WHERE WH_TYP = ") + CLib::Quot(pCV_DATA->K_WH_TYP)
 	                 + _T(" AND MC_NO = ") + CLib::Quot(pCV_DATA->K_TRACK_NO) + _T(") AS STOCK_MODE ");
-	strSql += CRLF + _T("      ,(SELECT ROLL_MODE FROM CV_DATA WHERE MC_NO = '154') AS ROLL_MODE			");
 	strSql += CRLF + _T("  FROM CV_DATA  ");
 	strSql += CRLF + _T(" WHERE WH_TYP = ") + CLib::Quot(pCV_DATA->K_WH_TYP);
 	strSql += CRLF + _T("   AND PLC_NO = ") + CLib::Quot(pCV_DATA->K_PLC_NO);	// [LGLS] LIMIT removed (TOP 1 above)
@@ -1860,7 +1858,8 @@ CString CCvSkinDlg::GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_M
 
 	pSTOCK_MODE = pRsw->GetItem(_T("STOCK_MODE"));
 	pREMOTE_CONTROL = pRsw->GetItem(_T("REMOTE_CONTROL"));
-	pROLL_MODE = pRsw->GetItem(_T("ROLL_MODE"));
+	// [LGLS 2026-09-10] ROLL_MODE 컬럼은 DB 에서 지웠다(타 현장 설비용).
+	pROLL_MODE = _T("");
 
 	delete pRsw;
 	return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);

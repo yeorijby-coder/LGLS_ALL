@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+﻿#include "StdAfx.h"
 #include "stdafx.h"
 #include "CollectDataList.h"
 #include "Ecs.h"
@@ -366,7 +366,6 @@ CString CCollectDataList::GetSelQuery_JOB_MST()
 				  _T("      , ") + m_pDoc->NVL + _T("(JOB_KIND,						 '99')	as 	JOB_KIND 				\n ")	 
 				  _T("      , ") + m_pDoc->NVL + _T("(JOB_STATUS,					 '99')	as 	JOB_STATUS 				\n ")	 
 				  _T("      , ") + m_pDoc->NVL + _T("(JOB_PRIORITY,					  '0')	as 	JOB_PRIORITY 				\n ")	 
-				  _T("      , ") + m_pDoc->NVL + _T("(MES_ERROR_CD,					  '0')	as 	MES_ERROR_CD 				\n ")	 
 				  _T("      , ") + m_pDoc->NVL + _T("(TRAY_TYP,						  '0')	as 	TRAY_TYP 				\n ")	 
 				  _T("      , ") + m_pDoc->NVL + _T("(TRAY_LEV,						  '0')	as 	TRAY_LEV 				\n ")	 
 				  _T("      , ") + m_pDoc->NVL + _T("(DURATION_TIME,				  ") + m_pDoc->SYSDATE + _T(")	as 	DURATION_TIME 				\n ")	 
@@ -407,7 +406,6 @@ CMap<CString, LPCTSTR, CJOB_MST*, CJOB_MST*>* CCollectDataList::CreateJOB_MST( C
 		strJOB_KIND = pRsw->GetItem(_T("JOB_KIND"));
 		strJOB_STATUS = pRsw->GetItem(_T("JOB_STATUS"));
 		strJOB_PRIORITY = pRsw->GetItem(_T("JOB_PRIORITY"));
-		strMES_ERROR_CD = pRsw->GetItem(_T("MES_ERROR_CD"));
 		strTRAY_TYP = pRsw->GetItem(_T("TRAY_TYP"));
 		strTRAY_LEV = pRsw->GetItem(_T("TRAY_LEV"));
 		strDURATION_TIME = pRsw->GetItem(_T("DURATION_TIME"));
@@ -427,7 +425,6 @@ CMap<CString, LPCTSTR, CJOB_MST*, CJOB_MST*>* CCollectDataList::CreateJOB_MST( C
 		pJOB_MST->JOB_KIND			 = strJOB_KIND;
 		pJOB_MST->JOB_STATUS		 = strJOB_STATUS;
 		pJOB_MST->JOB_PRIORITY		 = strJOB_PRIORITY;
-		pJOB_MST->MES_ERROR_CD		 = strMES_ERROR_CD;
 		pJOB_MST->TRAY_TYP			 = strTRAY_TYP;
 		pJOB_MST->TRAY_LEV			 = strTRAY_LEV;
 		pJOB_MST->DURATION_TIME		 = strDURATION_TIME;
