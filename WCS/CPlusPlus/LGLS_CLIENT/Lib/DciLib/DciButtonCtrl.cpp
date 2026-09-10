@@ -641,7 +641,7 @@ void CDciButtonCtrl::UpdateControl(CDC* pDC)
 		m_font.CreateFontIndirect(&m_logfont);
 		pOldFont = pDC->SelectObject(&m_font);
 
-		pDC->DrawText(m_strText, rcControlS, DT_SINGLELINE|DT_CENTER|DT_VCENTER);
+		pDC->DrawText(GetTextSafe(), rcControlS, DT_SINGLELINE|DT_CENTER|DT_VCENTER);
 
 		/*
 		LOGFONT m_logfont;
@@ -656,7 +656,7 @@ void CDciButtonCtrl::UpdateControl(CDC* pDC)
 		m_font.CreateFontIndirect(&m_logfont);
 		pOldFont = pDC->SelectObject(&m_font);
 
-		pDC->DrawText(m_strText, m_pDCI->ConvertRectS(m_rcControlL), DT_SINGLELINE|DT_CENTER|DT_VCENTER);
+		pDC->DrawText(GetTextSafe(), m_pDCI->ConvertRectS(m_rcControlL), DT_SINGLELINE|DT_CENTER|DT_VCENTER);
 		*/
 		pDC->SetTextColor(nOldFgColor);
 		pDC->SetBkMode(nOldBkMode);

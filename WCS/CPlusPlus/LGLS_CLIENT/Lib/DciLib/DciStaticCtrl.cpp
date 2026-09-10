@@ -239,7 +239,11 @@ void CDciStaticCtrl::UpdateControl(CDC* pDC)
 		//*/
 
 		// [LGLS 2026-09-09] 글자를 칸 크기에 맞춰 그린다(종전 DrawFontText 는 fontsize 고정).
-		DrawTextFitToRect(pDC, m_strText, rcControlS, m_nFontSize, m_pDCI->GetScale());
+		// [LGLS 2026-09-10] 글자는 락 안에서 한 벌 떠 온 뒤 그 사본으로 그린다.
+		//   재는 동안(GetTextExtent + 폰트 생성) 수집 스레드가 m_strText 를 바꾸면
+		//   버퍼가 사라져 DrawText 안에서 죽는다.
+		CString strDraw = GetTextSafe();
+		DrawTextFitToRect(pDC, strDraw, rcControlS, m_nFontSize, m_pDCI->GetScale());
 
 		if (pOldPen != NULL)	pDC->SelectObject(pOldPen);
 		if (pOldBrush != NULL)	pDC->SelectObject(pOldBrush);

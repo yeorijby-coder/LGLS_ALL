@@ -198,9 +198,9 @@ BOOL CTrackInfo::ApplyRetCntDisplay(CDciTrackCtrl* pTrackCtrl)
 		clrNew = (s_nRetCnt[idx] > 0) ? RGB(0,0,255) : RGB(0,0,0);
 	}
 
-	if (pStatic->m_strText != strNew || pStatic->m_clrFgColor != clrNew)
+	if (pStatic->GetTextSafe() != strNew || pStatic->m_clrFgColor != clrNew)
 	{
-		pStatic->m_strText = strNew;
+		pStatic->SetTextSafe(strNew);
 		pStatic->m_clrFgColor = clrNew;
 		pStatic->InvalidateControl(m_pEquipment->m_pDoc->m_hWndView, FALSE);
 	}
@@ -423,7 +423,7 @@ if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
 		WORD wStatus = m_arrayStatus[i];
 		DEBUGER_ASSERT_VALID(wStatus != 0);
 
-		int nTrackNum = CConvert::ToInt(pTrackCtrl->m_strText);
+		int nTrackNum = CConvert::ToInt(pTrackCtrl->GetTextSafe());
 
 		CTrackInfo* pTrack = m_pEquipment->m_pDoc->GetTrackInfo(nTrackNum);
 

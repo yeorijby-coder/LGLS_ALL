@@ -207,9 +207,9 @@ void CCv::AutoRunProc()
 				// [LGLS 2026-08-22] C/V #2 자리는 RTV 레일(5열)과 랙(8열) 사이 1.5칸뿐이라 짧게 쓴다
 			// [LGLS 2026-09-02] C/V#2 통로도 "입고 모드"/"출고 모드" 로 통일(사용자 요청)
 			CString strTxt = bOut ? _T("출고 모드") : _T("입고 모드");
-				if (pDirCtrl->m_strText != strTxt)
+				if (pDirCtrl->GetTextSafe() != strTxt)
 				{
-					pDirCtrl->m_strText = strTxt;
+					pDirCtrl->SetTextSafe(strTxt);	// [LGLS 2026-09-10] UI 스레드와 겹치지 않게
 					pDirCtrl->m_clrFgColor = bOut ? RGB(200,0,0) : RGB(0,0,200);
 					pDirCtrl->InvalidateControl(m_pDoc->m_hWndView, TRUE);
 				}

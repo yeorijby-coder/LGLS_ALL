@@ -135,9 +135,9 @@ void CScPair::RefreshScWaitCount()
 			CString strCidClr;
 			strCidClr.Format(_T("9000090%d"), nScClr);
 			CDciControl* pCtrlClr = m_pDoc->GetDciControl_FindAllLayout(strCidClr);
-			if (pCtrlClr != NULL && pCtrlClr->m_strText != _T(""))
+			if (pCtrlClr != NULL && pCtrlClr->GetTextSafe() != _T(""))
 			{
-				pCtrlClr->m_strText = _T("");
+				pCtrlClr->SetTextSafe(_T(""));
 				pCtrlClr->InvalidateControl(m_pDoc->m_hWndView, TRUE);
 			}
 		}
@@ -189,9 +189,9 @@ void CScPair::RefreshScWaitCount()
 		strTxt.Format(_T("출고대기 %d"), nCnt[nSc - 1]);
 		COLORREF clrTxt = (nCnt[nSc - 1] > 0) ? RGB(128, 0, 192) : RGB(150, 150, 150);
 
-		if (pCtrl->m_strText != strTxt || pCtrl->m_clrFgColor != clrTxt)
+		if (pCtrl->GetTextSafe() != strTxt || pCtrl->m_clrFgColor != clrTxt)
 		{
-			pCtrl->m_strText = strTxt;
+			pCtrl->SetTextSafe(strTxt);
 			pCtrl->m_clrFgColor = clrTxt;
 			pCtrl->InvalidateControl(m_pDoc->m_hWndView, TRUE);
 		}

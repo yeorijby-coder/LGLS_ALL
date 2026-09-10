@@ -168,7 +168,7 @@ void CDciControl::UpdateControl(CDC* pDC)
 		// select font and remember previous one
 		pOldFont = (CFont*)pDC->SelectObject(&m_font);
 
-		m_pDCI->DrawText(pDC, m_rcControlL, m_strText, m_clrFgColor);
+		m_pDCI->DrawText(pDC, m_rcControlL, GetTextSafe(), m_clrFgColor);
 
 		// restore DC state
 		if (pOldBrush != NULL)
@@ -220,7 +220,7 @@ void CDciControl::DrawFontText(CDC* pDC, CString strText, CRect* pRect, int nOld
 	CString strRealText = _T("");
 
 	if (strText == _T(""))
-		strRealText = m_strText;
+		strRealText = GetTextSafe();
 	else
 		strRealText = strText;
 
@@ -336,4 +336,25 @@ void CDciControlList::Clear()
 	for (POSITION pos=GetHeadPosition(); pos!=NULL; )
 		delete GetNext(pos);
 	RemoveAll();
+}
+
+// [LGLS 2026-09-10] 레이아웃 글자 접근용 락(전 컨트롤 공용).
+//   글자 대입은 짧고 드물어서 하나로 묶어도 화면이 느려지지 않는다.
+CCriticalSection& CDciControl::TextLock()
+{
+	static CCriticalSection s_cs;
+	return s_cs;
+}
+
+void CDciControl::SetTextSafe(LPCTSTR lpszText)
+{
+	CSingleLock _lock(&TextLock(), TRUE);
+	m_strText = (lpszText != NULL) ? lpszText : _T("");
+}
+
+// 사본을 돌려준다. 받은 쪽은 락 없이 마음대로 써도 된다.
+CString CDciControl::GetTextSafe()
+{
+	CSingleLock _lock(&TextLock(), TRUE);
+	return CString((LPCTSTR)m_strText);
 }

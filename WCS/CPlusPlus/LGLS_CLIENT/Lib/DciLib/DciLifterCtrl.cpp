@@ -1,4 +1,4 @@
-// DciLifterCtrl.cpp: implementation of the CDciLifterCtrl class.
+﻿// DciLifterCtrl.cpp: implementation of the CDciLifterCtrl class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -117,7 +117,7 @@ void CDciLifterCtrl::UpdateControl(CDC* pDC)
 	{
 		CDciLifterItem& item = m_items[i];
 		m_pDCI->DrawButton(pDC, item.m_rcLifterL, item.m_clrLifter, m_bClick);
-		m_pDCI->DrawText(pDC, item.m_rcLifterL, m_strText, m_clrFgColor);
+		m_pDCI->DrawText(pDC, item.m_rcLifterL, GetTextSafe(), m_clrFgColor);
 	}
 }
 

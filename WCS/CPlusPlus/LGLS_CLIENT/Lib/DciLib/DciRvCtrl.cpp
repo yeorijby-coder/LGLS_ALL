@@ -647,7 +647,7 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 		COLORREF clrExDisp;
 		CString  strExDisp = GetExtraTextSafe(&clrExDisp);
 		strExDisp.Trim();
-		CString  strDispText = strExDisp.IsEmpty() ? m_strText : strExDisp;
+		CString  strDispText = strExDisp.IsEmpty() ? GetTextSafe() : strExDisp;
 		COLORREF clrDispText = strExDisp.IsEmpty() ? m_clrFgColor : clrExDisp;
 
 		CPoint ptRailS1, ptRailS2;					// 레일끝의 포인트???

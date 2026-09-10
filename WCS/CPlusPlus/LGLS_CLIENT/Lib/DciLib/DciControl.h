@@ -5,6 +5,7 @@
 //#define AFX_DATA AFX_EXT_DATA
 
 #pragma once
+#include <afxmt.h>	// [LGLS 2026-09-10] CCriticalSection
 
 #include <afxtempl.h>
 #include "DciMaster.h"
@@ -38,6 +39,14 @@ public:
 	BOOL		m_bVisible;
 	BOOL		m_bClick;
 	int			m_nFontSize;
+
+	// [LGLS 2026-09-10] m_strText 는 수집 스레드가 바꾸고 UI 스레드가 그린다.
+	//   CString 대입이 옛 버퍼를 해제하므로 그리는 도중에 겹치면 DrawText 안에서 죽는다
+	//   (2026-09-10 16:48 크래시 : ScriptStringAnalyse 에서 ACCESS_VIOLATION).
+	//   글자를 읽고 쓸 때는 이 두 함수를 쓴다. 직접 m_strText 를 만지지 않는다.
+	static CCriticalSection& TextLock();
+	void		SetTextSafe(LPCTSTR lpszText);
+	CString		GetTextSafe();
 
 public:
 	virtual void InitControl(CDciMaster* pDCI);

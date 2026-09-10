@@ -182,7 +182,7 @@ void CDciTrackCtrl::UpdateControl(CDC* pDC)
 		//*/
 
 		// [LGLS] 트랙번호는 마지막 2자리만 표시(값 자체는 키로 유지)
-		CString strTrDisp = m_strText;
+		CString strTrDisp = GetTextSafe();
 		if (strTrDisp.GetLength() > 2) strTrDisp = strTrDisp.Right(2);
 		// [LGLS] 실제 렌더는 아래 DrawFontText에서 strTrDisp로 수행
 
