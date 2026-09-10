@@ -150,7 +150,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 
 
 	DDX_Control(pDX, IDC_GRP_MGDP_STATUS, m_grpMgdpStatus);
-	DDX_Control(pDX, IDC_BTN_MZ_MOVE, m_btnMzMove);
 	DDX_Control(pDX, IDC_LGLS_CV_ZOOM, m_btnCvZoom);	// [LGLS 2026-08-05]
 }
 
@@ -175,7 +174,6 @@ BEGIN_MESSAGE_MAP(CCvSkinDlg, CSkinDialog)
 	ON_BN_CLICKED(IDC_LGLS_CV_HS_EJECT, &CCvSkinDlg::OnBnClickedBtnCvHsEject)	// [LGLS 2026-09-06]
 	ON_BN_CLICKED(IDC_CHK_AUTO_SEL, &CCvSkinDlg::OnBnClickedChkAutoSel)
 	ON_WM_TIMER()
-	ON_BN_CLICKED(IDC_BTN_MZ_MOVE, &CCvSkinDlg::OnBnClickedBtnMzMove)
 	ON_BN_CLICKED(IDC_CHK_AUTO_SEL2, &CCvSkinDlg::OnBnClickedChkAutoSel2)
 END_MESSAGE_MAP()
 
@@ -577,8 +575,6 @@ void CCvSkinDlg::RedrawImage()
 	m_btnCvHsEject.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("arrow-left"), strExtension)), NULL, 5, 5);
 
 
-	m_btnMzMove.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnMzMove.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("write"), strExtension)), NULL, 5, 5);
 
 	// [LGLS 2026-08-05] 확대 버튼도 같은 스킨 + 아이콘(비트맵만 주면 글자가 안 그려진다)
 	m_btnCvZoom.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
@@ -675,12 +671,6 @@ void CCvSkinDlg::RelocationControls()
 	}
 
 	// [LGLS 2026-08-13] MG 이동/[확대]도 다른 버튼처럼 비트맵 크기로 - 확대 버튼 잘림 해결
-	if (::IsWindow(m_btnMzMove.m_hWnd))
-	{
-		m_btnMzMove.GetWindowRect(&rc2);
-		ScreenToClient(&rc2);
-		m_btnMzMove.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-	}
 	if (::IsWindow(m_btnCvZoom.m_hWnd))
 	{
 		m_btnCvZoom.GetWindowRect(&rc2);
@@ -774,8 +764,69 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 	InvalidateReadOnlyData(pLang);
 }
 
+
+// [LGLS 2026-09-10] 임시 계측 : 1초 갱신의 구간별 메모리 순증을 잰다.
+//   원인을 찾으면 이 블록과 호출부를 지운다.
+#ifdef _DEBUG
+static void LeakProbe(int nPhase)
+{
+	static _CrtMemState s_st[8];
+	static __int64      s_llSum[8] = {0};
+	static int          s_nCycle = 0;
+
+	if (nPhase < 0 || nPhase >= 8) return;
+	_CrtMemCheckpoint(&s_st[nPhase]);
+
+	if (nPhase > 0)
+	{
+		_CrtMemState d;
+		if (_CrtMemDifference(&d, &s_st[nPhase - 1], &s_st[nPhase]))
+		{
+			__int64 ll = 0;
+			for (int i = 0; i < _MAX_BLOCKS; i++) ll += (__int64)d.lSizes[i];
+			s_llSum[nPhase] += ll;
+		}
+	}
+
+	if (nPhase != 0) return;
+	if (++s_nCycle % 30 != 0) return;
+
+	try
+	{
+		CString strDir = g_strEcsPath + _T("\\LOG");
+		::CreateDirectory(strDir, NULL);
+		CTime tm = CTime::GetCurrentTime();
+		CString strPath;
+		strPath.Format(_T("%s\\ECS_LEAK_%s.log"), (LPCTSTR)strDir, (LPCTSTR)tm.Format(_T("%Y%m%d")));
+		CStdioFile f;
+		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate | CFile::modeWrite | CFile::typeText))
+		{
+			f.SeekToEnd();
+			CString strLine;
+			strLine.Format(_T("[%s] n=%d P1=%dKB P2=%dKB P3=%dKB\r\n"),
+				(LPCTSTR)tm.Format(_T("%H:%M:%S")), s_nCycle,
+				(int)(s_llSum[1] / 1024), (int)(s_llSum[2] / 1024), (int)(s_llSum[3] / 1024));
+			f.WriteString(strLine);
+			f.Close();
+		}
+	}
+	catch (CFileException* e) { e->Delete(); }
+	catch (...) { }
+}
+#else
+#define LeakProbe(x) ((void)0)
+#endif
+
 void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 {
+	LeakProbe(0);
+	// [LGLS 2026-09-10] DB 조회는 5초에 한 번만 한다.
+	//   설비 신호로 그리는 부분은 그대로 1초마다 갱신되므로 표시 반응은 그대로다.
+	//   1초마다 6건씩 조회하던 것이 줄어 DB 부담과 메모리 증가가 함께 준다.
+	static DWORD s_dwLastDbTick = 0;
+	DWORD dwNowTick = ::GetTickCount();
+	BOOL  bDbTick = (s_dwLastDbTick == 0) || ((dwNowTick - s_dwLastDbTick) >= 5000);
+	if (bDbTick) s_dwLastDbTick = dwNowTick;
 	if(m_pDoc == NULL) return;
 	CSingleLock _lockCvRead2(&m_pDoc->m_csEqpData, TRUE);   // [LGLS 2026-09-09] 수집 thread write serialize (refcount assert guard)
 
@@ -806,22 +857,43 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	if (pWndPaste != NULL)
 		pWndPaste->EnableWindow((pCopyJob != NULL && pCopyJob->COPY_YN) ? TRUE : FALSE);
 
-	GetErrorCode(_T("CV"), m_pTrackInfo->m_pCV_DATA->V_ERROR_CODE, (int)pLang, strGetErrorCode);
-	m_edtCvErrorCode.SetWindowText(strGetErrorCode);
+	LeakProbe(1);	// 1구간 : 시작~붙여넣기 판정
+	if (bDbTick)
+	{
+		GetErrorCode(_T("CV"), m_pTrackInfo->m_pCV_DATA->V_ERROR_CODE, (int)pLang, strGetErrorCode);
+		m_edtCvErrorCode.SetWindowText(strGetErrorCode);
+	}
 
 	CString strCCD_NM_KOR;
-	SelCommonCode(m_pTrackInfo->m_pCV_DATA->V_WAIT_SC_RET_JOB_RD, _T("WAIT_SC_RET_JOB"), strCCD_NM_KOR);
+	if (bDbTick)
+	{
+		SelCommonCode(m_pTrackInfo->m_pCV_DATA->V_WAIT_SC_RET_JOB_RD, _T("WAIT_SC_RET_JOB"), strCCD_NM_KOR);
+	}
 
-	SelCommonCode(m_pTrackInfo->m_pCV_DATA->V_TR_PAUSE_RD, _T("TRACK_PAUSE"), strCCD_NM_KOR);
-	m_edtCvTrackPause.SetWindowText(strCCD_NM_KOR);
+	if (bDbTick)
+	{
+		SelCommonCode(m_pTrackInfo->m_pCV_DATA->V_TR_PAUSE_RD, _T("TRACK_PAUSE"), strCCD_NM_KOR);
+		m_edtCvTrackPause.SetWindowText(strCCD_NM_KOR);
+	}
 
 
 	//SUSPEND 조회
-	CString strSql = GetQrySelectSUSPEND(m_pTrackInfo->m_pCV_DATA, strSUSPEND);
+	CString strSql;
+	if (bDbTick) strSql = GetQrySelectSUSPEND(m_pTrackInfo->m_pCV_DATA, strSUSPEND);
 	//m_edtCvSuspend2.SetWindowText(strSUSPEND); //cv suspend
 	
 	//공통 상태값 조회 및 입력
-	strSql = GetQrySelectStatusAll(m_pTrackInfo->m_pCV_DATA, strSTOCK_MODE, strREMOTE_CONTROL, strROLL_MODE);
+	// 이 값은 화면 문구/아이콘에 쓰이므로 조회를 건너뛴 주기에는 직전 값을 그대로 쓴다.
+	static CString s_strStockModeLast;
+	if (bDbTick)
+	{
+		strSql = GetQrySelectStatusAll(m_pTrackInfo->m_pCV_DATA, strSTOCK_MODE, strREMOTE_CONTROL, strROLL_MODE);
+		s_strStockModeLast = strSTOCK_MODE;
+	}
+	else
+	{
+		strSTOCK_MODE = s_strStockModeLast;
+	}
 
 	m_btnStockMode.SetIcon((strSTOCK_MODE == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	// [LGLS 2026-09-06] ★라벨 반전 수정★ CV_DATA.STOCK_MODE 는 '0'=입고 / '1'=출고 다.
@@ -844,6 +916,7 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	UpdateHsEjectEnable(strSTOCK_MODE);
 
 
+	LeakProbe(2);	// 2구간 : 에러코드/공통코드/상태 조회
 	CString strMessage;
 	int nRowCnt = -1;
 	
@@ -872,6 +945,8 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	m_btnCvRtvDepartHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_DEPARTHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	m_btnCvRtvArriveHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_ARRIVEHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 
+	LeakProbe(3);	// 3구간 : 상태 아이콘 갱신
+	if (!bDbTick) return;	// [LGLS 2026-09-10] 작업정보 조회도 5초 주기
 	strSql = GetQrySelectJOB_MST(m_pTrackInfo->m_pCV_DATA);
 	nRowCnt = -1;
 	_RecordsetPtr ptr =  m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
@@ -2138,58 +2213,6 @@ void CCvSkinDlg::OnTimer(UINT_PTR nIDEvent)
 		//조회
 		InvalidateTrackData(m_nLang);   /* [LGLS 2026-08-23] EN_KOR 고정을 현재 언어로 */
 	}
-}
-
-
-void CCvSkinDlg::OnBnClickedBtnMzMove()
-{
-	CString strSql = _T("");
-	CString strWH_TYP = m_pTrackInfo->m_pCV_DATA->K_WH_TYP;
-	CString strPLC_NO = m_pTrackInfo->m_pCV_DATA->K_PLC_NO;
-	CString strMC_NO = m_pTrackInfo->m_pCV_DATA->V_MC_NO;
-
-	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("매거진(108번)으로 이동시키겠습니까?")), MB_YESNO) != IDYES)
-			return;
-
-	m_pDoc->BeginTrans_DLG();
-
-	strSql.Format(_T(" UPDATE CV_DATA						\n")
-	_T("    SET LUGG_NO_OD = '9999'							\n")
-	_T("	  , DEST_POS_OD = '108'							\n")
-	_T("	  , JOB_TYP_OD = '6'							\n")
-	_T("      , WRITE_UPD_DT = ") + m_pDoc->SYSDATE + _T("  \n")
-	_T("      , OD_RQ_YN = 'Y'								\n")
-	_T("  WHERE WH_TYP = '%s'								\n")
-	_T("	AND PLC_NO = '%02s'								\n")
-	_T("    AND MC_NO = '%s'								\n")
-	_T("    AND OD_RQ_YN = 'N'								\n"),  strWH_TYP, strPLC_NO, strMC_NO);
-
- 	BOOL isSuccess =  m_pDoc->ExcuteQueryString_DLG(strSql);
-
-	if(isSuccess == TRUE)
-	{
-		CString strLOG_LUGG_NO = _T("9999");
-		CString strLOG_MSG = _T("");
-		strLOG_MSG.Format(_T("MZ 이동 지시 -> 트랙번호 : %s , 작업구분 : %s , 도착지 : %s"), strMC_NO, _T("6"), _T("108"));
-		if (!m_pDoc->GetQueryInsertClientLog(_T("CCvSkinDlg"), strLOG_LUGG_NO, _T(""), _T(""), strLOG_MSG))
-		{
-			m_pDoc->RollbackTrans_DLG();
-			InvalidateTrackData(m_nLang);
-			return;
-		}
-		
-		CString strTemp = _T("");
-		SetCvStatus(_T("9999"), _T("6"), _T("108"), _T(""), _T(""), _T(""), _T("WRITE"));
-
-		m_pDoc->CommitTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
-		return;
-	}
-
-	m_pDoc->RollbackTrans_DLG();
-	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
-	InvalidateTrackData(m_nLang);
-	return;
 }
 
 void CCvSkinDlg::OnBnClickedChkAutoSel2()

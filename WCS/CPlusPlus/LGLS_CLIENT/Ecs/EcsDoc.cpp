@@ -1168,6 +1168,25 @@ BOOL CEcsDoc::IsConnectDB_DLG()
 BOOL CEcsDoc::Initialize()
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+	// [LGLS 2026-09-10 임시] 종료 시 누수 목록을 파일로 받는다.
+	//   기본은 디버거 출력이라 붙어 있지 않으면 볼 수 없다.
+	{
+		static HANDLE s_hLeak = INVALID_HANDLE_VALUE;
+		if (s_hLeak == INVALID_HANDLE_VALUE)
+		{
+			CString strDir = g_strEcsPath + _T("\\LOG");
+			::CreateDirectory(strDir, NULL);
+			CString strPath = strDir + _T("\\ECS_LEAKDUMP.txt");
+			s_hLeak = ::CreateFile(strPath, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+				CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			if (s_hLeak != INVALID_HANDLE_VALUE)
+			{
+				_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+				_CrtSetReportFile(_CRT_WARN, s_hLeak);
+			}
+		}
+	}	// LeakDumpToFile
 	GetViewHandle();
 	while(InitializeDB() == FALSE)
 	{

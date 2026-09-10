@@ -120,8 +120,10 @@ BOOL CPanelInfoDlg::OnInitDialog()
 	m_list.ModifyStyle(0, WS_CLIPSIBLINGS);
 	ModifyStyle(0, WS_CLIPCHILDREN);
 	struct { LPCTSTR strHead; int nWidth; } COLS[] = {
-		{ _T("항목"),       95 }, { _T("값"),        110 }, { _T("설정"),      95 },
-		{ _T("확인"),       72 }, { _T("구ECS주소"),  72 }, { _T("실제주소"),  85 },
+		// [LGLS 2026-09-10] 판넬은 모니터링 전용이라 [설정]/[확인] 칸은 쓰지 않는다.
+		//   칸 번호를 그대로 두려고 지우지 않고 폭 0 으로 감춘다(값 채우는 코드가 번호로 접근한다).
+		{ _T("항목"),       95 }, { _T("값"),        110 }, { _T(""),          0 },
+		{ _T(""),           0 }, { _T("구ECS주소"),  72 }, { _T("실제주소"),  85 },
 		{ _T("기록시명칭"), 190 },
 	};
 	for (int i = 0; i < (int)(sizeof(COLS)/sizeof(COLS[0])); i++)
@@ -535,6 +537,8 @@ void CPanelInfoDlg::Refresh()
 void CPanelInfoDlg::PlaceOverlays()
 {
 	HideOverlays();
+	// [LGLS 2026-09-10] 모니터링 전용 - 칸 위 조작 컨트롤은 띄우지 않는다(사용자 지시).
+	return;
 
 	int nTab = m_tab.GetCurSel();
 	if (nTab == TAB_JOB && m_list.GetItemCount() > JOB_ROW_PRI)
@@ -799,6 +803,11 @@ void CPanelInfoDlg::OnListScrolled(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CPanelInfoDlg::BuildCmdBar()
 {
+	// [LGLS 2026-09-10] 판넬은 모니터링 전용으로 정리했다(사용자 지시).
+	//   조작은 설비 대화상자에서 한다. 명령 버튼을 아예 만들지 않으므로
+	//   LayoutCmdBar 가 목록에 판넬 높이를 모두 내준다.
+	return;
+
 	CRect rc0(0, 0, 10, 10);
 	CFont* pFont = GetFont();
 	for (int i = 0; i < CMD_COUNT; i++)

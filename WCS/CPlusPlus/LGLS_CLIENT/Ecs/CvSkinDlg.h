@@ -212,7 +212,6 @@ public:
 	CStaticTransparent m_lblJobStartLoc;
 	
 	CTGroupBox m_grpMgdpStatus;
-	CSkinButton m_btnMzMove;
 	CSkinButton m_btnCvZoom;	// [LGLS 2026-08-05] 확대(통신상태 패널 예정)
 	// [LGLS 2026-08-05] 통신상태 패널(확대) - SC/RTV 와 동일 구조
 	CPtrArray m_arVehCtrl;
@@ -294,6 +293,5 @@ public:
 	afx_msg void OnBnClickedChkAutoSel();
 	BOOL m_blAutoSel;
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	afx_msg void OnBnClickedBtnMzMove();
 	afx_msg void OnBnClickedChkAutoSel2();
 };

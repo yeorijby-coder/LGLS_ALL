@@ -13,6 +13,7 @@ public:
 	CEcsDoc*  m_pDoc;
 	CTabCtrl  m_tabTyp;
 	CListCtrl m_list;
+	CButton   m_chkAuto;	// [LGLS 2026-09-10] 자동 갱신 (오른쪽 위)
 
 	void Refresh();
 

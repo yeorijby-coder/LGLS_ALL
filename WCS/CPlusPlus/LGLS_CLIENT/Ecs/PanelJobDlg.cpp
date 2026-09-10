@@ -8,7 +8,8 @@
 #include "Lib.h"
 
 #define TIMER_PANEL_JOB      7301
-#define TIMER_PANEL_JOB_MS   3000
+#define TIMER_PANEL_JOB_MS   2000	// [LGLS 2026-09-10] 자동 갱신 주기(사용자 지시)
+#define IDC_PANEL_JOB_AUTO   2357	// 이 판넬 안에서만 쓰는 자식 ID
 
 // 탭 구성 : 전체 / 입고 / 출고 / 피킹출고 / 랙투랙 / 호기간이동 / 이동
 //   JOB_TYP : 1,11=입고  2,12=출고  3,13=피킹출고  4,14=랙투랙  5,15=호기간이동  0,6,10=이동
@@ -53,6 +54,13 @@ BOOL CPanelJobDlg::OnInitDialog()
 	};
 	for (int i = 0; i < (int)(sizeof(COLS)/sizeof(COLS[0])); i++)
 		m_list.InsertColumn(i, COLS[i].strHead, LVCFMT_LEFT, COLS[i].nWidth);
+
+	// [LGLS 2026-09-10] 자동 갱신 체크박스. 작업이 쌓이고 설비가 많이 움직이면
+	//   목록이 계속 새로 그려져 눈이 아프므로, 필요할 때만 켜서 본다.
+	m_chkAuto.Create(_T("자동 갱신"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+		CRect(0, 0, 10, 10), this, IDC_PANEL_JOB_AUTO);
+	m_chkAuto.SetFont(GetFont());
+	m_chkAuto.SetCheck(BST_CHECKED);
 
 	SetTimer(TIMER_PANEL_JOB, TIMER_PANEL_JOB_MS, NULL);
 	Refresh();
@@ -146,15 +154,20 @@ void CPanelJobDlg::Refresh()
 void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialog::OnSize(nType, cx, cy);
+	const int nChkW = 92;	// [LGLS 2026-09-10] 오른쪽 위 [자동 갱신] 자리
 	if (::IsWindow(m_tabTyp.m_hWnd))
-		m_tabTyp.MoveWindow(0, 0, cx, 24);
+		m_tabTyp.MoveWindow(0, 0, (cx > nChkW + 20) ? (cx - nChkW - 4) : cx, 24);
+	if (::IsWindow(m_chkAuto.m_hWnd) && cx > nChkW + 20)
+		m_chkAuto.MoveWindow(cx - nChkW, 4, nChkW - 4, 18);
 	if (::IsWindow(m_list.m_hWnd))
 		m_list.MoveWindow(0, 26, cx, cy - 26);
 }
 
 void CPanelJobDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	if (nIDEvent == TIMER_PANEL_JOB && IsWindowVisible())
+	// [LGLS 2026-09-10] 체크를 끄면 목록을 그대로 세워 둔다(사용자 지시).
+	if (nIDEvent == TIMER_PANEL_JOB && IsWindowVisible()
+		&& ::IsWindow(m_chkAuto.m_hWnd) && m_chkAuto.GetCheck() == BST_CHECKED)
 		Refresh();
 	CDialog::OnTimer(nIDEvent);
 }
