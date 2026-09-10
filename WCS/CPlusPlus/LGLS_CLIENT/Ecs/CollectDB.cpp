@@ -16,15 +16,19 @@ CCollectDB::CCollectDB(CEcsDoc* pDoc)
 	m_bThreadDoWork = FALSE;
 	m_pDoc = pDoc;
 	m_pThread = NULL;
+	m_dwThreadId = 0;
 	m_pDB_ACCESS = NULL;
 }
 
 
 CCollectDB::~CCollectDB(void)
 {
+	// [LGLS 2026-09-10] 수집 스레드를 먼저 세운다.
+	//   종전에는 스레드가 아직 m_pDB_ACCESS 를 쓰고 있는데 여기서 지웠다(use-after-free).
+	StopDoWork();
+
 	if(m_pDB_ACCESS != NULL){ delete m_pDB_ACCESS; }
 	m_pDB_ACCESS = NULL;
-
 }
 
 BOOL CCollectDB::IsDB_POSSIBLE()
@@ -72,7 +76,15 @@ BOOL CCollectDB::StartDoWork()
 
 	
 	m_bThreadDoWork = TRUE;
-	m_pThread = ::AfxBeginThread(DoWork, (LPVOID)this);
+	// [LGLS 2026-09-10] CWinThread 는 기본이 자동 삭제라, 스레드가 끝나면 m_pThread 가
+	//   가리키는 객체가 사라진다(멈출 때 그 포인터를 쓰면 위험하다). 우리가 지운다.
+	m_pThread = ::AfxBeginThread(DoWork, (LPVOID)this, THREAD_PRIORITY_NORMAL, 0, CREATE_SUSPENDED);
+	if(m_pThread != NULL)
+	{
+		m_pThread->m_bAutoDelete = FALSE;
+		m_dwThreadId = m_pThread->m_nThreadID;
+		m_pThread->ResumeThread();
+	}
 	if(m_pThread == NULL)
 	{
 		m_bThreadDoWork = FALSE;
@@ -90,7 +102,23 @@ BOOL CCollectDB::IsAllive()
 BOOL CCollectDB::StopDoWork()
 {
 	m_bThreadDoWork = FALSE;
-	::WaitForSingleObject(m_pThread, INFINITE);
+
+	if(m_pThread == NULL)
+		return TRUE;
+
+	// [LGLS 2026-09-10] 작업 스레드가 자기 자신에 대해 부르기도 한다(m_bExit 일 때).
+	//   그때는 깃발만 내리고 돌아간다. 기다리면 자기를 기다리는 꼴이 된다.
+	if(::GetCurrentThreadId() == m_dwThreadId)
+		return TRUE;
+
+	// 종전에는 CWinThread* 를 HANDLE 자리에 넘겨(잘못된 핸들) 사실상 기다리지 않았다.
+	HANDLE hThread = m_pThread->m_hThread;
+	if(hThread != NULL)
+		::WaitForSingleObject(hThread, 5000);
+
+	delete m_pThread;
+	m_pThread = NULL;
+	m_dwThreadId = 0;
 	return TRUE;
 }
 
@@ -123,12 +151,23 @@ UINT CCollectDB::DoWork(LPVOID pParm)
 			pEquipment = pDoc->m_pEquipments[nIdxEqp];
 
 			//설비들 값
-			if(pEquipment == NULL || pEquipment->m_pRsw == NULL)
+			// [LGLS 2026-09-10] 종전에는 pEquipment 가 NULL 일 때도 그것을 넘겨 호출했다.
+			//   Collect_EQUIPMENT 첫 줄이 pEquipment->GetSelectQry() 라 바로 죽는다.
+			if(pEquipment != NULL && pEquipment->m_pRsw == NULL)
 			{
 				pThis->Collect_EQUIPMENT(pEquipment);
 				::Sleep(50); //추가
 			}
 		}	
+
+		// [LGLS 2026-09-10] DB 가 끊기면 IsDB_POSSIBLE 이 접속 객체를 지우고 NULL 로 만든다.
+		//   종전에는 그 상태로 아래 ConnectStatus 에 들어가 NULL 을 역참조했다
+		//   (설비가 0대면 위 for 문이 아예 안 돌아 기동 직후에도 같은 일이 났다).
+		if(pThis->IsDB_POSSIBLE() == FALSE)
+		{
+			::Sleep(500);
+			continue;
+		}
 
 		if(pDoc->m_blConnectStatus == TRUE)
 		{
@@ -160,6 +199,10 @@ UINT CCollectDB::DoWork(LPVOID pParm)
 
 void CCollectDB::Collect_EQUIPMENT(CEquipment* pEquipment)
 {
+	// [LGLS 2026-09-10] 부르는 쪽을 고쳤지만 여기서도 막는다.
+	if(pEquipment == NULL || m_pDB_ACCESS == NULL || m_pDB_ACCESS->m_pAdoDB == NULL)
+		return;
+
 	CString strSql = _T("");
 	int nRowCnt = 0;
 	CString strErrMsg = _T("");
@@ -187,6 +230,10 @@ void CCollectDB::Collect_EQUIPMENT(CEquipment* pEquipment)
 }
 void CCollectDB::ConnectStatus(CConnectStatus* pConnectStatus, CString strHostNum)
 {
+	// [LGLS 2026-09-10] 문서가 아직 안 만들었거나 이미 닫혔으면 NULL 이다.
+	if(pConnectStatus == NULL)
+		return;
+
 	CString strSql = _T("");
 	int nRowCnt = 0;
 	CString strErrMsg = _T("");
@@ -199,8 +246,11 @@ void CCollectDB::ConnectStatus(CConnectStatus* pConnectStatus, CString strHostNu
 		::Sleep(500);
 		return;
 	}
-	//_RecordsetPtr pRsptr = NULL;
-	//if (m_pDB_ACCESS != NULL && m_pDB_ACCESS->m_pAdoDB != NULL)
+	// [LGLS 2026-09-10] 이 검사가 주석 처리돼 있었다. DB 가 끊긴 직후 여기로 들어오면
+	//   m_pDB_ACCESS 가 NULL 이라 그대로 죽는다(크래시 Ecs20260904_065507.RPT 계열).
+	if(m_pDB_ACCESS == NULL || m_pDB_ACCESS->m_pAdoDB == NULL)
+		return;
+
 	_RecordsetPtr pRsptr = m_pDB_ACCESS->m_pAdoDB->SelectSqlForThread_RecordSet(strSql, nRowCnt, strErrMsg);
 
 	if(nRowCnt <= 0)

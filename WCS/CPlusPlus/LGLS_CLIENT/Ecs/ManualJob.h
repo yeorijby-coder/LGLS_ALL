@@ -25,6 +25,9 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
 	virtual BOOL OnInitDialog();
+	// [LGLS 2026-09-10] 창이 어떤 길로 없어지든 여기서 정리한다.
+	//   ManualRtv / ManualSc 와 같은 방식으로 맞췄다.
+	virtual void PostNcDestroy();
 
 	DECLARE_MESSAGE_MAP()
 public:

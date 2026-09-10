@@ -70,8 +70,9 @@ public:
 public:
 	void	DrawText(CDC* pDC, const CRect& rcRectL, const CString& strText, COLORREF clrText, int nFontSize = 10);
 
-	// [LGLS 2026-09-10] 칸(화면 좌표)에 맞춰 글자 크기를 정해 그린다.
-	//   기준 = nBaseFontSize x 화면 배율(m_nScale). 칸을 넘치면 들어갈 때까지 줄인다.
+	// [LGLS 2026-09-10] 레이아웃 XML 의 fontsize 규칙에 따라 글자를 그린다.
+	//   nBaseFontSize == 0 : 칸(화면 좌표) 크기에 맞춘다. 칸이 커지면 글자도 커진다.
+	//   nBaseFontSize >  0 : 그 값을 그대로 쓴다(종전 동작).
 	//   랙 / 트랙 / RV / 리프터 / 스태틱이 모두 이 함수를 쓴다.
 	void	DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strText, int nBaseFontSize);
 

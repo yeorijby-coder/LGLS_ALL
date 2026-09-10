@@ -87,9 +87,26 @@ END_MESSAGE_MAP()
 
 void CManualJob::OnClose()
 {
-	m_pDoc->m_pManualJob = NULL;
-	m_pDoc->m_pManualLogin = NULL;
-	m_pDoc->m_blManualLogin = FALSE;
+	// [LGLS 2026-09-10] 종전에는 여기서 바로 delete this 를 했다.
+	//   창을 부수지도 않고 자기를 지우므로, 이 처리기가 끝난 뒤 MFC 가
+	//   이미 해제된 객체를 계속 만졌다(크래시 Ecs20260903_201313.RPT).
+	//   파괴만 요청하고, 뒷정리는 PostNcDestroy 에서 한다.
+	DestroyWindow();
+}
+
+// [LGLS 2026-09-10] [X] / Esc(취소) / 부모 파괴, 어느 길로 창이 없어져도 여기를 지난다.
+//   종전에는 이 함수가 없어서 Esc 로 닫으면 객체와 문서 포인터가 그대로 남았고,
+//   그 뒤로는 [반자동 작업] 을 눌러도 창이 다시 뜨지 않았다.
+void CManualJob::PostNcDestroy()
+{
+	if(m_pDoc != NULL)
+	{
+		m_pDoc->m_pManualJob = NULL;
+		m_pDoc->m_pManualLogin = NULL;
+		m_pDoc->m_blManualLogin = FALSE;
+	}
+
+	CSkinDialog::PostNcDestroy();
 	delete this;
 }
 

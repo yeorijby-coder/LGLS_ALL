@@ -101,7 +101,7 @@ void CDciRackCtrl::UpdateControl(CDC* pDC)
 				if (m_bClick)
 				{
 					str.Format("%d", i*nCol+j+1);
-					m_pDCI->DrawText(pDC, rcUnitL, str, m_clrFgColor);
+					m_pDCI->DrawText(pDC, rcUnitL, str, m_clrFgColor, m_nFontSize);
 				}
 			}
 		}
@@ -208,7 +208,7 @@ void CDciRackCtrl::UpdateControl(CDC* pDC)
 					if (m_bClick)
 					{
 						str.Format(_T("%d"), nBay2);
-						m_pDCI->DrawText(pDC, rcUnitL, str, m_clrFgColor);
+						m_pDCI->DrawText(pDC, rcUnitL, str, m_clrFgColor, m_nFontSize);
 						nBay2 += 4 ;
 						
 					}

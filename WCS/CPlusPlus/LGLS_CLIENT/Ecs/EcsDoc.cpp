@@ -245,10 +245,17 @@ CEcsDoc::~CEcsDoc()
 	if(m_pScSkinDlg != NULL){ delete m_pScSkinDlg;}
 	if(m_pRtvSkinDlg != NULL){ delete m_pRtvSkinDlg;}
 	if(m_pViewUsageRackDlg != NULL) { delete m_pViewUsageRackDlg;}
-	if(m_pManualRtv != NULL) { delete m_pManualRtv;}
-	if(m_pManualSc != NULL) { delete m_pManualSc;} 
+	// [LGLS 2026-09-10] 반자동 창들은 PostNcDestroy 에서 스스로 지운다.
+	//   여기서 delete 하면 소멸자 -> DestroyWindow -> PostNcDestroy -> delete this 로
+	//   두 번 지운다. 창이 살아 있으면 파괴만 요청하고 지우는 일은 창에 맡긴다
+	//   (이미 닫힌 창이면 포인터는 벌써 NULL 이다).
+	if(m_pManualRtv != NULL && ::IsWindow(m_pManualRtv->m_hWnd)) m_pManualRtv->DestroyWindow();
+	m_pManualRtv = NULL;
+	if(m_pManualSc != NULL && ::IsWindow(m_pManualSc->m_hWnd)) m_pManualSc->DestroyWindow();
+	m_pManualSc = NULL;
+	if(m_pManualJob != NULL && ::IsWindow(m_pManualJob->m_hWnd)) m_pManualJob->DestroyWindow();
+	m_pManualJob = NULL;
 	if(m_pScManualRet != NULL) { delete m_pScManualRet;} 
-	if(m_pManualJob != NULL) { delete m_pManualJob;}
 	if(m_pSemiTest != NULL){ if(::IsWindow(m_pSemiTest->m_hWnd)) m_pSemiTest->DestroyWindow(); delete m_pSemiTest; m_pSemiTest = NULL; }	// [LGLS 2026-08-13]
 	if(m_pConfigStatus != NULL) { delete m_pConfigStatus;}
 	if(m_pManualLogin != NULL) { delete m_pManualLogin;}

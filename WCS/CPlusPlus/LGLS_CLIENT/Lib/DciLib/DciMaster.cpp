@@ -277,29 +277,46 @@ void CDciMaster::DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strT
 	if (nW < 2 || nH < 2)
 		return;
 
-	int nScale = m_nScale;
-	if (nScale < 1) nScale = 1;
-	int nFont = nBaseFontSize * nScale;
-	if (nFont < 1) nFont = 1;
+	LOGFONT lf;
+	CFont font;
+	CFont* pOldFont = NULL;
+	CRect rcDraw(rcRectS);
 
-	// 칸 안쪽 여백. 고정 2px 로 두면 큰 칸에서 글자가 테두리에 붙어 답답하다.
-	//   칸 크기의 1/8(최소 2px)을 띄운다.
+	// [LGLS 2026-09-10] 레이아웃 XML 의 fontsize 규칙
+	//   0    : 칸 크기에 맞춘다(칸이 커지면 글자도 커진다)
+	//   그 밖 : 그 값을 그대로 쓴다(종전 동작). 손으로 맞춘 자리를 건드리지 않는다.
+	if (nBaseFontSize > 0)
+	{
+		memset(&lf, 0, sizeof(LOGFONT));
+		lf.lfQuality = PROOF_QUALITY;
+		lf.lfHeight  = nBaseFontSize;
+		lf.lfWeight  = FW_BOLD;
+		lstrcpy(lf.lfFaceName, _T("Arial"));
+
+		if (!font.CreateFontIndirect(&lf))
+			return;
+
+		pOldFont = pDC->SelectObject(&font);
+		pDC->DrawText(strText, rcDraw, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+		if (pOldFont != NULL)
+			pDC->SelectObject(pOldFont);
+		return;
+	}
+
+	// 여기부터는 fontsize = 0 : 칸에 맞춘다.
+	//   칸 안쪽 여백은 칸 크기의 1/8(최소 2px). 고정 2px 로 두면 큰 칸에서
+	//   글자가 테두리에 붙어 답답하다.
 	int nPadH = nH / 8; if (nPadH < 2) nPadH = 2;
 	int nPadW = nW / 8; if (nPadW < 2) nPadW = 2;
 
 	int nMaxH = nH - nPadH;
 	if (nMaxH < 3) nMaxH = 3;
-	if (nFont > nMaxH) nFont = nMaxH;
-
 	int nMaxW = nW - nPadW;
 	if (nMaxW < 3) nMaxW = 3;
 
-	LOGFONT lf;
-	CFont font;
-	CSize sz;
-	CFont* pOldFont = NULL;
+	int nFont = nMaxH;	// 칸 높이에서 시작해 폭에 맞을 때까지 줄인다
 
-	// 한 번 재보고 폭 비율로 줄인 뒤 몇 번만 다듬는다(폰트를 매번 만드는 비용을 아낀다)
+	CSize sz;
 	for (int nTry = 0; nTry < 8; nTry++)
 	{
 		memset(&lf, 0, sizeof(LOGFONT));
@@ -327,7 +344,6 @@ void CDciMaster::DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strT
 		nFont = nNext;
 	}
 
-	CRect rcDraw(rcRectS);
 	pDC->DrawText(strText, rcDraw, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 
 	if (pOldFont != NULL)
