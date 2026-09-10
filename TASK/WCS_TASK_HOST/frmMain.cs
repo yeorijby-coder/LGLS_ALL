@@ -631,69 +631,6 @@ int i;
             #endregion
         }
         #region 공파레트 입출고 관련 작업정보 UPDATE 하는 함수
-        public bool UpdateHostEmptyPlt(CUserDb bDb, string strEmtpyPltKind, string strEmtpyPltStation, string strLuggNo, string strWhereStatus = "", string strSetStatus = "")
-        {
-            if (strLuggNo == "0" || strLuggNo == "")
-            {
-                return false;
-            }
-            bDb.BeginTrans();
-
-            bDb.ParamsClear();
-
-            string strSql = "UPDATE HOST_EMPTY_PLT ";
-            strSql += modDefApp.CRLF + "    SET LUGG_NO = " + bDb.ParamsAdd("SET_LUGG_NO", strLuggNo);
-            if (strSetStatus != "")
-                strSql += modDefApp.CRLF + "    , STATUS  = " + bDb.ParamsAdd("SET_STATUS", strSetStatus);
-
-            strSql += modDefApp.CRLF + "      , UPD_ID  = 'HOST_TASK'";
-            strSql += modDefApp.CRLF + "      , UPD_DT  = " + modDateTime.SYSDATE;
-            strSql += modDefApp.CRLF + "  WHERE WH_TYP  = " + bDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
-            strSql += modDefApp.CRLF + "    AND STATUS  = " + bDb.ParamsAdd("WHERE_STATUS", strWhereStatus);
-
-            if (strWhereStatus != "" && strSetStatus != "")
-            {
-                strSql += modDefApp.CRLF + "    AND LUGG_NO = " + bDb.ParamsAdd("WHERE_LUGG_NO", strLuggNo);
-            }
-            else
-            {
-                strSql += modDefApp.CRLF + "    AND KIND    = " + bDb.ParamsAdd("KIND", strEmtpyPltKind);
-                strSql += modDefApp.CRLF + "    AND STN     = " + bDb.ParamsAdd("STN", strEmtpyPltStation);
-                strSql += modDefApp.CRLF + "    AND LUGG_NO = '0'";
-            }
-
-            int iSelCnt = bDb.ExcuteNonQry_Par(ref strSql);
-
-            if (iSelCnt <= 0)
-            {
-                bDb.RollbackTrans();
-                return false;
-            }
-
-            if (iSelCnt == 0)
-            {
-                bDb.RollbackTrans();
-                return false;
-            }
-
-            if (iSelCnt > 0)
-            {
-                int nLuggNo = Convert.ToInt32(strLuggNo);
-                // 변수 지우기
-                if (strWhereStatus != "" && strSetStatus != "")
-                {
-                    modDefApp.g_bEmtpyPltJob[nLuggNo] = false;
-                }
-                else
-                {
-                    modDefApp.g_strEmtpyPltKind = "";
-                    modDefApp.g_strEmtpyPltStation = "";
-                    modDefApp.g_bEmtpyPltJob[nLuggNo] = true;
-                }
-            }
-            bDb.CommitTrans();
-            return true;
-        }
         #endregion        // 작업삭제 
         public bool DeleteJobMst(CUserDb bDb, bool bTrans, string strLuggNo, bool bJobComplete = false, bool bServerSocket = false)
         {

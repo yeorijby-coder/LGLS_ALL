@@ -1,9 +1,9 @@
-﻿// Created by Microsoft (R) C/C++ Compiler Version 14.29.30159.0 (dda616bf).
+﻿// Created by Microsoft (R) C/C++ Compiler Version 14.29.30159.0 (dfc8a7ae).
 //
-// D:\인수인계\한국단자\ReNewal\CPlusPlus\KET_CLIENT\Bin\Debug\EcsLib\msxml3.tlh
+// D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\EcsLib\msxml3.tlh
 //
 // C++ source equivalent of Win32 type library msxml3.dll
-// compiler-generated file created 07/01/26 at 23:00:23 - DO NOT EDIT!
+// compiler-generated file created 09/10/26 at 06:17:36 - DO NOT EDIT!
 
 #pragma once
 #pragma pack(push, 8)
@@ -5197,7 +5197,7 @@ extern "C" const GUID __declspec(selectany) IID_ISchemaNotation =
 // Wrapper method implementations
 //
 
-#include "D:\인수인계\한국단자\ReNewal\CPlusPlus\KET_CLIENT\Bin\Debug\EcsLib\msxml3.tli"
+#include "D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\EcsLib\msxml3.tli"
 
 } // namespace MSXML2
 

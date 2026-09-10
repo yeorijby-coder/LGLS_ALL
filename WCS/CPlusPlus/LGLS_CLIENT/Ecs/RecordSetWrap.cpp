@@ -11,10 +11,17 @@ CRecordSetWrap::CRecordSetWrap(_RecordsetPtr precordSet)
 
 CRecordSetWrap::~CRecordSetWrap(void)
 {
-	if(m_pRecordSet != NULL)
+	// [LGLS 2026-09-10] 이미 닫힌 레코드셋에 Close() 를 부르면 _com_error 가
+	//   소멸자 밖으로 던져져 프로그램이 죽는다. 상태를 보고 닫고, 예외는 여기서 막는다.
+	try
 	{
-		m_pRecordSet->Close();
+		if(m_pRecordSet != NULL && m_pRecordSet->State != adStateClosed)
+		{
+			m_pRecordSet->Close();
+		}
 	}
+	catch(_com_error&) { }
+	catch(...) { }
 	m_pRecordSet = NULL;
 }
 

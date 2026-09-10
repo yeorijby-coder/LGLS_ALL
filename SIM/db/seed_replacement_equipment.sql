@@ -76,35 +76,11 @@ FROM (VALUES
 -- ---------------------------------------------------------------------
 -- 2) sc_data — S/C #1~#5 (901~905) 정보 보강 (기존 행 갱신 + 누락 생성)
 -- ---------------------------------------------------------------------
-INSERT INTO sc_data (wh_typ, sc_no, host_send_yn)
-SELECT '10', s.no, 'N'
-FROM (VALUES ('901'),('902'),('903'),('904'),('905')) AS s(no)
-WHERE NOT EXISTS (SELECT 1 FROM sc_data WHERE sc_no = s.no);
 
-UPDATE sc_data SET
-    plc_no      = lpad((sc_no::int - 900)::text, 2, '0'),
-    sc_grp_no   = '01',
-    mc_no       = sc_no,
-    mc_no_nm    = 'S/C#' || (sc_no::int - 900) || ' (Bank ' ||
-                  lpad(((sc_no::int - 900) * 2 - 1)::text, 2, '0') || ',' ||
-                  lpad(((sc_no::int - 900) * 2)::text, 2, '0') || ')',
-    auto_mode_rd = '1', ucstatus_rd = '1', online_mode_rd = '1', active_mode_rd = '1',
-    err_code_rd = '0', complete_rd = '0',
-    od_rq_yn = 'N', od_rq_flag = 'N', cmd_rq_yn = 'N',
-    use_fk_rd = '1', suspend = 'N', sc_typ = 'SF',
-    read_upd_dt = now(), write_upd_dt = now() - interval '1 second'
-WHERE wh_typ = '10' AND sc_no IN ('901','902','903','904','905');
 
 -- ---------------------------------------------------------------------
 -- 3) rtv_data — RGV #1
 -- ---------------------------------------------------------------------
-DELETE FROM rtv_data WHERE wh_typ = '10';
-INSERT INTO rtv_data (wh_typ, plc_no, rtv_no, auto_mode_rd, waiting_order_rd,
-                      sensor_rtv_rd, err_code_rd, sensor_fk1_rd, sensor_fk2_rd,
-                      cmd_rq_yn, od_rq_yn, suspend, is_error_rd,
-                      read_upd_dt, write_upd_dt)
-VALUES ('10', '01', '01', '1', '1', '0', '0', '0', '0', 'N', 'N', 'N', '0',
-        now(), now() - interval '1 second');
 
 -- ---------------------------------------------------------------------
 -- 4) eqp_mst — 통신 대상 설비 (HOST/HOST2 유지, 재고성 BCR 제거)
@@ -185,8 +161,6 @@ UPDATE job_mst SET job_status = '9'
  WHERE wh_typ = '10' AND job_status IN ('99','10','11','15','20','21','25');
 
 SELECT 'cv_data' t, COUNT(*) FROM cv_data
-UNION ALL SELECT 'sc_data', COUNT(*) FROM sc_data WHERE wh_typ='10'
-UNION ALL SELECT 'rtv_data', COUNT(*) FROM rtv_data
 UNION ALL SELECT 'eqp_mst', COUNT(*) FROM eqp_mst
 UNION ALL SELECT 'cv_def_inf', COUNT(*) FROM cv_def_inf
 UNION ALL SELECT 'sc_def_inf', COUNT(*) FROM sc_def_inf

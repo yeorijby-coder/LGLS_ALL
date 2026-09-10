@@ -1,9 +1,9 @@
-﻿// Created by Microsoft (R) C/C++ Compiler Version 14.29.30159.0 (b42b1fcb).
+﻿// Created by Microsoft (R) C/C++ Compiler Version 14.29.30159.0 (d0eaf3cf).
 //
-// D:\project\LGLS\CPlusPlus\LGLS_CLIENT\Bin\Release\Ecs\msxml3.tli
+// D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Release\Ecs\msxml3.tli
 //
 // Wrapper implementations for Win32 type library msxml3.dll
-// compiler-generated file created 07/12/26 at 00:07:45 - DO NOT EDIT!
+// compiler-generated file created 09/10/26 at 09:44:49 - DO NOT EDIT!
 
 #pragma once
 

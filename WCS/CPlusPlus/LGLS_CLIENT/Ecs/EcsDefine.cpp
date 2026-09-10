@@ -46,8 +46,6 @@ CEquipment* CEcsDefine::CreateEquipment(CString& strClassName, CString strThread
 		return new CScPair(m_pDoc, strThreadNo, nIndex);
 	}
 	else if (strClassName == RUNTIME_CLASS(CRtv)->m_lpszClassName) return new CRtv(m_pDoc, strThreadNo, nIndex);
-	else if (strClassName == RUNTIME_CLASS(CBcr)->m_lpszClassName) return new CBcr(m_pDoc, strThreadNo, nIndex);
-	else if (strClassName == RUNTIME_CLASS(CWc)->m_lpszClassName) return new CWc(m_pDoc, strThreadNo, nIndex);
 	else DEBUGER_ASSERT_VALID_LOG(FALSE, strClassName);
 
 	return NULL;	
@@ -112,21 +110,7 @@ BOOL CEcsDefine::ParseXml()
 					return FALSE;
 				}
 				break;
-
-
-			case CEquipment::enBCR:
-				if (!ParseBcr(pEquipment))
-				{
-					DEBUGER_TRACE(_T("Fail to ParseBcr!"), __WFUNCTION__);
-					return FALSE;
-				}
 				break;
-			case CEquipment::enWC:
-				if (!ParseWc(pEquipment))
-				{
-					DEBUGER_TRACE(_T("Fail to ParseWc!"), __WFUNCTION__);
-					return FALSE;
-				}
 				break;
 			}
 		}
@@ -572,125 +556,6 @@ BOOL CEcsDefine::ParseRtv(CEquipment* pEquipment)
 // 
 // 	pEquipment->m_nEQP_NO = CConvert::ToInt(strCID.Right(5));
 
-	return TRUE;
-}
-
-
-BOOL CEcsDefine::ParseBcr(CEquipment* pEquipment)
-{
-	DEBUGER_ASSERT_VALID(pEquipment != NULL);
-	DEBUGER_ASSERT_VALID(pEquipment->IsKindOf(RUNTIME_CLASS(CBcr)));
-
-	CString strValue;
-	CString strPLC_NO, strEQP_NO;
-	CString strTRACK_NO;
-	int nBcrCnt;
-
-	CBcr* pBcr = (CBcr*)pEquipment;
-	pBcr->m_WH_TYP = m_pDoc->m_WH_TYP;
-	CBcrInfo* pInfo = pBcr->m_pInfo;
-	DEBUGER_ASSERT_VALID(pBcr != NULL);
-	DEBUGER_ASSERT_VALID(pInfo != NULL);
-	MoveXPath(_T("./Bcrs"), FALSE);
-	nBcrCnt = GetChildElmtCount();
-	pInfo->m_MapBCR_MST.InitHashTable(nBcrCnt);
-	for(int nIdxBcr = 0; nIdxBcr < nBcrCnt; nIdxBcr++)
-	{
-		MoveChild(nIdxBcr);		
-		GetAttrValue(_T("plcno"), strPLC_NO);
-		GetAttrValue(_T("number"), strEQP_NO); 
-		GetAttrValue(_T("bcrtrack"), strTRACK_NO); 
-		pBcr->m_nNumber = CConvert::ToInt(strPLC_NO);
-		CBCR_MST* pBCR_MST = pInfo->CreateBCR_MST(strPLC_NO, strTRACK_NO);
-		pBcr->m_pInfo->m_MapBCR_MST.SetAt(pBCR_MST->K_BCR_NO,  pBCR_MST);
-		pBCR_MST->m_strBCR_MC_NO = strTRACK_NO;
-		pBCR_MST->m_pControl = (CDciButtonCtrl*)m_pDoc->GetDciControl_FindAllLayout(pBCR_MST->GetCid());
-		MoveParent();
-	}
-	return TRUE;
-
-
-
-
-
-
-//  	DEBUGER_ASSERT_VALID(pEquipment != NULL);
-//  	DEBUGER_ASSERT_VALID(pEquipment->IsKindOf(RUNTIME_CLASS(CBcr)));
-// 
-// 	CString strValue;
-// 	CString strPLC_NO, strEQP_NO;
-// 	int nBcrCnt;
-// 	CBcr* pBcr = (CBcr*)pEquipment;
-// 	pBcr->m_WH_TYP = m_pDoc->m_WH_TYP;
-// 	CBcrInfo* pInfo = pBcr->m_pInfo;
-// 	DEBUGER_ASSERT_VALID(pBcr != NULL);
-// 	DEBUGER_ASSERT_VALID(pInfo != NULL);
-// 	MoveXPath(_T("./Bcrs"), FALSE);
-// 	nBcrCnt = GetChildElmtCount();
-// 	pInfo->m_MapBCR_DATA.InitHashTable(nBcrCnt);
-// 	for(int nIdxBcr = 0; nIdxBcr < nBcrCnt; nIdxBcr++)
-// 	{
-// 		MoveChild(nIdxSc);		
-// 		GetAttrValue(_T("plcno"), strPLC_NO);
-// 		GetAttrValue(_T("number"), strEQP_NO); 
-// 		pBcr->m_nNumber = CConvert::ToInt(strPLC_NO);//m_nNumber 사용되지 않음
-// 		CBCR_MST* pBCR_MST = pInfo->CreateBCR_MST(strEQP_NO);
-// 		pBcr->m_pInfo->m_MapBCR_MST.SetAt(pBCR_MST->K_BCR_NO, pBCR_MST);
-// 		pBCR_MST->m_pControl = (CDciRvCtrl*)m_pDoc->GetDciControl_FindAllLayout(pBCR_MST->GetCid());
-// 		MoveParent();
-// 	}
- 
-//  	CString strValue;
-// 	CString strCID, strTID;
-//  	CBcr* pBcr = (CBcr*)pEquipment;
-//  	CBcrInfo* pInfo = NULL;
-//  	DEBUGER_ASSERT_VALID(pBcr != NULL);
-//  	GetAttrValue(_T("cid"), strCID);
-// 
-//  	MoveChildFirst();
-//  	GetAttrValue(_T("tid"), strTID);
-// 
-// 	pInfo = new CBcrInfo(pEquipment);
-// 	pInfo->m_pControl = (CDciButtonCtrl*)m_pDoc->GetDciControl(strCID);
-// 	DEBUGER_ASSERT_VALID(CLib::IsValidControlID(strCID));
-// 	DEBUGER_ASSERT_VALID(pInfo->m_pControl != NULL);
-// 
-// 	pInfo->m_pTrack = m_pDoc->GetTrackInfo(CConvert::ToInt(strTID));
-// 	DEBUGER_ASSERT_VALID(pInfo->m_pTrack != NULL);
-
-	return TRUE;
-}
-
-BOOL CEcsDefine::ParseWc(CEquipment* pEquipment)
-{
-	DEBUGER_ASSERT_VALID(pEquipment != NULL);
-	DEBUGER_ASSERT_VALID(pEquipment->IsKindOf(RUNTIME_CLASS(CWc)));
-
-	CString strValue;
-	CString strPLC_NO, strWC_MC_NO;
-	CString strTRACK_NO;
-	int nWcCnt;
-
-	CWc* pWc = (CWc*)pEquipment;
-	pWc->m_WH_TYP = m_pDoc->m_WH_TYP;
-	CWcInfo* pInfo = pWc->m_pInfo;
-	DEBUGER_ASSERT_VALID(pWc != NULL);
-	DEBUGER_ASSERT_VALID(pInfo != NULL);
-	MoveXPath(_T("./Wcs"), FALSE);
-	nWcCnt = GetChildElmtCount();
-	pInfo->m_MapWC_DATA.InitHashTable(nWcCnt);
-	for(int nIdxWc = 0; nIdxWc < nWcCnt; nIdxWc++)
-	{
-		MoveChild(nIdxWc);		
-		GetAttrValue(_T("plcno"), strPLC_NO);
-		GetAttrValue(_T("number"), strWC_MC_NO); 
-		pWc->m_nNumber = CConvert::ToInt(strPLC_NO);
-		CWC_DATA* pWC_DATA = pInfo->CreateWC_DATA(strPLC_NO, strWC_MC_NO);
-		pWc->m_pInfo->m_MapWC_DATA.SetAt(pWC_DATA->K_WC_MC_NO,  pWC_DATA);
-		pWC_DATA->m_strWC_MC_NO = strWC_MC_NO;
-		pWC_DATA->m_pControl = (CDciButtonCtrl*)m_pDoc->GetDciControl_FindAllLayout(pWC_DATA->GetCid());
-		MoveParent();
-	}
 	return TRUE;
 }
 

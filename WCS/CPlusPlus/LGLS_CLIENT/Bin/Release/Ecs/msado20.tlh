@@ -1,9 +1,9 @@
-﻿// Created by Microsoft (R) C/C++ Compiler Version 14.29.30159.0 (173ca2e5).
+﻿// Created by Microsoft (R) C/C++ Compiler Version 14.29.30159.0 (dfc0e446).
 //
-// D:\project\LGLS\CPlusPlus\LGLS_CLIENT\Bin\Release\Ecs\msado20.tlh
+// D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Release\Ecs\msado20.tlh
 //
 // C++ source equivalent of type library C:\Program Files\Common Files\System\ado\msado20.tlb
-// compiler-generated file created 07/12/26 at 00:07:45 - DO NOT EDIT!
+// compiler-generated file created 09/10/26 at 09:44:49 - DO NOT EDIT!
 
 #pragma once
 #pragma pack(push, 8)
@@ -2370,6 +2370,6 @@ Parameter;
 // Wrapper method implementations
 //
 
-#include "D:\project\LGLS\CPlusPlus\LGLS_CLIENT\Bin\Release\Ecs\msado20.tli"
+#include "D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Release\Ecs\msado20.tli"
 
 #pragma pack(pop)

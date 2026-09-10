@@ -25,19 +25,8 @@ UPDATE cv_data SET is_turn_rd='0', wait_time_rd='0', suspend='0', item_no=' ',
 GO
 
 -- 2) wc_data 클라이언트 컬럼
-IF COL_LENGTH('wc_data','wc_no')           IS NULL ALTER TABLE wc_data ADD wc_no           VARCHAR(2)  DEFAULT '01';
-IF COL_LENGTH('wc_data','plc_no')          IS NULL ALTER TABLE wc_data ADD plc_no          VARCHAR(2)  DEFAULT '01';
-IF COL_LENGTH('wc_data','weight_read_sta') IS NULL ALTER TABLE wc_data ADD weight_read_sta VARCHAR(1)  DEFAULT '0';
-IF COL_LENGTH('wc_data','cmd_rq_id')       IS NULL ALTER TABLE wc_data ADD cmd_rq_id       VARCHAR(10) DEFAULT '';
-IF COL_LENGTH('wc_data','cmd_rq_yn')       IS NULL ALTER TABLE wc_data ADD cmd_rq_yn       VARCHAR(1)  DEFAULT 'N';
-IF COL_LENGTH('wc_data','suspend')         IS NULL ALTER TABLE wc_data ADD suspend         VARCHAR(1)  DEFAULT '0';
-IF COL_LENGTH('wc_data','chk_bypass_yn')   IS NULL ALTER TABLE wc_data ADD chk_bypass_yn   VARCHAR(1)  DEFAULT 'N';
-GO
 
 -- 3) suspend 정규화 (클라이언트 토글: SET SUSPEND = 1 - SUSPEND)
-UPDATE rtv_data SET suspend='0' WHERE suspend IS NULL OR suspend NOT IN ('0','1');
-UPDATE sc_data  SET suspend='0' WHERE suspend IS NULL OR suspend NOT IN ('0','1');
-GO
 
 -- 4) cell_mst / cell_dtl (랙 대화상자용)
 IF OBJECT_ID('cell_mst','U') IS NULL
@@ -117,6 +106,5 @@ IF OBJECT_ID('cell_dtl','U') IS NULL
 GO
 
 SELECT 'cv_data cols' t, COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID('cv_data')
-UNION ALL SELECT 'wc_data cols', COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID('wc_data')
 UNION ALL SELECT 'cell_mst rows', COUNT(*) FROM cell_mst
 UNION ALL SELECT 'cell_dtl rows', COUNT(*) FROM cell_dtl;

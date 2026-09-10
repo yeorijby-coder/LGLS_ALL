@@ -113,7 +113,6 @@ protected:
 	BOOL m_bInitialized;
 	void RelocationControls();
 
-	CString GetQrySelect(int nLANG, CString strWH_TYP, CString strLUGG_NO, CString strMessage, CString strMESMessage2, CString strMESMessage3, CString strdtTo);
 
 
 

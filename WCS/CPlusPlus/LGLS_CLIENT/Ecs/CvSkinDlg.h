@@ -285,8 +285,6 @@ public:
 	void SetCvStatus(CString pLUGG_NO, CString pJOB_TYP, CString pDEST_POS, CString pPULP_SENSOR, CString pTRACK_PAUSE, CString pWAIT_SC_JOB_RET, CString pCMD);
 	void SelCommonCode(CString pCCD_CD, CString pCMD, CString& pCCD_NM_KOR);
 	void SelStnKind(int& nCNT);
-	void SelHostEmptyPlt(CString pKIND, CString pSTN, CString& pSTATUS, int& pLUGG_NO);
-	void SelWcData(CString& pOD_RQ_ID);
 	CEdit m_edtTrack;
 	CButton m_chkAutoSel;
 	CButton m_chkDebugMode;

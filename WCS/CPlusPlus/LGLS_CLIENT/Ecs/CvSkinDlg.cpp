@@ -765,61 +765,8 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 }
 
 
-// [LGLS 2026-09-10] 임시 계측 : 1초 갱신의 구간별 메모리 순증을 잰다.
-//   원인을 찾으면 이 블록과 호출부를 지운다.
-#ifdef _DEBUG
-static void LeakProbe(int nPhase)
-{
-	static _CrtMemState s_st[8];
-	static __int64      s_llSum[8] = {0};
-	static int          s_nCycle = 0;
-
-	if (nPhase < 0 || nPhase >= 8) return;
-	_CrtMemCheckpoint(&s_st[nPhase]);
-
-	if (nPhase > 0)
-	{
-		_CrtMemState d;
-		if (_CrtMemDifference(&d, &s_st[nPhase - 1], &s_st[nPhase]))
-		{
-			__int64 ll = 0;
-			for (int i = 0; i < _MAX_BLOCKS; i++) ll += (__int64)d.lSizes[i];
-			s_llSum[nPhase] += ll;
-		}
-	}
-
-	if (nPhase != 0) return;
-	if (++s_nCycle % 30 != 0) return;
-
-	try
-	{
-		CString strDir = g_strEcsPath + _T("\\LOG");
-		::CreateDirectory(strDir, NULL);
-		CTime tm = CTime::GetCurrentTime();
-		CString strPath;
-		strPath.Format(_T("%s\\ECS_LEAK_%s.log"), (LPCTSTR)strDir, (LPCTSTR)tm.Format(_T("%Y%m%d")));
-		CStdioFile f;
-		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate | CFile::modeWrite | CFile::typeText))
-		{
-			f.SeekToEnd();
-			CString strLine;
-			strLine.Format(_T("[%s] n=%d P1=%dKB P2=%dKB P3=%dKB\r\n"),
-				(LPCTSTR)tm.Format(_T("%H:%M:%S")), s_nCycle,
-				(int)(s_llSum[1] / 1024), (int)(s_llSum[2] / 1024), (int)(s_llSum[3] / 1024));
-			f.WriteString(strLine);
-			f.Close();
-		}
-	}
-	catch (CFileException* e) { e->Delete(); }
-	catch (...) { }
-}
-#else
-#define LeakProbe(x) ((void)0)
-#endif
-
 void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 {
-	LeakProbe(0);
 	// [LGLS 2026-09-10] DB 조회는 5초에 한 번만 한다.
 	//   설비 신호로 그리는 부분은 그대로 1초마다 갱신되므로 표시 반응은 그대로다.
 	//   1초마다 6건씩 조회하던 것이 줄어 DB 부담과 메모리 증가가 함께 준다.
@@ -857,7 +804,6 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	if (pWndPaste != NULL)
 		pWndPaste->EnableWindow((pCopyJob != NULL && pCopyJob->COPY_YN) ? TRUE : FALSE);
 
-	LeakProbe(1);	// 1구간 : 시작~붙여넣기 판정
 	if (bDbTick)
 	{
 		GetErrorCode(_T("CV"), m_pTrackInfo->m_pCV_DATA->V_ERROR_CODE, (int)pLang, strGetErrorCode);
@@ -916,7 +862,6 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	UpdateHsEjectEnable(strSTOCK_MODE);
 
 
-	LeakProbe(2);	// 2구간 : 에러코드/공통코드/상태 조회
 	CString strMessage;
 	int nRowCnt = -1;
 	
@@ -945,7 +890,6 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	m_btnCvRtvDepartHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_DEPARTHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	m_btnCvRtvArriveHsReady.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_ARRIVEHS_READY_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 
-	LeakProbe(3);	// 3구간 : 상태 아이콘 갱신
 	if (!bDbTick) return;	// [LGLS 2026-09-10] 작업정보 조회도 5초 주기
 	strSql = GetQrySelectJOB_MST(m_pTrackInfo->m_pCV_DATA);
 	nRowCnt = -1;
@@ -1903,6 +1847,11 @@ CString CCvSkinDlg::GetQrySelectSUSPEND( CCV_DATA* pCV_DATA, CString& strSUSPEND
 
 	strSUSPEND.Format(_T("[%s] %s"), strSUSPEND_CV, strSUSPEND_NM);
 
+	// [LGLS 2026-09-10] ★메모리 누수 원인★ 여기에 delete 가 없었다.
+	//   이 함수는 CV 대화상자 갱신마다 불리므로 조회 1건분 레코드셋이 그대로 쌓였다
+	//   (핸들/GDI 는 그대로인 채 Private bytes 만 분당 수 MB 씩 늘던 원인).
+	delete pRsw;
+
 
 	return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
 }
@@ -2124,54 +2073,6 @@ void CCvSkinDlg::SelStnKind(int& pCNT)
 	pCNT = CConvert::ToInt(strCNT);
 
 	delete pRsw;
-}
-
-void CCvSkinDlg::SelHostEmptyPlt(CString pKIND, CString pSTN, CString& pSTATUS, int& pLUGG_NO)
-{
-	CString strSql = _T("");
-	int nRowCnt = 0;
-	CString strMessage = _T("");
-
-	strSql.Format(_T(" SELECT TOP 1 *    					 \n") // [LGLS] TOP 1 instead of LIMIT 1
-			      _T("   FROM HOST_EMPTY_PLT			 \n")
-			      _T("	WHERE WH_TYP = '%s'				 \n")
-				  _T("	  AND KIND = '%s'				 \n")
-				  _T("	  AND STN = '%s'				 \n")
-				  _T("	 ORDER BY INS_DT DESC			 \n")
-				  _T("	 						 \n"), m_pDoc->m_WH_TYP, pKIND, pSTN); // [LGLS] LIMIT removed
-
-	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
-	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
-
-	pSTATUS = pRsw->GetItem(_T("STATUS"));
-	CString strLUGG_NO = pRsw->GetItem(_T("LUGG_NO"));
-	pLUGG_NO = CConvert::ToInt(strLUGG_NO);
-
-	delete pRsw;
-
-	return;
-}
-
-void CCvSkinDlg::SelWcData(CString& pOD_RQ_ID)
-{
-	CString strMC_NO = m_pTrackInfo->m_pCV_DATA->V_MC_NO;
-	CString strSql = _T("");
-	int nRowCnt = 0;
-	CString strMessage = _T("");
-
-	strSql.Format(_T(" SELECT *    						 \n")
-			      _T("   FROM WC_DATA					 \n")
-			      _T("	WHERE WH_TYP = '%s'				 \n")
-				  _T("	  AND WC_MC_NO = '%s'			 \n"), m_pDoc->m_WH_TYP, strMC_NO);
-
-	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
-	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
-
-	pOD_RQ_ID = pRsw->GetItem(_T("OD_RQ_ID"));
-
-	delete pRsw;
-
-	return;
 }
 
 void CCvSkinDlg::OnBnClickedChkAutoSel()

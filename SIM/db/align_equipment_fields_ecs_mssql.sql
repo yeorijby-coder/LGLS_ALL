@@ -1,4 +1,4 @@
--- =====================================================================
+﻿-- =====================================================================
 -- 원본 ECS 설비 변수 ↔ 대체 시스템 테이블 필드 정렬 (LGLS_MCS_IO)
 --
 -- 근거: 원본 ECS(D:\project\LGLS\LGLS_1WH_original\Backup\ECS) Device 계층 분석
@@ -54,46 +54,7 @@ GO
 --    재사용: OPERATION_MODE→auto_mode_rd, PALLET_EXIST_FLAG→sensor_rtv_rd,
 --            ALARM 상태 요약→is_error_rd/err_code_rd
 -- ---------------------------------------------------------------------
-IF COL_LENGTH('rtv_data','subsystem_status_rd')     IS NULL ALTER TABLE rtv_data ADD subsystem_status_rd     VARCHAR(1) DEFAULT '1';  -- SUBSYSTEM_STATUS (W) 0=DOWN 1=IDLE 2=RUN
-IF COL_LENGTH('rtv_data','location_01_rd')          IS NULL ALTER TABLE rtv_data ADD location_01_rd          VARCHAR(2) DEFAULT '';   -- SUBSYSTEM_LOCATION_01 (W)
-IF COL_LENGTH('rtv_data','location_02_rd')          IS NULL ALTER TABLE rtv_data ADD location_02_rd          VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('rtv_data','location_03_rd')          IS NULL ALTER TABLE rtv_data ADD location_03_rd          VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('rtv_data','pallet_on_vehicle_rd')    IS NULL ALTER TABLE rtv_data ADD pallet_on_vehicle_rd    VARCHAR(4) DEFAULT '';   -- PALLET_ON_VEHICLE (R, 4자 ASCII)
-IF COL_LENGTH('rtv_data','transfer_request_od')     IS NULL ALTER TABLE rtv_data ADD transfer_request_od     VARCHAR(1) DEFAULT '0';  -- TRANSFER_REQUEST (B, ECS→PLC)
-IF COL_LENGTH('rtv_data','transfer_ack_rd')         IS NULL ALTER TABLE rtv_data ADD transfer_ack_rd         VARCHAR(1) DEFAULT '0';  -- TRANSFER_ACK (B)
-IF COL_LENGTH('rtv_data','pallet_id_od')            IS NULL ALTER TABLE rtv_data ADD pallet_id_od            VARCHAR(4) DEFAULT '';   -- PALLET_ID (W 2w, 지시 파렛트)
-IF COL_LENGTH('rtv_data','from_01_od')              IS NULL ALTER TABLE rtv_data ADD from_01_od              VARCHAR(2) DEFAULT '';   -- FROM_01~03 (W, 6자 위치코드 2자씩)
-IF COL_LENGTH('rtv_data','from_02_od')              IS NULL ALTER TABLE rtv_data ADD from_02_od              VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('rtv_data','from_03_od')              IS NULL ALTER TABLE rtv_data ADD from_03_od              VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('rtv_data','to_01_od')                IS NULL ALTER TABLE rtv_data ADD to_01_od                VARCHAR(2) DEFAULT '';   -- TO_01~03 (W, CV행선은 TO_03=포트번호)
-IF COL_LENGTH('rtv_data','to_02_od')                IS NULL ALTER TABLE rtv_data ADD to_02_od                VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('rtv_data','to_03_od')                IS NULL ALTER TABLE rtv_data ADD to_03_od                VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('rtv_data','load_complete_rd')        IS NULL ALTER TABLE rtv_data ADD load_complete_rd        VARCHAR(1) DEFAULT '0';  -- LOAD_COMPLETE (B)
-IF COL_LENGTH('rtv_data','load_complete_ack_od')    IS NULL ALTER TABLE rtv_data ADD load_complete_ack_od    VARCHAR(1) DEFAULT '0';  -- LOAD_COMPLETE_ACK (B)
-IF COL_LENGTH('rtv_data','unload_complete_rd')      IS NULL ALTER TABLE rtv_data ADD unload_complete_rd      VARCHAR(1) DEFAULT '0';  -- UNLOAD_COMPLETE (B, 반송 완료 처리 트리거)
-IF COL_LENGTH('rtv_data','unload_complete_ack_od')  IS NULL ALTER TABLE rtv_data ADD unload_complete_ack_od  VARCHAR(1) DEFAULT '0';  -- UNLOAD_COMPLETE_ACK (B)
-IF COL_LENGTH('rtv_data','alarm_set_report_rd')     IS NULL ALTER TABLE rtv_data ADD alarm_set_report_rd     VARCHAR(1) DEFAULT '0';  -- ALARM_SET_REPORT (B)
-IF COL_LENGTH('rtv_data','alarm_set_report_ack_od') IS NULL ALTER TABLE rtv_data ADD alarm_set_report_ack_od VARCHAR(1) DEFAULT '0';  -- ALARM_SET_REPORT_ACK (B)
-IF COL_LENGTH('rtv_data','alarm_set_code_rd')       IS NULL ALTER TABLE rtv_data ADD alarm_set_code_rd       VARCHAR(4) DEFAULT '0';  -- ALARM_SET_CODE (W)
-IF COL_LENGTH('rtv_data','alarm_reset_report_rd')   IS NULL ALTER TABLE rtv_data ADD alarm_reset_report_rd   VARCHAR(1) DEFAULT '0';  -- ALARM_RESET_REPORT (B)
-IF COL_LENGTH('rtv_data','alarm_reset_report_ack_od') IS NULL ALTER TABLE rtv_data ADD alarm_reset_report_ack_od VARCHAR(1) DEFAULT '0'; -- ALARM_RESET_REPORT_ACK (B)
-IF COL_LENGTH('rtv_data','alarm_reset_code_rd')     IS NULL ALTER TABLE rtv_data ADD alarm_reset_code_rd     VARCHAR(4) DEFAULT '0';  -- ALARM_RESET_CODE (W)
-GO
 
-UPDATE rtv_data SET
-    subsystem_status_rd = '1',      -- IDLE
-    location_01_rd = '', location_02_rd = '', location_03_rd = '',
-    pallet_on_vehicle_rd = '',
-    transfer_request_od = '0', transfer_ack_rd = '0',
-    pallet_id_od = '',
-    from_01_od = '', from_02_od = '', from_03_od = '',
-    to_01_od = '', to_02_od = '', to_03_od = '',
-    load_complete_rd = '0', load_complete_ack_od = '0',
-    unload_complete_rd = '0', unload_complete_ack_od = '0',
-    alarm_set_report_rd = '0', alarm_set_report_ack_od = '0', alarm_set_code_rd = '0',
-    alarm_reset_report_rd = '0', alarm_reset_report_ack_od = '0', alarm_reset_code_rd = '0'
- WHERE wh_typ = '10';
-GO
 
 -- ---------------------------------------------------------------------
 -- 3) sc_data — Vehicle 옵저버블 (VEHICLE:11~15 = S/C#1~5, RGV 와 동일 세트)
@@ -101,52 +62,11 @@ GO
 --            PALLET_EXIST_FLAG→sensor_fk_rd, PALLET_ID(od)→lugg_no_fk1_od,
 --            FROM/TO(뱅크·베이·단)→start/dest_bank/bay/level_fk1_od, 알람→err_code_rd
 -- ---------------------------------------------------------------------
-IF COL_LENGTH('sc_data','subsystem_status_rd')     IS NULL ALTER TABLE sc_data ADD subsystem_status_rd     VARCHAR(1) DEFAULT '1';
-IF COL_LENGTH('sc_data','location_01_rd')          IS NULL ALTER TABLE sc_data ADD location_01_rd          VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','location_02_rd')          IS NULL ALTER TABLE sc_data ADD location_02_rd          VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','location_03_rd')          IS NULL ALTER TABLE sc_data ADD location_03_rd          VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','pallet_on_vehicle_rd')    IS NULL ALTER TABLE sc_data ADD pallet_on_vehicle_rd    VARCHAR(4) DEFAULT '';
-IF COL_LENGTH('sc_data','transfer_request_od')     IS NULL ALTER TABLE sc_data ADD transfer_request_od     VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','transfer_ack_rd')         IS NULL ALTER TABLE sc_data ADD transfer_ack_rd         VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','pallet_id_od')            IS NULL ALTER TABLE sc_data ADD pallet_id_od            VARCHAR(4) DEFAULT '';
-IF COL_LENGTH('sc_data','from_01_od')              IS NULL ALTER TABLE sc_data ADD from_01_od              VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','from_02_od')              IS NULL ALTER TABLE sc_data ADD from_02_od              VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','from_03_od')              IS NULL ALTER TABLE sc_data ADD from_03_od              VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','to_01_od')                IS NULL ALTER TABLE sc_data ADD to_01_od                VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','to_02_od')                IS NULL ALTER TABLE sc_data ADD to_02_od                VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','to_03_od')                IS NULL ALTER TABLE sc_data ADD to_03_od                VARCHAR(2) DEFAULT '';
-IF COL_LENGTH('sc_data','load_complete_rd')        IS NULL ALTER TABLE sc_data ADD load_complete_rd        VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','load_complete_ack_od')    IS NULL ALTER TABLE sc_data ADD load_complete_ack_od    VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','unload_complete_rd')      IS NULL ALTER TABLE sc_data ADD unload_complete_rd      VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','unload_complete_ack_od')  IS NULL ALTER TABLE sc_data ADD unload_complete_ack_od  VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','alarm_set_report_rd')     IS NULL ALTER TABLE sc_data ADD alarm_set_report_rd     VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','alarm_set_report_ack_od') IS NULL ALTER TABLE sc_data ADD alarm_set_report_ack_od VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','alarm_set_code_rd')       IS NULL ALTER TABLE sc_data ADD alarm_set_code_rd       VARCHAR(4) DEFAULT '0';
-IF COL_LENGTH('sc_data','alarm_reset_report_rd')   IS NULL ALTER TABLE sc_data ADD alarm_reset_report_rd   VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','alarm_reset_report_ack_od') IS NULL ALTER TABLE sc_data ADD alarm_reset_report_ack_od VARCHAR(1) DEFAULT '0';
-IF COL_LENGTH('sc_data','alarm_reset_code_rd')     IS NULL ALTER TABLE sc_data ADD alarm_reset_code_rd     VARCHAR(4) DEFAULT '0';
-GO
 
-UPDATE sc_data SET
-    subsystem_status_rd = '1',      -- IDLE
-    location_01_rd = '', location_02_rd = '', location_03_rd = '',
-    pallet_on_vehicle_rd = '',
-    transfer_request_od = '0', transfer_ack_rd = '0',
-    pallet_id_od = '',
-    from_01_od = '', from_02_od = '', from_03_od = '',
-    to_01_od = '', to_02_od = '', to_03_od = '',
-    load_complete_rd = '0', load_complete_ack_od = '0',
-    unload_complete_rd = '0', unload_complete_ack_od = '0',
-    alarm_set_report_rd = '0', alarm_set_report_ack_od = '0', alarm_set_code_rd = '0',
-    alarm_reset_report_rd = '0', alarm_reset_report_ack_od = '0', alarm_reset_code_rd = '0'
- WHERE wh_typ = '10' AND sc_no IN ('901','902','903','904','905');
-GO
 
 -- ---------------------------------------------------------------------
 -- 결과 확인
 -- ---------------------------------------------------------------------
 SELECT 'cv_data'  t, COUNT(*) rows_upd, COUNT(CASE WHEN wait_in_rd IS NOT NULL THEN 1 END) filled FROM cv_data  WHERE wh_typ='10'
 UNION ALL
-SELECT 'rtv_data', COUNT(*), COUNT(CASE WHEN subsystem_status_rd IS NOT NULL THEN 1 END) FROM rtv_data WHERE wh_typ='10'
 UNION ALL
-SELECT 'sc_data 901~905', COUNT(*), COUNT(CASE WHEN subsystem_status_rd IS NOT NULL THEN 1 END) FROM sc_data WHERE wh_typ='10' AND sc_no IN ('901','902','903','904','905');

@@ -288,7 +288,7 @@ BOOL CLogMesSkinDlg::OnInitDialog()
 
 	InitializeSpread(0, TRUE);
 
-	{ CString _tt; GetWindowText(_tt); if(_tt.Find(_T("[")) < 0) SetWindowText(_tt + _T(" [MES_IF_LOG]")); }	// [LGLS] 제목에 조회 테이블명
+	{ CString _tt; GetWindowText(_tt); if(_tt.Find(_T("[")) < 0) SetWindowText(_tt + _T(" [HOST_IF_LOG]")); }	// [LGLS] 제목에 조회 테이블명
 	return TRUE;
 }
 
@@ -394,62 +394,6 @@ void CLogMesSkinDlg::InitializeResource(EN_LANG nEN_LANG)
 }
 
 
-CString CLogMesSkinDlg::GetQrySelect(int nLANG, CString strWH_TYP, CString strLUGG_NO, CString strMesMessage, CString strMesMessage2, CString strMesMessage3, CString strdtTo)
-{
-	int nRowCnt = 0;
-	CString strSql = _T("");
-	CString CRLF = _T("\r\n");
-	CString strSqlWhTypCommonCode = CLib::GetCommonCode(strSql, _T("WH_TYP"), m_pDoc, nLANG);
-	CString strSrTypCommonCode = CLib::GetCommonCode(strSql, _T("SR_TYPE"), m_pDoc, nLANG);
-	nRowCnt = m_cbxRowCnt.GetItemData(m_cbxRowCnt.GetCurSel()); 
-	CString strRowCnt = CConvert::ToString(nRowCnt);
-
-	
-	strSql += CRLF + _T("SELECT MES.WH_TYP					");
-	strSql += CRLF + _T(",	   COM1.CCD_NM_KOR AS WH_TYP_NM");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.LOG_DATE,		'0') as LOG_DATE					 ");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.LOG_TIME,		'0') as LOG_TIME					 ");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(CCD_MES_CMD.CCD_NM_KOR,		    '0') as MES_CMD						 ");
-	strSql += CRLF + _T(",	   COM2.CCD_NM_KOR AS SR_TYPE_NM ");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.MESSAGE,			'0') as MESSAGE					");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.LUGG_NO,			'0') as LUGG_NO					");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.BCR_BOTTOM,		'0') as BCR_BOTTOM				");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.BCR_TOP,			'0') as BCR_TOP					");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.REMARKS,			'0') as REMARKS					");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.INS_DT,			") + m_pDoc->SYSDATE + _T(") as INS_DT				");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.INS_USER_ID,		'0') as INS_USER_ID				");
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.UPD_DT,			") + m_pDoc->SYSDATE + _T(") as UPD_DT				");	
-	strSql += CRLF + _T(",     ") + m_pDoc->NVL + _T("(MES.UPD_USER_ID,		'0') as UPD_USER_ID				");
-	strSql += CRLF + _T(" FROM MES_IF_LOG MES									");
-	strSql += CRLF + _T("	   LEFT OUTER JOIN (") + strSqlWhTypCommonCode + _T(") COM1 ");
-	strSql += CRLF + _T("		            ON MES.WH_TYP = COM1.CCD_CD 			    ");
-	strSql += CRLF + _T("	   LEFT OUTER JOIN (") + strSrTypCommonCode + _T(") COM2    ");
-	strSql += CRLF + _T("		            ON MES.SR_TYPE = COM2.CCD_CD 			    ");	
-	strSql += CRLF + _T("      LEFT OUTER JOIN COMMON_CODE CCD_MES_CMD ");
-	strSql += CRLF + _T("              ON CCD_MES_CMD.CDX_CD = 'MES_CMD' ");
-	strSql += CRLF + _T("             AND CCD_MES_CMD.CCD_CD = MES.MES_CMD ");
-	strSql += CRLF + _T("             AND CCD_MES_CMD.WH_TYP LIKE ") + CLib::QuotLikeLR(strSqlWhTypCommonCode);										
-	strSql += CRLF + _T("WHERE (MES.INS_DT < CONVERT(DATETIME, STUFF(STUFF(STUFF('") + strdtTo + _T("',13,0,':'),11,0,':'),9,0,' ')) AND MES.INS_DT > DATEADD(DAY, -1, CONVERT(DATETIME, STUFF(STUFF(STUFF('") + strdtTo + _T("',13,0,':'),11,0,':'),9,0,' '))))");	// [LGLS] Oracle date-diff -> DATEADD window
-	strSql += CRLF + _T("	   AND WH_TYP =  ") + CLib::Quot(strWH_TYP);
-	strSql += CRLF + _T("      AND (MES.MESSAGE LIKE '%") + strMesMessage + _T("%' AND MES.MESSAGE LIKE '%") + strMesMessage2 + _T("%' AND MES.MESSAGE LIKE '%") + strMesMessage3 + _T("%')");
-#if ORACLE
-	strSql += CRLF + _T(" AND ROWNUM <=	") + strRowCnt;
-#endif
-
-	strSql += CRLF + _T("ORDER BY MES.INS_DT DESC	   							    ");
-
-#if POSTGRESQL
-	if (strRowCnt != _T("ALL"))
-		strSql += CRLF + _T(" LIMIT	") + strRowCnt;
-#elif MSSQL
-	if (strRowCnt != _T("ALL"))	// [LGLS] SQL2008: inject TOP n instead of LIMIT
-		CLib::ApplyTopN(strSql, strRowCnt);	// [LGLS]
-#endif
-
-
-	return strSql;
-}
-
 void CLogMesSkinDlg::OnBnClickedBtnLogMesSearch()
 {
 	UpdateData(TRUE);
@@ -480,7 +424,6 @@ void CLogMesSkinDlg::OnBnClickedBtnLogMesSearch()
 	//m_pSpreadMain.ClearRange(1, 1, -1, -1, TRUE);
 
 
-	//strSql = GetQrySelect(nLANG, strWH_TYP, strLUGG_NO, strMesMessage, strMesMessage2, strMesMessage3, strdtTo);
 
 	//CStringArray arrColName;
 

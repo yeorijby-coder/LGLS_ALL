@@ -52,3 +52,50 @@ DB 이관 절차는 `DB_BACKUP/서버_구축_절차.md` 를 본다(2026-09-09 �
   개별 태스크 화면은 ALL_TASK 의 탭으로 안내한다.
 
 캡처는 `shots/` 에 있다. 다시 만들려면 `cd gen && python gen_screen_pptx.py`.
+
+---
+
+## 2026-09-10 개정 - 미사용 컬럼·표 정리
+
+이 현장에서 쓰지 않는 컬럼 51개와 표 12개를 DB 에서 지우고, 그에 맞춰 프로그램과 문서를 함께 정리했다.
+
+| 파일 | 내용 |
+|---|---|
+| 03_테이블_정의서_Rev3.docx | 미사용 컬럼 51개 삭제 반영 (cv_data 39 / job_mst 6 / job_mst_his 6) |
+| **03_테이블_정의서_Rev4.docx** | **미사용 표 12개까지 삭제 반영. 남은 25개 표 전부 수록(문서와 DB 가 1:1)** |
+| 테이블_사용현황_조사표.docx | Rev1 - 조사 결과(삭제 권고 7 / 판단 필요 5 / 유지 25) |
+| **테이블_사용현황_조사표_Rev2.docx** | **판단 필요 5건도 폐지 결정. 삭제 실행·회귀시험 기록 포함** |
+
+지운 표 12개
+
+```
+auto_sc_work  bcr_mst   client_pgr_nm  dest_def   event_log   host_empty_plt
+mes_if_log    rtv_data  sc_data        wait_track wc_data     wc_his
+```
+
+함께 정리한 프로그램
+
+- **Client** : WC / BCR / 공PLT / WC로그 화면과 설비 클래스를 걷어냈다.
+  지운 소스는 `Ecs/_removed_20260910/` 에 보관. 공PLT 는 메뉴 항목과 `Ecs.ini [MENU]` 키까지 제거(숨김이 아니라 폐지).
+  HOST 로그 창 제목의 테이블명을 `[MES_IF_LOG]` → `[HOST_IF_LOG]` 로 정정(이 화면은 원래 HOST_IF_LOG 를 조회한다).
+- **WCS_TASK_HOST** : 무게보고(`GetWeightReport`) / 빈파렛트 요청(`GetEmptyPltRequest`) / `UpdateHostEmptyPlt` 제거.
+  세 기능 모두 호출부가 이미 주석 처리돼 있었다.
+- 신규 구축 DDL(`TASK/IO_TASK/DB/mssql_schema.sql`)과 시뮬레이터 시드에서도 뺐다.
+
+SQL 스크립트는 `DB_BACKUP/` 에 있다. 현장은 백업·복원을 할 수 없으므로 점검·삭제·재점검·복구를 짝으로 두었다.
+
+```
+01_컬럼정리.sql   02_컬럼복구.sql    (컬럼)
+10_점검_표삭제전.sql  11_표삭제.sql  12_점검_표삭제후.sql  13_표복구.sql   (표)
+```
+
+회귀 시험 2026-09-10 11:23~11:28 - 5개 프로그램 재빌드 후 전체 기동, 입출고 풀사이클 5분 연속 운전.
+작업 이력 124행 증가, 진행 중 작업 3건 정상, CV/HOST/SCH 하트비트 정상, 새 크래시 리포트·조회 오류 없음.
+
+다시 만들기
+
+```
+cd gen
+python gen_tabledef_docx_rev4.py
+python gen_table_survey_rev2.py
+```

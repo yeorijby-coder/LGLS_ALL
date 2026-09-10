@@ -20,28 +20,6 @@ IF COL_LENGTH('cv_data', 'pulp_sensor_od') IS NULL
 IF COL_LENGTH('cv_data', 'wait_sc_ret_job_od') IS NULL
     ALTER TABLE cv_data ADD wait_sc_ret_job_od VARCHAR(2) DEFAULT '0';
 
-IF OBJECT_ID('wc_data', 'U') IS NULL
-    CREATE TABLE wc_data (
-        wh_typ         VARCHAR(2),
-        wc_mc_no       VARCHAR(3),
-        weight_rcv_val VARCHAR(7) DEFAULT '0000000'
-    );
-
-IF OBJECT_ID('host_if_log', 'U') IS NULL
-    CREATE TABLE host_if_log (
-        wh_typ      VARCHAR(2),
-        log_date    VARCHAR(8),
-        log_time    VARCHAR(9),
-        host_cmd    VARCHAR(2),
-        direction   VARCHAR(3),
-        message     VARCHAR(4000),
-        lugg_no     VARCHAR(4),
-        bcr_bottom  VARCHAR(30),
-        bcr_top     VARCHAR(30),
-        ins_dt      DATETIME DEFAULT GETDATE(),
-        ins_user_id VARCHAR(20)
-    );
-GO
 
 -- ---------------------------------------------------------------------
 -- 0-b) 기존 데이터 백업 후 재구성 (기존 88트랙 모델 대체)
@@ -103,37 +81,11 @@ GO
 -- ---------------------------------------------------------------------
 -- 2) sc_data — S/C #1~#5 (901~905) 정보 보강 (기존 행 갱신 + 누락 생성)
 -- ---------------------------------------------------------------------
-INSERT INTO sc_data (wh_typ, sc_no, host_send_yn)
-SELECT '10', s.no, 'N'
-FROM (VALUES ('901'),('902'),('903'),('904'),('905')) AS s(no)
-WHERE NOT EXISTS (SELECT 1 FROM sc_data WHERE sc_no = s.no);
 
-UPDATE sc_data SET
-    plc_no      = RIGHT('00' + CAST(CAST(sc_no AS INT) - 900 AS VARCHAR(2)), 2),
-    sc_grp_no   = '01',
-    mc_no       = sc_no,
-    mc_no_nm    = 'S/C#' + CAST(CAST(sc_no AS INT) - 900 AS VARCHAR(1)) + ' (Bank '
-                + RIGHT('00' + CAST((CAST(sc_no AS INT) - 900) * 2 - 1 AS VARCHAR(2)), 2) + ','
-                + RIGHT('00' + CAST((CAST(sc_no AS INT) - 900) * 2 AS VARCHAR(2)), 2) + ')',
-    auto_mode_rd = '1', ucstatus_rd = '1', online_mode_rd = '1', active_mode_rd = '1',
-    err_code_rd = '0', complete_rd = '0',
-    od_rq_yn = 'N', od_rq_flag = 'N', cmd_rq_yn = 'N',
-    use_fk_rd = '1', suspend = 'N', sc_typ = 'SF',
-    read_upd_dt = GETDATE(), write_upd_dt = DATEADD(SECOND, -1, GETDATE())
-WHERE wh_typ = '10' AND sc_no IN ('901','902','903','904','905');
-GO
 
 -- ---------------------------------------------------------------------
 -- 3) rtv_data — RGV #1
 -- ---------------------------------------------------------------------
-DELETE FROM rtv_data WHERE wh_typ = '10';
-INSERT INTO rtv_data (wh_typ, plc_no, rtv_no, auto_mode_rd, waiting_order_rd,
-                      sensor_rtv_rd, err_code_rd, sensor_fk1_rd, sensor_fk2_rd,
-                      cmd_rq_yn, od_rq_yn, suspend, is_error_rd,
-                      read_upd_dt, write_upd_dt)
-VALUES ('10', '01', '01', '1', '1', '0', '0', '0', '0', 'N', 'N', 'N', '0',
-        GETDATE(), DATEADD(SECOND, -1, GETDATE()));
-GO
 
 -- ---------------------------------------------------------------------
 -- 4) eqp_mst — 통신 대상 설비 (HOST/HOST2 유지, 재고성 BCR 제거)
@@ -225,11 +177,8 @@ UPDATE job_mst SET job_status = '9'
 GO
 
 SELECT 'cv_data' t, COUNT(*) cnt FROM cv_data
-UNION ALL SELECT 'sc_data', COUNT(*) FROM sc_data WHERE wh_typ='10'
-UNION ALL SELECT 'rtv_data', COUNT(*) FROM rtv_data
 UNION ALL SELECT 'eqp_mst', COUNT(*) FROM eqp_mst
 UNION ALL SELECT 'cv_def_inf', COUNT(*) FROM cv_def_inf
 UNION ALL SELECT 'sc_def_inf', COUNT(*) FROM sc_def_inf
 UNION ALL SELECT 'dest_pos_def', COUNT(*) FROM dest_pos_def
-UNION ALL SELECT 'wc_data', COUNT(*) FROM wc_data
 UNION ALL SELECT 'host_if_log', COUNT(*) FROM host_if_log;

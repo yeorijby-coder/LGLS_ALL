@@ -49,7 +49,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_UPDATE_COMMAND_UI(ID_STATUS_CV, &CMainFrame::OnUpdateStatusCv)
 	ON_UPDATE_COMMAND_UI(ID_STATUS_SR_MODE, &CMainFrame::OnUpdateStatusSR_MODE)
 	ON_UPDATE_COMMAND_UI(ID_STATUS_CV_1, &CMainFrame::OnUpdateStatusCv1)
-	ON_UPDATE_COMMAND_UI(ID_STATUS_WC_1, &CMainFrame::OnUpdateStatusWc1)
 	ON_UPDATE_COMMAND_UI(ID_STATUS_SC_1, &CMainFrame::OnUpdateStatusSc1)
 	ON_UPDATE_COMMAND_UI(ID_STATUS_SC_2, &CMainFrame::OnUpdateStatusSc2)
 	ON_UPDATE_COMMAND_UI(ID_STATUS_SC_3, &CMainFrame::OnUpdateStatusSc3)
@@ -1570,7 +1569,6 @@ void CMainFrame::OnButtonComm(UINT nID)
 
 	CTrackInfo* pTrackInfo = NULL;
 	CSC_DATA* pSC_DATA = NULL;
-	CWC_DATA* pWC_DATA = NULL;
 
 	// TEST 성공 - ANSI에서만 됨
 	//LPCSTR strPingTest = "cmd.exe /k ping -t 127.0.0.1";
@@ -1673,23 +1671,6 @@ void CMainFrame::OnButtonComm(UINT nID)
 		nEQP_TIME = CConvert::ToInt(strEQP_TIME);
 		strTYPE = _T("SC");
 		nEQP_NUM = 4;
-		nCheckTime = 5;
-
-		#pragma endregion
-		break;
-	case ID_STATUS_WC_1:
-		#pragma region ID_STATUS_WC_1
-		pWC_DATA = pDoc->GetWC_DATA(_T("104"));
-	
-		if (pWC_DATA == NULL)
-			return;
-		//strTemp1.Format(_T("SC_01 (IP:%s) (PORT:%04d)"),_T("10.99.43.243"),8192);		// switch문 밑에서 만들기
-
-		strEQP_CONNECTED_YN = pWC_DATA->V_EQP_CONNECTED_YN;
-		strEQP_TIME = pWC_DATA->V_EQP_TIME;
-		nEQP_TIME = CConvert::ToInt(strEQP_TIME);
-		strTYPE = _T("WC");
-		nEQP_NUM = 1;
 		nCheckTime = 5;
 
 		#pragma endregion
@@ -2033,47 +2014,6 @@ void CMainFrame::OnButtonSc4()
 	}
 }
 
-void CMainFrame::OnButtonWc1()
-{
-	//AfxMessageBox(_T("야호"));
-	CEcsDoc* pDoc = (CEcsDoc*)GetActiveDocument();
-	if (pDoc == NULL )	
-		return;
-
-	CWC_DATA* pWC_DATA = pDoc->GetWC_DATA(_T("104"));
-	
-	if (pWC_DATA == NULL)
-		return;
-
-	CString strTemp1, strTemp2;
-	CString strEQP_CONNECTED_YN = pWC_DATA->V_EQP_CONNECTED_YN;
-	strTemp1.Format(_T("WC_01 (IP:%s) (PORT:%04d)"),_T("10.99.43.249"),8198);
-
-	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
-	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
-	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
-	CString strEQP_TIME = pWC_DATA->V_EQP_TIME;
-	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
-
-	if (nEQP_TIME > 5)
-	{
-		strTemp2.Format(_T("PingTest를 하겠습니까? [접속정보 -> %s]"),strTemp1);
-		
-		if (AfxMessageBox(strTemp2, MB_YESNO) != IDYES)
-		{
-			AfxMessageBox(_T("통신 연결 되지 않았습니다!"));
-			return;
-		}
-
-		AfxMessageBox(_T("PingTest 하겠습니다.\n\nPing 비정상시 네트워크 담당자에게 확인바랍니다!\nPing 정상시 PORT가 정상적으로 OPEN 되어있는지 확인하세요"));
-		::ShellExecute(NULL, _T("open"), _T(".\\PING_WC01.BAT"), NULL, NULL, SW_SHOW);
-	}
-	else
-	{
-		AfxMessageBox(strTemp1);
-	}
-}
-
 void CMainFrame::OnButtonHost()
 {
 	//헷갈리겠지만 이 함수가 EQP_MST에서 EQP_TYP = HOST2 (E2W)
@@ -2082,10 +2022,9 @@ void CMainFrame::OnButtonHost()
 	if (pDoc == NULL )	
 		return;
 
-	CWC_DATA* pWC_DATA = pDoc->GetWC_DATA(_T("104"));
-	
-	if (pWC_DATA == NULL)
-		return;
+	// [LGLS 2026-09-10] 종전에는 여기서 WC 설비 데이터를 찾아 없으면 그냥 돌아갔다.
+	//   이 현장에는 WC 설비가 없어 늘 NULL 이었고, 그래서 HOST 상태등을 눌러도
+	//   아무 일도 일어나지 않았다. WC 를 걷어내면서 그 빗장을 없앤다.
 
 	CString strTemp1, strTemp2;
 	strTemp1.Format(_T("HOST (IP:%s) (PORT:%04d)"),_T("10.99.10.141"),8400);
@@ -2198,49 +2137,6 @@ void CMainFrame::OnUpdateStatusCv1(CCmdUI *pCmdUI)
 			m_wndStatusBar.SetPaneInfo(ID_STATUS_CV_1, _T("EQUIP"), GREEN, BLACK);
 			SetCommColor(ID_STATUS_CV_1, LGLS_COMM_OK);	// [LGLS] EQP_TASK ????
 			pTrackInfo->m_pCV_DATA->SetEQP_COLOR(_T("GREEN"));
-		}
-		
-	}
-	return;
-}
-
-
-void CMainFrame::OnUpdateStatusWc1(CCmdUI *pCmdUI)
-{
-	CEcsDoc* pDoc = (CEcsDoc*)GetActiveDocument();
-	if (pDoc == NULL )
-		return;
-	//m_pDoc = pDoc;
-	
-	CWC_DATA* pWC_DATA = pDoc->GetWC_DATA(_T("104"));
-	
-	if (pWC_DATA == NULL)
-		return;
-
-	// [LGLS 2026-09-09] 수집 스레드가 같은 CString 을 갱신하는 중이면 복사가 죽는다
-	//   (크래시 덤프 3건 - CMainFrame::OnUpdateStatusCv1). 설비 데이터 락으로 읽는다.
-	CSingleLock _lockEqp(&pDoc->m_csEqpData, TRUE);
-	CString strEQP_TIME = pWC_DATA->V_EQP_TIME;
-	CString strEQP_COLOR = pWC_DATA->V_EQP_COLOR;
-	CString strEQP_CONNECTED_YN = pWC_DATA->V_EQP_CONNECTED_YN;
-	int nEQP_TIME = CConvert::ToInt(strEQP_TIME);
-	
-	// [LGLS 2026-08-04] 5초는 미러 사이클(~3초)에 여유가 없어 한 사이클만 느어도 벰가 정상이다. 15초로 여유를 주고
-	//   실제 단절은 CONNECTED_YN='N' 또는 15초 무응답으로 판정한다.
-	if (nEQP_TIME > 15 || strEQP_CONNECTED_YN == _T("N"))
-	{
-		if(strEQP_COLOR != _T("RED"))
-		{
-			m_wndStatusBar.SetPaneInfo(ID_STATUS_WC_1, _T("WC_104"), RED, BLACK);
-			pWC_DATA->SetEQP_COLOR(_T("RED"));
-		}
-	}
-	else
-	{
-		if(strEQP_COLOR != _T("GREEN"))
-		{
-			m_wndStatusBar.SetPaneInfo(ID_STATUS_WC_1, _T("WC_104"), GREEN, BLACK);
-			pWC_DATA->SetEQP_COLOR(_T("GREEN"));
 		}
 		
 	}

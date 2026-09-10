@@ -2194,7 +2194,11 @@ BOOL CScSkinDlg::RetHsDataSelect(CString& strHS_MC_NO, CString& strSENSOR0_DATA_
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	pRsw->MoveFirst();
 	//출고 HS 번호, 화물감지 유무
@@ -2205,7 +2209,11 @@ BOOL CScSkinDlg::RetHsDataSelect(CString& strHS_MC_NO, CString& strSENSOR0_DATA_
 	delete pRsw;
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	return TRUE;
 
@@ -2319,7 +2327,11 @@ BOOL CScSkinDlg::JobMstInsert(CString pHsMcNo, CString& strNextVal, CString& str
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	pRsw->MoveFirst();
 	//seq에서 작업에 사용할 번호 가져오기

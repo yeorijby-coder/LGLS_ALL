@@ -386,12 +386,7 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClInclude Include="PanelInfoDlg.h" />
     <ClInclude Include="AdoDB.h" />
     <ClInclude Include="AdoDbIO.h" />
-    <ClInclude Include="AsyncSocketEx.h" />
-    <ClInclude Include="Bcr.h" />
-    <ClInclude Include="BcrInfo.h" />
-    <ClInclude Include="BCRSkinDlg.h" />
-    <ClInclude Include="BCR_MST.h" />
-    <ClInclude Include="ByteArrayEx.h" />
+    <ClInclude Include="AsyncSocketEx.h" />    <ClInclude Include="ByteArrayEx.h" />
     <ClInclude Include="CellInfo.h" />
     <ClInclude Include="CELL_DTL.h" />
     <ClInclude Include="CmdMsg.h" />
@@ -442,18 +437,14 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClInclude Include="Lang.h" />
     <ClInclude Include="Lib.h" />
     <ClInclude Include="ListenerSk.h" />
-    <ClInclude Include="Log.h" />
-    <ClInclude Include="LogBcrSkinDlg.h" />
-    <ClInclude Include="LogClientSkinDlg.h" />
+    <ClInclude Include="Log.h" />    <ClInclude Include="LogClientSkinDlg.h" />
     <ClInclude Include="LogEqpErrHisSkinDlg.h" />
     <ClInclude Include="LogEqpJobHisSkinDlg.h" />
     <ClInclude Include="LogEqpSkinDlg.h" />
     <ClInclude Include="LogIoSkinDlg.h" />
     <ClInclude Include="LogMesSkinDlg.h" />
     <ClInclude Include="LogWcsLogPgr.h" />
-    <ClInclude Include="MainFrm.h" />
-    <ClInclude Include="ManualEmpty.h" />
-    <ClInclude Include="ManualJob.h" />
+    <ClInclude Include="MainFrm.h" />    <ClInclude Include="ManualJob.h" />
     <ClInclude Include="SemiTestDlg.h" />
     <ClInclude Include="ManualLogin.h" />
     <ClInclude Include="ManualRtv.h" />
@@ -519,17 +510,10 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClInclude Include="UserCreateGroupDlg.h" />
     <ClInclude Include="UserCreateUserDlg.h" />
     <ClInclude Include="UserGroupDlg.h" />
-    <ClInclude Include="UserUserDlg.h" />
-    <ClInclude Include="ViewHostEmptyPltDlg.h" />
-    <ClInclude Include="ViewJobListDlg.h" />
+    <ClInclude Include="UserUserDlg.h" />    <ClInclude Include="ViewJobListDlg.h" />
     <ClInclude Include="ViewSearchDlg.h" />
     <ClInclude Include="ViewUsageRackDlg.h" />
-    <ClInclude Include="WarningDlg.h" />
-    <ClInclude Include="Wc.h" />
-    <ClInclude Include="WcInfo.h" />
-    <ClInclude Include="WcSkinDlg.h" />
-    <ClInclude Include="WC_DATA.h" />
-    <ClInclude Include="_Font.h" />
+    <ClInclude Include="WarningDlg.h" />    <ClInclude Include="_Font.h" />
     <ClInclude Include="_Picture.h" />
   </ItemGroup>
   <ItemGroup>
@@ -538,12 +522,7 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClCompile Include="PanelVehDlg.cpp" />
     <ClCompile Include="PanelJobDlg.cpp" />
     <ClCompile Include="PanelInfoDlg.cpp" />
-    <ClCompile Include="AsyncSocketEx.cpp" />
-    <ClCompile Include="Bcr.cpp" />
-    <ClCompile Include="BcrInfo.cpp" />
-    <ClCompile Include="BCRSkinDlg.cpp" />
-    <ClCompile Include="BCR_MST.cpp" />
-    <ClCompile Include="ByteArrayEx.cpp" />
+    <ClCompile Include="AsyncSocketEx.cpp" />    <ClCompile Include="ByteArrayEx.cpp" />
     <ClCompile Include="CAdoDB.cpp" />
     <ClCompile Include="CellInfo.cpp" />
     <ClCompile Include="CELL_DTL.cpp" />
@@ -580,18 +559,14 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClCompile Include="JOB_MST.cpp" />
     <ClCompile Include="KeyHelper.cpp" />
     <ClCompile Include="Lang.cpp" />
-    <ClCompile Include="Lib.cpp" />
-    <ClCompile Include="LogBcrSkinDlg.cpp" />
-    <ClCompile Include="LogClientSkinDlg.cpp" />
+    <ClCompile Include="Lib.cpp" />    <ClCompile Include="LogClientSkinDlg.cpp" />
     <ClCompile Include="LogEqpErrHisSkinDlg.cpp" />
     <ClCompile Include="LogEqpJobHisSkinDlg.cpp" />
     <ClCompile Include="LogEqpSkinDlg.cpp" />
     <ClCompile Include="LogIoSkinDlg.cpp" />
     <ClCompile Include="LogMesSkinDlg.cpp" />
     <ClCompile Include="LogWcsLogPgr.cpp" />
-    <ClCompile Include="MainFrm.cpp" />
-    <ClCompile Include="ManualEmpty.cpp" />
-    <ClCompile Include="ManualJob.cpp" />
+    <ClCompile Include="MainFrm.cpp" />    <ClCompile Include="ManualJob.cpp" />
     <ClCompile Include="SemiTestDlg.cpp" />
     <ClCompile Include="ManualLogin.cpp" />
     <ClCompile Include="ManualRtv.cpp" />
@@ -643,16 +618,9 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClCompile Include="UserCreateGroupDlg.cpp" />
     <ClCompile Include="UserCreateUserDlg.cpp" />
     <ClCompile Include="UserGroupDlg.cpp" />
-    <ClCompile Include="UserUserDlg.cpp" />
-    <ClCompile Include="ViewHostEmptyPltDlg.cpp" />
-    <ClCompile Include="ViewJobListDlg.cpp" />
+    <ClCompile Include="UserUserDlg.cpp" />    <ClCompile Include="ViewJobListDlg.cpp" />
     <ClCompile Include="ViewSearchDlg.cpp" />
-    <ClCompile Include="ViewUsageRackDlg.cpp" />
-    <ClCompile Include="Wc.cpp" />
-    <ClCompile Include="WcInfo.cpp" />
-    <ClCompile Include="WcSkinDlg.cpp" />
-    <ClCompile Include="WC_DATA.cpp" />
-  </ItemGroup>
+    <ClCompile Include="ViewUsageRackDlg.cpp" />  </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Ecs.rc" />
   </ItemGroup>

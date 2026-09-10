@@ -210,7 +210,6 @@ public:
 	afx_msg void OnUpdateStatusCv1(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateStatusSch(CCmdUI *pCmdUI);	// [LGLS 재적용] SCH(IO_TASK) 하트비트 표시등
 	afx_msg void OnSize(UINT nType, int cx, int cy);	// [LGLS 재적용] 상태바 통신버튼 위치 재계산
-	afx_msg void OnUpdateStatusWc1(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateStatusSc1(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateStatusSc2(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateStatusSc3(CCmdUI *pCmdUI);
@@ -222,7 +221,6 @@ public:
 	afx_msg void OnButtonSc2();
 	afx_msg void OnButtonSc3();
 	afx_msg void OnButtonSc4();
-	afx_msg void OnButtonWc1();
 	afx_msg void OnButtonHost();
 
 	afx_msg void OnButtonComm(UINT nID);

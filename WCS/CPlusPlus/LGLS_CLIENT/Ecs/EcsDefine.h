@@ -1,4 +1,4 @@
-// EcsDefine.h: interface for the CEcsDefine class.
+﻿// EcsDefine.h: interface for the CEcsDefine class.
 //
 
 #pragma once
@@ -31,10 +31,8 @@ protected:
 	BOOL ParseSc(CEquipment* pEquipment, int nForkType = 0);
 	BOOL ParseRtv(CEquipment* pEquipment);
 	BOOL ParseRfid(CEquipment* pEquipment);
-	BOOL ParseBcr(CEquipment* pEquipment);
 	BOOL ParseScPair(CEquipment* pEquipment);
 	BOOL ParseScSingle(CEquipment* pEquipment);
-	BOOL ParseWc(CEquipment* pEquipment);
 
 private:
 	BOOL ParseTracks(CCv* pEquipment);

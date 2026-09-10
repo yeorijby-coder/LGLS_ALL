@@ -2,6 +2,15 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
+      <FullPath>D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\XmlLib.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\EcsLib.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\DciLib.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
       <FullPath>D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\Ecs.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>

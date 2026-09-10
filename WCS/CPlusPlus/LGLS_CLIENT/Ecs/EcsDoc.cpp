@@ -23,7 +23,6 @@
 #include "UserGroupDlg.h"
 #include "UserCreateGroupDlg.h"
 #include "ViewJobListDlg.h"
-#include "ViewHostEmptyPltDlg.h"
 #include "RecordSetWrap.h"
 #include "SemiTestDlg.h"	// [LGLS 2026-08-13] 반자동 TEST
 #include "EqpSuspendDlg.h"
@@ -32,7 +31,6 @@
 #include "LogEqpSkinDlg.h"
 #include "LogMesSkinDlg.h"
 #include "LogClientSkinDlg.h"
-#include "LogBcrSkinDlg.h"
 #include "LogEqpErrHisSkinDlg.h"
 #include "LogEqpJobHisSkinDlg.h"
 #include "LogWcsLogPgr.h"
@@ -83,7 +81,7 @@ BEGIN_MESSAGE_MAP(CEcsDoc, CDocument)
 	ON_COMMAND_RANGE(ID_VIEW_JOBLIST, ID_VIEW_SEARCH, &CEcsDoc::OnCommandRangeMainFrameVIEW)
 	ON_COMMAND_RANGE(ID_MONITORING_1F, ID_MONITORING_ASSEMBLE, &CEcsDoc::OnCommandRangeMainFrameMONITORING)
 	ON_COMMAND_RANGE(ID_LANGUAGE_KOR, ID_LANGUAGE_HUNGARIAN, &CEcsDoc::OnCommandRangeMainFrameNATION)
-	ON_COMMAND_RANGE(ID_MANUAL_JOB, IDD_MANUAL_EMPTY, &CEcsDoc::OnCommandRangeMainFrameMANUAL)
+	ON_COMMAND_RANGE(ID_MANUAL_JOB, ID_MANUAL_RTV, &CEcsDoc::OnCommandRangeMainFrameMANUAL)	// [LGLS 2026-09-10] 공PLT 폐지로 범위 끝을 RTV 로
 	ON_COMMAND_RANGE(ID_LOG_IO, IDD_LOG_WCS_LOG_PGR, &CEcsDoc::OnCommandRangeMainFrameLOG)
 	//ON_COMMAND_RANGE(ID_LOG_IO, ID_LOG_CLIENT, &CEcsDoc::OnCommandRangeMainFrameLOG)
 	ON_COMMAND_RANGE(ID_USER_USER, ID_USER_GROUP, &CEcsDoc::OnCommandRangeMainFrameUSER)
@@ -156,7 +154,6 @@ CEcsDoc::CEcsDoc()
 
 	m_pLoginDlg = NULL;
 	m_pViewJobListDlg = NULL;
-	m_pViewHostEmptyPltDlg = NULL;
 	m_pViewUsageRackDlg = NULL;
 	m_pEqpSuspendDlg = NULL;
 
@@ -164,7 +161,6 @@ CEcsDoc::CEcsDoc()
 	m_pManualSc = NULL;
 	m_pScManualRet = NULL;
 	m_pManualJob = NULL;
-	m_pManualEmpty = NULL;
 	m_pManualLogin = NULL;
 	m_pSemiTest = NULL;	// [LGLS 2026-08-13]
 
@@ -174,8 +170,6 @@ CEcsDoc::CEcsDoc()
 	m_pWarningDlg = NULL;
 	m_pScSkinDlg = NULL;
 	m_pRtvSkinDlg = NULL;
-	m_pBcrSkinDlg = NULL;
-	m_pWcSkinDlg = NULL;
 
 	m_pLogIoSkinDlg = NULL;
 	m_pLogEqpSkinDlg = NULL;
@@ -183,7 +177,6 @@ CEcsDoc::CEcsDoc()
 	m_pConfigLogDelete = NULL;
 	m_pLogMesSkinDlg = NULL;
 	m_pLogWcsSkinDlg = NULL;
-	m_pLogBcrSkinDlg = NULL;
 	m_pLogEqpErrHis=NULL;
 	m_pLogJobHis=NULL;
 
@@ -248,12 +241,9 @@ CEcsDoc::~CEcsDoc()
 	if(m_pUrmDBAccess != NULL){ delete m_pUrmDBAccess;}
 	if(m_pDlgUrmDBAccess != NULL){ delete m_pDlgUrmDBAccess;}
 	if(m_pViewJobListDlg != NULL){ delete m_pViewJobListDlg;}
-	if(m_pViewHostEmptyPltDlg != NULL){ delete m_pViewHostEmptyPltDlg;}
 	if(m_pCvSkinDlg != NULL){ delete m_pCvSkinDlg;}
 	if(m_pScSkinDlg != NULL){ delete m_pScSkinDlg;}
 	if(m_pRtvSkinDlg != NULL){ delete m_pRtvSkinDlg;}
-	if(m_pBcrSkinDlg != NULL){ delete m_pBcrSkinDlg;}
-	if(m_pWcSkinDlg != NULL){ delete m_pWcSkinDlg;}
 	if(m_pViewUsageRackDlg != NULL) { delete m_pViewUsageRackDlg;}
 	if(m_pManualRtv != NULL) { delete m_pManualRtv;}
 	if(m_pManualSc != NULL) { delete m_pManualSc;} 
@@ -261,10 +251,8 @@ CEcsDoc::~CEcsDoc()
 	if(m_pManualJob != NULL) { delete m_pManualJob;}
 	if(m_pSemiTest != NULL){ if(::IsWindow(m_pSemiTest->m_hWnd)) m_pSemiTest->DestroyWindow(); delete m_pSemiTest; m_pSemiTest = NULL; }	// [LGLS 2026-08-13]
 	if(m_pConfigStatus != NULL) { delete m_pConfigStatus;}
-	if(m_pManualEmpty != NULL) { delete m_pManualEmpty;}
 	if(m_pManualLogin != NULL) { delete m_pManualLogin;}
 	if(m_pLogIoSkinDlg != NULL) { delete m_pLogIoSkinDlg;}
-	if(m_pLogBcrSkinDlg != NULL) { delete m_pLogBcrSkinDlg;}
 	if(m_pLogEqpSkinDlg != NULL) { delete m_pLogEqpSkinDlg;}
 	if(m_pLogClientSkinDlg != NULL) { delete m_pLogClientSkinDlg;}
 	if(m_pConfigLogDelete != NULL) { delete m_pConfigLogDelete;} 
@@ -489,36 +477,6 @@ void CEcsDoc::OnCommandRangeMainFrameLOG(UINT nID)
 				ShowWindow(m_pLogMesSkinDlg->m_hWnd, SW_SHOWNORMAL);
 				break;
 			}
-		case ID_LOG_BCR:
-			{
-				if (!Permission(_T("CLogBcrSkinDlg"), SEL_YN))
-				{
-					AfxMessageBox(GetMsgLangDef(_T("권한이 없습니다")));
-					return;
-				}
-
-				if (m_pLogBcrSkinDlg == NULL)
-				{
-					m_pLogBcrSkinDlg = new CLogBcrSkinDlg(this);
-					this->m_pLogBcrSkinDlg->Create(IDD_LOG_BCR);
-					CRect MainRect;
-					CRect Rect;
-					CRect PosRect;
-					::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-					this->m_pLogBcrSkinDlg->GetWindowRect(&Rect); 
-
-					PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-					PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-					this->m_pLogBcrSkinDlg->SetWindowPos(&m_pLogBcrSkinDlg->wndTop, PosRect.left, PosRect.top, 
-						Rect.Width(), Rect.Height(), 
-						SWP_SHOWWINDOW);
-
-				}
-				::SetWindowPos(m_pLogBcrSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-				::SetWindowPos(m_pLogBcrSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-				ShowWindow(m_pLogBcrSkinDlg->m_hWnd, SW_SHOWNORMAL);
-				break;
-			}
 		case ID_LOG_JOB_HIS:
 			{
 				if (!Permission(_T("CLogEqpJobHisSkinDlg"), SEL_YN))
@@ -695,37 +653,6 @@ void CEcsDoc::OnCommandRangeMainFrameMANUAL(UINT nID)
 			ShowWindow(m_pManualSc->m_hWnd, SW_SHOWNORMAL);
 			break;
 		}
-	case IDD_MANUAL_EMPTY:
-		{
-
-			//if (!Permission(_T("CManualEmpty"), INS_YN))
-			//{
-			//	AfxMessageBox(GetMsgLangDef(_T("권한이 없습니다")));
-			//	return;
-			//}
-
-			if (m_pManualEmpty == NULL)
-			{
-				m_pManualEmpty = new CManualEmpty(this, m_pDlgUrmDBAccess);
-				this->m_pManualEmpty->Create(IDD_MANUAL_EMPTY);
-				CRect MainRect;
-				CRect Rect;
-				CRect PosRect;
-				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-				this->m_pManualEmpty->GetWindowRect(&Rect); 
-
-				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-				this->m_pManualEmpty->SetWindowPos(&m_pManualEmpty->wndTop, PosRect.left, PosRect.top, 
-					Rect.Width(), Rect.Height(), 
-					SWP_SHOWWINDOW);
-
-			}
-			::SetWindowPos(m_pManualEmpty->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(m_pManualEmpty->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			ShowWindow(m_pManualEmpty->m_hWnd, SW_SHOWNORMAL);
-			break;
-		}
 	}
 }
 
@@ -784,35 +711,6 @@ void CEcsDoc::OnCommandRangeMainFrameVIEW(UINT nID)
 				pFrame->TogglePanelBars(this);
 			else
 				OpenJobListDialog();
-			break;
-		}
-	case ID_VIEW_HOST_EMPTY_PLT:
-		{
-			if (m_pViewHostEmptyPltDlg == NULL)
-			{
-				m_pViewHostEmptyPltDlg = new CViewHostEmptyPltDlg(this);
-				this->m_pViewHostEmptyPltDlg->Create(IDD_VIEW_HOST_EMPTY_PLT);
-			
-				CRect MainRect;
-				CRect Rect;
-				CRect PosRect;
-				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-				this->m_pViewHostEmptyPltDlg->GetWindowRect(&Rect); 
-
-				double dWidth = Rect.Width() * m_pMaxSizeX;
-				double dHeight = Rect.Height() * m_pMaxSizeX;
-
-				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-				this->m_pViewHostEmptyPltDlg->SetWindowPos(&m_pViewHostEmptyPltDlg->wndTop, PosRect.left, PosRect.top, 
-					Rect.Width(), Rect.Height(), 
-					SWP_SHOWWINDOW);
-				
-			}
-			::SetWindowPos(m_pViewHostEmptyPltDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(m_pViewHostEmptyPltDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			ShowWindow(m_pViewHostEmptyPltDlg->m_hWnd, SW_SHOWNORMAL);
-
 			break;
 		}
 	case ID_VIEW_USAGE:
@@ -1348,74 +1246,6 @@ CRTV_DATA* CEcsDoc::GetRTV_DATA(int nRTV_NO)
 		CRTV_DATA* pRtv_DATA = pRtv->m_pInfo->m_MapRTV_DATA[strRTV_NO];
 		if(pRtv_DATA != NULL)
 			return pRtv_DATA;
-	}
-	return NULL;	
-}
-
-CBCR_MST* CEcsDoc::GetBCR_MST(CString pstrBCR_NO)
-{
-	CString strBCR_NO;
-	if(pstrBCR_NO == _T("")){ return NULL; };
-	if(pstrBCR_NO.GetLength() < 2){ return NULL;};
-	strBCR_NO = pstrBCR_NO.Right(2);
-
-	CString strBcrKey;
-	CString strValue;
-	CEquipment* pEqp = NULL;
-	for(POSITION pPosBcr = m_MapEqps.GetStartPosition(); pPosBcr != NULL; )
-	{
-		CBcr* pBcr = NULL;
-		m_MapEqps.GetNextAssoc(pPosBcr, strBcrKey, pEqp);
-		if(pEqp == NULL){ continue;};
-		if(pEqp->m_enKind != CEquipment::enBCR){continue;};
-		pBcr = (CBcr*)pEqp;	
-		CBCR_MST* pBCR_MST = pBcr->m_pInfo->m_MapBCR_MST[strBCR_NO];
-		if(pBCR_MST != NULL)
-			return pBCR_MST;
-	}
-	return NULL;	
-}
-
-CBCR_MST* CEcsDoc::GetBCR_MST(int nBCR_NO)
-{	
-	CString strBCR_NO;
-	strBCR_NO.Format(_T("%05d"), nBCR_NO);
-	CString strBcrKey;
-	CString strValue;
-	CEquipment* pEqp = NULL;
-	for(POSITION pPosBcr = m_MapEqps.GetStartPosition(); pPosBcr != NULL; )
-	{
-		CBcr* pBcr = NULL;
-		m_MapEqps.GetNextAssoc(pPosBcr, strBcrKey, pEqp);
-		if(pEqp->m_enKind != CEquipment::enBCR){continue;};
-		pBcr = (CBcr*)pEqp;	
-		CBCR_MST* pBCR_MST = pBcr->m_pInfo->m_MapBCR_MST[strBCR_NO];
-		if(pBCR_MST != NULL)
-			return pBCR_MST;
-	}
-	return NULL;	
-}
-
-CWC_DATA* CEcsDoc::GetWC_DATA(CString pstrWC_MC_NO)
-{
-	CString strWC_MC_NO;
-	if(pstrWC_MC_NO == _T("")){ return NULL; };
-	if(pstrWC_MC_NO.GetLength() < 2){ return NULL;};
-	strWC_MC_NO = pstrWC_MC_NO.Right(3);
-
-	CString strWcKey;
-	CString strValue;
-	CEquipment* pEqp = NULL;
-	for(POSITION pPosWc = m_MapEqps.GetStartPosition(); pPosWc != NULL; )
-	{
-		CWc* pWc = NULL;
-		m_MapEqps.GetNextAssoc(pPosWc, strWcKey, pEqp);
-		if(pEqp == NULL){ continue;};
-		if(pEqp->m_enKind != CEquipment::enWC){continue;};
-		pWc = (CWc*)pEqp;	
-		CWC_DATA* pWC_DATA = pWc->m_pInfo->m_MapWC_DATA[strWC_MC_NO];
-		if(pWC_DATA != NULL)
-			return pWC_DATA;
 	}
 	return NULL;	
 }
@@ -2176,6 +2006,7 @@ void CEcsDoc::InitializeErrorMst()
 			pRswError->MoveNext();
 		}
 	}
+	delete pRswError;	// [LGLS 2026-09-10] 누수(기동 시 1회)
 }
 
 

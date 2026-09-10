@@ -15,10 +15,8 @@
 #include "Equipment.h"
 #include "Cv.h"
 #include "Sc.h"
-#include "Bcr.h"
 #include "ScPair.h"
 #include "Rtv.h"
-#include "Wc.h"
 #include "ScManualRet.h"
 
 #include "AdoDB.h"
@@ -30,7 +28,6 @@
 
 
 #include "ViewJobListDlg.h"
-#include "ViewHostEmptyPltDlg.h"
 #include "ViewSearchDlg.h"
 #include "EqpSuspendDlg.h"
 #include "UserUserDlg.h"
@@ -39,7 +36,6 @@
 #include "ManualRtv.h"
 #include "ManualSc.h"
 #include "ManualJob.h"
-#include "ManualEmpty.h"
 #include "ManualLogin.h"
 
 #include "CollectDataList.h"
@@ -98,7 +94,6 @@ typedef struct STFIRE_EQP_MESSAGE
 
 // CEcsDoc
 //
-class CBcr;
 class CFireParms;
 class CSystemLoginDlg;
 class CViewUsageRackDlg;
@@ -203,9 +198,6 @@ public:
 	CSC_DATA* GetSC_DATA(int nSC_NO);
 	CRTV_DATA* GetRTV_DATA(CString strRTV_NO);
 	CRTV_DATA* GetRTV_DATA(int nRTV_NO);
-	CBCR_MST* GetBCR_MST(CString strBCR_NO);
-	CBCR_MST* GetBCR_MST(int nBCR_NO);
-	CWC_DATA* GetWC_DATA(CString strWC_MC_NO);
 	
 
 public:
@@ -233,7 +225,6 @@ public:
 public:
 	CSystemLoginDlg* m_pLoginDlg;
 	CViewJobListDlg* m_pViewJobListDlg;
-	CViewHostEmptyPltDlg* m_pViewHostEmptyPltDlg;
 	CViewUsageRackDlg* m_pViewUsageRackDlg;
 	CEqpSuspendDlg* m_pEqpSuspendDlg;
 
@@ -241,7 +232,6 @@ public:
 	CManualSc* m_pManualSc;
 	CScManualRet* m_pScManualRet;
 	CManualJob* m_pManualJob;
-	CManualEmpty* m_pManualEmpty;
 	CManualLogin* m_pManualLogin;
 	class CSemiTestDlg* m_pSemiTest;	// [LGLS 2026-08-13] 반자동 TEST 창(리본 MANUAL 에서 오픈)
 
@@ -253,10 +243,7 @@ public:
 	afx_msg void OnCommandAlarmShow();   // [LGLS 2026-08-22] 리본 [알람] 버튼
 	CDialog*			m_pScSkinDlg;
 	CDialog*			m_pRtvSkinDlg;
-	CDialog*			m_pBcrSkinDlg;
-	CDialog*			m_pWcSkinDlg;
 	
-	CDialog*			m_pLogBcrSkinDlg;
 	CDialog*			m_pLogIoSkinDlg;
 	CDialog*		    m_pLogEqpSkinDlg;
 	CDialog*		    m_pLogClientSkinDlg;

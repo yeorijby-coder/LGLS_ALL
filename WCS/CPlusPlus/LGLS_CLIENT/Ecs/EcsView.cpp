@@ -17,8 +17,6 @@
 #include "CvSkinDlg.h"
 #include "ScSkinDlg.h"
 #include "RtvSkinDlg.h"
-#include "BCRSkinDlg.h"
-#include "WcSkinDlg.h"
 #include "ViewUsageRackDlg.h"
 #include "FireMessageDlg.h"
 #include "ViewJobListDlg.h"
@@ -636,74 +634,6 @@ LRESULT CEcsView::OnRefreshDialog(WPARAM wParam, LPARAM lParam)
 			::ShowWindow(pDoc->m_pRtvSkinDlg->m_hWnd, SW_SHOW);
 			::SendMessage(pDoc->m_pRtvSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)NULL, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
 		}
-	case CEquipment::enBCR:
-		{
-
-			if (!pDoc->Permission(_T("CBCRSkinDlg"), SEL_YN))
-			{
-				AfxMessageBox(pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-				return 0;
-			}
-
-			if (pDoc->m_pBcrSkinDlg == NULL)
-			{
-				pDoc->m_pBcrSkinDlg = new CBCRSkinDlg(pDoc);
-				pDoc->m_pBcrSkinDlg->Create(IDD_SKIN_RTV_CTRL);
-				CRect MainRect;
-				CRect Rect;
-				CRect PosRect;
-				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-				pDoc->m_pBcrSkinDlg->GetWindowRect(&Rect); 
-
-				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-				pDoc->m_pRtvSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
-					Rect.Width(), Rect.Height(), 
-					SWP_SHOWWINDOW);
-
-				if(pDoc->m_pBcrSkinDlg == NULL)
-					break;
-			}
-			
-			::SetWindowPos(pDoc->m_pBcrSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(pDoc->m_pBcrSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::ShowWindow(pDoc->m_pBcrSkinDlg->m_hWnd, SW_SHOW);
-			::SendMessage(pDoc->m_pBcrSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)NULL, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
-		}
-	case CEquipment::enWC:
-		{
-
-			if (!pDoc->Permission(_T("CWcSkinDlg"), SEL_YN))
-			{
-				AfxMessageBox(pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-				return 0;
-			}
-
-			if (pDoc->m_pWcSkinDlg == NULL)
-			{
-				pDoc->m_pWcSkinDlg = new CWcSkinDlg(pDoc);
-				pDoc->m_pWcSkinDlg->Create(IDD_SKIN_WC_CTRL);
-				CRect MainRect;
-				CRect Rect;
-				CRect PosRect;
-				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
-				pDoc->m_pWcSkinDlg->GetWindowRect(&Rect); 
-
-				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
-				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
-				pDoc->m_pWcSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
-					Rect.Width(), Rect.Height(), 
-					SWP_SHOWWINDOW);
-
-				if(pDoc->m_pWcSkinDlg == NULL)
-					break;
-			}
-			
-			::SetWindowPos(pDoc->m_pWcSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(pDoc->m_pWcSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::ShowWindow(pDoc->m_pWcSkinDlg->m_hWnd, SW_SHOW);
-			::SendMessage(pDoc->m_pWcSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)NULL, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
-		}
 	}
 	return 0;
 }
@@ -900,75 +830,6 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			::SetWindowPos(pDoc->m_pRtvSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
 			::ShowWindow(pDoc->m_pRtvSkinDlg->m_hWnd, SW_SHOWNORMAL); 
 			::SendMessage(pDoc->m_pRtvSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)pRTV_DATA, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
-			break;
-		}
- 
- 	case CEquipment::enBCR:
- 		{
-			CBCR_MST* pBCR_MST = pDoc->GetBCR_MST(strEqpKey);
-			if(pBCR_MST == NULL){ return 0; };
-
- 			if (pDoc->m_pBcrSkinDlg == NULL)
-			{
-				if (!pDoc->Permission(_T("CBCRSkinDlg"), SEL_YN))
-				{
-					AfxMessageBox(pDoc->m_pLang->GetLangValue(_T("권한이 없습니다"), pDoc->m_enLang));
-					return 0;
-				}
-
- 				pDoc->m_pBcrSkinDlg = new CBCRSkinDlg(pDoc);
- 				pDoc->m_pBcrSkinDlg->Create(IDD_SKIN_BCR_CRTL);
- 				CRect MainRect;
- 				CRect Rect;
- 				CRect PosRect;
- 				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
- 				pDoc->m_pBcrSkinDlg->GetWindowRect(&Rect); 
- 
- 				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
- 				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
- 				pDoc->m_pBcrSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
- 					Rect.Width(), Rect.Height(), 
- 					SWP_SHOWWINDOW);
- 			}
-			::SetWindowPos(pDoc->m_pBcrSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(pDoc->m_pBcrSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::ShowWindow(pDoc->m_pBcrSkinDlg->m_hWnd, SW_SHOWNORMAL); 
-			::SendMessage(pDoc->m_pBcrSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)pBCR_MST, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
-
-
-			break;
-		}
-		case CEquipment::enWC:
- 		{
-			CWC_DATA* pWC_DATA = pDoc->GetWC_DATA(strEqpKey);
-			if(pWC_DATA == NULL){ return 0; };
-
- 			if (pDoc->m_pWcSkinDlg == NULL)
-			{
-				if (!pDoc->Permission(_T("CWcSkinDlg"), SEL_YN))
-				{
-					AfxMessageBox(pDoc->m_pLang->GetLangValue(_T("권한이 없습니다"), pDoc->m_enLang));
-					return 0;
-				}
-
- 				pDoc->m_pWcSkinDlg = new CWcSkinDlg(pDoc);
- 				pDoc->m_pWcSkinDlg->Create(IDD_SKIN_WC_CTRL);
- 				CRect MainRect;
- 				CRect Rect;
- 				CRect PosRect;
- 				::AfxGetApp()->GetMainWnd()->GetWindowRect(&MainRect);   
- 				pDoc->m_pWcSkinDlg->GetWindowRect(&Rect); 
- 
- 				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
- 				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
- 				pDoc->m_pWcSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
- 					Rect.Width(), Rect.Height(), 
- 					SWP_SHOWWINDOW);
- 			}
-			::SetWindowPos(pDoc->m_pWcSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(pDoc->m_pWcSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
-			::ShowWindow(pDoc->m_pWcSkinDlg->m_hWnd, SW_SHOWNORMAL); 
-			::SendMessage(pDoc->m_pWcSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)pWC_DATA, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
 			break;
 		}
 	}

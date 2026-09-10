@@ -338,7 +338,11 @@ BOOL CScManualRet::RetHsDataSelect(CString& strHS_MC_NO, CString& strSENSOR0_DAT
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	pRsw->MoveFirst();
 	//출고 HS 번호, 화물감지 유무
@@ -349,7 +353,11 @@ BOOL CScManualRet::RetHsDataSelect(CString& strHS_MC_NO, CString& strSENSOR0_DAT
 	delete pRsw;
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	return TRUE;
 
@@ -376,7 +384,11 @@ BOOL CScManualRet::StoHsDataDelete(CString& strLuggNo, CString& strPulpSensorRd,
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	pRsw->MoveFirst(); 
 	strHS_NO = pRsw->GetItem(_T("HS_NO"));
@@ -395,7 +407,11 @@ BOOL CScManualRet::StoHsDataDelete(CString& strLuggNo, CString& strPulpSensorRd,
 	pRsw = new CRecordSetWrap(pRsptr);
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	pRsw->MoveFirst(); 
 	//작업번호, PULP 단수 변수에 담기
@@ -404,6 +420,7 @@ BOOL CScManualRet::StoHsDataDelete(CString& strLuggNo, CString& strPulpSensorRd,
 
 	if (strLuggNo == _T("0000"))
 	{
+		delete pRsw;		// [LGLS 2026-09-10] 누수
 		return FALSE;
 	}
 
@@ -511,7 +528,11 @@ BOOL CScManualRet::JobMstInsert(CString pHsMcNo, CString& strNextVal, CString& s
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 
 	pRsw->MoveFirst();
 	//seq에서 작업에 사용할 번호 가져오기
@@ -574,7 +595,11 @@ BOOL CScManualRet::JobMstUpdate(CString pLUGG_NO, CString& strProductSize)
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
 
 	if (nRowCnt <= 0)
+	{
+		// [LGLS 2026-09-10] 0행일 때도 래퍼를 지워 레코드셋을 닫는다(누수)
+		delete pRsw;
 		return FALSE;
+	}
 	
 	pRsw->MoveFirst(); 
 	strProductSize =  pRsw->GetItem(_T("PRODUCT_SIZE"));
