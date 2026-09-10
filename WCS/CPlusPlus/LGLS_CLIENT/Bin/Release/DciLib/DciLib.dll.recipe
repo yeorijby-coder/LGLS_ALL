@@ -2,6 +2,9 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
+      <FullPath>D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Release\XmlLib.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
       <FullPath>D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Release\DciLib.dll</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
