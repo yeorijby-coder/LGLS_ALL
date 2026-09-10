@@ -80,3 +80,6 @@ TASK/ALL_TASK/bin/Debug/LOG/
 
 # 문서 생성기 파이썬 캐시
 docs/**/__pycache__/
+
+# [LGLS 2026-09-11] 실수로 만들어지는 빈 메모장 파일
+새 텍스트 문서*.txt
