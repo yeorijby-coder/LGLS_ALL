@@ -14,6 +14,23 @@
 IMPLEMENT_DYNCREATE(CAdoDB, CObject)
 
 
+
+// [LGLS 2026-09-10] 레코드셋을 안전하게 닫는다.
+//   연결이 adUseClient 라 Open 된 레코드셋은 프로세스 메모리를 잡고 있다.
+//   0행이라고 Close() 없이 버리면 조회할 때마다 메모리가 남는다.
+static void CloseRsSafe(_RecordsetPtr& rs)
+{
+	if (rs == NULL) return;
+	try
+	{
+		if (rs->State != adStateClosed)
+			rs->Close();
+	}
+	catch (_com_error&) { }
+	catch (...)         { }
+	rs = NULL;
+}
+
 // [LGLS 2026-09-10] 접속 실패 알림.
 //   종전에는 실패마다 AfxMessageBox 를 띄웠다. 모달 상자 안에서 메시지 루프가 돌고
 //   그 안에서 타이머가 또 접속을 시도해 상자가 겹겹이 쌓였다(실측 57개).
@@ -367,7 +384,7 @@ _RecordsetPtr CAdoDB::SelectSqlForThread_RecordSet(CString strSql, int &nRowCnt,
 		if (rsPtr->adoEOF)
 		{
 			nRowCnt = 0;
-			rsPtr = NULL;
+			CloseRsSafe(rsPtr);	// [LGLS 2026-09-10] 닫고 놓아준다(누수)
 			return NULL;
 		}
 		
@@ -385,7 +402,7 @@ _RecordsetPtr CAdoDB::SelectSqlForThread_RecordSet(CString strSql, int &nRowCnt,
 		strMsg.Format(_T("SelectSqlForThread:%s\n\n%s\n\n%s"), 
 			(LPCTSTR)bstrSource, (LPCTSTR)bstrDescription, (LPCTSTR)bstrErrMsg);
 		//LOG_ERROR(LOG_POS_HOST, LOG_SYSTEM, IMS_TO_ECS, strMsg);
-		rsPtr  = NULL;
+		CloseRsSafe(rsPtr);	// [LGLS 2026-09-10] 오류 때도 닫고 놓아준다
 
 		// err가 E_FAIL일때 처리..
 		if ( err.Error() == E_FAIL ) 	
@@ -419,7 +436,7 @@ BOOL CAdoDB::SelectSqlForThread(CString strSql, CStringList &strTempList, int nR
 
 		if (rsPtr->adoEOF)
 		{
-			rsPtr = NULL;
+			CloseRsSafe(rsPtr);	// [LGLS 2026-09-10] 닫고 놓아준다(누수)
 			return TRUE;
 		}
 		
@@ -454,7 +471,7 @@ BOOL CAdoDB::SelectSqlForThread(CString strSql, CStringList &strTempList, int nR
 			if (i+1 ==nRtRecord)
 			{
 				rsPtr->Close();
-				rsPtr  = NULL;
+				CloseRsSafe(rsPtr);	// [LGLS 2026-09-10] 오류 때도 닫고 놓아준다
 				return TRUE;
 
 			}
@@ -474,7 +491,7 @@ BOOL CAdoDB::SelectSqlForThread(CString strSql, CStringList &strTempList, int nR
 		strMsg.Format(_T("SelectSqlForThread:%s\n\n%s\n\n%s"), 
 					(LPCTSTR)bstrSource, (LPCTSTR)bstrDescription, (LPCTSTR)bstrErrMsg);
 		//LOG_ERROR(LOG_POS_HOST, LOG_SYSTEM, IMS_TO_ECS, strMsg);
-		rsPtr  = NULL;
+		CloseRsSafe(rsPtr);	// [LGLS 2026-09-10] 오류 때도 닫고 놓아준다
 
 		// err가 E_FAIL일때 처리..
 		if ( err.Error() == E_FAIL ) 	m_bConnected=FALSE;
@@ -507,7 +524,7 @@ BOOL CAdoDB::SelectSqlForThread(CString strSql, int &nRowCnt, CString &strMsg)
 
 		if (rsPtr->adoEOF)
 		{
-			rsPtr = NULL;
+			CloseRsSafe(rsPtr);	// [LGLS 2026-09-10] 닫고 놓아준다(누수)
 			return TRUE;
 		}
 		nRowCnt = rsPtr->RecordCount; 
@@ -522,7 +539,7 @@ BOOL CAdoDB::SelectSqlForThread(CString strSql, int &nRowCnt, CString &strMsg)
 		strMsg.Format(_T("SelectSqlForThread:%s\n\n%s\n\n%s"), 
 			(LPCTSTR)bstrSource, (LPCTSTR)bstrDescription, (LPCTSTR)bstrErrMsg);
 		//LOG_ERROR(LOG_POS_HOST, LOG_SYSTEM, IMS_TO_ECS, strMsg);
-		rsPtr  = NULL;
+		CloseRsSafe(rsPtr);	// [LGLS 2026-09-10] 오류 때도 닫고 놓아준다
 		return FALSE;
 
 	}

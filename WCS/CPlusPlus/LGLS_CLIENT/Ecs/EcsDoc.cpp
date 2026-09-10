@@ -1599,10 +1599,62 @@ _RecordsetPtr CEcsDoc::GetSelectQryRecordsetPtr(CString pStrSql, int &pnRowCnt, 
 	return m_pUrmDBAccess->m_pAdoDB->SelectSqlForThread_RecordSet(pStrSql, pnRowCnt, pStrMessage);
 }
 
+
+// [LGLS 2026-09-10] 조회 실패 기록. 같은 내용은 1분에 한 번만 남긴다.
+//   <실행폴더>\LOG\ECS_SQL_yyyyMMdd.log
+static void ReportSqlFail(const CString& strSql, const CString& strMsg)
+{
+	if (strMsg.IsEmpty()) return;
+
+	static CCriticalSection s_cs;
+	static CMapStringToPtr  s_mapLast;
+	CSingleLock lock(&s_cs, TRUE);
+
+	CString strKey = strMsg.Left(80);
+	void* pv = NULL;
+	DWORD dwNow = ::GetTickCount();
+	if (s_mapLast.Lookup(strKey, pv))
+	{
+		DWORD dwPrev = (DWORD)(DWORD_PTR)pv;
+		if ((dwNow - dwPrev) < 60 * 1000) return;
+	}
+	s_mapLast.SetAt(strKey, (void*)(DWORD_PTR)dwNow);
+
+	try
+	{
+		CString strDir = g_strEcsPath + _T("\\LOG");
+		::CreateDirectory(strDir, NULL);
+		CTime tm = CTime::GetCurrentTime();
+		CString strPath;
+		strPath.Format(_T("%s\\ECS_SQL_%s.log"), (LPCTSTR)strDir, (LPCTSTR)tm.Format(_T("%Y%m%d")));
+		CStdioFile f;
+		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate | CFile::modeWrite | CFile::typeText))
+		{
+			f.SeekToEnd();
+			CString strOne = strSql;
+			strOne.Replace(_T("\r\n"), _T(" "));
+			strOne.Replace(_T("\n"), _T(" "));
+			strOne.Replace(_T("\t"), _T(" "));
+			CString strM = strMsg;
+			strM.Replace(_T("\r\n"), _T(" / "));
+			strM.Replace(_T("\n"), _T(" / "));
+			CString strLine;
+			strLine.Format(_T("[%s] %s\n   SQL: %s\n"),
+				(LPCTSTR)tm.Format(_T("%Y-%m-%d %H:%M:%S")), (LPCTSTR)strM, (LPCTSTR)strOne.Left(400));
+			f.WriteString(strLine);
+			f.Close();
+		}
+	}
+	catch (CFileException* e) { e->Delete(); }
+	catch (...) { }
+}
+
 _RecordsetPtr CEcsDoc::GetSelectQryRecordsetPtr_DLG(CString pStrSql, int &pnRowCnt, CString &pStrMessage)
 {
 	if(IsConnectDB(m_pDlgUrmDBAccess) == FALSE){ return FALSE; };
-	return m_pDlgUrmDBAccess->m_pAdoDB->SelectSqlForThread_RecordSet(pStrSql, pnRowCnt, pStrMessage);
+	_RecordsetPtr rs = m_pDlgUrmDBAccess->m_pAdoDB->SelectSqlForThread_RecordSet(pStrSql, pnRowCnt, pStrMessage);
+	ReportSqlFail(pStrSql, pStrMessage);	// [LGLS 2026-09-10] 실패한 조회를 찾기 위해
+	return rs;
 }
 
 
