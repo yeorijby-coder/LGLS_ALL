@@ -1,0 +1,117 @@
+자 오늘 현장에서 테스트 할건데.. 
+만약 
+
+SC, RTV가 화물을 이송하고 나서 색깔이 남아있다면 어디를 주로 봐야 할까? 
+SC가 화물을 싣고 목적지로 가고있는데 SC 컨트롤은 움직이지 않다가 최종적으로 완료 될때  해당 위치로 옮겨진다면 어디를 봐야 할까? 
+지난 화요일 18시 이후부터 지금까지 정체되어 멈춘화물이 있고 그 화물을 강제로 청소처리 해야 했다면 그 화물은 무슨이유로 정체된건지 로그를 확인해서 알려줘
+Got today and last Tuesday
+
+2026-09-11 07:22:02.15
+
+3번부터 실제 로그를 뒤지겠습니다. 지난 화요일은 2026-09-08 입니다.
+
+실행됨 명령 4개
+
+핵심 타임라인이 나왔습니다. 원인을 좁히겠습니다.
+
+실행됨 명령 4개
+
+관측 실패 지점을 찾았습니다. 그 뒤 4시간 반 동안 무슨 일이 있었는지 봅니다.
+
+실행됨 명령 2개
+
+원인이 명확합니다. 이제 1·2번 질문에 답하기 위해 코드를 확인하겠습니다.
+
+실행됨 명령 9개
+
+2026-09-11 07:26:33.16
+
+3. 정체 화물 — 로그에서 원인을 찾았습니다
+
+먼저 짚어둘 것: 이건 개발 PC 시뮬레이터 DB의 기록입니다(PLC IP가 127.0.0.1). 현장 DB는 여기서 볼 수 없습니다. 다만 현상과 원인 구조는 그대로 쓸 수 있습니다.
+
+지난 화요일 18시 이후 10분 넘게 머문 작업은 5건이고, 그중 1326·1327이 각각 5시간 걸렸습니다.
+
+작업 1326 (입고 124 → 크레인 901, 셀 01-007-05)
+
+시각	상태
+06:30:11	10 신규
+06:30:45	25 크레인 구동중
+—	4시간 32분 정지
+11:02:53	29 크레인 완료
+11:30:48	09 이력이관
+
+작업 1327 (입고 130 → 크레인 903)은 15(CV 이송)에서 4시간 32분 멈췄다가 11:03:05에 이어졌습니다.
+
+원인은 화물이나 스케줄러가 아니라 PLC 통신 단절입니다.
+
+06:31:12  VEH_SC   관측 실패: VEHICLE@11~15 STATUS 읽기 실패   (크레인 5대 전부)
+06:31:12  VEH_RTV  관측 실패: VEHICLE@1 STATUS 읽기 실패
+06:31:12  CV       [READ] Send 실패: 연결…
+06:31:13  VEH_SC / VEH_RTV  연속 실패 3회 - 소켓 재접속
+06:31:17~06:35:33  CV  [Open][Connect] SocketException  51회
+           └ "[Thread_Doing] 통신 스레드 종료"  51회
+06:35:33 ~ 11:02:47   로그 전무 (4시간 27분)
+11:02:47  VEH_SC   PLC 접속 성공 (127.0.0.1@2004, 차량 5대)
+11:02:48  즉시 정상 재개
+
+설비 PLC와의 소켓이 06:31:12에 끊기고 11:02:47까지 재접속하지 못했습니다. 그동안 크레인·RGV가 아무 신호도 못 받으니 1326은 크레인 완료보고를 못 받아 25에, 1327은 CV 이송 지시를 못 받아 15에 얼어붙은 것입니다. 강제 청소가 필요했던 이유가 이것입니다.
+
+현장에서 같은 증상이 보이면 볼 순서
+
+WCS_LOG_PGR 에서 pgr_nm IN ('VEH_SC','VEH_RTV') + log_kor LIKE '%관측 실패%' — 시작 시각
+WCS_TASK_CV_COMM0 의 [Open][Connect] / [Thread_Doing] 통신 스레드 종료
+EQP_MST 의 CONNECTED_YN / UPD_DT
+로그가 뚝 끊긴 구간이 곧 멈춘 구간입니다
+
+한 가지 더 — CV 통신 스레드는 약 4분간 재접속에 실패하면 스스로 종료합니다([Thread_Doing] 통신 스레드 종료). PLC가 돌아와도 그 스레드는 자동으로 살아나지 않을 수 있습니다. 현장에서 통신이 한 번 끊기면 WCS_TASK_CV 재기동을 먼저 확인하십시오.
+
+1. SC/RTV에 색이 남는다면
+
+색과 번호의 단일 소스는 작업정보 캐시입니다. 설비 차상값(PALLET_ON_VEHICLE_RD)은 2026-09-08에 소스에서 뺐습니다 — 설비가 내려놓은 뒤에도 이전 번호를 들고 있어서였죠.
+
+CEcsDoc::RefreshJobCache() 가 2초마다 JOB_MST 를 읽어 이렇게 매답니다.
+
+차량	매다는 조건	키
+크레인	JOB_STATUS IN ('25','29')	출고(2·12)면 START_POS, 아니면 DEST_POS
+RGV	JOB_STATUS = '35'	'801'
+
+따라서 색이 남는다 = 그 작업이 아직 25/29(또는 35)에 남아 있다는 뜻입니다. 화면이 틀린 게 아니라 작업이 다음 상태로 못 넘어간 것입니다.
+
+현장에서 바로 이 쿼리를 치십시오.
+
+sqlcmd -S <서버> -d LGLS_MCS_IO -U LGLS_IO -P LGLS_IO -W -s "|" -Q "SET NOCOUNT ON; SELECT LUGG_NO, JOB_TYP, JOB_STATUS, START_POS, DEST_POS, DATEDIFF(second,UPD_DT,GETDATE()) AS 정체초 FROM JOB_MST WHERE JOB_STATUS IN ('25','29','35') ORDER BY UPD_DT;"
+
+
+행이 있다 → 화면은 정상. 그 작업이 왜 안 끝나는지(크레인 완료신호·HOST 보고)를 봅니다.
+행이 없는데 색이 남는다 → Client 쪽. 작업정보 캐시가 갱신되지 않는 것이니 하단 상태바 SCH/EQUIP 색과 ODBC 연결을 봅니다(캐시는 DB 조회로 채웁니다).
+
+가르는 요령 하나 — S/C 상태창의 작업번호를 함께 보십시오. 상태창은 설비값 그대로를 보여줍니다.
+
+메인 화면 색	S/C 상태창 번호	판단
+남음	남음	작업이 안 끝난 것 (JOB_MST 확인)
+남음	비었음	Client 캐시/DB 조회 문제
+없음	남음	정상 (설비 잔류값은 원래 남습니다)
+2. SC가 이동 중엔 안 움직이고 완료 때 점프한다면
+
+위치는 이 경로로 옵니다.
+
+PLC  SUBSYSTEM_LOCATION_02 (Bay)
+  → VehThread.PollObservations  loc2
+  → chg("POS_H_RD", posH)            VehThread.cs:680
+  → SC_DATA_LGLS.POS_H_RD
+  → Sc.cpp SELECT → ScPair.cpp:69
+  → ScInfo.cpp:507  nScPos = V_POS_H_RD  → 레일 위치 사상
+
+먼저 알아두실 것 두 가지입니다.
+
+Bay(가로)만 씁니다. 뱅크(LOCATION_01)는 2026-09-08에 일부러 뺐고(구 ECS 규약대로), 높이도 화면 위치에 반영하지 않습니다. 크레인이 승강만 하고 있으면 화면은 원래 안 움직입니다.
+chg() 는 값이 바뀔 때만 DB에 씁니다. Bay 값이 안 바뀌면 화면도 그대로입니다.
+
+볼 순서 — 어디서 끊겼는지부터 가르십시오. 크레인이 이동하는 동안 1초 간격으로 이걸 돌려보세요.
+
+sqlcmd -S <서버> -d LGLS_MCS_IO -U LGLS_IO -P LGLS_IO -W -s "|" -Q "SET NOCOUNT ON; SELECT SC_NO, POS_H_RD, POS_V_RD, UCSTATUS_RD, CONVERT(varchar(12),READ_UPD_DT,114) AS 갱신 FROM SC_DATA_LGLS ORDER BY SC_NO;"
+
+POS_H_RD 가 이동 중 안 변하고 완료 때 한 번에 튄다 → PLC 쪽입니다. 현장 PLC가 현재위치를 실시간으로 안 쓰거나, PlcAddressMap.xml 의 SubsystemLocation offset="6" words="3" 가 지시위치를 가리키고 있을 수 있습니다. 구 ECS(Backup/ECS)의 MonitorAllEquipmentPanel01.RefreshStockerVehicle 가 읽던 주소와 대사해 보십시오 — 여기가 제일 유력합니다.
+POS_H_RD 는 잘 변하는데 화면만 안 움직인다 → Client 쪽입니다. ScInfo.cpp:504~510 의 레일 사상과 Ecs.ini [ETC] COLLECT_INTERVAL_MS(기본 300ms)를 봅니다.
+READ_UPD_DT 가 멈춰 있다 → 관측 자체가 안 도는 것이니 3번의 통신 단절과 같은 건입니다.
