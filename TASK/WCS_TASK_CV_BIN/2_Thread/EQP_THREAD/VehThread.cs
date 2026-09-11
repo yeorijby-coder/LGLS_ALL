@@ -539,16 +539,20 @@ namespace WCS_TASK_CV
             else
             {
                 // 이벤트 OFF 인데 Ack 가 1
-                if (strCached == "1")
+                if (strCached == "1" || strCached == null)
                 {
-                    // 우리가 올린 것이다 - 내린다 (규약 : 설비 Report OFF → WCS Ack OFF)
+                    // 우리가 올린 것이거나(캐시 "1"), 기동/재접속 직후 처음 보는 것(캐시 없음)이다.
+                    //   후자는 이전 실행이 남긴 잔재다 - 그대로 두면 다음 완료 이벤트를 설비가
+                    //   "이미 Ack 됨" 으로 보고 즉시 내려 WCS 가 관측하지 못한다(09-05 유실 형태).
+                    //   규약(설비 Report OFF → WCS Ack OFF)대로 내린다.
                     bool bOk = WriteBit(d, false);
                     if (bOk) v.Cache[strCacheKey] = "0";
-                    LogDb(strTag + " OFF 기록" + (bOk ? "" : " - 쓰기 실패"));
+                    LogDb(strTag + (strCached == null ? " OFF 기록 - 기동 직후 정합(이전 실행의 Ack 잔재)" : " OFF 기록")
+                          + (bOk ? "" : " - 쓰기 실패"));
                 }
                 else if (Cached(v, strCacheKey + "_x") != "1")
                 {
-                    // 우리가 올린 적 없는 Ack 가 켜져 있다(수동 조작 등). 되돌리지 않고 한 번만 알린다.
+                    // 운영 중(캐시 "0")에 우리가 올린 적 없는 Ack 가 켜졌다(수동 조작 등). 되돌리지 않고 한 번만 알린다.
                     v.Cache[strCacheKey + "_x"] = "1";
                     LogDb(strTag + " 이벤트 OFF 인데 Ack ON - 우리가 올린 것이 아니라 손대지 않음");
                 }
