@@ -554,6 +554,8 @@ LRESULT CEcsView::OnRefreshDialog(WPARAM wParam, LPARAM lParam)
 
 				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
 				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
+				// [LGLS 2026-09-11] 화면 밖으로 나가지 않게 못 박는다(배율 걸린 PC 대비).
+				CLib::ClampToWorkArea(::AfxGetApp()->GetMainWnd(), PosRect, Rect.Width(), Rect.Height());
 				pDoc->m_pCvSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
 					Rect.Width(), Rect.Height(), 
 					SWP_SHOWWINDOW);
@@ -585,6 +587,8 @@ LRESULT CEcsView::OnRefreshDialog(WPARAM wParam, LPARAM lParam)
 
 				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
 				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
+				// [LGLS 2026-09-11] 화면 밖으로 나가지 않게 못 박는다(배율 걸린 PC 대비).
+				CLib::ClampToWorkArea(::AfxGetApp()->GetMainWnd(), PosRect, Rect.Width(), Rect.Height());
 				pDoc->m_pScSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
 					Rect.Width(), Rect.Height(), 
 					SWP_SHOWWINDOW);
@@ -628,6 +632,8 @@ LRESULT CEcsView::OnRefreshDialog(WPARAM wParam, LPARAM lParam)
 
 				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
 				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
+				// [LGLS 2026-09-11] 화면 밖으로 나가지 않게 못 박는다(배율 걸린 PC 대비).
+				CLib::ClampToWorkArea(::AfxGetApp()->GetMainWnd(), PosRect, Rect.Width(), Rect.Height());
 				pDoc->m_pRtvSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
 					Rect.Width(), Rect.Height(), 
 					SWP_SHOWWINDOW);
@@ -721,6 +727,8 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 				pDoc->m_pCvSkinDlg->Create(IDD_SKIN_CV_CTRL1);
 
 
+				//// [LGLS 2026-09-11] 화면 밖으로 나가지 않게 못 박는다(배율 걸린 PC 대비).
+				//CLib::ClampToWorkArea(::AfxGetApp()->GetMainWnd(), PosRect, Rect.Width(), Rect.Height());
 				//pDoc->m_pCvSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
 				//	Rect.Width(), Rect.Height(), 
 				//	SWP_SHOWWINDOW);
@@ -737,6 +745,8 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
 			PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
 
+			// [LGLS 2026-09-11] 화면 밖으로 나가지 않게 못 박는다(배율 걸린 PC 대비).
+			CLib::ClampToWorkArea(::AfxGetApp()->GetMainWnd(), PosRect, Rect.Width(), Rect.Height());
 			pDoc->m_pCvSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
 				Rect.Width(), Rect.Height(), 
 				SWP_SHOWWINDOW);
@@ -785,6 +795,8 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 
 				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
 				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
+				// [LGLS 2026-09-11] 화면 밖으로 나가지 않게 못 박는다(배율 걸린 PC 대비).
+				CLib::ClampToWorkArea(::AfxGetApp()->GetMainWnd(), PosRect, Rect.Width(), Rect.Height());
 				pDoc->m_pScSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
 					Rect.Width(), Rect.Height(), 
 					SWP_SHOWWINDOW);
@@ -832,6 +844,8 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 
 				PosRect.left = ((MainRect.right  - MainRect.left) - Rect.Width())  / 2; 
 				PosRect.top  = ((MainRect.bottom - MainRect.top)  - Rect.Height()) / 2; 
+				// [LGLS 2026-09-11] 화면 밖으로 나가지 않게 못 박는다(배율 걸린 PC 대비).
+				CLib::ClampToWorkArea(::AfxGetApp()->GetMainWnd(), PosRect, Rect.Width(), Rect.Height());
 				pDoc->m_pRtvSkinDlg->SetWindowPos(&wndTop, PosRect.left, PosRect.top, 
 					Rect.Width(), Rect.Height(), 
 					SWP_SHOWWINDOW);

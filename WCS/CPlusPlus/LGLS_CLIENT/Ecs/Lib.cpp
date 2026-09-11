@@ -1995,8 +1995,44 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc)
 //   Gui/Widget/StackerCraneWidget.cs · RGVWidget.cs 의 파란 사각형.
 BOOL CLib::IsVehicleLoaded(CString strSensor)
 {
+	// [LGLS 2026-09-11] ini 로 끌 수 있게 둔다. 현장 PLC 가 이 비트를 안 채우면
+	//   크레인·RGV 색이 아예 안 뜨므로, 재빌드 없이 되돌릴 수 있어야 한다.
+	//   Ecs.ini [MENU] LOADBIT_GATE=0 이면 종전처럼 작업 캐시만 본다.
+	//   그리기마다 불리므로 처음 한 번만 읽는다(바꾸면 Client 재기동).
+	static int s_nGate = -1;
+	if (s_nGate < 0)
+		s_nGate = ::GetPrivateProfileInt(_T("MENU"), _T("LOADBIT_GATE"), 1, ECS_INI_FILE);
+	if (s_nGate == 0)
+		return TRUE;			// 게이트 끔 - 종전 동작
+
 	strSensor.Trim();
 	if (strSensor.IsEmpty())
 		return TRUE;			// 비트를 못 받으면 판정하지 않는다
 	return (strSensor != _T("0"));
+}
+
+// [LGLS 2026-09-11] 대화상자가 화면 밖에 뜨지 않게 못 박는다.
+//   기준 창이 있는 모니터의 작업 영역(작업 표시줄 제외)을 쓴다.
+void CLib::ClampToWorkArea(CWnd* pRef, CRect& rcPos, int nWidth, int nHeight)
+{
+	CRect rcWork(0, 0, 0, 0);
+	HWND hRef = (pRef != NULL) ? pRef->GetSafeHwnd() : NULL;
+	HMONITOR hMon = ::MonitorFromWindow(hRef, MONITOR_DEFAULTTOPRIMARY);
+	MONITORINFO mi;
+	memset(&mi, 0, sizeof(mi));
+	mi.cbSize = sizeof(mi);
+	if (hMon != NULL && ::GetMonitorInfo(hMon, &mi))
+		rcWork = mi.rcWork;
+	else if (!::SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0))
+		return;						// 알 수 없으면 건드리지 않는다
+
+	if (rcWork.Width() <= 0 || rcWork.Height() <= 0)
+		return;
+
+	// 오른쪽/아래로 넘치면 끌어당기고, 그래도 왼쪽/위로 나가면 모서리에 맞춘다.
+	//   (대화상자가 화면보다 크면 좌상단을 맞춰 제목줄이라도 보이게 한다)
+	if (rcPos.left + nWidth  > rcWork.right)  rcPos.left = rcWork.right  - nWidth;
+	if (rcPos.top  + nHeight > rcWork.bottom) rcPos.top  = rcWork.bottom - nHeight;
+	if (rcPos.left < rcWork.left) rcPos.left = rcWork.left;
+	if (rcPos.top  < rcWork.top)  rcPos.top  = rcWork.top;
 }

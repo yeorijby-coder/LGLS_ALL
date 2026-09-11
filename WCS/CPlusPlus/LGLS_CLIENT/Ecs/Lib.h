@@ -77,6 +77,12 @@ public:
 	//   표시가 통째로 사라지는 쪽이 더 나쁘다(판정하지 않고 종전 동작을 둔다).
 	static BOOL IsVehicleLoaded(CString strSensor);
 
+	// [LGLS 2026-09-11] 대화상자 위치를 모니터 작업 영역 안으로 밀어 넣는다.
+	//   종전 위치 식은 메인 창이 (0,0) 에 있다고 보고 폭·높이만 썼다. 배율이 걸린
+	//   PC(이 프로그램은 DPI 비인식)에서는 앱이 보는 화면이 줄어 값이 음수가 되고,
+	//   제목줄이 화면 위로 나가 창을 옮길 수도 없게 된다.
+	static void ClampToWorkArea(CWnd* pRef, CRect& rcPos, int nWidth, int nHeight);
+
 public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);
 
