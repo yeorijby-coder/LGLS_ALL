@@ -597,6 +597,13 @@ LRESULT CEcsView::OnRefreshDialog(WPARAM wParam, LPARAM lParam)
 			::SetWindowPos(pDoc->m_pScSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
 			::ShowWindow(pDoc->m_pScSkinDlg->m_hWnd, SW_SHOW);
 			::SendMessage(pDoc->m_pScSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)NULL, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
+
+			// [LGLS 2026-09-11] ★break 가 없어 RTV 케이스로 흘러 들어갔다★
+			//   증상(현장 1600x900) : 크레인을 누르면 대화상자가 안 뜨고 멈추며 ESC 로 풀림.
+			//   RTV 케이스 첫 줄의 권한 검사가 실패하면 AfxMessageBox(모달)가 뜨는데,
+			//   직전에 SC 대화상자를 TOPMOST 로 올려서 그 박스가 뒤에 가려 보이지 않았다.
+			//   권한이 있는 계정이면 SC 를 눌렀는데 RTV 대화상자까지 같이 떴다.
+			break;
 		}
 	case CEquipment::enRTV:
 		{
@@ -633,6 +640,9 @@ LRESULT CEcsView::OnRefreshDialog(WPARAM wParam, LPARAM lParam)
 			::SetWindowPos(pDoc->m_pRtvSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
 			::ShowWindow(pDoc->m_pRtvSkinDlg->m_hWnd, SW_SHOW);
 			::SendMessage(pDoc->m_pRtvSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)NULL, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
+
+			// [LGLS 2026-09-11] 마지막 케이스지만 다음에 케이스를 붙여도 안전하게 둔다.
+			break;
 		}
 	}
 	return 0;
