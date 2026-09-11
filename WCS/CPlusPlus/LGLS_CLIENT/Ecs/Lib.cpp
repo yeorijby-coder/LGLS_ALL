@@ -2036,3 +2036,48 @@ void CLib::ClampToWorkArea(CWnd* pRef, CRect& rcPos, int nWidth, int nHeight)
 	if (rcPos.left < rcWork.left) rcPos.left = rcWork.left;
 	if (rcPos.top  < rcWork.top)  rcPos.top  = rcWork.top;
 }
+
+// [LGLS 2026-09-11] 화면 조작 단계 기록. 파일에만 남기고 모달은 띄우지 않는다.
+//   Ecs.ini [MENU] UI_TRACE=0 으로 끌 수 있다(기본 1). 처음 한 번만 읽는다.
+void CLib::UiLog(LPCTSTR lpszFmt, ...)
+{
+	static int s_nOn = -1;
+	if (s_nOn < 0)
+		s_nOn = ::GetPrivateProfileInt(_T("MENU"), _T("UI_TRACE"), 1, ECS_INI_FILE);
+	if (s_nOn == 0)
+		return;
+
+	try
+	{
+		CString strMsg;
+		va_list args;
+		va_start(args, lpszFmt);
+		strMsg.FormatV(lpszFmt, args);
+		va_end(args);
+
+		CString strDir = g_strEcsPath + _T("\\LOG");
+		::CreateDirectory(strDir, NULL);
+		CTime tm = CTime::GetCurrentTime();
+		CString strPath;
+		strPath.Format(_T("%s\\ECS_UI_%s.log"), (LPCTSTR)strDir,
+			(LPCTSTR)tm.Format(_T("%Y%m%d")));
+
+		// 한 줄에 밀리초까지 남긴다 - 어느 단계에서 시간이 갔는지 봐야 한다.
+		SYSTEMTIME st;
+		::GetLocalTime(&st);
+		CString strLine;
+		strLine.Format(_T("[%02d:%02d:%02d.%03d] %s") + CString(_T("\r\n")),
+			st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, (LPCTSTR)strMsg);
+
+		CStdioFile f;
+		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate |
+				   CFile::modeWrite | CFile::typeText))
+		{
+			f.SeekToEnd();
+			f.WriteString(strLine);
+			f.Close();
+		}
+	}
+	catch (CFileException* pe) { pe->Delete(); }
+	catch (...) { }
+}

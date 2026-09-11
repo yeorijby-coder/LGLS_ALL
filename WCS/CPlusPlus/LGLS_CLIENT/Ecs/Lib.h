@@ -83,6 +83,12 @@ public:
 	//   제목줄이 화면 위로 나가 창을 옮길 수도 없게 된다.
 	static void ClampToWorkArea(CWnd* pRef, CRect& rcPos, int nWidth, int nHeight);
 
+	// [LGLS 2026-09-11] 화면 조작 단계 기록 (LOG\ECS_UI_yyyymmdd.log).
+	//   현장에서 "크레인을 눌렀는데 안 열리고 멈춘다" 가 어디서 멎는지 가리기 위한 것.
+	//   모달은 띄우지 않는다 - 운전 중에 상자가 뜨면 그 자체로 화면이 멈춘다.
+	//   Ecs.ini [MENU] UI_TRACE=0 이면 아무것도 쓰지 않는다(기본 1).
+	static void UiLog(LPCTSTR lpszFmt, ...);
+
 public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);
 

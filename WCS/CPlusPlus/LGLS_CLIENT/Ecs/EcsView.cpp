@@ -762,8 +762,17 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 
 	case CEquipment::enSC:
 		{
+			// [LGLS 2026-09-11] 여기서부터 단계 기록. 현장에서 어디서 멎는지 가린다.
+			CLib::UiLog(_T("[SC] CLICK cid=%s key=%s"), (LPCTSTR)strCID, (LPCTSTR)strEqpKey);
 			CSC_DATA* pSC_DATA = pDoc->GetSC_DATA(strEqpKey);
-			if(pSC_DATA == NULL){ return 0; };
+			if(pSC_DATA == NULL)
+			{
+				// EcsDefine.xml <Scs number=..> 에 없는 키다. 조용히 끝나므로 화면엔
+				// "눌렀는데 아무 일도 없다" 로만 보인다 - 반드시 남긴다.
+				CLib::UiLog(_T("[SC] ABORT no SC_DATA (EcsDefine.xml <Scs number> mismatch) key=%s"),
+					(LPCTSTR)strEqpKey);
+				return 0;
+			}
 
 			// [LGLS 2026-09-01] 판넬 모드 : 상세정보 판넬 SC 탭으로 전환
 			{
@@ -804,7 +813,22 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			::SetWindowPos(pDoc->m_pScSkinDlg->m_hWnd, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
 			::SetWindowPos(pDoc->m_pScSkinDlg->m_hWnd, HWND_NOTOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
 			::ShowWindow(pDoc->m_pScSkinDlg->m_hWnd, SW_SHOWNORMAL); 
+			{
+				// 창이 실제로 어디에 어떤 크기로 떴는지, 보이는 상태인지 그대로 남긴다.
+				CRect rcNow(0,0,0,0);
+				::GetWindowRect(pDoc->m_pScSkinDlg->m_hWnd, &rcNow);
+				CLib::UiLog(_T("[SC] SHOW rect=(%d,%d)-(%d,%d) visible=%d"),
+					rcNow.left, rcNow.top, rcNow.right, rcNow.bottom,
+					(int)::IsWindowVisible(pDoc->m_pScSkinDlg->m_hWnd));
+			}
+			// ★여기가 핵심★ 아래 SendMessage 는 동기다. 그 안에서 DB 를 읽으므로,
+			//   DB 가 네트워크 너머에 있으면 UI 스레드가 그만큼 통째로 멈춘다.
+			//   개발 PC 는 DB 가 로컬이라 순식간이다 - 현장에서만 나타나는 이유가 될 수 있다.
+			//   걸린 시간을 재서 남긴다.
+			DWORD dwT0 = ::GetTickCount();
+			CLib::UiLog(_T("[SC] REFRESH begin"));
 			::SendMessage(pDoc->m_pScSkinDlg->m_hWnd, WM_USER_DIALOG_MESSAGE_REFRESH, (WPARAM)pSC_DATA, (LPARAM)pDoc->m_enLang); //임시저장소 LPARM 추가파람
+			CLib::UiLog(_T("[SC] REFRESH end %u ms"), (unsigned)(::GetTickCount() - dwT0));
 			break;
 		}
 
