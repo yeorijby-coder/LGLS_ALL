@@ -226,6 +226,19 @@ namespace WCS_TASK_CV
         }
         #endregion
 
+        #region [CNF]::CV 스레드의 "전 설비 공통 알람" 처리 사용 여부  [LGLS 2026-09-11]
+        //   CvAlarmCheck 가 보는 M786/787·쓰는 M1539/1540 은 실은 S/C#1 자신의 알람 비트다.
+        //   VehThread 가 08-21 부터 호기별로 처리하므로 중복이고, 비트 쓰기가 워드 단위라
+        //   S/C#1 Ack 워드(이송지시·완료 Ack)를 CV 스레드가 되써서 지울 수 있다.
+        //   기본 0(끔). 현장 PLC 가 이 비트를 별도 공통 알람으로도 쓰는 것이 확인되면 1 로.
+        public static int GsReadInitProfileCvGlobalAlarm()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return 0;
+            return GetPrivateProfileInt("CNF", "CV_GLOBAL_ALARM", 0, cDefApp.GM_ENV_INI);
+        }
+        #endregion
+
         #region [PLC]::R(트래킹) 주소 해석 모드  [LGLS 2026-08-19]
         //   HEX = 구 ECS 호환(문서표기를 16진 파싱) / DEC = 현행(10진 워드주소)
         //   기본값 HEX : 종전 통신 동작(CvThread.GetRTrackingAddr)과 동일하게 유지

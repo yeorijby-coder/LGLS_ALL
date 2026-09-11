@@ -327,6 +327,7 @@ namespace WCS_TASK_CV
         private readonly System.Collections.Generic.HashSet<string> m_setPendOd  = new System.Collections.Generic.HashSet<string>();
         private readonly System.Collections.Generic.HashSet<string> m_setPendTrk = new System.Collections.Generic.HashSet<string>();
         private bool m_bPendScanOk = false;   // 스캔 실패 시 false → 전 설비 종전대로 처리(안전측)
+        private int  m_nCvGlobalAlarm = -1;    // [LGLS 2026-09-11] -1 미판독 / 0 건너뜀(기본) / 1 종전대로 CvAlarmCheck 수행
         private const int CYCLE_WARN_MS = 3000;               // 미러 한 바퀴 경고 임계(초과 시 단계별 소요 로깅)
         private DateTime m_dtLastCycleLog = DateTime.MinValue;
         // [LGLS 2026-08-01] 통신 실패가 연속된 사이클 수. 임계 도달 시 소켓을 닫고 스레드를 종료해 재접속시킨다.
@@ -650,7 +651,20 @@ namespace WCS_TASK_CV
                         }
 
                         // 알람 M비트(M0492/M0493)는 전 CV 공통 단일주소 → 사이클당 1회만 처리
-                        if (!CvAlarmCheck(1))
+                        // [LGLS 2026-09-11 밤] ★기본 건너뜀★ (WCS_DB.INI [CNF] CV_GLOBAL_ALARM=1 이면 종전대로)
+                        //   이 "공통 알람" 비트(M786/787, Ack M1539/1540)는 실은 S/C#1 자신의 알람 비트다.
+                        //   VehThread 가 08-21 부터 호기별로 처리하므로 중복이고, 비트 쓰기가 워드 단위
+                        //   (읽기→수정→쓰기)라 S/C#1 Ack 워드(M1536~1551 : 이송지시·적재/하역완료 Ack)를
+                        //   이 스레드가 낡은 값으로 되써서 SC 스레드가 올린 비트를 지울 수 있다.
+                        //   (현장 2026-09-11 : S/C#1 만 Unload Complete Ack 유실 - 2~5호기 Ack 워드는 여기서 안 건드린다)
+                        //   코드는 통신부라 지우지 않고 건너뛰기만 한다.
+                        if (m_nCvGlobalAlarm < 0)
+                        {
+                            m_nCvGlobalAlarm = cDefApi.GsReadInitProfileCvGlobalAlarm();
+                            MakeMsg_Imp("[CvAlarmCheck] 전 설비 공통 알람 처리 " + (m_nCvGlobalAlarm == 1 ? "사용" : "사용 안 함")
+                                        + " (WCS_DB.INI [CNF] CV_GLOBAL_ALARM=" + m_nCvGlobalAlarm + ")", m_nthNo);
+                        }
+                        if (m_nCvGlobalAlarm == 1 && !CvAlarmCheck(1))
                         {
                             if (m_msQPlc.m_bSocCon == false) goto EXIT_LBL;
                             nCycleFail++;
