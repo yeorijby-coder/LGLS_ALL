@@ -70,6 +70,14 @@ public:
 	static BOOL	IsDestStn2F(CString strDestStn); //조립동 2층으로 가는 작업인지를 체크
 
 public:
+	// [LGLS 2026-09-11] 차상에 화물이 있는가(구 ECS Vehicle.IsPalletExist 와 같은 뜻).
+	//   원본 : SC_DATA_LGLS.SENSOR_FK_RD / RTV_DATA_LGLS.SENSOR_RTV_RD
+	//          0 = 비었음, 1/2/3 = 적재(포크1 / 포크2 / 양쪽)
+	//   값이 비어 있으면 TRUE 를 돌려준다 - 현장 PLC 가 이 비트를 안 채울 때
+	//   표시가 통째로 사라지는 쪽이 더 나쁘다(판정하지 않고 종전 동작을 둔다).
+	static BOOL IsVehicleLoaded(CString strSensor);
+
+public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);
 
 public:

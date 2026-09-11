@@ -1989,3 +1989,14 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc)
 	delete pRsw;
 	return true;
 }
+
+// [LGLS 2026-09-11] 차상 적재 여부. 구 ECS 는 이 비트 하나로 색을 켜고 껐다.
+//   Backup/ECS Device/Unit/Vehicle.cs OnPalletExistFlag ->
+//   Gui/Widget/StackerCraneWidget.cs · RGVWidget.cs 의 파란 사각형.
+BOOL CLib::IsVehicleLoaded(CString strSensor)
+{
+	strSensor.Trim();
+	if (strSensor.IsEmpty())
+		return TRUE;			// 비트를 못 받으면 판정하지 않는다
+	return (strSensor != _T("0"));
+}

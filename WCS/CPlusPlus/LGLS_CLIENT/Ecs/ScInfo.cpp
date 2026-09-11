@@ -81,6 +81,14 @@ COLORREF CScInfo::GetForkColor1()
 	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000"))
 		return LIGHT_GRAY;
 
+	// [LGLS 2026-09-11] ★차상 비트로 한 번 더 거른다★ (구 ECS 와 같은 판정)
+	//   구 ECS 는 IsPalletExist 비트만으로 적재 표시를 켜고 껐다. 비트는 설비가
+	//   내려놓는 즉시 떨어지므로 "끝난 걸 바로" 안다. 우리는 작업 캐시만 봐서
+	//   작업이 다음 상태로 넘어가야 꺼졌다(2026-09-11 09:41~09:50 : 절전으로 작업이
+	//   25/35 에 10분 머물자 색도 10분 남았다).
+	if (!CLib::IsVehicleLoaded(m_pSC_DATA->V_SENSOR_FK_RD))
+		return LIGHT_GRAY;
+
 	// [LGLS 2026-08-31] ★작업정보를 설비값보다 우선한다★ (사용자 지적 : 색 0.5초 튐)
 	//   설비 지시(JOB_TYP_OD)는 규약상 기본형(1/2)만 쓴다 - DriveSC 가 11/12 를 1/2 로
 	//   정규화해 보낸다. 그 값이 JOB_TYP_RD 로 먼저 올라와 자동색이 0.5초 보였다가,
@@ -141,6 +149,10 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	BOOL bHeldP = (!strHeldP.IsEmpty() && strHeldP != _T("0") && strHeldP != _T("0000"));
 	if (!bHeldP)
 		return LIGHT_GRAY;		// 이 호기가 문 작업이 없다 - 설비 잔류값은 보지 않는다
+
+	// [LGLS 2026-09-11] 차상 비트로 한 번 더 거른다(구 ECS IsPalletExist 와 같은 판정).
+	if (!CLib::IsVehicleLoaded(pSC_DATA->V_SENSOR_FK_RD))
+		return LIGHT_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
 	// [LGLS 2026-08-31] 작업정보 우선 (설비 지시값은 기본형 1/2 라 반자동색이 늦게 든다 - 색 0.5초 튐)
@@ -418,6 +430,9 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 	//   (여기서 호기를 또 넣었더니 같은 자리에 두 번 찍혀 겹쳐 보였다.)
 	strOut = _T("");
 	if (!bHasJob) return;						// 작업 없음 -> 호기 표시
+
+	// [LGLS 2026-09-11] 번호도 차상 비트로 거른다 - 번호와 색은 늘 함께 간다.
+	if (!CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD)) return;
 
 	// [LGLS 2026-08-31] ★크레인에 색 없이 번호만 남으면 안 된다★ (사용자 지시)
 	//   색(GetForkColor1)은 작업정보의 작업구분으로 낸다. 작업정보에 없는 번호는

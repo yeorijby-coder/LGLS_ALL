@@ -994,6 +994,12 @@ void CMainFrame::OnPaneShow(UINT nID)
 		m_InfoPane.ShowPane(nID == ID_PANE_SHOW_INFO, FALSE, TRUE);
 		m_VehPane.ShowPane(nID == ID_PANE_SHOW_VEH,   FALSE, TRUE);
 		RecalcLayout();
+
+		// [LGLS 2026-09-11] 작업정보 판넬을 켜면 작업정보 창도 함께 띄운다(사용자 요청).
+		//   판넬은 그대로 동작하고 창이 하나 더 뜬다. 끌 때는 창을 닫지 않는다
+		//   - 판넬을 접고 창만 보는 쓰임이 있다.
+		if (nID == ID_PANE_SHOW_JOB)
+			m_pDoc->OpenJobListDialog();
 		return;
 	}
 
@@ -1004,6 +1010,12 @@ void CMainFrame::OnPaneShow(UINT nID)
 	pPane->ShowPane(bShow, FALSE, TRUE);
 	if (bShow) m_bUiModePanel = TRUE;
 	RecalcLayout();
+
+	// [LGLS 2026-09-11] 작업정보 판넬을 켜면 작업정보 창도 함께 띄운다(사용자 요청).
+	//   판넬은 그대로 동작하고 창이 하나 더 뜬다. 끌 때는 창을 닫지 않는다
+	//   - 판넬을 접고 창만 보는 쓰임이 있다.
+	if (bShow && nID == ID_PANE_SHOW_JOB)
+		m_pDoc->OpenJobListDialog();
 }
 
 void CMainFrame::OnUpdatePaneShow(CCmdUI* pCmdUI)

@@ -165,6 +165,12 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 		 pRTV_DATA->V_ACTIVE_MODE_RD != _T("1")))
 		return LIGHT_GRAY;	// [LGLS] 평상시 RTV도 SC 처럼 밝은 회색
 
+	// [LGLS 2026-09-11] ★차상 비트로 한 번 더 거른다★ (구 ECS 와 같은 판정)
+	//   RTV_DATA_LGLS.SENSOR_RTV_RD 를 Rtv.cpp 가 SENSOR_FK_RD 로 별칭해 온다.
+	//   구 ECS RGVWidget 도 IsPalletExist 하나로 적재 표시를 켜고 껐다.
+	if (!CLib::IsVehicleLoaded(pRTV_DATA->V_SENSOR_FK_RD))
+		return LIGHT_GRAY;
+
 	int nJobTypTmp = CConvert::ToInt(pRTV_DATA->V_JOB_TYP_RD);
 
 	// [LGLS 2026-08-23] 실경로에서는 RTV 의 JOB_TYP_RD 가 채워지지 않는 구간이 있다.
@@ -410,6 +416,10 @@ void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
 		else
 			bHasJob = FALSE;
 	}
+
+	// [LGLS 2026-09-11] 번호도 차상 비트로 거른다 - 번호와 색은 늘 함께 간다.
+	if (!CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD))
+		bHasJob = FALSE;
 
 	// [LGLS 2026-08-22] 호기 번호는 컨트롤이 이미 m_strText 로 포크 위에 그린다(레이아웃 text 속성).
 	//   그래서 표시할 것이 없으면 빈 문자열을 돌려주고 컨트롤이 호기를 그대로 쓰게 둔다.
