@@ -479,20 +479,81 @@ namespace WCS_TASK_CV
         /// </summary>
         private void AckFollow(VehDef v, string strAckTag, string strCacheKey, bool bEventOn)
         {
-            string strNow = bEventOn ? "1" : "0";
-            // [LGLS 2026-09-11] ★캐시가 없으면(= 기동 직후) 값이 같아 보여도 한 번은 쓴다★
-            //   캐시는 프로세스 메모리다. WCS_TASK_CV 를 재기동하면 비어서 시작하는데,
-            //   종전에는 없는 캐시를 "0" 으로 보고 이벤트도 OFF 면 같다고 판단해 그냥 돌아갔다.
-            //   그러면 PLC 에 이전 실행의 Ack 가 ON 으로 남아 있어도 영영 내리지 못한다.
-            //   설비는 "이미 Ack 됨" 으로 보고 완료 이벤트를 즉시 내려버려 WCS 가 그것을
-            //   한 번도 관측하지 못하고, 화물이 H/S 에 그대로 머문다.
-            //   (현장 2026-09-11 : 크레인이 내려놓고 15 가 됐는데 다음 트랙으로 안 감.
-            //    PLC 담당자 "Unload Complete Ack 가 안 들어왔다")
-            string strPrev = Cached(v, strCacheKey);
-            if (strPrev != null && strPrev == strNow) return;
-            if (WriteBit(O(v, strAckTag), bEventOn)) v.Cache[strCacheKey] = strNow;
+            AckFollow(v, strAckTag, strCacheKey, bEventOn, -1, -1);
         }
 
+        // [LGLS 2026-09-11 밤] ★캐시가 아니라 PLC 의 실제 Ack 비트를 기준으로 맞춘다★
+        //   종전 : 우리가 마지막에 쓴 값(캐시)과 같으면 아무것도 안 했다. 그런데 이 비트가 담긴 워드
+        //   (S/C#1 이면 M1536~1551)는 우리 말고도 쓰는 쪽이 있다 - CvThread.CvAlarmCheck 가
+        //   "공통 알람 Ack"(M1539/1540) 를 쓰는데 그 자리가 S/C#1 Ack 블록 안이다. 비트 쓰기는
+        //   양쪽 다 [워드 읽기 → 비트 수정 → 워드 쓰기] 라, 한쪽이 낡은 워드를 되쓰면 상대 비트가
+        //   지워진다. 지워진 Ack 를 캐시는 "이미 올렸다" 고 믿어 영영 다시 쓰지 않았다.
+        //   (현장 2026-09-11 : S/C#1 만 "Unload Complete Ack 가 안 왔다" - S/C#2~5 의 Ack 워드는
+        //    CvThread 가 건드리지 않는다)
+        //   nWordAddr/nWord : 호출부가 이번 주기에 읽어 둔 Ack 워드(같은 워드의 두 Ack 를 한 번에).
+        //   읽기에 실패했으면(-1) 종전 캐시 동작으로 물러난다 - 통신 장애 중 쓰기 폭주를 막는다.
+        private void AckFollow(VehDef v, string strAckTag, string strCacheKey, bool bEventOn, int nWordAddr, int nWord)
+        {
+            ObsDef d = O(v, strAckTag);
+            if (d == null) return;
+            string strNow = bEventOn ? "1" : "0";
+            string strCached = Cached(v, strCacheKey);
+
+            bool bKnown = (nWord >= 0 && nWordAddr == d.Address / 16);
+            if (!bKnown)
+            {
+                // 종전 동작 (기동 직후/재접속 후 첫 주기는 반드시 한 번 쓴다)
+                if (strCached != null && strCached == strNow) return;
+                if (WriteBit(d, bEventOn)) v.Cache[strCacheKey] = strNow;
+                return;
+            }
+
+            bool bAckNow = ((nWord >> (d.Address % 16)) & 1) != 0;
+            if (bAckNow == bEventOn)
+            {
+                v.Cache[strCacheKey] = strNow;          // PLC 값이 이미 원하는 값이다
+                v.Cache.Remove(strCacheKey + "_x");
+                return;
+            }
+
+            string strTag = "[VEH_" + m_strKind + "] " + v.OwnerId + " " + strAckTag + " (M" + d.Address + ")";
+            if (bEventOn)
+            {
+                // 이벤트 ON 인데 Ack 가 0 : 처음 올리는 것이거나, 올려 둔 것이 되돌아간 것이다.
+                bool bReassert = (strCached == "1");
+                if (bReassert)
+                {
+                    // 재기록은 1초에 한 번만 - PLC 가 스스로 내리는 규약이어도 맞서 폭주하지 않는다
+                    string strLast = Cached(v, strCacheKey + "_t");
+                    int nLast;
+                    if (strLast != null && int.TryParse(strLast, out nLast)
+                        && unchecked(Environment.TickCount - nLast) < 1000) return;
+                }
+                bool bOk = WriteBit(d, true);
+                if (bOk) v.Cache[strCacheKey] = "1";
+                v.Cache[strCacheKey + "_t"] = Environment.TickCount.ToString();
+                LogDb(strTag + (bReassert
+                    ? " ON 재기록 - 올려 둔 비트가 PLC 에서 되돌아가 있었음(외부 덮어쓰기 의심)"
+                    : " ON 기록") + (bOk ? "" : " - 쓰기 실패"));
+            }
+            else
+            {
+                // 이벤트 OFF 인데 Ack 가 1
+                if (strCached == "1")
+                {
+                    // 우리가 올린 것이다 - 내린다 (규약 : 설비 Report OFF → WCS Ack OFF)
+                    bool bOk = WriteBit(d, false);
+                    if (bOk) v.Cache[strCacheKey] = "0";
+                    LogDb(strTag + " OFF 기록" + (bOk ? "" : " - 쓰기 실패"));
+                }
+                else if (Cached(v, strCacheKey + "_x") != "1")
+                {
+                    // 우리가 올린 적 없는 Ack 가 켜져 있다(수동 조작 등). 되돌리지 않고 한 번만 알린다.
+                    v.Cache[strCacheKey + "_x"] = "1";
+                    LogDb(strTag + " 이벤트 OFF 인데 Ack ON - 우리가 올린 것이 아니라 손대지 않음");
+                }
+            }
+        }
         private ObsDef O(VehDef v, string name)
         {
             ObsDef d;
@@ -573,8 +634,22 @@ namespace WCS_TASK_CV
             //   (실측 2026-09-05 : 작업 4722 가 크레인 유휴·포크 빔 상태로 25 에 10분 이상 정체.
             //    S/C·RGV 전 호기의 LOAD/UNLOAD_COMPLETE_ACK 가 ON 으로 굳어 있었다.)
             //   CV(CvEventCheck)는 이미 해제까지 하고 있었고, 차량(S/C·RGV)만 빠져 있었다.
-            AckFollow(v, "LOAD_COMPLETE_ACK",   "__lcAck", loadCmp);
-            AckFollow(v, "UNLOAD_COMPLETE_ACK", "__ucAck", unloadCmp);
+            // [LGLS 2026-09-11 밤] Ack 워드(두 Ack 가 같은 워드)를 한 번 읽어 실제 값 기준으로 맞춘다.
+            int nAckWordAddr = -1, nAckWord = -1;
+            {
+                ObsDef dAck = O(v, "LOAD_COMPLETE_ACK");
+                if (dAck != null)
+                {
+                    byte[] bufAck = new byte[8];
+                    if (PlcReadWords(dAck.Device, dAck.Address / 16, 1, bufAck))
+                    {
+                        nAckWordAddr = dAck.Address / 16;
+                        nAckWord     = bufAck[0] | (bufAck[1] << 8);
+                    }
+                }
+            }
+            AckFollow(v, "LOAD_COMPLETE_ACK",   "__lcAck", loadCmp,   nAckWordAddr, nAckWord);
+            AckFollow(v, "UNLOAD_COMPLETE_ACK", "__ucAck", unloadCmp, nAckWordAddr, nAckWord);
             // [LGLS 2026-07-25] Transfer Complete Ack. 근거: PPT V1.1 슬라이드22 메모리맵(Bit: Ack & Command)
             //   RGV #1 Ack base M101.0(%MX1616) + 5 = M101.5 %MX1621(=0x655). (슬라이드17 시나리오 다이어그램엔 생략됨)
             //   설비 Transfer Complete(TRANSFER_ACK 0x3B4=M059.4) 관측 시 WCS Ack 발행. observables.tsv VEHICLE:1 0655 와 일치.
