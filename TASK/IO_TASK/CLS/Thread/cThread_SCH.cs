@@ -1998,6 +1998,22 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "    AND SENSOR0_DATA_RD = '1'                                   ";
                 q += CRLF + "    AND (LUGG_NO_RD IS NULL OR LTRIM(RTRIM(LUGG_NO_RD)) IN ('','0','0000')) ";
                 q += CRLF + "    AND (TRACKING_WRITE_YN IS NULL OR TRACKING_WRITE_YN <> 'Y')  ";
+                // [LGLS 2026-09-11] 같은 트랙에 작업번호를 두 번 쓰던 문제.
+                //   위 두 가드(LUGG_NO_RD / SENSOR0_DATA_RD)는 PLC 되읽기 미러다. 그런데
+                //   WCS_TASK_CV 는 한 순회에서 ★읽기(CvStatusScenario)를 쓰기(CvTrackingWrite)보다
+                //   먼저★ 돈다(CvThread.cs Thread_Doing 의 슬롯 루프 순서). 그래서 N주기에 쓴 값은
+                //   N+1주기에야 되읽힌다. 그 사이 TRACKING_WRITE_YN 은 이미 'N' 으로 내려가
+                //   있으므로(CvTrackingWrite 가 쓰기 직후 초기화) 0.2초 루프의 다음 회차가
+                //   "아직 비었다"고 보고 ★한 번 더★ 요청했다.
+                //   실측(로컬 09-06) : 작업 9601/9602 가 3~4초 간격으로 각각 두 번.
+                //   같은 번호를 같은 자리에 두 번 쓰는 것 자체는 무해하나, 트랙 127 처럼
+                //   ★통과 트랙★(frTrack=127 → toTrack=129, 출고대는 129)은 두 번째 쓰기 시점에
+                //   화물이 이미 넘어간 뒤일 수 있다 - 빈 트랙에 번호가 찍히는 유령 트래킹이 된다
+                //   (UpdateCvData 주석의 그 건과 같은 모양).
+                //   CvTrackingWrite 가 찍는 WRITE_UPD_DT 를 래치로 써서, 되읽기가 돌아올 시간
+                //   (15설비 순회 약 16초)을 준 뒤에만 다시 요청한다. 20초가 지나도 여전히 비어
+                //   있으면 그건 진짜 실패이므로 재요청이 나간다.
+                q += CRLF + "    AND (WRITE_UPD_DT IS NULL OR DATEDIFF(second, WRITE_UPD_DT, GETDATE()) > 20) ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = luggNo;

@@ -736,9 +736,40 @@ namespace WCS_TASK_CV
 
                 // [LGLS 2026-09-01] RTV 에러도 에러보고(E) 대상 — 알람 핸드셰이크에서 캐시한 코드를 반영.
                 //   (알람 블록은 chg 정의보다 앞서 돌므로 캐시로 넘겨받는다)
+                // [LGLS 2026-09-11] ★RTV 에러코드는 보고 펄스가 아니라 워드 상태로 본다★
+                //   현장 보고 : RTV 에러를 현장에서 해제했는데 WCS 에는 에러가 그대로 남아 있었다.
+                //   원인 : 종전에는 ERR_CODE_RD 를 알람 보고 비트의 모서리로만 움직였다.
+                //     발생 = (almSet && !prevSet), 해제 = (almReset && !prevReset)
+                //   두 보고는 펄스인데 15설비 순회가 약 16초다. 해제 보고가 그 사이에 스쳐
+                //   지나가면 관측 자체를 못 해 에러코드가 영영 안 내려간다.
+                //   (SC 는 ERR_CODE_RD 워드를 매 주기 상태로 읽어 스스로 풀린다 - RTV 만 이 구멍)
+                //   구 ECS 는 상태로 본다(판단 기준) :
+                //     Vehicle.OnAlarmSetCode(short value) { this.AlarmSetCode = value; }
+                //       → ALARM_SET_CODE 워드가 0 으로 내려가면 그대로 정상이 된다
+                //     ECSDispatcher.CheckEquipmentStatus : if (vehicle.AlarmSetCode != 0) Available = "5"
+                //   같은 규약으로 되돌린다. 모서리 분기는 Ack 핸드셰이크와 E 전문 판정용으로 남긴다.
+                int nAlmCodeNow = 0;
+                ObsDef oAlmCode = O(v, "ALARM_SET_CODE");
+                bool bAlmCodeObs = (oAlmCode != null && ReadShort(oAlmCode, ref nAlmCodeNow));
+
                 string strAlmErr;
-                if (v.Cache.TryGetValue("__almErrCode", out strAlmErr))
+                if (bAlmCodeObs)
                 {
+                    // 워드가 관측되면 그것이 진실이다. 모서리 캐시는 소비만 하고 버린다.
+                    v.Cache.Remove("__almErrCode");
+                    v.Cache.Remove("__almErrClr");
+                    string strErrNow = (nAlmCodeNow != 0) ? nAlmCodeNow.ToString("0000") : "0000";
+                    string strErrPrev = (Cached(v, "ERR_CODE_RD") ?? "");
+                    bNewErr = (strErrNow != "0000") && (strErrPrev != strErrNow);
+                    if (strErrPrev != strErrNow && strErrNow == "0000" && strErrPrev.Length > 0
+                        && strErrPrev != "0000")
+                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId
+                            + " 알람코드 워드가 0 → 에러 해제 반영 (종전 [" + strErrPrev + "])");
+                    chg("ERR_CODE_RD", strErrNow);
+                }
+                else if (v.Cache.TryGetValue("__almErrCode", out strAlmErr))
+                {
+                    // 워드가 관측에 없는 구성 - 종전 모서리 동작 (퇴행 방지)
                     v.Cache.Remove("__almErrCode");
                     bNewErr = ((Cached(v, "ERR_CODE_RD") ?? "") != strAlmErr);
                     chg("ERR_CODE_RD", strAlmErr);
