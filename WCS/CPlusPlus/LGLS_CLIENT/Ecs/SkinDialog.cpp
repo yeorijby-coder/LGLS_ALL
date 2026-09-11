@@ -5,6 +5,7 @@
 #include "SkinDialog.h"
 
 #include "Ecs.h"
+#include "Lib.h"	// [LGLS 2026-09-11] UiLog
 
 #define MARGIN_BOX			10
 
@@ -667,6 +668,19 @@ BOOL CSkinDialog::PreTranslateMessage(MSG* pMsg)
 	}
 	else if(pMsg->wParam == VK_ESCAPE)
 	{
+		// [LGLS 2026-09-11] 현장 "크레인 창이 안 보이다가 ESC 로 정상화" - 그 순간 창이 어떤 상태였는지 남긴다.
+		//   보임 여부, 사각, 창 영역(SetWindowRgn)의 바운딩 박스, 최상위 여부.
+		{
+			CRect rcW(0,0,0,0); ::GetWindowRect(m_hWnd, &rcW);
+			RECT rcRgn = {0,0,0,0}; int nRgn = -1;
+			HRGN hRgn = ::CreateRectRgn(0,0,0,0);
+			if (hRgn != NULL) { nRgn = ::GetWindowRgn(m_hWnd, hRgn); if (nRgn != ERROR) ::GetRgnBox(hRgn, &rcRgn); ::DeleteObject(hRgn); }
+			CString strT; GetWindowText(strT);
+			CLib::UiLog(_T("[SKIN] ESC hide title=%s visible=%d rect=(%d,%d)-(%d,%d) rgn=%d box=(%d,%d)-(%d,%d) topmost=%d"),
+				(LPCTSTR)strT, (int)::IsWindowVisible(m_hWnd), rcW.left, rcW.top, rcW.right, rcW.bottom,
+				nRgn, rcRgn.left, rcRgn.top, rcRgn.right, rcRgn.bottom,
+				(int)((::GetWindowLong(m_hWnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0));
+		}
 		::ShowWindow(m_hWnd, SW_HIDE); 
 		return TRUE;
 	}

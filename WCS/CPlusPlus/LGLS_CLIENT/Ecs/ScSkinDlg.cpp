@@ -750,7 +750,10 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 		+ _T("FROM SC_DATA_LGLS WHERE WH_TYP='") + m_pDoc->m_WH_TYP + _T("' AND PLC_NO='") + m_pSC_DATA->K_PLC_NO + _T("' AND MC_NO='") + m_pSC_DATA->K_SC_NO + _T("'");
 
 	CString strMessage; int nRowCnt = -1;
+	DWORD dwQ1 = ::GetTickCount();
 	_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CLib::UiLog(_T("[SC] SQL1 SC_DATA_LGLS %u ms rows=%d %s"), (unsigned)(::GetTickCount() - dwQ1), nRowCnt,
+		strMessage.IsEmpty() ? _T("") : _T("ERR")); 
 	if(nRowCnt > 0)
 	{
 		CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
@@ -864,7 +867,10 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 	{
 		strSql = GetQrySelectJOB_MST_FK1(m_pSC_DATA);
 		nRowCnt = -1;
+		DWORD dwQ2 = ::GetTickCount();
 		_RecordsetPtr ptr2 = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+		CLib::UiLog(_T("[SC] SQL2 JOB_MST %u ms rows=%d %s"), (unsigned)(::GetTickCount() - dwQ2), nRowCnt,
+			strMessage.IsEmpty() ? _T("") : _T("ERR"));
 		if(nRowCnt > 0)
 		{
 			CRecordSetWrap* pRsw2 = new CRecordSetWrap(ptr2);
@@ -962,7 +968,13 @@ LRESULT CScSkinDlg::OnMessagSwitch(WPARAM wParam, LPARAM lParam)
 	//   첫 데이터가 오는 순간 현재 호기 주소로 다시 그려진다.
 	BOOL bScChanged = (m_pSC_DATA != pSC_DATA);
 	m_pSC_DATA = pSC_DATA;
-	if (bScChanged) RebuildVehStatusPanel();
+	if (bScChanged)
+	{
+		// [LGLS 2026-09-11] 현장에서 SC 창만 안 그려지는 건 - 이 재구성이 SC 에만 있다. 시간을 잰다.
+		DWORD dwRb = ::GetTickCount();
+		RebuildVehStatusPanel();
+		CLib::UiLog(_T("[SC] REBUILD %u ms (ctrls=%d)"), (unsigned)(::GetTickCount() - dwRb), (int)m_arVehCtrl.GetCount());
+	}
 
 	EN_LANG enLangTemp = (EN_LANG)lParam;
 	if(m_nLang != enLangTemp)

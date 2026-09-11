@@ -763,6 +763,7 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 	case CEquipment::enSC:
 		{
 			// [LGLS 2026-09-11] 여기서부터 단계 기록. 현장에서 어디서 멎는지 가린다.
+			CLib::UiEnvLog();
 			CLib::UiLog(_T("[SC] CLICK cid=%s key=%s"), (LPCTSTR)strCID, (LPCTSTR)strEqpKey);
 			CSC_DATA* pSC_DATA = pDoc->GetSC_DATA(strEqpKey);
 			if(pSC_DATA == NULL)

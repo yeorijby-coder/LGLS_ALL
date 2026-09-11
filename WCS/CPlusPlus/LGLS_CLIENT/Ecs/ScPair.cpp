@@ -47,6 +47,11 @@ void CScPair::AutoRunProc()
 
 	// [LGLS 2026-07-24] 설비 데이터 CString 쓰기 구간
 	if(m_pDoc == NULL) return;
+	// [LGLS 2026-09-11] 락 범위를 아래 블록으로 좁힌다. 종전에는 함수 끝까지 쥐고 있어서
+	//   RefreshScWaitCount() 의 JOB_MST 집계(네트워크)까지 락 안에서 돌았다. SC 상태창의
+	//   InvalidateScData 는 같은 락을 메시지 펌프 없이 기다리므로, 현장처럼 문장당 1~2초면
+	//   그 시간만큼 SC 창이 굶는다. (RTV/CV 수집은 락 안에서 쿼리를 하지 않는다)
+	{
 	CSingleLock _lockSc(&m_pDoc->m_csEqpData, TRUE);
 
 	m_pRsw->MoveFirst();
@@ -116,6 +121,8 @@ void CScPair::AutoRunProc()
 		m_pRsw->MoveNext();	
 	}
 
+	}	// [LGLS 2026-09-11] 락 범위 끝 - 아래 DB 집계는 락 밖에서
+
 	// [LGLS 2026-09-02] 크레인별 출고 대기 작업 건수 표시(사용자 요청)
 	//   레이아웃 컨트롤 id=90000901~90000905 (S/C #1~5 행, 랙 왼쪽 칸)
 	//   대상 = 출고작업(JOB_TYP='2') 중 작업상태 [20] S/C 구동 대기, 크레인은 출발지(START_POS 901~905)로 판정
@@ -143,6 +150,12 @@ void CScPair::RefreshScWaitCount()
 		}
 		return;
 	}
+
+	// [LGLS 2026-09-11] 1초 캐시. 수집 주기(기본 300ms)마다 JOB_MST 를 세던 것을 줄인다.
+	//   표시값이 1초 늦어도 문제없는 통계 표시다.
+	static DWORD s_dwLastCnt = 0;
+	if (s_dwLastCnt != 0 && (::GetTickCount() - s_dwLastCnt) < 1000) return;
+	s_dwLastCnt = ::GetTickCount();
 
 	CString strSql;
 	strSql.Format(

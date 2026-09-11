@@ -2081,3 +2081,43 @@ void CLib::UiLog(LPCTSTR lpszFmt, ...)
 	catch (CFileException* pe) { pe->Delete(); }
 	catch (...) { }
 }
+
+// [LGLS 2026-09-11] 실행 환경 1회 기록. dwmapi 는 동적으로 불러 XP/구 서버에서도 링크가 깨지지 않게.
+void CLib::UiEnvLog()
+{
+	static BOOL s_bDone = FALSE;
+	if (s_bDone) return;
+	s_bDone = TRUE;
+
+	int nDwm = -1;
+	HMODULE hDwm = ::LoadLibrary(_T("dwmapi.dll"));
+	if (hDwm != NULL)
+	{
+		typedef HRESULT (WINAPI *PFN_DWMICE)(BOOL*);
+		PFN_DWMICE pfn = (PFN_DWMICE)::GetProcAddress(hDwm, "DwmIsCompositionEnabled");
+		BOOL bOn = FALSE;
+		if (pfn != NULL && SUCCEEDED(pfn(&bOn))) nDwm = bOn ? 1 : 0;
+		::FreeLibrary(hDwm);
+	}
+
+	// GetVersionEx 는 매니페스트 없는 앱에서 8.1+ 를 6.2 로 돌려주므로 RtlGetVersion 을 쓴다.
+	DWORD dwMaj = 0, dwMin = 0, dwBld = 0;
+	HMODULE hNt = ::GetModuleHandle(_T("ntdll.dll"));
+	if (hNt != NULL)
+	{
+		typedef LONG (WINAPI *PFN_RTLGV)(OSVERSIONINFOEXW*);
+		PFN_RTLGV pfn = (PFN_RTLGV)::GetProcAddress(hNt, "RtlGetVersion");
+		OSVERSIONINFOEXW vi; ::ZeroMemory(&vi, sizeof(vi)); vi.dwOSVersionInfoSize = sizeof(vi);
+		if (pfn != NULL && pfn(&vi) == 0) { dwMaj = vi.dwMajorVersion; dwMin = vi.dwMinorVersion; dwBld = vi.dwBuildNumber; }
+	}
+
+	HDC hdc = ::GetDC(NULL);
+	int nDpi = (hdc != NULL) ? ::GetDeviceCaps(hdc, LOGPIXELSX) : 0;
+	if (hdc != NULL) ::ReleaseDC(NULL, hdc);
+
+	UiLog(_T("[ENV] os=%u.%u.%u dwm=%d dpi=%d screen=%dx%d cycaption=%d cyframe=%d cxframe=%d padded=%d"),
+		(unsigned)dwMaj, (unsigned)dwMin, (unsigned)dwBld, nDwm, nDpi,
+		::GetSystemMetrics(SM_CXSCREEN), ::GetSystemMetrics(SM_CYSCREEN),
+		::GetSystemMetrics(SM_CYCAPTION), ::GetSystemMetrics(SM_CYFRAME), ::GetSystemMetrics(SM_CXFRAME),
+		::GetSystemMetrics(92 /*SM_CXPADDEDBORDER*/));
+}

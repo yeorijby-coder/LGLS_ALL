@@ -196,7 +196,10 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		+ _T("FROM RTV_DATA_LGLS WHERE WH_TYP='") + m_pDoc->m_WH_TYP + _T("' AND PLC_NO='") + m_pRTV_DATA->K_PLC_NO + _T("' AND RTV_NO='") + m_pRTV_DATA->K_RTV_NO + _T("'");
 
 	CString strMessage; int nRowCnt = -1;
+	DWORD dwQ1 = ::GetTickCount();
 	_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CLib::UiLog(_T("[RTV] SQL1 RTV_DATA_LGLS %u ms rows=%d %s"), (unsigned)(::GetTickCount() - dwQ1), nRowCnt,
+		strMessage.IsEmpty() ? _T("") : _T("ERR"));
 	if(nRowCnt > 0)
 	{
 		CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
@@ -298,7 +301,10 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 
 	strSql = GetQrySelectJOB_MST(m_pRTV_DATA);
 	nRowCnt = -1;
+	DWORD dwQ2 = ::GetTickCount();
 	_RecordsetPtr ptr2 = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CLib::UiLog(_T("[RTV] SQL2 JOB_MST %u ms rows=%d %s"), (unsigned)(::GetTickCount() - dwQ2), nRowCnt,
+		strMessage.IsEmpty() ? _T("") : _T("ERR"));
 	if(nRowCnt > 0)
 	{
 		CRecordSetWrap* pRsw2 = new CRecordSetWrap(ptr2);

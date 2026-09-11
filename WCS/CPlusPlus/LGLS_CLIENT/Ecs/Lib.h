@@ -88,6 +88,9 @@ public:
 	//   모달은 띄우지 않는다 - 운전 중에 상자가 뜨면 그 자체로 화면이 멈춘다.
 	//   Ecs.ini [MENU] UI_TRACE=0 이면 아무것도 쓰지 않는다(기본 1).
 	static void UiLog(LPCTSTR lpszFmt, ...);
+	// [LGLS 2026-09-11] 실행 환경을 한 번만 기록(DWM 합성 여부, 캡션/프레임 메트릭, OS).
+	//   현장(Win7/2012)과 개발 PC(Win11)의 차이를 로그에서 바로 보기 위한 것.
+	static void UiEnvLog();
 
 public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);
