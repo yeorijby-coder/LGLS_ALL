@@ -421,6 +421,14 @@ namespace WCS_TASK_CV
                         }
                         m_nComFailCycle = 0;
                         m_dtLastPollOk  = DateTime.Now;
+                        // [LGLS 2026-09-11] (재)접속했으면 Ack 캐시를 버린다.
+                        //   끊겨 있는 동안 PLC 쪽 Ack 비트가 어떻게 됐는지 알 수 없으므로
+                        //   다음 주기에 AckFollow 가 다시 맞추게 한다.
+                        foreach (VehDef vc in m_lstVeh)
+                        {
+                            vc.Cache.Remove("__lcAck");
+                            vc.Cache.Remove("__ucAck");
+                        }
                         LogDb("[VEH_" + m_strKind + "] PLC 접속 성공 (" + m_strIp + ":" + m_nPort + ", 차량 " + m_lstVeh.Count + "대)");
                         UpdateEqpMstConn("Y");
                     }
@@ -472,7 +480,16 @@ namespace WCS_TASK_CV
         private void AckFollow(VehDef v, string strAckTag, string strCacheKey, bool bEventOn)
         {
             string strNow = bEventOn ? "1" : "0";
-            if ((Cached(v, strCacheKey) ?? "0") == strNow) return;
+            // [LGLS 2026-09-11] ★캐시가 없으면(= 기동 직후) 값이 같아 보여도 한 번은 쓴다★
+            //   캐시는 프로세스 메모리다. WCS_TASK_CV 를 재기동하면 비어서 시작하는데,
+            //   종전에는 없는 캐시를 "0" 으로 보고 이벤트도 OFF 면 같다고 판단해 그냥 돌아갔다.
+            //   그러면 PLC 에 이전 실행의 Ack 가 ON 으로 남아 있어도 영영 내리지 못한다.
+            //   설비는 "이미 Ack 됨" 으로 보고 완료 이벤트를 즉시 내려버려 WCS 가 그것을
+            //   한 번도 관측하지 못하고, 화물이 H/S 에 그대로 머문다.
+            //   (현장 2026-09-11 : 크레인이 내려놓고 15 가 됐는데 다음 트랙으로 안 감.
+            //    PLC 담당자 "Unload Complete Ack 가 안 들어왔다")
+            string strPrev = Cached(v, strCacheKey);
+            if (strPrev != null && strPrev == strNow) return;
             if (WriteBit(O(v, strAckTag), bEventOn)) v.Cache[strCacheKey] = strNow;
         }
 
