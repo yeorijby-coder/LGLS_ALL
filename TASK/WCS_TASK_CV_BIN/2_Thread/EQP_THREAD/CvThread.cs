@@ -1873,6 +1873,48 @@ namespace WCS_TASK_CV
                             return false;
                         }
                     }
+                    else if (CMD_RQ_ID.StartsWith("ACKW"))
+                    {
+                        // [LGLS 2026-09-12] 운전 화면 [Ack 쓰기] : "ACKW-LC1=1" / "ACKW-UC2=0"  (구분자 '-' : ':' 는 DB 계층이 '@' 로 바꾼다)
+                        //   LC1/LC2 = Load Complete #1/#2 Ack, UC1/UC2 = Unload Complete #1/#2 Ack.
+                        //   컨베이어 Ack 워드는 이 스레드만 쓴다(WriteMBit = 워드 읽기→비트→쓰기). 주소는 주소맵 XML 우선,
+                        //   없으면 CvEventCheck 와 같은 내장식(%MX1280+(N-1)*16 / V0.9 M0800+(N-1)*10).
+                        string strSpecA = CMD_RQ_ID.Length > 5 ? CMD_RQ_ID.Substring(5).Trim().ToUpper() : "";
+                        int eqA = strSpecA.IndexOf('=');
+                        string strSigA = eqA > 0 ? strSpecA.Substring(0, eqA) : "";
+                        string strValA = eqA > 0 ? strSpecA.Substring(eqA + 1) : "";
+                        string strSigName = (strSigA == "LC1") ? "LoadComplete1Ack" : (strSigA == "LC2") ? "LoadComplete2Ack"
+                                          : (strSigA == "UC1") ? "UnloadComplete1Ack" : (strSigA == "UC2") ? "UnloadComplete2Ack" : null;
+                        int nOffA = (strSigA == "UC1") ? 1 : (strSigA == "LC1") ? 2 : (strSigA == "UC2") ? 3 : (strSigA == "LC2") ? 4 : -1;
+                        int nCvA = 0;
+                        int.TryParse(System.Text.RegularExpressions.Regex.Match(m_strPlc_No, @"\d+").Value, out nCvA);
+                        string strResA;
+                        if (strSigName == null || (strValA != "1" && strValA != "0") || nCvA < 1)
+                            strResA = "형식 오류(허용: ACKW-LC1|LC2|UC1|UC2=1|0) - 무시";
+                        else
+                        {
+                            int nBitA = -1;
+                            if (!cDefApp.GM_ADDR_V09) nBitA = cPlcAddrMap.Addr("CV", nCvA, "Ack", strSigName);
+                            if (nBitA < 0)
+                            {
+                                int nBaseA = cDefApp.GM_ADDR_V09 ? (800 + (nCvA - 1) * 10) : (1280 + (nCvA - 1) * 16);
+                                nBitA = nBaseA + nOffA;
+                            }
+                            bool bOnA = (strValA == "1");
+                            bool bOkA = WriteMBit(nBitA, bOnA);
+                            strResA = strSigName + (bOnA ? " ON" : " OFF") + " (%MX" + nBitA + ") 수동 " + (bOkA ? "기록" : "기록 실패");
+                        }
+                        m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 운전 명령 " + CMD_RQ_ID + " → " + strResA;
+                        MakeMsg_Imp(m_strLogMsg, m_nthNo);
+                        if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg))
+                        {
+                            return false;
+                        }
+                        if (!UpdateCvDataCmd(TRACK_NO))
+                        {
+                            return false;
+                        }
+                    }
                     else if (CMD_RQ_ID == "1") // PULP_SENSOR
                     {
                         Array.Clear(byTxBuff, 0, byTxBuff.Length);

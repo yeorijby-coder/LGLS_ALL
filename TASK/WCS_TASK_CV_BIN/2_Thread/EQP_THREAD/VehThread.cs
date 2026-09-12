@@ -923,6 +923,47 @@ namespace WCS_TASK_CV
             string cmd = ("" + dt.Rows[0]["CMD_RQ_ID"]).Trim().ToUpper();
             if (cmd.Length == 0 || cmd == "FCMP") return;
 
+            // [LGLS 2026-09-12] 운전 화면 [Ack 쓰기] : CMD_RQ_ID = "ACKW-LC=1" / "ACKW-UC=0"
+            //   ※구분자는 '-' 다. ':' 를 쓰면 DB 계층이 파라미터 표시 '@' 로 바꿔 처리 완료 UPDATE 가 안 맞는다(실측 72회 반복).
+            //   LC = LOAD_COMPLETE_ACK, UC = UNLOAD_COMPLETE_ACK, =1 켬 / =0 끔.
+            //   상황 A(설비가 완료 보고를 들고 Ack 를 기다리는데 Ack 가 지워진 경우)에서 운전원이 되살린다.
+            //   반드시 이 스레드가 쓴다 - 같은 Ack 워드를 만지는 다른 손이 없게 하고, 캐시를 함께 맞춰
+            //   AckFollow 가 설비 보고 OFF 때 규약대로 Ack 를 내리게 한다(다른 경로로 켠 Ack 는 내려 주는 이가 없다).
+            //   PLC→WCS 보고 비트(LOAD/UNLOAD_COMPLETE)는 대상이 아니다 - 그것은 PLC 의 말이다.
+            if (cmd.StartsWith("ACKW"))
+            {
+                string strSpec = cmd.Length > 5 ? cmd.Substring(5).Trim() : "";     // "LC=1"
+                int eq = strSpec.IndexOf('=');
+                string strSig = eq > 0 ? strSpec.Substring(0, eq).Trim() : "";
+                string strVal = eq > 0 ? strSpec.Substring(eq + 1).Trim() : "";
+                string strAckTag = (strSig == "LC") ? "LOAD_COMPLETE_ACK" : (strSig == "UC") ? "UNLOAD_COMPLETE_ACK" : null;
+                string strRepTag = (strSig == "LC") ? "LOAD_COMPLETE"     : (strSig == "UC") ? "UNLOAD_COMPLETE"     : null;
+                string strKey    = (strSig == "LC") ? "__lcAck" : "__ucAck";
+                bool bOn = (strVal == "1");
+                string strRes;
+                if (strAckTag == null || (strVal != "1" && strVal != "0"))
+                    strRes = "형식 오류(허용: ACKW-LC=1|0, ACKW-UC=1|0) - 무시";
+                else
+                {
+                    ObsDef dAck = O(v, strAckTag);
+                    ObsDef dRep = O(v, strRepTag);
+                    bool bRep = false;
+                    if (dRep != null) ReadBit(dRep, ref bRep);
+                    bool bOk = (dAck != null) && WriteBit(dAck, bOn);
+                    if (bOk) { v.Cache[strKey] = bOn ? "1" : "0"; v.Cache.Remove(strKey + "_x"); }
+                    strRes = strAckTag + (bOn ? " ON" : " OFF") + (dAck != null ? " (M" + dAck.Address + ")" : "")
+                           + " 수동 " + (bOk ? "기록" : "기록 실패") + " / 설비 보고 " + strRepTag + "=" + (bRep ? "1" : "0")
+                           + ((bOn && !bRep) ? " - 설비가 질문을 들고 있지 않다(상황 B) : 다음 주기에 규약대로 내려간다" : "");
+                }
+                string strUpdA = "";
+                strUpdA += CRLF + " UPDATE " + m_strTable + " SET CMD_RQ_YN = 'N', WRITE_UPD_DT = GETDATE()";
+                strUpdA += CRLF + "  WHERE WH_TYP = '" + Esc(m_strWhTyp) + "' AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
+                strUpdA += CRLF + "    AND CMD_RQ_YN = 'Y' AND CMD_RQ_ID = '" + Esc(cmd) + "' ";
+                DbExec(strUpdA);
+                LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 " + cmd + " → " + strRes);
+                return;
+            }
+
             string act;
             string extra = "";
             if (cmd.StartsWith("DELFK"))

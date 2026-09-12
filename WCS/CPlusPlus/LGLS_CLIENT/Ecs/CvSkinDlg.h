@@ -226,6 +226,7 @@ public:
 	void InvalidateCvvData();
 	void SetLedCv(int nId, CString strVal);
 	afx_msg void OnBnClickedVehZoom();
+	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
 	afx_msg void OnBnClickedCvvOk();	// [LGLS 2026-08-13] 확대 패널 [닫기]
 
 

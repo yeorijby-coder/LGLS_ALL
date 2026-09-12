@@ -27,6 +27,7 @@ public:
 	void CompactJobStatusArea();	// [LGLS 2026-08-01] 빈 공간 제거(사용자 지시 사진)
 	void SetVehPanelExpanded(BOOL bExpand);
 	afx_msg void OnBnClickedVehZoom();
+	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
 	afx_msg void OnBnClickedBtnRtvManual();   // [LGLS 2026-09-03] 수동지시
 	void LglsRelayoutJobStatus();      // [LGLS 2026-09-03] 작업상태 두 열 배치
 	BOOL m_bJobStatusRelayout;

@@ -3229,6 +3229,8 @@
 #define IDC_RTVV_DEST_POS               8035
 #define IDC_RTVV_RESEND                 8036
 #define IDC_RTVV_OK                     8037
+#define IDC_RTVV_BTN_LCA_W              8038
+#define IDC_RTVV_BTN_UCA_W              8039
 #define IDC_SCV_TITLE1                  8100
 #define IDC_SCV_TITLE2                  8101
 #define IDC_SCV_STATUS                  8102
@@ -3267,6 +3269,8 @@
 #define IDC_SCV_DEST_POS                8135
 #define IDC_SCV_RESEND                  8136
 #define IDC_SCV_OK                      8137
+#define IDC_SCV_BTN_LCA_W               8138
+#define IDC_SCV_BTN_UCA_W               8139
 #define IDC_SCV_ZOOM                    8200
 #define IDC_RTVV_ZOOM                   8201
 #define IDC_LGLS_SC_LOT_LBL             8210
@@ -3324,6 +3328,8 @@
 #define IDC_CVV_DEST                    8266
 #define IDC_CVV_ERR                     8267
 #define IDC_CVV_OK                      8268
+#define IDC_CVV_BTN_LCA_W               8269
+#define IDC_CVV_BTN_UCA_W               8270
 #define IDC_LGLS_ADDR_LBL               8299
 #define IDC_LGLS_ST_FR1                 8401
 #define IDC_LGLS_ST_FR2                 8402

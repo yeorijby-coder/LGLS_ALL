@@ -105,6 +105,7 @@ BEGIN_MESSAGE_MAP(CScSkinDlg, CSkinDialog)
 	ON_BN_CLICKED(IDC_SCV_RESEND, &CScSkinDlg::OnBnClickedScvResend)
 	ON_BN_CLICKED(IDC_SCV_OK, &CScSkinDlg::OnBnClickedScvOk)
 	ON_BN_CLICKED(IDC_LGLS_SC_ZOOM, &CScSkinDlg::OnBnClickedVehZoom)
+	ON_COMMAND_RANGE(IDC_SCV_BTN_LCA_W, IDC_SCV_BTN_UCA_W, &CScSkinDlg::OnAckWrite)	// [LGLS 2026-09-12] Ack 수동 쓰기
 	ON_BN_CLICKED(IDC_LGLS_SC_RESEND, &CScSkinDlg::OnBnClickedScvResend)	// [LGLS 2026-08-12] 확대 패널과 동일 기능
 END_MESSAGE_MAP()
 
@@ -2774,6 +2775,15 @@ void CScSkinDlg::BuildVehStatusPanel()
 	y += 20;
 
 	// ── 핸드셰이크 LED : 2열 x 6행 (라벨에 실주소) ────────────────
+	// [LGLS 2026-09-12] 완료 Ack [쓰기] 버튼 글자 (rc_resource\dlg_sc\dlg_sc.ini  ackwrite=)
+	CString strAckW = _T("쓰기");
+	{
+		TCHAR _cfA[MAX_PATH] = {0}; GetModuleFileName(NULL, _cfA, MAX_PATH);
+		CString _apA = _cfA;
+		CString _fpA = Global.GetConcatPath(_apA.Left(_apA.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), _T(".ini"));
+		CString _sA = CLib::GetIniStringFromPath(_fpA, _T("ackwrite"), (int)((m_pDoc == NULL) ? EN_KOR : m_pDoc->m_enLang));
+		if (!_sA.IsEmpty()) strAckW = _sA;
+	}
 	struct LEDDEF { LPCTSTR name; int id; LPCTSTR obs; };
 	LEDDEF leds[] = {
 		{ _T("적재완료"),    IDC_SCV_LED_LOAD_CMP,        _T("LOAD_COMPLETE") },
@@ -2795,6 +2805,9 @@ void CScSkinDlg::BuildVehStatusPanel()
 		int yy = y + row * 18;
 		mk.LabelA(leds[i].name, CLib::GetObsAddr(strOwner, leds[i].obs), x, yy + 1, 88, 86);
 		mk.Led(leds[i].id, x + 180, yy);
+		// [LGLS 2026-09-12] 완료 Ack 두 줄에 [쓰기] - 설비가 완료 보고를 들고 Ack 를 기다리는데 지워진 경우(상황 A) 되살린다
+		if (leds[i].id == IDC_SCV_LED_LOAD_CMP_ACK)   mk.Button(IDC_SCV_BTN_LCA_W, strAckW, x + 197, yy - 2, 30, 18);
+		if (leds[i].id == IDC_SCV_LED_UNLOAD_CMP_ACK) mk.Button(IDC_SCV_BTN_UCA_W, strAckW, x + 197, yy - 2, 30, 18);
 	}
 	y += 6 * 18 + 2;
 
@@ -3005,4 +3018,69 @@ void CScSkinDlg::LglsRelayoutJobStatus()
 	//   그 계산과 이중으로 움직여 어긋나므로, rc 를 유일한 기준으로 삼는다.
 	//   쓰지 않는 소그룹(항목/값/명령)도 rc 에서 NOT WS_VISIBLE 로 감췄다.
 	m_bJobStatusRelayout = TRUE;
+}
+
+// [LGLS 2026-09-12] 확대 패널 [쓰기] : 완료 Ack 를 운전원이 직접 켜고/끈다 (상황 A 구제).
+//   Client 는 PLC 에 직접 쓰지 않는다. SC_DATA_LGLS 의 명령 컬럼에 "ACKW:..=1|0" 을 남기면
+//   WCS_TASK_CV 의 해당 스레드가 소비해 그 스레드가 쓴다 - 같은 Ack 워드를 만지는 다른 손이 없게 하고,
+//   (S/C·RGV 는) 캐시를 함께 맞춰 설비가 보고를 내릴 때 규약대로 Ack 도 내리게 한다.
+//   대상은 완료 Ack 두 종류뿐 - 이송지시·PLC→WCS 보고 비트는 절대 쓰지 않는다.
+void CScSkinDlg::OnAckWrite(UINT nID)
+{
+	if (m_pDoc == NULL || m_pSC_DATA == NULL) return;
+	if (!m_pDoc->Permission(_T("CScSkinDlg"), UPD_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+	BOOL bLoad = (nID == IDC_SCV_BTN_LCA_W);
+	CString strName = m_pSC_DATA->V_MC_NO_NM;
+	CString strOwner = CString(_T("")) ; strOwner.Format(_T("VEHICLE:1%d"), CConvert::ToInt(m_pSC_DATA->K_SC_NO) % 10);
+	CString strObs = CString(bLoad ? _T("LOAD_COMPLETE_ACK") : _T("UNLOAD_COMPLETE_ACK")) + _T("");
+	CString strRep = CString(bLoad ? _T("LOAD_COMPLETE") : _T("UNLOAD_COMPLETE")) + _T("");
+	CString strSig; strSig.Format(_T("%s"), bLoad ? _T("LC") : _T("UC"));
+	CString strCur;    GetDlgItemText(bLoad ? IDC_SCV_LED_LOAD_CMP_ACK : IDC_SCV_LED_UNLOAD_CMP_ACK, strCur);
+	CString strRepNow; GetDlgItemText(bLoad ? IDC_SCV_LED_LOAD_CMP : IDC_SCV_LED_UNLOAD_CMP, strRepNow);
+
+	// 다른 명령이 처리 대기 중이면 덮어쓰지 않는다
+	{
+		CString strChk;
+		strChk.Format(_T(" SELECT CMD_RQ_ID, CMD_RQ_YN FROM SC_DATA_LGLS WHERE WH_TYP = '%s' AND PLC_NO = '%s' AND MC_NO = '%s' "), (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pSC_DATA->K_PLC_NO, (LPCTSTR)m_pSC_DATA->K_SC_NO);
+		int nRowCnt = -1; CString strMessage;
+		_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nRowCnt, strMessage);
+		if (nRowCnt > 0)
+		{
+			CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
+			pRsw->MoveFirst();
+			CString strPendId = pRsw->GetItem(_T("CMD_RQ_ID"));
+			CString strPendYn = pRsw->GetItem(_T("CMD_RQ_YN"));
+			delete pRsw;
+			strPendId.Trim(); strPendYn.Trim();
+			if (strPendYn == _T("Y") && strPendId.Left(4) != _T("ACKW"))
+			{
+				CString strBusy; strBusy.Format(_T("다른 명령(%s)이 처리 대기 중입니다. 잠시 후 다시 하세요."), (LPCTSTR)strPendId);
+				AfxMessageBox(strBusy);
+				return;
+			}
+		}
+	}
+
+	CString strMsg;
+	strMsg.Format(_T("%s\n%s  (%s)\n\n현재 Ack = %s   /   설비 보고 %s = %s\n\n[예] = ON 으로 쓰기      [아니오] = OFF 로 쓰기      [취소]"),
+		(LPCTSTR)strName, (LPCTSTR)strObs, (LPCTSTR)(CLib::GetObsAddr(strOwner, strObs).IsEmpty() ? CString(_T("주소 미상")) : CLib::GetObsAddr(strOwner, strObs)),
+		(LPCTSTR)strCur, (LPCTSTR)strRep, (LPCTSTR)strRepNow);
+	int nRet = AfxMessageBox(strMsg, MB_YESNOCANCEL | MB_ICONQUESTION | MB_DEFBUTTON3);
+	if (nRet != IDYES && nRet != IDNO) return;
+	CString strCmd; strCmd.Format(_T("ACKW-%s=%d"), (LPCTSTR)strSig, (nRet == IDYES) ? 1 : 0);	// 구분자 '-' (':' 는 TASK DB 계층이 '@' 로 바꾼다)
+
+	CString strSql;
+	strSql.Format(_T(" UPDATE SC_DATA_LGLS SET CMD_RQ_ID = '%s', CMD_RQ_YN = 'Y' WHERE WH_TYP = '%s' AND PLC_NO = '%s' AND MC_NO = '%s' AND (CMD_RQ_YN <> 'Y' OR CMD_RQ_ID LIKE 'ACKW%%') "),
+		(LPCTSTR)strCmd, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pSC_DATA->K_PLC_NO, (LPCTSTR)m_pSC_DATA->K_SC_NO);
+	if (m_pDoc->ExcuteQueryString_DLG(strSql) != TRUE)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+	CString strLog; strLog.Format(_T("Ack 수동 쓰기 %s -> %s (%s %s)"), (LPCTSTR)strName, (LPCTSTR)strCmd, (LPCTSTR)strObs, (LPCTSTR)CLib::GetObsAddr(strOwner, strObs));
+	m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), m_pSC_DATA->V_ITN_LUGG_FK1, _T(""), _T(""), strLog);
 }

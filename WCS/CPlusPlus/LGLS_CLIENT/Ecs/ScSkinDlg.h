@@ -39,6 +39,7 @@ public:
 	int     m_nVehPanelW;	// 오른쪽 패널 폭
 	void SetVehPanelExpanded(BOOL bExpand);
 	afx_msg void OnBnClickedVehZoom();
+	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
 	CScSkinDlg(CWnd* pParent = NULL);   // 표준 생성자입니다.
 	CScSkinDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);   // 표준 생성자입니다.
 	virtual ~CScSkinDlg();
