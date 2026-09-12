@@ -137,6 +137,8 @@ public:
 	int      m_nRibbonTip;			// [RibbonMenu] ToolTip (-1=아직 안 읽음)
 	BOOL     m_bRibbonTipApplied;	// 리본 툴팁을 한 번이라도 적용했나
 	CMap<void*, void*, CString, CString&> m_mapTipOrig;	// 원래 툴팁(끌 때 되돌림)
+	CMap<void*, void*, CString, CString&> m_mapTipPath;	// [LGLS 2026-09-12] 버튼을 만들 때 쓴 아이콘 파일 경로(실제 경로 툴팁)
+	void     TipReg(CMFCRibbonBaseElement* pElem, LPCTSTR pszIconPath);	// 버튼 생성 직후 리소스 경로 등록
 	CString  BuildTitle();
 	void     UpdateTitleText(BOOL bForce);
 	void     ApplyRibbonToolTipIni(BOOL bForce);

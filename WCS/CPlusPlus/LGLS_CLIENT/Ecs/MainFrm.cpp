@@ -471,14 +471,17 @@ void CMainFrame::AddCategoryWCS()
 	pPanelConfig->Add(pBtnSign);*/
 
 	CMFCRibbonButton* pBtnEqpSuspend = new CMFCRibbonButton(ID_SYSTEM_EQP_SUSPEND, _T("EQP"), HICONFromPATH(GetConcatPath(strAppPath, _T("eqpsuspend"), strExtension)), TRUE);
+	TipReg(pBtnEqpSuspend, GetConcatPath(strAppPath, _T("eqpsuspend"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnEqpSuspend->SetAlwaysLargeImage();
 	pPanelConfig->Add(pBtnEqpSuspend);
 
 	CMFCRibbonButton* pBtnLogDelete = new CMFCRibbonButton(IDD_CONFIG_LOG_DELETE, _T("LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("configlogdelete"), strExtension)), TRUE);
+	TipReg(pBtnLogDelete, GetConcatPath(strAppPath, _T("configlogdelete"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnLogDelete->SetAlwaysLargeImage();
 	pPanelConfig->Add(pBtnLogDelete);
 
 	CMFCRibbonButton* pBtnConfigStatus = new CMFCRibbonButton(IDD_CONFIG_STATUS, _T("CONF"), HICONFromPATH(GetConcatPath(strAppPath, _T("configstatus"), strExtension)), TRUE);
+	TipReg(pBtnConfigStatus, GetConcatPath(strAppPath, _T("configstatus"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnConfigStatus->SetAlwaysLargeImage();
 	pPanelConfig->Add(pBtnConfigStatus);
 
@@ -488,6 +491,7 @@ void CMainFrame::AddCategoryWCS()
 	{
 		CMFCRibbonButton* pBtnIniOpen = new CMFCRibbonButton(ID_CONFIG_INI_OPEN, _T("INI 열기"),
 			HICONFromPATH(GetConcatPath(strAppPath, _T("iniopen"), strExtension)), TRUE);
+		TipReg(pBtnIniOpen, GetConcatPath(strAppPath, _T("iniopen"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnIniOpen->SetAlwaysLargeImage();
 		pPanelConfig->Add(pBtnIniOpen);
 	}
@@ -499,6 +503,7 @@ void CMainFrame::AddCategoryWCS()
 		//   ID_USER_USER 는 이미 ON_COMMAND_RANGE(ID_USER_USER, ID_USER_GROUP) 로 라우팅되어 있다.
 		//   RenameRibbonText 는 이 패널의 0~2번만 다시 이름 붙이므로 여기 캡션이 그대로 유지된다.
 		CMFCRibbonButton* pBtnUserUser = new CMFCRibbonButton(ID_USER_USER, _T("사용자"), HICONFromPATH(GetConcatPath(strAppPath, _T("sign"), strExtension)), TRUE);
+		TipReg(pBtnUserUser, GetConcatPath(strAppPath, _T("sign"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnUserUser->SetAlwaysLargeImage();
 		pPanelConfig->Add(pBtnUserUser);
 	}
@@ -514,12 +519,14 @@ void CMainFrame::AddCategoryWCS()
 	//pPanelView->Add(pBtnRack);
 
 	CMFCRibbonButton* pBtnJob = new CMFCRibbonButton(ID_VIEW_JOBLIST, _T("JOB-INFO"), HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+	TipReg(pBtnJob, GetConcatPath(strAppPath, _T("job"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnJob->SetAlwaysLargeImage();
 	pPanelView->Add(pBtnJob);
 
 	// [LGLS 2026-09-10] 공PLT작업 버튼 폐지 - 이 현장에서 쓰지 않는다(사용자 결정).
 
 	CMFCRibbonButton* pBtnSearch = new CMFCRibbonButton(ID_VIEW_SEARCH, _T("SEARCH"), HICONFromPATH(GetConcatPath(strAppPath, _T("search"), strExtension)), TRUE);
+	TipReg(pBtnSearch, GetConcatPath(strAppPath, _T("search"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnSearch->SetAlwaysLargeImage();
 	pPanelView->Add(pBtnSearch);
 
@@ -541,10 +548,12 @@ void CMainFrame::AddCategoryWCS()
 
 		// [LGLS 2026-07-19] 트랙 표시 모드 버튼 3종 (검은 배경 + 흰 글자 아이콘)
 		CMFCRibbonButton* pBtnViewJobNo = new CMFCRibbonButton(ID_MONITORING_VIEW_JOBNO, _T("작업번호"), HICONFromPATH(GetConcatPath(strAppPath, _T("j"), strExtension)), TRUE);
+		TipReg(pBtnViewJobNo, GetConcatPath(strAppPath, _T("j"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnViewJobNo->SetAlwaysLargeImage();
 		pPanelMonitor->Add(pBtnViewJobNo);
 
 		CMFCRibbonButton* pBtnViewTrackNo = new CMFCRibbonButton(ID_MONITORING_VIEW_TRACKNO, _T("트랙번호"), HICONFromPATH(GetConcatPath(strAppPath, _T("t"), strExtension)), TRUE);
+		TipReg(pBtnViewTrackNo, GetConcatPath(strAppPath, _T("t"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnViewTrackNo->SetAlwaysLargeImage();
 		pPanelMonitor->Add(pBtnViewTrackNo);
 
@@ -552,6 +561,7 @@ void CMainFrame::AddCategoryWCS()
 		if (::GetPrivateProfileInt(_T("MENU"), _T("PRODINFO_MENU"), 1, ECS_INI_FILE) != 0)
 		{
 			CMFCRibbonButton* pBtnViewProd = new CMFCRibbonButton(ID_MONITORING_VIEW_PRODINFO, _T("제품정보"), HICONFromPATH(GetConcatPath(strAppPath, _T("p"), strExtension)), TRUE);
+			TipReg(pBtnViewProd, GetConcatPath(strAppPath, _T("p"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 			pBtnViewProd->SetAlwaysLargeImage();
 			pPanelMonitor->Add(pBtnViewProd);
 		}
@@ -606,16 +616,19 @@ void CMainFrame::AddCategoryWCS()
 
 		CMFCRibbonButton* pBtnPaneJob = new CMFCRibbonButton(ID_PANE_SHOW_JOB, _T("작업정보"),
 			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_job"), strExtension)), TRUE);
+		TipReg(pBtnPaneJob, GetConcatPath(strAppPath, _T("pane_job"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnPaneJob->SetAlwaysLargeImage();
 		pPanelPaneView->Add(pBtnPaneJob);
 
 		CMFCRibbonButton* pBtnPaneInfo = new CMFCRibbonButton(ID_PANE_SHOW_INFO, _T("상세정보"),
 			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_info"), strExtension)), TRUE);
+		TipReg(pBtnPaneInfo, GetConcatPath(strAppPath, _T("pane_info"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnPaneInfo->SetAlwaysLargeImage();
 		pPanelPaneView->Add(pBtnPaneInfo);
 
 		CMFCRibbonButton* pBtnPaneVeh = new CMFCRibbonButton(ID_PANE_SHOW_VEH, _T("설비반송"),
 			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_veh"), strExtension)), TRUE);
+		TipReg(pBtnPaneVeh, GetConcatPath(strAppPath, _T("pane_veh"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnPaneVeh->SetAlwaysLargeImage();
 		pPanelPaneView->Add(pBtnPaneVeh);
 	}
@@ -640,6 +653,7 @@ void CMainFrame::AddCategoryWCS()
 			//   상태는 DB(COMMON_CODE SCH_OPT/AUTO_TIME)에 있어 IO_TASK 가 같은 값을 본다.
 			CMFCRibbonButton* pBtnAutoTime = new CMFCRibbonButton(ID_CONFIG_AUTO_TIME, _T("시간기반 자동처리"),
 				HICONFromPATH(GetConcatPath(strAppPath, _T("autotime"), strExtension)), TRUE);
+			TipReg(pBtnAutoTime, GetConcatPath(strAppPath, _T("autotime"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 			pBtnAutoTime->SetAlwaysLargeImage();
 			pBtnAutoTime->SetToolTipText(_T("시간 기반 자동 처리"));
 			pBtnAutoTime->SetDescription(_T("설비 완료 신호가 오지 않아도 경과시간으로 완료를 추정할지 선택합니다."));
@@ -664,10 +678,12 @@ void CMainFrame::AddCategoryMANUAL()
 	CMFCRibbonPanel* pPanelManual = pCategory->AddPanel(_T("MANUAL"));
 
 	CMFCRibbonButton* pBtnManualJob = new CMFCRibbonButton(ID_MANUAL_JOB, _T("JOB"), HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+	TipReg(pBtnManualJob, GetConcatPath(strAppPath, _T("job"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnManualJob->SetAlwaysLargeImage();
 	pPanelManual->Add(pBtnManualJob);
 
 	CMFCRibbonButton* pBtnManualSc = new CMFCRibbonButton(ID_MANUAL_SC, _T("SC"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc"), strExtension)), TRUE);
+	TipReg(pBtnManualSc, GetConcatPath(strAppPath, _T("sc"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnManualSc->SetAlwaysLargeImage();
 	pPanelManual->Add(pBtnManualSc);
 
@@ -677,6 +693,7 @@ void CMainFrame::AddCategoryMANUAL()
 	//pPanelManual->Add(pBtnManualEmpty);
 
 	CMFCRibbonButton* pBtnManualRtv = new CMFCRibbonButton(ID_MANUAL_RTV, _T("RTV"), HICONFromPATH(GetConcatPath(strAppPath, _T("rtv"), strExtension)), TRUE);
+	TipReg(pBtnManualRtv, GetConcatPath(strAppPath, _T("rtv"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnManualRtv->SetAlwaysLargeImage();
 	pPanelManual->Add(pBtnManualRtv);
 
@@ -686,10 +703,12 @@ void CMainFrame::AddCategoryMANUAL()
 		CMFCRibbonPanel* pPanelSemiTest = pCategory->AddPanel(_T("반자동 TEST"));
 
 		CMFCRibbonButton* pBtnSemiTest = new CMFCRibbonButton(ID_MANUAL_SEMITEST, _T("반자동 TEST"), HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
+		TipReg(pBtnSemiTest, GetConcatPath(strAppPath, _T("job"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnSemiTest->SetAlwaysLargeImage();
 		pPanelSemiTest->Add(pBtnSemiTest);
 
 		CMFCRibbonButton* pBtnTestClear = new CMFCRibbonButton(ID_MANUAL_TESTCLEAR, _T("TEST 초기화"), HICONFromPATH(GetConcatPath(strAppPath, _T("empty"), strExtension)), TRUE);
+		TipReg(pBtnTestClear, GetConcatPath(strAppPath, _T("empty"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 		pBtnTestClear->SetAlwaysLargeImage();
 		pPanelSemiTest->Add(pBtnTestClear);
 	}
@@ -710,24 +729,29 @@ void CMainFrame::AddCategoryLOG()
 	CMFCRibbonPanel* pPanelLog = pCategory->AddPanel(_T("LOG"));
 
 	CMFCRibbonButton* pBtnIO_LOG = new CMFCRibbonButton(ID_LOG_IO, _T("IO_LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("iolog"), strExtension)), TRUE);
+	TipReg(pBtnIO_LOG, GetConcatPath(strAppPath, _T("iolog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnIO_LOG->SetAlwaysLargeImage();
 	pPanelLog->Add(pBtnIO_LOG);
 
 	CMFCRibbonButton* pBtnMES_LOG = new CMFCRibbonButton(ID_LOG_MES, _T("MES_LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("meslog"), strExtension)), TRUE);
+	TipReg(pBtnMES_LOG, GetConcatPath(strAppPath, _T("meslog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnMES_LOG->SetAlwaysLargeImage();
 	pPanelLog->Add(pBtnMES_LOG);
 
 	CMFCRibbonButton* pBtnEQP_HIS_LOG = new CMFCRibbonButton(ID_LOG_EQP_HIS, _T("EQP_HIS_LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("eqphislog"), strExtension)), TRUE);
+	TipReg(pBtnEQP_HIS_LOG, GetConcatPath(strAppPath, _T("eqphislog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnEQP_HIS_LOG->SetAlwaysLargeImage();
 	pPanelLog->Add(pBtnEQP_HIS_LOG);
 
 	// [LGLS 2026-07-22] WC(BCR)로그 버튼 제거 ? 대체 시스템 미사용
 
 	CMFCRibbonButton* pBtnCLIENT_LOG = new CMFCRibbonButton(ID_LOG_CLIENT, _T("CLIENT_LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("clientlog"), strExtension)), TRUE);
+	TipReg(pBtnCLIENT_LOG, GetConcatPath(strAppPath, _T("clientlog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnCLIENT_LOG->SetAlwaysLargeImage();
 	pPanelLog->Add(pBtnCLIENT_LOG);
 
 	CMFCRibbonButton* pBtnWCS_LOG = new CMFCRibbonButton(IDD_LOG_WCS_LOG_PGR, _T("WCS_LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("wcslog"), strExtension)), TRUE);
+	TipReg(pBtnWCS_LOG, GetConcatPath(strAppPath, _T("wcslog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnWCS_LOG->SetAlwaysLargeImage();
 	pPanelLog->Add(pBtnWCS_LOG);
 
@@ -736,6 +760,7 @@ void CMainFrame::AddCategoryLOG()
 	CMFCRibbonPanel* pPanelAlarm = pCategory->AddPanel(_T("알람"));
 	CMFCRibbonButton* pBtnAlarm = new CMFCRibbonButton(ID_ALARM_SHOW, _T("알람"),
 		HICONFromPATH(GetConcatPath(strAppPath, _T("eqphislog"), strExtension)), TRUE);
+	TipReg(pBtnAlarm, GetConcatPath(strAppPath, _T("eqphislog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnAlarm->SetAlwaysLargeImage();
 	pPanelAlarm->Add(pBtnAlarm);
 
@@ -1139,6 +1164,7 @@ void CMainFrame::AddCategoryUSER()
 	CMFCRibbonPanel* pPanelUser = pCategory->AddPanel(_T("USER"));
 
 	CMFCRibbonButton* pBtnUserUser = new CMFCRibbonButton(ID_USER_USER, _T("USER"), HICONFromPATH(GetConcatPath(strAppPath, _T("USER"), strExtension)), TRUE);
+	TipReg(pBtnUserUser, GetConcatPath(strAppPath, _T("USER"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 	pBtnUserUser->SetAlwaysLargeImage();
 	pPanelUser->Add(pBtnUserUser);
 
@@ -2558,7 +2584,7 @@ CString CMainFrame::ReloadTitleAndTipIni()
 	return strChg;
 }
 
-// [RibbonMenu] ToolTip=1 : 리본 버튼 툴팁을 "탭 > 패널 > 버튼" 경로로, 0 : 원래 툴팁으로 되돌린다.
+// [RibbonMenu] ToolTip=1 : 리본 버튼 툴팁을 실제 리소스 파일 경로(아이콘 png·문구 ini)로, 0 : 원래 툴팁으로 되돌린다.
 //   탭·패널 이름은 언어 전환(CEcsDoc::UpdateRibbonLang)으로 바뀌므로 그때도 다시 부른다.
 // 적용 증거(UI 로그) : 적용한 버튼 수와 첫 버튼의 툴팁 - 툴팁은 화면 캡처로 잡기 어려워 로그로 확인한다
 static int     s_nTipCnt = 0;
@@ -2592,8 +2618,20 @@ void CMainFrame::ApplyRibbonToolTipIni(BOOL bForce)
 	CLib::UiLog(_T("[INI] ribbon tooltip %s n=%d sample=%s"), bOn ? _T("on") : _T("off"), s_nTipCnt, (LPCTSTR)s_strTipSample);
 }
 
+// [LGLS 2026-09-12] 버튼을 만들 때 쓴 아이콘 파일 경로를 기억해 둔다(실제 경로 툴팁용)
+void CMainFrame::TipReg(CMFCRibbonBaseElement* pElem, LPCTSTR pszIconPath)
+{
+	if (pElem == NULL || pszIconPath == NULL) return;
+	m_mapTipPath.SetAt((void*)pElem, CString(pszIconPath));
+}
+
+// [RibbonMenu] ToolTip=1 : 툴팁 = ★실제 리소스 파일 경로★ (사용자 지시 - 메뉴 계층이 아니라 실제 경로)
+//   1줄 : 아이콘 png 전체 경로 (파일이 없으면 "(파일 없음)" 을 붙여 빠진 리소스를 바로 알 수 있게)
+//   2줄 : 같은 폴더의 문구 ini (rc_resource\mainframe_xxx\xxx.ini - 버튼 이름은 여기서 읽는다)
+//   경로를 등록하지 않은 원소(코드로만 만든 것)는 원래 툴팁을 둔다. 0 이면 모두 원래 툴팁으로.
 void CMainFrame::SetElemPathTip(CMFCRibbonBaseElement* pElem, const CString& strCat, const CString& strPanel, BOOL bOn)
 {
+	UNREFERENCED_PARAMETER(strCat); UNREFERENCED_PARAMETER(strPanel);
 	if (pElem == NULL) return;
 	if (pElem->IsKindOf(RUNTIME_CLASS(CMFCRibbonButtonsGroup)))		// 버튼 묶음이면 안의 버튼마다
 	{
@@ -2601,10 +2639,6 @@ void CMainFrame::SetElemPathTip(CMFCRibbonBaseElement* pElem, const CString& str
 		for (int i = 0; i < pGrp->GetCount(); i++) SetElemPathTip(pGrp->GetButton(i), strCat, strPanel, bOn);
 		return;
 	}
-	CString strText = pElem->GetText();
-	strText.Replace(_T("\n"), _T(" "));
-	strText.Trim();
-	if (strText.IsEmpty()) return;							// 구분선·여백 라벨
 	void* pKey = (void*)pElem;
 	CString strOrig;
 	if (!m_mapTipOrig.Lookup(pKey, strOrig))
@@ -2612,18 +2646,29 @@ void CMainFrame::SetElemPathTip(CMFCRibbonBaseElement* pElem, const CString& str
 		strOrig = pElem->GetToolTipText();
 		m_mapTipOrig.SetAt(pKey, strOrig);
 	}
-	if (bOn)
+	CString strIcon;
+	if (bOn && m_mapTipPath.Lookup(pKey, strIcon) && !strIcon.IsEmpty())
 	{
-		CString strPath;
-		strPath.Format(_T("%s > %s > %s"), (LPCTSTR)strCat, (LPCTSTR)strPanel, (LPCTSTR)strText);
-		pElem->SetToolTipText(strPath);
+		CString strTip = strIcon;
+		if (::GetFileAttributes(strIcon) == INVALID_FILE_ATTRIBUTES) strTip += _T("  (파일 없음)");
+		int nSl = strIcon.ReverseFind('\\');
+		if (nSl > 0)
+		{
+			CString strDir = strIcon.Left(nSl);
+			CString strFolder = strDir.Mid(strDir.ReverseFind('\\') + 1);		// mainframe_manual
+			if (strFolder.Find(_T("mainframe_")) == 0)
+			{
+				CString strIni = strDir + _T("\\") + strFolder.Mid(10) + _T(".ini");	// manual.ini
+				if (::GetFileAttributes(strIni) != INVALID_FILE_ATTRIBUTES) strTip += _T("\n") + strIni;
+			}
+		}
+		pElem->SetToolTipText(strTip);
 		s_nTipCnt++;
-		if (s_strTipSample.IsEmpty()) s_strTipSample = strPath;
+		if (s_strTipSample.IsEmpty()) s_strTipSample = strTip;
 	}
 	else
 	{
 		pElem->SetToolTipText(strOrig);
-		s_nTipCnt++;
-		if (s_strTipSample.IsEmpty()) s_strTipSample = strText + _T(" -> ") + (strOrig.IsEmpty() ? CString(_T("(none)")) : strOrig);
+		if (!bOn) { s_nTipCnt++; if (s_strTipSample.IsEmpty()) s_strTipSample = CString(pElem->GetText()) + _T(" -> ") + (strOrig.IsEmpty() ? CString(_T("(none)")) : strOrig); }
 	}
 }
