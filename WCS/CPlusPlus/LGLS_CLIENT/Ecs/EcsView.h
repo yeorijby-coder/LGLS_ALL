@@ -85,6 +85,15 @@ public:
 	ULONGLONG m_ullIniPendingTime;	// 바뀐 것을 봤지만 아직 1초가 안 지난 시각
 	int       m_nIniZoomBtn;		// 마지막으로 반영한 ZOOM_BTN 값
 	void CheckIniHotReload();
+
+	// [LGLS 2026-09-13] 메인 화면 2안 (Ecs.ini [MENU] MAIN_UI=2, 기동 시 1회 판단 - 바꾸면 재기동)
+	//   종전 범례가 있던 왼쪽 자리에 [통신 상태 + 축소 범례] 와 [작업정보] 를 고정한다.
+	//   짝이 되는 레이아웃 XML 에서는 범례 칸을 빼 둔다. 지도는 그대로다.
+	int   m_nMainUi;			// 1=종전 화면, 2=왼쪽 고정 배치
+	CWnd* m_pInfoBar;			// 통신 상태 한 줄 + 축소 범례 두 줄
+	CWnd* m_pJobFixed;		// 작업정보 (CPanelJobDlg)
+	void  CreateMainUi2();
+	void  LayoutMainUi2();
 	void ReloadIniHot();
 	LRESULT OnRefreshDialog(WPARAM wParam, LPARAM lParam);
 	LRESULT OnViewLayoutInfo(WPARAM wParam, LPARAM lParam);

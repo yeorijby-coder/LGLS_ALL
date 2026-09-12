@@ -86,3 +86,10 @@ docs/**/__pycache__/
 
 # [LGLS 2026-09-11] SC 대화상자 재현 시험용 사본 (형상관리 대상 아님)
 EXE_20260911_AM/
+
+# [LGLS 2026-09-13] 메인 화면 2안 직전 소스 백업 (git 이력으로도 복구 가능하므로 추적하지 않는다)
+Backup/LGLS_CLIENT_20260913_UI2_before/
+
+# [LGLS 2026-09-13] 메인 화면 2안 시험용 실행 폴더 (95MB, EXE 복제본이라 추적하지 않는다)
+#   다시 만들려면 : EXE\WCS_CLIENT 복사 → Ecs.exe 교체 → [MENU] MAIN_UI=2 → EcsLayout1_UI2.xml 로 교체
+EXE_UI2/

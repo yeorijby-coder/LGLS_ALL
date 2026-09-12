@@ -21,6 +21,7 @@
 #include "FireMessageDlg.h"
 #include "ViewJobListDlg.h"
 #include "RecordSetWrap.h"
+#include "PanelJobDlg.h"		// [LGLS 2026-09-13] 메인 화면 2안 - 작업정보 판넬을 왼쪽에 고정
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -50,10 +51,251 @@ END_MESSAGE_MAP()
 
 
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// [LGLS 2026-09-13] 메인 화면 2안 : 통신 상태 한 줄 + 축소 범례 두 줄
+//   종전 범례 표(69칸)는 화면의 왼쪽 절반을 먹어 지도로 눈이 가지 않았다(사용자 지적).
+//   색만 확인하면 되는 물건이라 칩 두 줄로 줄이고, 그 위에 통신 상태를 놓는다.
+//   통신 상태는 DB 의 마지막 갱신 시각으로 판단한다 - 리본의 램프 3개는 색이 고정이라 실제 상태가 아니다.
+//     설비   = CV_DATA.READ_UPD_DT   (WCS_TASK_CV 가 0.3초마다 갱신)
+//     상위   = HOST_IF_LOG.INS_DT    (HOST 전문이 오갈 때마다)
+//     스케줄 = JOB_MST.UPD_DT        (IO_TASK 가 작업을 진행시킬 때마다)
+// ═══════════════════════════════════════════════════════════════════════════
+class CLglsInfoBar : public CWnd
+{
+public:
+	CEcsDoc* m_pDoc;
+	CLglsInfoBar() { m_pDoc = NULL; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
+	enum { TIMER_HB = 7501 };
+	// 폭이 좁으면 칩 이름이 잘리므로 열 수를 폭에 맞춰 정하고, 그만큼 높이를 뷰에 알려 준다.
+	static int ChipCols(int nWidth) { if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
+	static int CalcHeight(int nWidth) { int nRow = (16 + ChipCols(nWidth) - 1) / ChipCols(nWidth); return 30 + 5 + nRow * 19 + 4; }
+protected:
+	int m_nAge[3];			// 설비 / 상위 / 스케줄 마지막 갱신 경과(초). -1 = 아직 모름
+	void ReadHeartbeat();
+	afx_msg void OnPaint();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	DECLARE_MESSAGE_MAP()
+};
+
+BEGIN_MESSAGE_MAP(CLglsInfoBar, CWnd)
+	ON_WM_PAINT()
+	ON_WM_TIMER()
+	ON_WM_ERASEBKGND()
+END_MESSAGE_MAP()
+
+BOOL CLglsInfoBar::OnEraseBkgnd(CDC* pDC)
+{
+	UNREFERENCED_PARAMETER(pDC);
+	return TRUE;			// 바탕은 OnPaint 에서 한 번에 그린다(깜빡임 방지)
+}
+
+void CLglsInfoBar::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == TIMER_HB)
+	{
+		ReadHeartbeat();
+		Invalidate(FALSE);
+		return;
+	}
+	CWnd::OnTimer(nIDEvent);
+}
+
+void CLglsInfoBar::ReadHeartbeat()
+{
+	if (m_pDoc == NULL) return;
+	CString strSql = _T("");
+	strSql += _T(" SELECT ISNULL((SELECT DATEDIFF(second, MAX(READ_UPD_DT), GETDATE()) FROM CV_DATA),     99999) AS EQP \n");
+	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(INS_DT),      GETDATE()) FROM HOST_IF_LOG), 99999) AS HST \n");
+	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(UPD_DT),      GETDATE()) FROM JOB_MST),     99999) AS SCH ");
+	int nRowCnt = 0;
+	CString strMsg = _T("");
+	_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+	if (nRowCnt <= 0)
+	{
+		for (int i = 0; i < 3; i++) m_nAge[i] = -1;		// 조회 실패 = 회색(모름)
+		return;
+	}
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+	pRsw->MoveFirst();
+	m_nAge[0] = _ttoi(pRsw->GetItem(_T("EQP")));
+	m_nAge[1] = _ttoi(pRsw->GetItem(_T("HST")));
+	m_nAge[2] = _ttoi(pRsw->GetItem(_T("SCH")));
+	delete pRsw;
+}
+
+// 경과 초 → 램프 색 (초록 정상 / 주황 늦음 / 빨강 끊김 / 회색 모름)
+static COLORREF PfLamp(int nAge, int nOk, int nWarn)
+{
+	if (nAge < 0 || nAge >= 99999) return RGB(150, 150, 150);
+	if (nAge <= nOk)   return RGB( 30, 142,  62);
+	if (nAge <= nWarn) return RGB(214, 139,   0);
+	return RGB(192, 38, 31);
+}
+
+static CString PfAgeText(int nAge)
+{
+	CString s;
+	if (nAge < 0 || nAge >= 99999) return _T("확인 불가");
+	if (nAge < 60)   { s.Format(_T("%d초 전"), nAge); return s; }
+	if (nAge < 3600) { s.Format(_T("%d분 전"), nAge / 60); return s; }
+	s.Format(_T("%d시간 전"), nAge / 3600);
+	return s;
+}
+
+void CLglsInfoBar::OnPaint()
+{
+	CPaintDC dc(this);
+	CRect rc;
+	GetClientRect(&rc);
+
+	// 메모리 DC 에 그려 한 번에 올린다
+	CDC mem;
+	mem.CreateCompatibleDC(&dc);
+	CBitmap bmp;
+	bmp.CreateCompatibleBitmap(&dc, rc.Width(), rc.Height());
+	CBitmap* pOldBmp = mem.SelectObject(&bmp);
+	mem.FillSolidRect(rc, RGB(255, 255, 255));
+
+	CFont fnt, fntB;
+	fnt.CreateFont(-12, 0, 0, 0, FW_NORMAL, 0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
+	fntB.CreateFont(-12, 0, 0, 0, FW_BOLD,   0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
+	CFont* pOldFont = mem.SelectObject(&fntB);
+	mem.SetBkMode(TRANSPARENT);
+
+	// ── 1) 통신 상태 한 줄 ─────────────────────────────
+	const int nRowH = 30;
+	struct { LPCTSTR name; int ok; int warn; } CM[3] = {
+		{ _T("설비"), 10, 60 }, { _T("상위"), 60, 300 }, { _T("스케줄"), 120, 900 } };
+	int nCellW = rc.Width() / 3;
+	for (int i = 0; i < 3; i++)
+	{
+		CRect rcC(i * nCellW + 6, 4, (i + 1) * nCellW - 2, 4 + nRowH - 8);
+		CRect rcDot(rcC.left, rcC.top + 4, rcC.left + 11, rcC.top + 15);
+		CBrush br(PfLamp(m_nAge[i], CM[i].ok, CM[i].warn));
+		CBrush* pOldBr = mem.SelectObject(&br);
+		mem.Ellipse(rcDot);
+		mem.SelectObject(pOldBr);
+		mem.SelectObject(&fntB);
+		mem.SetTextColor(RGB(20, 32, 41));
+		CRect rcT(rcDot.right + 5, rcC.top, rcC.right, rcC.bottom);
+		mem.DrawText(CM[i].name, rcT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+		mem.SelectObject(&fnt);
+		mem.SetTextColor(RGB(90, 108, 118));
+		mem.DrawText(PfAgeText(m_nAge[i]), rcT, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+	}
+	mem.FillSolidRect(CRect(4, nRowH, rc.right - 4, nRowH + 1), RGB(214, 222, 224));
+
+	// ── 2) 축소 범례 (색만 확인하면 되므로 칩 두 줄) ─────
+	CConfig* pCfg = (m_pDoc != NULL) ? m_pDoc->m_pConfig : NULL;
+	if (pCfg != NULL)
+	{
+		struct { COLORREF clr; LPCTSTR name; } CH[16] = {
+			{ pCfg->m_clrUSER_COLOR_STO,       _T("입고") },
+			{ pCfg->m_clrUSER_COLOR_RET,       _T("출고") },
+			{ pCfg->m_clrUSER_COLOR_MOVE,      _T("이동") },
+			{ pCfg->m_clrUSER_COLOR_RTR,       _T("랙투랙") },
+			{ pCfg->m_clrUSER_COLOR_ATA,       _T("호기간") },
+			{ pCfg->m_clrUSER_COLOR_SEMI_STO,  _T("반자동입고") },
+			{ pCfg->m_clrUSER_COLOR_SEMI_RET,  _T("반자동출고") },
+			{ pCfg->m_clrUSER_COLOR_SEMI_MOVE, _T("반자동이동") },
+			{ pCfg->m_clrUSER_COLOR_STN_STO,   _T("입고대") },
+			{ pCfg->m_clrUSER_COLOR_STN_RET,   _T("출고대") },
+			{ pCfg->m_clrUSER_COLOR_HS_STO,    _T("입고HS") },
+			{ pCfg->m_clrUSER_COLOR_HS_RET,    _T("출고HS") },
+			{ pCfg->m_clrUSER_COLOR_SUSPEND,   _T("일시정지") },
+			{ pCfg->m_clrUSER_COLOR_ERROR,     _T("에러") },
+			{ pCfg->m_clrUSER_COLOR_CV_SEARCH, _T("검색") },
+			{ pCfg->m_clrUSER_COLOR_TRACKING,  _T("작업번호") } };
+		mem.SelectObject(&fnt);
+		mem.SetTextColor(RGB(35, 48, 56));
+		int nCol = ChipCols(rc.Width());
+		int nW = (rc.Width() - 8) / nCol;
+		int nH = 19;
+		int nTop = nRowH + 5;
+		for (int i = 0; i < 16; i++)
+		{
+			int x = 4 + (i % nCol) * nW;
+			int y = nTop + (i / nCol) * nH;
+			CRect rcBox(x, y + 3, x + 12, y + 15);
+			mem.FillSolidRect(rcBox, CH[i].clr);
+			CBrush brFrm(RGB(90, 90, 90));
+			mem.FrameRect(rcBox, &brFrm);
+			CRect rcTx(rcBox.right + 3, y, x + nW - 2, y + nH);
+			mem.DrawText(CH[i].name, rcTx, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+		}
+	}
+
+	dc.BitBlt(0, 0, rc.Width(), rc.Height(), &mem, 0, 0, SRCCOPY);
+	mem.SelectObject(pOldFont);
+	mem.SelectObject(pOldBmp);
+}
+
+// 왼쪽 고정 칸(통신 + 범례 + 작업정보)을 만든다. Ecs.ini [MENU] MAIN_UI=2 일 때만.
+void CEcsView::CreateMainUi2()
+{
+	m_nMainUi = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI"), 1, ECS_INI_FILE);
+	if (m_nMainUi != 2) return;
+	CEcsDoc* pDoc = GetDocument();
+	if (pDoc == NULL) return;
+
+	if (m_pInfoBar == NULL)
+	{
+		CLglsInfoBar* pBar = new CLglsInfoBar();
+		pBar->m_pDoc = pDoc;
+		LPCTSTR pszCls = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW,
+			::LoadCursor(NULL, IDC_ARROW), (HBRUSH)::GetStockObject(WHITE_BRUSH), NULL);
+		if (pBar->CreateEx(0, pszCls, _T(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+					   CRect(0, 0, 10, 10), this, 0))
+		{
+			pBar->SetTimer(CLglsInfoBar::TIMER_HB, 5000, NULL);
+			m_pInfoBar = pBar;
+		}
+		else
+			delete pBar;
+	}
+
+	if (m_pJobFixed == NULL)
+	{
+		// 이미 있는 [작업정보] 판넬을 그대로 쓴다 - 표 항목·필터 탭·자동 갱신이 판넬과 같다.
+		CPanelJobDlg* pJob = new CPanelJobDlg(this);
+		pJob->m_pDoc = pDoc;
+		if (pJob->Create(IDD_PANEL_JOB, this))
+		{
+			pJob->ShowWindow(SW_SHOW);
+			m_pJobFixed = pJob;
+		}
+		else
+			delete pJob;
+	}
+
+	LayoutMainUi2();
+	CLib::UiLog(_T("[UI2] left column created bar=%d job=%d"), (m_pInfoBar != NULL) ? 1 : 0, (m_pJobFixed != NULL) ? 1 : 0);
+}
+
+// 왼쪽 칸의 폭은 종전 범례가 쓰던 만큼(격자 42칸 중 19칸)이라 지도는 지금 자리 그대로다.
+void CEcsView::LayoutMainUi2()
+{
+	if (m_nMainUi != 2) return;
+	CRect rc;
+	GetClientRect(&rc);
+	if (rc.Width() < 200 || rc.Height() < 200) return;
+	int nLeft = rc.Width() * 19 / 42;
+	if (nLeft < 420) nLeft = 420;
+	if (nLeft > 1000) nLeft = 1000;
+	int nBarH = CLglsInfoBar::CalcHeight(nLeft - 12);		// 통신 한 줄 + 범례(폭에 따라 2~4줄)
+	if (m_pInfoBar != NULL && ::IsWindow(m_pInfoBar->m_hWnd))
+		m_pInfoBar->SetWindowPos(&wndTop, 6, 6, nLeft - 12, nBarH, SWP_SHOWWINDOW);
+	if (m_pJobFixed != NULL && ::IsWindow(m_pJobFixed->m_hWnd))
+		m_pJobFixed->SetWindowPos(&wndTop, 6, 6 + nBarH + 6, nLeft - 12, rc.Height() - nBarH - 24, SWP_SHOWWINDOW);
+}
+
 CEcsView::CEcsView()
 	: CFormView(CEcsView::IDD)
 {
 	m_ullIniWriteTime = 0; m_ullIniPendingTime = 0; m_nIniZoomBtn = -1;	// [LGLS 2026-09-12] ini 핫 리로드
+	m_nMainUi = 1; m_pInfoBar = NULL; m_pJobFixed = NULL;	// [LGLS 2026-09-13] 메인 화면 2안
 	m_nSearchType = 0;
 	m_bSearchFlag = FALSE;
 	m_nSearchCount = 0;
@@ -175,6 +417,7 @@ void CEcsView::OnInitialUpdate()
 
 	pDoc->UpdateRibbonLang();
 	::SetTimer(this->m_hWnd, 1000, NULL, NULL);
+	CreateMainUi2();		// [LGLS 2026-09-13] MAIN_UI=2 이면 왼쪽 고정 칸을 만든다
 	Invalidate(TRUE);
 }
 
@@ -403,6 +646,7 @@ void CEcsView::OnRButtonUp(UINT nFlags, CPoint point)
 void CEcsView::OnSize(UINT nType, int cx, int cy) 
 {
 	CFormView::OnSize(nType, cx, cy);
+	LayoutMainUi2();		// [LGLS 2026-09-13] 왼쪽 고정 칸 다시 배치
 
 	
 	
