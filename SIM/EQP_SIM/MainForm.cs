@@ -84,6 +84,16 @@ namespace EQP_SIM
                                  " (관측값 " + obsMap.Count + "점)";
                 lblStatus.Text = "가동 중 — ECS 접속 대기";
 
+                // [LGLS 2026-09-12] 고장 주입 프리셋 (EQP_SIM.ini [FAULT] A=1 / B=1 / COUNT=n) - 자동 시험용.
+                //   체크박스 Checked 대입이 CheckedChanged 를 태워 엔진 플래그까지 같이 선다.
+                try
+                {
+                    nudFaultA.Value = Math.Max(0, Math.Min(99, config.GetInt("FAULT", "COUNT", 1)));
+                    if (config.GetBool("FAULT", "A", false)) chkFaultA.Checked = true;
+                    else if (config.GetBool("FAULT", "B", false)) chkFaultB.Checked = true;
+                }
+                catch { }
+
                 BuildMemToolPanel();   // [LGLS 2026-09-02] 수동 메모리 쓰기/읽기 + 구ECS 주소 변환
                 timerUi.Start();
             }
@@ -309,6 +319,63 @@ namespace EQP_SIM
             if (engine == null) return;
             engine.InjectEmptyRetrieval = chkInjectEmpty.Checked;
             if (chkInjectEmpty.Checked) lblStatus.Text = "공출고 에러 예약됨 — 다음 출고 크레인에서 발생(ERR 58)";
+        }
+
+        // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (현장 2026-09-11 재현) - 사용자 지시
+        //   A : WCS 가 쓴 Unload Complete Ack 를 지운다(외부 되쓰기). 크레인은 M785 를 들고 기다린다.
+        //   B : 크레인이 Unload Complete 를 올렸다 바로 철회하고 자기 사이클을 끝낸다(포기).
+        //   둘 다 하역 포트의 벨트 인수가 보류된다. A 해제 = 다음 Ack 부터 정상, B 해제 = 보류 화물 수동 인수.
+        private void chkFaultA_CheckedChanged(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            engine.FaultAckLoss = chkFaultA.Checked;
+            engine.FaultAckLossCount = (int)nudFaultA.Value;
+            engine.Log("[고장 주입] 상황 A " + (chkFaultA.Checked ? "켬 (지울 횟수 " + nudFaultA.Value + ", 0=계속)" : "끔"));
+            if (chkFaultA.Checked)
+            {
+                if (chkFaultB.Checked) chkFaultB.Checked = false;   // 둘 중 하나만
+                lblStatus.Text = "상황 A 예약됨 — 다음 1호기 출고 하역에서 Ack 를 " + (nudFaultA.Value == 0 ? "계속" : nudFaultA.Value + "회") + " 지운다 (벨트 인수 보류)";
+            }
+            else
+            {
+                engine.CancelFaultA();
+                lblStatus.Text = "상황 A 해제 — 진행 중이던 건은 다음 Ack 부터 정상 완료";
+            }
+        }
+
+        private void nudFaultA_ValueChanged(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            engine.FaultAckLossCount = (int)nudFaultA.Value;
+        }
+
+        // [LGLS 2026-09-12] [고장 해제·수동 인수] : A/B 를 끄고, 보류 중인 화물의 벨트 인수를 재개한다
+        //   (현장에서 PLC 담당자가 포트 시퀀스를 다시 태우거나 벨트를 수동으로 돌린 것에 해당)
+        private void btnFaultClear_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            if (chkFaultA.Checked) chkFaultA.Checked = false;   // → CancelFaultA
+            if (chkFaultB.Checked) chkFaultB.Checked = false;   // → ReleaseBlockedHandovers
+            int n = engine.ReleaseBlockedHandovers();           // 체크가 이미 꺼져 있던 경우도 보류 화물은 푼다
+            engine.Log("[고장 주입] 해제 버튼 - 보류 화물 " + n + "건 수동 인수");
+            lblStatus.Text = "고장 주입 해제 — 보류 화물 " + n + "건 수동 인수(벨트 재개)";
+        }
+
+        private void chkFaultB_CheckedChanged(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            engine.FaultAckTimeout = chkFaultB.Checked;
+            engine.Log("[고장 주입] 상황 B " + (chkFaultB.Checked ? "켬" : "끔"));
+            if (chkFaultB.Checked)
+            {
+                if (chkFaultA.Checked) chkFaultA.Checked = false;   // 둘 중 하나만
+                lblStatus.Text = "상황 B 예약됨 — 다음 1호기 출고 하역에서 보고를 바로 철회 (벨트 인수 보류, 해제 시 수동 인수)";
+            }
+            else
+            {
+                int n = engine.ReleaseBlockedHandovers();
+                lblStatus.Text = "상황 B 해제 — 보류 화물 " + n + "건 수동 인수(벨트 재개)";
+            }
         }
 
         // [LGLS 2026-09-05] [설비 에러 해제] : 현장 조작반에서 사람이 크레인 에러를 푸는 동작을 흉내낸다.

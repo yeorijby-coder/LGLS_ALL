@@ -391,6 +391,34 @@ namespace EQP_SIM.Sim
             UpdateWaitOut();
         }
 
+        /// <summary>[LGLS 2026-09-12] 포트 위 파렛트의 벨트 인수 보류 설정/해제 (고장 주입 상황 A/B). 없으면 false.</summary>
+        public bool SetHandoverBlocked(int port, bool blocked)
+        {
+            int idx = Def.OrderOf(port);
+            SimPallet p;
+            if (idx <= 0 || !Pallets.TryGetValue(idx, out p)) return false;
+            if (p.HandoverBlocked == blocked) return true;
+            p.HandoverBlocked = blocked;
+            if (!blocked) p.MoveReadyAt = DateTime.Now.AddMilliseconds(engine.MoveMs);
+            engine.Log(Def.Id + " P" + port + (blocked ? " 벨트 인수 보류(핸드셰이크 대기)" : " 벨트 인수 재개") + " (JOB " + p.Id + ")");
+            return true;
+        }
+
+        /// <summary>[LGLS 2026-09-12] 보류 중인 파렛트를 전부 풀어 준다(운전원이 PLC 에서 수동 인수한 상황 재현). 반환: 푼 개수.</summary>
+        public int ReleaseBlockedHandovers()
+        {
+            int n = 0;
+            foreach (var kv in Pallets)
+            {
+                if (!kv.Value.HandoverBlocked) continue;
+                kv.Value.HandoverBlocked = false;
+                kv.Value.MoveReadyAt = DateTime.Now.AddMilliseconds(engine.MoveMs);
+                engine.Log(Def.Id + " P" + Def.Ports[kv.Key - 1] + " 벨트 인수 수동 재개 (JOB " + kv.Value.Id + ")");
+                n++;
+            }
+            return n;
+        }
+
         /// <summary>차량(RGV/SC)이 포트에서 파렛트를 집어감. 반환: 파렛트 (없으면 null)</summary>
         public SimPallet TakePallet(int port)
         {
@@ -839,6 +867,8 @@ namespace EQP_SIM.Sim
                 //   입고로 복귀하면 이 이동이 배출 화물을 출고대(22)에서 안쪽(21)으로
                 //   되끌어 들였다. 제거 단계는 출고대만 보므로 화물이 121 에 영구 잔류했다.
                 if (p.DischargedAt != DateTime.MinValue) continue;
+                // [LGLS 2026-09-12] 차량 하역 핸드셰이크가 안 끝난 화물은 PLC 가 인수하지 않는다(상황 A/B 재현).
+                if (p.HandoverBlocked) continue;
                 if (!bDualCv && p.Dir != dir) continue;             // 전용 컨베이어는 종전대로 적재 주체로 판정
                 if (bDualCv) p.Dir = dir;                           // 겸용대는 현재 벨트 방향으로 정렬
                 if (Pallets.ContainsKey(nextIdx)) continue;

@@ -17,6 +17,11 @@
             this.chkAutoFeed = new System.Windows.Forms.CheckBox();
             this.chkInjectDouble = new System.Windows.Forms.CheckBox();
             this.chkInjectEmpty = new System.Windows.Forms.CheckBox();
+            this.chkFaultA = new System.Windows.Forms.CheckBox();
+            this.nudFaultA = new System.Windows.Forms.NumericUpDown();
+            this.lblFaultA = new System.Windows.Forms.Label();
+            this.chkFaultB = new System.Windows.Forms.CheckBox();
+            this.btnFaultClear = new System.Windows.Forms.Button();
             this.btnClearErr = new System.Windows.Forms.Button();
             this.btnFeed11 = new System.Windows.Forms.Button();
             this.btnFeed12 = new System.Windows.Forms.Button();
@@ -48,6 +53,11 @@
             this.pnlTop.Controls.Add(this.chkAutoFeed);
             this.pnlTop.Controls.Add(this.chkInjectDouble);
             this.pnlTop.Controls.Add(this.chkInjectEmpty);
+            this.pnlTop.Controls.Add(this.chkFaultA);
+            this.pnlTop.Controls.Add(this.nudFaultA);
+            this.pnlTop.Controls.Add(this.lblFaultA);
+            this.pnlTop.Controls.Add(this.chkFaultB);
+            this.pnlTop.Controls.Add(this.btnFaultClear);
             this.pnlTop.Controls.Add(this.btnClearErr);
             this.pnlTop.Controls.Add(this.btnFeed11);
             this.pnlTop.Controls.Add(this.btnFeed12);
@@ -64,7 +74,7 @@
             this.pnlTop.Controls.Add(this.btnSpawnPallet);
             this.pnlTop.Controls.Add(this.lblSpawnHint);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTop.Height = 118;   // [LGLS 2026-09-06] 화물 생성 행 추가
+            this.pnlTop.Height = 146;   // [LGLS 2026-09-06] 화물 생성 행 추가 / [LGLS 2026-09-12] 고장 주입 행 추가
             //
             // lblServer
             //
@@ -91,6 +101,36 @@
             this.chkInjectEmpty.Text = "공출고 에러 (다음 출고 크레인)";
             this.chkInjectEmpty.ForeColor = System.Drawing.Color.DarkBlue;
             this.chkInjectEmpty.CheckedChanged += new System.EventHandler(this.chkInjectEmpty_CheckedChanged);
+            //
+            // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (상황 A / 상황 B)
+            //
+            this.chkFaultA.Location = new System.Drawing.Point(12, 116);
+            this.chkFaultA.Size = new System.Drawing.Size(372, 22);
+            this.chkFaultA.Text = "상황 A : 1호기 출고 하역완료 Ack 유실 (외부 되쓰기 재현)";
+            this.chkFaultA.ForeColor = System.Drawing.Color.DarkOrange;
+            this.chkFaultA.CheckedChanged += new System.EventHandler(this.chkFaultA_CheckedChanged);
+            this.nudFaultA.Location = new System.Drawing.Point(386, 115);
+            this.nudFaultA.Size = new System.Drawing.Size(46, 25);
+            this.nudFaultA.Minimum = 0;
+            this.nudFaultA.Maximum = 99;
+            this.nudFaultA.Value = 1;
+            this.nudFaultA.ValueChanged += new System.EventHandler(this.nudFaultA_ValueChanged);
+            this.lblFaultA.Location = new System.Drawing.Point(434, 118);
+            this.lblFaultA.Size = new System.Drawing.Size(112, 20);
+            this.lblFaultA.Text = "회 지움(0=계속)";
+            this.lblFaultA.ForeColor = System.Drawing.Color.DimGray;
+            this.chkFaultB.Location = new System.Drawing.Point(552, 116);
+            this.chkFaultB.Size = new System.Drawing.Size(430, 22);
+            this.chkFaultB.Text = "상황 B : 1호기 출고 하역완료 보고 조기 철회 (크레인 포기 재현)";
+            this.chkFaultB.ForeColor = System.Drawing.Color.Maroon;
+            this.chkFaultB.CheckedChanged += new System.EventHandler(this.chkFaultB_CheckedChanged);
+            this.btnFaultClear.Location = new System.Drawing.Point(986, 113);
+            this.btnFaultClear.Size = new System.Drawing.Size(120, 26);
+            this.btnFaultClear.Text = "고장 해제·수동 인수";
+            this.btnFaultClear.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnFaultClear.BackColor = System.Drawing.Color.MistyRose;
+            this.btnFaultClear.UseVisualStyleBackColor = false;
+            this.btnFaultClear.Click += new System.EventHandler(this.btnFaultClear_Click);
             // [LGLS 2026-09-05] [설비 에러 해제] - 현장 조작반에서 사람이 에러를 푸는 동작.
             //   공출고(58)는 재지정이 없어 작업을 삭제하는데, 그러면 스케줄러가 에러난 크레인에
             //   새 지시를 주지 않아 에러가 영영 남는다. 그 상황을 현장처럼 풀어 준다.
@@ -242,6 +282,11 @@
         private System.Windows.Forms.CheckBox chkAutoFeed;
         private System.Windows.Forms.CheckBox chkInjectDouble;
         private System.Windows.Forms.CheckBox chkInjectEmpty;
+        private System.Windows.Forms.CheckBox chkFaultA;
+        private System.Windows.Forms.NumericUpDown nudFaultA;
+        private System.Windows.Forms.Label lblFaultA;
+        private System.Windows.Forms.CheckBox chkFaultB;
+        private System.Windows.Forms.Button btnFaultClear;
         private System.Windows.Forms.Button btnClearErr;
         private System.Windows.Forms.Button btnFeed11;
         private System.Windows.Forms.Button btnFeed12;

@@ -40,6 +40,11 @@ namespace EQP_SIM.Sim
         {
             public string Owner, EventName, AckName;
             public DateTime ExpireAt;   // Ack 미수신 시 자동 해제
+            // [LGLS 2026-09-12] 고장 주입 : 0=정상, 1=상황 A(Ack 유실), 2=상황 B(조기 철회)
+            public int Fault;
+            public int AckLossRemaining;   // 상황 A 에서 앞으로 지울 Ack 횟수 (-1 = 계속)
+            public int Port;               // 하역한 포트(벨트 인수 보류/재개 대상), 0 = 해당 없음
+            public string CvId;
         }
         private readonly List<PendingEvent> pendingEvents = new List<PendingEvent>();
         private readonly object sync = new object();
@@ -81,6 +86,16 @@ namespace EQP_SIM.Sim
         // [LGLS] 이중입고/공출고 에러 주입 (시나리오 테스트): 체크 시 다음 최초 입고/출고 S/C 작업에서 1회 발생
         public volatile bool InjectDoubleStorage = false;   // 이중입고 (입고 목적셀 이미 점유 → ERR 54)
         public volatile bool InjectEmptyRetrieval = false;  // 공출고 (출고 출발셀 재고없음 → ERR 58)
+
+        // [LGLS 2026-09-12] 크레인 하역 핸드셰이크 고장 주입 (현장 2026-09-11 S/C#1 출고 정체 재현) - 사용자 지시
+        //   상황 A : Ack 유실 - WCS 가 쓴 UNLOAD_COMPLETE_ACK 를 외부 손이 지운다. 크레인은 질문(M785)을 들고 기다린다.
+        //   상황 B : 크레인 포기 - UNLOAD_COMPLETE 를 WCS 가 볼 틈 없이 철회하고 자기 사이클을 끝낸다.
+        //   두 경우 모두 PLC 의 벨트 인수(하역 포트 → RGV 측)는 핸드셰이크가 끝날 때까지 보류된다.
+        //   대상 = S/C FaultTargetScNo 호기의 ★포트 하역(출고)★ 만.
+        public volatile bool FaultAckLoss = false;
+        public volatile bool FaultAckTimeout = false;
+        public volatile int  FaultAckLossCount = 1;      // 상황 A 에서 지울 횟수 (0 = 계속)
+        public volatile int  FaultTargetScNo = 1;
 
         public event Action<string> LogAdded;
         public event Action StateChanged;
@@ -269,6 +284,77 @@ namespace EQP_SIM.Sim
             return !io.GetBool(owner, eventName);
         }
 
+        /// <summary>
+        /// [LGLS 2026-09-12] 차량 하역 완료 보고. 고장 주입 대상이면 상황 A/B 로 올린다.
+        ///   port : 포트 하역이면 포트 번호(벨트 인수 보류 대상), 랙 셀 하역이면 0.
+        /// </summary>
+        public void RaiseUnloadComplete(VehicleDef d, int port)
+        {
+            int fault = 0;
+            if (port > 0 && d != null && !d.IsRgv && d.ScNo == FaultTargetScNo)
+            {
+                if (FaultAckLoss) fault = 1;
+                else if (FaultAckTimeout) fault = 2;
+            }
+            if (fault == 0)
+            {
+                RaiseEvent(d.Id, "UNLOAD_COMPLETE", "UNLOAD_COMPLETE_ACK");
+                return;
+            }
+
+            string cvId = null;
+            var cv = World.FindByPort(port);
+            if (cv != null) { cvId = cv.Id; Conveyor(cvId).SetHandoverBlocked(port, true); }
+
+            if (fault == 2)
+            {
+                // 상황 B : 올렸다가 WCS 폴링(0.3초)이 볼 틈 없이 바로 거둔다. 크레인은 자기 사이클을 끝낸다.
+                //   TRANSFER_ACK(1.5초)는 정상이므로 WCS 는 그것으로 완료를 잡고 위치판정으로 15 까지 간다 - 현장 그대로.
+                io.SetBool(d.Id, "UNLOAD_COMPLETE", true);
+                Thread.Sleep(2);
+                io.SetBool(d.Id, "UNLOAD_COMPLETE", false);
+                Log(d.Id + " ★[상황 B] 하역완료 보고를 올렸다가 Ack 를 기다리지 않고 철회 (크레인 포기 재현) - P" + port + " 벨트 인수 보류. B 체크 해제 시 수동 인수");
+                return;
+            }
+
+            // 상황 A : 질문을 들고 기다린다(타임아웃 없음). WCS 가 쓴 Ack 를 N번 지운다.
+            io.SetBool(d.Id, "UNLOAD_COMPLETE", true);
+            int nLoss = (FaultAckLossCount <= 0) ? -1 : FaultAckLossCount;
+            lock (sync)
+            {
+                pendingEvents.Add(new PendingEvent
+                {
+                    Owner = d.Id, EventName = "UNLOAD_COMPLETE", AckName = "UNLOAD_COMPLETE_ACK",
+                    ExpireAt = DateTime.MaxValue, Fault = 1, AckLossRemaining = nLoss, Port = port, CvId = cvId
+                });
+            }
+            Log(d.Id + " ★[상황 A] 하역완료 보고 ON - WCS 의 Ack 를 " + (nLoss < 0 ? "계속" : nLoss + "회") + " 지운다 (외부 되쓰기 재현) - P" + port + " 벨트 인수 보류");
+        }
+
+        /// <summary>[LGLS 2026-09-12] 상황 A 해제 : 더 지우지 않고 정상 타임아웃으로 되돌린다. 다음 Ack 부터 정상 완료.</summary>
+        public void CancelFaultA()
+        {
+            lock (sync)
+            {
+                foreach (var pe in pendingEvents)
+                {
+                    if (pe.Fault != 1) continue;
+                    pe.AckLossRemaining = 0;
+                    pe.ExpireAt = DateTime.Now.AddMilliseconds(AckTimeoutMs);
+                    Log(pe.Owner + " [상황 A 해제] 더 지우지 않는다 - 다음 Ack 부터 정상 완료 (타임아웃 " + AckTimeoutMs + "ms 복원)");
+                }
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-12] 보류된 벨트 인수를 전부 재개 (운전원이 PLC 에서 수동 인수한 상황). 반환: 푼 개수.</summary>
+        public int ReleaseBlockedHandovers()
+        {
+            int n = 0;
+            foreach (var cv in conveyors.Values) n += cv.ReleaseBlockedHandovers();
+            if (n > 0) Log("[수동 인수] 보류 중이던 화물 " + n + "건의 벨트 인수를 재개");
+            return n;
+        }
+
         // [LGLS 2026-07-20] kind: 담당 설비군의 이벤트만 처리 (CV=CONVEYOR:*, RTV=VEHICLE:1, SC=그 외 VEHICLE:*)
         private void ProcessHandshakes(DateTime now, string kind)
         {
@@ -280,6 +366,14 @@ namespace EQP_SIM.Sim
                           : pe.Owner.StartsWith("VEHICLE:") && pe.Owner != "VEHICLE:1";
                 if (!mine) continue;
                 bool acked = pe.AckName != null && io.GetBool(pe.Owner, pe.AckName);
+                // [LGLS 2026-09-12] 상황 A : WCS 가 올린 Ack 를 외부 손이 지운다(워드 되쓰기 재현). 이벤트는 그대로 든다.
+                if (acked && pe.Fault == 1 && pe.AckLossRemaining != 0)
+                {
+                    io.SetBool(pe.Owner, pe.AckName, false);
+                    if (pe.AckLossRemaining > 0) pe.AckLossRemaining--;
+                    Log(pe.Owner + " ★[상황 A] WCS 의 " + pe.AckName + " 를 지웠다 (남은 " + (pe.AckLossRemaining < 0 ? "계속" : pe.AckLossRemaining + "회") + ") - 크레인은 계속 기다린다");
+                    continue;
+                }
                 if (acked || now >= pe.ExpireAt)
                 {
                     io.SetBool(pe.Owner, pe.EventName, false);
@@ -287,6 +381,12 @@ namespace EQP_SIM.Sim
                     pendingEvents.RemoveAt(i);
                     if (!acked && pe.AckName != null)
                         Log(pe.Owner + " " + pe.EventName + " Ack 타임아웃 — 자동 해제");
+                    // [LGLS 2026-09-12] 핸드셰이크가 끝났으면(정상 수신이든 타임아웃이든) 보류했던 벨트 인수를 재개
+                    if (pe.Port > 0 && pe.CvId != null)
+                    {
+                        if (acked) Log(pe.Owner + " ★[상황 A] Ack 정상 수신 - 핸드셰이크 완료 → P" + pe.Port + " 벨트 인수 재개");
+                        Conveyor(pe.CvId).SetHandoverBlocked(pe.Port, false);
+                    }
                 }
             }
         }

@@ -385,7 +385,8 @@ namespace EQP_SIM.Sim
                     io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", to01);
                     io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", to02);
                     io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", to03);
-                    engine.RaiseEvent(Def.Id, "UNLOAD_COMPLETE", "UNLOAD_COMPLETE_ACK");
+                    // [LGLS 2026-09-12] 고장 주입(상황 A/B) 판정은 엔진이 한다 - 포트 하역이면 포트 번호를 넘긴다
+                    engine.RaiseUnloadComplete(Def, IsPort(to01, to02) ? ParseInt(to03) : 0);
                     state = VState.AtDest;
                     StatusText = "하차 완료";
                     engine.Log(Def.Id + " [8/8 완료] 하차 완료 - 작업 완료");
@@ -462,7 +463,8 @@ namespace EQP_SIM.Sim
                     io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", to01);
                     io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", to02);
                     io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", to03);
-                    engine.RaiseEvent(Def.Id, "UNLOAD_COMPLETE", "UNLOAD_COMPLETE_ACK");
+                    // [LGLS 2026-09-12] 고장 주입(상황 A/B) 판정은 엔진이 한다 - 포트 하역이면 포트 번호를 넘긴다
+                    engine.RaiseUnloadComplete(Def, IsPort(to01, to02) ? ParseInt(to03) : 0);
                     state = VState.AtDest;
                     StatusText = "하차 완료";
                     break;

@@ -20,6 +20,9 @@ namespace EQP_SIM.Sim
         /// <summary>[LGLS 2026-08-22] 출고대 신호(WAIT_IN)가 ON 된 시각. 지게차 반출 3초 카운트의 기준점.</summary>
         public DateTime OutSignalAt = DateTime.MinValue;
         public DateTime SensorOnAt = DateTime.MinValue;    // [LGLS 2026-07-21] 입고대 적재 후 재하감지 ON 예정 시각
+        /// <summary>[LGLS 2026-09-12] 차량 하역 핸드셰이크(Unload Complete ↔ Ack)가 끝날 때까지 PLC 가 벨트 인수를
+        /// 보류하는 상태. 고장 주입(상황 A/B)에서만 세워진다 - 정상 운전에서는 항상 false.</summary>
+        public bool HandoverBlocked = false;
                                                            //   (MinValue=이미 감지됨. PLC가 적재 2초 뒤 신호를 올리는 동작 재현)
     }
 
