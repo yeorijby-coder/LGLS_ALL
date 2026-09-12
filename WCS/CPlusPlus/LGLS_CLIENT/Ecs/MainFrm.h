@@ -60,13 +60,33 @@ public:
 class CLglsRibbonBar : public CMFCRibbonBar
 {
 public:
-	CLglsRibbonBar() : m_pRightCat(NULL) {}
+	CLglsRibbonBar() : m_pRightCat(NULL), m_pTipPanel(NULL), m_bPathTip(TRUE) {}
 	void SetRightCategory(CMFCRibbonCategory* p) { m_pRightCat = p; }
 	void AddRightPanel(CLglsRibbonPanel* p)      { if (p != NULL) m_arRightPanels.Add(p); }
 protected:
 	CMFCRibbonCategory* m_pRightCat;
 	CObArray            m_arRightPanels;	// 각 탭의 [통신] 그룹(활성인 것만 자리가 잡힌다)
 	virtual void RecalcLayout();
+
+public:
+	// [LGLS 2026-09-12] 그룹(패널) 위에 마우스를 올리면 그 그룹의 문구 ini 경로를 띄운다(사용자 지시).
+	//   MFC 는 버튼(원소)에만 툴팁을 붙이고 그룹에는 붙이지 않으므로 여기서 직접 띄운다.
+	//   버튼 위에서는 MFC 가 그 버튼의 아이콘 파일 경로를 띄우므로 우리 것은 감춘다.
+	void SetPanelIni(CMFCRibbonPanel* pPanel, LPCTSTR pszResName);	// 그룹 ↔ rc_resource 이름 등록
+	void EnablePathTip(BOOL bOn);						// Ecs.ini [RibbonMenu] ToolTip
+	static CString PanelIniPath(LPCTSTR pszResName);	// exe\rc_resource\mainframe_xxx\xxx.ini
+
+protected:
+	CMap<void*, void*, CString, CString&> m_mapPanelIni;
+	CToolTipCtrl m_ttPanel;
+	void*        m_pTipPanel;		// 지금 띄워 둔 그룹 (NULL = 안 띄운 상태)
+	CString      m_strTipText;		// 툴팁에 넘긴 문자열(컨트롤이 참조하므로 살려 둔다)
+	BOOL         m_bPathTip;
+	void ShowPanelTip(CMFCRibbonPanel* pPanel, CPoint ptScreen);
+	void HidePanelTip();
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnMouseLeave();
+	DECLARE_MESSAGE_MAP()
 };
 
 class CMainFrame : public CFrameWndEx

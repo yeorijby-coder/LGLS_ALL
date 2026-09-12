@@ -465,6 +465,7 @@ void CMainFrame::AddCategoryWCS()
 	strExtension = _T(".png");
 
 	CMFCRibbonPanel* pPanelConfig = pCategory->AddPanel(_T("CONFIG"));
+	m_wndRibbonBar.SetPanelIni(pPanelConfig, _T("config"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 	/*CMFCRibbonButton* pBtnSign = new CMFCRibbonButton(ID_SYSTEM_LOGIN, _T("SIGN"), HICONFromPATH(GetConcatPath(strAppPath, _T("sign"), strExtension)), TRUE);
 	pBtnSign->SetAlwaysLargeImage();
@@ -514,6 +515,7 @@ void CMainFrame::AddCategoryWCS()
 	strExtension = _T(".png");
 
 	CMFCRibbonPanel* pPanelView = pCategory->AddPanel(_T("VIEW"));
+	m_wndRibbonBar.SetPanelIni(pPanelView, _T("view"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 	//CMFCRibbonButton* pBtnRack = new CMFCRibbonButton(ID_VIEW_USAGE, _T("USAGE"), HICONFromPATH(GetConcatPath(strAppPath, _T("usage"), strExtension)), TRUE);
 	//pBtnRack->SetAlwaysLargeImage();
 	//pPanelView->Add(pBtnRack);
@@ -537,6 +539,7 @@ void CMainFrame::AddCategoryWCS()
 	strExtension = _T(".png");
 
 	CMFCRibbonPanel* pPanelMonitor = pCategory->AddPanel(_T("WAREHOUSE MONITOR"));
+	m_wndRibbonBar.SetPanelIni(pPanelMonitor, _T("monitor"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 
 	if(strWH_TYP == _T("10"))
@@ -613,6 +616,7 @@ void CMainFrame::AddCategoryWCS()
 		strAppPath.Format(_T("%s"), chrFileName);
 		strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_view\\");
 		CMFCRibbonPanel* pPanelPaneView = pCategory->AddPanel(_T("판넬 보기"));
+		m_wndRibbonBar.SetPanelIni(pPanelPaneView, _T("view"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 		CMFCRibbonButton* pBtnPaneJob = new CMFCRibbonButton(ID_PANE_SHOW_JOB, _T("작업정보"),
 			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_job"), strExtension)), TRUE);
@@ -647,6 +651,7 @@ void CMainFrame::AddCategoryWCS()
 			strAppPath.Format(_T("%s"), chrFileName);
 			strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
 			CMFCRibbonPanel* pPanelProcess = pCategory->AddPanel(_T("처리"));
+			m_wndRibbonBar.SetPanelIni(pPanelProcess, _T("config"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 			// [시간 기반 자동 처리] : 스케줄러가 설비 신호 대신 경과시간으로 완료를 추정하는
 			//   처리의 사용 여부를 켜고 끈다. 선택 = 사용, 해제 = 사용 안 함(설비 신호로만 처리).
@@ -676,6 +681,7 @@ void CMainFrame::AddCategoryMANUAL()
 
 	CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("MANUAL"), IDB_LOGO_ECS, IDB_LOGO_ECS);
 	CMFCRibbonPanel* pPanelManual = pCategory->AddPanel(_T("MANUAL"));
+	m_wndRibbonBar.SetPanelIni(pPanelManual, _T("manual"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 	CMFCRibbonButton* pBtnManualJob = new CMFCRibbonButton(ID_MANUAL_JOB, _T("JOB"), HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
 	TipReg(pBtnManualJob, GetConcatPath(strAppPath, _T("job"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
@@ -701,6 +707,7 @@ void CMainFrame::AddCategoryMANUAL()
 	if (::GetPrivateProfileInt(_T("MENU"), _T("SEMITEST_MENU"), 1, ECS_INI_FILE) != 0)
 	{
 		CMFCRibbonPanel* pPanelSemiTest = pCategory->AddPanel(_T("반자동 TEST"));
+		m_wndRibbonBar.SetPanelIni(pPanelSemiTest, _T("manual"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 		CMFCRibbonButton* pBtnSemiTest = new CMFCRibbonButton(ID_MANUAL_SEMITEST, _T("반자동 TEST"), HICONFromPATH(GetConcatPath(strAppPath, _T("job"), strExtension)), TRUE);
 		TipReg(pBtnSemiTest, GetConcatPath(strAppPath, _T("job"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
@@ -727,6 +734,7 @@ void CMainFrame::AddCategoryLOG()
 
 	CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("LOG"), IDB_LOGO_ECS, IDB_LOGO_ECS);
 	CMFCRibbonPanel* pPanelLog = pCategory->AddPanel(_T("LOG"));
+	m_wndRibbonBar.SetPanelIni(pPanelLog, _T("log"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 	CMFCRibbonButton* pBtnIO_LOG = new CMFCRibbonButton(ID_LOG_IO, _T("IO_LOG"), HICONFromPATH(GetConcatPath(strAppPath, _T("iolog"), strExtension)), TRUE);
 	TipReg(pBtnIO_LOG, GetConcatPath(strAppPath, _T("iolog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
@@ -758,6 +766,7 @@ void CMainFrame::AddCategoryLOG()
 	// [LGLS 2026-09-01] [알람] 그룹을 LOG 카테고리 안 별도 패널로 이동(독립 카테고리 폐지).
 	//   작업 체류 경보창(CWarningDlg) 수동 표시 경로.
 	CMFCRibbonPanel* pPanelAlarm = pCategory->AddPanel(_T("알람"));
+	m_wndRibbonBar.SetPanelIni(pPanelAlarm, _T("alarm"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 	CMFCRibbonButton* pBtnAlarm = new CMFCRibbonButton(ID_ALARM_SHOW, _T("알람"),
 		HICONFromPATH(GetConcatPath(strAppPath, _T("eqphislog"), strExtension)), TRUE);
 	TipReg(pBtnAlarm, GetConcatPath(strAppPath, _T("eqphislog"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
@@ -1162,6 +1171,7 @@ void CMainFrame::AddCategoryUSER()
 
 	CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("USER"), IDB_LOGO_ECS, IDB_LOGO_ECS);
 	CMFCRibbonPanel* pPanelUser = pCategory->AddPanel(_T("USER"));
+	m_wndRibbonBar.SetPanelIni(pPanelUser, _T("user"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 
 	CMFCRibbonButton* pBtnUserUser = new CMFCRibbonButton(ID_USER_USER, _T("USER"), HICONFromPATH(GetConcatPath(strAppPath, _T("USER"), strExtension)), TRUE);
 	TipReg(pBtnUserUser, GetConcatPath(strAppPath, _T("USER"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
@@ -1301,6 +1311,108 @@ BOOL CMainFrame::IsStatusOnRibbon()
 }
 
 // [LGLS 2026-09-08] 기본 배치 뒤 [통신] 탭만 오른쪽 끝으로 민다.
+// [LGLS 2026-09-12] 그룹(패널) 위 마우스 → 그 그룹의 문구 ini 경로 툴팁 (사용자 지시)
+//   MFC 리본은 버튼(CMFCRibbonBaseElement)에만 툴팁을 붙인다. 그룹은 원소가 아니라 붙일 자리가 없어
+//   마우스를 따라가며 추적(TTF_TRACK) 툴팁을 직접 띄운다. 버튼 위에서는 MFC 것(아이콘 경로)에 양보한다.
+BEGIN_MESSAGE_MAP(CLglsRibbonBar, CMFCRibbonBar)
+	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSELEAVE()
+END_MESSAGE_MAP()
+
+void CLglsRibbonBar::SetPanelIni(CMFCRibbonPanel* pPanel, LPCTSTR pszResName)
+{
+	if (pPanel == NULL || pszResName == NULL) return;
+	m_mapPanelIni.SetAt((void*)pPanel, CString(pszResName));
+}
+
+// rc_resource\mainframe_<이름>\<이름>.ini - 리본 문구(다국어 4섹션)를 읽는 그 파일
+CString CLglsRibbonBar::PanelIniPath(LPCTSTR pszResName)
+{
+	TCHAR szExe[MAX_PATH] = {0};
+	::GetModuleFileName(NULL, szExe, MAX_PATH);
+	CString strDir = szExe;
+	int nSl = strDir.ReverseFind('\\');
+	if (nSl > 0) strDir = strDir.Left(nSl);
+	CString strRet;
+	strRet.Format(_T("%s\\rc_resource\\mainframe_%s\\%s.ini"), (LPCTSTR)strDir, pszResName, pszResName);
+	return strRet;
+}
+
+void CLglsRibbonBar::EnablePathTip(BOOL bOn)
+{
+	m_bPathTip = bOn;
+	if (!bOn) HidePanelTip();
+}
+
+void CLglsRibbonBar::OnMouseMove(UINT nFlags, CPoint point)
+{
+	CMFCRibbonBar::OnMouseMove(nFlags, point);
+	if (!m_bPathTip) { HidePanelTip(); return; }
+	if (HitTest(point, TRUE) != NULL) { HidePanelTip(); return; }	// 버튼 위 - MFC 툴팁(아이콘 경로)에 양보
+	CMFCRibbonCategory* pCat = GetActiveCategory();
+	CMFCRibbonPanel* pPanel = (pCat != NULL) ? pCat->GetPanelFromPoint(point) : NULL;
+	if (pPanel == NULL) { HidePanelTip(); return; }
+	CPoint ptScr(point);
+	ClientToScreen(&ptScr);
+	ShowPanelTip(pPanel, ptScr);
+}
+
+void CLglsRibbonBar::OnMouseLeave()
+{
+	HidePanelTip();
+	CMFCRibbonBar::OnMouseLeave();
+}
+
+void CLglsRibbonBar::ShowPanelTip(CMFCRibbonPanel* pPanel, CPoint ptScreen)
+{
+	CString strRes;
+	if (!m_mapPanelIni.Lookup((void*)pPanel, strRes) || strRes.IsEmpty()) { HidePanelTip(); return; }
+	if (m_ttPanel.GetSafeHwnd() == NULL)
+	{
+		if (!m_ttPanel.Create(this, TTS_ALWAYSTIP | TTS_NOPREFIX)) return;
+		m_ttPanel.SendMessage(TTM_SETMAXTIPWIDTH, 0, 1000);		// 줄바꿈 허용(긴 경로)
+		TOOLINFO tiAdd;
+		ZeroMemory(&tiAdd, sizeof(tiAdd));
+		tiAdd.cbSize   = sizeof(TOOLINFO);
+		tiAdd.uFlags   = TTF_IDISHWND | TTF_TRACK | TTF_ABSOLUTE;
+		tiAdd.hwnd     = GetSafeHwnd();
+		tiAdd.uId      = (UINT_PTR)GetSafeHwnd();
+		tiAdd.hinst    = AfxGetInstanceHandle();
+		tiAdd.lpszText = _T("");
+		m_ttPanel.SendMessage(TTM_ADDTOOL, 0, (LPARAM)&tiAdd);
+	}
+	TOOLINFO ti;
+	ZeroMemory(&ti, sizeof(ti));
+	ti.cbSize = sizeof(TOOLINFO);
+	ti.hwnd   = GetSafeHwnd();
+	ti.uId    = (UINT_PTR)GetSafeHwnd();
+	if (m_pTipPanel != (void*)pPanel)
+	{
+		// 파일이 없어도 경로는 보인다(사용자 지시) - 빠진 리소스를 그 자리에서 알 수 있게
+		CString strTip = PanelIniPath(strRes);
+		if (::GetFileAttributes(strTip) == INVALID_FILE_ATTRIBUTES) strTip += _T("  (파일 없음)");
+		m_strTipText = strTip;
+		ti.lpszText = (LPTSTR)(LPCTSTR)m_strTipText;
+		m_ttPanel.SendMessage(TTM_UPDATETIPTEXT, 0, (LPARAM)&ti);
+		m_ttPanel.SendMessage(TTM_TRACKACTIVATE, TRUE, (LPARAM)&ti);
+		m_pTipPanel = (void*)pPanel;
+	}
+	m_ttPanel.SendMessage(TTM_TRACKPOSITION, 0, MAKELPARAM(ptScreen.x + 16, ptScreen.y + 22));
+}
+
+void CLglsRibbonBar::HidePanelTip()
+{
+	if (m_pTipPanel == NULL) return;
+	m_pTipPanel = NULL;
+	if (m_ttPanel.GetSafeHwnd() == NULL) return;
+	TOOLINFO ti;
+	ZeroMemory(&ti, sizeof(ti));
+	ti.cbSize = sizeof(TOOLINFO);
+	ti.hwnd   = GetSafeHwnd();
+	ti.uId    = (UINT_PTR)GetSafeHwnd();
+	m_ttPanel.SendMessage(TTM_TRACKACTIVATE, FALSE, (LPARAM)&ti);
+}
+
 void CLglsRibbonBar::RecalcLayout()
 {
 	CMFCRibbonBar::RecalcLayout();
@@ -1369,6 +1481,7 @@ void CMainFrame::AddCommPanel(CMFCRibbonCategory* pCategory)
 	if (pCategory == NULL || !IsStatusOnRibbon() || GetCommMode() != 2) return;
 
 	CMFCRibbonPanel* pPanel = pCategory->AddPanel(_T("통신"), 0, RUNTIME_CLASS(CLglsRibbonPanel));
+	m_wndRibbonBar.SetPanelIni(pPanel, _T("config"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
 	if (pPanel == NULL) return;
 
 	TCHAR chrFileName[500];
@@ -2598,6 +2711,7 @@ void CMainFrame::ApplyRibbonToolTipIni(BOOL bForce)
 	if (nCat <= 0) return;
 	if (m_nRibbonTip < 0) m_nRibbonTip = (::GetPrivateProfileInt(_T("RibbonMenu"), _T("ToolTip"), 1, ECS_INI_FILE) != 0) ? 1 : 0;
 	BOOL bOn = (m_nRibbonTip != 0);
+	m_wndRibbonBar.EnablePathTip(bOn);		// [LGLS 2026-09-12] 그룹(패널) ini 경로 툴팁
 	s_nTipCnt = 0; s_strTipSample.Empty();
 	for (int c = 0; c < nCat; c++)
 	{
@@ -2629,6 +2743,9 @@ void CMainFrame::TipReg(CMFCRibbonBaseElement* pElem, LPCTSTR pszIconPath)
 //   1줄 : 아이콘 png 전체 경로 (파일이 없으면 "(파일 없음)" 을 붙여 빠진 리소스를 바로 알 수 있게)
 //   2줄 : 같은 폴더의 문구 ini (rc_resource\mainframe_xxx\xxx.ini - 버튼 이름은 여기서 읽는다)
 //   경로를 등록하지 않은 원소(코드로만 만든 것)는 원래 툴팁을 둔다. 0 이면 모두 원래 툴팁으로.
+// [RibbonMenu] ToolTip=1 : 버튼 툴팁 = ★그 버튼 아이콘(png) 파일의 실제 경로★ (사용자 지시)
+//   그 자리에 파일이 없어도 경로는 그대로 보이고 뒤에 "(파일 없음)" 을 붙인다 - 빠진 리소스를 바로 알 수 있다.
+//   그룹(패널)의 문구 ini 경로는 CLglsRibbonBar 가 따로 띄운다. 0 이면 모두 원래 툴팁으로.
 void CMainFrame::SetElemPathTip(CMFCRibbonBaseElement* pElem, const CString& strCat, const CString& strPanel, BOOL bOn)
 {
 	UNREFERENCED_PARAMETER(strCat); UNREFERENCED_PARAMETER(strPanel);
@@ -2651,17 +2768,6 @@ void CMainFrame::SetElemPathTip(CMFCRibbonBaseElement* pElem, const CString& str
 	{
 		CString strTip = strIcon;
 		if (::GetFileAttributes(strIcon) == INVALID_FILE_ATTRIBUTES) strTip += _T("  (파일 없음)");
-		int nSl = strIcon.ReverseFind('\\');
-		if (nSl > 0)
-		{
-			CString strDir = strIcon.Left(nSl);
-			CString strFolder = strDir.Mid(strDir.ReverseFind('\\') + 1);		// mainframe_manual
-			if (strFolder.Find(_T("mainframe_")) == 0)
-			{
-				CString strIni = strDir + _T("\\") + strFolder.Mid(10) + _T(".ini");	// manual.ini
-				if (::GetFileAttributes(strIni) != INVALID_FILE_ATTRIBUTES) strTip += _T("\n") + strIni;
-			}
-		}
 		pElem->SetToolTipText(strTip);
 		s_nTipCnt++;
 		if (s_strTipSample.IsEmpty()) s_strTipSample = strTip;
