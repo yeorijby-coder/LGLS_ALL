@@ -24,6 +24,8 @@ public:
 	BOOL    m_bVehExpanded;	// TRUE=확대(상태 패널 표시)
 	int     m_nVehBaseH;	// 축소 상태 창 높이
 	int     m_nVehPanelH;	// 상태 패널 높이
+	int     m_nVehBaseW;	// [LGLS 2026-09-12] 축소 상태 창 폭 (오른쪽 확대)
+	int     m_nVehPanelW;	// [LGLS 2026-09-12] 오른쪽 패널 폭
 	void CompactJobStatusArea();	// [LGLS 2026-08-01] 빈 공간 제거(사용자 지시 사진)
 	void SetVehPanelExpanded(BOOL bExpand);
 	afx_msg void OnBnClickedVehZoom();

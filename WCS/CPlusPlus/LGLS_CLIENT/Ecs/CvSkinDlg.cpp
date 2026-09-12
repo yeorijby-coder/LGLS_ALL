@@ -24,7 +24,7 @@ CCvSkinDlg::CCvSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	m_nLang = m_pDoc->m_enLang;
 	m_pTrackInfo = NULL;
 	m_blAutoSel = false;
-	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0;
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;	// [LGLS 2026-09-12]
 	m_brLedOn = NULL; m_brLedOff = NULL; m_brStatus = NULL;
 }
 
@@ -35,7 +35,7 @@ CCvSkinDlg::CCvSkinDlg(CWnd* pParent /*=NULL*/)
 	m_bInitialized = FALSE;
 	m_pTrackInfo = NULL;
 	m_blAutoSel = false;
-	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0;
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;	// [LGLS 2026-09-12]
 	m_brLedOn = NULL; m_brLedOff = NULL; m_brStatus = NULL;
 
 }
@@ -2150,10 +2150,13 @@ void CCvSkinDlg::BuildCvStatusPanel()
 
 	CRect rcCli; GetClientRect(&rcCli);
 	CRect rcWin; GetWindowRect(&rcWin);
-	const int PH = 222;						// [LGLS 2026-08-06] 화면 안에 들어가게 압축
-	int nTop = rcCli.Height();
-	m_nVehBaseH  = rcWin.Height();
-	m_nVehPanelH = PH;
+	// [LGLS 2026-09-12] S/C(09-08)와 같이 ★오른쪽★으로 편다 - 세로는 그대로, 폭만 PW 만큼.
+	const int PW = 470;						// 오른쪽에 붙는 패널 폭(px)
+	int nLeft = rcCli.Width();					// 기존 컨트롤 오른쪽(빈 영역)에서 시작
+	if (m_nVehBaseH <= 0) m_nVehBaseH = rcWin.Height();
+	if (m_nVehBaseW <= 0) m_nVehBaseW = rcWin.Width();
+	m_nVehPanelW = PW;
+	m_nVehPanelH = 0;
 
 	CFont* pFont = GetFont();
 	struct MK {
@@ -2196,11 +2199,12 @@ void CCvSkinDlg::BuildCvStatusPanel()
 		}
 	} mk = { this, pFont };
 
-	int y = nTop + 4;
+	int y = 4;
 	// [LGLS 2026-08-06] 창 폭이 대화상자마다 달라(SC 좁음) 고정 좌표는 잘린다 - 동적 계산
-	int nColW = (rcCli.Width() - 12) / 2;
-	int nCol1 = 6 + nColW;
-	int nBtnX = rcCli.Width() - 118;
+	int nCol0 = nLeft + 6;						// 좌표는 모두 패널 왼쪽 끝(nLeft) 기준
+	int nColW = (PW - 12) / 2;
+	int nCol1 = nCol0 + nColW;
+	int nBtnX = nLeft + PW - 118;
 
 	CString strOwner = _T("CONVEYOR:2");
 	CString strSfx = _T("_01");
@@ -2210,10 +2214,10 @@ void CCvSkinDlg::BuildCvStatusPanel()
 		strSfx = (CConvert::ToInt(m_pTrackInfo->m_pCV_DATA->K_TRACK_NO) % 2 == 1) ? _T("_01") : _T("_02");
 	}
 	// ── 제목 / 상태 / 닫기 ──────────────────────────────────────────
-	mk.Value(IDC_CVV_TITLE1, 6,   y, 110, 18);
-	mk.Value(IDC_CVV_TITLE2, 120, y, 130, 18);
-	mk.Label(_T("상태"), 256, y + 2, 84, 16);
-	mk.Value(IDC_CVV_STATUS, 344, y, 56, 18);
+	mk.Value(IDC_CVV_TITLE1, nCol0, y, 110, 18);
+	mk.Value(IDC_CVV_TITLE2, nCol0 + 114, y, 130, 18);
+	mk.Label(_T("상태"), nCol0 + 250, y + 2, 84, 16);
+	mk.Value(IDC_CVV_STATUS, nCol0 + 338, y, 56, 18);
 	y += 20;
 
 	// ── 핸드셰이크 LED : 2열 x 6행 ─────────────────────────────────
@@ -2243,7 +2247,7 @@ void CCvSkinDlg::BuildCvStatusPanel()
 	for (int i = 0; i < sizeof(leds)/sizeof(leds[0]); i++)
 	{
 		int col = i / 6, row = i % 6;
-		int x = (col == 0) ? 6 : nCol1;
+		int x = (col == 0) ? nCol0 : nCol1;
 		int yy = y + row * 18;
 		mk.LabelA(leds[i].name, CLib::GetObsAddr(strOwner, leds[i].obs), x, yy + 1, 88, 86);
 		mk.Led(leds[i].id, x + 180, yy);
@@ -2262,13 +2266,13 @@ void CCvSkinDlg::BuildCvStatusPanel()
 		BOOL bAny = FALSE;
 		if (!aTrk.IsEmpty())
 		{
-			mk.LabelA(_T("트래킹화물"), aTrk, 6, y + 2, 58, 56);
-			mk.Value(IDC_CVV_LUGG, 126, y, 110, 18);
+			mk.LabelA(_T("트래킹화물"), aTrk, nCol0, y + 2, 58, 56);
+			mk.Value(IDC_CVV_LUGG, nCol0 + 120, y, 110, 18);
 			bAny = TRUE;
 		}
 		if (!aDir.IsEmpty())
 		{
-			int x = aTrk.IsEmpty() ? 6 : nCol1;
+			int x = aTrk.IsEmpty() ? nCol0 : nCol1;
 			mk.LabelA(_T("방향모드"), aDir, x, y + 2, 58, 56);
 			mk.Value(IDC_CVV_DIR, x + 120, y, 110, 18);
 			bAny = TRUE;
@@ -2277,7 +2281,7 @@ void CCvSkinDlg::BuildCvStatusPanel()
 	}
 
 	// ── 버튼(맨 아래) ──────────────────────────────────────────────
-	mk.Button(IDC_CVV_OK, _T("닫기"), 6, y, 80, 22);
+	mk.Button(IDC_CVV_OK, _T("닫기"), nCol0, y, 80, 22);
 	y += 26;
 
 	SetVehPanelExpanded(FALSE);
@@ -2292,7 +2296,9 @@ void CCvSkinDlg::SetVehPanelExpanded(BOOL bExpand)
 		if (p != NULL && ::IsWindow(p->m_hWnd)) p->ShowWindow(bExpand ? SW_SHOW : SW_HIDE);
 	}
 	CRect rc; GetWindowRect(&rc);
-	SetWindowPos(NULL, 0, 0, rc.Width(), m_nVehBaseH + (bExpand ? m_nVehPanelH : 0), SWP_NOMOVE | SWP_NOZORDER);
+	// [LGLS 2026-09-12] 세로가 아니라 가로를 늘린다 (S/C 와 동일).
+	if (m_nVehBaseW <= 0) m_nVehBaseW = rc.Width();
+	SetWindowPos(NULL, 0, 0, m_nVehBaseW + (bExpand ? m_nVehPanelW : 0), m_nVehBaseH, SWP_NOMOVE | SWP_NOZORDER);
 	RedrawWindow(NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
 	if (bExpand)
 		for (int i = 0; i < m_arVehCtrl.GetCount(); i++)
@@ -2305,13 +2311,18 @@ void CCvSkinDlg::SetVehPanelExpanded(BOOL bExpand)
 		MONITORINFO mi; ::ZeroMemory(&mi, sizeof(mi)); mi.cbSize = sizeof(mi);
 		if (::GetMonitorInfo(hMon, &mi))
 		{
+			// [LGLS 2026-09-12] 오른쪽으로 펴므로 우측이 넘치면 왼쪽으로 밀어 넣는다(세로 보정도 유지).
 			CRect rcNow; GetWindowRect(&rcNow);
+			int nLeftNew = rcNow.left, nTopNew = rcNow.top;
+			int nOverR = rcNow.right - mi.rcWork.right;
+			if (nOverR > 0) nLeftNew = rcNow.left - nOverR;
+			if (nLeftNew < mi.rcWork.left) nLeftNew = mi.rcWork.left;
 			int nOver = rcNow.bottom - mi.rcWork.bottom;
-			if (nOver > 0)
+			if (nOver > 0) nTopNew = rcNow.top - nOver;
+			if (nTopNew < mi.rcWork.top) nTopNew = mi.rcWork.top;
+			if (nLeftNew != rcNow.left || nTopNew != rcNow.top)
 			{
-				int nTopNew = rcNow.top - nOver;
-				if (nTopNew < mi.rcWork.top) nTopNew = mi.rcWork.top;
-				SetWindowPos(NULL, rcNow.left, nTopNew, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+				SetWindowPos(NULL, nLeftNew, nTopNew, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 			}
 		}
 	}

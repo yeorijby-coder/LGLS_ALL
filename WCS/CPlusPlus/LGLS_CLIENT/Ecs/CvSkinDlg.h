@@ -218,6 +218,8 @@ public:
 	BOOL m_bVehExpanded;
 	int  m_nVehBaseH;
 	int  m_nVehPanelH;
+	int  m_nVehBaseW;	// [LGLS 2026-09-12] 축소 상태 창 폭 (오른쪽 확대)
+	int  m_nVehPanelW;	// [LGLS 2026-09-12] 오른쪽 패널 폭
 	HBRUSH m_brLedOn;
 	HBRUSH m_brLedOff;
 	HBRUSH m_brStatus;
