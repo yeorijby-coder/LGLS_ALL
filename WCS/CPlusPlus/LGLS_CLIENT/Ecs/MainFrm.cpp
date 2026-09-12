@@ -610,7 +610,11 @@ void CMainFrame::AddCategoryWCS()
 	// [LGLS 2026-09-09] [판넬 보기] 그룹 : 판넬 3개를 각각 켜고 끈다(선택=표시).
 	//   종전 [UI모드](대화상자/판넬 모드 2버튼)를 대체한다.
 	//   Ecs.ini [MENU] UIMODE_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
-	if (::GetPrivateProfileInt(_T("MENU"), _T("UIMODE_MENU"), 1, ECS_INI_FILE) != 0)
+	// [LGLS 2026-09-13] 새 배치(MAIN_UI=2)에서는 판넬이 왼쪽에 늘 떠 있어 이 그룹을 숨긴다(사용자 지시).
+	//   필요하면 Ecs.ini [MENU] PANEVIEW_MENU=1 로 되살린다.
+	int nMainUiPv = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI"), 1, ECS_INI_FILE);
+	int nPaneView = ::GetPrivateProfileInt(_T("MENU"), _T("PANEVIEW_MENU"), (nMainUiPv == 2) ? 0 : 1, ECS_INI_FILE);
+	if (::GetPrivateProfileInt(_T("MENU"), _T("UIMODE_MENU"), 1, ECS_INI_FILE) != 0 && nPaneView != 0)
 	{
 		// 이 시점의 strAppPath 는 직전 패널(창고 모니터링) 폴더라 다시 지정한다.
 		strAppPath.Format(_T("%s"), chrFileName);

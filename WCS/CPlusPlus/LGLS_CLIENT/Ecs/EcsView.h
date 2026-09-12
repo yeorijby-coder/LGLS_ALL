@@ -93,17 +93,21 @@ public:
 	int   m_nUiLeftW;			// 왼쪽 칸 폭   (0=기본값 : 격자 42칸 중 19칸)
 	int   m_nUiCommH;			// 통신 칸 높이 (0=기본값)
 	int   m_nUiLegH;			// 범례 칸 높이 (0=기본값)
+	int   m_nUiVehH;			// 설비반송 칸 높이 (0=기본값)
 	CWnd* m_pCommBar;			// 통신 상태
 	CWnd* m_pLegBar;			// 범례
+	CWnd* m_pVehFixed;		// 설비반송 (CPanelVehDlg)
 	CWnd* m_pJobFixed;		// 작업정보 (CPanelJobDlg)
 	CWnd* m_pSplitV;			// 손잡이 : 왼쪽 칸 ↔ 지도
 	CWnd* m_pSplitH1;			// 손잡이 : 통신 ↔ 범례
-	CWnd* m_pSplitH2;			// 손잡이 : 범례 ↔ 작업정보
+	CWnd* m_pSplitH2;			// 손잡이 : 범례 ↔ 설비반송
+	CWnd* m_pSplitH3;			// 손잡이 : 설비반송 ↔ 작업정보
 	void  CreateMainUi2();
 	void  LayoutMainUi2();
+	void  RelayoutMap();						// 왼쪽 칸 폭이 바뀌면 지도도 그만큼 다시 배치
 public:
 	// 손잡이(CLglsSplitBar)가 부르므로 공개로 둔다
-	void  OnUiDrag(int nWhich, int nDelta);	// 0=왼쪽 칸 폭, 1=통신 칸, 2=범례 칸
+	void  OnUiDrag(int nWhich, int nDelta);	// 0=왼쪽 칸 폭, 1=통신, 2=범례, 3=설비반송
 	void  SaveUiSizes();						// 끌어 놓은 크기를 Ecs.ini 에 남긴다
 protected:
 	void ReloadIniHot();
