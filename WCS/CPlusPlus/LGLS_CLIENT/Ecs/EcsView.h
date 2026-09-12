@@ -89,11 +89,23 @@ public:
 	// [LGLS 2026-09-13] 메인 화면 2안 (Ecs.ini [MENU] MAIN_UI=2, 기동 시 1회 판단 - 바꾸면 재기동)
 	//   종전 범례가 있던 왼쪽 자리에 [통신 상태 + 축소 범례] 와 [작업정보] 를 고정한다.
 	//   짝이 되는 레이아웃 XML 에서는 범례 칸을 빼 둔다. 지도는 그대로다.
-	int   m_nMainUi;			// 1=종전 화면, 2=왼쪽 고정 배치
-	CWnd* m_pInfoBar;			// 통신 상태 한 줄 + 축소 범례 두 줄
+	int   m_nMainUi;			// 1=종전 화면, 2=왼쪽 고정 배치(통신/범례/작업정보 3단)
+	int   m_nUiLeftW;			// 왼쪽 칸 폭   (0=기본값 : 격자 42칸 중 19칸)
+	int   m_nUiCommH;			// 통신 칸 높이 (0=기본값)
+	int   m_nUiLegH;			// 범례 칸 높이 (0=기본값)
+	CWnd* m_pCommBar;			// 통신 상태
+	CWnd* m_pLegBar;			// 범례
 	CWnd* m_pJobFixed;		// 작업정보 (CPanelJobDlg)
+	CWnd* m_pSplitV;			// 손잡이 : 왼쪽 칸 ↔ 지도
+	CWnd* m_pSplitH1;			// 손잡이 : 통신 ↔ 범례
+	CWnd* m_pSplitH2;			// 손잡이 : 범례 ↔ 작업정보
 	void  CreateMainUi2();
 	void  LayoutMainUi2();
+public:
+	// 손잡이(CLglsSplitBar)가 부르므로 공개로 둔다
+	void  OnUiDrag(int nWhich, int nDelta);	// 0=왼쪽 칸 폭, 1=통신 칸, 2=범례 칸
+	void  SaveUiSizes();						// 끌어 놓은 크기를 Ecs.ini 에 남긴다
+protected:
 	void ReloadIniHot();
 	LRESULT OnRefreshDialog(WPARAM wParam, LPARAM lParam);
 	LRESULT OnViewLayoutInfo(WPARAM wParam, LPARAM lParam);

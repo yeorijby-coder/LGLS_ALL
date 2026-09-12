@@ -53,9 +53,10 @@ END_MESSAGE_MAP()
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [LGLS 2026-09-13] 메인 화면 2안 : 통신 상태 한 줄 + 축소 범례 두 줄
-//   종전 범례 표(69칸)는 화면의 왼쪽 절반을 먹어 지도로 눈이 가지 않았다(사용자 지적).
-//   색만 확인하면 되는 물건이라 칩 두 줄로 줄이고, 그 위에 통신 상태를 놓는다.
+// [LGLS 2026-09-13] 메인 화면 새 배치 (Ecs.ini [MENU] MAIN_UI=2) - 사용자 지시 1안
+//   종전 범례 표(69칸)가 화면 왼쪽 절반을 먹어 지도로 눈이 가지 않았다.
+//   그 자리를 위에서부터 [통신 상태] [범례] [작업정보] 로 나눈다. 지도는 손대지 않는다.
+//   세 칸의 경계에 손잡이를 두어 마우스로 크기를 조절하고, 놓은 크기는 Ecs.ini 에 남긴다.
 //   통신 상태는 DB 의 마지막 갱신 시각으로 판단한다 - 리본의 램프 3개는 색이 고정이라 실제 상태가 아니다.
 //     설비   = CV_DATA.READ_UPD_DT   (WCS_TASK_CV 가 0.3초마다 갱신)
 //     상위   = HOST_IF_LOG.INS_DT    (HOST 전문이 오갈 때마다)
@@ -65,14 +66,17 @@ class CLglsInfoBar : public CWnd
 {
 public:
 	CEcsDoc* m_pDoc;
-	CLglsInfoBar() { m_pDoc = NULL; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
-	enum { TIMER_HB = 7501 };
-	// 폭이 좁으면 칩 이름이 잘리므로 열 수를 폭에 맞춰 정하고, 그만큼 높이를 뷰에 알려 준다.
-	static int ChipCols(int nWidth) { if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
-	static int CalcHeight(int nWidth) { int nRow = (16 + ChipCols(nWidth) - 1) / ChipCols(nWidth); return 30 + 5 + nRow * 19 + 4; }
+	int      m_nKind;			// 0 = 통신 상태, 1 = 범례
+	CLglsInfoBar() { m_pDoc = NULL; m_nKind = 0; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
+	enum { TIMER_HB = 7501, CHIP_CNT = 20 };
+	// 이름이 잘리지 않을 만큼만 열을 둔다(폭이 좁으면 줄 수가 는다).
+	static int ChipCols(int nWidth) { if (nWidth < 420) return 3; if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
+	static int LegendBestH(int nWidth) { int c = ChipCols(nWidth); return ((CHIP_CNT + c - 1) / c) * 20 + 10; }
 protected:
 	int m_nAge[3];			// 설비 / 상위 / 스케줄 마지막 갱신 경과(초). -1 = 아직 모름
 	void ReadHeartbeat();
+	void PaintComm(CDC& dc, CRect rc, CFont& fnt, CFont& fntB);
+	void PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB);
 	afx_msg void OnPaint();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
@@ -104,7 +108,7 @@ void CLglsInfoBar::OnTimer(UINT_PTR nIDEvent)
 
 void CLglsInfoBar::ReadHeartbeat()
 {
-	if (m_pDoc == NULL) return;
+	if (m_pDoc == NULL || m_nKind != 0) return;
 	CString strSql = _T("");
 	strSql += _T(" SELECT ISNULL((SELECT DATEDIFF(second, MAX(READ_UPD_DT), GETDATE()) FROM CV_DATA),     99999) AS EQP \n");
 	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(INS_DT),      GETDATE()) FROM HOST_IF_LOG), 99999) AS HST \n");
@@ -144,95 +148,204 @@ static CString PfAgeText(int nAge)
 	return s;
 }
 
+static CString PfStateText(int nAge, int nOk, int nWarn)
+{
+	if (nAge < 0 || nAge >= 99999) return _T("확인 불가");
+	if (nAge <= nOk)   return _T("정상");
+	if (nAge <= nWarn) return _T("느림");
+	return _T("끊김");
+}
+
+// 통신 상태 : 칸이 낮으면 한 줄에 3개, 높으면 한 줄에 하나씩 크게
+void CLglsInfoBar::PaintComm(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
+{
+	struct { LPCTSTR name; int ok; int warn; } CM[3] = {
+		{ _T("설비 통신"), 10, 60 }, { _T("상위 통신"), 60, 300 }, { _T("스케줄러"), 120, 900 } };
+	BOOL bTall = (rc.Height() >= 70);
+	for (int i = 0; i < 3; i++)
+	{
+		CRect rcC;
+		if (bTall) rcC.SetRect(6, 4 + i * (rc.Height() - 8) / 3, rc.right - 6, 4 + (i + 1) * (rc.Height() - 8) / 3);
+		else       rcC.SetRect(6 + i * rc.Width() / 3, 3, (i + 1) * rc.Width() / 3 - 2, rc.bottom - 3);
+		int nCy = (rcC.top + rcC.bottom) / 2;
+		CRect rcDot(rcC.left, nCy - 6, rcC.left + 12, nCy + 6);
+		CBrush br(PfLamp(m_nAge[i], CM[i].ok, CM[i].warn));
+		CBrush* pOldBr = dc.SelectObject(&br);
+		dc.Ellipse(rcDot);
+		dc.SelectObject(pOldBr);
+		CRect rcT(rcDot.right + 6, rcC.top, rcC.right, rcC.bottom);
+		dc.SelectObject(&fntB);
+		dc.SetTextColor(RGB(20, 32, 41));
+		dc.DrawText(bTall ? CM[i].name : CString(CM[i].name).Left(2), rcT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+		dc.SelectObject(&fnt);
+		dc.SetTextColor(RGB(90, 108, 118));
+		CString strR = PfAgeText(m_nAge[i]);
+		if (bTall) strR = PfStateText(m_nAge[i], CM[i].ok, CM[i].warn) + _T("  ·  ") + strR;
+		dc.DrawText(strR, rcT, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+		if (bTall && i < 2)
+			dc.FillSolidRect(CRect(6, rcC.bottom, rc.right - 6, rcC.bottom + 1), RGB(228, 234, 236));
+	}
+}
+
+// 범례 : 색칩 20개. 칸이 높으면 줄 간격을 넓혀 채운다.
+void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
+{
+	UNREFERENCED_PARAMETER(fntB);
+	CConfig* pCfg = (m_pDoc != NULL) ? m_pDoc->m_pConfig : NULL;
+	if (pCfg == NULL) return;
+	struct { COLORREF clr; LPCTSTR name; } CH[CHIP_CNT] = {
+		{ pCfg->m_clrUSER_COLOR_STO,        _T("입고") },
+		{ pCfg->m_clrUSER_COLOR_RET,        _T("출고") },
+		{ pCfg->m_clrUSER_COLOR_MOVE,       _T("이동") },
+		{ pCfg->m_clrUSER_COLOR_RTR,        _T("랙투랙") },
+		{ pCfg->m_clrUSER_COLOR_ATA,        _T("호기간이동") },
+		{ pCfg->m_clrUSER_COLOR_SEMI_STO,   _T("반자동 입고") },
+		{ pCfg->m_clrUSER_COLOR_SEMI_RET,   _T("반자동 출고") },
+		{ pCfg->m_clrUSER_COLOR_SEMI_MOVE,  _T("반자동 이동") },
+		{ pCfg->m_clrUSER_COLOR_SEMI_RTR,   _T("반자동 랙투랙") },
+		{ pCfg->m_clrUSER_COLOR_SEMI_ATA,   _T("반자동 호기간") },
+		{ pCfg->m_clrUSER_COLOR_STN_STO,    _T("입고대") },
+		{ pCfg->m_clrUSER_COLOR_STN_RET,    _T("출고대") },
+		{ pCfg->m_clrUSER_COLOR_HS_STO,     _T("입고 HS") },
+		{ pCfg->m_clrUSER_COLOR_HS_RET,     _T("출고 HS") },
+		{ pCfg->m_clrUSER_COLOR_SUSPEND,    _T("일시정지") },
+		{ pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") },
+		{ pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
+		{ pCfg->m_clrUSER_COLOR_DISCONNECT, _T("통신두절") },
+		{ pCfg->m_clrUSER_COLOR_CV_SEARCH,  _T("검색") },
+		{ pCfg->m_clrUSER_COLOR_TRACKING,   _T("작업번호 있음") } };
+	dc.SelectObject(&fnt);
+	dc.SetTextColor(RGB(35, 48, 56));
+	int nCol = ChipCols(rc.Width());
+	int nRow = (CHIP_CNT + nCol - 1) / nCol;
+	int nW = (rc.Width() - 8) / nCol;
+	int nH = (rc.Height() - 8) / nRow;
+	if (nH < 17) nH = 17;
+	if (nH > 30) nH = 30;
+	for (int i = 0; i < CHIP_CNT; i++)
+	{
+		int x = 4 + (i % nCol) * nW;
+		int y = 4 + (i / nCol) * nH;
+		if (y + 14 > rc.bottom) break;			// 칸이 낮으면 들어가는 만큼만
+		CRect rcBox(x, y + (nH - 12) / 2, x + 12, y + (nH - 12) / 2 + 12);
+		dc.FillSolidRect(rcBox, CH[i].clr);
+		CBrush brFrm(RGB(90, 90, 90));
+		dc.FrameRect(rcBox, &brFrm);
+		CRect rcTx(rcBox.right + 4, y, x + nW - 2, y + nH);
+		dc.DrawText(CH[i].name, rcTx, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+	}
+}
+
 void CLglsInfoBar::OnPaint()
 {
 	CPaintDC dc(this);
 	CRect rc;
 	GetClientRect(&rc);
+	if (rc.Width() <= 0 || rc.Height() <= 0) return;
 
-	// 메모리 DC 에 그려 한 번에 올린다
 	CDC mem;
 	mem.CreateCompatibleDC(&dc);
 	CBitmap bmp;
 	bmp.CreateCompatibleBitmap(&dc, rc.Width(), rc.Height());
 	CBitmap* pOldBmp = mem.SelectObject(&bmp);
 	mem.FillSolidRect(rc, RGB(255, 255, 255));
+	mem.SetBkMode(TRANSPARENT);
 
 	CFont fnt, fntB;
 	fnt.CreateFont(-12, 0, 0, 0, FW_NORMAL, 0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
 	fntB.CreateFont(-12, 0, 0, 0, FW_BOLD,   0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
-	CFont* pOldFont = mem.SelectObject(&fntB);
-	mem.SetBkMode(TRANSPARENT);
+	CFont* pOldFont = mem.SelectObject(&fnt);
 
-	// ── 1) 통신 상태 한 줄 ─────────────────────────────
-	const int nRowH = 30;
-	struct { LPCTSTR name; int ok; int warn; } CM[3] = {
-		{ _T("설비"), 10, 60 }, { _T("상위"), 60, 300 }, { _T("스케줄"), 120, 900 } };
-	int nCellW = rc.Width() / 3;
-	for (int i = 0; i < 3; i++)
-	{
-		CRect rcC(i * nCellW + 6, 4, (i + 1) * nCellW - 2, 4 + nRowH - 8);
-		CRect rcDot(rcC.left, rcC.top + 4, rcC.left + 11, rcC.top + 15);
-		CBrush br(PfLamp(m_nAge[i], CM[i].ok, CM[i].warn));
-		CBrush* pOldBr = mem.SelectObject(&br);
-		mem.Ellipse(rcDot);
-		mem.SelectObject(pOldBr);
-		mem.SelectObject(&fntB);
-		mem.SetTextColor(RGB(20, 32, 41));
-		CRect rcT(rcDot.right + 5, rcC.top, rcC.right, rcC.bottom);
-		mem.DrawText(CM[i].name, rcT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-		mem.SelectObject(&fnt);
-		mem.SetTextColor(RGB(90, 108, 118));
-		mem.DrawText(PfAgeText(m_nAge[i]), rcT, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
-	}
-	mem.FillSolidRect(CRect(4, nRowH, rc.right - 4, nRowH + 1), RGB(214, 222, 224));
-
-	// ── 2) 축소 범례 (색만 확인하면 되므로 칩 두 줄) ─────
-	CConfig* pCfg = (m_pDoc != NULL) ? m_pDoc->m_pConfig : NULL;
-	if (pCfg != NULL)
-	{
-		struct { COLORREF clr; LPCTSTR name; } CH[16] = {
-			{ pCfg->m_clrUSER_COLOR_STO,       _T("입고") },
-			{ pCfg->m_clrUSER_COLOR_RET,       _T("출고") },
-			{ pCfg->m_clrUSER_COLOR_MOVE,      _T("이동") },
-			{ pCfg->m_clrUSER_COLOR_RTR,       _T("랙투랙") },
-			{ pCfg->m_clrUSER_COLOR_ATA,       _T("호기간") },
-			{ pCfg->m_clrUSER_COLOR_SEMI_STO,  _T("반자동입고") },
-			{ pCfg->m_clrUSER_COLOR_SEMI_RET,  _T("반자동출고") },
-			{ pCfg->m_clrUSER_COLOR_SEMI_MOVE, _T("반자동이동") },
-			{ pCfg->m_clrUSER_COLOR_STN_STO,   _T("입고대") },
-			{ pCfg->m_clrUSER_COLOR_STN_RET,   _T("출고대") },
-			{ pCfg->m_clrUSER_COLOR_HS_STO,    _T("입고HS") },
-			{ pCfg->m_clrUSER_COLOR_HS_RET,    _T("출고HS") },
-			{ pCfg->m_clrUSER_COLOR_SUSPEND,   _T("일시정지") },
-			{ pCfg->m_clrUSER_COLOR_ERROR,     _T("에러") },
-			{ pCfg->m_clrUSER_COLOR_CV_SEARCH, _T("검색") },
-			{ pCfg->m_clrUSER_COLOR_TRACKING,  _T("작업번호") } };
-		mem.SelectObject(&fnt);
-		mem.SetTextColor(RGB(35, 48, 56));
-		int nCol = ChipCols(rc.Width());
-		int nW = (rc.Width() - 8) / nCol;
-		int nH = 19;
-		int nTop = nRowH + 5;
-		for (int i = 0; i < 16; i++)
-		{
-			int x = 4 + (i % nCol) * nW;
-			int y = nTop + (i / nCol) * nH;
-			CRect rcBox(x, y + 3, x + 12, y + 15);
-			mem.FillSolidRect(rcBox, CH[i].clr);
-			CBrush brFrm(RGB(90, 90, 90));
-			mem.FrameRect(rcBox, &brFrm);
-			CRect rcTx(rcBox.right + 3, y, x + nW - 2, y + nH);
-			mem.DrawText(CH[i].name, rcTx, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-		}
-	}
+	if (m_nKind == 0) PaintComm(mem, rc, fnt, fntB);
+	else              PaintLegend(mem, rc, fnt, fntB);
 
 	dc.BitBlt(0, 0, rc.Width(), rc.Height(), &mem, 0, 0, SRCCOPY);
 	mem.SelectObject(pOldFont);
 	mem.SelectObject(pOldBmp);
 }
 
-// 왼쪽 고정 칸(통신 + 범례 + 작업정보)을 만든다. Ecs.ini [MENU] MAIN_UI=2 일 때만.
+// ── 칸 크기 조절 손잡이 ─────────────────────────────────────────────────────
+//   끄는 동안 바로 다시 배치하고, 손을 떼면 그 크기를 Ecs.ini 에 남긴다.
+class CLglsSplitBar : public CWnd
+{
+public:
+	CEcsView* m_pView;
+	int       m_nWhich;			// 0=왼쪽 칸 폭, 1=통신 칸 높이, 2=범례 칸 높이
+	BOOL      m_bVert;			// TRUE=세로 손잡이(좌우로 끈다)
+	CLglsSplitBar() { m_pView = NULL; m_nWhich = 0; m_bVert = FALSE; m_bDrag = FALSE; }
+protected:
+	BOOL   m_bDrag;
+	CPoint m_ptLast;
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
+	afx_msg void OnPaint();
+	DECLARE_MESSAGE_MAP()
+};
+
+BEGIN_MESSAGE_MAP(CLglsSplitBar, CWnd)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONUP()
+	ON_WM_SETCURSOR()
+	ON_WM_PAINT()
+END_MESSAGE_MAP()
+
+BOOL CLglsSplitBar::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	UNREFERENCED_PARAMETER(pWnd); UNREFERENCED_PARAMETER(nHitTest); UNREFERENCED_PARAMETER(message);
+	::SetCursor(::LoadCursor(NULL, m_bVert ? IDC_SIZEWE : IDC_SIZENS));
+	return TRUE;
+}
+
+void CLglsSplitBar::OnPaint()
+{
+	CPaintDC dc(this);
+	CRect rc;
+	GetClientRect(&rc);
+	dc.FillSolidRect(rc, RGB(226, 232, 234));
+	// 가운데 손잡이 점 세 개 - 끌 수 있는 자리임을 알린다
+	int cx = rc.Width() / 2, cy = rc.Height() / 2;
+	for (int i = -1; i <= 1; i++)
+	{
+		int x = m_bVert ? cx - 1 : cx - 1 + i * 7;
+		int y = m_bVert ? cy - 1 + i * 7 : cy - 1;
+		dc.FillSolidRect(CRect(x, y, x + 2, y + 2), RGB(140, 152, 156));
+	}
+}
+
+void CLglsSplitBar::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	UNREFERENCED_PARAMETER(nFlags);
+	m_bDrag = TRUE;
+	m_ptLast = point;
+	ClientToScreen(&m_ptLast);
+	SetCapture();
+}
+
+void CLglsSplitBar::OnMouseMove(UINT nFlags, CPoint point)
+{
+	UNREFERENCED_PARAMETER(nFlags);
+	if (!m_bDrag || m_pView == NULL) return;
+	CPoint pt(point);
+	ClientToScreen(&pt);
+	int nDelta = m_bVert ? (pt.x - m_ptLast.x) : (pt.y - m_ptLast.y);
+	if (nDelta == 0) return;
+	m_ptLast = pt;
+	m_pView->OnUiDrag(m_nWhich, nDelta);
+}
+
+void CLglsSplitBar::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	UNREFERENCED_PARAMETER(nFlags); UNREFERENCED_PARAMETER(point);
+	if (!m_bDrag) return;
+	m_bDrag = FALSE;
+	ReleaseCapture();
+	if (m_pView != NULL) m_pView->SaveUiSizes();
+}
+
+// 왼쪽 고정 칸(통신 + 범례 + 작업정보)과 손잡이 3개를 만든다. Ecs.ini [MENU] MAIN_UI=2 일 때만.
 void CEcsView::CreateMainUi2()
 {
 	m_nMainUi = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI"), 1, ECS_INI_FILE);
@@ -240,17 +353,25 @@ void CEcsView::CreateMainUi2()
 	CEcsDoc* pDoc = GetDocument();
 	if (pDoc == NULL) return;
 
-	if (m_pInfoBar == NULL)
+	// 지난번에 끌어 놓은 크기 (0 = 기본값)
+	m_nUiLeftW = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI_LEFT_W"), 0, ECS_INI_FILE);
+	m_nUiCommH = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI_COMM_H"), 0, ECS_INI_FILE);
+	m_nUiLegH  = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI_LEG_H"),  0, ECS_INI_FILE);
+
+	LPCTSTR pszCls = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW,
+		::LoadCursor(NULL, IDC_ARROW), (HBRUSH)::GetStockObject(WHITE_BRUSH), NULL);
+
+	for (int k = 0; k < 2; k++)			// 0 = 통신, 1 = 범례
 	{
+		CWnd** ppDst = (k == 0) ? &m_pCommBar : &m_pLegBar;
+		if (*ppDst != NULL) continue;
 		CLglsInfoBar* pBar = new CLglsInfoBar();
 		pBar->m_pDoc = pDoc;
-		LPCTSTR pszCls = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW,
-			::LoadCursor(NULL, IDC_ARROW), (HBRUSH)::GetStockObject(WHITE_BRUSH), NULL);
-		if (pBar->CreateEx(0, pszCls, _T(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
-					   CRect(0, 0, 10, 10), this, 0))
+		pBar->m_nKind = k;
+		if (pBar->CreateEx(0, pszCls, _T(""), WS_CHILD | WS_VISIBLE | WS_BORDER, CRect(0, 0, 10, 10), this, 0))
 		{
-			pBar->SetTimer(CLglsInfoBar::TIMER_HB, 5000, NULL);
-			m_pInfoBar = pBar;
+			if (k == 0) pBar->SetTimer(CLglsInfoBar::TIMER_HB, 5000, NULL);
+			*ppDst = pBar;
 		}
 		else
 			delete pBar;
@@ -270,32 +391,117 @@ void CEcsView::CreateMainUi2()
 			delete pJob;
 	}
 
+	CWnd** ppSp[3] = { &m_pSplitV, &m_pSplitH1, &m_pSplitH2 };
+	for (int i = 0; i < 3; i++)
+	{
+		if (*ppSp[i] != NULL) continue;
+		CLglsSplitBar* pSp = new CLglsSplitBar();
+		pSp->m_pView = this;
+		pSp->m_nWhich = i;
+		pSp->m_bVert = (i == 0);
+		if (pSp->CreateEx(0, pszCls, _T(""), WS_CHILD | WS_VISIBLE, CRect(0, 0, 10, 10), this, 0))
+			*ppSp[i] = pSp;
+		else
+			delete pSp;
+	}
+
 	LayoutMainUi2();
-	CLib::UiLog(_T("[UI2] left column created bar=%d job=%d"), (m_pInfoBar != NULL) ? 1 : 0, (m_pJobFixed != NULL) ? 1 : 0);
+	CLib::UiLog(_T("[UI2] left column created (comm=%d legend=%d job=%d)"),
+		(m_pCommBar != NULL) ? 1 : 0, (m_pLegBar != NULL) ? 1 : 0, (m_pJobFixed != NULL) ? 1 : 0);
 }
 
-// 왼쪽 칸의 폭은 종전 범례가 쓰던 만큼(격자 42칸 중 19칸)이라 지도는 지금 자리 그대로다.
+// 손잡이를 끌면 그 칸만 늘리고 나머지는 따라 움직인다.
+void CEcsView::OnUiDrag(int nWhich, int nDelta)
+{
+	if (m_nMainUi != 2) return;
+	CRect rc;
+	GetClientRect(&rc);
+	if (nWhich == 0)
+	{
+		if (m_nUiLeftW <= 0) m_nUiLeftW = rc.Width() * 19 / 42;
+		m_nUiLeftW += nDelta;
+		if (m_nUiLeftW < 320) m_nUiLeftW = 320;
+		if (m_nUiLeftW > rc.Width() - 360) m_nUiLeftW = rc.Width() - 360;
+	}
+	else if (nWhich == 1)
+	{
+		if (m_nUiCommH <= 0) m_nUiCommH = 96;
+		m_nUiCommH += nDelta;
+		if (m_nUiCommH < 26)  m_nUiCommH = 26;
+		if (m_nUiCommH > 300) m_nUiCommH = 300;
+	}
+	else
+	{
+		if (m_nUiLegH <= 0) m_nUiLegH = 200;
+		m_nUiLegH += nDelta;
+		if (m_nUiLegH < 24) m_nUiLegH = 24;
+		int nMax = rc.Height() - m_nUiCommH - 160;
+		if (nMax < 40) nMax = 40;
+		if (m_nUiLegH > nMax) m_nUiLegH = nMax;
+	}
+	LayoutMainUi2();
+}
+
+void CEcsView::SaveUiSizes()
+{
+	if (m_nMainUi != 2) return;
+	CString s;
+	s.Format(_T("%d"), m_nUiLeftW); ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_LEFT_W"), s, ECS_INI_FILE);
+	s.Format(_T("%d"), m_nUiCommH); ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_COMM_H"), s, ECS_INI_FILE);
+	s.Format(_T("%d"), m_nUiLegH);  ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_LEG_H"),  s, ECS_INI_FILE);
+	CLib::UiLog(_T("[UI2] size saved left=%d comm=%d legend=%d"), m_nUiLeftW, m_nUiCommH, m_nUiLegH);
+}
+
+// 왼쪽 칸의 기본 폭은 종전 범례가 쓰던 만큼(격자 42칸 중 19칸)이라 지도는 지금 자리 그대로다.
 void CEcsView::LayoutMainUi2()
 {
 	if (m_nMainUi != 2) return;
 	CRect rc;
 	GetClientRect(&rc);
-	if (rc.Width() < 200 || rc.Height() < 200) return;
-	int nLeft = rc.Width() * 19 / 42;
-	if (nLeft < 420) nLeft = 420;
-	if (nLeft > 1000) nLeft = 1000;
-	int nBarH = CLglsInfoBar::CalcHeight(nLeft - 12);		// 통신 한 줄 + 범례(폭에 따라 2~4줄)
-	if (m_pInfoBar != NULL && ::IsWindow(m_pInfoBar->m_hWnd))
-		m_pInfoBar->SetWindowPos(&wndTop, 6, 6, nLeft - 12, nBarH, SWP_SHOWWINDOW);
+	if (rc.Width() < 300 || rc.Height() < 300) return;
+
+	int nLeft = (m_nUiLeftW > 0) ? m_nUiLeftW : rc.Width() * 19 / 42;
+	if (nLeft < 320) nLeft = 320;
+	if (nLeft > rc.Width() - 360) nLeft = rc.Width() - 360;
+	int nCommH = (m_nUiCommH > 0) ? m_nUiCommH : 96;
+	int nLegH  = (m_nUiLegH  > 0) ? m_nUiLegH  : 200;
+	if (nCommH + nLegH > rc.Height() - 160)			// 작업정보가 최소 160 은 되게
+	{
+		int nRoom = rc.Height() - 160 - nCommH;
+		nLegH = (nRoom > 40) ? nRoom : 40;
+	}
+	const int nSp = 6;			// 손잡이 두께
+	int x = 6, w = nLeft - 12, y = 6;
+	if (w < 100) w = 100;
+
+	if (m_pCommBar != NULL && ::IsWindow(m_pCommBar->m_hWnd))
+		m_pCommBar->SetWindowPos(&wndTop, x, y, w, nCommH, SWP_SHOWWINDOW);
+	y += nCommH;
+	if (m_pSplitH1 != NULL && ::IsWindow(m_pSplitH1->m_hWnd))
+		m_pSplitH1->SetWindowPos(&wndTop, x, y, w, nSp, SWP_SHOWWINDOW);
+	y += nSp;
+	if (m_pLegBar != NULL && ::IsWindow(m_pLegBar->m_hWnd))
+		m_pLegBar->SetWindowPos(&wndTop, x, y, w, nLegH, SWP_SHOWWINDOW);
+	y += nLegH;
+	if (m_pSplitH2 != NULL && ::IsWindow(m_pSplitH2->m_hWnd))
+		m_pSplitH2->SetWindowPos(&wndTop, x, y, w, nSp, SWP_SHOWWINDOW);
+	y += nSp;
+	int nJobH = rc.Height() - y - 8;
+	if (nJobH < 80) nJobH = 80;
 	if (m_pJobFixed != NULL && ::IsWindow(m_pJobFixed->m_hWnd))
-		m_pJobFixed->SetWindowPos(&wndTop, 6, 6 + nBarH + 6, nLeft - 12, rc.Height() - nBarH - 24, SWP_SHOWWINDOW);
+		m_pJobFixed->SetWindowPos(&wndTop, x, y, w, nJobH, SWP_SHOWWINDOW);
+	if (m_pSplitV != NULL && ::IsWindow(m_pSplitV->m_hWnd))
+		m_pSplitV->SetWindowPos(&wndTop, nLeft - 2, 6, nSp, rc.Height() - 14, SWP_SHOWWINDOW);
 }
 
 CEcsView::CEcsView()
 	: CFormView(CEcsView::IDD)
 {
 	m_ullIniWriteTime = 0; m_ullIniPendingTime = 0; m_nIniZoomBtn = -1;	// [LGLS 2026-09-12] ini 핫 리로드
-	m_nMainUi = 1; m_pInfoBar = NULL; m_pJobFixed = NULL;	// [LGLS 2026-09-13] 메인 화면 2안
+	// [LGLS 2026-09-13] 메인 화면 새 배치 (MAIN_UI=2)
+	m_nMainUi = 1; m_nUiLeftW = 0; m_nUiCommH = 0; m_nUiLegH = 0;
+	m_pCommBar = NULL; m_pLegBar = NULL; m_pJobFixed = NULL;
+	m_pSplitV = NULL; m_pSplitH1 = NULL; m_pSplitH2 = NULL;
 	m_nSearchType = 0;
 	m_bSearchFlag = FALSE;
 	m_nSearchCount = 0;
