@@ -509,9 +509,7 @@ void CRtvSkinDlg::RedrawImage()
 		//   RGV(VEHICLE:1) 의 구 ECS 태그도 29개뿐이고 취소·삭제 신호가 없다
 		//   (ECS→PLC 쓰기 = FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack).
 		//   구 ECS RGVForm 도 IO_TRANSFER_REQUEST 를 true 로만 썼다(재전송뿐, 철회 없음).
-		UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
-		StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND,   nCol1, bZoom ? 4 : 3, szL, 0, FALSE);
-		if (!bZoom) { CWnd* pZ = GetDlgItem(IDC_LGLS_RTV_ZOOM); if (pZ) pZ->ShowWindow(SW_HIDE); }
+		ApplyZoomBtnIni();		// [LGLS 2026-09-12] 명령 버튼 쌓기 + [확대] 표시/숨김 - ini 저장 감지 시 같은 함수로 재적용
 		// [LGLS 2026-09-03] 확대 아래 빈 자리(사용자 지정)에 일시정지 상태 에디트 + [일시정지] 버튼을 함께 둔다
 		{
 			CWnd* pZoom = GetDlgItem(bZoom ? IDC_LGLS_RTV_ZOOM : IDC_BTN_RTV_MANUAL);   // 확대 숨김이면 그 위 버튼 기준
@@ -2027,4 +2025,19 @@ void CRtvSkinDlg::OnAckWrite(UINT nID)
 	}
 	CString strLog; strLog.Format(_T("Ack 수동 쓰기 %s -> %s (%s %s)"), (LPCTSTR)strName, (LPCTSTR)strCmd, (LPCTSTR)strObs, (LPCTSTR)CLib::GetObsAddr(strOwner, strObs));
 	m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), m_pRTV_DATA->V_ITN_LUGG_FK1, _T(""), _T(""), strLog);
+}
+
+// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → 명령 버튼을 4개/3개로 다시 쌓고 [확대] 를 표시/숨김.
+//   창을 만들 때(RedrawImage)와 CEcsView 가 ini 저장을 감지했을 때 부른다. 숨길 때 패널이 펼쳐져 있으면 먼저 접는다.
+//   (일시정지 에디트·버튼은 명령 그룹 바닥에 붙어 있어 버튼 수가 바뀌어도 자리를 옮길 필요가 없다)
+void CRtvSkinDlg::ApplyZoomBtnIni()
+{
+	if (GetSafeHwnd() == NULL) return;
+	SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
+	BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
+	if (!bZoom && m_bVehExpanded) SetVehPanelExpanded(FALSE);
+	UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
+	StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND, nCol1, bZoom ? 4 : 3, szL, 0, FALSE);
+	CWnd* pZ = GetDlgItem(IDC_LGLS_RTV_ZOOM);
+	if (pZ) pZ->ShowWindow(bZoom ? SW_SHOW : SW_HIDE);
 }

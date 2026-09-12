@@ -38,6 +38,7 @@ public:
 	int     m_nVehBaseW;	// 축소 상태 창 폭
 	int     m_nVehPanelW;	// 오른쪽 패널 폭
 	void SetVehPanelExpanded(BOOL bExpand);
+	void ApplyZoomBtnIni();		// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN 재적용(창 생성 시·ini 저장 감지 시)
 	afx_msg void OnBnClickedVehZoom();
 	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
 	CScSkinDlg(CWnd* pParent = NULL);   // 표준 생성자입니다.

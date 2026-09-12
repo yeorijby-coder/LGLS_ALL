@@ -27,6 +27,7 @@ public:
 
 	// 체류 판정 기준(초). Ecs.ini [USER] JOB_STALL_WARN_SEC, 기본 300
 	int  m_nStallSec;
+	void ReloadIni();		// [LGLS 2026-09-12] Ecs.ini 저장 감지 시 JOB_STALL_WARN_SEC 다시 읽기
 	// 자동 표시 억제(STOP 버튼)
 	BOOL m_bMute;
 	// 이미 알린 작업 : "작업번호|상태" 목록 (같은 상태로 머무는 동안 1회만 알림)

@@ -21,12 +21,18 @@ CWarningDlg::CWarningDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	m_pDoc = pDoc;
 	m_bMute = FALSE;
 	m_nCursor = -1;
-	m_nStallSec = ::GetPrivateProfileInt(_T("USER"), _T("JOB_STALL_WARN_SEC"), 300, ECS_INI_FILE);
-	if (m_nStallSec < 10) m_nStallSec = 10;
+	ReloadIni();
 }
 
 CWarningDlg::~CWarningDlg()
 {
+}
+
+// [LGLS 2026-09-12] 체류 판정 기준(초)을 Ecs.ini 에서 읽는다. 생성 시와 ini 저장 감지 시(CEcsView::ReloadIniHot) 부른다.
+void CWarningDlg::ReloadIni()
+{
+	m_nStallSec = ::GetPrivateProfileInt(_T("USER"), _T("JOB_STALL_WARN_SEC"), 300, ECS_INI_FILE);
+	if (m_nStallSec < 10) m_nStallSec = 10;
 }
 
 void CWarningDlg::DoDataExchange(CDataExchange* pDX)

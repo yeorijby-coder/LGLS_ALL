@@ -225,6 +225,7 @@ public:
 	HBRUSH m_brStatus;
 	void BuildCvStatusPanel();
 	void SetVehPanelExpanded(BOOL bExpand);
+	void ApplyZoomBtnIni();		// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN 재적용(창 생성 시·ini 저장 감지 시)
 	void InvalidateCvvData();
 	void SetLedCv(int nId, CString strVal);
 	afx_msg void OnBnClickedVehZoom();

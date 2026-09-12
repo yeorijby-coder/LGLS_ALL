@@ -28,6 +28,7 @@ public:
 	int     m_nVehPanelW;	// [LGLS 2026-09-12] 오른쪽 패널 폭
 	void CompactJobStatusArea();	// [LGLS 2026-08-01] 빈 공간 제거(사용자 지시 사진)
 	void SetVehPanelExpanded(BOOL bExpand);
+	void ApplyZoomBtnIni();		// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN 재적용(창 생성 시·ini 저장 감지 시)
 	afx_msg void OnBnClickedVehZoom();
 	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
 	afx_msg void OnBnClickedBtnRtvManual();   // [LGLS 2026-09-03] 수동지시

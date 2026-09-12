@@ -569,16 +569,14 @@ void CScSkinDlg::RedrawImage()
 		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>크레인 창을 여는 두 번째 경로
 		{ CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
 		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
-		BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
+		// [LGLS 2026-09-12] ZOOM_BTN 판단과 명령 버튼 쌓기는 ApplyZoomBtnIni() 로 - ini 저장 감지 시 같은 함수로 재적용
 		// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - 설비 인터페이스에 반송지시 취소 신호가 없다.
 		//   구 ECS 운영 DB(TB_OBSERVABLE) 기준 S/C·RGV 의 ECS→PLC 쓰기 태그는
 		//   FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack 뿐이고 취소·삭제 태그가 없다.
 		//   구 ECS 도 IO_TRANSFER_REQUEST 를 true 로만 썼고 false 로 내린 곳이 한 군데도 없다.
 		//   시나리오 규약(PPT 슬라이드6)도 "Cmd Strobe Reset - Reseted By PLC When Cmd Start" 라
 		//   PLC 가 지시를 집어든 뒤에는 되돌릴 방법이 없다.
-		UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
-		StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND,  nCol1, bZoom ? 4 : 3, szL, 1, FALSE);
-		if (!bZoom) { CWnd* pZ = GetDlgItem(IDC_LGLS_SC_ZOOM); if (pZ) pZ->ShowWindow(SW_HIDE); }
+		ApplyZoomBtnIni();
 		// [LGLS 2026-09-09] ★정지 버튼 3개를 다시 보이게 한다★ (사용자 요청)
 		//   입고 정지 / 출고 정지 / 작업금지 - 핸들러(OnBnClickedBtnCvStoSuspend 등)는 원래 있었고
 		//   여기서 숨기기만 하고 있었다. [입출고상태] 그룹 안에 세로로 세운다.
@@ -3083,4 +3081,18 @@ void CScSkinDlg::OnAckWrite(UINT nID)
 	}
 	CString strLog; strLog.Format(_T("Ack 수동 쓰기 %s -> %s (%s %s)"), (LPCTSTR)strName, (LPCTSTR)strCmd, (LPCTSTR)strObs, (LPCTSTR)CLib::GetObsAddr(strOwner, strObs));
 	m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), m_pSC_DATA->V_ITN_LUGG_FK1, _T(""), _T(""), strLog);
+}
+
+// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → 명령 버튼을 4개/3개로 다시 쌓고 [확대] 를 표시/숨김.
+//   창을 만들 때(RedrawImage)와 CEcsView 가 ini 저장을 감지했을 때 부른다. 숨길 때 패널이 펼쳐져 있으면 먼저 접는다.
+void CScSkinDlg::ApplyZoomBtnIni()
+{
+	if (GetSafeHwnd() == NULL) return;
+	SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
+	BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
+	if (!bZoom && m_bVehExpanded) SetVehPanelExpanded(FALSE);
+	UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
+	StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND, nCol1, bZoom ? 4 : 3, szL, 1, FALSE);
+	CWnd* pZ = GetDlgItem(IDC_LGLS_SC_ZOOM);
+	if (pZ) pZ->ShowWindow(bZoom ? SW_SHOW : SW_HIDE);
 }

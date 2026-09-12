@@ -581,7 +581,7 @@ void CCvSkinDlg::RedrawImage()
 	m_btnCvZoom.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnCvZoom.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("arrow-down"), strExtension)), NULL, 5, 5);
 	// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
-	if (!(::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0)) m_btnCvZoom.ShowWindow(SW_HIDE);
+	ApplyZoomBtnIni();		// [LGLS 2026-09-12] ini 저장 감지 시에도 같은 함수로 재적용
 
 
 	m_btnCvSenserProd0.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
@@ -2771,4 +2771,14 @@ void CCvSkinDlg::OnAckWrite(UINT nID)
 	}
 	CString strLog; strLog.Format(_T("Ack 수동 쓰기 %s -> %s (%s %s)"), (LPCTSTR)strName, (LPCTSTR)strCmd, (LPCTSTR)strObs, (LPCTSTR)CLib::GetObsAddr(strOwner, strObs));
 	m_pDoc->GetQueryInsertClientLog(_T("CCvSkinDlg"), m_pTrackInfo->m_pCV_DATA->V_LUGG_NO_RD, _T(""), _T(""), strLog);
+}
+
+// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → [확대] 버튼 표시/숨김.
+//   창을 만들 때(RedrawImage)와 CEcsView 가 ini 저장을 감지했을 때 부른다. 숨길 때 패널이 펼쳐져 있으면 먼저 접는다.
+void CCvSkinDlg::ApplyZoomBtnIni()
+{
+	if (GetSafeHwnd() == NULL || m_btnCvZoom.GetSafeHwnd() == NULL) return;
+	BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
+	if (!bZoom && m_bVehExpanded) SetVehPanelExpanded(FALSE);
+	m_btnCvZoom.ShowWindow(bZoom ? SW_SHOW : SW_HIDE);
 }

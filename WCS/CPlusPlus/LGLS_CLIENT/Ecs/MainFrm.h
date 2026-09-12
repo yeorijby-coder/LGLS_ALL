@@ -2,6 +2,7 @@
 //
 
 #pragma once
+#include <afxtempl.h>	// [LGLS 2026-09-12] CMap (리본 툴팁 원본 보관)
 
 #include "LogoBandWnd.h"
 #include "PanelDockPane.h"
@@ -122,6 +123,27 @@ public:
 	void TogglePanelBars(CEcsDoc* pDoc);   // 리본 [작업정보] 진입점
 	void ShowJobDetail(CString strLuggNo); // 작업 판넬 선택 -> 정보 판넬 연동
 	virtual void RecalcLayout(BOOL bNotify = TRUE);   // [LGLS] 판넬이 상태바를 침범하지 않게 클램프
+
+	// [LGLS 2026-09-12] 제목줄 "Ecs V1.0   [Build:빌드시각] [DB:DB명@서버][실행경로]" - Ecs.ini [Title] BuildDate/DbInfo/Path 로 켜고 끔.
+	//   창 폭보다 길면 0.2초마다 한 글자씩 흘린다(마퀴). [RibbonMenu] ToolTip=1 이면 리본 버튼 툴팁을 "탭 > 패널 > 버튼" 경로로.
+	//   두 섹션 모두 Ecs.ini 저장 즉시 반영(CEcsView::ReloadIniHot → ReloadTitleAndTipIni).
+	enum { TIMER_TITLE_MARQUEE = 7401 };
+	CString  m_strTitleFull;		// 조립된 전체 제목
+	CString  m_strTitleShown;		// 마지막으로 SetWindowText 한 문자열
+	int      m_nTitleOfs;			// 마퀴 시작 위치
+	int      m_nTitleBuild;		// [Title] BuildDate (-1=아직 안 읽음)
+	int      m_nTitleDb;			// [Title] DbInfo
+	int      m_nTitlePath;			// [Title] Path
+	int      m_nRibbonTip;			// [RibbonMenu] ToolTip (-1=아직 안 읽음)
+	BOOL     m_bRibbonTipApplied;	// 리본 툴팁을 한 번이라도 적용했나
+	CMap<void*, void*, CString, CString&> m_mapTipOrig;	// 원래 툴팁(끌 때 되돌림)
+	CString  BuildTitle();
+	void     UpdateTitleText(BOOL bForce);
+	void     ApplyRibbonToolTipIni(BOOL bForce);
+	void     SetElemPathTip(CMFCRibbonBaseElement* pElem, const CString& strCat, const CString& strPanel, BOOL bOn);
+	CString  ReloadTitleAndTipIni();	// ini 저장 감지 시 - 바뀐 키 요약을 돌려준다
+	virtual void OnUpdateFrameTitle(BOOL bAddToTitle);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	CCV_DATA* m_pCV_DATA;
 
 	HICON m_hIcon;

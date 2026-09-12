@@ -53,6 +53,7 @@ END_MESSAGE_MAP()
 CEcsView::CEcsView()
 	: CFormView(CEcsView::IDD)
 {
+	m_ullIniWriteTime = 0; m_ullIniPendingTime = 0; m_nIniZoomBtn = -1;	// [LGLS 2026-09-12] ini 핫 리로드
 	m_nSearchType = 0;
 	m_bSearchFlag = FALSE;
 	m_nSearchCount = 0;
@@ -217,6 +218,10 @@ void CEcsView::OnTimer(UINT_PTR nIDEvent)
 		CFormView::OnTimer(nIDEvent);
 		return;
 	}
+	// [LGLS 2026-09-12] Ecs.ini 저장 자동 감지 - 1초에 한 번(다른 1초 작업과 50틱 어긋나게)
+	if (nCount % 100 == 50)
+		CheckIniHotReload();
+
  	if (nCount % 100 == 0) //HEART BEAT COLLECT DB
  	{
 		if(pDoc->IsAlliveCollectDB() == FALSE)
@@ -1235,4 +1240,88 @@ void CEcsView::GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_MODE, 
 	pROLL_MODE = _T("");
 
 	delete pRsw;
+}
+
+// [LGLS 2026-09-12] Ecs.ini 저장 자동 감지 (사용자 지시 : "ini 에 적용하면 바로 적용되게").
+//   1초마다 파일 수정 시각을 본다. 바뀐 뒤 1초 더 그대로면(편집기 저장이 끝난 뒤) 재기동 없이 되는 키만 다시 읽는다.
+//   프로그램 자신이 쓰는 값(LAST_LANG·LAST_TAB_INDEX·[설정 상태] 색 저장)도 시각을 바꾸지만, 대상 키가 그대로면 "no change" 로 끝난다.
+void CEcsView::CheckIniHotReload()
+{
+	WIN32_FILE_ATTRIBUTE_DATA fad;
+	ZeroMemory(&fad, sizeof(fad));
+	if (!::GetFileAttributesEx(ECS_INI_FILE, GetFileExInfoStandard, &fad)) return;
+	ULONGLONG t = ((ULONGLONG)fad.ftLastWriteTime.dwHighDateTime << 32) | fad.ftLastWriteTime.dwLowDateTime;
+	if (m_ullIniWriteTime == 0)
+	{
+		// 기동 직후 : 기준 시각과 현재 ZOOM_BTN 값만 잡아 둔다(이때는 다시 읽지 않는다)
+		m_ullIniWriteTime = t;
+		m_nIniZoomBtn = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0) ? 1 : 0;
+		return;
+	}
+	if (t == m_ullIniWriteTime) { m_ullIniPendingTime = 0; return; }
+	if (t != m_ullIniPendingTime) { m_ullIniPendingTime = t; return; }	// 방금 바뀜 - 1초 뒤 한 번 더 확인
+	m_ullIniWriteTime = t;
+	m_ullIniPendingTime = 0;
+	ReloadIniHot();
+}
+
+// [LGLS 2026-09-12] 재기동 없이 되는 키만 다시 읽는다. 바뀐 키는 UI 로그(LOG\ECS_UI_yyyymmdd.log)에 [INI] reload 로 남긴다.
+//   · [ETC] ViewRetCnt        : CConfig 값만 바꾸면 트랙 그리기(TrackInfo)가 다음 갱신에 반영
+//   · [MENU] UI_TRACE/LOADBIT_GATE : CLib 캐시 비우기
+//   · [MENU] ZOOM_BTN         : 이미 만들어진 CV/SC/RTV 상태창의 [확대] 버튼 표시/숨김(숨기면 펼친 패널도 접음)
+//   · [USER] JOB_STALL_WARN_SEC : 체류 경고창 기준 초
+//   (USER_COLOR_* 27개는 사용자 지시로 제외)
+void CEcsView::ReloadIniHot()
+{
+	CEcsDoc* pDoc = GetDocument();
+	if (pDoc == NULL) return;
+	CString strChg = _T("");
+
+	if (pDoc->m_pConfig != NULL)
+	{
+		int nOld = pDoc->m_pConfig->m_nETC_ViewRetCnt;
+		int nNew = ::GetPrivateProfileInt(_T("ETC"), _T("ViewRetCnt"), 0, ECS_INI_FILE);
+		if (nOld != nNew)
+		{
+			pDoc->m_pConfig->m_nETC_ViewRetCnt = nNew;
+			strChg.AppendFormat(_T(" ViewRetCnt=%d"), nNew);
+		}
+	}
+
+	{
+		int nTr0 = CLib::IniUiTrace(), nGt0 = CLib::IniLoadBitGate();
+		CLib::IniCacheReset();
+		int nTr1 = CLib::IniUiTrace(), nGt1 = CLib::IniLoadBitGate();
+		if (nTr0 != nTr1) strChg.AppendFormat(_T(" UI_TRACE=%d"), nTr1);
+		if (nGt0 != nGt1) { strChg.AppendFormat(_T(" LOADBIT_GATE=%d"), nGt1); Invalidate(FALSE); }
+	}
+
+	{
+		int nZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0) ? 1 : 0;
+		if (nZoom != m_nIniZoomBtn)
+		{
+			m_nIniZoomBtn = nZoom;
+			strChg.AppendFormat(_T(" ZOOM_BTN=%d"), nZoom);
+			if (pDoc->m_pCvSkinDlg  != NULL && ::IsWindow(pDoc->m_pCvSkinDlg->m_hWnd))  ((CCvSkinDlg*)pDoc->m_pCvSkinDlg)->ApplyZoomBtnIni();
+			if (pDoc->m_pScSkinDlg  != NULL && ::IsWindow(pDoc->m_pScSkinDlg->m_hWnd))  ((CScSkinDlg*)pDoc->m_pScSkinDlg)->ApplyZoomBtnIni();
+			if (pDoc->m_pRtvSkinDlg != NULL && ::IsWindow(pDoc->m_pRtvSkinDlg->m_hWnd)) ((CRtvSkinDlg*)pDoc->m_pRtvSkinDlg)->ApplyZoomBtnIni();
+		}
+	}
+
+	if (pDoc->m_pWarningDlg != NULL)
+	{
+		CWarningDlg* pWarn = (CWarningDlg*)pDoc->m_pWarningDlg;
+		int nOld = pWarn->m_nStallSec;
+		pWarn->ReloadIni();
+		if (nOld != pWarn->m_nStallSec) strChg.AppendFormat(_T(" JOB_STALL_WARN_SEC=%d"), pWarn->m_nStallSec);
+	}
+
+	// [Title] BuildDate/DbInfo/Path · [RibbonMenu] ToolTip → 메인 프레임(제목줄·리본 툴팁)
+	{
+		CMainFrame* pFrm = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
+		if (pFrm != NULL) strChg += pFrm->ReloadTitleAndTipIni();
+	}
+
+	// 형식 문자열은 ASCII 만(MBCS 빌드에서 UTF-8 소스의 한글은 FormatV 에서 깨진다)
+	CLib::UiLog(_T("[INI] reload%s"), strChg.IsEmpty() ? _T(" (no change in hot keys)") : (LPCTSTR)strChg);
 }

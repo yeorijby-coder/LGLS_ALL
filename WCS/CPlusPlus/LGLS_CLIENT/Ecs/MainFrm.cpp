@@ -8,6 +8,7 @@
 #include "MFCRibbonPanel_Wrap.h"
 #include "MinButton.h"
 #include "RecordSetWrap.h"
+#include "Lib.h"		// [LGLS 2026-09-12] UiLog (리본 툴팁 적용 증거)
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -30,6 +31,7 @@ const int iCategoryIndex_BB = 3;
 const int iCategoryIndex_CC = 4;
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
+	ON_WM_TIMER()		// [LGLS 2026-09-12] 제목줄 마퀴
 	ON_COMMAND(ID_CONFIG_INI_OPEN, &CMainFrame::OnConfigIniOpen)
 	ON_COMMAND(ID_CONFIG_AUTO_TIME, &CMainFrame::OnConfigAutoTime)
 	ON_UPDATE_COMMAND_UI(ID_CONFIG_AUTO_TIME, &CMainFrame::OnUpdateConfigAutoTime)
@@ -99,7 +101,8 @@ CMainFrame::CMainFrame()
 	m_bShowStatusBar = false;
 	m_bToolNMenuBar = false;
 	m_nAppLook = theApp.GetInt (_T("ApplicationLook"), 0);
-
+	// [LGLS 2026-09-12] 제목줄·리본 툴팁 ini
+	m_nTitleOfs = 0; m_nTitleBuild = -1; m_nTitleDb = -1; m_nTitlePath = -1; m_nRibbonTip = -1; m_bRibbonTipApplied = FALSE;
 }
 CMainFrame::~CMainFrame()
 {
@@ -158,6 +161,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	//m_hIcon = LoadIcon(::AfxGetInstanceHandle(), _T("WCS.exe"));
 	SetIcon(Global.m_hIcon[IDX_ICON_MAX-1][2], TRUE);
+
+	// [LGLS 2026-09-12] 제목줄 마퀴(0.2초) + 리본 툴팁 지연 적용. 첫 틱에서 [Title]/[RibbonMenu] 를 읽는다.
+	SetTimer(TIMER_TITLE_MARQUEE, 200, NULL);
 
 	return TRUE;
 }
@@ -426,6 +432,7 @@ LRESULT CMainFrame::OnLangUpdate(WPARAM wParam, LPARAM lParam)
 	RenameRibbonText(pDoc->m_enLang);			// TEST
 
 	m_wndRibbonBar.ForceRecalcLayout();			// TEST
+	ApplyRibbonToolTipIni(TRUE);		// [LGLS 2026-09-12] 탭·패널 이름이 바뀐 뒤 경로 툴팁([RibbonMenu] ToolTip)을 다시 붙인다
 
 	return 0;
 }
@@ -2409,4 +2416,214 @@ void CMainFrame::OnUpdateStatusHost(CCmdUI *pCmdUI)
 	}
 	
 	return;
+}
+
+// ===========================================================================
+// [LGLS 2026-09-12] 제목줄 (Ecs.ini [Title]) / 리본 경로 툴팁 (Ecs.ini [RibbonMenu]) - 사용자 지시
+//   제목 = "Ecs V1.0   [Build:yyyy.MM.dd HH:mm:ss] [DB:DB명@서버][실행 파일 경로]"
+//   · 빌드 시각은 PE 헤더의 링크 시각(TimeDateStamp) - 파일마다 다시 컴파일되지 않는 __DATE__ 보다 정확하다.
+//   · 창 폭(캡션 글꼴로 측정)보다 길면 0.2초마다 한 글자씩 왼쪽으로 흘린다.
+//   · MFC 는 문서 제목("Ecs")으로 제목을 되돌리려 하므로 OnUpdateFrameTitle 을 가로챈다.
+// ===========================================================================
+static CString PfExeBuildTime()
+{
+	HMODULE hMod = ::GetModuleHandle(NULL);
+	if (hMod == NULL) return _T("");
+	PIMAGE_DOS_HEADER pDos = (PIMAGE_DOS_HEADER)hMod;
+	if (pDos->e_magic != IMAGE_DOS_SIGNATURE) return _T("");
+	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)((BYTE*)hMod + pDos->e_lfanew);
+	if (pNt->Signature != IMAGE_NT_SIGNATURE) return _T("");
+	CTime t((__time64_t)pNt->FileHeader.TimeDateStamp);
+	return t.Format(_T("%Y.%m.%d %H:%M:%S"));
+}
+
+CString CMainFrame::BuildTitle()
+{
+	CString s;
+	s.Format(_T("%s V%s"), AfxGetAppName(), WCS_VERSION_STR);
+	if (m_nTitleBuild != 0)
+	{
+		static CString s_strBuild = PfExeBuildTime();
+		s += _T("   [Build:") + s_strBuild + _T("]");
+	}
+	if (m_nTitleDb != 0)
+	{
+		TCHAR szSvr[_MAX_PATH] = {0}, szDb[_MAX_PATH] = {0};
+#if ORACLE
+		::GetPrivateProfileString(_T("DB_1"), _T("SERVER"), _T(""), szSvr, _MAX_PATH, ECS_INI_FILE);
+		::GetPrivateProfileString(_T("DB_1"), _T("USERID"), _T(""), szDb, _MAX_PATH, ECS_INI_FILE);
+#else
+		::GetPrivateProfileString(_T("DB_2"), _T("SERVER"), _T(""), szSvr, _MAX_PATH, ECS_INI_FILE);
+		::GetPrivateProfileString(_T("DB_2"), _T("DATABASE"), _T(""), szDb, _MAX_PATH, ECS_INI_FILE);
+#endif
+		CString strDb;
+		strDb.Format(_T(" [DB:%s@%s]"), szDb, szSvr);
+		s += strDb;
+	}
+	if (m_nTitlePath != 0)
+	{
+		TCHAR szPath[MAX_PATH] = {0};
+		::GetModuleFileName(NULL, szPath, MAX_PATH);
+		s += _T("[") + CString(szPath) + _T("]");
+	}
+	return s;
+}
+
+// 제목이 창 폭에 들어가면 그대로, 넘치면 m_nTitleOfs 부터 폭에 맞게 잘라 보여준다(OnTimer 가 0.2초마다 한 글자씩 민다).
+void CMainFrame::UpdateTitleText(BOOL bForce)
+{
+	if (GetSafeHwnd() == NULL || m_strTitleFull.IsEmpty()) return;
+	CString strShow = m_strTitleFull;
+	CRect rcWin; GetWindowRect(&rcWin);
+	int nAvail = rcWin.Width() - 260;			// 아이콘·빠른실행 도구모음·창 버튼 자리를 뺀 폭
+	if (nAvail > 50)
+	{
+		NONCLIENTMETRICS ncm; ZeroMemory(&ncm, sizeof(ncm)); ncm.cbSize = sizeof(ncm);
+		CFont font; BOOL bFont = FALSE;
+		if (::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0)) bFont = font.CreateFontIndirect(&ncm.lfCaptionFont);
+		CWindowDC dc(this);
+		CFont* pOld = bFont ? dc.SelectObject(&font) : NULL;
+		if (dc.GetTextExtent(m_strTitleFull).cx > nAvail)
+		{
+			CString strLoop = m_strTitleFull + _T("      ");		// 한 바퀴 = 전체 + 여백
+			int L = strLoop.GetLength();
+			if (m_nTitleOfs >= L) m_nTitleOfs = 0;
+			CString strRot = strLoop.Mid(m_nTitleOfs) + strLoop.Left(m_nTitleOfs);
+			int nFit = strRot.GetLength();
+			while (nFit > 1 && dc.GetTextExtent(strRot.Left(nFit)).cx > nAvail) nFit -= (nFit / 16 > 0 ? nFit / 16 : 1);
+			while (nFit < strRot.GetLength() && dc.GetTextExtent(strRot.Left(nFit + 1)).cx <= nAvail) nFit++;
+			strShow = strRot.Left(nFit);
+		}
+		else
+			m_nTitleOfs = 0;
+		if (pOld != NULL) dc.SelectObject(pOld);
+	}
+	if (bForce || strShow != m_strTitleShown)
+	{
+		m_strTitleShown = strShow;
+		SetWindowText(strShow);
+	}
+}
+
+void CMainFrame::OnUpdateFrameTitle(BOOL bAddToTitle)
+{
+	// MFC 기본 동작은 문서 제목("Ecs")으로 덮어쓴다. 조립된 제목이 있으면 그것을 유지한다.
+	if (m_strTitleFull.IsEmpty()) { CFrameWndEx::OnUpdateFrameTitle(bAddToTitle); return; }
+	UpdateTitleText(TRUE);
+}
+
+void CMainFrame::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == TIMER_TITLE_MARQUEE)
+	{
+		if (m_nTitleBuild < 0)
+			ReloadTitleAndTipIni();			// 첫 틱 : ini 를 읽고 제목을 조립한다
+		else
+		{
+			m_nTitleOfs++;					// 넘칠 때만 의미 있다(안 넘치면 UpdateTitleText 가 0 으로 되돌린다)
+			UpdateTitleText(FALSE);
+		}
+		if (!m_bRibbonTipApplied && m_wndRibbonBar.GetSafeHwnd() != NULL && m_wndRibbonBar.GetCategoryCount() > 0)
+			ApplyRibbonToolTipIni(TRUE);
+		return;
+	}
+	CFrameWndEx::OnTimer(nIDEvent);
+}
+
+// Ecs.ini [Title]/[RibbonMenu] 를 (다시) 읽는다. 기동 첫 틱과 CEcsView::ReloadIniHot(ini 저장 감지)에서 부른다.
+CString CMainFrame::ReloadTitleAndTipIni()
+{
+	CString strChg = _T("");
+	BOOL bFirst = (m_nTitleBuild < 0);
+	int nB = (::GetPrivateProfileInt(_T("Title"), _T("BuildDate"), 1, ECS_INI_FILE) != 0) ? 1 : 0;
+	int nD = (::GetPrivateProfileInt(_T("Title"), _T("DbInfo"),    1, ECS_INI_FILE) != 0) ? 1 : 0;
+	int nP = (::GetPrivateProfileInt(_T("Title"), _T("Path"),      1, ECS_INI_FILE) != 0) ? 1 : 0;
+	int nT = (::GetPrivateProfileInt(_T("RibbonMenu"), _T("ToolTip"), 1, ECS_INI_FILE) != 0) ? 1 : 0;
+	if (nB != m_nTitleBuild) { if (!bFirst) strChg.AppendFormat(_T(" Title.BuildDate=%d"), nB); m_nTitleBuild = nB; }
+	if (nD != m_nTitleDb)    { if (!bFirst) strChg.AppendFormat(_T(" Title.DbInfo=%d"),    nD); m_nTitleDb    = nD; }
+	if (nP != m_nTitlePath)  { if (!bFirst) strChg.AppendFormat(_T(" Title.Path=%d"),      nP); m_nTitlePath  = nP; }
+	if (nT != m_nRibbonTip)
+	{
+		if (m_nRibbonTip >= 0) strChg.AppendFormat(_T(" RibbonMenu.ToolTip=%d"), nT);
+		m_nRibbonTip = nT;
+		ApplyRibbonToolTipIni(TRUE);
+	}
+	CString strNew = BuildTitle();
+	if (strNew != m_strTitleFull)
+	{
+		m_strTitleFull = strNew;
+		m_nTitleOfs = 0;
+		UpdateTitleText(TRUE);
+	}
+	return strChg;
+}
+
+// [RibbonMenu] ToolTip=1 : 리본 버튼 툴팁을 "탭 > 패널 > 버튼" 경로로, 0 : 원래 툴팁으로 되돌린다.
+//   탭·패널 이름은 언어 전환(CEcsDoc::UpdateRibbonLang)으로 바뀌므로 그때도 다시 부른다.
+// 적용 증거(UI 로그) : 적용한 버튼 수와 첫 버튼의 툴팁 - 툴팁은 화면 캡처로 잡기 어려워 로그로 확인한다
+static int     s_nTipCnt = 0;
+static CString s_strTipSample;
+
+void CMainFrame::ApplyRibbonToolTipIni(BOOL bForce)
+{
+	UNREFERENCED_PARAMETER(bForce);
+	if (m_wndRibbonBar.GetSafeHwnd() == NULL) return;
+	int nCat = m_wndRibbonBar.GetCategoryCount();
+	if (nCat <= 0) return;
+	if (m_nRibbonTip < 0) m_nRibbonTip = (::GetPrivateProfileInt(_T("RibbonMenu"), _T("ToolTip"), 1, ECS_INI_FILE) != 0) ? 1 : 0;
+	BOOL bOn = (m_nRibbonTip != 0);
+	s_nTipCnt = 0; s_strTipSample.Empty();
+	for (int c = 0; c < nCat; c++)
+	{
+		CMFCRibbonCategory* pCat = m_wndRibbonBar.GetCategory(c);
+		if (pCat == NULL) continue;
+		if (pCat == m_wndRibbonBar.GetMainCategory() || !pCat->IsVisible()) continue;	// 응용 프로그램 단추 패널·인쇄 미리보기 등 화면에 없는 탭 제외
+		CString strCat = pCat->GetName(); strCat.Trim();
+		for (int i = 0; i < pCat->GetPanelCount(); i++)
+		{
+			CMFCRibbonPanel* pPanel = pCat->GetPanel(i);
+			if (pPanel == NULL) continue;
+			CString strPanel = pPanel->GetName(); strPanel.Trim();
+			for (int e = 0; e < pPanel->GetCount(); e++)
+				SetElemPathTip(pPanel->GetElement(e), strCat, strPanel, bOn);
+		}
+	}
+	m_bRibbonTipApplied = TRUE;
+	CLib::UiLog(_T("[INI] ribbon tooltip %s n=%d sample=%s"), bOn ? _T("on") : _T("off"), s_nTipCnt, (LPCTSTR)s_strTipSample);
+}
+
+void CMainFrame::SetElemPathTip(CMFCRibbonBaseElement* pElem, const CString& strCat, const CString& strPanel, BOOL bOn)
+{
+	if (pElem == NULL) return;
+	if (pElem->IsKindOf(RUNTIME_CLASS(CMFCRibbonButtonsGroup)))		// 버튼 묶음이면 안의 버튼마다
+	{
+		CMFCRibbonButtonsGroup* pGrp = (CMFCRibbonButtonsGroup*)pElem;
+		for (int i = 0; i < pGrp->GetCount(); i++) SetElemPathTip(pGrp->GetButton(i), strCat, strPanel, bOn);
+		return;
+	}
+	CString strText = pElem->GetText();
+	strText.Replace(_T("\n"), _T(" "));
+	strText.Trim();
+	if (strText.IsEmpty()) return;							// 구분선·여백 라벨
+	void* pKey = (void*)pElem;
+	CString strOrig;
+	if (!m_mapTipOrig.Lookup(pKey, strOrig))
+	{
+		strOrig = pElem->GetToolTipText();
+		m_mapTipOrig.SetAt(pKey, strOrig);
+	}
+	if (bOn)
+	{
+		CString strPath;
+		strPath.Format(_T("%s > %s > %s"), (LPCTSTR)strCat, (LPCTSTR)strPanel, (LPCTSTR)strText);
+		pElem->SetToolTipText(strPath);
+		s_nTipCnt++;
+		if (s_strTipSample.IsEmpty()) s_strTipSample = strPath;
+	}
+	else
+	{
+		pElem->SetToolTipText(strOrig);
+		s_nTipCnt++;
+		if (s_strTipSample.IsEmpty()) s_strTipSample = strText + _T(" -> ") + (strOrig.IsEmpty() ? CString(_T("(none)")) : strOrig);
+	}
 }

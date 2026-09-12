@@ -1993,16 +1993,29 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc)
 // [LGLS 2026-09-11] 차상 적재 여부. 구 ECS 는 이 비트 하나로 색을 켜고 껐다.
 //   Backup/ECS Device/Unit/Vehicle.cs OnPalletExistFlag ->
 //   Gui/Widget/StackerCraneWidget.cs · RGVWidget.cs 의 파란 사각형.
+// [LGLS 2026-09-12] Ecs.ini 핫 리로드용 캐시. CEcsView::CheckIniHotReload() 가 저장을 감지하면 비운다.
+static int s_nIniUiTrace     = -1;
+static int s_nIniLoadBitGate = -1;
+void CLib::IniCacheReset() { s_nIniUiTrace = -1; s_nIniLoadBitGate = -1; }
+int  CLib::IniUiTrace()
+{
+	if (s_nIniUiTrace < 0) s_nIniUiTrace = ::GetPrivateProfileInt(_T("MENU"), _T("UI_TRACE"), 1, ECS_INI_FILE);
+	return s_nIniUiTrace;
+}
+int  CLib::IniLoadBitGate()
+{
+	if (s_nIniLoadBitGate < 0) s_nIniLoadBitGate = ::GetPrivateProfileInt(_T("MENU"), _T("LOADBIT_GATE"), 1, ECS_INI_FILE);
+	return s_nIniLoadBitGate;
+}
+
 BOOL CLib::IsVehicleLoaded(CString strSensor)
 {
 	// [LGLS 2026-09-11] ini 로 끌 수 있게 둔다. 현장 PLC 가 이 비트를 안 채우면
 	//   크레인·RGV 색이 아예 안 뜨므로, 재빌드 없이 되돌릴 수 있어야 한다.
 	//   Ecs.ini [MENU] LOADBIT_GATE=0 이면 종전처럼 작업 캐시만 본다.
-	//   그리기마다 불리므로 처음 한 번만 읽는다(바꾸면 Client 재기동).
-	static int s_nGate = -1;
-	if (s_nGate < 0)
-		s_nGate = ::GetPrivateProfileInt(_T("MENU"), _T("LOADBIT_GATE"), 1, ECS_INI_FILE);
-	if (s_nGate == 0)
+	//   그리기마다 불리므로 캐시하되, Ecs.ini 저장 시 자동으로 다시 읽는다(09-12, 재기동 불필요).
+	// [LGLS 2026-09-12] 캐시(IniLoadBitGate) - Ecs.ini 저장이 감지되면 자동으로 다시 읽는다(재기동 불필요).
+	if (CLib::IniLoadBitGate() == 0)
 		return TRUE;			// 게이트 끔 - 종전 동작
 
 	strSensor.Trim();
@@ -2038,13 +2051,11 @@ void CLib::ClampToWorkArea(CWnd* pRef, CRect& rcPos, int nWidth, int nHeight)
 }
 
 // [LGLS 2026-09-11] 화면 조작 단계 기록. 파일에만 남기고 모달은 띄우지 않는다.
-//   Ecs.ini [MENU] UI_TRACE=0 으로 끌 수 있다(기본 1). 처음 한 번만 읽는다.
+//   Ecs.ini [MENU] UI_TRACE=0 으로 끌 수 있다(기본 1). Ecs.ini 저장 시 자동 반영(09-12).
 void CLib::UiLog(LPCTSTR lpszFmt, ...)
 {
-	static int s_nOn = -1;
-	if (s_nOn < 0)
-		s_nOn = ::GetPrivateProfileInt(_T("MENU"), _T("UI_TRACE"), 1, ECS_INI_FILE);
-	if (s_nOn == 0)
+	// [LGLS 2026-09-12] 캐시(IniUiTrace) - Ecs.ini 저장이 감지되면 자동으로 다시 읽는다(재기동 불필요).
+	if (CLib::IniUiTrace() == 0)
 		return;
 
 	try
@@ -2066,15 +2077,20 @@ void CLib::UiLog(LPCTSTR lpszFmt, ...)
 		SYSTEMTIME st;
 		::GetLocalTime(&st);
 		CString strLine;
-		strLine.Format(_T("[%02d:%02d:%02d.%03d] %s") + CString(_T("\r\n")),
-			st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, (LPCTSTR)strMsg);
+		// [LGLS 2026-09-12] 시각 부분만 서식을 쓰고 본문은 이어 붙인다.
+		strLine.Format(_T("[%02d:%02d:%02d.%03d] "), st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+		strLine += strMsg;
+		strLine += _T("\r\n");
 
-		CStdioFile f;
-		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate |
-				   CFile::modeWrite | CFile::typeText))
+		// [LGLS 2026-09-12] ★한글이 잘리던 원인★ 이 프로그램은 유니코드 빌드라 CStdioFile::WriteString(typeText) 이
+		//   fputws 를 거치는데, CRT 로캘이 "C" 여서 한글에서 변환이 실패해 그 줄의 나머지(줄바꿈까지)가 사라졌다
+		//   ("[SC] " 뒤 잘림, 리본 툴팁 견본 잘림). CP949(ANSI) 바이트로 바꿔 이진 모드로 직접 쓴다.
+		CStringA strAnsi(strLine);
+		CFile f;
+		if (f.Open(strPath, CFile::modeCreate | CFile::modeNoTruncate | CFile::modeWrite | CFile::shareDenyNone | CFile::typeBinary))
 		{
 			f.SeekToEnd();
-			f.WriteString(strLine);
+			f.Write((LPCSTR)strAnsi, strAnsi.GetLength());
 			f.Close();
 		}
 	}

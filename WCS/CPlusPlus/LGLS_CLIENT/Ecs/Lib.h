@@ -92,6 +92,12 @@ public:
 	//   현장(Win7/2012)과 개발 PC(Win11)의 차이를 로그에서 바로 보기 위한 것.
 	static void UiEnvLog();
 
+	// [LGLS 2026-09-12] Ecs.ini 핫 리로드. 그리기마다 불리는 함수는 값을 캐시해 두는데,
+	//   CEcsView 가 ini 저장을 감지하면 IniCacheReset() 으로 비워 다음 호출에 다시 읽게 한다(재기동 불필요).
+	static void IniCacheReset();
+	static int  IniUiTrace();		// [MENU] UI_TRACE (캐시)
+	static int  IniLoadBitGate();	// [MENU] LOADBIT_GATE (캐시)
+
 public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);
 

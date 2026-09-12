@@ -77,6 +77,15 @@ public:
 	virtual void OnDraw(CDC* pDC);
 
 	LRESULT OnControlClick(WPARAM wParam, LPARAM lParam);
+
+	// [LGLS 2026-09-12] Ecs.ini 저장 자동 감지(핫 리로드). OnTimer(1초)에서 CheckIniHotReload().
+	//   대상 : [ETC] ViewRetCnt, [MENU] ZOOM_BTN·UI_TRACE·LOADBIT_GATE, [USER] JOB_STALL_WARN_SEC, [Title] 3키, [RibbonMenu] ToolTip
+	//   (색상 USER_COLOR_* 27개는 사용자 지시로 제외 - [설정 상태] 대화상자 [저장] 경로만 유지)
+	ULONGLONG m_ullIniWriteTime;	// 마지막으로 반영한 Ecs.ini 수정 시각
+	ULONGLONG m_ullIniPendingTime;	// 바뀐 것을 봤지만 아직 1초가 안 지난 시각
+	int       m_nIniZoomBtn;		// 마지막으로 반영한 ZOOM_BTN 값
+	void CheckIniHotReload();
+	void ReloadIniHot();
 	LRESULT OnRefreshDialog(WPARAM wParam, LPARAM lParam);
 	LRESULT OnViewLayoutInfo(WPARAM wParam, LPARAM lParam);
 
