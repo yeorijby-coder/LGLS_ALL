@@ -103,7 +103,10 @@ void CTrackInfo::ApplyTrackTextMode(CDciTrackCtrl* pTrackCtrl)
 	if (nMode == 1)
 	{
 		// [LGLS 2026-07-22] 수집 스레드가 갱신 중인 CString 을 참조 공유 없이 깊은 복사(레이스 방어)
-		pTrackCtrl->SetExtraTextSafe(bHasJob ? CString((LPCTSTR)m_pCV_DATA->V_LUGG_NO_RD) : CString(_T(" ")), clrJob);
+		// [LGLS 2026-09-12] 작업번호 모드에서는 ★트래킹이 있으면 화물·작업 유무와 무관하게★ 번호를 찍는다(사용자 지시).
+		//   화물 없이 번호만 남은 트랙은 GetCvColor 가 "작업번호 있음" 색으로 칠하므로 번호가 같이 보여야 한다.
+		//   (08-24 에 숨겼던 이유였던 "도착 예약 선기록" 은 09-06 에 없앴다)
+		pTrackCtrl->SetExtraTextSafe(bLuggVal ? CString((LPCTSTR)m_pCV_DATA->V_LUGG_NO_RD) : CString(_T(" ")), clrJob);
 	}
 	else if (nMode == 2)
 	{
@@ -284,6 +287,18 @@ COLORREF CTrackInfo::GetCvColor()
 			if (clrJobTyp != CLR_INVALID)
 				return clrJobTyp;
 		}
+	}
+
+	// [LGLS 2026-09-12] ★작업번호만 남은 트랙★ (사용자 지시)
+	//   화물감지는 없는데 트래킹(작업번호)이 남아 있고, 그 번호가 작업정보에도 없다(위에서 안 걸림).
+	//   종전에는 회색(일반)이라 빈 트랙과 구분이 안 됐다. 범례 20번 "작업번호 있음" 색으로 칠해
+	//   운전원이 잔재 트래킹을 한눈에 알아보게 한다(Ecs.ini [USER] USER_COLOR_TRACKING).
+	{
+		CString strLuggOnly = m_pCV_DATA->V_LUGG_NO_RD;
+		strLuggOnly.Trim();
+		if (!strLuggOnly.IsEmpty() && strLuggOnly != _T("0") && strLuggOnly != _T("0000")
+			&& m_pCV_DATA->V_SENSOR0_DATA_RD != _T("1"))
+			return pConfig->m_clrUSER_COLOR_TRACKING;
 	}
 
 	if (m_pCV_DATA->V_SENSOR0_DATA_RD != _T("1"))

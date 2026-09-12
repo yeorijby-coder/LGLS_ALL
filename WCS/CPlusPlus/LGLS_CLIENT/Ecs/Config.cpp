@@ -183,6 +183,10 @@ void CConfig::LoadConfigUSER()
 	::GetPrivateProfileString(_T("USER"), _T("USER_COLOR_WC_PASS"),	CConvert::ToString(m_clrUSER_COLOR_WC_PASS),	szTemp, _MAX_PATH, ECS_INI_FILE);	
 	m_clrUSER_COLOR_WC_PASS = CConvert::ToColor(CString(szTemp));
 
+	// [LGLS 2026-09-12] 화물 없이 작업번호만 남은 트랙 색 (없으면 기본 황토색)
+	::GetPrivateProfileString(_T("USER"), _T("USER_COLOR_TRACKING"),	CConvert::ToString(m_clrUSER_COLOR_TRACKING),	szTemp, _MAX_PATH, ECS_INI_FILE);
+	m_clrUSER_COLOR_TRACKING = CConvert::ToColor(CString(szTemp));
+
 	::GetPrivateProfileString(_T("USER"), _T("USER_COLOR_CV_SEARCH"),	CConvert::ToString(m_clrUSER_COLOR_CV_SEARCH),	szTemp, _MAX_PATH, ECS_INI_FILE);
 	m_clrUSER_COLOR_CV_SEARCH = CConvert::ToColor(CString(szTemp));
 
@@ -238,6 +242,7 @@ void CConfig::InitializeConfigUSER()
 	m_clrUSER_COLOR_MANUAL = YELLOW;		// 
 	m_clrUSER_COLOR_DISCONNECT = WHITE;
 	m_clrUSER_COLOR_WC_PASS = SITE;			
+	m_clrUSER_COLOR_TRACKING = RGB(210, 180, 140);	// [LGLS 2026-09-12] 황토색 - 작업번호만 남은 트랙
 	m_clrUSER_COLOR_CV_SEARCH = PINK;
 
 	// [LGLS 2026-09-09] 레일 색 : 정지 3종은 붉은 계열로 나누고(2동의 "붉으면 정지" 유지),

@@ -1729,7 +1729,7 @@ void CEcsDoc::ApplyLegendColors()
 	PfSetLegendBox(this, _T("90009017"), p->m_clrUSER_COLOR_MANUAL);
 	PfSetLegendBox(this, _T("90009018"), p->m_clrUSER_COLOR_DISCONNECT);
 	PfSetLegendBox(this, _T("90009019"), p->m_clrUSER_COLOR_CV_SEARCH);
-	PfSetLegendBox(this, _T("90009020"), LIGHT_GRAY);           // 일반(작업 없음)
+	PfSetLegendBox(this, _T("90009020"), p->m_clrUSER_COLOR_TRACKING);   // [LGLS 2026-09-12] 작업번호 있음(화물 없이 트래킹만 남은 트랙)
 
 	// --- S/C·RGV 상태 = 포크 색 (ScInfo/RtvInfo GetForkColor1 기준)
 	PfSetLegendRv(this, _T("90009101"), 0, LIGHT_GRAY,                 TRUE);   // 작업없음(정상)
