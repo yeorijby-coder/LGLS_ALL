@@ -153,33 +153,34 @@ void CGlobal::LoadBitmaps()
 	}
 }
 
+// [LGLS 2026-09-12] 스킨 그림을 rc_resource\skin 으로 옮겼다(사용자 지시). 경로는 exe 폴더 기준.
 CString CGlobal::GetBitmapFileName(UINT nBitmapID)
 {
 	switch( nBitmapID )
 	{
-	case IDX_BMP_CAPTION_LEFT				:	return _T("skin\\caption_left.bmp");			break;
-	case IDX_BMP_CAPTION_CENTER				:	return _T("skin\\caption_center.bmp");			break;
-	case IDX_BMP_CAPTION_RIGHT				:	return _T("skin\\caption_right.bmp");			break;
-	case IDX_BMP_FRAME_LEFT					:	return _T("skin\\frame_left.bmp");				break;
-	case IDX_BMP_FRAME_LEFT_BOTTOM			:	return _T("skin\\frame_leftbottom.bmp");		break;
-	case IDX_BMP_FRAME_BOTTOM				:	return _T("skin\\frame_bottom.bmp");			break;
-	case IDX_BMP_FRAME_RIGHT_BOTTOM			:	return _T("skin\\frame_rightbottom.bmp");		break;
-	case IDX_BMP_FRAME_RIGHT				:	return _T("skin\\frame_right.bmp");				break;
-	case IDX_BMP_BOX_MINIMIZE				:	return _T("skin\\box_minimize.bmp");			break;
-	case IDX_BMP_BOX_MAXMIZE				:	return _T("skin\\box_maximize.bmp");			break;
-	case IDX_BMP_BOX_RESTORE				:	return _T("skin\\box_restore.bmp");				break;
-	case IDX_BMP_BOX_EXIT					:	return _T("skin\\box_exit.bmp");				break;
-	case IDX_BMP_BOX_MINIMIZE_ON			:	return _T("skin\\box_minimize_on.bmp");			break;
-	case IDX_BMP_BOX_MAXMIZE_ON				:	return _T("skin\\box_maximize_on.bmp");			break;
-	case IDX_BMP_BOX_RESTORE_ON				:	return _T("skin\\box_restore_on.bmp");			break;
-	case IDX_BMP_BOX_EXIT_ON				:	return _T("skin\\box_exit_on.bmp");				break;
-	case IDX_BMP_BOX_MINIMIZE_OVER			:	return _T("skin\\box_minimize_over.bmp");		break;
-	case IDX_BMP_BOX_MAXMIZE_OVER			:	return _T("skin\\box_maximize_over.bmp");		break;
-	case IDX_BMP_BOX_RESTORE_OVER			:	return _T("skin\\box_restore_over.bmp");		break;
-	case IDX_BMP_BOX_EXIT_OVER				:	return _T("skin\\box_exit_over.bmp");			break;
-	case IDX_BMP_BTN_BASE					:	return _T("skin\\btn_base.bmp");				break;
-	case IDX_BMP_BTN_BASE_LARGE				:	return _T("skin\\btn_base_large.bmp");			break;
-	case IDX_BMP_BTN_BASE_WIDELARGE			:	return _T("skin\\btn_base_widelarge.bmp");			break;
+	case IDX_BMP_CAPTION_LEFT				:	return _T("rc_resource\\skin\\caption_left.bmp");			break;
+	case IDX_BMP_CAPTION_CENTER				:	return _T("rc_resource\\skin\\caption_center.bmp");			break;
+	case IDX_BMP_CAPTION_RIGHT				:	return _T("rc_resource\\skin\\caption_right.bmp");			break;
+	case IDX_BMP_FRAME_LEFT					:	return _T("rc_resource\\skin\\frame_left.bmp");				break;
+	case IDX_BMP_FRAME_LEFT_BOTTOM			:	return _T("rc_resource\\skin\\frame_leftbottom.bmp");		break;
+	case IDX_BMP_FRAME_BOTTOM				:	return _T("rc_resource\\skin\\frame_bottom.bmp");			break;
+	case IDX_BMP_FRAME_RIGHT_BOTTOM			:	return _T("rc_resource\\skin\\frame_rightbottom.bmp");		break;
+	case IDX_BMP_FRAME_RIGHT				:	return _T("rc_resource\\skin\\frame_right.bmp");				break;
+	case IDX_BMP_BOX_MINIMIZE				:	return _T("rc_resource\\skin\\box_minimize.bmp");			break;
+	case IDX_BMP_BOX_MAXMIZE				:	return _T("rc_resource\\skin\\box_maximize.bmp");			break;
+	case IDX_BMP_BOX_RESTORE				:	return _T("rc_resource\\skin\\box_restore.bmp");				break;
+	case IDX_BMP_BOX_EXIT					:	return _T("rc_resource\\skin\\box_exit.bmp");				break;
+	case IDX_BMP_BOX_MINIMIZE_ON			:	return _T("rc_resource\\skin\\box_minimize_on.bmp");			break;
+	case IDX_BMP_BOX_MAXMIZE_ON				:	return _T("rc_resource\\skin\\box_maximize_on.bmp");			break;
+	case IDX_BMP_BOX_RESTORE_ON				:	return _T("rc_resource\\skin\\box_restore_on.bmp");			break;
+	case IDX_BMP_BOX_EXIT_ON				:	return _T("rc_resource\\skin\\box_exit_on.bmp");				break;
+	case IDX_BMP_BOX_MINIMIZE_OVER			:	return _T("rc_resource\\skin\\box_minimize_over.bmp");		break;
+	case IDX_BMP_BOX_MAXMIZE_OVER			:	return _T("rc_resource\\skin\\box_maximize_over.bmp");		break;
+	case IDX_BMP_BOX_RESTORE_OVER			:	return _T("rc_resource\\skin\\box_restore_over.bmp");		break;
+	case IDX_BMP_BOX_EXIT_OVER				:	return _T("rc_resource\\skin\\box_exit_over.bmp");			break;
+	case IDX_BMP_BTN_BASE					:	return _T("rc_resource\\skin\\btn_base.bmp");				break;
+	case IDX_BMP_BTN_BASE_LARGE				:	return _T("rc_resource\\skin\\btn_base_large.bmp");			break;
+	case IDX_BMP_BTN_BASE_WIDELARGE			:	return _T("rc_resource\\skin\\btn_base_widelarge.bmp");			break;
 	}
 	return _T("");
 }
@@ -205,15 +206,17 @@ void CGlobal::LoadIcons()
 	}
 }
 
+// [LGLS 2026-09-12] 스킨 아이콘은 rc_resource\skin, 메인 창 아이콘(bulb)은 rc_resource\ico 로 옮겼다.
+//   bulb.ico 는 실행 폴더에 아예 없어 로드가 늘 실패하고 있었다 - 이번에 넣었다.
 CString CGlobal::GetIconFileName(UINT nIconID)
 {
 	switch( nIconID )
 	{
-	case IDX_ICON_SKIN							:	return _T("skin\\skin.ico");					break;
-	case IDX_ICON_SKIN_INACTIVE					:	return _T("skin\\skin_inactive.ico");			break;
-	case IDX_ICON_OK							:	return _T("skin\\ok.ico");						break;
-	case IDX_ICON_CANCEL						:	return _T("skin\\close.ico");					break;	
-	case IDX_ICON_WCS							:	return _T("bulb.ico");							break;	
+	case IDX_ICON_SKIN							:	return _T("rc_resource\\skin\\skin.ico");					break;
+	case IDX_ICON_SKIN_INACTIVE					:	return _T("rc_resource\\skin\\skin_inactive.ico");			break;
+	case IDX_ICON_OK							:	return _T("rc_resource\\skin\\ok.ico");						break;
+	case IDX_ICON_CANCEL						:	return _T("rc_resource\\skin\\close.ico");					break;	
+	case IDX_ICON_WCS							:	return _T("rc_resource\\ico\\bulb.ico");							break;	
 	}
 	return _T("");
 }
