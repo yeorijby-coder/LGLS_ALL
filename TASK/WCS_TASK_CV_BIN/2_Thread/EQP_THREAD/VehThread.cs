@@ -262,6 +262,12 @@ namespace WCS_TASK_CV
 
         private bool WriteBit(ObsDef d, bool value)
         {
+            // [LGLS 2026-09-14] M 비트는 단일 비트 쓰기(%MX) - 구 ECS mdDevSet/mdDevRst 와 같다.
+            //   종전 워드 read-modify-write 는 CV 스레드 등 다른 소켓이 같은 워드를 쓰는 사이에
+            //   낡은 워드로 이송지시/완료 Ack 비트를 지울 수 있었다. (BIT_WRITE=0 이면 종전 방식)
+            if (d.Device == 'M')
+                return m_msQPlc.WRITE_BIT((byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, d.Address, value);
+
             byte[] buf = new byte[8];
             if (!PlcReadWords(d.Device, d.Address / 16, 1, buf)) return false;
             int word = buf[0] | (buf[1] << 8);

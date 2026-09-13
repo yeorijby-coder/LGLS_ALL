@@ -112,6 +112,12 @@ namespace WCS_TASK_CV
             return Q3E_RECV_HEADER;
         }
 
+        // [LGLS 2026-09-14] 단일 비트 쓰기는 XGT 전용. Melsec 은 종전 워드 read-modify-write 를 그대로 쓴다.
+        public override bool WRITE_BIT(byte DeviceCode, int nBitAddr, bool bOn)
+        {
+            return WriteBitByWord(DeviceCode, nBitAddr, bOn);
+        }
+
         #region 프레임 빌더 (QnA-3E Binary)
         protected override byte[] BuildReadFrame(byte deviceCode, int wordAddr, int wordCount)
         {

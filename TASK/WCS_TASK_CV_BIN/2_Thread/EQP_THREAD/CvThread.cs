@@ -3156,31 +3156,9 @@ namespace WCS_TASK_CV
         /// </summary>
         private bool WriteMBit(int mBitAddr, bool value)
         {
-            int wordAddr = mBitAddr / 16;
-            int bitPos   = mBitAddr % 16;
-
-            // 현재 워드 읽기
-            byte[] rxBuf = new byte[100];
-            Array.Clear(rxBuf, 0, rxBuf.Length);
-            if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
-                               (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
-                               wordAddr, 1, ref rxBuf))
-                return false;
-
-            // 비트 변경
-            int word = rxBuf[0] | (rxBuf[1] << 8);
-            if (value)
-                word |=  (1 << bitPos);
-            else
-                word &= ~(1 << bitPos);
-
-            // 변경된 워드 쓰기
-            byte[] txBuf = new byte[2];
-            txBuf[0] = (byte)(word & 0xFF);
-            txBuf[1] = (byte)((word >> 8) & 0xFF);
-            return m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
-                                  (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
-                                  wordAddr, 1, txBuf);
+            // [LGLS 2026-09-14] 워드 read-modify-write -> 단일 비트 쓰기(%MX). 같은 워드의 다른 비트를 덮지 않는다.
+            //   (WCS_DB.INI [CNF] BIT_WRITE=0 이면 종전 워드 방식 - FenetProtocol.WriteBitByWord)
+            return m_msQPlc.WRITE_BIT((byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, mBitAddr, value);
         }
 
         /// <summary>

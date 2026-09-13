@@ -394,6 +394,106 @@ namespace WCS_TASK_CV
         }
         #endregion
 
+        #region WRITE_BIT - 단일 비트 쓰기  [LGLS 2026-09-14]
+        /// <summary>
+        /// 비트 하나만 ON/OFF 한다.
+        /// nBitAddr : 절대 비트번호 (워드주소*16 + 비트, 예: M0962 = 96*16+2 = 1538 -> %MX1538)
+        ///
+        /// [왜] 종전 방식(워드를 읽고 비트를 바꿔 워드를 통째로 되씀)은 읽기와 쓰기 사이에
+        ///   다른 스레드(각자 소켓)나 PLC 가 같은 워드의 다른 비트를 바꾸면 그 변경을 낡은 값으로 덮는다.
+        ///   S/C#1 Ack 워드(M0960~M096F)를 VehThread 와 옛 CvAlarmCheck 가 함께 쓰며 하역 Ack 가 지워진 원인.
+        ///   구 ECS 는 FenetDriver.mdDevSet/mdDevRst 로 비트 단위(%MX) 쓰기를 했다 - 같은 프레임을 쓴다.
+        ///
+        /// 프레임 : COMMAND 0x58 / DATATYPE 0x0000(bit) / BLOCKCOUNT 1 / "%MX"+10진 비트번호 / DATACOUNT 1 / DATA 0x01|0x00
+        /// WCS_DB.INI [CNF] BIT_WRITE=0 이거나 V0.9 주소모드면 종전 워드 방식으로 쓴다.
+        /// </summary>
+        public virtual bool WRITE_BIT(byte DeviceCode, int nBitAddr, bool bOn)
+        {
+            if (cDefApp.GM_ADDR_V09 || cDefApi.GsReadInitProfileBitWrite() == 0)
+                return WriteBitByWord(DeviceCode, nBitAddr, bOn);
+
+            byte[] txFrame = BuildBitWriteFrame(GetDeviceChar(DeviceCode), nBitAddr, bOn);
+            if (IsHex)
+                SndHexString = BytesToHexs(txFrame, txFrame.Length);
+            if (IsAscii)
+                SndAsciiString = Encoding.Default.GetString(txFrame, 0, txFrame.Length);
+
+            Clearbuffer();
+            string msg = "";
+            if (!SendRst(txFrame, txFrame.Length, ref msg))
+            {
+                SetErrorMsg("[WRITE_BIT] Send 실패: " + msg + " TX[" + SndHexString + "]");
+                return false;
+            }
+
+            byte[] rxBuf = new byte[GetRecvHeaderSize() + 64];
+            Array.Clear(rxBuf, 0, rxBuf.Length);
+            if (!RecvRst(ref rxBuf, GetWriteAckSize(), ref msg))
+            {
+                if (IsHex && RcvLen > 0)
+                    RcvHexString = BytesToHexs(rxBuf, RcvLen);
+                SetErrorMsg("[WRITE_BIT] Recv ACK 실패: " + msg);
+                return false;
+            }
+            if (IsHex && RcvLen > 0)
+                RcvHexString = BytesToHexs(rxBuf, RcvLen);
+            if (IsAscii && RcvLen > 0)
+                RcvAsciiString = Encoding.Default.GetString(rxBuf, 0, RcvLen);
+
+            return ValidateResponse(rxBuf, "[WRITE_BIT]");
+        }
+
+        /// <summary>종전 워드 read-modify-write 비트 쓰기 (BIT_WRITE=0 / V0.9 / Melsec)</summary>
+        protected bool WriteBitByWord(byte DeviceCode, int nBitAddr, bool bOn)
+        {
+            int wordAddr = nBitAddr / 16;
+            int bitPos   = nBitAddr % 16;
+            byte[] rxBuf = new byte[100];
+            Array.Clear(rxBuf, 0, rxBuf.Length);
+            if (!READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, DeviceCode, wordAddr, 1, ref rxBuf))
+                return false;
+            int word = rxBuf[0] | (rxBuf[1] << 8);
+            if (bOn) word |= (1 << bitPos); else word &= ~(1 << bitPos);
+            byte[] txBuf = new byte[2];
+            txBuf[0] = (byte)(word & 0xFF);
+            txBuf[1] = (byte)((word >> 8) & 0xFF);
+            return WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, DeviceCode, wordAddr, 1, txBuf);
+        }
+
+        // 구 ECS FenetDriver.mdDevSet/mdDevRst 와 같은 필드 순서. 체크섬만 BuildFenetFrame 과 같이 LENGTH 확정 후 합산(규격).
+        private byte[] BuildBitWriteFrame(char devChar, int nBitAddr, bool bOn)
+        {
+            byte[] addrBytes = Encoding.ASCII.GetBytes(nBitAddr.ToString());
+            LastAddrText = "%" + devChar + "X" + nBitAddr;
+            int varStrLen  = 3 + addrBytes.Length;                   // %, 디바이스문자, X + 주소
+            int cmdDataLen = 2 + 2 + 2 + 2 + 2 + varStrLen + 2 + 1;   // CMD DTYPE RSV BLK VARLEN DEV CNT DATA
+
+            byte[] frame = new byte[20 + cmdDataLen];
+            int o = 0;
+            Buffer.BlockCopy(FENET_COMPANY_ID, 0, frame, 0, 10); o = 10;
+            frame[o++] = 0x00; frame[o++] = 0x00;                    // PLC_INFO
+            frame[o++] = 0xA0;                                       // CPU_INFO
+            frame[o++] = 0x33;                                       // SOURCE_FRAME
+            frame[o++] = 0x20; frame[o++] = _invokeSeq++;            // INVOKE_ID (구 ECS mdDevSet 0x20)
+            frame[o++] = (byte)(cmdDataLen & 0xFF);                  // LENGTH
+            frame[o++] = (byte)((cmdDataLen >> 8) & 0xFF);
+            frame[o++] = 0x00;                                       // POSITION
+            int checksum = 0;
+            for (int i = 0; i < 19; i++) checksum += frame[i];
+            frame[o++] = (byte)(checksum & 0xFF);                    // CHECKSUM
+            frame[o++] = 0x58; frame[o++] = 0x00;                    // COMMAND : 쓰기
+            frame[o++] = 0x00; frame[o++] = 0x00;                    // DATATYPE : 비트
+            frame[o++] = 0x00; frame[o++] = 0x00;                    // RESERVED
+            frame[o++] = 0x01; frame[o++] = 0x00;                    // BLOCKCOUNT
+            frame[o++] = (byte)(varStrLen & 0xFF); frame[o++] = 0x00; // VARIABLE_LENGTH
+            frame[o++] = (byte)'%'; frame[o++] = (byte)devChar; frame[o++] = (byte)'X';
+            Buffer.BlockCopy(addrBytes, 0, frame, o, addrBytes.Length); o += addrBytes.Length;
+            frame[o++] = 0x01; frame[o++] = 0x00;                    // DATACOUNT : 1
+            frame[o++] = (byte)(bOn ? 0x01 : 0x00);                  // DATA
+            return frame;
+        }
+        #endregion
+
         #region 프레임 빌더 (LSIS-XGT FEnet)
         /*
          * LSIS-XGT FEnet 요청 프레임을 생성한다.

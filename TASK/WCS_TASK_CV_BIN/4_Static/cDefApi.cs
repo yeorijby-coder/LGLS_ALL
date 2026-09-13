@@ -239,6 +239,19 @@ namespace WCS_TASK_CV
         }
         #endregion
 
+        #region [CNF]::M 비트 쓰기 방식  [LGLS 2026-09-14]
+        //   1(기본) = XGT 단일 비트 쓰기 (%MX + 절대비트번호, DATATYPE 0x00) - 구 ECS FenetDriver.mdDevSet/mdDevRst 와 같은 프레임.
+        //             그 비트 하나만 PLC 가 바꾸므로 같은 워드를 다른 스레드/PLC 가 동시에 써도 서로 지우지 않는다.
+        //   0        = 종전 워드 read-modify-write (워드를 읽어 비트를 바꾼 뒤 워드를 통째로 되씀). 비교 시험용으로 보존.
+        //   V0.9 주소모드(GM_ADDR_V09)와 Melsec(Q3E) 는 항상 종전 방식이다. 호출마다 읽으므로 재기동 없이 바뀐다.
+        public static int GsReadInitProfileBitWrite()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return 1;
+            return GetPrivateProfileInt("CNF", "BIT_WRITE", 1, cDefApp.GM_ENV_INI);
+        }
+        #endregion
+
         #region [PLC]::R(트래킹) 주소 해석 모드  [LGLS 2026-08-19]
         //   HEX = 구 ECS 호환(문서표기를 16진 파싱) / DEC = 현행(10진 워드주소)
         //   기본값 HEX : 종전 통신 동작(CvThread.GetRTrackingAddr)과 동일하게 유지
