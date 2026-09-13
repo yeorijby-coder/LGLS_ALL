@@ -324,6 +324,7 @@ void CConfig::SaveConfigUSER()
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_ERROR"),    CConvert::ToString(m_clrUSER_COLOR_ERROR), ECS_INI_FILE);
 
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_WC_PASS"),    CConvert::ToString(m_clrUSER_COLOR_WC_PASS), ECS_INI_FILE);
+	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_TRACKING"),   CConvert::ToString(m_clrUSER_COLOR_TRACKING), ECS_INI_FILE);	// [LGLS 2026-09-13] 범례 창에서 편집
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_CV_SEARCH"),    CConvert::ToString(m_clrUSER_COLOR_CV_SEARCH), ECS_INI_FILE);
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_SC_INVK"),    CConvert::ToString(m_clrUSER_COLOR_SC_INVK), ECS_INI_FILE);
 

@@ -177,10 +177,11 @@ void CConfigStatus::LoadColor()
 	m_btnErr		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_ERROR		: LIGHT_GRAY;
 	m_btnManual		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_MANUAL		: LIGHT_GRAY;
 	m_btnDisConnect	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_DISCONNECT	: LIGHT_GRAY;
-	m_btnWcPass		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_WC_PASS		: LIGHT_GRAY;
-	// [LGLS 2026-09-03] 이 현장에는 WC(작업대 컨트롤러) 패스 모드가 없다 - 범례에서 비활성(사용자 요청)
-	m_btnWcPass.EnableWindow(FALSE);
-	m_lblCvWcPass.EnableWindow(FALSE);
+	// [LGLS 2026-09-13] 이 현장에는 WC 패스 모드가 없어 비활성이던 칸(09-03)을 "작업번호 있음" 색 편집으로 쓴다(사용자 지시).
+	//   화물 없이 작업번호(트래킹)만 남은 트랙 색 = USER_COLOR_TRACKING (메인 범례 "작업번호 있음" 과 같은 값)
+	m_btnWcPass		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_TRACKING	: LIGHT_GRAY;
+	m_btnWcPass.EnableWindow(TRUE);
+	m_lblCvWcPass.EnableWindow(TRUE);
 	m_btnCvSearch	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_CV_SEARCH	: LIGHT_GRAY;
 	// [LGLS 2026-07-19] 반자동 작업 색상
 	m_btnSemiSto	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_SEMI_STO		: LIGHT_GRAY;
@@ -216,7 +217,7 @@ void CConfigStatus::OnBnClickedBtnSave()
 		m_pDoc->m_pConfig->m_clrUSER_COLOR_ERROR		= m_btnErr.m_crColor;
 		m_pDoc->m_pConfig->m_clrUSER_COLOR_MANUAL		= m_btnManual.m_crColor;
 		m_pDoc->m_pConfig->m_clrUSER_COLOR_DISCONNECT	= m_btnDisConnect.m_crColor;
-		m_pDoc->m_pConfig->m_clrUSER_COLOR_WC_PASS		= m_btnWcPass.m_crColor;
+		m_pDoc->m_pConfig->m_clrUSER_COLOR_TRACKING		= m_btnWcPass.m_crColor;	// [LGLS 2026-09-13] 칸 용도 변경 : WC 패스 → 작업번호 있음
 		m_pDoc->m_pConfig->m_clrUSER_COLOR_CV_SEARCH	= m_btnCvSearch.m_crColor;
 		// [LGLS 2026-07-19] 반자동 작업 색상
 		m_pDoc->m_pConfig->m_clrUSER_COLOR_SEMI_STO		= m_btnSemiSto.m_crColor;
@@ -238,7 +239,8 @@ void CConfigStatus::OnBnClickedBtnSave()
 		m_pDoc->ApplyLegendColors();
 		{
 			CWnd* pView = m_pDoc->GetViewObject();
-			if (pView != NULL) pView->Invalidate(TRUE);
+			// [LGLS 2026-09-13] 새 메인 화면의 왼쪽 범례 칸(뷰의 자식)까지 다시 그린다
+			if (pView != NULL) pView->RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
 		}
 
 		Invalidate(TRUE);
