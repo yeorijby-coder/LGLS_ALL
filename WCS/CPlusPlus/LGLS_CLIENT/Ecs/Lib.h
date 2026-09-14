@@ -97,6 +97,7 @@ public:
 	static void IniCacheReset();
 	static int  IniUiTrace();		// [MENU] UI_TRACE (캐시)
 	static int  IniLoadBitGate();	// [MENU] LOADBIT_GATE (캐시)
+	static int  IniVehClearMode();	// [LGLS 2026-09-14] [MENU] VEH_CLEAR_MODE (캐시) 0 종전 / 1 적재 비트 / 2 H/S 기록
 
 public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);

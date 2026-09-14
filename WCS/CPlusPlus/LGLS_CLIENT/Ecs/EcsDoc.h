@@ -408,6 +408,7 @@ public:
 	DWORD m_dwAliveJobTick;
 	CMapStringToString m_mapAliveJob;
 	CMapStringToString m_mapVehJob;		// 호기(901~905/801) -> 진행 중 작업번호
+	CMapStringToString m_mapVehSta;		// [LGLS 2026-09-14] 호기 -> 그 작업의 상태(25/29/35)
 	// [LGLS 2026-09-09] 작업정보 캐시 락. 설비 스레드마다 이 캐시를 읽고 갱신하는데
 	//   보호가 없어, 한쪽이 RemoveAll 하는 사이 다른 쪽이 Lookup 하다 죽었다
 	//   (크래시 덤프 6건 - IsJobInJobMst / GetVehicleJobNo / GetVehicleJobTyp).
@@ -417,6 +418,8 @@ public:
 	BOOL IsJobInJobMst(LPCTSTR lpszLugg);
 	CString GetVehicleJobNo(LPCTSTR lpszVehNo);
 	CString GetVehicleJobTyp(LPCTSTR lpszVehNo);
+	CString GetVehicleJobSta(LPCTSTR lpszVehNo);	// [LGLS 2026-09-14] 그 호기에 물린 작업의 상태
+	BOOL IsLuggOnCvTrack(const CString& strLugg);	// [LGLS 2026-09-14] 그 화물번호가 C/V 트랙에 올라가 있나
 	// [LGLS 2026-08-31] 작업정보 캐시 버전. 내용이 바뀔 때마다 1 증가한다.
 	//   설비값이 그대로여도 작업정보가 바뀌면 화면을 다시 그려야 하기 때문이다.
 	DWORD   m_dwJobCacheVer;

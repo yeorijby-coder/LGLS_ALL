@@ -59,6 +59,7 @@ public:
 	COLORREF GetForkColor2();
 	COLORREF GetForkColor1();
 	COLORREF GetForkColor2(CSC_DATA* pSC_DATA);
+	BOOL IsVehicleDisplayOff(CSC_DATA* pSC_DATA);	// [LGLS 2026-09-14] VEH_CLEAR_MODE : 내려놓은 것으로 볼지
 	COLORREF GetForkColor1(CSC_DATA* pSC_DATA);
 	COLORREF GetRailColor(CSC_DATA* pSC_DATA);
 	

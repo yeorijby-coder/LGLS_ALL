@@ -2438,6 +2438,50 @@ CString CEcsDoc::GetVehicleJobTyp(LPCTSTR lpszVehNo)
 	return (nBar >= 0) ? strJob.Mid(nBar + 1) : _T("");
 }
 
+// [LGLS 2026-09-14] 그 호기에 물린 작업의 상태(크레인 25/29, RTV 35). 없으면 빈 문자열.
+CString CEcsDoc::GetVehicleJobSta(LPCTSTR lpszVehNo)
+{
+	CSingleLock _lockJob(&m_csJobCache, TRUE);
+	CString strVeh(lpszVehNo == NULL ? _T("") : lpszVehNo);
+	strVeh.Trim();
+	if (strVeh.IsEmpty()) return _T("");
+	RefreshJobCache();
+	CString strSta;
+	if (!m_mapVehSta.Lookup(strVeh, strSta)) return _T("");
+	return strSta;
+}
+
+// [LGLS 2026-09-14] 그 화물번호가 어느 C/V 트랙의 화물번호(LUGG_NO_RD)로 올라가 있는가.
+//   크레인·RTV 가 내려놓은 화물이 H/S 트랙에 기록되는 시점을 잡는다 (VEH_CLEAR_MODE=2).
+//   설비 수집 스레드가 이미 m_csEqpData 를 쥔 채 부른다 - 같은 스레드 재진입이라 괜찮다.
+BOOL CEcsDoc::IsLuggOnCvTrack(const CString& strLuggIn)
+{
+	CString strLugg(strLuggIn);
+	strLugg.Trim();
+	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return FALSE;
+	CSingleLock _lockEqp(&m_csEqpData, TRUE);
+	CString strKey;
+	CEquipment* pEqp = NULL;
+	for (POSITION pPos = m_MapEqps.GetStartPosition(); pPos != NULL; )
+	{
+		m_MapEqps.GetNextAssoc(pPos, strKey, pEqp);
+		if (pEqp == NULL || pEqp->m_enKind != CEquipment::enCV) continue;
+		CCv* pCv = (CCv*)pEqp;
+		if (pCv->m_pInfo == NULL) continue;
+		CString strTrk;
+		CTrackInfo* pTrk = NULL;
+		for (POSITION pT = pCv->m_pInfo->m_MapTrackInfo.GetStartPosition(); pT != NULL; )
+		{
+			pCv->m_pInfo->m_MapTrackInfo.GetNextAssoc(pT, strTrk, pTrk);
+			if (pTrk == NULL || pTrk->m_pCV_DATA == NULL) continue;
+			CString strOn = pTrk->m_pCV_DATA->V_LUGG_NO_RD;
+			strOn.Trim();
+			if (strOn == strLugg) return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 // [LGLS 2026-08-23] 작업정보 캐시 갱신(2초). 종전에는 IsJobInJobMst 안에만 있었고
 //   호기별 조회가 IsJobInJobMst(_T("0")) 로 갱신을 유도했는데, 그 함수는 "0" 이면
 //   맨 앞에서 그냥 FALSE 를 돌려주므로 캐시가 영영 채워지지 않았다.
@@ -2454,6 +2498,7 @@ void CEcsDoc::RefreshJobCache()
 		CString strSig;
 		m_mapAliveJob.RemoveAll();
 		m_mapVehJob.RemoveAll();
+		m_mapVehSta.RemoveAll();	// [LGLS 2026-09-14]
 		CString strSql;
 		strSql.Format(_T(" SELECT LUGG_NO, ISNULL(JOB_TYP,'') AS JOB_TYP, ISNULL(START_POS,'') AS START_POS, ISNULL(DEST_POS,'') AS DEST_POS, ISNULL(JOB_STATUS,'') AS JOB_STATUS FROM JOB_MST WHERE WH_TYP = '%s' "), m_WH_TYP);
 		int nRowCnt = 0;
@@ -2474,6 +2519,7 @@ void CEcsDoc::RefreshJobCache()
 
 				// [LGLS 2026-08-22] 진행 중(20/21/25) 작업은 그 호기에 물려 있는 것으로 본다.
 				CString strSt = pRsw->GetItem(_T("JOB_STATUS")); strSt.Trim();
+				if (CLib::IniVehClearMode() == 2) strSig += strSt + _T(";");	// [LGLS 2026-09-14] 모드 2 : 상태 전이도 다시 칠함
 				// [LGLS 2026-08-24] 20(구동대기)은 아직 크레인에 지시가 나가기 전이다.
 				//   그때부터 표시하면 크레인에는 작업이 없는데 화면에만 번호가 뜬다
 				//   (SC 상태창 작업번호는 비어 있는데 뷰에는 번호가 보이는 현상).
@@ -2495,7 +2541,7 @@ void CEcsDoc::RefreshJobCache()
 				if (strSt == _T("35"))
 				{
 					if (!strItem.IsEmpty())
-						m_mapVehJob.SetAt(_T("801"), strItem + _T("|") + strTypCur);
+						{ m_mapVehJob.SetAt(_T("801"), strItem + _T("|") + strTypCur); m_mapVehSta.SetAt(_T("801"), strSt); }
 				}
 				if (strSt == _T("25") || strSt == _T("29"))
 				{
@@ -2505,7 +2551,7 @@ void CEcsDoc::RefreshJobCache()
 					strVeh.Trim();
 					// 값은 "작업번호|작업구분" 으로 담는다(색 표시에 구분이 필요하다).
 					if (!strVeh.IsEmpty() && !strItem.IsEmpty())
-						m_mapVehJob.SetAt(strVeh, strItem + _T("|") + strTyp);
+						{ m_mapVehJob.SetAt(strVeh, strItem + _T("|") + strTyp); m_mapVehSta.SetAt(strVeh, strSt); }
 				}
 				pRsw->MoveNext();
 			}

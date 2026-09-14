@@ -121,6 +121,39 @@ COLORREF CScInfo::GetForkColor1()
 	return BLACK;
 }
 
+// [LGLS 2026-09-14] 크레인이 화물을 내려놓은 것으로 볼 것인가 (Ecs.ini [MENU] VEH_CLEAR_MODE, 사용자 지시)
+//   종전에는 설비가 반송 완료를 보고할 때까지(하역 뒤 약 10초) 작업구분·차상번호를 들고 있어
+//   화면에 보이는 칸(GetForkColor2)에 출고색이 남았다. 9/11 의 적재 비트 게이트는 이 레이아웃에서
+//   그려지지 않는 둘째 칸(GetForkColor1)과 번호에만 걸려 있었다.
+//   0 = 판정하지 않음(종전) / 1 = 차상 적재 비트 0 / 2 = 물었던 화물번호가 C/V 트랙에 기록됨, 또는 크레인 완료(29)
+BOOL CScInfo::IsVehicleDisplayOff(CSC_DATA* pSC_DATA)
+{
+	if (pSC_DATA == NULL || m_pEquipment == NULL || m_pEquipment->m_pDoc == NULL) return FALSE;
+	int nMode = CLib::IniVehClearMode();
+	if (nMode == 1)
+	{
+		CString strSen = pSC_DATA->V_SENSOR_FK_RD;
+		strSen.Trim();
+		return (!strSen.IsEmpty() && strSen == _T("0"));	// 비트를 못 받으면(빈 값) 판정하지 않는다
+	}
+	if (nMode == 2)
+	{
+		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
+		if (pDoc->GetVehicleJobSta(pSC_DATA->K_SC_NO) == _T("29")) return TRUE;
+		CString arrLugg[3];
+		arrLugg[0] = pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO);
+		arrLugg[1] = pSC_DATA->V_LUGG_NO_FK1_RD;
+		arrLugg[2] = pSC_DATA->V_ITN_LUGG_FK1;
+		for (int i = 0; i < 3; i++)
+			if (pDoc->IsLuggOnCvTrack(arrLugg[i])) return TRUE;
+		// 작업정보에 물린 작업이 없는데 설비값만 남은 것은 완료 보고 전 잔재다
+		CString strHeld = arrLugg[0];
+		strHeld.Trim();
+		if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
+	}
+	return FALSE;
+}
+
 COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 {
 	CConfig* pConfig = m_pEquipment->m_pDoc->m_pConfig;
@@ -152,6 +185,8 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 
 	// [LGLS 2026-09-11] 차상 비트로 한 번 더 거른다(구 ECS IsPalletExist 와 같은 판정).
 	if (!CLib::IsVehicleLoaded(pSC_DATA->V_SENSOR_FK_RD))
+		return LIGHT_GRAY;
+	if (IsVehicleDisplayOff(pSC_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		return LIGHT_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
@@ -262,6 +297,10 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 		pSC_DATA->V_AUTO_MODE_RD   == _T("0") || 
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("0"))
 		return DARK_GRAY;
+
+	// [LGLS 2026-09-14] 화면에 보이는 칸. 내려놓았으면 설비 잔류값(작업구분·차상번호)으로 칠하지 않는다
+	if (IsVehicleDisplayOff(pSC_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
+		return LIGHT_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
 	// [LGLS 2026-09-02] 「번호와 색은 함께」 - 작업번호가 그려지는 칸(rcForkL1)의 배경이 이 함수(m_clrFork)다.
@@ -433,6 +472,7 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 
 	// [LGLS 2026-09-11] 번호도 차상 비트로 거른다 - 번호와 색은 늘 함께 간다.
 	if (!CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD)) return;
+	if (IsVehicleDisplayOff(pData)) return;	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 
 	// [LGLS 2026-08-31] ★크레인에 색 없이 번호만 남으면 안 된다★ (사용자 지시)
 	//   색(GetForkColor1)은 작업정보의 작업구분으로 낸다. 작업정보에 없는 번호는

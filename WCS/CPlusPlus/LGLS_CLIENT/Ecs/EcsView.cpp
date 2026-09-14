@@ -1862,11 +1862,13 @@ void CEcsView::ReloadIniHot()
 	}
 
 	{
-		int nTr0 = CLib::IniUiTrace(), nGt0 = CLib::IniLoadBitGate();
+		int nTr0 = CLib::IniUiTrace(), nGt0 = CLib::IniLoadBitGate(), nVc0 = CLib::IniVehClearMode();
 		CLib::IniCacheReset();
-		int nTr1 = CLib::IniUiTrace(), nGt1 = CLib::IniLoadBitGate();
+		int nTr1 = CLib::IniUiTrace(), nGt1 = CLib::IniLoadBitGate(), nVc1 = CLib::IniVehClearMode();
 		if (nTr0 != nTr1) strChg.AppendFormat(_T(" UI_TRACE=%d"), nTr1);
 		if (nGt0 != nGt1) { strChg.AppendFormat(_T(" LOADBIT_GATE=%d"), nGt1); Invalidate(FALSE); }
+		// [LGLS 2026-09-14] 크레인·RTV 색 지우는 시점 (0 종전 / 1 적재 비트 / 2 H/S 기록). 다음 수집 주기에 다시 칠해진다
+		if (nVc0 != nVc1) { strChg.AppendFormat(_T(" VEH_CLEAR_MODE=%d"), nVc1); Invalidate(FALSE); }
 	}
 
 	{

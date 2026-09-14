@@ -135,6 +135,36 @@ BOOL CRtvInfo::IsRtvDown(CRTV_DATA* pRTV_DATA)
 	return FALSE;
 }
 
+// [LGLS 2026-09-14] RTV 가 화물을 내려놓은 것으로 볼 것인가 (Ecs.ini [MENU] VEH_CLEAR_MODE, 사용자 지시)
+//   크레인과 같은 이유 - 화면에 보이는 칸(GetForkColor2)은 설비 작업구분을 먼저 보고 적재 비트를 보지 않았다.
+//   0 = 판정하지 않음(종전) / 1 = 차상 적재 비트 0 / 2 = 물었던 화물번호가 C/V 트랙에 기록됨
+BOOL CRtvInfo::IsVehicleDisplayOff(CRTV_DATA* pRTV_DATA)
+{
+	if (pRTV_DATA == NULL || m_pEquipment == NULL || m_pEquipment->m_pDoc == NULL) return FALSE;
+	int nMode = CLib::IniVehClearMode();
+	if (nMode == 1)
+	{
+		CString strSen = pRTV_DATA->V_SENSOR_FK_RD;
+		strSen.Trim();
+		return (!strSen.IsEmpty() && strSen == _T("0"));	// 비트를 못 받으면(빈 값) 판정하지 않는다
+	}
+	if (nMode == 2)
+	{
+		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
+		CString arrLugg[3];
+		arrLugg[0] = pDoc->GetVehicleJobNo(pRTV_DATA->K_RTV_NO);
+		arrLugg[1] = pRTV_DATA->V_LUGG_NO_FK1_RD;
+		arrLugg[2] = pRTV_DATA->V_ITN_LUGG_FK1;
+		for (int i = 0; i < 3; i++)
+			if (pDoc->IsLuggOnCvTrack(arrLugg[i])) return TRUE;
+		// 작업정보에 물린 작업(35)이 없는데 설비값만 남은 것은 완료 보고 전 잔재다
+		CString strHeld = arrLugg[0];
+		strHeld.Trim();
+		if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
+	}
+	return FALSE;
+}
+
 COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 {
 	CConfig* pConfig = m_pEquipment->m_pDoc->m_pConfig;
@@ -169,6 +199,8 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 	//   RTV_DATA_LGLS.SENSOR_RTV_RD 를 Rtv.cpp 가 SENSOR_FK_RD 로 별칭해 온다.
 	//   구 ECS RGVWidget 도 IsPalletExist 하나로 적재 표시를 켜고 껐다.
 	if (!CLib::IsVehicleLoaded(pRTV_DATA->V_SENSOR_FK_RD))
+		return LIGHT_GRAY;
+	if (IsVehicleDisplayOff(pRTV_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		return LIGHT_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pRTV_DATA->V_JOB_TYP_RD);
@@ -267,6 +299,9 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
 	if (IsRtvDown(pRTV_DATA))
 		return DARK_GRAY;
+	// [LGLS 2026-09-14] 화면에 보이는 칸. 내려놓았으면 설비 잔류값으로 칠하지 않는다
+	if (IsVehicleDisplayOff(pRTV_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
+		return LIGHT_GRAY;
 
 	//if (pRTV_DATA->V_ERR_STA_FK2_RD != _T("0"))
 	//	return pConfig->m_clrUSER_COLOR_ERROR;
@@ -419,6 +454,8 @@ void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
 
 	// [LGLS 2026-09-11] 번호도 차상 비트로 거른다 - 번호와 색은 늘 함께 간다.
 	if (!CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD))
+		bHasJob = FALSE;
+	if (IsVehicleDisplayOff(pData))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		bHasJob = FALSE;
 
 	// [LGLS 2026-08-22] 호기 번호는 컨트롤이 이미 m_strText 로 포크 위에 그린다(레이아웃 text 속성).

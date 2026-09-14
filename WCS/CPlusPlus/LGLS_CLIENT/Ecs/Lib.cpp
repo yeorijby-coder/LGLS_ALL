@@ -1996,7 +1996,8 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc)
 // [LGLS 2026-09-12] Ecs.ini 핫 리로드용 캐시. CEcsView::CheckIniHotReload() 가 저장을 감지하면 비운다.
 static int s_nIniUiTrace     = -1;
 static int s_nIniLoadBitGate = -1;
-void CLib::IniCacheReset() { s_nIniUiTrace = -1; s_nIniLoadBitGate = -1; }
+static int s_nIniVehClearMode = -1;	// [LGLS 2026-09-14]
+void CLib::IniCacheReset() { s_nIniUiTrace = -1; s_nIniLoadBitGate = -1; s_nIniVehClearMode = -1; }
 int  CLib::IniUiTrace()
 {
 	if (s_nIniUiTrace < 0) s_nIniUiTrace = ::GetPrivateProfileInt(_T("MENU"), _T("UI_TRACE"), 1, ECS_INI_FILE);
@@ -2006,6 +2007,20 @@ int  CLib::IniLoadBitGate()
 {
 	if (s_nIniLoadBitGate < 0) s_nIniLoadBitGate = ::GetPrivateProfileInt(_T("MENU"), _T("LOADBIT_GATE"), 1, ECS_INI_FILE);
 	return s_nIniLoadBitGate;
+}
+
+// [LGLS 2026-09-14] 크레인·RTV 가 화물을 내려놓은 뒤 색·작업번호를 언제 지우는가 (사용자 지시)
+//   0 = 종전 동작 (설비가 반송 완료를 보고할 때까지 하역 뒤 약 10초 남는다)
+//   1 = 차상 적재 비트가 꺼지면 (구 ECS IsPalletExist 와 같은 판정, 기본값)
+//   2 = 그 화물번호가 C/V 트랙(H/S 등)에 기록되면 (편법. 트랙이 없는 입고 랙 하역은 크레인 완료 29)
+int  CLib::IniVehClearMode()
+{
+	if (s_nIniVehClearMode < 0)
+	{
+		s_nIniVehClearMode = ::GetPrivateProfileInt(_T("MENU"), _T("VEH_CLEAR_MODE"), 1, ECS_INI_FILE);
+		if (s_nIniVehClearMode < 0 || s_nIniVehClearMode > 2) s_nIniVehClearMode = 1;
+	}
+	return s_nIniVehClearMode;
 }
 
 BOOL CLib::IsVehicleLoaded(CString strSensor)
