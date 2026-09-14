@@ -2011,16 +2011,16 @@ int  CLib::IniLoadBitGate()
 
 // [LGLS 2026-09-14] 크레인·RTV 가 화물을 내려놓은 뒤 색·작업번호를 언제 지우는가 (사용자 지시)
 //   0 = 종전 동작 (설비가 반송 완료를 보고할 때까지 하역 뒤 약 10초 남는다)
-//   1 = 차상 적재 비트가 꺼지면 (구 ECS IsPalletExist 와 같은 판정, 기본값)
+//   1 = 차상 적재 비트가 꺼지면 (구 ECS IsPalletExist 와 같은 판정)
 //   2 = 그 화물번호가 C/V 트랙(H/S 등)에 기록되면 (편법. 트랙이 없는 입고 랙 하역은 크레인 완료 29)
 //   3 = 색이 뜨는 시점은 0 과 같고(작업이 물리면 바로), 지우는 시점만 2 처럼 - 화물이 작업 시작 때 있던 트랙이 아닌
-//       새 트랙에 기록되면 지운다 (입고 픽업 전에 미리 회색이 되는 2 의 단점이 없다). 랙 하역은 크레인 완료 29
+//       새 트랙에 기록되면 지운다 (입고 픽업 전에 미리 회색이 되는 2 의 단점이 없다). 랙 하역은 크레인 완료 29. 기본값(09-15)
 int  CLib::IniVehClearMode()
 {
 	if (s_nIniVehClearMode < 0)
 	{
-		s_nIniVehClearMode = ::GetPrivateProfileInt(_T("MENU"), _T("VEH_CLEAR_MODE"), 1, ECS_INI_FILE);
-		if (s_nIniVehClearMode < 0 || s_nIniVehClearMode > 3) s_nIniVehClearMode = 1;	// [LGLS 2026-09-14] 3 추가
+		s_nIniVehClearMode = ::GetPrivateProfileInt(_T("MENU"), _T("VEH_CLEAR_MODE"), 3, ECS_INI_FILE);	// [LGLS 2026-09-15] 기본값 1 -> 3 (사용자 지시)
+		if (s_nIniVehClearMode < 0 || s_nIniVehClearMode > 3) s_nIniVehClearMode = 3;	// [LGLS 2026-09-14] 3 추가
 	}
 	return s_nIniVehClearMode;
 }
