@@ -148,6 +148,15 @@ BOOL CRtvInfo::IsVehicleDisplayOff(CRTV_DATA* pRTV_DATA)
 		strSen.Trim();
 		return (!strSen.IsEmpty() && strSen == _T("0"));	// 비트를 못 받으면(빈 값) 판정하지 않는다
 	}
+	if (nMode == 3)
+	{
+		// 색이 뜨는 시점은 종전(0)과 같다. 지우는 시점 : 물린 작업(35) 없음 / 시작 때 없던 트랙에 화물 기록(착지)
+		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
+		CString strHeld = pDoc->GetVehicleJobNo(pRTV_DATA->K_RTV_NO);
+		strHeld.Trim();
+		if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
+		return pDoc->IsLuggOnNewTrack(pRTV_DATA->K_RTV_NO, strHeld);
+	}
 	if (nMode == 2)
 	{
 		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
@@ -524,6 +533,12 @@ void CRtvInfo::InvokeControl(CRTV_DATA* pRTV_DATA)
 		}
 	}
 
+	// [LGLS 2026-09-14] 모드 2/3 은 트랙 화물번호 변화로도 판정이 바뀐다 - 판정이 바뀌면 다시 그린다
+	if (CLib::IniVehClearMode() >= 2)
+	{
+		int nOff = IsVehicleDisplayOff(pRTV_DATA) ? 1 : 0;
+		if (nOff != pRTV_DATA->m_nLglsDispOff) { pRTV_DATA->m_nLglsDispOff = nOff; pRTV_DATA->m_bModified = TRUE; }
+	}
 	if (pRTV_DATA->m_bModified == FALSE)
 		return; 
 

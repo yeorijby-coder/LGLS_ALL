@@ -2482,6 +2482,68 @@ BOOL CEcsDoc::IsLuggOnCvTrack(const CString& strLuggIn)
 	return FALSE;
 }
 
+// [LGLS 2026-09-14] 그 화물번호가 올라가 있는 C/V 트랙 목록 (예 "00104,00103,"). 없으면 빈 문자열.
+CString CEcsDoc::GetTracksWithLugg(const CString& strLuggIn)
+{
+	CString strOut;
+	CString strLugg(strLuggIn);
+	strLugg.Trim();
+	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return strOut;
+	CSingleLock _lockEqp(&m_csEqpData, TRUE);
+	CString strKey;
+	CEquipment* pEqp = NULL;
+	for (POSITION pPos = m_MapEqps.GetStartPosition(); pPos != NULL; )
+	{
+		m_MapEqps.GetNextAssoc(pPos, strKey, pEqp);
+		if (pEqp == NULL || pEqp->m_enKind != CEquipment::enCV) continue;
+		CCv* pCv = (CCv*)pEqp;
+		if (pCv->m_pInfo == NULL) continue;
+		CString strTrk;
+		CTrackInfo* pTrk = NULL;
+		for (POSITION pT = pCv->m_pInfo->m_MapTrackInfo.GetStartPosition(); pT != NULL; )
+		{
+			pCv->m_pInfo->m_MapTrackInfo.GetNextAssoc(pT, strTrk, pTrk);
+			if (pTrk == NULL || pTrk->m_pCV_DATA == NULL) continue;
+			CString strOn = pTrk->m_pCV_DATA->V_LUGG_NO_RD;
+			strOn.Trim();
+			if (strOn == strLugg) strOut += strTrk + _T(",");
+		}
+	}
+	return strOut;
+}
+
+// [LGLS 2026-09-14] VEH_CLEAR_MODE=3 판정 (사용자 지시 : 색이 뜨는 시점은 종전대로, 지우는 시점만 2 처럼).
+//   호기가 그 화물의 작업을 처음 물었을 때 화물이 있던 트랙 목록을 기억해 두고,
+//   그 목록에 없는 트랙에 화물번호가 기록되면 "내려놓았다"로 본다.
+//   - 출고 크레인 : 시작 때 트랙 없음(랙) -> H/S 트랙에 기록되는 순간 지운다
+//   - 입고 크레인 : 시작 때 입고 트랙에 있음 -> 픽업 전에도 색이 남고(2 와 다른 점), 랙 하역은 29 로 지운다
+//   - RTV        : 시작 때 픽업 트랙에 있음 -> 착지 트랙에 기록되는 순간 지운다 (픽업·착지 트랙에 잠깐 함께 있어도 됨)
+BOOL CEcsDoc::IsLuggOnNewTrack(LPCTSTR lpszVehNo, const CString& strLuggIn)
+{
+	CString strVeh(lpszVehNo == NULL ? _T("") : lpszVehNo);
+	strVeh.Trim();
+	CString strLugg(strLuggIn);
+	strLugg.Trim();
+	if (strVeh.IsEmpty() || strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return FALSE;
+	CString strNow = GetTracksWithLugg(strLugg);
+	CSingleLock _lockJob(&m_csJobCache, TRUE);
+	CString strSaved;
+	if (!m_mapVehClear3.Lookup(strVeh, strSaved) || strSaved.Left(strLugg.GetLength() + 1) != strLugg + _T("|"))
+	{
+		m_mapVehClear3.SetAt(strVeh, strLugg + _T("|") + strNow);	// 이 작업을 처음 본다 - 시작 때 트랙 목록 기억
+		return FALSE;
+	}
+	CString strStart = strSaved.Mid(strLugg.GetLength() + 1);
+	int nPos = 0;
+	CString strTok = strNow.Tokenize(_T(","), nPos);
+	while (!strTok.IsEmpty())
+	{
+		if (strStart.Find(strTok + _T(",")) < 0) return TRUE;	// 시작 때 없던 트랙에 올라갔다 = 내려놓았다
+		strTok = strNow.Tokenize(_T(","), nPos);
+	}
+	return FALSE;
+}
+
 // [LGLS 2026-08-23] 작업정보 캐시 갱신(2초). 종전에는 IsJobInJobMst 안에만 있었고
 //   호기별 조회가 IsJobInJobMst(_T("0")) 로 갱신을 유도했는데, 그 함수는 "0" 이면
 //   맨 앞에서 그냥 FALSE 를 돌려주므로 캐시가 영영 채워지지 않았다.
@@ -2519,7 +2581,7 @@ void CEcsDoc::RefreshJobCache()
 
 				// [LGLS 2026-08-22] 진행 중(20/21/25) 작업은 그 호기에 물려 있는 것으로 본다.
 				CString strSt = pRsw->GetItem(_T("JOB_STATUS")); strSt.Trim();
-				if (CLib::IniVehClearMode() == 2) strSig += strSt + _T(";");	// [LGLS 2026-09-14] 모드 2 : 상태 전이도 다시 칠함
+				if (CLib::IniVehClearMode() >= 2) strSig += strSt + _T(";");	// [LGLS 2026-09-14] 모드 2 : 상태 전이도 다시 칠함
 				// [LGLS 2026-08-24] 20(구동대기)은 아직 크레인에 지시가 나가기 전이다.
 				//   그때부터 표시하면 크레인에는 작업이 없는데 화면에만 번호가 뜬다
 				//   (SC 상태창 작업번호는 비어 있는데 뷰에는 번호가 보이는 현상).
