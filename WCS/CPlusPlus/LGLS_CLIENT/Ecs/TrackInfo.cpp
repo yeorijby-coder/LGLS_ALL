@@ -397,6 +397,31 @@ if (m_pEquipment != NULL && m_pEquipment->m_pDoc != NULL)
 		return;
 
 	m_pCV_DATA->m_bModified = FALSE;
+	// [LGLS 2026-09-14] 화물 인지 시각 계측 (Ecs.ini [MENU] UI_TRACE=1) : 트랙의 화물번호/감지 값이 바뀐 것을
+	//   화면 쪽이 알게 된 시각을 남긴다. db = 설비 통신(WCS_TASK_CV)이 그 행을 기록한 시각(초 단위).
+	if (CLib::IniUiTrace() != 0)
+	{
+		static CCriticalSection s_csLglsTrk;
+		static CMapStringToString s_mapLglsTrk;
+		CString strKey = GetStringTRACK_NO();
+		CString strNow = m_pCV_DATA->V_LUGG_NO_RD + _T("/") + m_pCV_DATA->V_SENSOR0_DATA_RD;
+		CString strOld;
+		BOOL bChanged = FALSE;
+		{
+			CSingleLock lk(&s_csLglsTrk, TRUE);
+			if (!s_mapLglsTrk.Lookup(strKey, strOld) || strOld != strNow)
+			{
+				s_mapLglsTrk.SetAt(strKey, strNow);
+				bChanged = TRUE;
+			}
+		}
+		if (bChanged && !strOld.IsEmpty())
+		{
+			CString strDb = (m_pCV_DATA->V_READ_UPD_DT.GetTime() > 0) ? m_pCV_DATA->V_READ_UPD_DT.Format(_T("%H:%M:%S")) : CString(_T("-"));
+			CLib::UiLog(_T("[TRK] %s %s -> %s db=%s"), (LPCTSTR)strKey, (LPCTSTR)strOld, (LPCTSTR)strNow, (LPCTSTR)strDb);
+		}
+	}
+
 
 	if (pTrackCtrl == NULL) 
 	{

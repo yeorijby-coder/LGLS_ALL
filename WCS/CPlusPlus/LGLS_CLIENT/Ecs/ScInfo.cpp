@@ -671,27 +671,27 @@ void CScInfo::InvokeControl(CSC_DATA*	    pSC_DATA)
 	if (pSC_DATA->m_pControl)						
 	{
 		pSC_DATA->m_pControl->m_nForkPos =  nForkPos;
-		bErase = TRUE;
+		bErase = FALSE;	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 	}
 	if (pSC_DATA->m_pControl2)
 	{
 		pSC_DATA->m_pControl2->m_nForkPos = nForkPos;
-		bErase = TRUE;
+		bErase = FALSE;	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 	}
 	if (pSC_DATA->m_pControl3)
 	{
 		pSC_DATA->m_pControl3->m_nForkPos = nForkPos;
-		bErase = TRUE;
+		bErase = FALSE;	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 	}
 	if (pSC_DATA->m_pControl4)
 	{
 		pSC_DATA->m_pControl4->m_nForkPos =  nForkPos;
-		bErase = TRUE;
+		bErase = FALSE;	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 	}
 	if (pSC_DATA->m_pControl5)
 	{
 		pSC_DATA->m_pControl5->m_nForkPos =  nForkPos;
-		bErase = TRUE;
+		bErase = FALSE;	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 	}
 
 	if (pSC_DATA->m_pControl)

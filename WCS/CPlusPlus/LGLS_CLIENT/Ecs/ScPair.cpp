@@ -145,7 +145,7 @@ void CScPair::RefreshScWaitCount()
 			if (pCtrlClr != NULL && pCtrlClr->GetTextSafe() != _T(""))
 			{
 				pCtrlClr->SetTextSafe(_T(""));
-				pCtrlClr->InvalidateControl(m_pDoc->m_hWndView, TRUE);
+				pCtrlClr->InvalidateControl(m_pDoc->m_hWndView, FALSE);	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 			}
 		}
 		return;
@@ -206,7 +206,7 @@ void CScPair::RefreshScWaitCount()
 		{
 			pCtrl->SetTextSafe(strTxt);
 			pCtrl->m_clrFgColor = clrTxt;
-			pCtrl->InvalidateControl(m_pDoc->m_hWndView, TRUE);
+			pCtrl->InvalidateControl(m_pDoc->m_hWndView, FALSE);	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 		}
 	}
 }

@@ -498,7 +498,7 @@ void CRtvInfo::InvokeControl(CRTV_DATA* pRTV_DATA)
 	int nPos = pRTV_DATA->m_MapRtvPosition[pRTV_DATA->V_POS_H_RD];
 	if (pRTV_DATA->m_pControl)				
 	{
-		bErase = TRUE;
+		bErase = FALSE;	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 		pRTV_DATA->m_pControl->m_nForkPos = (nPos < 0 || nPos > 18) ? 0 : nPos;
 	}
 

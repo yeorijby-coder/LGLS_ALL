@@ -211,7 +211,7 @@ void CCv::AutoRunProc()
 				{
 					pDirCtrl->SetTextSafe(strTxt);	// [LGLS 2026-09-10] UI 스레드와 겹치지 않게
 					pDirCtrl->m_clrFgColor = bOut ? RGB(200,0,0) : RGB(0,0,200);
-					pDirCtrl->InvalidateControl(m_pDoc->m_hWndView, TRUE);
+					pDirCtrl->InvalidateControl(m_pDoc->m_hWndView, FALSE);	// [LGLS 2026-09-14] 배경 지우기 끔 - OnDraw 가 메모리 DC 에 통째로 그려 옮기므로 흰색 선칠이 필요 없다(깜빡임 원인)
 				}
 			}
 		}

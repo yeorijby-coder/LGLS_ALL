@@ -862,8 +862,51 @@ void CEcsView::OnDestroy()
 /////////////////////////////////////////////////////////////////////////////
 // CEcsView printing
 
+// [LGLS 2026-09-14] 메인 화면 그리기 시간 계측 (Ecs.ini [MENU] UI_TRACE=1 일 때 5초마다 한 줄)
+//   buf    = 메모리 DC 에 레이아웃을 그려 화면으로 옮기는 시간
+//   direct = 그 뒤 화면에 직접 한 번 더 그리는 시간
+static void LglsPaintStat(LONGLONG llBuf, LONGLONG llDirect)
+{
+	static LARGE_INTEGER s_liFreq = { 0 };
+	static int s_nCnt = 0;
+	static double s_dBufSum = 0, s_dBufMax = 0, s_dDirSum = 0, s_dDirMax = 0, s_dTotMax = 0;
+	static DWORD s_dwStart = 0;
+	if (s_liFreq.QuadPart == 0) ::QueryPerformanceFrequency(&s_liFreq);
+	double dBuf = llBuf * 1000.0 / (double)s_liFreq.QuadPart;
+	double dDir = llDirect * 1000.0 / (double)s_liFreq.QuadPart;
+	if (s_dwStart == 0) s_dwStart = ::GetTickCount();
+	s_nCnt++; s_dBufSum += dBuf; s_dDirSum += dDir;
+	if (dBuf > s_dBufMax) s_dBufMax = dBuf;
+	if (dDir > s_dDirMax) s_dDirMax = dDir;
+	if (dBuf + dDir > s_dTotMax) s_dTotMax = dBuf + dDir;
+	DWORD dwNow = ::GetTickCount();
+	if (dwNow - s_dwStart >= 5000)
+	{
+		CLib::UiLog(_T("[PAINT] %u ms 동안 %d 회 | buf 평균 %.2f 최대 %.2f ms | direct 평균 %.2f 최대 %.2f ms | 합 평균 %.2f 최대 %.2f ms"),
+			dwNow - s_dwStart, s_nCnt, s_dBufSum / s_nCnt, s_dBufMax, s_dDirSum / s_nCnt, s_dDirMax,
+			(s_dBufSum + s_dDirSum) / s_nCnt, s_dTotMax);
+		s_nCnt = 0; s_dBufSum = s_dBufMax = s_dDirSum = s_dDirMax = s_dTotMax = 0; s_dwStart = dwNow;
+	}
+}
+
+struct LglsPaintTimer
+{
+	LARGE_INTEGER t0, t1;
+	BOOL bMid;
+	LglsPaintTimer() : bMid(FALSE) { ::QueryPerformanceCounter(&t0); t1 = t0; }
+	void Mid() { ::QueryPerformanceCounter(&t1); bMid = TRUE; }
+	~LglsPaintTimer()
+	{
+		LARGE_INTEGER t2;
+		::QueryPerformanceCounter(&t2);
+		if (!bMid) t1 = t2;
+		LglsPaintStat(t1.QuadPart - t0.QuadPart, t2.QuadPart - t1.QuadPart);
+	}
+};
+
 void CEcsView::OnDraw(CDC* pDC) 
 {
+	LglsPaintTimer _lglsPt;	// [LGLS 2026-09-14] 그리기 시간 계측
 	CEcsDoc* pDoc = GetDocument();
 	ASSERT(pDoc != NULL);
 
@@ -887,23 +930,24 @@ void CEcsView::OnDraw(CDC* pDC)
 	memDC.SelectObject(pOldBitmap);
 	memDC.DeleteDC();
 	bitmap.DeleteObject();
+	_lglsPt.Mid();
 
-	CEcsLayout layout;
-	int nTemp = -1;
-	if (m_tabLayout.GetSafeHwnd())
-	{
-		nTemp = m_tabLayout.GetCurSel();
-	}
-
-	if (nTemp < 0)
-		return;
-
-	CEcsLayout* pEcsLayout = pDoc->m_pEcsLayOuts[nTemp];
-	if (pEcsLayout == NULL)
-		return;
-
-	pEcsLayout->OnDraw(this, pDC, nTemp + 1);
-
+	// [LGLS 2026-09-14] 아래 호출을 뺐다 (사용자 지시 : 화면 지연 개선).
+	//   바로 위에서 같은 레이아웃(선택된 탭)을 메모리 DC 에 다 그려 화면으로 옮겼는데,
+	//   여기서 컨트롤 전체를 버퍼 없이 화면에 한 번 더 그리고 있었다. CEcsLayout::OnDraw 는
+	//   탭 번호를 쓰지 않으므로 결과는 같고, 비용만 두 배에 깜빡임이 생겼다.
+	//CEcsLayout layout;
+	//int nTemp = -1;
+	//if (m_tabLayout.GetSafeHwnd())
+	//{
+	//	nTemp = m_tabLayout.GetCurSel();
+	//}
+	//if (nTemp < 0)
+	//	return;
+	//CEcsLayout* pEcsLayout = pDoc->m_pEcsLayOuts[nTemp];
+	//if (pEcsLayout == NULL)
+	//	return;
+	//pEcsLayout->OnDraw(this, pDC, nTemp + 1);
 }
 
 BOOL CEcsView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 

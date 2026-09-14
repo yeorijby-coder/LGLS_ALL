@@ -30,6 +30,16 @@ CDciMaster::CDciMaster(void)
 
 CDciMaster::~CDciMaster(void)
 {
+	// [LGLS 2026-09-14] 글자 맞춤 캐시의 글꼴 해제
+	POSITION pos = m_mapFitFont.GetStartPosition();
+	while (pos != NULL)
+	{
+		int nKey = 0;
+		CFont* pFont = NULL;
+		m_mapFitFont.GetNextAssoc(pos, nKey, pFont);
+		delete pFont;
+	}
+	m_mapFitFont.RemoveAll();
 }
 
 // CDciMaster 멤버 함수
@@ -277,75 +287,79 @@ void CDciMaster::DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strT
 	if (nW < 2 || nH < 2)
 		return;
 
-	LOGFONT lf;
-	CFont font;
-	CFont* pOldFont = NULL;
 	CRect rcDraw(rcRectS);
+	CSingleLock lock(&m_csFit, TRUE);
 
 	// [LGLS 2026-09-10] 레이아웃 XML 의 fontsize 규칙
 	//   0    : 칸 크기에 맞춘다(칸이 커지면 글자도 커진다)
 	//   그 밖 : 그 값을 그대로 쓴다(종전 동작). 손으로 맞춘 자리를 건드리지 않는다.
-	if (nBaseFontSize > 0)
+	// [LGLS 2026-09-14] 맞춘 결과와 글꼴을 캐시한다. 계산 방법은 종전과 같다.
+	int nFont = nBaseFontSize;
+	if (nBaseFontSize <= 0)
 	{
-		memset(&lf, 0, sizeof(LOGFONT));
-		lf.lfQuality = PROOF_QUALITY;
-		lf.lfHeight  = nBaseFontSize;
-		lf.lfWeight  = FW_BOLD;
-		lstrcpy(lf.lfFaceName, _T("Arial"));
+		CString strKey;
+		strKey.Format(_T("%d|%d|%s"), nW, nH, (LPCTSTR)strText);
+		if (!m_mapFitHeight.Lookup(strKey, nFont))
+		{
+			// 칸 안쪽 여백은 칸 크기의 1/8(최소 2px). 고정 2px 로 두면 큰 칸에서
+			//   글자가 테두리에 붙어 답답하다.
+			int nPadH = nH / 8; if (nPadH < 2) nPadH = 2;
+			int nPadW = nW / 8; if (nPadW < 2) nPadW = 2;
+			int nMaxH = nH - nPadH;
+			if (nMaxH < 3) nMaxH = 3;
+			int nMaxW = nW - nPadW;
+			if (nMaxW < 3) nMaxW = 3;
 
-		if (!font.CreateFontIndirect(&lf))
-			return;
+			nFont = nMaxH;	// 칸 높이에서 시작해 폭에 맞을 때까지 줄인다
+			for (int nTry = 0; nTry < 8; nTry++)
+			{
+				CFont* pTry = GetFitFont(nFont);
+				if (pTry == NULL)
+					return;
+				CFont* pOld = pDC->SelectObject(pTry);
+				CSize sz = pDC->GetTextExtent(strText);
+				pDC->SelectObject(pOld);
+				if (sz.cx <= nMaxW || nFont <= 3)
+					break;
+				int nNext = (int)((__int64)nFont * nMaxW / (sz.cx > 0 ? sz.cx : 1));
+				if (nNext >= nFont) nNext = nFont - 1;
+				if (nNext < 3)      nNext = 3;
+				nFont = nNext;
+			}
+			// 작업번호처럼 글자가 계속 바뀌는 칸이 있어 무한히 쌓이지 않게 한다
+			if (m_mapFitHeight.GetCount() > 4000)
+				m_mapFitHeight.RemoveAll();
+			m_mapFitHeight.SetAt(strKey, nFont);
+		}
+	}
 
-		pOldFont = pDC->SelectObject(&font);
-		pDC->DrawText(strText, rcDraw, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-		if (pOldFont != NULL)
-			pDC->SelectObject(pOldFont);
+	CFont* pFont = GetFitFont(nFont);
+	if (pFont == NULL)
 		return;
-	}
-
-	// 여기부터는 fontsize = 0 : 칸에 맞춘다.
-	//   칸 안쪽 여백은 칸 크기의 1/8(최소 2px). 고정 2px 로 두면 큰 칸에서
-	//   글자가 테두리에 붙어 답답하다.
-	int nPadH = nH / 8; if (nPadH < 2) nPadH = 2;
-	int nPadW = nW / 8; if (nPadW < 2) nPadW = 2;
-
-	int nMaxH = nH - nPadH;
-	if (nMaxH < 3) nMaxH = 3;
-	int nMaxW = nW - nPadW;
-	if (nMaxW < 3) nMaxW = 3;
-
-	int nFont = nMaxH;	// 칸 높이에서 시작해 폭에 맞을 때까지 줄인다
-
-	CSize sz;
-	for (int nTry = 0; nTry < 8; nTry++)
-	{
-		memset(&lf, 0, sizeof(LOGFONT));
-		lf.lfQuality = PROOF_QUALITY;
-		lf.lfHeight  = nFont;
-		lf.lfWeight  = FW_BOLD;
-		lstrcpy(lf.lfFaceName, _T("Arial"));
-
-		font.DeleteObject();
-		if (!font.CreateFontIndirect(&lf))
-			return;
-
-		pOldFont = pDC->SelectObject(&font);
-		sz = pDC->GetTextExtent(strText);
-
-		if (sz.cx <= nMaxW || nFont <= 3)
-			break;
-
-		pDC->SelectObject(pOldFont);
-		pOldFont = NULL;
-
-		int nNext = (int)((__int64)nFont * nMaxW / (sz.cx > 0 ? sz.cx : 1));
-		if (nNext >= nFont) nNext = nFont - 1;
-		if (nNext < 3)      nNext = 3;
-		nFont = nNext;
-	}
-
+	CFont* pOldFont = pDC->SelectObject(pFont);
 	pDC->DrawText(strText, rcDraw, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-
 	if (pOldFont != NULL)
 		pDC->SelectObject(pOldFont);
+}
+
+// [LGLS 2026-09-14] 높이별 글꼴을 한 번만 만든다 (굵게, Arial - 종전 DrawTextFit 과 같은 속성)
+CFont* CDciMaster::GetFitFont(int nHeight)
+{
+	CFont* pFont = NULL;
+	if (m_mapFitFont.Lookup(nHeight, pFont))
+		return pFont;
+	LOGFONT lf;
+	memset(&lf, 0, sizeof(LOGFONT));
+	lf.lfQuality = PROOF_QUALITY;
+	lf.lfHeight  = nHeight;
+	lf.lfWeight  = FW_BOLD;
+	lstrcpy(lf.lfFaceName, _T("Arial"));
+	pFont = new CFont;
+	if (!pFont->CreateFontIndirect(&lf))
+	{
+		delete pFont;
+		return NULL;
+	}
+	m_mapFitFont.SetAt(nHeight, pFont);
+	return pFont;
 }

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <afxtempl.h>
+#include <afxmt.h>	// [LGLS 2026-09-14] 글자 맞춤 캐시 락
 
 
 class CDciControl;
@@ -75,6 +76,17 @@ public:
 	//   nBaseFontSize >  0 : 그 값을 그대로 쓴다(종전 동작).
 	//   랙 / 트랙 / RV / 리프터 / 스태틱이 모두 이 함수를 쓴다.
 	void	DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strText, int nBaseFontSize);
+
+protected:
+	// [LGLS 2026-09-14] 글자 맞춤 캐시 (화면 지연 개선).
+	//   종전에는 그릴 때마다 칸마다 글꼴을 최대 8번 만들고 글자 폭을 쟀다.
+	//   "칸 폭|칸 높이|글자" 로 맞춘 글꼴 높이를 기억하고, 높이별 글꼴은 한 번만 만든다.
+	CMap<CString, LPCTSTR, int, int>	m_mapFitHeight;
+	CMap<int, int, CFont*, CFont*>		m_mapFitFont;
+	CCriticalSection					m_csFit;
+	CFont*	GetFitFont(int nHeight);
+
+public:
 
 	void	Draw3dSolidRect(CDC* pDC, const CRect& rcRectL, COLORREF clrBrush, COLORREF clrLeftTop, COLORREF clrRightBottom);
 	void	DrawButton(CDC* pDC, const CRect& rcRectL, COLORREF clrBrush, BOOL bClick);

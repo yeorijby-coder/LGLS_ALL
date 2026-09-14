@@ -122,12 +122,48 @@ BOOL CCollectDB::StopDoWork()
 	return TRUE;
 }
 
+// [LGLS 2026-09-14] 수집 주기 계측 (Ecs.ini [MENU] UI_TRACE=1 일 때 10초마다 한 줄)
+//   한 바퀴 = 전 설비 조회 + 통신상태 조회 + 쉬는 시간(COLLECT_INTERVAL_MS) 까지. 수집 스레드 하나에서만 부른다.
+static LARGE_INTEGER s_liLglsFreq = { 0 };
+static double s_dLglsSqlSum = 0, s_dLglsSqlMax = 0;
+static int s_nLglsSqlCnt = 0;
+static double LglsQpcMs(const LARGE_INTEGER& a, const LARGE_INTEGER& b)
+{
+	if (s_liLglsFreq.QuadPart == 0) ::QueryPerformanceFrequency(&s_liLglsFreq);
+	return (b.QuadPart - a.QuadPart) * 1000.0 / (double)s_liLglsFreq.QuadPart;
+}
+static void LglsCollectCycle()
+{
+	static LARGE_INTEGER s_liPrev = { 0 };
+	static int s_nCycles = 0;
+	static double s_dCycSum = 0, s_dCycMax = 0;
+	static DWORD s_dwStart = 0;
+	LARGE_INTEGER liNow;
+	::QueryPerformanceCounter(&liNow);
+	if (s_liPrev.QuadPart != 0)
+	{
+		double d = LglsQpcMs(s_liPrev, liNow);
+		s_nCycles++; s_dCycSum += d; if (d > s_dCycMax) s_dCycMax = d;
+	}
+	s_liPrev = liNow;
+	if (s_dwStart == 0) s_dwStart = ::GetTickCount();
+	if (::GetTickCount() - s_dwStart >= 10000 && s_nCycles > 0)
+	{
+		CLib::UiLog(_T("[COLLECT] 한 바퀴 %d 회 | 평균 %.0f ms 최대 %.0f ms | 설비 조회 %d 건 평균 %.1f ms 최대 %.1f ms"),
+			s_nCycles, s_dCycSum / s_nCycles, s_dCycMax, s_nLglsSqlCnt,
+			(s_nLglsSqlCnt > 0) ? s_dLglsSqlSum / s_nLglsSqlCnt : 0.0, s_dLglsSqlMax);
+		s_nCycles = 0; s_dCycSum = s_dCycMax = 0; s_nLglsSqlCnt = 0; s_dLglsSqlSum = s_dLglsSqlMax = 0;
+		s_dwStart = ::GetTickCount();
+	}
+}
+
 UINT CCollectDB::DoWork(LPVOID pParm)
 {
 	CEquipment *pEquipment = NULL;
 	CCollectDB* pThis = (CCollectDB*)pParm;
 	while(pThis->m_bThreadDoWork)
 	{			
+		LglsCollectCycle();	// [LGLS 2026-09-14] 수집 주기 계측
 		CEcsDoc* pDoc = pThis->m_pDoc;
 		if(pDoc == NULL)
 		{
@@ -155,7 +191,14 @@ UINT CCollectDB::DoWork(LPVOID pParm)
 			//   Collect_EQUIPMENT 첫 줄이 pEquipment->GetSelectQry() 라 바로 죽는다.
 			if(pEquipment != NULL && pEquipment->m_pRsw == NULL)
 			{
-				pThis->Collect_EQUIPMENT(pEquipment);
+				{
+					LARGE_INTEGER liQ0, liQ1;	// [LGLS 2026-09-14] 설비 조회 시간 계측
+					::QueryPerformanceCounter(&liQ0);
+					pThis->Collect_EQUIPMENT(pEquipment);
+					::QueryPerformanceCounter(&liQ1);
+					double dQ = LglsQpcMs(liQ0, liQ1);
+					s_nLglsSqlCnt++; s_dLglsSqlSum += dQ; if (dQ > s_dLglsSqlMax) s_dLglsSqlMax = dQ;
+				}
 				::Sleep(50); //추가
 			}
 		}	
