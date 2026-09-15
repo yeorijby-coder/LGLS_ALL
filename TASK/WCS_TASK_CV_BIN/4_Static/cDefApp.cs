@@ -87,6 +87,12 @@ namespace WCS_TASK_CV
         // [LGLS 2026-09-01] D 블록 해석 모드 (R 과 대칭). true=DOC(문서표기 10진, 확정) / false=LEGACY(구 ezMCS 환산).
         //   실PLC 대사로 DOC 확정 - LEGACY 는 전환용 보존(기능 삭제 금지, 사용자 지시).
         public static bool GM_D_ADDR_DOC = true;
+        // [LGLS 2026-09-15] C/V 방향 워드의 입고/출고 부호 (WCS_DB.INI [PLC] DIR_CODE = IN0 | IN1, SYS_MAIN 라디오)
+        //   false(IN0, 현행) : 입고='0'(0x30) 출고='1'(0x31)   /   true(IN1) : 입고='1' 출고='0'
+        //   현장 PLC 담당자가 래더에서 확인한 값이 입고=1/출고=0 이라 바꿔 쓸 수 있게 둔다. 쓰기·판독 양쪽에 적용.
+        public static bool GM_DIR_IN1 = false;
+        public static byte GsDirChar(bool bOut) { return (byte)((bOut ^ GM_DIR_IN1) ? 0x31 : 0x30); }
+        public static string GsDirModeText() { return GM_DIR_IN1 ? "입고=1 / 출고=0 (IN1)" : "입고=0 / 출고=1 (IN0, 현행)"; }
         // [LGLS 2026-09-02] 구 트랙테이블(트랙x10) D영역 지시 쓰기 - V1.1 확정 주소(크레인 D160~/RGV D210/방향 D300~)와
         //   정면 충돌(RGV 상태를 0으로 덮어씀)해 기본 차단. 구 방식 PLC 필요 시 INI [PLC] CV_DTRACK_WRITE=ON.
         public static bool GM_CV_DTRACK_WRITE = false;

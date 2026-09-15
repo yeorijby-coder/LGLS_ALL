@@ -204,6 +204,28 @@ namespace WCS_TASK_CV
             m_rdoDLegacy.CheckedChanged += rdoDAddr_CheckedChanged;
             m_rdoDDoc.Visible = m_rdoDLegacy.Visible = (m_nPlcMaker == 1);
 
+            // [LGLS 2026-09-15] C/V 방향 워드 부호 라디오 (사용자 지시 : PLC 담당자 확인값이 입고=1/출고=0)
+            //   D 라디오 오른쪽에 같은 줄로 둔다. WCS_DB.INI [PLC] DIR_CODE 에 저장, 다음 방향지시부터 바로 적용.
+            cDefApp.GM_DIR_IN1 = cDefApi.GsReadInitProfileDirIn1();
+            //   [사용자 지적] 첫 줄 오른쪽에 두니 글자가 잘리고 겹쳤다 - 위 패널을 한 줄 늘려 셋째 줄에 따로 둔다.
+            pnlTop.Height += 24;
+            m_rdoDirIn0 = new RadioButton { Text = "C/V 방향 부호 : 입고=0 / 출고=1 (현행)", AutoSize = true,
+                BackColor = System.Drawing.Color.MistyRose };
+            m_rdoDirIn1 = new RadioButton { Text = "입고=1 / 출고=0 (PLC 담당자 확인값)", AutoSize = true,
+                BackColor = System.Drawing.Color.MistyRose };
+            var pnlDir = new Panel { Location = new System.Drawing.Point(rdoRHex.Left, rdoRHex.Top + 48),
+                Size = new System.Drawing.Size(560, 20), BackColor = System.Drawing.Color.Transparent };
+            m_rdoDirIn0.Location = new System.Drawing.Point(0, 0);
+            m_rdoDirIn1.Location = new System.Drawing.Point(270, 0);
+            pnlDir.Controls.Add(m_rdoDirIn0); pnlDir.Controls.Add(m_rdoDirIn1);
+            rdoRHex.Parent.Controls.Add(pnlDir); pnlDir.BringToFront();
+            m_bDirLoading = true;
+            m_rdoDirIn0.Checked = !cDefApp.GM_DIR_IN1;
+            m_rdoDirIn1.Checked = cDefApp.GM_DIR_IN1;
+            m_bDirLoading = false;
+            m_rdoDirIn0.CheckedChanged += rdoDirCode_CheckedChanged;
+            m_rdoDirIn1.CheckedChanged += rdoDirCode_CheckedChanged;
+
             // [LGLS 2026-09-02] 환경 INI(WCS_DB.INI) 바로 열기 - [정리] 버튼 왼쪽 빈 자리(둘째 줄, 겹침 없음)
             var btnIni = new Button { Text = "INI 열기", Size = new System.Drawing.Size(72, 23),
                 Location = new System.Drawing.Point(808, 28),
@@ -941,6 +963,8 @@ namespace WCS_TASK_CV
         //   ※ 통신 중 전환하면 다음 사이클부터 새 주소로 읽고 쓴다.
         private bool m_bRAddrLoading = false;
         private RadioButton m_rdoDDoc, m_rdoDLegacy;   // [LGLS 2026-09-01] D 해석 모드 라디오(런타임 생성)
+        private RadioButton m_rdoDirIn0, m_rdoDirIn1;  // [LGLS 2026-09-15] C/V 방향 부호 라디오(런타임 생성)
+        private bool m_bDirLoading;
         private bool m_bDAddrLoading;
 
         // [LGLS 2026-09-01] D 블록 해석 모드 전환 (R 과 대칭). XML(dAddrMode) 단일 기준.
@@ -964,6 +988,18 @@ namespace WCS_TASK_CV
             string strMsg = "[D주소모드] " + cDefApp.GsDAddrModeText()
                           + "  (예: S/C#1 상태 = D" + cPlcAddrMap.BlockBase("SC", 1, "Status").ToString("0000")
                           + ") - 완전 반영은 재기동 권장";
+            try { PsMsgView_IMP(strMsg, 0); } catch { }
+        }
+
+        // [LGLS 2026-09-15] C/V 방향 워드 부호 전환. 쓰기(CvChg_CMD_RQ_YN)와 판독(STOCK_MODE) 양쪽에 즉시 적용된다.
+        private void rdoDirCode_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bDirLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+            cDefApp.GM_DIR_IN1 = m_rdoDirIn1.Checked;
+            cDefApi.GsWriteInitProfileDirIn1(cDefApp.GM_DIR_IN1);
+            string strMsg = "[방향부호] " + cDefApp.GsDirModeText() + " - 다음 방향지시·판독부터 적용 (WCS_DB.INI [PLC] DIR_CODE)";
             try { PsMsgView_IMP(strMsg, 0); } catch { }
         }
 

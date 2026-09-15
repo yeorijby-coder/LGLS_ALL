@@ -324,6 +324,20 @@ public static bool GsReadInitProfileDAddrDoc()
             WritePrivateProfileString("PLC", "D_ADDR_MODE", pDoc ? "DOC" : "LEGACY", cDefApp.GM_ENV_INI);
         }
 
+        // [LGLS 2026-09-15] [PLC] DIR_CODE : C/V 방향 워드 부호. IN0(기본) 입고=0/출고=1, IN1 입고=1/출고=0
+        public static bool GsReadInitProfileDirIn1()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return false;
+            StringBuilder sb = new StringBuilder(64);
+            GetPrivateProfileString("PLC", "DIR_CODE", "IN0", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            return (sb.ToString().Trim().ToUpper() == "IN1");
+        }
+        public static void GsWriteInitProfileDirIn1(bool pIn1)
+        {
+            WritePrivateProfileString("PLC", "DIR_CODE", pIn1 ? "IN1" : "IN0", cDefApp.GM_ENV_INI);
+        }
+
         /// <summary>
         /// [LGLS 2026-08-30] 설비 에러이력(EQP_ERR_HIS)에 남길 EQP_TYP — [CNF] SC_ERR_TYP / RTV_ERR_TYP.
         ///   Client 설비에러이력 창이 이 값으로 EQP_ECD_MST 를 조인해 메시지를 표시한다.
