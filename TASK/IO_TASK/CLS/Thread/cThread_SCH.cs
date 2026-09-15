@@ -1033,7 +1033,11 @@ namespace TSK_COMM_IOSCH
                             }
                             continue;
                         }
-                        if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv()) continue;
+                        if (jobTyp == "2" && startPos == "901" && HasSc1InboundOnRtv())
+                        {
+                            DbgLog("SC1RULE3_" + luggNo, "[SC1] 출고 보류 - 1호기행 입고가 픽업트랙/RTV/통로에 있음(규칙 3, 작업 " + luggNo + ")");
+                            continue;
+                        }
                         if (jobTyp == "1" && IsTrackEmpty(_wT)) continue;
                         // [LGLS 2026-08-31] ★픽업 트랙의 화물이 이 작업의 화물인지 확인한다★
                         //   (RGV 오집 수정과 같은 패턴 - 크레인 판)
@@ -2291,7 +2295,13 @@ namespace TSK_COMM_IOSCH
                 //   양보 사유가 되지 않는다. 실제 라인 점유는 31/35 부터이고, 하역트랙 물리 점유는
                 //   DriveSC 의 !IsTrackEmpty(_wT) 가 따로 막는다.
                 //   ~~[LGLS 2026-08-04] '받았으면' = 구동대기(30)부터 포함~~ (교착 유발로 철회)
-                q += CRLF + "    AND JOB_STATUS IN ('" + ST_RGV_RUN + "') ";
+                // [LGLS 2026-09-15] ★규칙 3★ RTV 출발지/RTV/통로(103·104)에 입고 실물이 있으면 SC1 출고 보류 (30/35/39 + 15통로실물).
+                //   방향전환형 통로는 벨트가 한 방향이라 입고·출고 실물이 동시 존재 불가 - 물리 상태 기반이라 교착 없음.
+                //   진행 중(21+) 출고 하역은 막지 않고 20→25 새 지시만 막는다. 실측 6147/6156 교착 예방.
+                q += CRLF + "    AND ( JOB_STATUS IN ('" + ST_RGV_WAIT + "','" + ST_RGV_RUN + "','" + ST_RGV_DONE + "') ";
+                q += CRLF + "       OR (JOB_STATUS = '" + ST_CV_RUN + "' AND HS_TRACK_NO IN ('103','104')            ";
+                q += CRLF + "           AND EXISTS (SELECT 1 FROM CV_DATA C WHERE C.WH_TYP = JOB_MST.WH_TYP                ";
+                q += CRLF + "                         AND C.MC_NO IN ('103','104') AND C.LUGG_NO_RD = JOB_MST.LUGG_NO)) ) ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
