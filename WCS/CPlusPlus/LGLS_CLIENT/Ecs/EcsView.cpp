@@ -40,6 +40,7 @@ BEGIN_MESSAGE_MAP(CEcsView, CFormView)
 	ON_WM_TIMER()
 	ON_WM_SIZE()
 	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONDBLCLK()
 	ON_WM_LBUTTONUP()
 	ON_WM_KEYDOWN()
 	ON_WM_MOUSEMOVE()
@@ -1047,6 +1048,122 @@ void CEcsView::OnLButtonDown(UINT nFlags, CPoint point)
 	}
 
 	CFormView::OnLButtonDown(nFlags, point);
+}
+
+// [LGLS 2026-09-15] 메인 화면의 "입고 모드"/"출고 모드" 칸을 더블클릭하면 방향을 반대로 바꾼다 (사용자 지시).
+//   대상 칸 : C/V#11(트랙 122) = 레이아웃 id 90000122, C/V#2(트랙 103·104) = 90000103 (Cv.cpp 가 글자를 채우는 칸과 같다).
+//   Client 는 PLC 에 직접 쓰지 않는다. CV_DATA 명령 컬럼(CMD_RQ_ID=DIR, CMD_RQ_PARM=0|1)에 남기면
+//   설비 통신(CvThread.CvChg_CMD_RQ_YN)이 다음 주기에 D 방향 워드에 쓴다 - IO_TASK·C/V 창 [H/S 배출]과 같은 규약.
+//   반대 방향 작업 화물이 그 트랙에 있으면 설비 통신이 전환을 보류한다(IsDualCvDirChangeHeld).
+BOOL CEcsView::DirectionToggleByDblClk(CPoint point)
+{
+	CEcsDoc* pDoc = GetDocument();
+	if (pDoc == NULL) return FALSE;
+	CEcsLayout* pLayout = pDoc->GetSelectedLayout();
+	if (pLayout == NULL || pLayout->GetDciMaster() == NULL) return FALSE;
+
+	static const LPCTSTR s_szCid[2]   = { _T("90000122"), _T("90000103") };
+	static const LPCTSTR s_szTrack[2] = { _T("122"), _T("103") };
+	static const LPCTSTR s_szName[2]  = { _T("C/V#11"), _T("C/V#2") };
+	int nHit = -1;
+	CRect rcHit[2];
+	for (int i = 0; i < 2; i++)
+	{
+		rcHit[i].SetRectEmpty();
+		CString strCid(s_szCid[i]);
+		CDciControl* pCtrl = pDoc->GetDciControl_FindAllLayout(strCid);
+		if (pCtrl == NULL) continue;
+		rcHit[i] = pLayout->GetDciMaster()->ConvertRectS(pCtrl->m_rcControlL);
+		rcHit[i].NormalizeRect();
+		if (nHit < 0 && rcHit[i].PtInRect(point)) nHit = i;
+	}
+	if (nHit < 0)
+	{
+		// 빗나간 더블클릭도 남긴다 - 현장에서 칸 위치가 다를 때 대조용 (UI_TRACE=1 일 때만)
+		CLib::UiLog(_T("[DIR] dblclk miss pt=(%d,%d) 122=(%d,%d)-(%d,%d) 103=(%d,%d)-(%d,%d)"), point.x, point.y,
+			rcHit[0].left, rcHit[0].top, rcHit[0].right, rcHit[0].bottom, rcHit[1].left, rcHit[1].top, rcHit[1].right, rcHit[1].bottom);
+		return FALSE;
+	}
+
+	CLib::UiLog(_T("[DIR] dblclk track=%s"), s_szTrack[nHit]);
+	if (!pDoc->Permission(_T("CCvSkinDlg"), UPD_YN))
+	{
+		AfxMessageBox(pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return TRUE;
+	}
+
+	// 현재 방향은 DB 의 STOCK_MODE(설비 통신이 정규화한 논리값 1=출고, 옛 원시값 49 도 출고) 로 본다
+	CString strSql;
+	strSql.Format(_T(" SELECT ISNULL(STOCK_MODE,'') AS STOCK_MODE FROM CV_DATA WHERE WH_TYP = '%s' AND MC_NO = '%s' "),
+		(LPCTSTR)pDoc->m_WH_TYP, s_szTrack[nHit]);
+	int nRowCnt = 0;
+	CString strMsg;
+	_RecordsetPtr pRs = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+	if (nRowCnt <= 0)
+	{
+		AfxMessageBox(pDoc->GetMsgLangDef(_T("설비 데이터를 읽지 못했습니다")));
+		return TRUE;
+	}
+	CString strMode;
+	{
+		CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+		pRsw->MoveFirst();
+		strMode = pRsw->GetItem(_T("STOCK_MODE"));
+		delete pRsw;
+	}
+	strMode.Trim();
+	BOOL bOutNow = (strMode == _T("1") || strMode == _T("49"));
+	CString strNow  = pDoc->GetMsgLangDef(bOutNow ? _T("출고 모드") : _T("입고 모드"));
+	CString strNext = pDoc->GetMsgLangDef(bOutNow ? _T("입고 모드") : _T("출고 모드"));
+	// [LGLS 2026-09-15] 확인창에 PLC 방향 워드 주소도 보인다(사용자 지시). 주소맵(PlcAddressMap.xml)은 설비 통신이 갖고 있어
+	//   Client 는 Ecs.ini [MENU] DIR_ADDR_CV11 / DIR_ADDR_CV2 (기본 310 / 301 = D0300 + 설비번호 - 1) 로 표기한다.
+	//   설비 통신 로그 "방향지시 … → D워드 310" 과 같은 번호다. 주소맵이 바뀌면 ini 만 맞추면 된다.
+	int nDirAddr = ::GetPrivateProfileInt(_T("MENU"), (nHit == 0) ? _T("DIR_ADDR_CV11") : _T("DIR_ADDR_CV2"),
+		(nHit == 0) ? 310 : 301, ECS_INI_FILE);
+	CString strAddr;
+	strAddr.Format(_T("D%04d (%%DB%d)"), nDirAddr, nDirAddr * 2);
+	CString strAsk;
+	strAsk.Format(_T("%s (%s %s)\n\n[%s] → [%s]\n%s : %s\n\n%s"),
+		(LPCTSTR)pDoc->GetMsgLangDef(_T("방향을 바꾸겠습니까?")), s_szName[nHit],
+		(LPCTSTR)(pDoc->GetMsgLangDef(_T("트랙")) + _T(" ") + s_szTrack[nHit]),
+		(LPCTSTR)strNow, (LPCTSTR)strNext,
+		(LPCTSTR)pDoc->GetMsgLangDef(_T("PLC 주소")), (LPCTSTR)strAddr,
+		(LPCTSTR)pDoc->GetMsgLangDef(_T("반대 방향 작업 화물이 있으면 설비 통신이 전환을 보류합니다.")));
+	if (AfxMessageBox(strAsk, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES)
+		return TRUE;
+
+	// IO_TASK RequestCvDirection / C/V 창 [H/S 배출] 과 같은 명령 규약. 대기 중인 다른 명령은 덮어쓰지 않는다.
+	CString strParm = bOutNow ? _T("0") : _T("1");
+	strSql.Format(_T(" UPDATE CV_DATA                                          \n")
+		  _T("    SET CMD_RQ_ID    = 'DIR'                             \n")
+		  _T("      , CMD_RQ_PARM  = '%s'                              \n")
+		  _T("      , CMD_RQ_YN    = 'Y'                               \n")
+		  _T("      , WRITE_UPD_DT = ") + pDoc->SYSDATE + _T("           \n")
+		  _T("  WHERE WH_TYP = '%s'                                    \n")
+		  _T("    AND MC_NO  = '%s'                                    \n")
+		  _T("    AND (CMD_RQ_YN <> 'Y' OR CMD_RQ_ID = 'DIR')          "),
+		(LPCTSTR)strParm, (LPCTSTR)pDoc->m_WH_TYP, s_szTrack[nHit]);
+	pDoc->BeginTrans_DLG();
+	if (pDoc->ExcuteQueryString_DLG(strSql) != TRUE)
+	{
+		pDoc->RollbackTrans_DLG();
+		AfxMessageBox(pDoc->GetMsgLangDef(_T("실패")));
+		return TRUE;
+	}
+	CString strLog;
+	strLog.Format(_T("방향 전환 요청(더블클릭) -> %s 트랙 %s : %s -> %s, %s"), s_szName[nHit], s_szTrack[nHit], (LPCTSTR)strNow, (LPCTSTR)strNext, (LPCTSTR)strAddr);
+	pDoc->GetQueryInsertClientLog(_T("CEcsView"), _T(""), _T(""), _T(""), strLog);
+	pDoc->CommitTrans_DLG();
+	CLib::UiLog(_T("[DIR] request track=%s parm=%s"), s_szTrack[nHit], (LPCTSTR)strParm);
+	AfxMessageBox(pDoc->GetMsgLangDef(_T("방향 전환을 요청했습니다. 잠시 뒤 화면에 반영됩니다.")));
+	return TRUE;
+}
+
+void CEcsView::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+	// 방향 칸이면 여기서 처리하고, 그 밖의 칸은 종전대로 클릭 두 번과 같게 둔다
+	if (DirectionToggleByDblClk(point)) return;
+	OnLButtonDown(nFlags, point);
 }
 
 void CEcsView::OnLButtonUp(UINT nFlags, CPoint point) 
