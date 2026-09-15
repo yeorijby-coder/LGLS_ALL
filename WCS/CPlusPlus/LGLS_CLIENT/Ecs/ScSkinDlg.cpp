@@ -28,6 +28,11 @@ IMPLEMENT_DYNAMIC(CScSkinDlg, CSkinDialog)
 	m_pDB = NULL;
 	m_pScManualRet = NULL;
 	m_brLedOn = NULL; m_brLedOff = NULL; m_brStatus = NULL;
+	// [LGLS 2026-09-15] ★확대 패널 멤버 초기화 누락 - 현장 크레인 창이 65535x65535 로 뜬 원인★
+	//   RTV/CV 생성자에는 09-12 에 넣었는데 SC 만 빠져 있었다. 쓰레기 값이 양수면
+	//   BuildVehStatusPanel 의 "m_nVehBaseH <= 0 이면 측정" 을 건너뛰고 그 값으로 SetWindowPos 한다.
+	//   개발 PC 는 우연히 0 이라 재현되지 않았고, 현장(원격 세션)은 [SC] SHOW rect=(-366,76)-(65169,65611).
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;
 }
 CScSkinDlg::CScSkinDlg(CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CScSkinDlg::IDD, pParent)
@@ -38,6 +43,11 @@ CScSkinDlg::CScSkinDlg(CWnd* pParent /*=NULL*/)
 	m_pDB = NULL;
 	m_pScManualRet = NULL;
 	m_brLedOn = NULL; m_brLedOff = NULL; m_brStatus = NULL;
+	// [LGLS 2026-09-15] ★확대 패널 멤버 초기화 누락 - 현장 크레인 창이 65535x65535 로 뜬 원인★
+	//   RTV/CV 생성자에는 09-12 에 넣었는데 SC 만 빠져 있었다. 쓰레기 값이 양수면
+	//   BuildVehStatusPanel 의 "m_nVehBaseH <= 0 이면 측정" 을 건너뛰고 그 값으로 SetWindowPos 한다.
+	//   개발 PC 는 우연히 0 이라 재현되지 않았고, 현장(원격 세션)은 [SC] SHOW rect=(-366,76)-(65169,65611).
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;
 }
 
 CScSkinDlg::~CScSkinDlg()
