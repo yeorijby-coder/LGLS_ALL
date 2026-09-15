@@ -86,6 +86,9 @@ namespace EQP_SIM.Sim
         // [LGLS] 이중입고/공출고 에러 주입 (시나리오 테스트): 체크 시 다음 최초 입고/출고 S/C 작업에서 1회 발생
         public volatile bool InjectDoubleStorage = false;   // 이중입고 (입고 목적셀 이미 점유 → ERR 54)
         public volatile bool InjectEmptyRetrieval = false;  // 공출고 (출고 출발셀 재고없음 → ERR 58)
+        // [LGLS 2026-09-15] 자동 테스트용 : N건 연속 주입 카운터. Data/inject_ctrl.txt 에 "D=10" / "E=10" 로 예약(폴링).
+        public volatile int InjectDoubleCount = 0;
+        public volatile int InjectEmptyCount  = 0;
 
         // [LGLS 2026-09-12] 크레인 하역 핸드셰이크 고장 주입 (현장 2026-09-11 S/C#1 출고 정체 재현) - 사용자 지시
         //   상황 A : Ack 유실 - WCS 가 쓴 UNLOAD_COMPLETE_ACK 를 외부 손이 지운다. 크레인은 질문(M785)을 들고 기다린다.
@@ -248,6 +251,7 @@ namespace EQP_SIM.Sim
                             SaveState();
                             nextSaveAt = now.AddSeconds(2);
                         }
+                        PollInjectCtrl(now);   // [LGLS 2026-09-15] Data/inject_ctrl.txt 로 이중입고/공출고 N건 예약(자동 테스트)
                         var h = StateChanged;
                         if (h != null) h();
                     }
@@ -258,6 +262,32 @@ namespace EQP_SIM.Sim
                 }
                 Thread.Sleep(100);
             }
+        }
+
+        // [LGLS 2026-09-15] 자동 테스트 : Data/inject_ctrl.txt 를 폴링해 이중입고/공출고를 N건 예약한다.
+        //   파일 내용 예) "D=10" 또는 "E=10" 또는 "D=10 E=10". 읽고 나서 파일을 지운다(1회 소비).
+        private DateTime nextInjectPollAt = DateTime.MinValue;
+        private void PollInjectCtrl(DateTime now)
+        {
+            try
+            {
+                if (now < nextInjectPollAt) return;
+                nextInjectPollAt = now.AddMilliseconds(1000);
+                if (string.IsNullOrEmpty(dataDir)) return;
+                string p = Path.Combine(dataDir, "inject_ctrl.txt");
+                if (!File.Exists(p)) return;
+                string txt = File.ReadAllText(p);
+                File.Delete(p);
+                foreach (string tok in txt.Split(new char[] { ' ', '\t', '\r', '\n', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    string[] kv = tok.Split('=');
+                    if (kv.Length != 2) continue;
+                    int n; if (!int.TryParse(kv[1].Trim(), out n)) continue;
+                    if (kv[0].Trim().ToUpper() == "D") { InjectDoubleCount = n; Log("[주입예약] 이중입고 " + n + "건 예약"); }
+                    else if (kv[0].Trim().ToUpper() == "E") { InjectEmptyCount = n; Log("[주입예약] 공출고 " + n + "건 예약"); }
+                }
+            }
+            catch { }
         }
 
         // ------------------------------------------------------------------

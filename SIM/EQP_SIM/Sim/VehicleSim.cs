@@ -216,15 +216,17 @@ namespace EQP_SIM.Sim
                         {
                             bool isIngo  = !IsPort(to01, to02);     // 목적지가 랙 셀 = 입고
                             bool isOutgo = !IsPort(from01, from02); // 출발지가 랙 셀 = 출고
-                            if (engine.InjectDoubleStorage && isIngo)
+                            if ((engine.InjectDoubleStorage || engine.InjectDoubleCount > 0) && isIngo)
                             {
-                                pendingErrCode = 54; engine.InjectDoubleStorage = false;
-                                engine.Log(Def.Id + " ★이중입고 에러 예약 (다음 입고 하차 시 발생)");
+                                pendingErrCode = 54;
+                                if (engine.InjectDoubleCount > 0) engine.InjectDoubleCount--; else engine.InjectDoubleStorage = false;
+                                engine.Log(Def.Id + " ★이중입고 에러 예약 (다음 입고 하차 시 발생) 잔여 " + engine.InjectDoubleCount);
                             }
-                            else if (engine.InjectEmptyRetrieval && isOutgo)
+                            else if ((engine.InjectEmptyRetrieval || engine.InjectEmptyCount > 0) && isOutgo)
                             {
-                                pendingErrCode = 58; engine.InjectEmptyRetrieval = false;
-                                engine.Log(Def.Id + " ★공출고 에러 예약 (출발셀 픽업 시 발생)");
+                                pendingErrCode = 58;
+                                if (engine.InjectEmptyCount > 0) engine.InjectEmptyCount--; else engine.InjectEmptyRetrieval = false;
+                                engine.Log(Def.Id + " ★공출고 에러 예약 (출발셀 픽업 시 발생) 잔여 " + engine.InjectEmptyCount);
                             }
                         }
 
