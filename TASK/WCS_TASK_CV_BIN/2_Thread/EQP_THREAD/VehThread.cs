@@ -796,8 +796,28 @@ namespace WCS_TASK_CV
                 chg("ACTIVE_MODE_RD", bDown ? "0" : "1");
                 // [LGLS] 이중입고(54)/공출고(58): 설비 ERR_CODE_RD 관측(EQP_SIM/실PLC)에서 읽어 SC_DATA 반영. 관측 없으면 정상(0000).
                 string errCode = "0000";
-                ObsDef eco = O(v, "ERR_CODE_RD");
-                if (eco != null) { int ec = 0; if (ReadShort(eco, ref ec) && ec != 0) errCode = ec.ToString("0000"); }
+                // [LGLS 2026-09-15] ErrCode 블록(D1160+10k)은 문서에 없는 시뮬 예약영역이다. 현장에서는 그 워드를 PLC 가 다른 용도로
+                //   써서 3·5호기가 코드 0001 로 떴다가 저절로 풀렸다. 기본은 블록을 읽지 않고, 알람코드 워드(ALARM_SET_CODE,
+                //   문서 D0161+10k)를 상태로 본다 - 구 ECS Vehicle.OnAlarmSetCode / RTV 쪽(09-11)과 같은 규약.
+                //   WCS_DB.INI [CNF] SC_ERR_CODE_BLOCK=1 이면 종전대로 블록을 읽는다(EQP_SIM 이중입고/공출고 시험).
+                bool bErrFromBlock = false;
+                ObsDef eco = (cDefApi.GsReadInitProfileScErrCodeBlock() != 0) ? O(v, "ERR_CODE_RD") : null;
+                if (eco != null) { int ec = 0; if (ReadShort(eco, ref ec)) { bErrFromBlock = true; if (ec != 0) errCode = ec.ToString("0000"); } }
+                if (!bErrFromBlock)
+                {
+                    int nScAlm = 0;
+                    ObsDef oScAlm = O(v, "ALARM_SET_CODE");
+                    if (oScAlm != null && ReadShort(oScAlm, ref nScAlm) && nScAlm != 0) errCode = nScAlm.ToString("0000");
+                }
+                {
+                    string strScPrev = (Cached(v, "ERR_CODE_RD") ?? "");
+                    if (strScPrev != errCode && errCode == "0000" && strScPrev.Length > 0 && strScPrev != "0000")
+                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 에러코드 0 → 에러 해제 반영 (종전 [" + strScPrev + "], "
+                              + (bErrFromBlock ? "ErrCode 블록" : "ALARM_SET_CODE 워드") + ")");
+                    if (strScPrev != errCode && errCode != "0000")
+                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 에러코드 " + errCode + " 관측 ("
+                              + (bErrFromBlock ? "ErrCode 블록" : "ALARM_SET_CODE 워드") + ")");
+                }
                 // [LGLS 2026-08-30] 에러가 '새로' 올라온 순간에만 에러보고(E) 플래그를 내린다.
                 //   HOST_TASK CCliWork.IsEquip_ERROR_Modified 는 HOST_ERR_SEND_YN='N' 인 건만 E 전문으로
                 //   올린다. 종전에는 ERR_CODE_RD 가 바뀌어도 상태보고(S) 플래그(HOST_SEND_YN)만 내려서,

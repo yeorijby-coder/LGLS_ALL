@@ -239,6 +239,19 @@ namespace WCS_TASK_CV
         }
         #endregion
 
+        #region [CNF]::크레인 에러코드를 ErrCode 블록으로 읽을지  [LGLS 2026-09-15]
+        //   0(기본) = 알람코드 워드(ALARM_SET_CODE, 문서 D0161+10k) 상태로 본다 - 구 ECS Vehicle.OnAlarmSetCode 와 같다.
+        //   1        = 주소맵 ErrCode 블록(D1160+10k, 문서에 없는 시뮬 예약영역)도 읽는다 - EQP_SIM 이중입고/공출고 시험용.
+        //   현장(2026-09-15) : 3·5호기가 지상반 에러 없이 코드 0001 로 떴다가 저절로 풀렸다 - D1180/D1200 은 PLC 가
+        //   다른 용도로 쓰는 워드라 그 값(1)이 에러코드로 읽힌 것. 호출마다 읽으므로 재기동 없이 바뀐다.
+        public static int GsReadInitProfileScErrCodeBlock()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return 0;
+            return GetPrivateProfileInt("CNF", "SC_ERR_CODE_BLOCK", 0, cDefApp.GM_ENV_INI);
+        }
+        #endregion
+
         #region [CNF]::M 비트 쓰기 방식  [LGLS 2026-09-14]
         //   1(기본) = XGT 단일 비트 쓰기 (%MX + 절대비트번호, DATATYPE 0x00) - 구 ECS FenetDriver.mdDevSet/mdDevRst 와 같은 프레임.
         //             그 비트 하나만 PLC 가 바꾸므로 같은 워드를 다른 스레드/PLC 가 동시에 써도 서로 지우지 않는다.
