@@ -731,9 +731,15 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "    AND JM.DEST_POS  Is not null                                ";
                 // [LGLS 2026-07-21] 트랙별 배타: 같은 트랙의 운반 중(11/15) 작업이 남아 있으면 신규 지시 금지
                 //   (겸용 C/V#11 에서 입고/출고 지시가 같은 트랙에 연속 발행되는 것 방지)
+                // [LGLS 2026-09-15] ★상태 15 는 입고 첫 구간(입력대→픽업)과 RGV 이후(103→104) 를 모두 쓴다★
+                //   RGV 를 거친 입고(HS_TRACK_NO 기록됨)는 이미 입력대(122)를 떠나 SC 라인(103/104)에 있으므로
+                //   입력대 신규 발행을 막을 이유가 없다. 그 화물까지 세면, 크레인 정지 등으로 103/104 에 입고가
+                //   서 있을 때 다음 입고(7318)가 입력대에서 영영 기록되지 않는다(실측 : 104 입고 H/S 작업정지 중).
+                //   → 배타 대상에서 "HS_TRACK 이 기록된 입고(RGV 이후)" 는 제외한다. 첫 구간(HS 미기록) 입고와 출고는 종전대로.
                 strSql += CRLF + "    AND NOT EXISTS (SELECT 1 FROM JOB_MST J2                    ";
                 strSql += CRLF + "                     WHERE J2.WH_TYP = JM.WH_TYP                ";
                 strSql += CRLF + "                       AND J2.JOB_STATUS IN ('15')         ";
+                strSql += CRLF + "                       AND NOT (J2.JOB_TYP IN ('1','11') AND J2.HS_TRACK_NO IS NOT NULL AND LTRIM(RTRIM(J2.HS_TRACK_NO)) <> '') ";
                 strSql += CRLF + "                       AND CD.MC_NO = (CASE WHEN J2.JOB_TYP IN ('2','12') THEN J2.DEST_POS ELSE J2.START_POS END)) ";
                 // [LGLS 2026-07-23] 겸용 입출고대(122) 교착 방지: 122 로 오는 출고 반출이 RTV 에 지시된 상태
                 //   (RTV_DATA_LGLS.JOB_TYP_OD='2' + LUGG_OD=해당 출고작업)면 122 입고 발행(트래킹 기록)을 보류한다.
@@ -957,12 +963,16 @@ namespace TSK_COMM_IOSCH
                 // [LGLS 2026-07-24] 출고 직렬화: 같은 크레인의 선행 출고가 CV/반출 구간(10/11/15)에 남아 있으면
                 //   다음 출고 SC 지시를 보류한다 — 출고 화물이 라인(하역 2트랙)에 겹겹이 쌓여 겸용 라인이
                 //   막히는 것을 방지 ([CV#2 교착 TEST]에서 출고 3건이 C\V#2 를 가득 채워 교착하던 고리 차단).
-                strSql += CRLF + "    AND NOT ( JM.JOB_TYP IN ('2','12') AND EXISTS (SELECT 1              ";
+                // [LGLS 2026-09-15] 출고 2-deep (사용자 확정) : 같은 크레인 출고가 CV/반출(10/15)에 ★2건 이상★
+                //   있을 때만 보류. 1건까지 허용해 통로 두 칸(짝수 하차 + 홀수 RGV대기)을 채운다.
+                //   드롭칸(짝수) 비었을 때만 하차하는 아래 게이트가 3건 이상을 막는다(교착 방지 유지).
+                strSql += CRLF + "    AND NOT ( JM.JOB_TYP IN ('2','12') AND (SELECT COUNT(*)               ";
                 strSql += CRLF + "                   FROM JOB_MST J7                                       ";
                 strSql += CRLF + "                  WHERE J7.WH_TYP = JM.WH_TYP                            ";
                 strSql += CRLF + "                    AND J7.JOB_TYP IN ('2','12')                         ";
                 strSql += CRLF + "                    AND J7.START_POS = SD.SC_NO                          ";
-                strSql += CRLF + "                    AND J7.JOB_STATUS IN ('10','15')) )             ";
+                strSql += CRLF + "                    AND J7.LUGG_NO <> JM.LUGG_NO                          ";
+                strSql += CRLF + "                    AND J7.JOB_STATUS IN ('10','15')) >= 2 )         ";
                 // [LGLS 2026-07-19] suspend 방향별 게이트: 1=입고정지, 2=출고정지, 3=입출고정지
                 strSql += CRLF + "    AND NOT (JM.JOB_TYP IN ('1','11') AND SD.SUSPEND IN ('1','3'))      ";
                 strSql += CRLF + "    AND NOT (JM.JOB_TYP IN ('2','12') AND SD.SUSPEND IN ('2','3'))      ";
@@ -1010,9 +1020,12 @@ namespace TSK_COMM_IOSCH
                         if (jobTyp == "2")
                         {
                             int _wTn; string _oddT = int.TryParse(_wT, out _wTn) ? (_wTn - 1).ToString() : "";
-                            if (!string.IsNullOrEmpty(_oddT) && !IsTrackEmpty(_oddT))
+                            // [LGLS 2026-09-15] 출고 2-deep : 홀수(RGV측) 트랙에 ★입고(반대방향)★ 화물이 있을 때만 보류.
+                            //   같은 방향 출고 화물이 홀수에서 RGV 를 기다리는 중이면 짝수에 다음 출고를 내려도 된다
+                            //   (벨트는 짝수→홀수로만 도므로 겹치지 않는다). 반대방향 입고 화물이 곧 짝수로 올라오면 충돌하므로 보류.
+                            if (!string.IsNullOrEmpty(_oddT) && HasInboundCargoOnTrack(_oddT))
                             {
-                                DbgLog("SCOUT_" + scNo, string.Format("[SC] 출고 보류 - 라인 {0} 에 입고 진행 화물(하차 트랙 {1} 로 진입 예정)", _oddT, _wT));
+                                DbgLog("SCOUT_" + scNo, string.Format("[SC] 출고 보류 - 라인 {0} 에 입고(반대방향) 진행 화물(하차 트랙 {1})", _oddT, _wT));
                                 continue;
                             }
                         }
@@ -1228,32 +1241,18 @@ namespace TSK_COMM_IOSCH
                     string dropTrack   = bOutRgv ? RgvPickupTrack(destPos)                   : RgvDropTrack(destPos);
                     string lineKey = bOutRgv ? "" : RgvDropTrack(destPos);
                     if (!bOutRgv && setBlockedLine.Contains(lineKey)) continue;         // 앞선(더 오래된) 작업이 이 라인 대기 중
-                    // [LGLS 2026-09-15] ★S/C#1 통로(103/104) 입고 2-deep★ (사용자 확정)
-                    //   통로에는 칸이 둘이다. 드롭칸(103)만 비어 있으면 104 에 앞 입고가 크레인 대기 중이어도
-                    //   다음 입고를 103 에 내린다. 같은 방향(입고)이라 교착이 없다 - 크레인이 104 를 비우면
-                    //   벨트가 103→104 로 밀어 올린다(EQP_SIM MovePallets 의 nextIdx 점유 검사가 보장).
-                    //   종전 CanEnterLine(둘 다 비어야) + HasInboundWaitingOnScLine(20/21/25=이미 104 로 올라간 화물)
-                    //   이 통로를 1파렛트로 묶어 6215 형 대기가 났다(실측 09-15). 반대방향(출고) 혼재는 종전대로 차단.
-                    bool bSc1DualIn = (!bOutRgv && dropTrack == SC1_DUAL_CV);
-                    if (bSc1DualIn)
+                    // [LGLS 2026-09-15] ★라인 점유를 칸(cell) 단위로 판정 - 2-deep(피킹 3-deep)★ (사용자 확정)
+                    //   라인 컨베이어는 칸이 둘(피킹대는 셋)이다. 드롭칸만 비어 있으면 다음 칸에 앞 화물이
+                    //   있어도 그 칸에 내린다. 같은 방향이라 교착이 없다 - 앞 칸이 비면 벨트가 밀어 올린다
+                    //   (EQP_SIM MovePallets 의 nextIdx 점유 검사가 보장). N칸 라인은 자연히 N-deep 이 된다.
+                    //   종전 CanEnterLine(라인 전체가 비어야) + HasInboundWaitingOnScLine(20/21/25=이미 다음 칸으로 간 화물)
+                    //   이 라인을 1파렛트로 묶어 6215 형 대기가 났다(실측 09-15). 방향전환형(SC1 통로)만 반대방향 혼재 차단.
+                    if (!bOutRgv)
                     {
-                        if (!CanDropInboundSc1(luggNo))
+                        if (!CanDropInbound(dropTrack, luggNo))
                         {
                             setBlockedLine.Add(lineKey);
-                            DbgLog("SC1DROP_" + rtvNo, string.Format("[RGV] 보류 - S/C#1 통로 드롭칸(103) 사용 중이거나 반대방향 화물 있음(작업 {0})", luggNo));
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        if (!bOutRgv && !CanEnterLine(dropTrack, luggNo)) { setBlockedLine.Add(lineKey); continue; }   // 드롭 라인 점유 시 대기 (CV_DATA 기준)
-                        // [LGLS 2026-08-30] 위 판정은 CV_DATA 미러(최대 ~16초 지연) 기반이라, RTV 가 막
-                        //   내려놓은 화물을 못 보고 같은 드롭 트랙에 다음 입고를 또 보낼 수 있다(크레인 충돌).
-                        //   JOB_MST 로 지연 없이 한 번 더 막는다.
-                        if (!bOutRgv && HasInboundWaitingOnScLine(destPos, luggNo))
-                        {
-                            setBlockedLine.Add(lineKey);
-                            DbgLog("RGVLINE_" + rtvNo, string.Format("[RGV] 보류 - S/C {0} 라인에 픽업 대기 화물 있음(작업 {1})", destPos, luggNo));
+                            DbgLog("INDROP_" + rtvNo, string.Format("[RGV] 보류 - 드롭칸 {0} 사용 중(막 내려진 앞 화물) 또는 반대방향 화물 있음(작업 {1})", dropTrack, luggNo));
                             continue;
                         }
                     }
@@ -1956,32 +1955,64 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-09-15] S/C#1 통로(103/104) 입고 드롭 허용 판정 - 2-deep.
         //   드롭칸(103)이 비어 있고 통로에 반대방향(출고) 화물이 없으면 허용.
         //   104 에 앞 입고가 크레인 대기 중이어도 같은 방향이라 무방하다(크레인이 비우면 103→104 전진).
-        private bool CanDropInboundSc1(string lugg)
+        // [LGLS 2026-09-15] 입고 드롭칸 단위 진입 판정 (2-deep / 피킹 3-deep). 모든 라인 공통.
+        private bool CanDropInbound(string dropTrack, string lugg)
         {
-            // ① 드롭칸 103 물리 점유(미러) + 예약 이동
-            if (!IsTrackFreeFor("103", lugg) || m_dicCvMove.ContainsKey("103")) return false;
-            // ② 미러 지연 창 보호 : 103 에 막 내려졌으나 아직 104 로 못 올라간 앞 입고(15/39 + HS=103)가 있으면 보류
-            if (HasInboundOnSc1DropCell(lugg)) return false;
-            // ③ 통로(103/104)에 반대방향(출고) 화물이 있으면 보류 - 양방향 교착 방지
-            if (HasOutboundCargoOnCv2(lugg)) return false;
+            // ① 드롭칸 물리 점유(미러) + 예약 이동
+            if (!IsTrackFreeFor(dropTrack, lugg) || m_dicCvMove.ContainsKey(dropTrack)) return false;
+            // ② 미러 지연 창 보호 : 드롭칸에 막 내려졌으나 아직 다음 칸으로 못 간 앞 입고(15/39 + HS=드롭칸)가 있으면 보류
+            if (HasInboundOnDropCell(dropTrack, lugg)) return false;
+            // ③ 방향전환형 겸용 라인(SC1 통로 103/104)만 : 반대방향(출고) 화물이 통로에 있으면 보류 - 양방향 교착 방지
+            if (Array.IndexOf(SHARED_LINE_CV2, dropTrack) >= 0 && HasOutboundCargoOnCv2(lugg)) return false;
             return true;
         }
 
-        /// <summary>[LGLS 2026-09-15] 103(드롭칸)에 막 내려졌으나 아직 104 로 못 넘어간 다른 입고가 있나 - 미러 지연 무관(JOB_MST).</summary>
-        private bool HasInboundOnSc1DropCell(string exceptLugg)
+        /// <summary>[LGLS 2026-09-15] 드롭칸에 막 내려졌으나 아직 다음 칸(짝수)으로 못 넘어간 다른 입고가 있나 - 미러 지연 무관(JOB_MST).
+        ///   ★상태 15 는 지연된다★ : RGV 가 103 에 내려놓아 상태 15(HS=103)가 된 뒤, 벨트가 103→104 로 밀어 올려도
+        ///   상태는 한동안 15 로 남는다(실측 7315 : 물리적으로 104 인데 상태 15·HS=103). 그 화물까지 "103 점유"로
+        ///   세면 103 이 비었는데도 다음 입고(7316)가 영영 막힌다. 그래서 ★다음 칸(104)에 이미 올라간 화물은 제외★한다.</summary>
+        private bool HasInboundOnDropCell(string dropTrack, string exceptLugg)
         {
             try {
+                int dt; string nextCell = int.TryParse(dropTrack, out dt) ? (dt + 1).ToString() : (dropTrack ?? "");
                 string q = "";
-                q += CRLF + " SELECT COUNT(*) AS CNT FROM JOB_MST                          ";
-                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND JOB_TYP IN ('1','11')             ";
-                q += CRLF + "    AND DEST_POS = '901' AND HS_TRACK_NO = '103'               ";
-                q += CRLF + "    AND JOB_STATUS IN ('" + ST_CV_RUN + "','" + ST_RGV_DONE + "') ";
-                q += CRLF + "    AND LUGG_NO <> :LUGG                                        ";
-                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')                       ";
+                q += CRLF + " SELECT COUNT(*) AS CNT FROM JOB_MST J                        ";
+                q += CRLF + "  WHERE J.WH_TYP = :WH_TYP AND J.JOB_TYP IN ('1','11')         ";
+                q += CRLF + "    AND J.HS_TRACK_NO = :TRK                                    ";
+                q += CRLF + "    AND J.JOB_STATUS IN ('" + ST_CV_RUN + "','" + ST_RGV_DONE + "') ";
+                q += CRLF + "    AND J.LUGG_NO <> :LUGG                                      ";
+                q += CRLF + "    AND (J.DEL_YN IS NULL OR J.DEL_YN <> 'Y')                   ";
+                q += CRLF + "    AND NOT EXISTS (SELECT 1 FROM CV_DATA C                     ";   // 이미 다음 칸(짝수)에 올라간 화물은 드롭칸을 비운 것
+                q += CRLF + "                     WHERE C.WH_TYP = J.WH_TYP AND C.MC_NO = :NEXT ";
+                q += CRLF + "                       AND C.SENSOR0_DATA_RD = '1' AND C.LUGG_NO_RD = J.LUGG_NO) ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("TRK",    DbLang.VARCHAR).Value = dropTrack ?? "";
                 _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = exceptLugg ?? "";
+                _pBdb.mComMain.Parameters.Add("NEXT",   DbLang.VARCHAR).Value = nextCell;
+                if (DbQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        /// <summary>[LGLS 2026-09-15] 그 트랙(홀수, RGV측)에 입고(반대방향) 작업 화물이 실려 있나 - 출고 하차 충돌 방지.</summary>
+        private bool HasInboundCargoOnTrack(string track)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT FROM CV_DATA C                          ";
+                q += CRLF + "   INNER JOIN JOB_MST J ON J.WH_TYP = C.WH_TYP                   ";
+                q += CRLF + "                       AND J.LUGG_NO = C.LUGG_NO_RD             ";
+                q += CRLF + "  WHERE C.WH_TYP = :WH_TYP AND C.MC_NO = :TRK                    ";
+                q += CRLF + "    AND C.SENSOR0_DATA_RD = '1'                                 ";
+                q += CRLF + "    AND J.JOB_TYP IN ('1','11')                                 ";
+                q += CRLF + "    AND J.JOB_STATUS NOT IN ('09','29')                         ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("TRK",    DbLang.VARCHAR).Value = track ?? "";
                 if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
                 return n > 0;
