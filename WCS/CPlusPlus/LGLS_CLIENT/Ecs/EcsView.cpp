@@ -1122,12 +1122,38 @@ BOOL CEcsView::DirectionToggleByDblClk(CPoint point)
 		(nHit == 0) ? 310 : 301, ECS_INI_FILE);
 	CString strAddr;
 	strAddr.Format(_T("D%04d (%%DB%d)"), nDirAddr, nDirAddr * 2);
+	// [LGLS 2026-09-15] 값도 보인다(사용자 지시). PLC 에 실제로 쓰는 문자는 설비 통신의 부호 설정(WCS_DB.INI [PLC] DIR_CODE,
+	//   IN0 = 입고 '0'/출고 '1', IN1 = 반대)을 따르는데 Client 는 그 ini 를 모른다.
+	//   설비 통신이 마지막으로 남긴 방향지시 로그("… 방향지시 출고('0') → D워드 310 [IN1]")의 [IN1] 표기로 부호를 읽는다.
+	BOOL bIn1 = FALSE;
+	{
+		CString strSqlLog;
+		// 최근 하루·설비 통신 줄만 본다 (전체 LIKE 는 89만 행에서 7초 - 확인창이 늦게 뜬다). 없으면 IN0 으로 표시.
+		strSqlLog.Format(_T(" SELECT TOP 1 log_kor FROM wcs_log_pgr WHERE ins_dt >= DATEADD(day, -1, GETDATE()) AND pgr_nm = 'WCS_TASK_CV_COMM0' AND log_kor LIKE '%%방향지시%%D워드%%' ORDER BY ins_dt DESC "));
+		int nCntLog = 0;
+		CString strMsgLog;
+		_RecordsetPtr pRsLog = pDoc->GetSelectQryRecordsetPtr_DLG(strSqlLog, nCntLog, strMsgLog);
+		if (nCntLog > 0)
+		{
+			CRecordSetWrap* pRswLog = new CRecordSetWrap(pRsLog);
+			pRswLog->MoveFirst();
+			CString strLast = pRswLog->GetItem(_T("log_kor"));
+			delete pRswLog;
+			bIn1 = (strLast.Find(_T("[IN1]")) >= 0);
+		}
+	}
+	BOOL bOutNext = !bOutNow;
+	TCHAR chNow  = ((bOutNow  ? 1 : 0) ^ (bIn1 ? 1 : 0)) ? _T('1') : _T('0');
+	TCHAR chNext = ((bOutNext ? 1 : 0) ^ (bIn1 ? 1 : 0)) ? _T('1') : _T('0');
+	CString strVal;
+	strVal.Format(_T("'%c' → '%c'%s"), chNow, chNext, bIn1 ? _T("  [IN1]") : _T(""));
 	CString strAsk;
-	strAsk.Format(_T("%s (%s %s)\n\n[%s] → [%s]\n%s : %s\n\n%s"),
+	strAsk.Format(_T("%s (%s %s)\n\n[%s] → [%s]\n%s : %s\n%s : %s\n\n%s"),
 		(LPCTSTR)pDoc->GetMsgLangDef(_T("방향을 바꾸겠습니까?")), s_szName[nHit],
 		(LPCTSTR)(pDoc->GetMsgLangDef(_T("트랙")) + _T(" ") + s_szTrack[nHit]),
 		(LPCTSTR)strNow, (LPCTSTR)strNext,
 		(LPCTSTR)pDoc->GetMsgLangDef(_T("PLC 주소")), (LPCTSTR)strAddr,
+		(LPCTSTR)pDoc->GetMsgLangDef(_T("값")), (LPCTSTR)strVal,
 		(LPCTSTR)pDoc->GetMsgLangDef(_T("반대 방향 작업 화물이 있으면 설비 통신이 전환을 보류합니다.")));
 	if (AfxMessageBox(strAsk, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES)
 		return TRUE;
@@ -1151,7 +1177,7 @@ BOOL CEcsView::DirectionToggleByDblClk(CPoint point)
 		return TRUE;
 	}
 	CString strLog;
-	strLog.Format(_T("방향 전환 요청(더블클릭) -> %s 트랙 %s : %s -> %s, %s"), s_szName[nHit], s_szTrack[nHit], (LPCTSTR)strNow, (LPCTSTR)strNext, (LPCTSTR)strAddr);
+	strLog.Format(_T("방향 전환 요청(더블클릭) -> %s 트랙 %s : %s -> %s, %s, 값 %s"), s_szName[nHit], s_szTrack[nHit], (LPCTSTR)strNow, (LPCTSTR)strNext, (LPCTSTR)strAddr, (LPCTSTR)strVal);
 	pDoc->GetQueryInsertClientLog(_T("CEcsView"), _T(""), _T(""), _T(""), strLog);
 	pDoc->CommitTrans_DLG();
 	CLib::UiLog(_T("[DIR] request track=%s parm=%s"), s_szTrack[nHit], (LPCTSTR)strParm);
