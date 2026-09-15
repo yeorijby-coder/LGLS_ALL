@@ -136,7 +136,7 @@ CString CRtv::GetSelectQry() //kdh20190521
 		_T("		EM.PLC_IP, EM.PLC_PORT_FROM, EM.CONNECTED_YN, EM.USE_YN \n")
 		_T("  FROM RTV_DATA_LGLS RD INNER JOIN EQP_MST EM \n")
 		_T("                           ON EM.WH_TYP = RD.WH_TYP \n")
-		_T("                          AND RD.PLC_NO = EM.PLC_NO \n")
+		_T("                          AND RIGHT('00'+RD.PLC_NO,2) = RIGHT('00'+EM.PLC_NO,2) \n")
 		_T(" WHERE RD.WH_TYP = '%s' \n")
 		_T("   AND EM.EQP_TYP = '%s' \n")
 		, m_pDoc->m_WH_TYP, _T("RTV"));

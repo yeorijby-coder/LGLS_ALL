@@ -75,6 +75,9 @@ UINT CEquipment::ThreadProc(LPVOID pParam)
 
 	while (true)
 	{
+		if (pThis->m_enKind == CEquipment::enRTV)
+			int a = 0;
+
 		switch (::WaitForMultipleObjects(enEventSize, pThis->m_hEventArray, FALSE, 500))
 		{
 		case enEventKill:
