@@ -1228,15 +1228,34 @@ namespace TSK_COMM_IOSCH
                     string dropTrack   = bOutRgv ? RgvPickupTrack(destPos)                   : RgvDropTrack(destPos);
                     string lineKey = bOutRgv ? "" : RgvDropTrack(destPos);
                     if (!bOutRgv && setBlockedLine.Contains(lineKey)) continue;         // 앞선(더 오래된) 작업이 이 라인 대기 중
-                    if (!bOutRgv && !CanEnterLine(dropTrack, luggNo)) { setBlockedLine.Add(lineKey); continue; }   // 드롭 라인 점유 시 대기 (CV_DATA 기준)
-                    // [LGLS 2026-08-30] 위 판정은 CV_DATA 미러(최대 ~16초 지연) 기반이라, RTV 가 막
-                    //   내려놓은 화물을 못 보고 같은 드롭 트랙에 다음 입고를 또 보낼 수 있다(크레인 충돌).
-                    //   JOB_MST 로 지연 없이 한 번 더 막는다.
-                    if (!bOutRgv && HasInboundWaitingOnScLine(destPos, luggNo))
+                    // [LGLS 2026-09-15] ★S/C#1 통로(103/104) 입고 2-deep★ (사용자 확정)
+                    //   통로에는 칸이 둘이다. 드롭칸(103)만 비어 있으면 104 에 앞 입고가 크레인 대기 중이어도
+                    //   다음 입고를 103 에 내린다. 같은 방향(입고)이라 교착이 없다 - 크레인이 104 를 비우면
+                    //   벨트가 103→104 로 밀어 올린다(EQP_SIM MovePallets 의 nextIdx 점유 검사가 보장).
+                    //   종전 CanEnterLine(둘 다 비어야) + HasInboundWaitingOnScLine(20/21/25=이미 104 로 올라간 화물)
+                    //   이 통로를 1파렛트로 묶어 6215 형 대기가 났다(실측 09-15). 반대방향(출고) 혼재는 종전대로 차단.
+                    bool bSc1DualIn = (!bOutRgv && dropTrack == SC1_DUAL_CV);
+                    if (bSc1DualIn)
                     {
-                        setBlockedLine.Add(lineKey);
-                        DbgLog("RGVLINE_" + rtvNo, string.Format("[RGV] 보류 - S/C {0} 라인에 픽업 대기 화물 있음(작업 {1})", destPos, luggNo));
-                        continue;
+                        if (!CanDropInboundSc1(luggNo))
+                        {
+                            setBlockedLine.Add(lineKey);
+                            DbgLog("SC1DROP_" + rtvNo, string.Format("[RGV] 보류 - S/C#1 통로 드롭칸(103) 사용 중이거나 반대방향 화물 있음(작업 {0})", luggNo));
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (!bOutRgv && !CanEnterLine(dropTrack, luggNo)) { setBlockedLine.Add(lineKey); continue; }   // 드롭 라인 점유 시 대기 (CV_DATA 기준)
+                        // [LGLS 2026-08-30] 위 판정은 CV_DATA 미러(최대 ~16초 지연) 기반이라, RTV 가 막
+                        //   내려놓은 화물을 못 보고 같은 드롭 트랙에 다음 입고를 또 보낼 수 있다(크레인 충돌).
+                        //   JOB_MST 로 지연 없이 한 번 더 막는다.
+                        if (!bOutRgv && HasInboundWaitingOnScLine(destPos, luggNo))
+                        {
+                            setBlockedLine.Add(lineKey);
+                            DbgLog("RGVLINE_" + rtvNo, string.Format("[RGV] 보류 - S/C {0} 라인에 픽업 대기 화물 있음(작업 {1})", destPos, luggNo));
+                            continue;
+                        }
                     }
                     // [LGLS 2026-08-31] RTV 1대 배타 (사용자 확정 조건)
                     //   "JOB_STATUS=35 이면서 RTV 가 그 작업번호를 받아 동작 중(RTV 레일 파랑)" 일 때만 막는다.
@@ -1926,6 +1945,64 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("SC_NO",  DbLang.VARCHAR).Value = scNo;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = exceptLugg ?? "";
+                if (DbQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+
+        // [LGLS 2026-09-15] S/C#1 통로(103/104) 입고 드롭 허용 판정 - 2-deep.
+        //   드롭칸(103)이 비어 있고 통로에 반대방향(출고) 화물이 없으면 허용.
+        //   104 에 앞 입고가 크레인 대기 중이어도 같은 방향이라 무방하다(크레인이 비우면 103→104 전진).
+        private bool CanDropInboundSc1(string lugg)
+        {
+            // ① 드롭칸 103 물리 점유(미러) + 예약 이동
+            if (!IsTrackFreeFor("103", lugg) || m_dicCvMove.ContainsKey("103")) return false;
+            // ② 미러 지연 창 보호 : 103 에 막 내려졌으나 아직 104 로 못 올라간 앞 입고(15/39 + HS=103)가 있으면 보류
+            if (HasInboundOnSc1DropCell(lugg)) return false;
+            // ③ 통로(103/104)에 반대방향(출고) 화물이 있으면 보류 - 양방향 교착 방지
+            if (HasOutboundCargoOnCv2(lugg)) return false;
+            return true;
+        }
+
+        /// <summary>[LGLS 2026-09-15] 103(드롭칸)에 막 내려졌으나 아직 104 로 못 넘어간 다른 입고가 있나 - 미러 지연 무관(JOB_MST).</summary>
+        private bool HasInboundOnSc1DropCell(string exceptLugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT FROM JOB_MST                          ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND JOB_TYP IN ('1','11')             ";
+                q += CRLF + "    AND DEST_POS = '901' AND HS_TRACK_NO = '103'               ";
+                q += CRLF + "    AND JOB_STATUS IN ('" + ST_CV_RUN + "','" + ST_RGV_DONE + "') ";
+                q += CRLF + "    AND LUGG_NO <> :LUGG                                        ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')                       ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = exceptLugg ?? "";
+                if (DbQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return false; }
+        }
+
+        /// <summary>[LGLS 2026-09-15] 통로(103/104)에 출고 작업 화물이 있나 - 반대방향 교착 방지.</summary>
+        private bool HasOutboundCargoOnCv2(string exceptLugg)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT FROM CV_DATA C                          ";
+                q += CRLF + "   INNER JOIN JOB_MST J ON J.WH_TYP = C.WH_TYP                   ";
+                q += CRLF + "                       AND J.LUGG_NO = C.LUGG_NO_RD             ";
+                q += CRLF + "  WHERE C.WH_TYP = :WH_TYP AND C.MC_NO IN ('103','104')         ";
+                q += CRLF + "    AND J.JOB_TYP IN ('2','12')                                 ";
+                q += CRLF + "    AND J.JOB_STATUS NOT IN ('09','19','29')                    ";
+                q += CRLF + "    AND C.LUGG_NO_RD <> :LUGG                                    ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
                 _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = exceptLugg ?? "";
                 if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
