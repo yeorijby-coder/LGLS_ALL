@@ -68,7 +68,7 @@ COLORREF CRtvInfo::GetForkColor()
 // 	case enJobTypeManual:		return pConfig->m_clrManual;
 // 	}
 // 	
-	return LIGHT_GRAY;
+	return LEGEND_IDLE_GRAY;
 }
 
 COLORREF CRtvInfo::GetForkColor1()
@@ -112,7 +112,7 @@ COLORREF CRtvInfo::GetForkColor1()
 // 	if (m_RtvInfo[1].m_nInternalJobType != 0)
 // 		return LIGHT_GRAY;
 
-	return LIGHT_GRAY;
+	return LEGEND_IDLE_GRAY;
 	//return BLACK;
 }
 
@@ -184,7 +184,7 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 
 	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
 	if (IsRtvDown(pRTV_DATA))
-		return DARK_GRAY;
+		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 
 	//if (pRTV_DATA->V_ERR_STA_FK2_RD != _T("0"))
 	//	return pConfig->m_clrUSER_COLOR_ERROR;
@@ -202,15 +202,15 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 	if (!bVehJob &&
 		(pRTV_DATA->V_AUTO_MODE_RD != _T("1") ||
 		 pRTV_DATA->V_ACTIVE_MODE_RD != _T("1")))
-		return LIGHT_GRAY;	// [LGLS] 평상시 RTV도 SC 처럼 밝은 회색
+		return LEGEND_IDLE_GRAY;	// [LGLS] 평상시 RTV도 SC 처럼 밝은 회색
 
 	// [LGLS 2026-09-11] ★차상 비트로 한 번 더 거른다★ (구 ECS 와 같은 판정)
 	//   RTV_DATA_LGLS.SENSOR_RTV_RD 를 Rtv.cpp 가 SENSOR_FK_RD 로 별칭해 온다.
 	//   구 ECS RGVWidget 도 IsPalletExist 하나로 적재 표시를 켜고 껐다.
 	if (!CLib::IsVehicleLoaded(pRTV_DATA->V_SENSOR_FK_RD))
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 	if (IsVehicleDisplayOff(pRTV_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pRTV_DATA->V_JOB_TYP_RD);
 
@@ -250,7 +250,7 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 
 
 
-	return LIGHT_GRAY;
+	return LEGEND_IDLE_GRAY;
 }
 
 COLORREF CRtvInfo::GetForkColor2()
@@ -293,7 +293,7 @@ COLORREF CRtvInfo::GetForkColor2()
 // 	if (m_RtvInfo[0].m_nInternalJobType != 0)
 // 		return LIGHT_GRAY;
 // 	
-	return LIGHT_GRAY;
+	return LEGEND_IDLE_GRAY;
 	//return BLACK;
 }
 
@@ -307,10 +307,10 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 
 	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
 	if (IsRtvDown(pRTV_DATA))
-		return DARK_GRAY;
+		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 	// [LGLS 2026-09-14] 화면에 보이는 칸. 내려놓았으면 설비 잔류값으로 칠하지 않는다
 	if (IsVehicleDisplayOff(pRTV_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 
 	//if (pRTV_DATA->V_ERR_STA_FK2_RD != _T("0"))
 	//	return pConfig->m_clrUSER_COLOR_ERROR;
@@ -331,7 +331,7 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 		(pRTV_DATA->V_AUTO_MODE_RD != _T("1") ||
 		 pRTV_DATA->V_ACTIVE_MODE_RD != _T("1")))
 
-		return LIGHT_GRAY;	// [LGLS] 평상시 RTV 밝은 회색(보이는 포크=GetForkColor2)
+		return LEGEND_IDLE_GRAY;	// [LGLS] 평상시 RTV 밝은 회색(보이는 포크=GetForkColor2)
 
 	int nJobTypTmp = CConvert::ToInt(pRTV_DATA->V_JOB_TYP_RD);
 	if (nJobTypTmp == 0 && bVehJob2)
@@ -355,7 +355,7 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 
 
 
-	return LIGHT_GRAY;
+	return LEGEND_IDLE_GRAY;
 }
 
 

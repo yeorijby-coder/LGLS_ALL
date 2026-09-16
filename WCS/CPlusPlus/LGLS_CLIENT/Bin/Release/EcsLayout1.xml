@@ -60,12 +60,12 @@
 			<Control id="" l="27" b="4" r="41" t="5" text="" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" fontsize="14" start="0" type="0" len="1"/>
 		</CDciRackCtrl>
 	</Group>
-	<Group gname="SC" gid="2" show="1">
+	<Group gname="RTV" gid="2" show="1">
 		<CDciRvCtrl>
 			<Control id="17130801" l="23" b="1" r="24" t="20" text="1" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" forktype="0" type="2" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000" Increase="1"/>
 		</CDciRvCtrl>
 	</Group>
-	<Group gname="RTV" gid="2" show="1">
+	<Group gname="SC" gid="2" show="1">
 		<CDciRvCtrl>
 			<Control id="17120901" l="26" b="17" r="42" t="18" text="1" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" forktype="0" type="0" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000" Increase="1"/>
 			<Control id="17120902" l="26" b="14" r="42" t="15" text="2" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="000000" enable="1" visible="1" fontsize="14" prod="0" forktype="0" type="0" forkpos="1" forkcolor="f0f0f0" wingcolor="f0f0f0" railcolor="000000" Increase="1"/>

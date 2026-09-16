@@ -28,6 +28,8 @@
 #define LIGHT_CYAN		RGB(  0,192,192)
 #define LIGHT_MAGENTA	RGB(192,  0,192)
 #define LIGHT_GRAY		RGB(192,192,192)
+// [LGLS 2026-09-17] 범례 "작업없음(정상)" 칸 색 - 크레인·RGV 포크도 이 색으로 칠한다(범례 기준, 사용자 지시)
+#define LEGEND_IDLE_GRAY	RGB(224,224,224)
 #define LIGHT_ORANGE	RGB(255,192,  0)
 #define LIGHT_OLIVE		RGB(160,160, 80)
 #define PALE_GRAY		RGB(220,220,220)

@@ -223,7 +223,7 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 		{ 1, 0, pCfg->m_clrUSER_COLOR_DISCONNECT, _T("통신두절") },
 		{ 1, 0, pCfg->m_clrUSER_COLOR_CV_SEARCH,  _T("검색") },
 		{ 1, 0, pCfg->m_clrUSER_COLOR_TRACKING,   _T("작업번호 있음") },
-		{ 2, 0, RGB(224, 224, 224),               _T("작업없음(정상)") },
+		{ 2, 0, LEGEND_IDLE_GRAY,                 _T("작업없음(정상)") },
 		{ 2, 0, pCfg->m_clrUSER_COLOR_MANUAL,     _T("미가동(수동)") },
 		{ 2, 0, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") },
 		{ 3, 1, pCfg->m_clrUSER_COLOR_STO_SUSPEND,  _T("입고 금지") },

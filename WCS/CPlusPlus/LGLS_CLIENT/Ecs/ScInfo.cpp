@@ -53,7 +53,7 @@ COLORREF CScInfo::GetForkColor1()
  		return pConfig->m_clrUSER_COLOR_ERROR;
  
  	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
- 		return DARK_GRAY;
+ 		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
  
  	// [LGLS 2026-08-23] 크레인이 작업을 받아 화물을 뜨러 가는 동안에는 설비에 작업번호가
 	//   아직 실리지 않아(ITN_LUGG_FK1=0) 여기서 회색으로 빠졌다 - "색 없이 움직인다" 던 증상.
@@ -79,7 +79,7 @@ COLORREF CScInfo::GetForkColor1()
 		strHeld.Trim();
 	}
 	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000"))
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 
 	// [LGLS 2026-09-11] ★차상 비트로 한 번 더 거른다★ (구 ECS 와 같은 판정)
 	//   구 ECS 는 IsPalletExist 비트만으로 적재 표시를 켜고 껐다. 비트는 설비가
@@ -87,7 +87,7 @@ COLORREF CScInfo::GetForkColor1()
 	//   작업이 다음 상태로 넘어가야 꺼졌다(2026-09-11 09:41~09:50 : 절전으로 작업이
 	//   25/35 에 10분 머물자 색도 10분 남았다).
 	if (!CLib::IsVehicleLoaded(m_pSC_DATA->V_SENSOR_FK_RD))
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 
 	// [LGLS 2026-08-31] ★작업정보를 설비값보다 우선한다★ (사용자 지적 : 색 0.5초 튐)
 	//   설비 지시(JOB_TYP_OD)는 규약상 기본형(1/2)만 쓴다 - DriveSC 가 11/12 를 1/2 로
@@ -178,7 +178,7 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("0") || 
 		pSC_DATA->V_AUTO_MODE_RD   == _T("0") || 
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("0"))
-		return DARK_GRAY;
+		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 
 	// [LGLS 2026-09-08] ★차상 관측값(PALLET_ON_VEHICLE_RD)으로 색을 칠하지 않는다★ (사용자 지적)
 	//   V_LUGG_NO_FK1_RD 는 SC_DATA_LGLS.PALLET_ON_VEHICLE_RD 별칭이다(Sc.cpp:82).
@@ -191,13 +191,13 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	strHeldP.Trim();
 	BOOL bHeldP = (!strHeldP.IsEmpty() && strHeldP != _T("0") && strHeldP != _T("0000"));
 	if (!bHeldP)
-		return LIGHT_GRAY;		// 이 호기가 문 작업이 없다 - 설비 잔류값은 보지 않는다
+		return LEGEND_IDLE_GRAY;		// 이 호기가 문 작업이 없다 - 설비 잔류값은 보지 않는다
 
 	// [LGLS 2026-09-11] 차상 비트로 한 번 더 거른다(구 ECS IsPalletExist 와 같은 판정).
 	if (!CLib::IsVehicleLoaded(pSC_DATA->V_SENSOR_FK_RD))
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 	if (IsVehicleDisplayOff(pSC_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
 	// [LGLS 2026-08-31] 작업정보 우선 (설비 지시값은 기본형 1/2 라 반자동색이 늦게 든다 - 색 0.5초 튐)
@@ -248,9 +248,9 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("1") && 
 		pSC_DATA->V_AUTO_MODE_RD   == _T("1") && 
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("1"))
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 	else
-		return DARK_GRAY;
+		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 
 	return BLACK;
 }
@@ -267,10 +267,10 @@ COLORREF CScInfo::GetForkColor2()
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
 	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
-		return DARK_GRAY;
+		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 
 	if (m_pSC_DATA->V_ITN_LUGG_FK2 == _T("0") || m_pSC_DATA->V_ITN_LUGG_FK2 == _T("0000"))
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(m_pSC_DATA->V_JOB_TYP_RD);
 	switch (nJobTypTmp)
@@ -306,11 +306,11 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("0") || 
 		pSC_DATA->V_AUTO_MODE_RD   == _T("0") || 
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("0"))
-		return DARK_GRAY;
+		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 
 	// [LGLS 2026-09-14] 화면에 보이는 칸. 내려놓았으면 설비 잔류값(작업구분·차상번호)으로 칠하지 않는다
 	if (IsVehicleDisplayOff(pSC_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(pSC_DATA->V_JOB_TYP_RD);
 	// [LGLS 2026-09-02] 「번호와 색은 함께」 - 작업번호가 그려지는 칸(rcForkL1)의 배경이 이 함수(m_clrFork)다.
@@ -348,9 +348,9 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("1") && 
 		pSC_DATA->V_AUTO_MODE_RD   == _T("1") && 
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("1"))
-		return LIGHT_GRAY;
+		return LEGEND_IDLE_GRAY;
 	else
-		return DARK_GRAY;
+		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 
 	return BLACK;
 }
