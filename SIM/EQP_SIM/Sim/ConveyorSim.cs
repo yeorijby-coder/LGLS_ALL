@@ -908,6 +908,11 @@ namespace EQP_SIM.Sim
                 if (!bDualCv && p.Dir != dir) continue;             // 전용 컨베이어는 종전대로 적재 주체로 판정
                 if (bDualCv) p.Dir = dir;                           // 겸용대는 현재 벨트 방향으로 정렬
                 if (Pallets.ContainsKey(nextIdx)) continue;
+                // [LGLS 2026-09-17 06:21] ★H/S 워드 기록이 끝나기 전에는 벨트가 옮기지 않는다★ (현장 관찰, 사용자 보고)
+                //   현장 : 크레인 하차 → 크레인 데이터 소멸 → ~1초 뒤 출고 H/S(짝수 칸)에 데이터 기록 → 그 뒤 벨트 이동.
+                //   종전 시뮬은 반송 완료 직후 짝수→홀수로 옮겨 짝수 칸 기록이 한 번도 보이지 않았다(RTV 출발지에서만 보임).
+                //   지연(HS_RECORD_LAG_MS)이 0 이면 RecordDone 은 항상 true 라 종전과 같다.
+                if (!p.RecordDone) continue;
                 if (now < p.MoveReadyAt) continue;
                 if (string.IsNullOrEmpty(p.Id)) continue;                    // JOB 지정 전 이동 금지 (슬라이드8)
                 // 차량 하역/Wait-Out 포트 체류: ECS 판독·배차 주기(수 초)가 현재 위치의
