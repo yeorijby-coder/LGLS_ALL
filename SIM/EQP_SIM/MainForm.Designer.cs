@@ -23,6 +23,8 @@
             this.chkFaultB = new System.Windows.Forms.CheckBox();
             this.btnFaultClear = new System.Windows.Forms.Button();
             this.btnClearErr = new System.Windows.Forms.Button();
+            this.btnOpenIni = new System.Windows.Forms.Button();
+            this.btnReloadIni = new System.Windows.Forms.Button();
             this.btnFeed11 = new System.Windows.Forms.Button();
             this.btnFeed12 = new System.Windows.Forms.Button();
             this.btnFeed15 = new System.Windows.Forms.Button();
@@ -59,6 +61,8 @@
             this.pnlTop.Controls.Add(this.chkFaultB);
             this.pnlTop.Controls.Add(this.btnFaultClear);
             this.pnlTop.Controls.Add(this.btnClearErr);
+            this.pnlTop.Controls.Add(this.btnOpenIni);
+            this.pnlTop.Controls.Add(this.btnReloadIni);
             this.pnlTop.Controls.Add(this.btnFeed11);
             this.pnlTop.Controls.Add(this.btnFeed12);
             this.pnlTop.Controls.Add(this.btnFeed15);
@@ -142,6 +146,23 @@
             this.btnClearErr.BackColor = System.Drawing.Color.LightYellow;
             this.btnClearErr.UseVisualStyleBackColor = false;
             this.btnClearErr.Click += new System.EventHandler(this.btnClearErr_Click);
+            // [LGLS 2026-09-17] [INI 열기] / [INI 다시 읽기] - EQP_SIM.ini [TIMING](HS_RECORD_LAG_MS 등)을 운전 중 조절(사용자 지시)
+            this.btnOpenIni.Location = new System.Drawing.Point(556, 52);
+            this.btnOpenIni.Name = "btnOpenIni";
+            this.btnOpenIni.Size = new System.Drawing.Size(92, 23);
+            this.btnOpenIni.Text = "INI 열기";
+            this.btnOpenIni.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnOpenIni.BackColor = System.Drawing.Color.Honeydew;
+            this.btnOpenIni.UseVisualStyleBackColor = false;
+            this.btnOpenIni.Click += new System.EventHandler(this.btnOpenIni_Click);
+            this.btnReloadIni.Location = new System.Drawing.Point(652, 52);
+            this.btnReloadIni.Name = "btnReloadIni";
+            this.btnReloadIni.Size = new System.Drawing.Size(92, 23);
+            this.btnReloadIni.Text = "INI 다시 읽기";
+            this.btnReloadIni.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnReloadIni.BackColor = System.Drawing.Color.Honeydew;
+            this.btnReloadIni.UseVisualStyleBackColor = false;
+            this.btnReloadIni.Click += new System.EventHandler(this.btnReloadIni_Click);
             //
             // btnFeed11 / 12 / 15
             //
@@ -288,6 +309,8 @@
         private System.Windows.Forms.CheckBox chkFaultB;
         private System.Windows.Forms.Button btnFaultClear;
         private System.Windows.Forms.Button btnClearErr;
+        private System.Windows.Forms.Button btnOpenIni;
+        private System.Windows.Forms.Button btnReloadIni;
         private System.Windows.Forms.Button btnFeed11;
         private System.Windows.Forms.Button btnFeed12;
         private System.Windows.Forms.Button btnFeed15;

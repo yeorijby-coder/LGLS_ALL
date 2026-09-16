@@ -391,6 +391,34 @@ namespace EQP_SIM
             lblStatus.Text = (n > 0) ? ("설비 에러 해제 - " + n + "대") : "에러 상태인 설비가 없습니다";
         }
 
+        // [LGLS 2026-09-17] [INI 열기] - EQP_SIM.ini 를 메모장으로 연다. [TIMING] 값(HS_RECORD_LAG_MS 등)을 고친 뒤
+        //   [INI 다시 읽기]를 누르면 재기동 없이 반영된다(사용자 지시). 그 외 섹션(XGT 포트, 주입 프리셋 등)은 재기동이 필요하다.
+        private string IniPath { get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EQP_SIM.ini"); } }
+
+        private void btnOpenIni_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!File.Exists(IniPath)) { lblStatus.Text = "INI 없음: " + IniPath; return; }
+                System.Diagnostics.Process.Start("notepad.exe", "\"" + IniPath + "\"");
+                lblStatus.Text = "INI 열림 - [TIMING] 은 저장 후 [INI 다시 읽기], 나머지 섹션은 재기동 필요";
+            }
+            catch (Exception ex) { lblStatus.Text = "INI 열기 실패: " + ex.Message; }
+        }
+
+        private void btnReloadIni_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            try
+            {
+                config = new SimConfig(IniPath);
+                engine.ReloadTiming(config);
+                lblStatus.Text = "INI [TIMING] 다시 읽음 - H/S 기록 지연 " + engine.HsRecordLagMs + "ms, 이동 " + engine.MoveMs
+                               + "ms, 반출 " + engine.OutRemoveMs + "ms (다음 동작부터 적용)";
+            }
+            catch (Exception ex) { lblStatus.Text = "INI 다시 읽기 실패: " + ex.Message; }
+        }
+
         private void btnFeed11_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:11"); }
 
         // [LGLS 2026-08-24] 가운데 투입 버튼 = "24 입고대"(C/V#12).
