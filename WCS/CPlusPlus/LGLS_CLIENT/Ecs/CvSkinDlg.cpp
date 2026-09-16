@@ -1180,8 +1180,11 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 				if(nRowCnt > 0)
 				{
 					//// 작업정보도 CV 구동중으로 변경할것!
+					// [LGLS 2026-09-17] Aisle CV (S/C line 103~120): paste/write -> JOB_STATUS 16 (aisle CV running), else 15 (CV running). (user request)
+					int nTrkNo = _ttoi(strTrackNo);
+					CString strStNew = (nTrkNo >= 103 && nTrkNo <= 120) ? _T("16") : _T("15");
 					strSql.Format(_T(" UPDATE JOB_MST								\n")
-								  _T("    SET JOB_STATUS = '11'						\n")
+								  _T("    SET JOB_STATUS = '") + strStNew + _T("'						\n")
 								  _T("	    , UPD_USER_ID = '%s'	    			\n")
 								  _T("      , UPD_DT = ") + m_pDoc->SYSDATE + _T("  \n")
 								  _T("  WHERE WH_TYP = '%s'							\n")
@@ -1551,8 +1554,11 @@ void CCvSkinDlg::UpdateTrackData(int pBtnJob)
 				if(nRowCnt > 0)
 				{
 					//// 작업정보도 CV 구동중으로 변경할것!
+					// [LGLS 2026-09-17] Aisle CV (S/C line 103~120): paste/write -> JOB_STATUS 16 (aisle CV running), else 15 (CV running). (user request)
+					int nTrkNo = _ttoi(strTrackNo);
+					CString strStNew = (nTrkNo >= 103 && nTrkNo <= 120) ? _T("16") : _T("15");
 					strSql.Format(_T(" UPDATE JOB_MST								\n")
-								  _T("    SET JOB_STATUS = '11'						\n")
+								  _T("    SET JOB_STATUS = '") + strStNew + _T("'						\n")
 								  _T("	    , UPD_USER_ID = '%s'	    			\n")
 								  _T("      , UPD_DT = ") + m_pDoc->SYSDATE + _T("  \n")
 								  _T("  WHERE WH_TYP = '%s'							\n")

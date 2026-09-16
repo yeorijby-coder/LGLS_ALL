@@ -630,7 +630,9 @@ namespace TSK_COMM_IOSCH
                     //   104 에 갇히고, RGV 는 라인 점유로 입고 드롭을 보류하는 상호 대기가 됐다.
                     //   통로에 실물이 있는 쪽이 이긴다 - 15 는 (HS 트랙에 그 화물 실재)일 때만 진행.
                     //   (SQL Server 는 집계 안에 하위쿼리를 못 넣는다 - 실물 여부는 LEFT JOIN 으로)
+                    // [LGLS 2026-09-17 01:00] 입고 16(통로CV 구동중) = 통로 위 실물이 이미 확인된 상태 → 실물 조건 없이 진행 중으로 센다.
                     qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND (JM.JOB_STATUS IN ('25','35','39') ";
+                    qs += CRLF + "                 OR (JM.JOB_STATUS = '16' AND JM.HS_TRACK_NO IN ('103','104')) ";
                     qs += CRLF + "                 OR (JM.JOB_STATUS = '15' AND JM.HS_TRACK_NO IN ('103','104') AND C1.MC_NO IS NOT NULL) ";
                     qs += CRLF + "                ) THEN 1 ELSE 0 END) AS IN_RUN  ";
                     // [LGLS 2026-09-16] ★출고 29(크레인 완료)·16(통로CV 구동중)도 통로 진행 중이다★ (사용자 확정, 실측 15초 체류)
@@ -961,7 +963,9 @@ namespace TSK_COMM_IOSCH
                 //   출고는 첫 진입이므로 SC 구동대기(20) 그대로.
                 //     입고 : 99 → 10 → 15 → 35 → 39 → 15 → 25 → 29 → 09
                 //     출고 : 99 → 20 → 25 → 29 → 15 → 35 → 39 → 15 → 19 → 09
-                strSql += CRLF + "    AND ( (JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = '15')       ";
+                // [LGLS 2026-09-17 01:00] 입고도 통로 위 실물 확인 후 16(통로CV 구동중)이 될 수 있다([CNF] IN_HS_STATUS, Client 통로 붙여넣기/쓰기).
+                //   읽는 쪽은 옵션과 무관하게 15/16 을 모두 받는다 - 옵션을 바꾸는 순간 남아 있던 작업이 서지 않도록.
+                strSql += CRLF + "    AND ( (JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS IN ('15','16'))   ";
                 strSql += CRLF + "       OR (JM.JOB_TYP NOT IN ('1','11') AND JM.JOB_STATUS = :ST_WAIT) ) ";
                 strSql += CRLF + "    AND SD.ONLINE_MODE_RD  = '1'                                 ";
                 strSql += CRLF + "    AND SD.AUTO_MODE_RD    = '1'                                 ";
@@ -2033,7 +2037,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + " SELECT COUNT(*) AS CNT FROM JOB_MST J                        ";
                 q += CRLF + "  WHERE J.WH_TYP = :WH_TYP AND J.JOB_TYP IN ('1','11')         ";
                 q += CRLF + "    AND J.HS_TRACK_NO = :TRK                                    ";
-                q += CRLF + "    AND J.JOB_STATUS IN ('" + ST_CV_RUN + "','" + ST_RGV_DONE + "') ";
+                q += CRLF + "    AND J.JOB_STATUS IN ('" + ST_CV_RUN + "','" + ST_CV_RUN2 + "','" + ST_RGV_DONE + "') ";   // [LGLS 2026-09-17] 입고 16 도 드롭칸 점유
                 q += CRLF + "    AND J.LUGG_NO <> :LUGG                                      ";
                 q += CRLF + "    AND (J.DEL_YN IS NULL OR J.DEL_YN <> 'Y')                   ";
                 q += CRLF + "    AND NOT EXISTS (SELECT 1 FROM CV_DATA C                     ";   // 이미 다음 칸(짝수)에 올라간 화물은 드롭칸을 비운 것
@@ -2470,7 +2474,9 @@ namespace TSK_COMM_IOSCH
                 // [LGLS 2026-09-15] ★규칙 3★ RTV 출발지/RTV/통로(103·104)에 입고 실물이 있으면 SC1 출고 보류 (30/35/39 + 15통로실물).
                 //   방향전환형 통로는 벨트가 한 방향이라 입고·출고 실물이 동시 존재 불가 - 물리 상태 기반이라 교착 없음.
                 //   진행 중(21+) 출고 하역은 막지 않고 20→25 새 지시만 막는다. 실측 6147/6156 교착 예방.
+                // [LGLS 2026-09-17 01:00] 입고 16(통로 실물 확인됨)도 통로 점유다.
                 q += CRLF + "    AND ( JOB_STATUS IN ('" + ST_RGV_WAIT + "','" + ST_RGV_RUN + "','" + ST_RGV_DONE + "') ";
+                q += CRLF + "       OR (JOB_STATUS = '" + ST_CV_RUN2 + "' AND HS_TRACK_NO IN ('103','104'))           ";
                 q += CRLF + "       OR (JOB_STATUS = '" + ST_CV_RUN + "' AND HS_TRACK_NO IN ('103','104')            ";
                 q += CRLF + "           AND EXISTS (SELECT 1 FROM CV_DATA C WHERE C.WH_TYP = JOB_MST.WH_TYP                ";
                 q += CRLF + "                         AND C.MC_NO IN ('103','104') AND C.LUGG_NO_RD = JOB_MST.LUGG_NO)) ) ";
@@ -3780,9 +3786,13 @@ namespace TSK_COMM_IOSCH
                     //   하역 화물에 번호를 함께 얹고, ConveyorSim 이 이동 때마다 따라 옮긴다.
                     //   우리가 도착지에 덧쓰던 값만 그 자리에 눌러앉아 잔재가 됐다.
                     //   (우리 쪽 SetPallet 대응물은 UpdateCvData - CV 반송지시 시 출발 트랙에 쓴다)
-                    if (UpdateJobStatus(ST_CV_RUN, luggNo, ref rtn))
+                    // [LGLS 2026-09-17 01:00] ENV_IOSCH.INI [CNF] IN_HS_STATUS : 입고가 통로(H/S)에 내려진 뒤의 상태값.
+                    //   15(기본, 종전) 또는 16(통로CV 구동중 - 출고와 같은 표시). 호출마다 읽어 재기동 불필요(사용자 지시).
+                    //   읽는 쪽(DriveSC/IN_RUN/규칙3/드롭칸/DriveRGV)은 15·16 을 모두 받으므로 값을 바꿔도 진행 중 작업이 서지 않는다.
+                    string stInHs = (cDefApi.GsReadInitProfileCnf("IN_HS_STATUS", 15) == 16) ? ST_CV_RUN2 : ST_CV_RUN;
+                    if (UpdateJobStatus(stInHs, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RGV 도착지 {1} 기록 완료 → 상태 '{2}'",
-                                    luggNo, landTrk, ST_CV_RUN));
+                                    luggNo, landTrk, stInHs));
                     else
                         MakeMsg_Error(string.Format("[SCH][RGV] 착지 전이 실패({0}): {1}", luggNo, rtn));
                 }
