@@ -422,7 +422,14 @@ namespace EQP_SIM.Sim
                 SetExist(kv.Key, true);
                 SetTracking(kv.Key, p.Id);
                 p.RecordDone = true;
-                engine.Log(Def.Id + " slot" + kv.Key + " H/S 기록 반영 (JOB " + p.Id + ", 지연 후)");
+                // [LGLS 2026-09-17 06:42] 기록이 드러난 뒤 [TIMING] HS_AFTER_RECORD_HOLD_MS 동안은 그 칸에 머문다(사용자 보고).
+                //   종전엔 기록 반영과 같은 틱에 다음 칸으로 옮겨 Client(미러 주기)가 짝수 H/S 기록을 한 번도 보지 못했다.
+                if (engine.HsAfterRecordHoldMs > 0)
+                {
+                    DateTime hold = now.AddMilliseconds(engine.HsAfterRecordHoldMs);
+                    if (hold > p.MoveReadyAt) p.MoveReadyAt = hold;
+                }
+                engine.Log(Def.Id + " slot" + kv.Key + " H/S 기록 반영 (JOB " + p.Id + ", 지연 후" + (engine.HsAfterRecordHoldMs > 0 ? ", " + engine.HsAfterRecordHoldMs + "ms 체류" : "") + ")");
             }
         }
 

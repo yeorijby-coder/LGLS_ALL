@@ -65,6 +65,8 @@ namespace EQP_SIM.Sim
         public int WaitOutHoldMs = 9000;
         /// <summary>[LGLS 2026-09-16] 크레인 하차 후 H/S 워드(재석/트래킹) 기록 지연(ms). 0=즉시(종전). 현장 재현 시 ~1200.</summary>
         public int HsRecordLagMs = 0;
+        /// <summary>[LGLS 2026-09-17] H/S 워드 기록이 드러난 뒤 벨트가 다음 칸으로 옮기기까지 최소 체류(ms). Client 가 짝수 칸 기록을 볼 수 있게. 0=즉시.</summary>
+        public int HsAfterRecordHoldMs = 3000;
 
         /// <summary>
         /// [LGLS 2026-09-17] EQP_SIM.ini [TIMING] 을 (다시) 읽어 타이밍 값을 적용한다 - 기동 시와 화면 [INI 다시 읽기] 버튼(사용자 지시).
@@ -77,12 +79,13 @@ namespace EQP_SIM.Sim
             ForkStepMs = config.GetInt("TIMING", "FORK_STEP_MS", ForkStepMs);
             WaitOutHoldMs = config.GetInt("TIMING", "WAITOUT_HOLD_MS", WaitOutHoldMs);
             HsRecordLagMs = config.GetInt("TIMING", "HS_RECORD_LAG_MS", HsRecordLagMs);   // [LGLS 2026-09-16]
+            HsAfterRecordHoldMs = config.GetInt("TIMING", "HS_AFTER_RECORD_HOLD_MS", HsAfterRecordHoldMs);   // [LGLS 2026-09-17]
             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
             SrcCargoTimeoutMs = config.GetInt("TIMING", "SRC_CARGO_TIMEOUT_MS", SrcCargoTimeoutMs);
             OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);
             InSensorDelayMs = config.GetInt("TIMING", "IN_SENSOR_DELAY_MS", InSensorDelayMs);
             Log("[TIMING] MOVE=" + MoveMs + " TRAVEL=" + TravelMs + " FORK_STEP=" + ForkStepMs + " WAITOUT_HOLD=" + WaitOutHoldMs
-                + " HS_RECORD_LAG=" + HsRecordLagMs + " OUT_REMOVE=" + OutRemoveMs + " OUT_TRACK_CLEAR=" + OutTrackClearMs
+                + " HS_RECORD_LAG=" + HsRecordLagMs + " HS_AFTER_RECORD_HOLD=" + HsAfterRecordHoldMs + " OUT_REMOVE=" + OutRemoveMs + " OUT_TRACK_CLEAR=" + OutTrackClearMs
                 + " SRC_CARGO_TIMEOUT=" + SrcCargoTimeoutMs + " IN_SENSOR_DELAY=" + InSensorDelayMs + " (ms)");
         }
         public int SrcCargoTimeoutMs = 60000;   // [LGLS 2026-09-04] 차량이 출발지에서 화물을 기다리는 최대 시간(넘으면 지시 포기)
