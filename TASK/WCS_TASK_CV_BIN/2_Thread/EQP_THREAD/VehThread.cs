@@ -694,7 +694,8 @@ namespace WCS_TASK_CV
                     // [LGLS 2026-09-01] RTV 는 SC 와 달리 별도 ERR_CODE_RD 워드가 없다(원문서 미정의).
                     //   알람 발생 보고의 코드(D0211)를 설비 에러코드로 삼아 아래 DB 반영부에서
                     //   ERR_CODE_RD + HOST_ERR_SEND_YN='N' 으로 기록 → HOST_TASK 가 E 전문으로 올린다.
-                    if (m_strKind != "SC" && code != 0) v.Cache["__almErrCode"] = code.ToString("0000");
+                    // [LGLS 2026-09-16] SC 도 [CNF] SC_ERR_CODE_BLOCK=2(알람 보고 비트 래치) 이면 여기서 읽은 코드를 래치한다(사용자 지시).
+                    if ((m_strKind != "SC" || cDefApi.GsReadInitProfileScErrCodeBlock() == 2) && code != 0) v.Cache["__almErrCode"] = code.ToString("0000");
                     System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 발생 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
                 }
                 else if (!almSet && prevSet)
@@ -716,7 +717,7 @@ namespace WCS_TASK_CV
                     WriteBit(oResetAck, true);
                     v.Cache["ALM_RESET_ACKED"] = "1";
                     // [LGLS 2026-09-01] 알람 해제 → RTV 에러코드 정상(0000) 복귀 (E 재보고는 하지 않는다)
-                    if (m_strKind != "SC") v.Cache["__almErrClr"] = "1";
+                    if (m_strKind != "SC" || cDefApi.GsReadInitProfileScErrCodeBlock() == 2) v.Cache["__almErrClr"] = "1";   // [LGLS 2026-09-16] 모드 2: 해제 보고로 래치 클리어
                     System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 해제 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
                 }
                 else if (!almReset && prevReset)
@@ -801,22 +802,44 @@ namespace WCS_TASK_CV
                 //   문서 D0161+10k)를 상태로 본다 - 구 ECS Vehicle.OnAlarmSetCode / RTV 쪽(09-11)과 같은 규약.
                 //   WCS_DB.INI [CNF] SC_ERR_CODE_BLOCK=1 이면 종전대로 블록을 읽는다(EQP_SIM 이중입고/공출고 시험).
                 bool bErrFromBlock = false;
-                ObsDef eco = (cDefApi.GsReadInitProfileScErrCodeBlock() != 0) ? O(v, "ERR_CODE_RD") : null;
-                if (eco != null) { int ec = 0; if (ReadShort(eco, ref ec)) { bErrFromBlock = true; if (ec != 0) errCode = ec.ToString("0000"); } }
-                if (!bErrFromBlock)
+                // [LGLS 2026-09-16] [CNF] SC_ERR_CODE_BLOCK : 0=알람코드 워드 상시(현장 기본) / 1=ErrCode 블록(시뮬) / 2=알람 보고 비트 래치(신설, 사용자 지시)
+                int  nErrMode   = cDefApi.GsReadInitProfileScErrCodeBlock();
+                bool bLatchMode = (nErrMode == 2);
+                if (bLatchMode)
                 {
-                    int nScAlm = 0;
-                    ObsDef oScAlm = O(v, "ALARM_SET_CODE");
-                    if (oScAlm != null && ReadShort(oScAlm, ref nScAlm) && nScAlm != 0) errCode = nScAlm.ToString("0000");
+                    // 모드 2 : 워드를 상시 읽지 않는다. ALARM_SET_REPORT 가 설 때 읽어 둔 코드(__almErrCode)로 에러를 세우고,
+                    //   ALARM_RESET_REPORT 에서 내린다(__almErrClr). 그 사이에는 종전 ERR_CODE_RD 를 그대로 유지(래치).
+                    //   현장 3·5호기처럼 PLC 가 그 워드에 다른 값을 쓰거나 잔존시켜도 보고 비트 없이는 에러가 되지 않는다.
+                    //   문서 핸드셰이크(AlarmSetReport→Ack) 및 구 ECS Vehicle.OnAlarmSetReport 규약과 같다.
+                    errCode = (Cached(v, "ERR_CODE_RD") ?? "0000"); if (errCode.Length == 0) errCode = "0000";
+                    string strLatched;
+                    if (v.Cache.TryGetValue("__almErrCode", out strLatched)) { v.Cache.Remove("__almErrCode"); errCode = strLatched; }
+                    if (v.Cache.ContainsKey("__almErrClr")) { v.Cache.Remove("__almErrClr"); errCode = "0000"; }
                 }
+                else
+                {
+                    ObsDef eco = (nErrMode != 0) ? O(v, "ERR_CODE_RD") : null;
+                    if (eco != null) { int ec = 0; if (ReadShort(eco, ref ec)) { bErrFromBlock = true; if (ec != 0) errCode = ec.ToString("0000"); } }
+                    if (!bErrFromBlock)
+                    {
+                        int nScAlm = 0;
+                        ObsDef oScAlm = O(v, "ALARM_SET_CODE");
+                        if (oScAlm != null && ReadShort(oScAlm, ref nScAlm) && nScAlm != 0) errCode = nScAlm.ToString("0000");
+                    }
+                }
+                string strErrSrc = bLatchMode ? "알람 보고 래치" : (bErrFromBlock ? "ErrCode 블록" : "ALARM_SET_CODE 워드");
                 {
                     string strScPrev = (Cached(v, "ERR_CODE_RD") ?? "");
                     if (strScPrev != errCode && errCode == "0000" && strScPrev.Length > 0 && strScPrev != "0000")
-                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 에러코드 0 → 에러 해제 반영 (종전 [" + strScPrev + "], "
-                              + (bErrFromBlock ? "ErrCode 블록" : "ALARM_SET_CODE 워드") + ")");
+                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 에러코드 0 → 에러 해제 반영 (종전 [" + strScPrev + "], " + strErrSrc + ")");
                     if (strScPrev != errCode && errCode != "0000")
-                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 에러코드 " + errCode + " 관측 ("
-                              + (bErrFromBlock ? "ErrCode 블록" : "ALARM_SET_CODE 워드") + ")");
+                    {
+                        // [LGLS 2026-09-16] 판별 로그 : 관측 순간의 알람 보고 비트 상태를 함께 남긴다.
+                        //   OFF 인데 코드가 섰다면 = 보고 없는 워드 값(다른 용도/잔존) → 유령. ON 이면 = 실제 알람 보고.
+                        bool bRepNow = false; ObsDef oRep = O(v, "ALARM_SET_REPORT"); if (oRep != null) ReadBit(oRep, ref bRepNow);
+                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 에러코드 " + errCode + " 관측 (" + strErrSrc
+                              + ", 알람보고비트=" + (bRepNow ? "ON" : "OFF") + ")");
+                    }
                 }
                 // [LGLS 2026-08-30] 에러가 '새로' 올라온 순간에만 에러보고(E) 플래그를 내린다.
                 //   HOST_TASK CCliWork.IsEquip_ERROR_Modified 는 HOST_ERR_SEND_YN='N' 인 건만 E 전문으로

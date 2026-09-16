@@ -63,6 +63,8 @@ namespace EQP_SIM.Sim
         // [LGLS 2026-08-23] 크레인 구분 동작(포크 출/호이스트/포크 센터) 1단계 시간
         public int ForkStepMs = 3000;
         public int WaitOutHoldMs = 9000;
+        /// <summary>[LGLS 2026-09-16] 크레인 하차 후 H/S 워드(재석/트래킹) 기록 지연(ms). 0=즉시(종전). 현장 재현 시 ~1200.</summary>
+        public int HsRecordLagMs = 0;
         public int SrcCargoTimeoutMs = 60000;   // [LGLS 2026-09-04] 차량이 출발지에서 화물을 기다리는 최대 시간(넘으면 지시 포기)
         public int OutRemoveMs = 3000;       // [LGLS 2026-08-22] 출고대 신호 ON 후 지게차가 화물을 가져가기까지
         public int OutTrackClearMs = 3000;   // [LGLS 2026-08-22] 화물 반출 후 남은 데이터(트래킹) 제거까지
@@ -146,6 +148,7 @@ namespace EQP_SIM.Sim
             TravelMs = config.GetInt("TIMING", "TRAVEL_MS", TravelMs);
             ForkStepMs = config.GetInt("TIMING", "FORK_STEP_MS", ForkStepMs);
             WaitOutHoldMs = config.GetInt("TIMING", "WAITOUT_HOLD_MS", WaitOutHoldMs);
+            HsRecordLagMs = config.GetInt("TIMING", "HS_RECORD_LAG_MS", HsRecordLagMs);   // [LGLS 2026-09-16]
             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
             SrcCargoTimeoutMs = config.GetInt("TIMING", "SRC_CARGO_TIMEOUT_MS", SrcCargoTimeoutMs);
             OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);

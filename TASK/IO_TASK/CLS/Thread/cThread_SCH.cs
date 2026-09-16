@@ -147,7 +147,11 @@ namespace TSK_COMM_IOSCH
         //   이 상태는 로그도 없이 영원히 continue 하던 자리라, 화물이 유실된 항목 하나가 m_dicOutStn 를 물고
         //   대기열 전체를 막았다(작업 1783 이 슬롯을 점유 → 1785 가 OUTPEND 에서 무한 대기).
         private class OutStnState { public DateTime Due; public int Stage = 0; public string Lugg = ""; public string Odd = ""; public string OutStn = "122"; public DateTime OddStallSince = DateTime.MinValue; public DateTime AckStallSince = DateTime.MinValue; }
-        private readonly Dictionary<string, OutStnState> m_dicOutStn = new Dictionary<string, OutStnState>();  // [LGLS] RTV 출고대 반출 시퀀스(113→RTV→121→22)  // [LGLS] 출고 라인CV 짝수→홀수 지연 이동
+        private readonly Dictionary<string, OutStnState> m_dicOutStn = new Dictionary<string, OutStnState>();
+        // [LGLS 2026-09-16] 출고 크레인 완료(29) 직후 C/V#2 통로를 잠시 "출고 유지" 하는 유예 타이머(사용자 확정, 방향 플립플롭 방어).
+        //   키=작업번호, 값=만료 시각. SyncDualCvDirection 이 만료 전이면 입고 전환을 보류한다.
+        private readonly Dictionary<string, DateTime> m_dicOutHold = new Dictionary<string, DateTime>();
+        private const int OUT_HOLD_SEC = 3;  // [LGLS] RTV 출고대 반출 시퀀스(113→RTV→121→22)  // [LGLS] 출고 라인CV 짝수→홀수 지연 이동
         // [LGLS] RTV 출고대 반출 대기열(FIFO): RTV 는 1대뿐이라 출고대 반출 경로는 동시에 1건만 돈다.
         //   홀수(RGV 픽업)트랙에 도착한 출고 화물을 여기 쌓아두고, 출고대 반출 경로가 비면 선입선출로 하나씩 태운다.
         //   (구코드는 SC 완료 시점에 `if (m_dicOutStn.Count == 0)` 로만 출고대 반출 경로를 만들어서, 선행 화물이
@@ -626,7 +630,13 @@ namespace TSK_COMM_IOSCH
                     qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND (JM.JOB_STATUS IN ('25','35','39') ";
                     qs += CRLF + "                 OR (JM.JOB_STATUS = '15' AND JM.HS_TRACK_NO IN ('103','104') AND C1.MC_NO IS NOT NULL) ";
                     qs += CRLF + "                ) THEN 1 ELSE 0 END) AS IN_RUN  ";
-                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS IN ('25','35','39','15') THEN 1 ELSE 0 END) AS OUT_RUN ";
+                    // [LGLS 2026-09-16] ★출고 29(크레인 완료)·16(통로CV 구동중)도 통로 진행 중이다★ (사용자 확정, 실측 15초 체류)
+                    //   출고는 크레인이 H/S(104)에 내린 순간 29 가 되는데, 실물은 통로에 있고 LandScDrop 이
+                    //   CV_DATA 미러(~1초 지연)로 실물을 확인한 뒤에야 16 이 된다. 종전엔 그 창에서 출고가
+                    //   29 라 조회에서 통째로 빠져 OUT_RUN=OUT_CNT=0 이 되고, 대기 입고가 있으면 입고 모드로
+                    //   전환됐다가 16 이 되면 다시 출고로 되돌아와 방향 전환 2회(≈15초)가 났다.
+                    //   → 출고 29/16 을 진행 중으로 본다. 입고 29 는 진짜 완료(통로 실물 없음)라 계속 제외.
+                    qs += CRLF + "      , SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS IN ('25','35','39','15','16','29') THEN 1 ELSE 0 END) AS OUT_RUN ";
                     qs += CRLF + "   FROM JOB_MST JM                                ";
                     qs += CRLF + "   LEFT JOIN CV_DATA C1 ON C1.WH_TYP = JM.WH_TYP  ";
                     qs += CRLF + "        AND C1.MC_NO = JM.HS_TRACK_NO             ";
@@ -634,7 +644,8 @@ namespace TSK_COMM_IOSCH
                     qs += CRLF + "  WHERE JM.WH_TYP      = :WH_TYP                  ";
                     qs += CRLF + "    AND ( (JM.JOB_TYP IN ('2','12') AND JM.START_POS = '901')  ";
                     qs += CRLF + "       OR (JM.JOB_TYP IN ('1','11') AND JM.DEST_POS  = '901') ) ";
-                    qs += CRLF + "    AND JM.JOB_STATUS NOT IN ('09','19','29') ";
+                    qs += CRLF + "    AND JM.JOB_STATUS NOT IN ('09','19') ";
+                    qs += CRLF + "    AND NOT (JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = '29') ";
                     qs += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')   ";
                     _pBdb.mComMain.CommandType = CommandType.Text;
                     _pBdb.mComMain.Parameters.Clear();
@@ -654,6 +665,22 @@ namespace TSK_COMM_IOSCH
                         string want = (nInRun  > 0) ? "0"
                                     : (nOutRun > 0) ? "1"
                                     : (nOut > 0) ? "1" : (nIn > 0) ? "0" : "";
+                        // [LGLS 2026-09-16] 출고 유지 유예(#5) : 출고 크레인 완료 직후 OUT_HOLD_SEC 동안은 입고로 넘기지 않는다.
+                        //   미러 지연 등 순간 공백에서 입고→출고 재전환(2회 전환)이 나는 것을 막는 방어막.
+                        {
+                            List<string> expired = new List<string>();
+                            bool bHold = false;
+                            foreach (KeyValuePair<string, DateTime> kv in m_dicOutHold)
+                            {
+                                if (kv.Value > DateTime.Now) bHold = true; else expired.Add(kv.Key);
+                            }
+                            foreach (string k in expired) m_dicOutHold.Remove(k);
+                            if (bHold && want == "0")
+                            {
+                                DbgLog("DUAL_103", "[통로] 출고 유지 유예 중 - 입고 전환 보류");
+                                want = "1";
+                            }
+                        }
                         if (want != "" && GetCvStockMode("103") != want)
                         {
                             if (RequestCvDirection("103", want))
@@ -1843,7 +1870,18 @@ namespace TSK_COMM_IOSCH
                         if (bSemiIn)
                             MakeMsg_Imp(string.Format("[SCH][SC] 반자동 입고 {0} S/C 완료 → 즉시 삭제(상위 보고 없음)", luggNo));
                         else if (jobTyp == "2")
-                            MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료 → CV 처리 인계 (상태 '{1}')", luggNo, stNext));
+                        {
+                            // [LGLS 2026-09-16] 출고 크레인 완료 → 통로 "출고 유지" 유예 등록(H/S 실물이 미러에 잡힐 때까지 입고 전환 보류)
+                            //   ★S/C#1(901) 출고만★ - 유예는 C/V#2(103) 방향 판정에만 쓰인다. 다른 호기 출고에 걸면
+                            //   103 에 입고 실물이 있어도 출고로 밀어 오판한다(실측 18:47:54, 안전가드가 막음).
+                            if (scNo == "901")
+                            {
+                                m_dicOutHold[luggNo] = DateTime.Now.AddSeconds(OUT_HOLD_SEC);
+                                MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료 → CV 처리 인계 (상태 '{1}', 통로 출고 유지 {2}s)", luggNo, stNext, OUT_HOLD_SEC));
+                            }
+                            else
+                                MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료 → CV 처리 인계 (상태 '{1}')", luggNo, stNext));
+                        }
                         else
                             MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료(입고 최종 09, 응답 시 삭제) → 상태 '{1}'", luggNo, stNext));
                     }
@@ -2764,7 +2802,35 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = stn;
                 if (DbQry(q) <= 0) return false;
                 int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
-                return n > 0;
+                if (n > 0) return true;
+                // [LGLS 2026-09-16] ★완료(09)/삭제된 작업의 실물 잔재 → JOB_MST_HIS 최신 행으로 방향 판정★ (3안, DB 기반 - 사용자 확정)
+                //   122 실측: 출고 6851 이 RTV 하차와 동시에 09 가 되어 위 조회에서 빠졌고 실물은 121 에 남았는데,
+                //   대기 입고 때문에 122 를 입고로 뒤집자 121→122 배출 경로가 죽어 상호 정체. 메모리 배열 대신
+                //   JOB_MST_HIS(재기동에도 유지, 번호 재사용은 UPD_DT 최신 행으로 구분)로 그 실물의 구분/목적지를 본다.
+                //     · 이 작업대의 반대 방향 작업이었으면 → 실물이 빠질 때까지 보류
+                //     · 원하는 방향 작업이었으면 → 우리 화물, 전환 OK
+                //     · 이 작업대와 무관하거나 이력이 없으면 → 정체 원인이 되므로 보류(안전망)
+                string q2 = "";
+                q2 += CRLF + " SELECT TOP 1 JOB_TYP, START_POS, DEST_POS FROM JOB_MST_HIS ";
+                q2 += CRLF + "  WHERE WH_TYP = :WH_TYP AND LUGG_NO = :LUGG ORDER BY UPD_DT DESC ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = lugg;
+                if (DbQry(q2) <= 0)
+                {
+                    DbgLog("DIRHOLD_" + mcNo, "[CV] 방향전환 보류 - 겸용대 " + mcNo + " 실물(" + lugg + ") 이력 없음");
+                    return true;
+                }
+                string hTyp = (GetVal(_pBdb.mDtMain.Rows[0], "JOB_TYP")   ?? "").Trim();
+                string hSt  = (GetVal(_pBdb.mDtMain.Rows[0], "START_POS") ?? "").Trim();
+                string hDe  = (GetVal(_pBdb.mDtMain.Rows[0], "DEST_POS")  ?? "").Trim();
+                bool hisOut = (hTyp == "2" || hTyp == "12"), hisIn = (hTyp == "1" || hTyp == "11");
+                bool relStn = (hSt == stn || hDe == stn);
+                bool opposite = (wantDir == "1") ? (hisIn && relStn) : (hisOut && relStn);
+                bool hold = opposite || !relStn;
+                if (hold) DbgLog("DIRHOLD_" + mcNo, "[CV] 방향전환 보류 - 겸용대 " + mcNo + " 에 완료된 " + (hisOut ? "출고" : hisIn ? "입고" : "?") + " 잔재(" + lugg + ", 이력 " + hSt + "->" + hDe + ")");
+                return hold;
             } catch { return false; }
         }
 
@@ -3600,16 +3666,31 @@ namespace TSK_COMM_IOSCH
                                 IsTrackEmpty("121") && IsTrackEmpty("122"))
                             {
                                 string rtnF = "";
-                                if (UpdateJobStatus(ST_CV_DONE, luggNo, ref rtnF))
+                                if ((jTyp2 == "12") ? DeleteJobNow(luggNo, ref rtnF) : UpdateJobStatus("09", luggNo, ref rtnF))   // [LGLS 2026-09-16 2안] 19→09/삭제
                                     MakeMsg_Imp(string.Format(
                                         "[SCH][RGV] 작업 {0} 겸용 출고대 배출 확인(라인 빔, {1}초 경과) → 상태 '{2}' (출고 최종)",
-                                        luggNo, elapsed, ST_CV_DONE));
+                                        luggNo, elapsed, (jTyp2 == "12") ? "삭제" : "09"));
                                 continue;
                             }
                         }
                         continue;
                     }
 
+                    // [LGLS 2026-09-16 2안, 사용자 확정] 출고: 도착 트랙에 실물(작업번호)이 기록된 것을 확인한 뒤에야 완료.
+                    //   자동(2)=09(HOST 재보고 대상) / 반자동(12)=즉시 삭제. 입고(1/11)는 종전대로 15(CV 인계).
+                    {
+                        string jTypL = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
+                        if (jTypL == "2" || jTypL == "12")
+                        {
+                            string rtnO = ""; bool bSemiO = (jTypL == "12");
+                            if (bSemiO ? DeleteJobNow(luggNo, ref rtnO) : UpdateJobStatus("09", luggNo, ref rtnO))
+                                MakeMsg_Imp(string.Format("[SCH][RGV] 출고 {0} RGV 도착지 {1} 실물 기록 확인 → {2}",
+                                            luggNo, landTrk, bSemiO ? "즉시 삭제(반자동)" : "완료(09)"));
+                            else
+                                MakeMsg_Error(string.Format("[SCH][RGV] 출고 완료 전이 실패({0}): {1}", luggNo, rtnO));
+                            continue;
+                        }
+                    }
                     string rtn = "";
                     // [LGLS 2026-08-31] ★착지 기록(트랙 R영역 쓰기)을 폐기했다★ - 구 ECS 기준 확인 결과.
                     //   구 ECS 는 ECSDispatcher.cs:592 에서 SetPallet(fromPort, palletId) 단 한 곳,
@@ -3908,17 +3989,18 @@ namespace TSK_COMM_IOSCH
                     //   · 반자동 출고(12) : RTV 완료 = 작업 완료 → 즉시 삭제(상위 보고 없음)
                     //   · 자동   출고(2)  : RTV 완료 = 작업 완료 → 09(HOST 응답 받을 때까지 60초 주기 재보고)
                     //   · 입고(1/11)      : RGV 는 중간 이송 → 39(도착지 기록 대기)
-                    bool bSemiOut = (rawTyp == "12");
-                    string stNextRgv = (jTyp == "2") ? "09" : ST_RGV_DONE;
-                    if ((bSemiOut ? DeleteJobNow(luggNo, ref rtn) : UpdateJobStatus(stNextRgv, luggNo, ref rtn)))
+                    // [LGLS 2026-09-16 2안, 사용자 확정] 출고도 RTV COMPLETE 만으로 완료하지 않는다.
+                    //   현장은 크레인/RTV 완료 후 ~1초 뒤에야 도착 트랙 데이터가 기록되므로, RTV 완료 즉시 09 로 하면
+                    //   "실물 기록도 전에 완료" 가 되어 겸용대(122) 방향 가드가 실물을 못 보고 뒤집힌다(6851·9405 실측).
+                    //   → 출고도 39(도착 기록 대기)로 두고, LandRgvDrop 이 도착 트랙에 작업번호가 실제 기록된 것을
+                    //     확인한 뒤 자동=09 / 반자동=삭제 로 완료한다. 39 는 활성 상태라 방향 가드가 출고를 계속 본다.
+                    string stNextRgv = ST_RGV_DONE;
+                    if (UpdateJobStatus(stNextRgv, luggNo, ref rtn))
                     {
                         RtvResetComplete();
                         m_dicPrevRGV.Remove("RGV_801");
-                        if (bSemiOut)
-                            MakeMsg_Imp(string.Format("[SCH][RGV] 반자동 출고 {0} RTV 완료 → 즉시 삭제(상위 보고 없음)", luggNo));
-                        else
-                            MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RTV 반송 완료 → 상태 '{1}' ({2})",
-                                        luggNo, stNextRgv, (jTyp == "2") ? "출고 작업완료(09)" : "도착지 기록 대기"));
+                        MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RTV 반송 완료 → 상태 '{1}' ({2})",
+                                    luggNo, stNextRgv, (jTyp == "2") ? "출고 - 도착 실물 기록 확인 후 완료" : "도착지 기록 대기"));
                     }
                     else
                         MakeMsg_Error(string.Format("[SCH][RGV] 완료 전이 실패({0}): {1}", luggNo, rtn));

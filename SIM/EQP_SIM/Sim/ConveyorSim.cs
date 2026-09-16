@@ -377,7 +377,11 @@ namespace EQP_SIM.Sim
         }
 
         /// <summary>차량(RGV/SC)이 포트에 파렛트를 내려놓음</summary>
-        public void PlacePallet(int port, string palletId, FlowDir dir)
+        public void PlacePallet(int port, string palletId, FlowDir dir) { PlacePallet(port, palletId, dir, false); }
+
+        /// <summary>[LGLS 2026-09-16] deferRecord=true 이면 실물은 놓되 PLC 워드(재석/트래킹) 기록은 RevealRecord 까지 보류
+        /// (현장의 "크레인 완료 후 ~1초 뒤 H/S 데이터 기록" 재현. [TIMING] HS_RECORD_LAG_MS)</summary>
+        public void PlacePallet(int port, string palletId, FlowDir dir, bool deferRecord)
         {
             int idx = Def.OrderOf(port);
             if (idx <= 0) return;
@@ -385,10 +389,41 @@ namespace EQP_SIM.Sim
                                     MoveReadyAt = DateTime.Now.AddMilliseconds(engine.MoveMs),
                                     HoldUntil = DateTime.Now.AddMilliseconds(engine.WaitOutHoldMs) };
             Pallets[idx] = p;
-            SetExist(idx, true);
-            SetTracking(idx, p.Id);
+            if (deferRecord)
+            {
+                p.RecordDone = false;
+                p.RecordVisibleAt = DateTime.MaxValue;        // RevealRecord 가 시각을 정해 줄 때까지 숨김
+                engine.Log(Def.Id + " P" + port + " 하차 - H/S 기록 보류(반송 완료 후 " + engine.HsRecordLagMs + "ms)");
+            }
+            else
+            {
+                SetExist(idx, true);
+                SetTracking(idx, p.Id);
+            }
             PulseEvent("LOAD_COMPLETE", idx);                 // 차량 하역 → Load Complete
             UpdateWaitOut();
+        }
+
+        /// <summary>[LGLS 2026-09-16] 보류된 H/S 기록을 lagMs 뒤에 드러내도록 예약 (차량 반송 완료 시점에 호출)</summary>
+        public void RevealRecord(int port, int lagMs)
+        {
+            int idx = Def.OrderOf(port);
+            SimPallet p;
+            if (idx <= 0 || !Pallets.TryGetValue(idx, out p) || p.RecordDone) return;
+            p.RecordVisibleAt = DateTime.Now.AddMilliseconds(lagMs);
+        }
+
+        private void RevealPendingRecords(DateTime now)
+        {
+            foreach (var kv in Pallets)
+            {
+                SimPallet p = kv.Value;
+                if (p.RecordDone || now < p.RecordVisibleAt) continue;
+                SetExist(kv.Key, true);
+                SetTracking(kv.Key, p.Id);
+                p.RecordDone = true;
+                engine.Log(Def.Id + " slot" + kv.Key + " H/S 기록 반영 (JOB " + p.Id + ", 지연 후)");
+            }
         }
 
         /// <summary>[LGLS 2026-09-12] 포트 위 파렛트의 벨트 인수 보류 설정/해제 (고장 주입 상황 A/B). 없으면 false.</summary>
@@ -541,6 +576,7 @@ namespace EQP_SIM.Sim
         // ------------------------------------------------------------------
         public void Tick(DateTime now)
         {
+            RevealPendingRecords(now);   // [LGLS 2026-09-16] 보류된 H/S 기록 드러내기
             // 0) [LGLS 2026-07-21] 입고대 재하감지 지연 ON: 적재(InjectPallet) 후 PLC 2초 규약이 지나면 신호를 올린다.
             foreach (var kv in Pallets)
             {
@@ -881,6 +917,7 @@ namespace EQP_SIM.Sim
                 // Shift: PLC가 Pallet ID/Exist 를 다음 영역으로 이동 (무결성 보장)
                 Pallets.Remove(curIdx);
                 Pallets[nextIdx] = p;
+                p.RecordDone = true; p.RecordVisibleAt = DateTime.MinValue;   // [LGLS 2026-09-16] 이동하면 아래에서 새 위치 워드를 바로 쓴다
                 SetExist(curIdx, false);
                 SetTracking(curIdx, "");
                 SetExist(nextIdx, true);

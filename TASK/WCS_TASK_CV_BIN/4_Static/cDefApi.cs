@@ -239,11 +239,14 @@ namespace WCS_TASK_CV
         }
         #endregion
 
-        #region [CNF]::크레인 에러코드를 ErrCode 블록으로 읽을지  [LGLS 2026-09-15]
-        //   0(기본) = 알람코드 워드(ALARM_SET_CODE, 문서 D0161+10k) 상태로 본다 - 구 ECS Vehicle.OnAlarmSetCode 와 같다.
-        //   1        = 주소맵 ErrCode 블록(D1160+10k, 문서에 없는 시뮬 예약영역)도 읽는다 - EQP_SIM 이중입고/공출고 시험용.
+        #region [CNF]::크레인 에러코드 판정 방식  [LGLS 2026-09-15, 2026-09-16 모드 2 추가]
+        //   0(기본) = 알람코드 워드(ALARM_SET_CODE, 문서 D0161+10k) 를 매 주기 읽어 0 이 아니면 에러 - 구 ECS Vehicle.OnAlarmSetCode 와 같다.
+        //   1        = 주소맵 ErrCode 블록(D1160+10k, 문서에 없는 시뮬 예약영역)을 읽는다 - EQP_SIM 이중입고/공출고 시험용.
+        //   2        = 알람 보고 비트 래치 : ALARM_SET_REPORT 가 설 때 읽은 코드로 에러를 세우고 ALARM_RESET_REPORT 에서 내린다.
+        //              워드를 상시 읽지 않으므로 PLC 가 그 워드에 다른 값을 쓰거나 잔존시켜도 유령 에러가 안 난다(사용자 지시).
         //   현장(2026-09-15) : 3·5호기가 지상반 에러 없이 코드 0001 로 떴다가 저절로 풀렸다 - D1180/D1200 은 PLC 가
-        //   다른 용도로 쓰는 워드라 그 값(1)이 에러코드로 읽힌 것. 호출마다 읽으므로 재기동 없이 바뀐다.
+        //   다른 용도로 쓰는 워드라 그 값(1)이 에러코드로 읽힌 것. 0 으로도 3·5호기 0001 이 재발(2026-09-16) → 2 를 옵션으로 둔다.
+        //   호출마다 읽으므로 재기동 없이 바뀐다. RTV 에는 적용되지 않는다(RTV 는 자체 규칙).
         public static int GsReadInitProfileScErrCodeBlock()
         {
             if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))

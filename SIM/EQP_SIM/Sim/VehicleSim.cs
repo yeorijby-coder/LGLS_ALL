@@ -33,6 +33,8 @@ namespace EQP_SIM.Sim
         private VState state = VState.Idle;
         private DateTime stateUntil = DateTime.MinValue;
         private string from01, from02, from03, to01, to02, to03, palletId;
+        private string m_lastDropCvId = null;   // [LGLS 2026-09-16] H/S 기록 지연용: 마지막 하차 컨베이어/포트
+        private int    m_lastDropPort = 0;
         private SimPallet carrying;
 
         // [LGLS] 이중입고/공출고 에러 주입: 이 작업에서 발생시킬 에러코드 (0=정상, 54=이중입고, 58=공출고)
@@ -477,6 +479,11 @@ namespace EQP_SIM.Sim
                         io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 1);        // IDLE=1
                         engine.RaiseEvent(Def.Id, "TRANSFER_ACK", null, 1500);  // Transfer Complete 보고 (Ack 관측값 없음)
                         engine.Log(Def.Id + " 반송 완료 (JOB " + palletId + ")");
+                        if (m_lastDropCvId != null)   // [LGLS 2026-09-16] H/S 기록 지연: 반송 완료 + lag 뒤 드러냄
+                        {
+                            engine.Conveyor(m_lastDropCvId).RevealRecord(m_lastDropPort, engine.HsRecordLagMs);
+                            m_lastDropCvId = null;
+                        }
                         io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");   // [LGLS 2026-08-22] 데이터는 여기서 내린다
                         carrying = null;
                         state = VState.Idle;
@@ -600,7 +607,9 @@ namespace EQP_SIM.Sim
                 FlowDir dir = cv.No >= 11 ? FlowDir.Outgo
                             : Def.IsRgv ? FlowDir.Ingo : FlowDir.Outgo;
                 carrying.Dir = dir;
-                engine.Conveyor(cv.Id).PlacePallet(port, carrying.Id, dir);
+                bool deferRec = (!Def.IsRgv && engine.HsRecordLagMs > 0);   // [LGLS 2026-09-16] 크레인 H/S 기록 지연 재현
+                engine.Conveyor(cv.Id).PlacePallet(port, carrying.Id, dir, deferRec);
+                if (deferRec) { m_lastDropCvId = cv.Id; m_lastDropPort = port; }
                 engine.Log(Def.Id + " P" + port + " 하차 (JOB " + carrying.Id + ")");
             }
             else
