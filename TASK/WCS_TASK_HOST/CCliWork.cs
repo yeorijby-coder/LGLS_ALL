@@ -39,7 +39,32 @@ namespace TSK_HostCom
         // [LGLS 2026-09-16 23:42] 09 작업별 마지막 F 보고 시각. 없으면 ★즉시★ 보고, 있으면 60초 뒤 재보고(응답 없을 때만 남는다).
         //   실측 : 입고는 25→09 로 바로 가서 GetJobCompleteReport(19/29)에 걸리지 않아 60초 주기에만 보고됐다(6972 = 58초 지연).
         private readonly System.Collections.Generic.Dictionary<string, DateTime> m_dic09ReportAt = new System.Collections.Generic.Dictionary<string, DateTime>();
-        private const int RE_REPORT_09_SEC = 60;
+        // [LGLS 2026-09-17] 재보고 간격을 EcsComA.ini [Host] RE_REPORT_09_SEC 로 뺐다(기본 60, 5~3600초).
+        //   폴링마다 읽되 파일은 5초에 한 번만 다시 읽는다 - 저장하면 재기동 없이 반영된다.
+        private int m_nReReport09Sec = 60;
+        private DateTime m_dtReReport09Read = DateTime.MinValue;
+        private int RE_REPORT_09_SEC
+        {
+            get
+            {
+                if ((DateTime.Now - m_dtReReport09Read).TotalSeconds >= 5)
+                {
+                    m_dtReReport09Read = DateTime.Now;
+                    try
+                    {
+                        string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+                        int v = modDefAPI.GetPrivateProfileInt("Host", "RE_REPORT_09_SEC", 60, strIni);
+                        if (v < 5) v = 5;
+                        if (v > 3600) v = 3600;
+                        if (v != m_nReReport09Sec)
+                            modCmWork.ShowMsgClient(string.Format("[완료(09) 재보고] 간격 {0}초 → {1}초 (EcsComA.ini [Host] RE_REPORT_09_SEC)", m_nReReport09Sec, v), modDefApp.MSG_IMP);
+                        m_nReReport09Sec = v;
+                    }
+                    catch { }
+                }
+                return m_nReReport09Sec;
+            }
+        }
         //Direction
         private string m_strDirection = "E2W";  // 해당 클래스에서는 이방향으로 보냄!
         public bool m_bFetchSimMode;         // 시뮬레이터 모드 여부
