@@ -652,6 +652,12 @@ namespace WCS_TASK_CV
 		delegate void DelegateListViewItem(ListViewItem item, cDefApp.eLogWriteGbn eThGbn);
 
         // @@@.Client 메세지 Listview Invoke 선언
+		private int m_nPendUiLog = 0;   // [LGLS 2026-09-17] 화면 로그 비동기 대기 건수
+		private void PsSetMsgUi(ListViewItem item, cDefApp.eLogWriteGbn eThGbn)
+		{
+			System.Threading.Interlocked.Decrement(ref m_nPendUiLog);
+			PsSetMsg(item, eThGbn);
+		}
 		private void PsSetMsg(ListViewItem item, cDefApp.eLogWriteGbn eThGbn)
 		{
 			try
@@ -684,10 +690,22 @@ namespace WCS_TASK_CV
 
 				ListView lstView = (ListView)Ctrl;
 
-				if (lstView.InvokeRequired == true)
+				if (lstView.InvokeRequired == true && cDefApi.GsCnfInt("UI_LOG_ASYNC", 1) == 0)
 				{
-					DelegateListViewItem d = new DelegateListViewItem(this.PsSetMsg); // SetListview
-					this.Invoke(d, item, eThGbn);
+					this.Invoke(new DelegateListViewItem(this.PsSetMsg), item, eThGbn);   // 종전 동기 방식
+				}
+				else if (lstView.InvokeRequired == true)
+				{
+					// [CNF] UI_LOG_ASYNC  [LGLS 2026-09-17] Invoke(동기) → BeginInvoke(비동기).
+					//   통신 스레드가 로그 한 줄마다 화면 스레드를 기다려 한 바퀴가 길어졌다(화면 속도 저하).
+					//   순서는 BeginInvoke 큐가 지킨다. 화면이 밀리면 쌓이지 않도록 대기 건수 상한을 둔다.
+					if (System.Threading.Interlocked.Increment(ref m_nPendUiLog) > 2000)
+					{
+						System.Threading.Interlocked.Decrement(ref m_nPendUiLog);
+						return;
+					}
+					DelegateListViewItem d = new DelegateListViewItem(this.PsSetMsgUi);
+					this.BeginInvoke(d, item, eThGbn);
 				}
 				else
 				{

@@ -269,6 +269,32 @@ namespace WCS_TASK_CV
         public static bool GsScErrDownRed(int nMode)   { return nMode == 1 || nMode == 4; }
         #endregion
 
+        #region [CNF]::C/V 순회 속도 옵션  [LGLS 2026-09-17]
+        //   CV_BULK_R        1(기본) = R 트래킹을 128워드 이하 조각으로 한꺼번에 읽는다 / 0 = 설비별 개별 READ(종전)
+        //   CV_EVT_BULK      1(기본) = 이벤트 확인에 사이클 시작의 M 일괄 값을 쓴다 / 0 = 설비별 개별 READ(종전)
+        //   CV_HB_MS         통신상태(EQP_MST) 갱신 간격 ms. 기본 1000, 0 = 설비마다(종전)
+        //   CV_CYCLE_SLEEP_MS 한 바퀴 뒤 쉬는 시간 ms. 기본 200 (0~2000)
+        //   CV_CYCLE_LOG_MS  한 바퀴가 이 값을 넘으면 30초에 한 번 [CYCLE] 로그. 기본 1000
+        //   UI_LOG_ASYNC     1(기본) = 화면 로그를 비동기로 넣는다 / 0 = 동기(종전, 통신 스레드가 화면을 기다림)
+        //   2초마다 파일을 다시 읽으므로 저장하면 재기동 없이 반영된다.
+        private static readonly object s_cnfLock = new object();
+        private static readonly System.Collections.Generic.Dictionary<string, int> s_cnfCache = new System.Collections.Generic.Dictionary<string, int>();
+        private static DateTime s_cnfLoaded = DateTime.MinValue;
+        public static int GsCnfInt(string pKey, int pDefault)
+        {
+            lock (s_cnfLock)
+            {
+                if ((DateTime.Now - s_cnfLoaded).TotalMilliseconds >= 2000) { s_cnfCache.Clear(); s_cnfLoaded = DateTime.Now; }
+                int v;
+                if (s_cnfCache.TryGetValue(pKey, out v)) return v;
+                v = System.IO.File.Exists(cDefApp.GM_ENV_INI)
+                    ? (int)GetPrivateProfileInt("CNF", pKey, pDefault, cDefApp.GM_ENV_INI) : pDefault;
+                s_cnfCache[pKey] = v;
+                return v;
+            }
+        }
+        #endregion
+
         #region [CNF]::M 비트 쓰기 방식  [LGLS 2026-09-14]
         //   1(기본) = XGT 단일 비트 쓰기 (%MX + 절대비트번호, DATATYPE 0x00) - 구 ECS FenetDriver.mdDevSet/mdDevRst 와 같은 프레임.
         //             그 비트 하나만 PLC 가 바꾸므로 같은 워드를 다른 스레드/PLC 가 동시에 써도 서로 지우지 않는다.

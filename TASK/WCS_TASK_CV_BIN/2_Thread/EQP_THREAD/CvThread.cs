@@ -328,7 +328,7 @@ namespace WCS_TASK_CV
         private readonly System.Collections.Generic.HashSet<string> m_setPendTrk = new System.Collections.Generic.HashSet<string>();
         private bool m_bPendScanOk = false;   // 스캔 실패 시 false → 전 설비 종전대로 처리(안전측)
         private int  m_nCvGlobalAlarm = -1;    // [LGLS 2026-09-11] -1 미판독 / 0 건너뜀(기본) / 1 종전대로 CvAlarmCheck 수행
-        private const int CYCLE_WARN_MS = 3000;               // 미러 한 바퀴 경고 임계(초과 시 단계별 소요 로깅)
+        private const int CYCLE_WARN_MS = 1000;               // [2026-09-17 3000→1000] 미러 한 바퀴 경고 임계(초과 시 단계별 소요 로깅)
         private DateTime m_dtLastCycleLog = DateTime.MinValue;
         // [LGLS 2026-08-01] 통신 실패가 연속된 사이클 수. 임계 도달 시 소켓을 닫고 스레드를 종료해 재접속시킨다.
         //   (설비 재기동으로 상대가 세션을 리셋하면 Send/Recv 는 실패하지만 m_bSocCon 은 여전히 true 라
@@ -695,7 +695,7 @@ namespace WCS_TASK_CV
                         // [LGLS 2026-07-31] 미러 주기 감시: 한 바퀴가 길어지면 그만큼 CV_DATA(→Client) 반영이 늦어져
                         //   설비 동작 순서가 뒤바뀐 것처럼 보인다. 느릴 때만(임계 초과) 30초에 1번 단계별 소요를 남긴다.
                         swCycle.Stop();
-                        if (swCycle.ElapsedMilliseconds > CYCLE_WARN_MS &&
+                        if (swCycle.ElapsedMilliseconds > cDefApi.GsCnfInt("CV_CYCLE_LOG_MS", CYCLE_WARN_MS) &&   // [CNF] CV_CYCLE_LOG_MS
                             (DateTime.Now - m_dtLastCycleLog).TotalSeconds >= 30)
                         {
                             m_dtLastCycleLog = DateTime.Now;
@@ -706,7 +706,7 @@ namespace WCS_TASK_CV
                             InsertWcsLogPgr("", strCyc);
                         }
 
-                        Thread.Sleep(200);
+                        Thread.Sleep(Math.Max(0, Math.Min(2000, cDefApi.GsCnfInt("CV_CYCLE_SLEEP_MS", 200))));   // [CNF] CV_CYCLE_SLEEP_MS
                     }
                 }
 
@@ -848,6 +848,8 @@ namespace WCS_TASK_CV
         //   PLC_NO 별 `DATEDIFF(SECOND, EQP_MST.UPD_DT, GETDATE()) > 5`(Ecs\Cv.cpp) 이라 5초를 넘는 순간
         //   접속끊김으로 표시됐다가 다음 순회에 복구되는 **깜빡임**이 발생한다.
         //   소켓·접속 상태는 전 설비 공통(1소켓)이므로 슬롯 처리마다 전 설비 행을 함께 갱신해 항상 신선하게 유지한다.
+        private DateTime m_dtLastCommAll = DateTime.MinValue;   // [LGLS 2026-09-17] 하트비트 갱신 간격 제한
+        private readonly System.Collections.Generic.Dictionary<int, string> m_dicLastJobLog = new System.Collections.Generic.Dictionary<int, string>();   // [LGLS 2026-09-17] 트랙별 마지막 이력 작업번호
         public bool CommunicationAllSlots(string CONNECTED_YN)
         {
             try
@@ -3189,7 +3191,17 @@ namespace WCS_TASK_CV
         private bool   m_bBulkLogged = false;
         private byte[] m_bufBulkM  = null;   private int m_nBulkMWord = 0;   private int m_nBulkMCnt = 0;
         private byte[] m_bufBulkD  = null;   private int m_nBulkDWord = 0;   private int m_nBulkDCnt = 0;
-        private byte[] m_bufBulkR  = null;   private int m_nBulkRWord = 0;   private int m_nBulkRCnt = 0;
+        // [LGLS 2026-09-17] R 은 전 구간(146워드)이 한 번 상한(128)을 넘어 설비별 개별 READ(15회)로 돌았다.
+        //   128워드 이하 조각 여러 개로 나눠 읽어 둔다(15회 → 2회). 각 조각 = (시작워드, 워드수, 버퍼)
+        private System.Collections.Generic.List<Tuple<int, int, byte[]>> m_lstBulkR = new System.Collections.Generic.List<Tuple<int, int, byte[]>>();
+
+        /// <summary>[LGLS 2026-09-17] R 조각 캐시에서 구간을 잘라 온다. 한 조각 안에 다 들어 있어야 한다.</summary>
+        private bool SliceBulkR(int wordAddr, int cnt, byte[] dst)
+        {
+            foreach (var c in m_lstBulkR)
+                if (SliceFrom(c.Item3, c.Item1, c.Item2, wordAddr, cnt, dst)) return true;
+            return false;
+        }
 
         /// <summary>캐시에서 [wordAddr, wordAddr+cnt) 구간을 잘라 dst 에 채운다. 범위 밖이면 false.</summary>
         private static bool SliceFrom(byte[] src, int srcWord, int srcCnt, int wordAddr, int cnt, byte[] dst)
@@ -3236,6 +3248,7 @@ namespace WCS_TASK_CV
                 int mLo = int.MaxValue, mHi = int.MinValue;
                 int dLo = int.MaxValue, dHi = int.MinValue;
                 int rLo = int.MaxValue, rHi = int.MinValue;
+                var lstRSpan = new System.Collections.Generic.List<int[]>();   // [LGLS 2026-09-17] 설비별 R 구간 [시작, 끝)
                 for (int no = nMin; no <= nMax; no++)
                 {
                     int mBase = cPlcAddrMap.BlockBase("CV", no, "Event");
@@ -3252,6 +3265,7 @@ namespace WCS_TASK_CV
                     int rw = RTrackReadBase(no);
                     if (rw < rLo) rLo = rw;
                     if (rw + nMaxSlots * nTrkSlotW > rHi) rHi = rw + nMaxSlots * nTrkSlotW;
+                    lstRSpan.Add(new int[] { rw, rw + nMaxSlots * nTrkSlotW });
                 }
                 if (mLo > mHi || dLo > dHi || rLo > rHi) return;
 
@@ -3261,11 +3275,21 @@ namespace WCS_TASK_CV
                 const int MAX_W = 128;
                 if (mCnt <= 0 || dCnt <= 0) { m_bBulkGiveUp = true; return; }
                 if (mCnt > MAX_W || dCnt > MAX_W) { m_bBulkGiveUp = true; return; }
-                bool bDoR = (rCnt > 0 && rCnt <= MAX_W);
+                // [LGLS 2026-09-17] R 은 설비 구간을 끊지 않고 128워드 이하 조각으로 묶는다
+                //   (설비 한 대의 구간이 조각 경계에 걸리지 않게 - 걸리면 그 설비만 개별 READ 로 폴백된다)
+                lstRSpan.Sort((x, y) => x[0].CompareTo(y[0]));
+                var lstRChunk = new System.Collections.Generic.List<int[]>();
+                foreach (int[] sp in lstRSpan)
+                {
+                    int[] last = lstRChunk.Count > 0 ? lstRChunk[lstRChunk.Count - 1] : null;
+                    if (last != null && Math.Max(last[1], sp[1]) - last[0] <= MAX_W) last[1] = Math.Max(last[1], sp[1]);
+                    else if (sp[1] - sp[0] <= MAX_W) lstRChunk.Add(new int[] { sp[0], sp[1] });
+                }
+                bool bDoR = (rCnt > 0 && lstRChunk.Count > 0 && cDefApi.GsCnfInt("CV_BULK_R", 1) == 1);   // [CNF] CV_BULK_R
 
                 byte[] bm = new byte[mCnt * 2 + 16];
                 byte[] bd = new byte[dCnt * 2 + 16];
-                byte[] br = bDoR ? new byte[rCnt * 2 + 16] : null;
+                var lstR = new System.Collections.Generic.List<Tuple<int, int, byte[]>>();
 
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, mLo, mCnt, ref bm))
@@ -3273,19 +3297,32 @@ namespace WCS_TASK_CV
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D, dLo, dCnt, ref bd))
                 { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] D 실패 - 종전 개별 READ 로 전환", m_nthNo, m_msQPlc.LastAddrText); return; }
-                if (bDoR && !m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
-                                   (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R, rLo, rCnt, ref br))
-                { bDoR = false; br = null; }            // R 만 실패하면 R 은 개별 READ 로 둔다
+                if (bDoR)
+                {
+                    foreach (int[] ch in lstRChunk)
+                    {
+                        int n = ch[1] - ch[0];
+                        byte[] br = new byte[n * 2 + 16];
+                        // 한 조각이 실패해도 그 조각의 설비만 개별 READ 로 폴백된다(나머지 조각은 그대로 쓴다)
+                        if (m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                                          (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R, ch[0], n, ref br))
+                            lstR.Add(Tuple.Create(ch[0], n, br));
+                    }
+                }
 
                 m_bufBulkM = bm; m_nBulkMWord = mLo; m_nBulkMCnt = mCnt;
                 m_bufBulkD = bd; m_nBulkDWord = dLo; m_nBulkDCnt = dCnt;
-                m_bufBulkR = bDoR ? br : null; m_nBulkRWord = rLo; m_nBulkRCnt = bDoR ? rCnt : 0;
+                m_lstBulkR = lstR;
                 m_bBulkOk = true;
                 if (!m_bBulkLogged)
                 {
                     m_bBulkLogged = true;
-                    MakeMsg_Imp(string.Format("[일괄READ] 상태 구간 일괄 조회 - M {0}워드 / D {1}워드 / R {2}",
-                        mCnt, dCnt, bDoR ? (rCnt + "워드") : "개별"), m_nthNo);
+                    string strR = "";
+                    foreach (int[] ch in lstRChunk) strR += (strR.Length == 0 ? "" : ", ") + "R" + ch[0] + "+" + (ch[1] - ch[0]);
+                    MakeMsg_Imp(string.Format("[일괄READ] 상태 구간 일괄 조회 - M {0}워드 / D {1}워드 / R {2}조각({3})",
+                        mCnt, dCnt, lstRChunk.Count, strR), m_nthNo);
+                    InsertWcsLogPgr("", string.Format("[일괄READ] 상태 구간 일괄 조회 - M {0}워드 / D {1}워드 / R {2}조각({3})",
+                        mCnt, dCnt, lstRChunk.Count, strR));
                 }
             }
             catch { m_bBulkOk = false; }
@@ -3415,6 +3452,10 @@ namespace WCS_TASK_CV
 
                 byte[] byRxBuff = new byte[100];
                 Array.Clear(byRxBuff, 0, byRxBuff.Length);
+                // [LGLS 2026-09-17] 사이클 시작에 읽어 둔 M 일괄 캐시(상태 판정과 같은 구간)를 그대로 쓴다.
+                //   이벤트 비트는 PLC 가 올리고 내리는 값이라 이 스레드의 쓰기(ACK 블록)와 겹치지 않는다.
+                //   캐시가 없거나 구간 밖이면 종전 개별 READ.
+                if (!(m_bBulkOk && cDefApi.GsCnfInt("CV_EVT_BULK", 1) == 1 && SliceFrom(m_bufBulkM, m_nBulkMWord, m_nBulkMCnt, mWordAddr, nEvWords, byRxBuff)))
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
                                    mWordAddr, nEvWords, ref byRxBuff))
@@ -3883,7 +3924,7 @@ namespace WCS_TASK_CV
                 Array.Clear(byRBuff, 0, byRBuff.Length);
                 int nRBase = RTrackReadBase(cvMachineNo);
                 int nRCntW = nSlots * cPlcAddrMap.BlockSlotWords("CV", "Tracking", 2);
-                if (!(m_bBulkOk && SliceFrom(m_bufBulkR, m_nBulkRWord, m_nBulkRCnt, nRBase, nRCntW, byRBuff)))
+                if (!(m_bBulkOk && SliceBulkR(nRBase, nRCntW, byRBuff)))
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R,
                                    nRBase, nRCntW, ref byRBuff))
@@ -4005,8 +4046,14 @@ namespace WCS_TASK_CV
                             InsertWcsLogPgr(nCvNo.ToString("000"), strTitle + " 트랙 " + nCvNo + " 재하 감지 " + (SENSOR0 == "1" ? "ON" : "OFF")
                                             + " (%MX" + (mBase + palletOfs + s) + ") 트래킹[" + strJobNo + "]", strJobNo);
                     }
-                    if ((cv.V11_JOBNO ?? "") != strJobNo)
+                    // [LGLS 2026-09-17] 30회 주기 재동기화로 캐시가 비어도 이력은 실제로 바뀐 때만 남긴다
+                    //   (종전에는 재동기화마다 "[] -> [0000]" 이 DB 에 쌓였다). 비교 기준 = 마지막으로 남긴 값.
+                    string strPrevLog;
+                    if (!m_dicLastJobLog.TryGetValue(nCvNo, out strPrevLog)) strPrevLog = cv.V11_JOBNO ?? "";
+                    m_dicLastJobLog[nCvNo] = strJobNo;
+                    if (strPrevLog != strJobNo)
                         {
+                            cv.V11_JOBNO = strPrevLog;   // 아래 로그 문구의 직전 값
                             // [LGLS 2026-08-23] 작업번호가 사라지는 로그([1718] -> [0])도 그 작업으로 조회되도록
                             //   새 값이 비면 직전 값을 남긴다.
                             string strLogLugg = (string.IsNullOrEmpty(strJobNo) || strJobNo == "0" || strJobNo == "0000")
@@ -4034,7 +4081,11 @@ namespace WCS_TASK_CV
                 //   항상 실패해 **EQUIP 이 빨강**으로 표시됨. 여기서 복원한다.
                 // [LGLS 2026-07-30] 1소켓 통합 후에는 슬롯 순회 주기(~10초)가 Client 임계 5초를 넘겨 EQUIP 이
                 //   깜빡였다 → 이 설비만이 아니라 등록된 전 설비 행을 함께 갱신(슬롯 처리마다 호출되므로 ~1초 신선도).
-                CommunicationAllSlots("Y");
+                // [LGLS 2026-09-17] 한 바퀴에 15번 쓰던 것을 1초에 한 번으로 줄인다(Client 판정 임계 5초)
+                if ((DateTime.Now - m_dtLastCommAll).TotalMilliseconds >= cDefApi.GsCnfInt("CV_HB_MS", 1000))   // [CNF] CV_HB_MS
+                {
+                    if (CommunicationAllSlots("Y")) m_dtLastCommAll = DateTime.Now;
+                }
                 return true;
             }
             catch (Exception ex)
