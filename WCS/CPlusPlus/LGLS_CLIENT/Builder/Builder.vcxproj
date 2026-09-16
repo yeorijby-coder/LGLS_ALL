@@ -21,7 +21,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>Dynamic</UseOfMfc>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -49,8 +49,8 @@
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>.\../../Bin/Release\</OutDir>
-    <IntDir>.\../../Bin/Release/Builder\</IntDir>
+    <OutDir>.\../Bin/Release\</OutDir>
+    <IntDir>.\../Bin/Release/Builder\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -116,17 +116,18 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\../../Bin/Release/Builder\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\../../Bin/Release/Builder\Builder.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../Bin/Release/Builder\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\../Bin/Release/Builder\Builder.pch</PrecompiledHeaderOutputFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <ObjectFileName>.\../../Bin/Release/Builder\</ObjectFileName>
-      <ProgramDataBaseFileName>.\../../Bin/Release/Builder\</ProgramDataBaseFileName>
+      <ObjectFileName>.\../Bin/Release/Builder\</ObjectFileName>
+      <ProgramDataBaseFileName>.\../Bin/Release/Builder\</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>../Lib/XmlLib;../Lib/DciLib;../Lib/BuilderLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <TypeLibraryName>.\../../Bin/Release\Builder.tlb</TypeLibraryName>
+      <TypeLibraryName>.\../Bin/Release\Builder.tlb</TypeLibraryName>
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <TargetEnvironment>Win32</TargetEnvironment>
     </Midl>
@@ -136,12 +137,13 @@
     </ResourceCompile>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\../../Bin/Release\Builder.bsc</OutputFile>
+      <OutputFile>.\../Bin/Release\Builder.bsc</OutputFile>
     </Bscmake>
     <Link>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
-      <OutputFile>.\../../Bin/Release\Builder.exe</OutputFile>
+      <OutputFile>.\../Bin/Release\Builder.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)XmlLib.lib;$(OutDir)DciLib.lib;$(OutDir)BuilderLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
