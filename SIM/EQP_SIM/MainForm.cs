@@ -400,7 +400,31 @@ namespace EQP_SIM
             try
             {
                 if (!File.Exists(IniPath)) { lblStatus.Text = "INI 없음: " + IniPath; return; }
-                System.Diagnostics.Process.Start("notepad.exe", "\"" + IniPath + "\"");
+                // [LGLS 2026-09-17] "notepad.exe" 이름으로 띄우면 Windows 11 의 스토어 메모장 별칭이 잡혀
+                //   x86 프로세스에서 Microsoft.UI.Windowing.Core.dll 오류가 난다(사용자 실측).
+                //   → .ini 연결 프로그램(셸)으로 연다. 실패하면 System32 메모장, 그것도 안 되면 폴더를 연다.
+                bool bOpened = false;
+                try
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo(IniPath) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi); bOpened = true;
+                }
+                catch { }
+                if (!bOpened)
+                {
+                    try
+                    {
+                        string np = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
+                        var psi = new System.Diagnostics.ProcessStartInfo(np, "\"" + IniPath + "\"") { UseShellExecute = true };
+                        System.Diagnostics.Process.Start(psi); bOpened = true;
+                    }
+                    catch { }
+                }
+                if (!bOpened)
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo("explorer.exe", "/select,\"" + IniPath + "\"") { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
                 lblStatus.Text = "INI 열림 - [TIMING] 은 저장 후 [INI 다시 읽기], 나머지 섹션은 재기동 필요";
             }
             catch (Exception ex) { lblStatus.Text = "INI 열기 실패: " + ex.Message; }
