@@ -481,15 +481,15 @@ void CSkinDialog::DrawFrame()
 		else
 		{
 			// Restore Box ��Ʈ���� �޸� DC�� ����
-			tmpDC.SelectObject(m_hBmpRestore);
-			x = x-m_sizeBox.cx;			
-			BufferDC.BitBlt(x, y, m_sizeBox.cx, m_sizeBox.cx, &tmpDC, 0, 0, SRCCOPY);
+			// [LGLS 2026-09-16] disable-max : draw nothing (close only)
 		}
 
 		// Minimize Box ��Ʈ���� �޸� DC�� ����
+		if( !m_bDisableMaximize ) {
 		tmpDC.SelectObject(m_hBmpMinimize);
 		x = x-m_sizeBox.cx;		
 		BufferDC.BitBlt(x, y, m_sizeBox.cx, m_sizeBox.cx, &tmpDC, 0, 0, SRCCOPY);
+		}
 	}
 	else
 	{
@@ -788,8 +788,7 @@ BOOL CSkinDialog::PreTranslateMessage(MSG* pMsg)
 
 			if( m_bDisableMaximize )	// [LGLS] �ִ�ȭ ����: �ּ�ȭ�� �ִ�ȭ �ڸ���, �ִ�ȭ Ŭ������ ����
 			{
-				rcMinimize.left = rcMaximize.left;
-				rcMinimize.right = rcMaximize.right;
+				rcMinimize.SetRectEmpty();
 				rcMaximize.SetRectEmpty();
 			}
 

@@ -34,6 +34,8 @@ namespace TSK_HostCom
 		private int m_iSelCnt;
         //Command
         private string m_strHostCmd;
+        // [LGLS 2026-09-16] 완료(09) 잔류 작업 60초 주기 재보고용 마지막 실행 시각
+        private DateTime m_dtLast09Report = DateTime.MinValue;
         //Direction
         private string m_strDirection = "E2W";  // 해당 클래스에서는 이방향으로 보냄!
         public bool m_bFetchSimMode;         // 시뮬레이터 모드 여부
@@ -869,6 +871,7 @@ namespace TSK_HostCom
                 // [LGLS] 본 대체 시스템은 재고(무게/빈파렛트)를 관리하지 않음 — 발신 제거
             }
             GetJobCompleteReport();
+            ReReportComplete09();   // [LGLS 2026-09-16] 09 잔류 작업 60초 주기 완료 재보고
             GetLoadArrivalReport();
 
 			return true;
@@ -1873,9 +1876,71 @@ namespace TSK_HostCom
             return true;
         }
 
+        // [LGLS 2026-09-16] 완료(09)로 남아있는 자동 작업을 60초마다 상위로 재보고한다(사용자 지시).
+        //   정상 경로는 09 설정 → F 전송 → 즉시 삭제라 09 는 순간 상태지만, 삭제 실패/상위 미응답으로
+        //   09 에 머무는 작업이 생길 수 있다. 그런 작업을 1분 주기로 F(완료) 재전송해 유실을 막는다.
+        //   반자동/수동(LUGG 9000번대·JOB_TYP 10~15)은 상위와 무관하므로 제외한다.
+        private void ReReportComplete09()
+        {
+            string strTitle = "[ReReportComplete09] .. ";
+            try
+            {
+                if (!m_blSockConnected) return;
+                if (modDefApp.g_frmForm.chkSimMode.Checked == true) return;   // 시뮬 모드는 상위 미연결
+                if ((DateTime.Now - m_dtLast09Report).TotalSeconds < 60) return;
+                m_dtLast09Report = DateTime.Now;
+
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + " SELECT LUGG_NO, JOB_TYP FROM JOB_MST ";
+                m_strSql += modDefApp.CRLF + "  WHERE WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "    AND JOB_STATUS = '09' ";
+                m_strSql += modDefApp.CRLF + "    AND (LEN(LUGG_NO) <> 4 OR LUGG_NO < '9000') ";
+                m_strSql += modDefApp.CRLF + "    AND JOB_TYP NOT IN ('10','11','12','13','14','15') ";
+                int nCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+                if (nCnt <= 0) return;
+
+                System.Data.DataTable dt = m_BDb.dtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    int nJobType = Convert.ToInt32(dt.Rows[i]["JOB_TYP"].ToString());
+                    int nLuggNum = Convert.ToInt32(dt.Rows[i]["LUGG_NO"].ToString());
+                    int nClass;
+                    switch (nJobType)
+                    {
+                        case 1:  nClass = 1; break;   // 입고
+                        case 2:  nClass = 2; break;   // 출고
+                        default: nClass = 3; break;   // 그 외
+                    }
+                    string strStep = (nJobType == 2) ? "2" : "1";
+                    m_strHostCmd = "F";
+                    string strTemp = string.Format("F{0:0}{1:0000}{2:0}{3}", nJobType, nLuggNum, nClass, strStep);
+                    int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
+                    m_bytTxBuff = new byte[iTxCnt];
+                    MakeHeader(strTemp.Length);
+                    m_bytTxBuff[modDefApp.MSG_HEAD_CNT] = modDefApp.STX;
+                    byte[] bytTempByte = System.Text.Encoding.Default.GetBytes(strTemp);
+                    Array.Copy(bytTempByte, 0, m_bytTxBuff, modDefApp.MSG_HEAD_CNT + 1, strTemp.Length);
+                    m_bytTxBuff[iTxCnt - 1] = modDefApp.ETX;
+
+                    // [LGLS 2026-09-16] 응답을 받으면 완료 확정 → 작업 삭제. 못 받으면 남겨서 다음 주기에 다시 보고(사용자 지시).
+                    string strLugg = dt.Rows[i]["LUGG_NO"].ToString().Trim();
+                    if (RequestSrv(iTxCnt.ToString()))
+                    {
+                        modDefApp.g_frmForm.DeleteJobMst(m_BDb, true, strLugg);   // 함수안에서 Transaction 처리
+                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) 응답 수신 → 작업 {0} 삭제", strLugg), modDefApp.MSG_NOR);
+                    }
+                    else
+                    {
+                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) 재보고(응답 없음 → 유지) - 작업 {0} (60초 주기)", strLugg), modDefApp.MSG_IMP);
+                    }
+                }
+            }
+            catch (Exception ex) { modCmWork.ShowMsgClient(strTitle + "오류: " + ex.Message, modDefApp.MSG_ERR); }
+        }
+
         //최초작성자	: BASE(정복열)
         //작성일		: 20200518
-        //설명		    : 공파레트 입출고 요청 
+        //설명		    : 공파레트 입출고 요청
         //최초작성자	: BASE(정복열)
         //작성일		: 20200515
         //설명		    : 공파레트 입출고 요청 

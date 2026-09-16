@@ -68,7 +68,7 @@ BOOL CSemiTestDlg::OnInitDialog()
 	// 기본값: 입고대 124 → 출고대 126
 	for (int r = 0; r < ROWS; r++)
 	{
-		SetDlgItemText(IDC_LGLS_ST_FR1 + r, _T("124"));
+		SetDlgItemText(IDC_LGLS_ST_FR1 + r, _T("124"));  // [LGLS 2026-09-16] 출발지=입고대 124(사용자 확정)
 		SetDlgItemText(IDC_LGLS_ST_TO1 + r, _T("126"));
 		SetRowStat(r, _T("-"));
 	}
@@ -107,6 +107,7 @@ static LPCTSTR SchFuncForStatus(const CString& strOld, const CString& strNew)
 	if (strNew == _T("21"))                        return _T("cThread_SCH.DriveSC");
 	if (strNew == _T("31"))                        return _T("cThread_SCH.DriveRGV");
 	if (strNew == _T("15"))                        return _T("cThread_SCH.RunCV");
+	if (strNew == _T("16"))                        return _T("cThread_SCH.RunCV");  // [LGLS 2026-09-16] 통로CV 구동중
 	if (strNew == _T("25"))                        return _T("cThread_SCH.RunSC");
 	if (strNew == _T("35"))                        return _T("cThread_SCH.RunRGV");
 	if (strNew == _T("19"))                        return _T("cThread_SCH.CompleteCV");

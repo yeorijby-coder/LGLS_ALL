@@ -98,6 +98,7 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-08-30] 구동지시(11/21/31) 폐기 - "대기 → 중 → 완료" 3단계.
         //   명령을 발행한 순간이 곧 구동 중이다. 수락 확인은 Complete* 의 OD_RQ_YN='N' 이 한다.
         private const string ST_CV_RUN  = "15"; // CV 구동중
+        private const string ST_CV_RUN2 = "16"; // CV 구동중2
         private const string ST_CV_DONE = "19"; // CV 구동완료
 
         private const string ST_SC_WAIT = "20"; // SC 구동대기
@@ -382,8 +383,11 @@ namespace TSK_COMM_IOSCH
                     DriveSC();      // 입고 15 / 출고 20 → 25
                     DriveRGV();     // 15 → 35 (RGV 도착지를 HS_TRACK_NO 에 기록)
 
-                    // ── ④ 마무리 : 반자동 삭제 / 감시
-                    DeleteSemiFinished();      // 반자동(11/12)은 19/29 에서 바로 삭제(상위 보고 없음)
+                    // ── ④ 마무리 : 감시
+                    // [LGLS 2026-09-16] DeleteSemiFinished() 비활성화(사용자 지시) - 완료 작업을 자동 삭제하지 않고
+                    //   상태(19/29/09)로 남긴다. (종전: 반자동 11/12 를 19/29 에서 바로 삭제)
+                    //   ※되살리려면 아래 주석을 해제한다.
+                    //DeleteSemiFinished();
                     CheckStalledJobs();        // 작업 체류(설비 무응답) 감시 → 경고
 
                     // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
@@ -1184,7 +1188,7 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "  INNER JOIN RTV_DATA_LGLS RD                                         ";
                 strSql += CRLF + "     ON JM.WH_TYP    = RD.WH_TYP                                 ";
                 strSql += CRLF + "  WHERE JM.WH_TYP          = :WH_TYP                             ";
-                strSql += CRLF + "    AND JM.JOB_STATUS      = :ST_WAIT                            ";   // [LGLS 2026-08-31] CV 구동중(15) - RGV 대기 상태(30) 폐기
+                strSql += CRLF + "    AND JM.JOB_STATUS      IN ('15','16')                         ";//= :ST_WAIT                            ";   // [LGLS 2026-08-31] CV 구동중(15) - RGV 대기 상태(30) 폐기
                 strSql += CRLF + "    AND RD.AUTO_MODE_RD    = '1'                                 ";   // AUTO
                 strSql += CRLF + "    AND RD.OD_RQ_YN        = 'N'                                 ";   // 설비 유휴
                 strSql += CRLF + "    AND RD.SUBSYSTEM_STATUS_RD = '1'                             ";   // [LGLS 2026-07-21] IDLE 일 때만(물리 1대 — 반송 중 중복 지시 방지)
@@ -1770,7 +1774,8 @@ namespace TSK_COMM_IOSCH
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
-                    string jobTyp = GetVal(dt.Rows[i], "JOB_TYP");
+                    string rawTyp = GetVal(dt.Rows[i], "JOB_TYP");   // [LGLS 2026-09-16] 원본(반자동 11/12 구분용)
+                    string jobTyp = rawTyp;
                     if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
                     string scNo   = GetVal(dt.Rows[i], "SC_NO");
                     string rtn = "";
@@ -1807,13 +1812,15 @@ namespace TSK_COMM_IOSCH
                             + "이 호기가 정상 완료신호를 낼 때까지 추가 자동 처리는 하지 않습니다.", luggNo, scNo));
                     }
 
-                    // [LGLS] 출고(2)는 CV 처리로 인계, 입고(1)는 최종 완료(29 → HOST F보고)
-                    // [LGLS 2026-08-31] 29 = 크레인이 완료했다 (입고/출고 공통).
-                    //   출고는 이 시점에 랙 셀이 비므로 HOST 가 1차 완료보고를 낸다.
-                    //   그 뒤 하역 도착지에 데이터를 기록하며 15 가 되는 것은 LandScDrop() 이 한다.
-                    string stNext = ST_SC_DONE;
+                    // [LGLS] 출고(2)는 CV 처리로 인계, 입고(1)는 최종 완료
+                    // [LGLS 2026-09-16] 완료 시점 처리(사용자 지시) :
+                    //   · 반자동 입고(11) : S/C 완료 = 작업 완료 → 즉시 삭제(상위 보고 없음)
+                    //   · 자동   입고(1)  : S/C 완료 = 작업 완료 → 09(HOST 응답 받을 때까지 60초 주기 재보고)
+                    //   · 출고(2/12)      : S/C 완료 = 1차(랙 셀 해제) → 29 로 두고 RGV 처리로 인계
+                    bool bSemiIn = (rawTyp == "11");
+                    string stNext = (jobTyp == "1") ? "09" : ST_SC_DONE;
 
-                    if (UpdateJobStatus(stNext, luggNo, ref rtn))
+                    if ((bSemiIn ? DeleteJobNow(luggNo, ref rtn) : UpdateJobStatus(stNext, luggNo, ref rtn)))
                     {
                         ClearScOd(luggNo);	// [LGLS] SC 작업 완료 -> 해당 작업 od 클리어(잔류 방지)
                         m_dicPrevSC.Remove("SC_" + scNo);   // [LGLS] 발행 키(SC_+호기번호)로 해제
@@ -1833,10 +1840,12 @@ namespace TSK_COMM_IOSCH
                             DbNonQry(strSqlCmpRst);
                         }
                         catch { }
-                        if (jobTyp == "2")
+                        if (bSemiIn)
+                            MakeMsg_Imp(string.Format("[SCH][SC] 반자동 입고 {0} S/C 완료 → 즉시 삭제(상위 보고 없음)", luggNo));
+                        else if (jobTyp == "2")
                             MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료 → CV 처리 인계 (상태 '{1}')", luggNo, stNext));
                         else
-                            MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료(입고 최종) → 상태 '{1}' (HOST 완료보고 대상)", luggNo, stNext));
+                            MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} S/C 이송 완료(입고 최종 09, 응답 시 삭제) → 상태 '{1}'", luggNo, stNext));
                     }
                     else
                         MakeMsg_Error(string.Format("[SCH][SC] 완료 전이 실패({0}): {1}", luggNo, rtn));
@@ -2381,7 +2390,7 @@ namespace TSK_COMM_IOSCH
                 //   입고가 영원히 굶는다(실측: [CV#2 교착 TEST] 중 입고 0083/0098 이 30 에서 18분 정지,
                 //   그때 RTV 는 완전 유휴였고 막은 출고 3건 중 2건은 상태 20 이었다).
                 //   20 = 대기(아무것도 점유하지 않음) → 양보 사유 아님. 21 부터가 실제 점유.
-                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','" + ST_SC_WAIT + "') ";
+                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','15','" + ST_SC_WAIT + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -3694,7 +3703,7 @@ namespace TSK_COMM_IOSCH
                     //   하역 화물에 번호를 함께 얹고, ConveyorSim 이 이동 때마다 따라 옮긴다.
                     //   우리가 도착지에 덧쓰던 값만 그 자리에 눌러앉아 잔재가 됐다.
                     //   (우리 쪽 SetPallet 대응물은 UpdateCvData - CV 반송지시 시 출발 트랙에 쓴다)
-                    if (UpdateJobStatus(ST_CV_RUN, luggNo, ref rtn))
+                    if (UpdateJobStatus(ST_CV_RUN2, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} SC 도착지 {1} 기록 완료 → 상태 '{2}'",
                                     luggNo, landTrk, ST_CV_RUN));
                     else
@@ -3852,7 +3861,8 @@ namespace TSK_COMM_IOSCH
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
-                    string jTyp   = GetVal(dt.Rows[i], "JOB_TYP");
+                    string rawTyp = GetVal(dt.Rows[i], "JOB_TYP");   // [LGLS 2026-09-16] 원본(반자동 12 구분용)
+                    string jTyp   = rawTyp;
                     if (jTyp == "11") jTyp = "1"; else if (jTyp == "12") jTyp = "2";
 
                     // [LGLS 2026-09-06] RTV 도 COMPLETE_RD 를 래치하므로 S/C 와 같은 유실 위험이 있다.
@@ -3894,13 +3904,21 @@ namespace TSK_COMM_IOSCH
                     string rtn = "";
                     // [LGLS 2026-08-31] RGV 반송 완료 = 39. 도착지에 데이터를 기록하는 것은
                     //   LandRgvDrop() 이 도착 신호가 꺼진 것을 보고 한다(그때 15 가 된다).
-                    string stNextRgv = ST_RGV_DONE;
-                    if (UpdateJobStatus(stNextRgv, luggNo, ref rtn))
+                    // [LGLS 2026-09-16] 출고 RTV 완료 처리(사용자 지시) :
+                    //   · 반자동 출고(12) : RTV 완료 = 작업 완료 → 즉시 삭제(상위 보고 없음)
+                    //   · 자동   출고(2)  : RTV 완료 = 작업 완료 → 09(HOST 응답 받을 때까지 60초 주기 재보고)
+                    //   · 입고(1/11)      : RGV 는 중간 이송 → 39(도착지 기록 대기)
+                    bool bSemiOut = (rawTyp == "12");
+                    string stNextRgv = (jTyp == "2") ? "09" : ST_RGV_DONE;
+                    if ((bSemiOut ? DeleteJobNow(luggNo, ref rtn) : UpdateJobStatus(stNextRgv, luggNo, ref rtn)))
                     {
                         RtvResetComplete();
                         m_dicPrevRGV.Remove("RGV_801");
-                        MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RTV 반송 완료 → 상태 '{1}' (도착지 기록 대기)",
-                                    luggNo, stNextRgv));
+                        if (bSemiOut)
+                            MakeMsg_Imp(string.Format("[SCH][RGV] 반자동 출고 {0} RTV 완료 → 즉시 삭제(상위 보고 없음)", luggNo));
+                        else
+                            MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RTV 반송 완료 → 상태 '{1}' ({2})",
+                                        luggNo, stNextRgv, (jTyp == "2") ? "출고 작업완료(09)" : "도착지 기록 대기"));
                     }
                     else
                         MakeMsg_Error(string.Format("[SCH][RGV] 완료 전이 실패({0}): {1}", luggNo, rtn));
@@ -4260,6 +4278,27 @@ namespace TSK_COMM_IOSCH
                 int n = DbNonQry(strSql);
                 if (n < 0) { strRtn += "JOB_MST 상태변경 오류:" + _pBdb.ErrMsg; return false; }
                 if (n == 0) { strRtn += "변경할 JOB_MST 작업이 없음(LUGG_NO:" + strLuggNo + ")"; return false; }
+                return true;
+            }
+            catch (Exception ex) { strRtn += ex.Message; return false; }
+        }
+
+        // [LGLS 2026-09-16] 단건 작업 즉시 삭제(반자동 완료 시 - 상위 보고 없음, 사용자 지시).
+        //   반자동 출고=RTV 완료, 반자동 입고=S/C 완료 시점에 이 함수로 바로 지운다.
+        private bool DeleteJobNow(string strLuggNo, ref string strRtn)
+        {
+            try
+            {
+                string strSql = "";
+                strSql += CRLF + " DELETE FROM JOB_MST                   ";
+                strSql += CRLF + "  WHERE WH_TYP  = :WH_TYP              ";
+                strSql += CRLF + "    AND LUGG_NO = :LUGG_NO             ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = strLuggNo;
+                int n = DbNonQry(strSql);
+                if (n < 0) { strRtn += "JOB_MST 삭제 오류:" + _pBdb.ErrMsg; return false; }
                 return true;
             }
             catch (Exception ex) { strRtn += ex.Message; return false; }
