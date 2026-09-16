@@ -1946,7 +1946,7 @@ void CLib::RenameColumn(CStringArray& pColArray, int pLang, CStringArray& pColRe
    }
 }
 
-bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc)
+bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, LPCTSTR strExcludeMc)
 {
 	if (pDoc   == NULL)                     
 		return false;
@@ -1961,12 +1961,10 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc)
 	CString strDEST_POS;
 	CString strMessage;
 	cbx.ResetContent();
-	strSql.Format(_T("  SELECT TRACK_NO						")
-				  _T("       , REMARKS						") 
-				  _T("       , GROUP_NO						")
-				  _T("       , MC_NO						")
-				  _T("	  FROM DEST_POS_DEF					")
-				  _T("ORDER BY GROUP_NO, MC_NO				"));
+	CString strWhere = _T("");
+	if (strExcludeMc != NULL && _tcslen(strExcludeMc) > 0)
+		strWhere.Format(_T(" WHERE MC_NO <> '%s' "), strExcludeMc);  // [LGLS 2026-09-16] 출발/도찬 콘보 제외(사용자 지시)
+	strSql.Format(_T("  SELECT TRACK_NO, REMARKS, GROUP_NO, MC_NO FROM DEST_POS_DEF %s ORDER BY GROUP_NO, MC_NO "), (LPCTSTR)strWhere);
 
 	_RecordsetPtr pRsptr = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);

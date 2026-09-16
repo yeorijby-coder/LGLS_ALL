@@ -546,8 +546,9 @@ LRESULT CRtvSkinDlg::OnMessagSwitch(WPARAM wParam, LPARAM lParam)
 	CRTV_DATA* pRTV_DATA = (CRTV_DATA*)wParam;
 	if(pRTV_DATA == NULL)
 	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RTV를 찾을수 없습니다")));
-		return 0;
+		// [LGLS 2026-09-16] wParam NULL (OnRefreshDialog path) -> keep current selection, no modal warning
+		if(m_pRTV_DATA == NULL) return 0;
+		pRTV_DATA = m_pRTV_DATA;
 	}
 
 	m_pRTV_DATA = pRTV_DATA;

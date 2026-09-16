@@ -119,8 +119,12 @@ BOOL CManualJob::OnInitDialog()
 	InitializeFontManager(this);
 	SetFontNation((int)pEn, 0);
 
-	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobStartPos, m_pDoc);
-	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobDestPos, m_pDoc);
+	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobStartPos, m_pDoc, _T("126"));  // [LGLS 2026-09-16] start combo excludes 126 (out station)
+	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobDestPos, m_pDoc, _T("124"));  // [LGLS 2026-09-16] dest combo excludes 124 (in station)
+
+	// [LGLS 2026-09-16] IMS STATION label made entries longer - widen dropdown so text is not clipped
+	m_cbxManualJobStartPos.SetDroppedWidth(300);
+	m_cbxManualJobDestPos.SetDroppedWidth(300);
 
 	CLib::BindCombo(m_cbxManualJobWhTyp, _T("WH_TYP"), m_pDoc,(int)pEn, FALSE);
 	CLib::BindCombo(m_cbxManualJobJobTyp, _T("JOB_TYP"), m_pDoc,(int)pEn, TRUE);

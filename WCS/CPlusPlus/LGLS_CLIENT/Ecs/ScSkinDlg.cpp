@@ -964,8 +964,9 @@ LRESULT CScSkinDlg::OnMessagSwitch(WPARAM wParam, LPARAM lParam)
 	CSC_DATA* pSC_DATA = (CSC_DATA*)wParam;
 	if(pSC_DATA == NULL)
 	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("SC를 찾을수 없습니다")));
-		return 0;
+		// [LGLS 2026-09-16] wParam NULL (OnRefreshDialog path) -> keep current selection, no modal warning
+		if(m_pSC_DATA == NULL) return 0;
+		pSC_DATA = m_pSC_DATA;
 	}
 
 	// [LGLS 2026-09-01] ★호기 전환 시 확대 패널의 주소 라벨을 다시 만든다★ (사용자 지적)
