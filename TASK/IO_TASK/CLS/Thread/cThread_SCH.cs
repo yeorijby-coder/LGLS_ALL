@@ -1666,20 +1666,12 @@ namespace TSK_COMM_IOSCH
                     //     문제일 가능성이 높다. 자동으로 계속 밀어내면 원인이 가려진다.
                     //   [LGLS 2026-09-06] S/C(25) 와 RTV(35) 둘 다 대상이다. RTV 도 COMPLETE_RD 를
                     //     같은 방식으로 래치하므로 유실 위험이 동일하다(RtvCompleteFor 참조).
-                    if (status == ST_SC_RUN || status == ST_RGV_RUN)
-                    {
-                        if (m_setAutoTimeUsed.Contains(luggNo))
-                        {
-                            MakeMsg_Error(string.Format(
-                                "[SCH][체류경고] 작업 {0} - 시간 기반 자동 처리를 이미 1회 사용했습니다. "
-                                + "자동 처리하지 않고 정지 상태로 둡니다. 설비와 작업을 확인하세요.", luggNo));
-                        }
-                        else if (m_setAutoTimeGrant.Add(luggNo))
-                        {
-                            MakeMsg_Imp(string.Format(
-                                "[SCH][체류복구] 작업 {0} - 완료신호 유실 가능성. 시간 기반 자동 처리를 1회 허용합니다.", luggNo));
-                        }
-                    }
+                    // [LGLS 2026-09-17 00:20] ★체류복구(시간 기반 자동 완료 1회 허용) 폐기★ (사용자 지시)
+                    //   실측 7052 : 크레인이 지시를 잃은 상태(시뮬 재기동)에서 체류복구가 "완료신호 유실"로 오판해
+                    //   화물이 H/S(104)에 그대로 있는데 09 로 완료·상위 보고·삭제 → 유령 재고 + 104 잔재로 1호기 라인 정체.
+                    //   작업정보가 지워지면 실물 위치를 되찾을 길이 없다. 체류는 ★경고만★ 남기고 사람이 처리한다.
+                    //   (m_setAutoTimeGrant 는 더 이상 채우지 않는다 - CompleteSC/CompleteRGVReal 의 시간 기반 분기는
+                    //    [환경설정] > [시간 기반 자동 처리] 를 명시적으로 켰을 때만 남는다)
                 }
 
                 // 정상 진행으로 돌아선 작업은 경고 이력에서 제거
@@ -1788,8 +1780,9 @@ namespace TSK_COMM_IOSCH
                 //   ① [환경설정] > [시간 기반 자동 처리] 가 켜져 있을 때 (종전 동작 - 상시)
                 //   ② 체류경고로 그 작업에 1회 허용이 떨어졌을 때 (CheckStalledJobs)
                 //   어느 행이 어느 분기로 걸렸는지는 BY_SIGNAL 로 구분해 아래 루프에서 판정한다.
+                // [LGLS 2026-09-17 00:20] 체류복구(②) 폐기 - 시간 기반 분기는 [환경설정] 옵션(①)일 때만 연다(사용자 지시).
                 bool bAutoTime = AutoTimeProcEnabled();
-                if (bAutoTime || m_setAutoTimeGrant.Count > 0)
+                if (bAutoTime)
                 {
                     strSql += CRLF + "    AND ( ( SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ) ";
                     strSql += CRLF + "       OR ( SD.UCSTATUS_RD = '1'                              ";
@@ -1827,29 +1820,8 @@ namespace TSK_COMM_IOSCH
 
                     // 설비 완료신호가 아니라 ★시간 기반★ 으로 걸린 행이면,
                     //   [시간 기반 자동 처리] 가 켜져 있거나 그 작업에 1회 허용이 있어야 한다.
-                    if (!bBySignal && !bAutoTime)
-                    {
-                        if (!m_setAutoTimeGrant.Contains(luggNo)) continue;   // 허용 없음 - 그대로 세워 둔다
-
-                        // 그 호기가 직전에도 자동 처리로 빠져나갔고 그 뒤 정상 완료신호가 한 번도
-                        //   없었다면, 신호 자체가 죽어 있다는 뜻이다. 더 밀어내지 않고 세워 둔다.
-                        if (m_setAutoTimeUsedSc.Contains(scNo))
-                        {
-                            if (m_setAutoTimeRefused.Add(luggNo))
-                                MakeMsg_Error(string.Format(
-                                    "[SCH][체류경고] 작업 {0} - S/C #{1} 은 직전에도 완료신호 없이 자동 처리했고 "
-                                    + "그 뒤 정상 완료신호가 없습니다. 자동 처리하지 않고 정지 상태로 둡니다. "
-                                    + "크레인 완료신호(UNLOAD_COMPLETE) 배선/설비를 확인하세요.", luggNo, scNo));
-                            continue;
-                        }
-
-                        m_setAutoTimeGrant.Remove(luggNo);
-                        m_setAutoTimeUsed.Add(luggNo);
-                        m_setAutoTimeUsedSc.Add(scNo);
-                        MakeMsg_Imp(string.Format(
-                            "[SCH][체류복구] 작업 {0} - 시간 기반 자동 처리 1회 사용(완료신호 없이 완료 처리, S/C #{1}). "
-                            + "이 호기가 정상 완료신호를 낼 때까지 추가 자동 처리는 하지 않습니다.", luggNo, scNo));
-                    }
+                    // [LGLS 2026-09-17 00:20] 체류복구 폐기 - 완료신호 없이 걸린 행은 옵션이 꺼져 있으면 그대로 세워 둔다.
+                    if (!bBySignal && !bAutoTime) continue;
 
                     // [LGLS] 출고(2)는 CV 처리로 인계, 입고(1)는 최종 완료
                     // [LGLS 2026-09-16] 완료 시점 처리(사용자 지시) :
@@ -4063,31 +4035,10 @@ namespace TSK_COMM_IOSCH
                     }
                     else
                     {
-                        if (!AutoTimeProcEnabled())
-                        {
-                            if (!m_setAutoTimeGrant.Contains(luggNo)) continue;   // 허용 없음 - 세워 둔다
-                            if (m_setAutoTimeUsedSc.Contains(RTV_NO))
-                            {
-                                if (m_setAutoTimeRefused.Add(luggNo))
-                                    MakeMsg_Error(string.Format(
-                                        "[SCH][체류경고] 작업 {0} - RTV #{1} 은 직전에도 완료신호 없이 자동 처리했고 "
-                                        + "그 뒤 정상 완료신호가 없습니다. 자동 처리하지 않고 정지 상태로 둡니다. "
-                                        + "RTV 완료신호(UNLOAD_COMPLETE) 배선/설비를 확인하세요.", luggNo, RTV_NO));
-                                continue;
-                            }
-                        }
-                        // 물리적으로 끝난 정황이 있어야 한다 : 유휴 + 지시 없음 + 차상 화물 없음 + 경과
+                        // [LGLS 2026-09-17 00:20] 체류복구 폐기(사용자 지시) - 완료신호가 없으면 [환경설정] > [시간 기반 자동 처리] 가
+                        //   켜져 있고 물리적으로 끝난 정황(유휴 + 지시 없음 + 차상 화물 없음 + 경과)이 있을 때만 완료. 아니면 세워 둔다.
+                        if (!AutoTimeProcEnabled()) continue;
                         if (!RtvIdleEmptyFor(luggNo)) continue;
-
-                        if (!AutoTimeProcEnabled())
-                        {
-                            m_setAutoTimeGrant.Remove(luggNo);
-                            m_setAutoTimeUsed.Add(luggNo);
-                            m_setAutoTimeUsedSc.Add(RTV_NO);
-                            MakeMsg_Imp(string.Format(
-                                "[SCH][체류복구] 작업 {0} - 시간 기반 자동 처리 1회 사용(완료신호 없이 완료 처리, RTV #{1}). "
-                                + "이 호기가 정상 완료신호를 낼 때까지 추가 자동 처리는 하지 않습니다.", luggNo, RTV_NO));
-                        }
                     }
                     string rtn = "";
                     // [LGLS 2026-08-31] RGV 반송 완료 = 39. 도착지에 데이터를 기록하는 것은
