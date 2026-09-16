@@ -2857,6 +2857,20 @@ namespace TSK_COMM_IOSCH
                     (DateTime.Now - last).TotalMilliseconds < DIR_REQ_HOLD_MS)
                     return false;      // 직전 지시가 아직 반영 중 — 중복 지시 억제
 
+                // [LGLS 2026-09-17 06:35] ★Client 수동 전환(DIRM) 우선★ (사용자 지시 "바로 바뀌면 좋겠어")
+                //   실측 : 화면에서 강제 전환해도 자동 정합(SyncDualCvDirection 등)이 3~5초 만에 되돌렸다.
+                //   설비 통신이 수동 전환을 쓰면 CV_DATA.OD_USER_ID='MANUAL_DIR', OD_UPD_DT 를 남긴다.
+                //   그로부터 [CNF] MANUAL_DIR_HOLD_SEC(기본 120초) 동안은 자동 방향 지시를 내지 않는다.
+                //   (모든 자동 방향 지시는 이 함수를 지나므로 여기 한 곳이면 된다. HOST M 전문의 DIRW 승격은 별도.)
+                {
+                    string whyM;
+                    if (IsManualDirHold(mcNo, out whyM))
+                    {
+                        DbgLog("DIRMAN_" + mcNo, "[CV] 자동 방향 지시 보류 - 겸용대 " + mcNo + " " + whyM);
+                        return false;
+                    }
+                }
+
                 // [LGLS 2026-08-30] 겸용대 방향 전환 규약(사용자 확정):
                 //   현재 방향의 작업 화물이 아직 설비에 있으면 전환하지 않는다. 뒤집으면 이송 방향이
                 //   반대가 되어 그 화물이 갇히고(HS 미성립) 크레인 앞에서 충돌한다.
@@ -2903,6 +2917,36 @@ namespace TSK_COMM_IOSCH
                 MakeMsg_Error("[SCH][CV] RequestCvDirection 오류: " + ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>[LGLS 2026-09-17] 그 겸용대(설비 단위 - 103/104, 121/122)에 Client 수동 방향 전환이 MANUAL_DIR_HOLD_SEC 안에 있었는가.</summary>
+        private bool IsManualDirHold(string mcNo, out string why)
+        {
+            why = "";
+            try
+            {
+                int nHold = cDefApi.GsReadInitProfileCnf("MANUAL_DIR_HOLD_SEC", 120);
+                if (nHold <= 0) return false;
+                string[] tracks = (mcNo == SC1_DUAL_CV || mcNo == "104") ? SHARED_LINE_CV2
+                                : (mcNo == "121" || mcNo == "122")       ? DUAL_LINE_CV11
+                                : new string[] { mcNo };
+                string q = "";
+                q += CRLF + " SELECT MIN(DATEDIFF(second, OD_UPD_DT, " + DbLang.SYSDATE + ")) AS AGO ";
+                q += CRLF + "   FROM CV_DATA                                          ";
+                q += CRLF + "  WHERE WH_TYP     = :WH_TYP                             ";
+                q += CRLF + "    AND MC_NO     IN ('" + string.Join("','", tracks) + "') ";
+                q += CRLF + "    AND OD_USER_ID = 'MANUAL_DIR'                        ";
+                q += CRLF + "    AND OD_UPD_DT IS NOT NULL                            ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return false;
+                int ago; if (!int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "AGO"), out ago)) return false;
+                if (ago < 0 || ago >= nHold) return false;
+                why = "수동 전환 " + ago + "초 전 (자동 정합 " + nHold + "초 억제)";
+                return true;
+            }
+            catch { return false; }
         }
 
         /// <summary>[LGLS 2026-08-01] 트랙 트래킹(작업번호)이 비었는지 — 화물 센서와 별개로 예약/잔류 트래킹까지 본다.</summary>

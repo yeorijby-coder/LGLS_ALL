@@ -1154,20 +1154,21 @@ BOOL CEcsView::DirectionToggleByDblClk(CPoint point)
 		(LPCTSTR)strNow, (LPCTSTR)strNext,
 		(LPCTSTR)pDoc->GetMsgLangDef(_T("PLC 주소")), (LPCTSTR)strAddr,
 		(LPCTSTR)pDoc->GetMsgLangDef(_T("값")), (LPCTSTR)strVal,
-		(LPCTSTR)pDoc->GetMsgLangDef(_T("반대 방향 작업 화물이 있으면 설비 통신이 전환을 보류합니다.")));
+		(LPCTSTR)pDoc->GetMsgLangDef(_T("수동 전환은 즉시 반영되고, 잠시 동안 자동 방향 정합이 멈춥니다.")));   // [LGLS 2026-09-17] DIRM 즉시 전환
 	if (AfxMessageBox(strAsk, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES)
 		return TRUE;
 
 	// IO_TASK RequestCvDirection / C/V 창 [H/S 배출] 과 같은 명령 규약. 대기 중인 다른 명령은 덮어쓰지 않는다.
+	// [LGLS 2026-09-17] 'DIRM' = 수동(즉시) 전환. 설비 통신이 화물 보류 없이 바로 쓰고, IO_TASK 는 한동안 자동 정합을 멈춘다(사용자 지시).
 	CString strParm = bOutNow ? _T("0") : _T("1");
 	strSql.Format(_T(" UPDATE CV_DATA                                          \n")
-		  _T("    SET CMD_RQ_ID    = 'DIR'                             \n")
+		  _T("    SET CMD_RQ_ID    = 'DIRM'                            \n")
 		  _T("      , CMD_RQ_PARM  = '%s'                              \n")
 		  _T("      , CMD_RQ_YN    = 'Y'                               \n")
 		  _T("      , WRITE_UPD_DT = ") + pDoc->SYSDATE + _T("           \n")
 		  _T("  WHERE WH_TYP = '%s'                                    \n")
 		  _T("    AND MC_NO  = '%s'                                    \n")
-		  _T("    AND (CMD_RQ_YN <> 'Y' OR CMD_RQ_ID = 'DIR')          "),
+		  _T("    AND (CMD_RQ_YN <> 'Y' OR CMD_RQ_ID IN ('DIR','DIRM','DIRW'))  "),
 		(LPCTSTR)strParm, (LPCTSTR)pDoc->m_WH_TYP, s_szTrack[nHit]);
 	pDoc->BeginTrans_DLG();
 	if (pDoc->ExcuteQueryString_DLG(strSql) != TRUE)
@@ -1177,7 +1178,8 @@ BOOL CEcsView::DirectionToggleByDblClk(CPoint point)
 		return TRUE;
 	}
 	CString strLog;
-	strLog.Format(_T("방향 전환 요청(더블클릭) -> %s 트랙 %s : %s -> %s, %s, 값 %s"), s_szName[nHit], s_szTrack[nHit], (LPCTSTR)strNow, (LPCTSTR)strNext, (LPCTSTR)strAddr, (LPCTSTR)strVal);
+	// [LGLS 2026-09-17] 로그 컬럼(varchar 200)을 넘지 않게 짧게 - 길면 INSERT 실패 팝업이 겹쳐 떴다(사용자 보고).
+	strLog.Format(_T("수동 방향 전환(즉시) 트랙 %s : %s -> %s, %s"), s_szTrack[nHit], (LPCTSTR)strNow, (LPCTSTR)strNext, (LPCTSTR)strAddr);
 	pDoc->GetQueryInsertClientLog(_T("CEcsView"), _T(""), _T(""), _T(""), strLog);
 	pDoc->CommitTrans_DLG();
 	CLib::UiLog(_T("[DIR] request track=%s parm=%s"), s_szTrack[nHit], (LPCTSTR)strParm);

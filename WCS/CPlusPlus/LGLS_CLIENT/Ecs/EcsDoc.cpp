@@ -2230,13 +2230,24 @@ BOOL CEcsDoc::GetQueryInsertClientLog(CString pWIN_ID, CString pLUGG_NO, CString
 	strSql += CRLF + _T("				, '") + pLUGG_NO + _T("'		");
 	strSql += CRLF + _T("				, '") + pBOTTOM_TRAY + _T("'	");
 	strSql += CRLF + _T("				, '") + pTOP_TRAY + _T("'		");
+	// [LGLS 2026-09-17] MESSAGE column is varchar(200): trim so INSERT never fails on long (Korean, 2-byte) text. (user report: two popups)
+	{
+		int nBytes = ::WideCharToMultiByte(949, 0, pMESSAGE, -1, NULL, 0, NULL, NULL) - 1;
+		while (nBytes > 196 && pMESSAGE.GetLength() > 0)
+		{
+			pMESSAGE = pMESSAGE.Left(pMESSAGE.GetLength() - 1);
+			nBytes = ::WideCharToMultiByte(949, 0, pMESSAGE, -1, NULL, 0, NULL, NULL) - 1;
+		}
+		pMESSAGE.Replace(_T("'"), _T("''"));
+	}
 	strSql += CRLF + _T("				, '") + pMESSAGE + _T("'			");
 	strSql += CRLF + _T("				, '") + CString(bAlarm ? _T("Y") : _T("N")) + _T("')	");
 
  	BOOL isSuccess = ExcuteQueryString_DLG(strSql);
 	if(isSuccess == FALSE)
 	{
-		AfxMessageBox(GetMsgLangDef(_T("CLIENT LOG 추가 실패")));
+		// [LGLS 2026-09-17] no popup for a failed audit-log insert - it doubled the message box on manual direction change (user report).
+		TRACE(_T("CLIENT LOG insert failed"));
 	}
 	// [LGLS 2026-08-22] 구 CLog::Write 의 bAlarm 처리(PumpupAlarm) 대응 -
 	//   로그를 남기면서 이 PC 의 경고창에 즉시 띄운다. 다른 Client 는 ALARM_YN 을

@@ -949,7 +949,7 @@ namespace TSK_HostCom
             m_BDb.ParamsClear();
 
             m_strSql = modDefApp.CRLF + "   SELECT  *                 ";
-            m_strSql += modDefApp.CRLF + "    FROM  SC_DATA_LGLS           ";
+            m_strSql += modDefApp.CRLF + "    FROM  SC_DATA_LGLS WITH (NOLOCK)  ";   // [LGLS 2026-09-17] 상태보고 읽기 - 교착(1205) 피해자 방지
             m_strSql += modDefApp.CRLF + "   WHERE  WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
             //m_strSql += modDefApp.CRLF + "     AND  HOST_SEND_YN = 'N'";          // 모든 크레인의 정보를 가져와야함!
             m_strSql += modDefApp.CRLF + "ORDER BY  SC_NO             ";
@@ -1014,7 +1014,7 @@ namespace TSK_HostCom
             m_BDb.ParamsClear();
 
             m_strSql = modDefApp.CRLF + "   SELECT  *                 ";
-            m_strSql += modDefApp.CRLF + "    FROM  SC_DATA_LGLS           ";
+            m_strSql += modDefApp.CRLF + "    FROM  SC_DATA_LGLS WITH (NOLOCK)  ";   // [LGLS 2026-09-17] 상태보고 읽기 - 교착(1205) 피해자 방지
             m_strSql += modDefApp.CRLF + "   WHERE  WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
             m_strSql += modDefApp.CRLF + "ORDER BY  SC_NO             ";
 
@@ -1110,8 +1110,10 @@ namespace TSK_HostCom
             // [LGLS 2026-07-30] 명세 43B 집계 전문 구성에 필요한 트랙만 조회:
             //   122=101(외부 입출고 겸용대), 129/130=102(피킹존 출고/입고), 126=103(제품 입고대), 124=104(원부자재 불출대),
             //   103=110(SC1 라인 C/V#2 — PLC 모드 필드용)
+            // [LGLS 2026-09-17 06:36] 상태보고용 읽기는 잠금을 잡지 않는다(WITH (NOLOCK)) - 실측 : 설비 통신/스케줄러의 CV_DATA 갱신과
+            //   맞물려 SQL Server 교착(1205)의 피해자로 끊겼다("트랜잭션(프로세스 ID 56)이 ... 교착 상태"). 표시용 스냅샷이라 더티 리드 무해.
             m_strSql = modDefApp.CRLF + "     SELECT  CD.*                          ";
-            m_strSql += modDefApp.CRLF + "      FROM  CV_DATA CD                    ";
+            m_strSql += modDefApp.CRLF + "      FROM  CV_DATA CD WITH (NOLOCK)      ";
             m_strSql += modDefApp.CRLF + "     WHERE  CD.WH_TYP       =  " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
             m_strSql += modDefApp.CRLF + "       AND  CD.MC_NO IN ('103','122','124','126','129','130') ";
             m_strSql += modDefApp.CRLF + "  ORDER BY  CD.PLC_NO,     CD.MC_NO       ";
