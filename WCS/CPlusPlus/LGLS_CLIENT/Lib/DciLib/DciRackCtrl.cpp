@@ -25,6 +25,7 @@ void CDciRackCtrl::InitControl(CDciMaster* pDCI)
 
 	m_nType = enL2R;
 	m_nUnitLenL = 1;
+	m_nUnitLenH = 0;	// [LGLS 2026-09-16] 0=len과 동일(정사각). XML lenh 로 세로 지정 시 2x3 등 가능
 	m_nStartPos = 0;
 //	m_nIncreaseCount = 1;
 }
@@ -37,6 +38,7 @@ int CDciRackCtrl::UpdatePropNames(CDciPropertyArray& properties)
 	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("start"));
 	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("type"));
 	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("len"));
+	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("lenh"));	// [LGLS 2026-09-16] 세로 유닛(하위호환)
 //	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("increase"));
 	ASSERT(properties.GetSize() == i);
 
@@ -52,6 +54,8 @@ int CDciRackCtrl::UpdatePropValues(CDciPropertyArray& properties, BOOL bSaveObje
 		m_nStartPos		= CConvert::ToInt(properties[i++].m_strValue);
 		m_nType			= CConvert::ToInt(properties[i++].m_strValue);
 		m_nUnitLenL		= CConvert::ToInt(properties[i++].m_strValue);
+		m_nUnitLenH		= CConvert::ToInt(properties[i++].m_strValue);	// [LGLS 2026-09-16]
+		if (m_nUnitLenH <= 0) m_nUnitLenH = m_nUnitLenL;	// 미지정=정사각(종전 동작)
 //		m_nIncreaseCount= CConvert::ToInt(properties[i++].m_strValue);
 	}
 	else	
@@ -59,6 +63,7 @@ int CDciRackCtrl::UpdatePropValues(CDciPropertyArray& properties, BOOL bSaveObje
 		properties[i++].m_strValue.Format(_T("%d"), m_nStartPos);
 		properties[i++].m_strValue.Format(_T("%d"), m_nType);
 		properties[i++].m_strValue.Format(_T("%d"), m_nUnitLenL);
+		properties[i++].m_strValue.Format(_T("%d"), m_nUnitLenH);	// [LGLS 2026-09-16]
 //		properties[i++].m_strValue.Format(_T("%d"), m_nIncreaseCount);
 	}
 	
@@ -78,9 +83,9 @@ void CDciRackCtrl::UpdateControl(CDC* pDC)
 		CString str;
 		CRect rcUnitL;
 		int nLen = m_nUnitLenL;
-//		int nRow = abs(m_rcControlL.Height()) / m_nUnitLenL;
+//		int nRow = abs(m_rcControlL.Height()) / m_nUnitLenH;
 //		int nCol = abs(m_rcControlL.Width()) / m_nUnitLenL;
-		int nRow = abs(m_rcControlL.Height()) / m_nUnitLenL;
+		int nRow = abs(m_rcControlL.Height()) / m_nUnitLenH;
 		int nCol = abs(m_rcControlL.Width()) / m_nUnitLenL;
 
 //=========================================================================================================================
@@ -93,9 +98,9 @@ void CDciRackCtrl::UpdateControl(CDC* pDC)
 			for (int j=0; j<nCol; ++j)
 			{
 				rcUnitL.left	= m_rcControlL.left+j*m_nUnitLenL;
-				rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenL;
+				rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenH;
 				rcUnitL.right	= m_rcControlL.left+(j+1)*m_nUnitLenL;
-				rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenL;
+				rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenH;
 				m_pDCI->DrawButton(pDC, rcUnitL, m_clrBgColor, m_bClick);
 
 				if (m_bClick)
@@ -117,9 +122,9 @@ void CDciRackCtrl::UpdateControl(CDC* pDC)
 				{
 					// 각 컨트롤의 위치를 계산하는 부분
 					rcUnitL.left	= m_rcControlL.left+j*m_nUnitLenL;
-					rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenL;
+					rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenH;
 					rcUnitL.right	= m_rcControlL.left+(j+1)*m_nUnitLenL;
-					rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenL;
+					rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenH;
 					m_pDCI->DrawButton(pDC, rcUnitL, m_clrBgColor, m_bClick);
 
 					if (m_bClick)
@@ -158,9 +163,9 @@ void CDciRackCtrl::UpdateControl(CDC* pDC)
 				{
 					// 각 컨트롤의 위치를 계산하는 부분
 					rcUnitL.left	= m_rcControlL.left+j*m_nUnitLenL;
-					rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenL;
+					rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenH;
 					rcUnitL.right	= m_rcControlL.left+(j+1)*m_nUnitLenL;
-					rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenL;
+					rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenH;
 					m_pDCI->DrawButton(pDC, rcUnitL, m_clrBgColor, m_bClick);
 
 					
@@ -200,9 +205,9 @@ void CDciRackCtrl::UpdateControl(CDC* pDC)
 				for (int j=0; j<nCol; ++j)
 				{
 					rcUnitL.left	= m_rcControlL.left+j*m_nUnitLenL;
-					rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenL;
+					rcUnitL.top		= m_rcControlL.bottom+(i+1)*m_nUnitLenH;
 					rcUnitL.right	= m_rcControlL.left+(j+1)*m_nUnitLenL;
-					rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenL;
+					rcUnitL.bottom	= m_rcControlL.bottom+i*m_nUnitLenH;
 					m_pDCI->DrawButton(pDC, rcUnitL, m_clrBgColor, m_bClick);
 
 					if (m_bClick)
