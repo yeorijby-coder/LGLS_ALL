@@ -397,8 +397,9 @@ namespace TSK_COMM_IOSCH
                     // ── 알람 감시 : 설비 에러코드 로깅 (Set/Reset Report Ack 는 통신 Task 담당)
                     ReportOutStationArrival();  // [LGLS 2026-08-30] 출고대 신호 ON → 상위 도착보고(22)
                     MonitorAlarm();
-                    MarkErrorJobStatus();       // [LGLS 2026-08-30] 이중입고(54)/공출고(58) → 작업상태 반영
-                    ResumeRedirectedJobs();     // [LGLS 2026-08-30] 재지정(07/06) → 새 셀로 재개 지시
+                    // [LGLS 2026-09-16] ★이 현장은 이중입고/공출고가 없다(사용자 확인)★ - 아래 두 처리는 미사용(주석). 정의는 보존.
+                    //MarkErrorJobStatus();       // [LGLS 2026-08-30] 이중입고(54)/공출고(58) → 작업상태 반영
+                    //ResumeRedirectedJobs();     // [LGLS 2026-08-30] 재지정(07/06) → 새 셀로 재개 지시
                     ConsumeForceComplete();     // [LGLS 2026-09-06] 운전 화면 [강제완료](FCMP) 소비
                     SweepOrphanVehicleData();   // [LGLS 2026-09-08] 작업이 사라진 뒤 설비에 남은 지시 흔적 정리
 

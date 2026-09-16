@@ -695,7 +695,8 @@ namespace WCS_TASK_CV
                     //   알람 발생 보고의 코드(D0211)를 설비 에러코드로 삼아 아래 DB 반영부에서
                     //   ERR_CODE_RD + HOST_ERR_SEND_YN='N' 으로 기록 → HOST_TASK 가 E 전문으로 올린다.
                     // [LGLS 2026-09-16] SC 도 [CNF] SC_ERR_CODE_BLOCK=2(알람 보고 비트 래치) 이면 여기서 읽은 코드를 래치한다(사용자 지시).
-                    if ((m_strKind != "SC" || cDefApi.GsReadInitProfileScErrCodeBlock() == 2) && code != 0) v.Cache["__almErrCode"] = code.ToString("0000");
+                    //   2026-09-16 23:03 모드 1/3/4 도 래치 계열(cDefApi.GsScErrLatch).
+                    if ((m_strKind != "SC" || cDefApi.GsScErrLatch(cDefApi.GsReadInitProfileScErrCodeBlock())) && code != 0) v.Cache["__almErrCode"] = code.ToString("0000");
                     System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 발생 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
                 }
                 else if (!almSet && prevSet)
@@ -717,7 +718,7 @@ namespace WCS_TASK_CV
                     WriteBit(oResetAck, true);
                     v.Cache["ALM_RESET_ACKED"] = "1";
                     // [LGLS 2026-09-01] 알람 해제 → RTV 에러코드 정상(0000) 복귀 (E 재보고는 하지 않는다)
-                    if (m_strKind != "SC" || cDefApi.GsReadInitProfileScErrCodeBlock() == 2) v.Cache["__almErrClr"] = "1";   // [LGLS 2026-09-16] 모드 2: 해제 보고로 래치 클리어
+                    if (m_strKind != "SC" || cDefApi.GsScErrLatch(cDefApi.GsReadInitProfileScErrCodeBlock())) v.Cache["__almErrClr"] = "1";   // [LGLS 2026-09-16] 래치 계열(1/2/3/4): 해제 보고로 래치 클리어
                     System.Diagnostics.Debug.WriteLine(v.OwnerId + " 알람 해제 보고 감지 (code=" + code.ToString("0000") + ") → Ack ON");
                 }
                 else if (!almReset && prevReset)
@@ -801,13 +802,18 @@ namespace WCS_TASK_CV
                 //   써서 3·5호기가 코드 0001 로 떴다가 저절로 풀렸다. 기본은 블록을 읽지 않고, 알람코드 워드(ALARM_SET_CODE,
                 //   문서 D0161+10k)를 상태로 본다 - 구 ECS Vehicle.OnAlarmSetCode / RTV 쪽(09-11)과 같은 규약.
                 //   WCS_DB.INI [CNF] SC_ERR_CODE_BLOCK=1 이면 종전대로 블록을 읽는다(EQP_SIM 이중입고/공출고 시험).
-                bool bErrFromBlock = false;
-                // [LGLS 2026-09-16] [CNF] SC_ERR_CODE_BLOCK : 0=알람코드 워드 상시(현장 기본) / 1=ErrCode 블록(시뮬) / 2=알람 보고 비트 래치(신설, 사용자 지시)
+                // [LGLS 2026-09-16 23:03] [CNF] SC_ERR_CODE_BLOCK (사용자 지시) - 표는 cDefApi.GsReadInitProfileScErrCodeBlock 주석 참조
+                //   0 = 알람코드 워드 상시(현장 기본)
+                //   2 = 알람 보고 비트 래치            3 = 2 + 워드가 0 이면 해제
+                //   4 = 2 + DOWN 이면 에러색           1 = 2 + 워드 0 해제 + DOWN 에러색  (종전 ErrCode 블록 용도는 폐기)
                 int  nErrMode   = cDefApi.GsReadInitProfileScErrCodeBlock();
-                bool bLatchMode = (nErrMode == 2);
+                bool bLatchMode = cDefApi.GsScErrLatch(nErrMode);
+                bool bWordClr   = cDefApi.GsScErrWordClear(nErrMode);
+                bool bDownRed   = cDefApi.GsScErrDownRed(nErrMode);
+                bool bClrByWord = false;
                 if (bLatchMode)
                 {
-                    // 모드 2 : 워드를 상시 읽지 않는다. ALARM_SET_REPORT 가 설 때 읽어 둔 코드(__almErrCode)로 에러를 세우고,
+                    // 래치 계열 : 워드를 상시 읽지 않는다. ALARM_SET_REPORT 가 설 때 읽어 둔 코드(__almErrCode)로 에러를 세우고,
                     //   ALARM_RESET_REPORT 에서 내린다(__almErrClr). 그 사이에는 종전 ERR_CODE_RD 를 그대로 유지(래치).
                     //   현장 3·5호기처럼 PLC 가 그 워드에 다른 값을 쓰거나 잔존시켜도 보고 비트 없이는 에러가 되지 않는다.
                     //   문서 핸드셰이크(AlarmSetReport→Ack) 및 구 ECS Vehicle.OnAlarmSetReport 규약과 같다.
@@ -815,19 +821,21 @@ namespace WCS_TASK_CV
                     string strLatched;
                     if (v.Cache.TryGetValue("__almErrCode", out strLatched)) { v.Cache.Remove("__almErrCode"); errCode = strLatched; }
                     if (v.Cache.ContainsKey("__almErrClr")) { v.Cache.Remove("__almErrClr"); errCode = "0000"; }
+                    // 모드 1/3 : RESET 보고 펄스를 16초 순회 사이에 놓쳐도 워드가 0 으로 내려가 있으면 해제한다
+                    //   (RTV 09-11 사례와 같은 구멍 방지, 구 ECS Vehicle.OnAlarmSetCode(0) 과 같은 규약).
+                    if (bWordClr && errCode != "0000")
+                    {
+                        int nW = 0; ObsDef oW = O(v, "ALARM_SET_CODE");
+                        if (oW != null && ReadShort(oW, ref nW) && nW == 0) { errCode = "0000"; bClrByWord = true; }
+                    }
                 }
                 else
                 {
-                    ObsDef eco = (nErrMode != 0) ? O(v, "ERR_CODE_RD") : null;
-                    if (eco != null) { int ec = 0; if (ReadShort(eco, ref ec)) { bErrFromBlock = true; if (ec != 0) errCode = ec.ToString("0000"); } }
-                    if (!bErrFromBlock)
-                    {
-                        int nScAlm = 0;
-                        ObsDef oScAlm = O(v, "ALARM_SET_CODE");
-                        if (oScAlm != null && ReadShort(oScAlm, ref nScAlm) && nScAlm != 0) errCode = nScAlm.ToString("0000");
-                    }
+                    int nScAlm = 0;
+                    ObsDef oScAlm = O(v, "ALARM_SET_CODE");
+                    if (oScAlm != null && ReadShort(oScAlm, ref nScAlm) && nScAlm != 0) errCode = nScAlm.ToString("0000");
                 }
-                string strErrSrc = bLatchMode ? "알람 보고 래치" : (bErrFromBlock ? "ErrCode 블록" : "ALARM_SET_CODE 워드");
+                string strErrSrc = bLatchMode ? ("알람 보고 래치 모드 " + nErrMode + (bClrByWord ? ", 워드 0" : "")) : "ALARM_SET_CODE 워드";
                 {
                     string strScPrev = (Cached(v, "ERR_CODE_RD") ?? "");
                     if (strScPrev != errCode && errCode == "0000" && strScPrev.Length > 0 && strScPrev != "0000")
@@ -847,6 +855,16 @@ namespace WCS_TASK_CV
                 //   이중입고(54)/공출고(58)가 DB 까지 와도 상위로 보고되지 않아 재지정 절차가 시작되지 않았다.
                 bNewErr = (errCode != "0000") && ((Cached(v, "ERR_CODE_RD") ?? "") != errCode);
                 chg("ERR_CODE_RD", errCode);
+                // [LGLS 2026-09-16 23:03] 모드 1/4 : SUBSYSTEM_STATUS=DOWN 을 포크 에러상태 ERR_STA_FK1_RD='3'(COMMON_CODE SC_ERR_STA_FK 3=사용정지)로 내린다.
+                //   Client 메인 화면 ScInfo.GetForkColor1 은 ERR_STA_FK1_RD != '0' 이면 에러색 → 구 ECS StackerCraneWidget(DOWN=빨강)과 같아진다.
+                //   ERR_CODE_RD 는 건드리지 않으므로 상위 E 전문(HOST_ERR_SEND_YN)에는 오르지 않는다. 그 외 모드는 '0' 으로 정리.
+                {
+                    string strFkPrev = (Cached(v, "ERR_STA_FK1_RD") ?? "");
+                    string strFkNow  = (bDownRed && bDown) ? "3" : "0";
+                    if (strFkPrev != strFkNow && (strFkNow == "3" || strFkPrev == "3"))
+                        LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + (strFkNow == "3" ? " DOWN → 에러색 표시(ERR_STA_FK1_RD=3, 모드 " + nErrMode + ")" : " DOWN 해제 → 에러색 해제(ERR_STA_FK1_RD=0)"));
+                    chg("ERR_STA_FK1_RD", strFkNow);
+                }
             }
             else
             {

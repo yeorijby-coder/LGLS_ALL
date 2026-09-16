@@ -36,6 +36,9 @@ namespace EQP_SIM
         {
             try
             {
+                // [LGLS 2026-09-16] 이 현장은 이중입고/공출고가 없다(사용자 확인) - 주입 체크박스 숨김
+                chkInjectDouble.Visible = false;
+                chkInjectEmpty.Visible  = false;
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 config = new SimConfig(Path.Combine(baseDir, "EQP_SIM.ini"));
 
@@ -307,18 +310,21 @@ namespace EQP_SIM
         }
 
         // [LGLS] 이중입고/공출고 에러 주입: 체크 시 다음 최초 입고/출고 S/C 작업에서 1회 발생 (VehicleSim 소비)
+        // [LGLS 2026-09-16] ★이 현장은 이중입고/공출고가 없다(사용자 확인)★ - 주입 기능 미사용. 핸들러는 무력화, 체크박스는 숨김.
         private void chkInjectDouble_CheckedChanged(object sender, EventArgs e)
         {
-            if (engine == null) return;
-            engine.InjectDoubleStorage = chkInjectDouble.Checked;
-            if (chkInjectDouble.Checked) lblStatus.Text = "이중입고 에러 예약됨 — 다음 입고 크레인에서 발생(ERR 54)";
+            //if (engine == null) return;
+            //engine.InjectDoubleStorage = chkInjectDouble.Checked;
+            //if (chkInjectDouble.Checked) lblStatus.Text = "이중입고 에러 예약됨 — 다음 입고 크레인에서 발생(ERR 54)";
+            if (chkInjectDouble.Checked) chkInjectDouble.Checked = false;
         }
 
         private void chkInjectEmpty_CheckedChanged(object sender, EventArgs e)
         {
-            if (engine == null) return;
-            engine.InjectEmptyRetrieval = chkInjectEmpty.Checked;
-            if (chkInjectEmpty.Checked) lblStatus.Text = "공출고 에러 예약됨 — 다음 출고 크레인에서 발생(ERR 58)";
+            //if (engine == null) return;
+            //engine.InjectEmptyRetrieval = chkInjectEmpty.Checked;
+            //if (chkInjectEmpty.Checked) lblStatus.Text = "공출고 에러 예약됨 — 다음 출고 크레인에서 발생(ERR 58)";
+            if (chkInjectEmpty.Checked) chkInjectEmpty.Checked = false;
         }
 
         // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (현장 2026-09-11 재현) - 사용자 지시

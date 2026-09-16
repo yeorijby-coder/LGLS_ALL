@@ -1659,6 +1659,7 @@ void CScSkinDlg::OnBnClickedChkScFork2()
 
 void CScSkinDlg::OnBnClickedScDuplicationSto()
 {
+	return;   // [LGLS 2026-09-16] unused at this site (no dual-store/empty-retrieval) - button hidden in rc
 	UpdateData(TRUE);
 
 	CString strSql = _T("");

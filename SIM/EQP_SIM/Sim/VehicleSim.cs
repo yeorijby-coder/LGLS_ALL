@@ -218,13 +218,13 @@ namespace EQP_SIM.Sim
                         {
                             bool isIngo  = !IsPort(to01, to02);     // 목적지가 랙 셀 = 입고
                             bool isOutgo = !IsPort(from01, from02); // 출발지가 랙 셀 = 출고
-                            if ((engine.InjectDoubleStorage || engine.InjectDoubleCount > 0) && isIngo)
+                            if (false && (engine.InjectDoubleStorage || engine.InjectDoubleCount > 0) && isIngo)   // [LGLS 2026-09-16] 이중입고 주입 미사용(이 현장 없음)
                             {
                                 pendingErrCode = 54;
                                 if (engine.InjectDoubleCount > 0) engine.InjectDoubleCount--; else engine.InjectDoubleStorage = false;
                                 engine.Log(Def.Id + " ★이중입고 에러 예약 (다음 입고 하차 시 발생) 잔여 " + engine.InjectDoubleCount);
                             }
-                            else if ((engine.InjectEmptyRetrieval || engine.InjectEmptyCount > 0) && isOutgo)
+                            else if (false && (engine.InjectEmptyRetrieval || engine.InjectEmptyCount > 0) && isOutgo)   // [LGLS 2026-09-16] 공출고 주입 미사용(이 현장 없음)
                             {
                                 pendingErrCode = 58;
                                 if (engine.InjectEmptyCount > 0) engine.InjectEmptyCount--; else engine.InjectEmptyRetrieval = false;

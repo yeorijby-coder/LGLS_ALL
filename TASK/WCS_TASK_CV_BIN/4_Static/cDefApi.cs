@@ -239,20 +239,34 @@ namespace WCS_TASK_CV
         }
         #endregion
 
-        #region [CNF]::크레인 에러코드 판정 방식  [LGLS 2026-09-15, 2026-09-16 모드 2 추가]
-        //   0(기본) = 알람코드 워드(ALARM_SET_CODE, 문서 D0161+10k) 를 매 주기 읽어 0 이 아니면 에러 - 구 ECS Vehicle.OnAlarmSetCode 와 같다.
-        //   1        = 주소맵 ErrCode 블록(D1160+10k, 문서에 없는 시뮬 예약영역)을 읽는다 - EQP_SIM 이중입고/공출고 시험용.
-        //   2        = 알람 보고 비트 래치 : ALARM_SET_REPORT 가 설 때 읽은 코드로 에러를 세우고 ALARM_RESET_REPORT 에서 내린다.
-        //              워드를 상시 읽지 않으므로 PLC 가 그 워드에 다른 값을 쓰거나 잔존시켜도 유령 에러가 안 난다(사용자 지시).
-        //   현장(2026-09-15) : 3·5호기가 지상반 에러 없이 코드 0001 로 떴다가 저절로 풀렸다 - D1180/D1200 은 PLC 가
-        //   다른 용도로 쓰는 워드라 그 값(1)이 에러코드로 읽힌 것. 0 으로도 3·5호기 0001 이 재발(2026-09-16) → 2 를 옵션으로 둔다.
-        //   호출마다 읽으므로 재기동 없이 바뀐다. RTV 에는 적용되지 않는다(RTV 는 자체 규칙).
+        #region [CNF]::크레인 에러코드 판정 방식  [LGLS 2026-09-15, 2026-09-16 모드 2 추가, 2026-09-16 23:03 모드 1/3/4 재정의(사용자 지시)]
+        //   ┌ 모드 ┬ 에러 세움(ERR_CODE_RD)                    ┬ 에러 내림                          ┬ DOWN 이면 에러색(ERR_STA_FK1_RD=3) ┐
+        //   │  0   │ ALARM_SET_CODE 워드가 0 아니면(매 주기) │ 워드가 0 이 되면                   │ 아니오                              │
+        //   │  2   │ ALARM_SET_REPORT 보고 비트가 설 때 래치 │ ALARM_RESET_REPORT 보고             │ 아니오                              │
+        //   │  3   │ 2 와 같음                                │ RESET 보고 또는 워드 0             │ 아니오                              │
+        //   │  4   │ 2 와 같음                                │ RESET 보고                          │ 예                                  │
+        //   │  1   │ 2 와 같음                                │ RESET 보고 또는 워드 0             │ 예   (구 ECS 와 가장 가까움)        │
+        //   └──────┴──────────────────────────────────────────┴────────────────────────────────────┴─────────────────────────────────────┘
+        //   - 0 은 구 ECS Vehicle.OnAlarmSetCode(워드 미러) + Dispatcher(AlarmSetCode!=0) 규약. 보고 비트 없이 워드에 값만 실리면
+        //     (현장 3·5호기 0001, 2026-09-15/16) 유령 에러가 난다.
+        //   - 래치 계열(1/2/3/4)은 구 ECS StackerForm 의 알람 LED(IsAlarmSetReport) 규약. 보고 비트 없는 워드 값은 무시.
+        //   - "워드 0 해제"(1/3)는 RESET 보고 펄스를 16초 순회 사이에 놓쳐 에러가 안 내려가는 구멍(RTV 09-11 사례)을 막는다.
+        //   - "DOWN 에러색"(1/4)은 구 ECS 메인 화면 StackerCraneWidget(SUBSYSTEM_STATUS=DOWN → 빨강)과 맞추는 것. ERR_CODE_RD 가 아니라
+        //     ERR_STA_FK1_RD 로 내리므로 상위 E 전문은 나가지 않는다.
+        //   - 종전 모드 1(주소맵 ErrCode 블록 D1160+10k)은 폐기 - 이 현장은 이중입고/공출고가 없다(2026-09-16).
+        //   호출마다 읽으므로 재기동 없이 바뀐다. RTV 에는 적용되지 않는다(RTV 는 워드 상시 + 래치 병행).
         public static int GsReadInitProfileScErrCodeBlock()
         {
             if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
                 return 0;
             return GetPrivateProfileInt("CNF", "SC_ERR_CODE_BLOCK", 0, cDefApp.GM_ENV_INI);
         }
+        /// <summary>래치 계열(1/2/3/4)인가 - 보고 비트로 세우고 RESET 보고로 내린다</summary>
+        public static bool GsScErrLatch(int nMode)     { return nMode == 1 || nMode == 2 || nMode == 3 || nMode == 4; }
+        /// <summary>워드가 0 이면 해제하는가(1/3)</summary>
+        public static bool GsScErrWordClear(int nMode) { return nMode == 1 || nMode == 3; }
+        /// <summary>DOWN 이면 에러색으로 표시하는가(1/4)</summary>
+        public static bool GsScErrDownRed(int nMode)   { return nMode == 1 || nMode == 4; }
         #endregion
 
         #region [CNF]::M 비트 쓰기 방식  [LGLS 2026-09-14]

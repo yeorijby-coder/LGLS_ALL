@@ -65,6 +65,9 @@ namespace HOST_SIM
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            // [LGLS 2026-09-16] 이 현장은 이중입고/공출고가 없다(사용자 확인) - 재지정 버튼 숨김
+            btnRedirectDouble.Visible = false;
+            btnRedirectEmpty.Visible  = false;
             config = new SimConfig(Path.Combine(SimConfig.BaseDir, "HOST_SIM.ini"));
 
             string dataDir = Path.Combine(SimConfig.BaseDir, "Data");
@@ -328,20 +331,23 @@ namespace HOST_SIM
                 string bay  = frame.BodyText(17, 3);
                 string lev  = frame.BodyText(20, 2);
                 string cell = bank + bay.Substring(1, 2) + lev;    // BBbbLL (Bay 3자리 중 뒤 2자리)
-                if (errKind == '1')          // 이중입고
-                {
-                    redirLuggD = lugg; redirCellD = cell; redirScD = sc;
-                    SafeUI(() => { btnRedirectDouble.Enabled = true;
-                        lblStatus.Text = string.Format("이중입고 발생: JOB {0} SC{1} 랙 {2} — [이중입고 재지정] 가능", lugg, sc, cell); });
-                    Log("SYS", string.Format("★이중입고(ErrorKind=1): JOB={0} SC{1} 셀={2} → 재지정 버튼 활성화", lugg, sc, cell));
-                }
-                else if (errKind == '3')     // 공출고
-                {
-                    redirLuggE = lugg; redirCellE = cell; redirScE = sc;
-                    SafeUI(() => { btnRedirectEmpty.Enabled = true;
-                        lblStatus.Text = string.Format("공출고 발생: JOB {0} SC{1} — [공출고 재지정] 가능", lugg, sc); });
-                    Log("SYS", string.Format("★공출고(ErrorKind=3): JOB={0} SC{1} → 재지정 버튼 활성화", lugg, sc));
-                }
+                // [LGLS 2026-09-16] ★이 현장은 이중입고/공출고가 없다(사용자 확인)★ - 재지정 버튼 활성화 로직 미사용(주석). 파싱은 보존, 로그만 남긴다.
+                if (errKind == '1' || errKind == '3')
+                    Log("SYS", string.Format("(미사용) 이중입고/공출고 E 보고 수신 ErrorKind={0} JOB={1} SC{2} - 이 현장은 해당 없음", errKind, lugg, sc));
+                //if (errKind == '1')          // 이중입고
+                //{
+                //    redirLuggD = lugg; redirCellD = cell; redirScD = sc;
+                //    SafeUI(() => { btnRedirectDouble.Enabled = true;
+                //        lblStatus.Text = string.Format("이중입고 발생: JOB {0} SC{1} 랙 {2} — [이중입고 재지정] 가능", lugg, sc, cell); });
+                //    Log("SYS", string.Format("★이중입고(ErrorKind=1): JOB={0} SC{1} 셀={2} → 재지정 버튼 활성화", lugg, sc, cell));
+                //}
+                //else if (errKind == '3')     // 공출고
+                //{
+                //    redirLuggE = lugg; redirCellE = cell; redirScE = sc;
+                //    SafeUI(() => { btnRedirectEmpty.Enabled = true;
+                //        lblStatus.Text = string.Format("공출고 발생: JOB {0} SC{1} — [공출고 재지정] 가능", lugg, sc); });
+                //    Log("SYS", string.Format("★공출고(ErrorKind=3): JOB={0} SC{1} → 재지정 버튼 활성화", lugg, sc));
+                //}
             }
             catch { }
         }

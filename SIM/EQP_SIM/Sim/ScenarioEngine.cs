@@ -254,7 +254,7 @@ namespace EQP_SIM.Sim
                             SaveState();
                             nextSaveAt = now.AddSeconds(2);
                         }
-                        PollInjectCtrl(now);   // [LGLS 2026-09-15] Data/inject_ctrl.txt 로 이중입고/공출고 N건 예약(자동 테스트)
+                        //PollInjectCtrl(now);   // [LGLS 2026-09-15] Data/inject_ctrl.txt 로 이중입고/공출고 N건 예약(자동 테스트)  [LGLS 2026-09-16] 이 현장 미사용 - 주석
                         var h = StateChanged;
                         if (h != null) h();
                     }
