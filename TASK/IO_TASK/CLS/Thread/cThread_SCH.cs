@@ -733,6 +733,15 @@ namespace TSK_COMM_IOSCH
                         DbgLog("DIRRST_" + sp, "[겸용대] 입고 방향 복귀 보류 - 그 작업대로 오는 출고 진행 중");
                         continue;
                     }
+                    // [LGLS 2026-09-16 23:20] 121/122 미러 갭·반출 전 출고 보호 (DUAL_LINE_CV11 주석 ①②)
+                    {
+                        string why;
+                        if (!IsDualStnClearForInbound(sp, out why))
+                        {
+                            DbgLog("DIRRST_" + sp, "[겸용대] 입고 방향 복귀 보류 - " + why + " (트랙 " + sp + ")");
+                            continue;
+                        }
+                    }
                     if (RequestCvDirection(sp, "0"))
                         MakeMsg_Imp(string.Format("[SCH][CV] 겸용대 {0} 방향 복귀 지시 - 입고(0) (대기 중인 입고 작업 있음)", sp));
                 }
@@ -1974,6 +1983,20 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-08-30] C/V#11 도 방향전환형 겸용대다(입출고 겸용대, 트랙 121/122).
         private static readonly string[] DUAL_LINE_CV11 = { "121", "122" };
 
+        // [LGLS 2026-09-16 23:20] ★겸용 입출고대(122) 입고 전환 안전장치★ (6911/6914 정체 실측, 사용자 지시 "앞으로 발생하지 않게")
+        //   실측(22:45) : 출고 6911 이 RTV 하차 즉시 09 가 되고 121→122 로 굴러가는 사이, CV_DATA 미러가 121 은 비우고
+        //   122 는 아직 안 채운 ~1초 창에서 ②입고 복귀(IsTrackEmpty)와 IsDualCvBusyWithJob 이 모두 "비었음"으로 통과
+        //   → 122 가 입고로 뒤집혀, 출고대에 막 도착한 6911 이 벨트를 타고 121 로 되끌려 갇히고(시뮬 = 현장 벨트 물리)
+        //   그 위에 지시된 입고 6914 도 갇혔다. 09 가 된 출고는 HasActiveOutboundTo 에서도 빠진다.
+        //   ① 121/122 두 트랙이 모두 센서 0·트래킹 0 인 상태가 DUAL_CLEAR_SETTLE_MS 이상 ★연속★ 관측돼야 "비었음"
+        //      (미러 갭은 1주기 안에 닫히므로 3초 연속이면 이동 중 화물을 놓치지 않는다)
+        //   ② 122 로 오는 출고가 완료(09/19/39)된 지 OUT_ARRIVE_GRACE_SEC 안이면 지게차 반출 전으로 보고 보류
+        //      (시뮬 : 하차 09 → 2초 이동 → 3초 후 배출 표시 → 3초 후 트래킹 제거 ≈ 10초. 현장은 ①의 센서가 잡는다)
+        private const int DUAL_CLEAR_SETTLE_MS = 3000;
+        private const int OUT_ARRIVE_GRACE_SEC = 15;
+        private readonly Dictionary<string, DateTime> m_dicDualClearSince = new Dictionary<string, DateTime>();   // 빈 상태 시작 시각
+        private readonly Dictionary<string, DateTime> m_dicDualClearSeen  = new Dictionary<string, DateTime>();   // 마지막 관측 시각(관측 공백이면 다시 센다)
+
         /// <summary>
         /// [LGLS 2026-08-30] 그 크레인의 드롭 라인에서 S/C 픽업을 기다리는 입고 화물이 이미 있는가.
         ///   ★크레인 충돌 방지의 최종 기준★
@@ -2265,6 +2288,16 @@ namespace TSK_COMM_IOSCH
                     {
                         DbgLog("DIRW_" + mcNo, string.Format("[모드] 전환 대기 - 작업대 {0}/{1} 에 화물·데이터 남음", mcNo, mate));
                         continue;
+                    }
+                    // [LGLS 2026-09-16 23:20] HOST 입고 복귀(DIRW→DIR)도 122 는 ①연속 빈 상태 ②출고 도착 유예를 거친다.
+                    if (dir != "1")
+                    {
+                        string why;
+                        if (!IsDualStnClearForInbound(mcNo, out why))
+                        {
+                            DbgLog("DIRW_" + mcNo, "[모드] 전환 대기 - 작업대 " + mcNo + " " + why);
+                            continue;
+                        }
                     }
 
                     string upd = "";
@@ -2853,6 +2886,16 @@ namespace TSK_COMM_IOSCH
                     DbgLog("DIRHOLD_" + mcNo, string.Format("[CV] 방향전환 보류 - 겸용대 {0} 에 작업 화물이 남아 있음", mcNo));
                     return false;
                 }
+                // [LGLS 2026-09-16 23:20] 122 입고 전환은 어느 호출부에서 오든 ①연속 빈 상태 ②출고 도착 유예를 통과해야 한다.
+                if (dir == "0")
+                {
+                    string why;
+                    if (!IsDualStnClearForInbound(mcNo, out why))
+                    {
+                        DbgLog("DIRHOLD_" + mcNo, "[CV] 방향전환 보류 - 겸용대 " + mcNo + " " + why);
+                        return false;
+                    }
+                }
 
                 string q = "";
                 q += CRLF + " UPDATE CV_DATA                              ";
@@ -2928,6 +2971,67 @@ namespace TSK_COMM_IOSCH
                 if (DbQry(q) <= 0) return true;
                 return GetVal(_pBdb.mDtMain.Rows[0], "SENSOR0_DATA_RD") != "1";
             } catch { return false; }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-16 23:20] 겸용 입출고대(122)를 입고로 돌려도 되는가 - DUAL_LINE_CV11 주석의 ①②.
+        ///   122 가 아니면 항상 true(기존 규칙만 적용). 보류 사유는 why 로 돌려준다.
+        /// </summary>
+        private bool IsDualStnClearForInbound(string stn, out string why)
+        {
+            why = "";
+            if (stn != "122") return true;
+            try
+            {
+                DateTime now = DateTime.Now;
+                string busy = "";
+                foreach (string t in DUAL_LINE_CV11)
+                {
+                    if (!IsTrackEmpty(t))     { busy = "트랙 " + t + " 에 화물 있음"; break; }
+                    if (!IsTrackLuggEmpty(t)) { busy = "트랙 " + t + " 에 트래킹(" + TrackLugg(t) + ") 남음"; break; }
+                }
+                if (busy.Length > 0)
+                {
+                    m_dicDualClearSince.Remove(stn); m_dicDualClearSeen.Remove(stn);
+                    why = busy; return false;
+                }
+                // ① 빈 상태가 연속으로 이어졌는가 (관측 공백이 1초를 넘으면 처음부터 다시 센다)
+                DateTime since, seen;
+                if (!m_dicDualClearSince.TryGetValue(stn, out since) ||
+                    !m_dicDualClearSeen.TryGetValue(stn, out seen) || (now - seen).TotalMilliseconds > 1000)
+                {
+                    since = now; m_dicDualClearSince[stn] = now;
+                }
+                m_dicDualClearSeen[stn] = now;
+                double ms = (now - since).TotalMilliseconds;
+                if (ms < DUAL_CLEAR_SETTLE_MS) { why = "빈 상태 안정화 대기(" + (int)ms + "/" + DUAL_CLEAR_SETTLE_MS + "ms)"; return false; }
+                // ② 방금 도착한 출고(지게차 반출 전)
+                if (RecentOutboundArrivedAt(stn)) { why = "출고 도착 " + OUT_ARRIVE_GRACE_SEC + "초 유예(반출 전)"; return false; }
+                return true;
+            }
+            catch (Exception ex) { why = "판정 오류 " + ex.Message; return false; }   // 모르면 돌리지 않는다
+        }
+
+        /// <summary>[LGLS 2026-09-16 23:20] 그 작업대로 오는 출고가 최근 OUT_ARRIVE_GRACE_SEC 안에 완료(09/19/39)됐는가 - JOB_MST_HIS 기준(삭제돼도 남는다)</summary>
+        private bool RecentOutboundArrivedAt(string stn)
+        {
+            try {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                                   ";
+                q += CRLF + "   FROM JOB_MST_HIS                                       ";
+                q += CRLF + "  WHERE WH_TYP      = :WH_TYP                             ";
+                q += CRLF + "    AND JOB_TYP    IN ('2','12')                          ";
+                q += CRLF + "    AND DEST_POS    = :STN                                ";
+                q += CRLF + "    AND JOB_STATUS IN ('09','19','39')                    ";
+                q += CRLF + "    AND UPD_DT     >= DATEADD(SECOND, -" + OUT_ARRIVE_GRACE_SEC + ", " + DbLang.SYSDATE + ") ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("STN",    DbLang.VARCHAR).Value = stn;
+                if (DbQry(q) <= 0) return false;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            } catch { return true; }   // 모르면 유예 쪽
         }
         #region [LGLS] RV(SC/RTV 공통) 적재·하역 4단계 시퀀스
         // 사용자 요구 동작(각 단계 2초). RV = SC·RTV 통칭.
