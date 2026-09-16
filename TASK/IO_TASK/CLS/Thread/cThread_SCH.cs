@@ -151,7 +151,9 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-09-16] 출고 크레인 완료(29) 직후 C/V#2 통로를 잠시 "출고 유지" 하는 유예 타이머(사용자 확정, 방향 플립플롭 방어).
         //   키=작업번호, 값=만료 시각. SyncDualCvDirection 이 만료 전이면 입고 전환을 보류한다.
         private readonly Dictionary<string, DateTime> m_dicOutHold = new Dictionary<string, DateTime>();
-        private const int OUT_HOLD_SEC = 3;  // [LGLS] RTV 출고대 반출 시퀀스(113→RTV→121→22)  // [LGLS] 출고 라인CV 짝수→홀수 지연 이동
+        // [LGLS 2026-09-16 23:55] ENV_IOSCH.INI [CNF] OUT_HOLD_SEC (기본 3, 0 = 유예 없음). 호출마다 읽으므로 재기동 없이 바뀐다(사용자 지시).
+        //   0 으로 두면 크레인 완료 직후 미러 공백에서 입고→출고 재전환(2회 전환)이 날 수 있다 - A/B before 재현용.
+        private static int OUT_HOLD_SEC { get { int v = cDefApi.GsReadInitProfileCnf("OUT_HOLD_SEC", 3); return v < 0 ? 0 : v; } }
         // [LGLS] RTV 출고대 반출 대기열(FIFO): RTV 는 1대뿐이라 출고대 반출 경로는 동시에 1건만 돈다.
         //   홀수(RGV 픽업)트랙에 도착한 출고 화물을 여기 쌓아두고, 출고대 반출 경로가 비면 선입선출로 하나씩 태운다.
         //   (구코드는 SC 완료 시점에 `if (m_dicOutStn.Count == 0)` 로만 출고대 반출 경로를 만들어서, 선행 화물이
