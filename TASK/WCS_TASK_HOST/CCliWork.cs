@@ -36,6 +36,10 @@ namespace TSK_HostCom
         private string m_strHostCmd;
         // [LGLS 2026-09-16] 완료(09) 잔류 작업 60초 주기 재보고용 마지막 실행 시각
         private DateTime m_dtLast09Report = DateTime.MinValue;
+        // [LGLS 2026-09-16 23:42] 09 작업별 마지막 F 보고 시각. 없으면 ★즉시★ 보고, 있으면 60초 뒤 재보고(응답 없을 때만 남는다).
+        //   실측 : 입고는 25→09 로 바로 가서 GetJobCompleteReport(19/29)에 걸리지 않아 60초 주기에만 보고됐다(6972 = 58초 지연).
+        private readonly System.Collections.Generic.Dictionary<string, DateTime> m_dic09ReportAt = new System.Collections.Generic.Dictionary<string, DateTime>();
+        private const int RE_REPORT_09_SEC = 60;
         //Direction
         private string m_strDirection = "E2W";  // 해당 클래스에서는 이방향으로 보냄!
         public bool m_bFetchSimMode;         // 시뮬레이터 모드 여부
@@ -1887,7 +1891,7 @@ namespace TSK_HostCom
             {
                 if (!m_blSockConnected) return;
                 if (modDefApp.g_frmForm.chkSimMode.Checked == true) return;   // 시뮬 모드는 상위 미연결
-                if ((DateTime.Now - m_dtLast09Report).TotalSeconds < 60) return;
+                // [LGLS 2026-09-16 23:42] 주기 게이트를 없앤다 - 매 폴링 09 작업을 보고, 작업별로 즉시/60초 재보고를 가른다(사용자 지시 "09 되는 시점에 먼저 F").
                 m_dtLast09Report = DateTime.Now;
 
                 m_BDb.ParamsClear();
@@ -1904,6 +1908,12 @@ namespace TSK_HostCom
                 {
                     int nJobType = Convert.ToInt32(dt.Rows[i]["JOB_TYP"].ToString());
                     int nLuggNum = Convert.ToInt32(dt.Rows[i]["LUGG_NO"].ToString());
+                    // [LGLS 2026-09-16 23:42] 처음 보는 09 는 즉시, 이미 보고한 것은 RE_REPORT_09_SEC 지나야 다시 보낸다.
+                    string strKey09 = dt.Rows[i]["LUGG_NO"].ToString().Trim();
+                    DateTime dtPrev09;
+                    bool bFirst09 = !m_dic09ReportAt.TryGetValue(strKey09, out dtPrev09);
+                    if (!bFirst09 && (DateTime.Now - dtPrev09).TotalSeconds < RE_REPORT_09_SEC) continue;
+                    m_dic09ReportAt[strKey09] = DateTime.Now;
                     int nClass;
                     switch (nJobType)
                     {
@@ -1927,11 +1937,12 @@ namespace TSK_HostCom
                     if (RequestSrv(iTxCnt.ToString()))
                     {
                         modDefApp.g_frmForm.DeleteJobMst(m_BDb, true, strLugg);   // 함수안에서 Transaction 처리
-                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) 응답 수신 → 작업 {0} 삭제", strLugg), modDefApp.MSG_NOR);
+                        m_dic09ReportAt.Remove(strKey09);
+                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) {1} → 응답 수신 → 작업 {0} 삭제", strLugg, bFirst09 ? "즉시 보고" : "재보고"), modDefApp.MSG_NOR);
                     }
                     else
                     {
-                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) 재보고(응답 없음 → 유지) - 작업 {0} (60초 주기)", strLugg), modDefApp.MSG_IMP);
+                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) {1}(응답 없음 → 유지) - 작업 {0} ({2}초 뒤 재보고)", strLugg, bFirst09 ? "즉시 보고" : "재보고", RE_REPORT_09_SEC), modDefApp.MSG_IMP);
                     }
                 }
             }
