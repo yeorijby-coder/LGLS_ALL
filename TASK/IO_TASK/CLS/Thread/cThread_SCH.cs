@@ -986,6 +986,12 @@ namespace TSK_COMM_IOSCH
 
                 DataTable dt = _pBdb.mDtMain.Copy();
 
+                // [LGLS 2026-09-16] ★한 사이클에 한 크레인당 1건만 지시★ (CV#2 교착 테스트에서 확정)
+                //   크레인 배타 게이트(위 NOT EXISTS 25)는 쿼리 시점 스냅샷이라, 후보가 모두 20 인 순간
+                //   같은 크레인의 출고 3건이 한 루프에서 연달아 25 로 승격돼 SC1 통로(103/104=2칸)를
+                //   넘겨 크레인이 3번째를 든 채 굳고, 앞 2건은 25→29(크레인 IDLE 필요)를 못 넘어 전면 교착했다.
+                //   크레인은 물리적으로 한 번에 하나만 나르므로, 이번 사이클에 이미 지시한 크레인은 건너뛴다.
+                var setDispatchedSc = new HashSet<string>();
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     string scNo    = GetVal(dt.Rows[i], "SC_NO");
@@ -996,6 +1002,8 @@ namespace TSK_COMM_IOSCH
                     string destPos = GetVal(dt.Rows[i], "DEST_POS");
                     string startLoc= GetVal(dt.Rows[i], "START_LOCATION");
                     string destLoc = GetVal(dt.Rows[i], "DEST_LOCATION");
+
+                    if (setDispatchedSc.Contains(scNo)) continue;   // [LGLS 2026-09-16] 이번 사이클에 이미 이 크레인 지시함
 
                     string key = "SC_" + scNo;
                     if (m_dicPrevSC.ContainsKey(key) && m_dicPrevSC[key] == luggNo) continue;
@@ -1133,6 +1141,7 @@ namespace TSK_COMM_IOSCH
                     {
                         _pBdb.Commit();
                         m_dicPrevSC[key] = luggNo;
+                        setDispatchedSc.Add(scNo);   // [LGLS 2026-09-16] 이 크레인은 이번 사이클 지시 완료 - 추가 지시 금지
                         MakeMsg_Imp(string.Format("[SCH][SC] S/C #{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", scNo, luggNo, ST_SC_RUN));
                     }
                     else
