@@ -411,8 +411,14 @@ COLORREF CScInfo::GetRailColor()
 	// [LGLS 2026-07-22] m_bInvoke: JOB_TYP_RD(지시 21~완료 25 구간, 스케줄러 유지)=지시 중이면 BLUE, 아니면 BLACK
 	// [LGLS 2026-09-09] 작업중 레일색도 설정값을 쓴다(기본 파랑 - 2동 규칙).
 	//   종전엔 BLUE 하드코딩이라 [범례] 창의 [작업중] 설정이 화면에 안 먹었다.
-	return (m_pSC_DATA->V_JOB_TYP_RD != _T("0") && m_pSC_DATA->V_JOB_TYP_RD != _T(""))
-		   ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
+	// [LGLS 2026-09-16] JOB_TYP_RD 잔값(작업정지/미완으로 안 지워진 값)만으로 작업중(파랑) 표시하던 문제 수정.
+	//   실제 가동(UCSTATUS=2) 또는 화물 보유일 때만 작업중색. idle/화물없음이면 잔값이 있어도 BLACK.
+	{
+		BOOL bJob  = (m_pSC_DATA->V_JOB_TYP_RD != _T("0") && m_pSC_DATA->V_JOB_TYP_RD != _T(""));
+		BOOL bBusy = (m_pSC_DATA->V_UCSTATUS_RD == _T("2"));
+		BOOL bHold = (m_pSC_DATA->V_LUGG_NO_FK1_RD != _T("0000") && m_pSC_DATA->V_LUGG_NO_FK1_RD != _T("0") && m_pSC_DATA->V_LUGG_NO_FK1_RD != _T(""));
+		return (bJob && (bBusy || bHold)) ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
+	}
 	//RAIL 색상
 }
 
@@ -439,8 +445,13 @@ COLORREF CScInfo::GetRailColor(CSC_DATA* pSC_DATA)
 	// [LGLS 2026-07-22] m_bInvoke: JOB_TYP_RD(지시 21~완료 25 구간, 스케줄러 유지)=지시 중이면 BLUE, 아니면 BLACK
 	// [LGLS 2026-09-09] 작업중 레일색도 설정값을 쓴다(기본 파랑 - 2동 규칙).
 	//   종전엔 BLUE 하드코딩이라 [범례] 창의 [작업중] 설정이 화면에 안 먹었다.
-	return (pSC_DATA->V_JOB_TYP_RD != _T("0") && pSC_DATA->V_JOB_TYP_RD != _T(""))
-		   ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
+	// [LGLS 2026-09-16] JOB_TYP_RD 잔값만으로 작업중 표시 방지 : 실제 가동(UCSTATUS=2) 또는 화물 보유일 때만.
+	{
+		BOOL bJob  = (pSC_DATA->V_JOB_TYP_RD != _T("0") && pSC_DATA->V_JOB_TYP_RD != _T(""));
+		BOOL bBusy = (pSC_DATA->V_UCSTATUS_RD == _T("2"));
+		BOOL bHold = (pSC_DATA->V_LUGG_NO_FK1_RD != _T("0000") && pSC_DATA->V_LUGG_NO_FK1_RD != _T("0") && pSC_DATA->V_LUGG_NO_FK1_RD != _T(""));
+		return (bJob && (bBusy || bHold)) ? m_pEquipment->m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK : BLACK;
+	}
 }
 
 COLORREF CScInfo::GetPostColor()
