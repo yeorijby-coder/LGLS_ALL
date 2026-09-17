@@ -382,17 +382,6 @@ void CLogIoSkinDlg::OnBnClickedBtnLogIoSearch()
 
 void CLogIoSkinDlg::FillSpreadColumn(CStringArray& strCols)
 {
-	//m_spdLog.SetBackColor(WHITE);
-	//int nColCnt = strCols.GetSize();
-	//m_spdLog.SetMaxCols(nColCnt);
-	//CString strValue = _T("");
-	//for(int nIdxCol = 0; nIdxCol < nColCnt; nIdxCol++)
-	//{
-	//	strValue.Format(_T("%s\r"), strCols.GetAt(nIdxCol));
-	//	m_spdLog.SetText(nIdxCol + 1, 0, variant_t(strValue));
-	//	m_spdLog.put_ColWidth(nIdxCol + 1, strValue.GetLength() * 1.5);
-	//}
-	//m_spdLog.put_ColWidth(2, 45);
 }
 
 

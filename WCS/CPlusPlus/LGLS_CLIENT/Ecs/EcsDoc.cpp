@@ -1576,49 +1576,6 @@ CView* CEcsDoc::GetViewObject()
 	return GetNextView(pos);
 }
 
-// 
-// void CEcsDoc::OnMenuClick_LANGUAGE_KOR()
-// {
-// 	m_enLang = EN_LANG::EN_KOR;
-// 	CMainFrame* pWnd = (CMainFrame*)AfxGetMainWnd();
-// 	if(pWnd == NULL)
-// 		return;
-// 	pWnd->RenameRibbonText(m_enLang);
-// }
-
-// void CEcsDoc::OnMenuClick_SYSTEM_LOGOUT()
-// {
-// 	CString m_strId = _T("");
-// 	CMap<CString, LPCTSTR, CPermission*, CPermission*> m_pUserInfo;
-// 
-// 	CString		strJunk;
-// 	CPermission* posPerm;
-// 	POSITION pos = m_pUserInfo.GetStartPosition();
-// 	for (;;)
-// 	{
-// 		if (pos == NULL) break;
-// 		m_pUserInfo.GetNextAssoc(pos, strJunk, posPerm);
-// 		if(posPerm != NULL)
-// 		{
-// 			delete posPerm;
-// 		}
-// 	}
-// }
-// 
-// void CEcsDoc::OnMenuClick_SYSTEM_SCTIME()
-// {
-// 	if(IsPermissionDlg(_T("CSystemScTimeDlg")) == FALSE)
-// 	{
-// 		CString strKey = _T("권한 Permission없음");
-// 		CString aaa = m_pLang->GetLangValue(strKey, m_enLang);
-// 		AfxMessageBox(aaa);
-// 		return;
-// 	}
-// 
-// 	CSystemScTimeDlg* pDlg = new CSystemScTimeDlg(this);
-// 	pDlg->Create(IDD_SYSTEM_SCTIME);
-// 	pDlg->ShowWindow(SW_SHOW);
-// }
 
 void CEcsDoc::OnMenuClick_VIEW_RACK()
 {
@@ -1844,46 +1801,6 @@ CDciControl* CEcsDoc::GetDciControl(CString& strCID)
 	//*/
 
 }
-// 
-// BOOL CEcsDoc::GetDBObject( CAdoDB** pDB, CURMDBAccess** pDbAccess )
-// {
-// 	TRY
-// 	{
-// 		if((*pDB) == NULL || (*pDbAccess) == NULL)
-// 		{
-// 			(*pDB) = new CAdoDB();
-// 			(*pDbAccess) = new CURMDBAccess(this, (*pDB));
-// 			return TRUE;
-// 		}
-// 	}
-// 	CATCH(CException, e)
-// 	{
-// 		(*pDB) = NULL;
-// 		(*pDbAccess) = NULL;
-// 		return FALSE;
-// 	}
-// 	END_CATCH
-// 
-// 	return TRUE;
-// }
-// 
-// BOOL CEcsDoc::IsConnectMainDB()
-// {
-// 	if(m_pUrmDB == NULL || m_pUrmDB->m_bConnected == FALSE)
-// 	{
-// 		m_pUrmDB = NULL;
-// 		m_pUrmDBAccess = NULL;
-// 		m_pUrmDB = new CAdoDB(this);
-// 		m_pUrmDBAccess = new CURMDBAccess(this, m_pUrmDB);
-// 		if(m_pUrmDB->ConnectDB() == FALSE)
-// 		{
-// 			delete m_pUrmDB;
-// 			delete m_pUrmDBAccess;
-// 			return FALSE;
-// 		}
-// 	}
-// 	return TRUE;
-// }
 
 void CEcsDoc::EnterBlcokingSection()
 {

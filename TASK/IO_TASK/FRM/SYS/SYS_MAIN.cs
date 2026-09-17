@@ -34,14 +34,13 @@ namespace TSK_COMM_IOSCH
 	{
 		private string m_StrConnecString; //DataBase Connection 문자열.
         // LG화학 자동 반송 Scheduler THREAD
-        // (기존 설비 스레드 cThread_CV/cThread_SC/cThread_R 은 현장 구성에서 제외됨 - 참고용으로만 보존)
+        // (기존 설비 스레드 cThread_CV/cThread_SC/cThread_R 은 현장 구성에서 제외됨 - 2026-09-17 소스 삭제, git 이력에 있음)
         private cThread_SCH[] m_Thread_SCH = new cThread_SCH[1];
 
         private cLogThread[] m_thLogging = new cLogThread[200]; //Thread 객체.
 
 		private MainClass m_Maindefine = new MainClass();
 		private string m_strRtnMsg = ""; //리턴 문자열.
-        private Object thisLock = new object();
         private frmLogFilter m_frmLogFilter = null;   // [LGLS 2026-09-02] 로그 필터 폼 (단일 인스턴스)
 
 		#region@@@.생성자
@@ -296,57 +295,6 @@ namespace TSK_COMM_IOSCH
 
             switch (nThNo)
             {
-                //case (int) cDefApp.eThGbn.R_GR01:
-                //    strLogName = "RETRY_JOB";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR01:
-                //    strLogName = "CONVEYOR1F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR02:
-                //    strLogName = "CONVEYOR2F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR03:
-                //    strLogName = "CONVEYOR3F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR04:
-                //    strLogName = "CONVEYOR4F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR05:
-                //    strLogName = "CONVEYOR5F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR06:
-                //    strLogName = "CONVEYOR6F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR07:
-                //    strLogName = "CONVEYOR7F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR08:
-                //    strLogName = "CONVEYOR8F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR09:
-                //    strLogName = "CONVEYOR9F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR10:
-                //    strLogName = "CONVEYOR10F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR11:
-                //    strLogName = "CONVEYOR11F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR12:
-                //    strLogName = "CONVEYOR12F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR13:
-                //    strLogName = "CONVEYOR13F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR14:
-                //    strLogName = "CONVEYOR14F";
-                //    break;
-                //case (int)cDefApp.eThGbn.CV_GR15:
-                //    strLogName = "CONVEYOR15F";
-                //    break;
-                //case (int)cDefApp.eThGbn.SC_GR22:
-                //    strLogName = "STACKER CRANE";
-                //    break;
                 case (int)cDefApp.eThGbn.SCH_GR01:
                     strLogName = "SCHEDULER";
                     break;

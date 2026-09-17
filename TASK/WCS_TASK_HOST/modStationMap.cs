@@ -329,25 +329,6 @@ namespace TSK_HostCom
             }
         }
 
-        /// <summary>내부 코드가 크레인(하이랙)인지 여부</summary>
-        public static bool IsCrane(string strInnerCode)
-        {
-            int nInner;
-            if (int.TryParse(strInnerCode, out nInner) == false) return false;
-            return (nInner >= 900);
-        }
-
-        /// <summary>로그 표기용 스테이션 명칭</summary>
-        public static string GetDesc(string strImsCode)
-        {
-            int nIms;
-            if (int.TryParse(strImsCode, out nIms) == false) return "";
-
-            string strDesc;
-            if (m_dicDesc.TryGetValue(nIms, out strDesc) == false) return "";
-            return strDesc;
-        }
-
         /// <summary>현재 적재된 매핑 전체를 로그용 문자열로 반환</summary>
         public static string DumpMap()
         {

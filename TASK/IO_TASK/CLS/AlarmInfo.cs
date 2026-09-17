@@ -6,11 +6,6 @@ namespace TSK_COMM_IOSCH
 {
     public class AlarmInfo
     {
-       	private string  _pHost;
-        private string  _pUnit;
-        private string  _pAlarmGroup;
-        private string  _pManagerAlarm;
-
 	    public int      _nALCD;
 	    public int      _nALID;
 	    public string   _strALTX;		// Max 40자리

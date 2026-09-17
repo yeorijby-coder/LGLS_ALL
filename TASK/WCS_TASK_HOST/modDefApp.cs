@@ -27,24 +27,15 @@ namespace TSK_HostCom
 		public static string g_strRemoteIP;
 		// Remote Port
 		public static int g_iRemotePort;
-		// 시스템 운영모드
-		public static OpSta g_SysMode;
         
-        // 공파레트 요청 관련
-        public static string g_strEmtpyPltKind;
-        public static string g_strEmtpyPltStation;
         public static bool[] g_bEmtpyPltJob = new bool[10000];
 
-		public static string g_strPcIp;
 		public static string g_strPcNm;
 		public static bool g_blSTOP_REQ;
         public static string g_strSYS_LANG = "LANG1";
         public static string COMPANY_CD = "F100";
         public static string AREA_CD = "F101";
-        public static string SYS_GRP = "G1";
-        public static string WH_CD = "AA06";
         public static string WH_TYP = "10";
-        public const string PRS_ID = "TSK_ECSCOM";
 		public static string g_strRE_DRCT_CNT;
 		// [LGLS 2026-08-30] 재지정 작업상태 (common_code 'JOB_STATUS' 코드값)
 		//   09 = 이중입고 에러 / 08 = 공출고 에러 / 07 = 이중입고 재지정 / 06 = 공출고 재지정
@@ -78,11 +69,6 @@ namespace TSK_HostCom
 			}
 			return false;
 		}
-		public static string[] g_strWH_CD;
-        public static string[] g_strWH_TYP;
-        public static string[] g_strCvNo;
-        public static string[] g_strCvSta;
-        public static bool g_blGetCvNo = false;
         public static string GM_RTN_MSG;
 
 #if ORACLE
@@ -123,14 +109,10 @@ public static frmMain g_frmForm;
 		// 디폴트 Read Timeout
 		public const int TIME_OUT = 5;
 
-		// 종료 이벤트
-		public static AutoResetEvent g_areListenExitEvent = new AutoResetEvent(false);
 		public static AutoResetEvent[] g_areLogExitEvent = new AutoResetEvent[2];
 
 		// Listen Socket
 		public static System.Net.Sockets.TcpListener g_tcplsn;
-		// Client Socket 정보 리스트
-		public static CliSocketInfo[] g_CliSockList;
 		// Socket 동기화 객체
 		public static object g_objSockSync = new object();
 		// Log 메세지 리스트
@@ -159,27 +141,17 @@ public static frmMain g_frmForm;
 		// 에러
 		public const string MSG_ERR = "ERR";
 
-		// 표시 Icon 종류
-		public const int ICON_NOR = 0;
-		public const int ICON_ERR = 1;
 
 		// 제어문자
 		public const string CRLF = ControlChars.CrLf;
 		public const int STX = 0x2;
 		public const int ETX = 0x3;
 
-		// SOCKET FRAME 제어 문자
-		public const int TRANS_R = 0x52;	//R' - Request
-		public const int TRANS_ACK = 0x41; 	//A' - Response Ack
-		public const int TRANS_NAK = 0x4e;	//N' - Response Nak
 
 		public const string MSG_ACK = "A";	//- Response Ack
 		public const string MSG_NAK = "N";	//- Response Nak
 
 		public const   int MSG_HEAD_CNT = 15;
-		public const int MSG_ORDER_CNT = 61;
-		public const int MSG_DUAL_STO_CNT = 31;
-		public const int MSG_ARRI_BATCH_CNT = 7;
 
 		// Interface목록서[ECS-자동창고] 기준 MailBox 명 (Header 10자리)
 		public const string MSG_MAILBOX_SEND = "ECS_MBX";	// WCS(ECS역할) -> HOST(WMS/IMS)
@@ -199,9 +171,6 @@ public static frmMain g_frmForm;
 		public const int MSG_REDIRECT_BODY_CNT = 31;	// 'R' 재작업지시
 		public const int MSG_RSPS_BODY_CNT = 11;		// 응답 메세지
 
-        //public const int MSG_EMPTY_PLT_CNT = 7;
-        //public const int MSG_DUAL_STO_CNT = 31;
-        //public const int MSG_ARRI_BATCH_CNT = 7;
 		
 		//  Error Message Code
 		public const int MSG_NO_ERROR = 0;
@@ -229,10 +198,8 @@ public static frmMain g_frmForm;
 		// 조회조건 중 '전체'
 		//Public Const ALL_QRY = "전체"
 
-		public const string ALL_QRY = "ALL";
 		// PDA Client 수
 
-		public const int MAX_CLI_CNT = 4;
 		// 통신상태
 		public enum ComSts : int
 		{
@@ -240,13 +207,6 @@ public static frmMain g_frmForm;
 			ComErr = 1
 		}
 		
-		// RUN /STOP (wms운영상태)
-		public enum OpSta : int
-		{
-			Unkonown = 0,
-			RunSta = 1,
-			StopSta = 2
-		}
         #region 작업정보 처리 상수들
         public enum EN_JOB_TYPE : int
         {
@@ -261,24 +221,6 @@ public static frmMain g_frmForm;
             enJobPatternSto, enJobPatternRet, enJobPatternPR, enJobPatternR2R, enJobPatternW2W, enJobPatternMove
         };
 
-        public enum EN_JOB_STATUS : int
-        {
-            enJobStatusAll, enJobStatusNew,
-            enJobStatusComplete, enJobStatusArrived, enJobStatusCancel,
-            enJobStatusErrorEmptyRetrieve, enJobStatusErrorDualStore,
-            enJobStatusErrorEmptyRetrieve2, enJobStatusErrorDualStore2,
-            enJobStatusDualStoreRetry, enJobStatusEmptyRetrieveRetry,
-            enJobStatusCvNew, enJobStatusCvInvoke,
-            enJobStatusScRequest, enJobStatusScInvoke, enJobStatusScComplete,
-            enJobStatusRtvInvoke, enJobStatusRtvComplete,
-            enJobStatusLifterInvoke, enJobStatusLifterComplete, enJobStatusLifterCvInvoke,
-            enJobStatusLgvInvoke, enJobStatusLgvComplete,
-            enJobStatusResend,
-            enJobStatusCompleteRequest, enJobStatusRefuseComplete,
-            enJobStatusError, enJobStatusRefuseError, enJobStatusInvokeError,
-            enJobStatusRefuseArrived,
-            enJobStatusSize
-        };
         public	enum EN_LENGTH : int 
         {
             enLengthStation = 3, 
@@ -320,21 +262,6 @@ public static frmMain g_frmForm;
             }
             return (int)EN_JOB_PATTERN.enJobPatternNone;
         }
-        public static bool IsOfflineJobType(int nJobType)
-        {
-	        switch (nJobType)
-	        {
-            case (int)EN_JOB_TYPE.enJobTypeSemiSto:
-            case (int)EN_JOB_TYPE.enJobTypeSemiRet:
-            case (int)EN_JOB_TYPE.enJobTypeSemiR2R:
-            case (int)EN_JOB_TYPE.enJobTypeSemiPR:
-            case (int)EN_JOB_TYPE.enJobTypeSemiMove:
-            case (int)EN_JOB_TYPE.enJobTypeSemiW2W:	
-		        return true;
-	        }
-
-	        return false;
-        }
         public static bool IsOnlineJobType(int nJobType)
         {
             switch (nJobType)
@@ -355,88 +282,7 @@ public static frmMain g_frmForm;
             return ((nLuggNum > 0) && (nLuggNum < 9000)) ? true : false;
         }
 
-        public static bool IsOfflineLuggNum(int nLuggNum)
-        {
-            return ((nLuggNum > 9000) && (nLuggNum < 9999)) ? true : false;
-        }
-        public static bool IsValidID(string strStationID)
-        {
-            if (strStationID != "" || strStationID.Length == 1 || strStationID.Length == 3)
-		        return true;
 
-	        return false;
-        }
-        public static string GetJobTypeString(int nJobType)
-        {
-	        switch (nJobType)
-	        {
-	        case (int)EN_JOB_TYPE.enJobTypeNone:		return "없음";
-	        case (int)EN_JOB_TYPE.enJobTypeAutoSto:		return "입고";
-	        case (int)EN_JOB_TYPE.enJobTypeAutoRet:		return "출고";
-	        case (int)EN_JOB_TYPE.enJobTypeAutoR2R:		return "랙이동";
-	        case (int)EN_JOB_TYPE.enJobTypeAutoPR:		return "피킹출고";
-	        case (int)EN_JOB_TYPE.enJobTypeAutoMove:	return "이동";
-        //	case (int)EN_JOB_TYPE.enJobTypeAutoW2W:		return "창고간이동";
-	        case (int)EN_JOB_TYPE.enJobTypeSemiSto:		return "반자동 입고";
-	        case (int)EN_JOB_TYPE.enJobTypeSemiRet:		return "반자동 출고";
-	        case (int)EN_JOB_TYPE.enJobTypeSemiR2R:		return "반자동 랙이동";
-	        case (int)EN_JOB_TYPE.enJobTypeSemiPR:		return "반자동 피킹출고";
-	        case (int)EN_JOB_TYPE.enJobTypeSemiMove:	return "반자동 이동";
-        //	case (int)EN_JOB_TYPE.enJobTypeSemiW2W:		return "반자동 창고간이동";
-	        case (int)EN_JOB_TYPE.enJobTypeManual:		return "수동작업";
-	        }
-
-	        return Convert.ToString(nJobType);
-        }
-
-        public static string GetJobStatusString(int nJobStatus)
-        {
-	        switch (nJobStatus)
-	        {
-	        case (int)EN_JOB_STATUS.enJobStatusAll:					return "전체";
-	        case (int)EN_JOB_STATUS.enJobStatusNew:					return "신규";
-	        case (int)EN_JOB_STATUS.enJobStatusComplete:			return "완료보고";
-	        case (int)EN_JOB_STATUS.enJobStatusArrived:				return "도착보고";
-	        case (int)EN_JOB_STATUS.enJobStatusCancel:				return "취소보고";
-	        case (int)EN_JOB_STATUS.enJobStatusErrorEmptyRetrieve:	return "공 출 고	에  러";
-	        case (int)EN_JOB_STATUS.enJobStatusErrorDualStore:		return "이중입고 에  러";
-	        case (int)EN_JOB_STATUS.enJobStatusErrorEmptyRetrieve2:	return "공 출 고(FORK #2)";
-	        case (int)EN_JOB_STATUS.enJobStatusErrorDualStore2:		return "이중입고(FORK #2)";
-	        case (int)EN_JOB_STATUS.enJobStatusEmptyRetrieveRetry:	return "공 출 고	재지정";
-	        case (int)EN_JOB_STATUS.enJobStatusDualStoreRetry:		return "이중입고 재지정";
-	        case (int)EN_JOB_STATUS.enJobStatusCvNew:				return "C/V 구동 대기";
-	        case (int)EN_JOB_STATUS.enJobStatusCvInvoke:			return "C/V 구동중";
-	        case (int)EN_JOB_STATUS.enJobStatusScRequest:			return "S/C 구동 요구";
-	        case (int)EN_JOB_STATUS.enJobStatusScInvoke:			return "S/C 구동중";
-	        case (int)EN_JOB_STATUS.enJobStatusScComplete:			return "S/C 작업완료";
-	        case (int)EN_JOB_STATUS.enJobStatusRtvInvoke:			return "RTV 구동중";
-	        case (int)EN_JOB_STATUS.enJobStatusRtvComplete:			return "RTV 작업완료";
-	        case (int)EN_JOB_STATUS.enJobStatusLifterInvoke:		return "Lifter 구동중";
-	        case (int)EN_JOB_STATUS.enJobStatusLifterComplete:		return "Lifter 작업완료";
-	        case (int)EN_JOB_STATUS.enJobStatusLifterCvInvoke:		return "Lifter C/V 구동";
-	        case (int)EN_JOB_STATUS.enJobStatusLgvInvoke:			return "LGV 작업지시";
-	        case (int)EN_JOB_STATUS.enJobStatusLgvComplete:			return "LGV 작업완료";
-	        case (int)EN_JOB_STATUS.enJobStatusCompleteRequest:		return "완료 요청";
-	        case (int)EN_JOB_STATUS.enJobStatusRefuseComplete:		return "완료 실패";
-	        case (int)EN_JOB_STATUS.enJobStatusInvokeError:			return "지시실패";
-	        case (int)EN_JOB_STATUS.enJobStatusError:				return "에러 보고";
-	        case (int)EN_JOB_STATUS.enJobStatusRefuseError:			return "에러 보고 실패";
-	        case (int)EN_JOB_STATUS.enJobStatusRefuseArrived:		return "도착 보고 실패";
-	        case (int)EN_JOB_STATUS.enJobStatusResend:				return "재전송";
-	        }
-
-	        string strTemp;
-            strTemp = string.Format("등록되지 않은 작업상태 [{0}]", nJobStatus);
-	        return strTemp;
-        }
-
-        public static int GetSide(string strLocation)
-        {
-            if (strLocation.Length != (int)EN_LENGTH.enLengthLocation)
-                return 0;
-
-            return ((Convert.ToInt32(strLocation.Substring(0, 2)) + 1) % 2) + 1;
-        }
         public static int GetBank(string strLocation)
         {
 	        if (strLocation.Length != (int)EN_LENGTH.enLengthLocation)
@@ -445,21 +291,6 @@ public static frmMain g_frmForm;
             return Convert.ToInt32(strLocation.Substring(0, 2));
         }
 
-        public static int GetBay(string strLocation)
-        {
-	        if (strLocation.Length != (int)EN_LENGTH.enLengthLocation)
-		        return 0;
-
-            return Convert.ToInt32(strLocation.Substring(2, 3));
-        }
-
-        public static int GetLevel(string strLocation)
-        {
-	        if (strLocation.Length != (int)EN_LENGTH.enLengthLocation)
-		        return 0;
-
-            return Convert.ToInt32(strLocation.Substring(5, 2));
-        }
         public static int GetStackerNum(int nWarehouse, string strLocation)
         {
             if (strLocation.Length != (int)EN_LENGTH.enLengthLocation)
@@ -484,14 +315,6 @@ public static frmMain g_frmForm;
         public const int	SC_STATUS_SUSPEND_RET			= 7;
         public const int	SC_STATUS_SUSPEND_ALL			= 8;
 
-        // SC 수
-		public const int SC_CNT = 2;
-		// Bank수'
-		public const int BANK_1_CNT = 4;
-		// Bay수'필
-		public const int BAY_1_CNT = 25;
-		// Level수'필
-		public const int LEVEL_1_CNT = 9;
 		//*********************************************************************************************
 
 		//**************************************************************************************
@@ -503,7 +326,6 @@ public static frmMain g_frmForm;
 			public string g_strUserID;
 			public string g_strUserName;
 			public string g_strUserPassword;
-			public string g_strUserLevel;
 			public string g_strDbAlias;
 			//mssql
 			public string g_strDatabase;
@@ -513,29 +335,6 @@ public static frmMain g_frmForm;
             public string g_strDbPort;
 		}
 
-		public struct CliSocketInfo
-		{
-			// List내의 순서, ID
-			public int g_iMyID;
-			// Client IP
-			public string g_strClientIP;
-			// 접속한 Client ID
-			public string g_strClientID;
-			// 접속여부
-			public bool g_blConnected;
-			// 활당된 쓰레드 객체 주소
-			public System.Threading.Thread g_thrThread;
-			// 생성된 소켓 객체 주소
-			public System.Net.Sockets.Socket g_sktSocket;
-
-			// 소켓 쓰레드 종료 (강제종료)
-			public void ManualClose()
-			{
-				modCmWork.CloseSocket(ref g_sktSocket);
-				g_thrThread.Join();
-			}
-
-		}
 		//**************************************************************************************
 	}
 }

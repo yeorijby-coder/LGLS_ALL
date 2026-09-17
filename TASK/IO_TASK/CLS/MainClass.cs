@@ -2062,20 +2062,6 @@ namespace TSK_COMM_IOSCH
          * SetProcessStep
          */
         #region c++ SetProcessStep
-        //void CJob::SetProcessStep(CJobItem &JobItem)
-        //{
-        //    CSingleLock SingleLock(&m_csSyncJobList);
-        //    S       ingleLock.Lock();
-
-        //    CJobItem* pJobItem = FindLuggNum(JobItem.m_nLuggNum);
-        //    if(pJobItem == NULL)
-        //        return;
-
-        //    pJobItem->SetProcessStep(JobItem.m_nProcessStep, true);
-        //    Backup();
-        //}
-        #endregion
-        #region c++ SetProcessStep
         public bool SetProcessStep(int luggnum, string jobstat)
         {
             int nSelCnt = 0;

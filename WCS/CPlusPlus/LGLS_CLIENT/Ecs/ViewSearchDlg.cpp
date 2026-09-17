@@ -266,18 +266,6 @@ void CViewSearchDlg::OnSetSearchCv()
 	int nTop;
 	int nBottom;
 
-	//if (m_pDoc->m_layout.GetDciControl(strDciControl) != NULL)
-	//{
-	//	nMonitor += 1;
-	//	nLeft	= m_pDoc->m_layout.GetDciControl(strDciControl)->m_rcControlL.left;
-	//	nRight	= m_pDoc->m_layout.GetDciControl(strDciControl)->m_rcControlL.right;
-	//	nTop	= m_pDoc->m_layout.GetDciControl(strDciControl)->m_rcControlL.top;
-	//	nBottom = m_pDoc->m_layout.GetDciControl(strDciControl)->m_rcControlL.bottom;
-	//}
-	//else // 없는 트랙번호 일 때
-	//{
-	//	return;
-	//}
 
 	CEcsLayout* pLayout = m_pDoc->GetSelectedLayout();
 

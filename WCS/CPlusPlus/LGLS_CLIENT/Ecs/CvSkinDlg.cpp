@@ -945,21 +945,6 @@ void CCvSkinDlg::InvalidateLangControl( EN_LANG enLangTemp )
 	if(m_pDoc == NULL)
 		return;
 
-	//언어추가할것
-	//m_lblCvJobNo.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), enLangTemp));
-	//m_lblCvStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치"), enLangTemp));
-	//m_lblCvDestPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치"), enLangTemp));
-	//m_lblCvJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), enLangTemp));
-	//m_lblCvFmsRpt.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("보고여부"), enLangTemp));
-	//m_lblCvTrayLev.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("단수"), enLangTemp));
-	//m_lblCvTrayTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("타입"), enLangTemp));
-	//m_lblCvMesIFSta.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("MES I/F STA"), enLangTemp));
-	//m_lblCvErrCd.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("에러코드"), enLangTemp));
-	//m_lblCvJobJobNo.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), enLangTemp));
-	//m_lblCvJobStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치"), enLangTemp));
-	//m_lblCvJobDestPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치"), enLangTemp));
-	//m_lblCvJobJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), enLangTemp));
-	//m_lblCvJobMrcd.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("MRCD"), enLangTemp));
 }
 
 void CCvSkinDlg::InvalidateComboBoxData(EN_LANG enLangTemp, CComboBox* pComboBox, CString pTemp)

@@ -293,22 +293,6 @@ void CUserUserDlg::RelocationControls()
 	CRect rc;
 	GetClientRect(&rc);
 	int x=0, y=0;
-	//TCHAR chrFileName[500];
-	//GetModuleFileName(NULL, chrFileName, MAX_PATH);
-	//CString strAppPath;
-	//CString strAppPath2;
-	//CString strExtension;
-	//strAppPath.Format(_T("%s"),chrFileName);
-	//strAppPath2.Format(_T("%s"),chrFileName);
-
-	//strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_useruser\\20x20\\");
-	//strAppPath2 = strAppPath2.Left(strAppPath2.ReverseFind('\\')) + _T("\\rc_resource\\dlg_useruser\\16x16\\");
-	//strExtension = _T(".png");
-
-
-	//SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
-	//SIZE sizeLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-	//SIZE sizeWideLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_WIDELARGE);
 
 	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
 	SIZE sizeLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);

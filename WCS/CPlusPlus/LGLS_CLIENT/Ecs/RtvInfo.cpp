@@ -39,78 +39,11 @@ void CRtvInfo::Serialize(CArchive& ar)
 COLORREF CRtvInfo::GetForkColor()
 {
 // 	
-// 	if (m_nErrorCode == enErrorCommunication)
-// 		return pConfig->m_clrDisconnect;
-// 
-// 	if (m_ucStatus == enStatusError)
-// 		return IsAlarmCode() ? pConfig->m_clrAlarm : pConfig->m_clrError;
-// 
-// 	if ((IsAutoMode() == FALSE) || (IsActive() == FALSE))
-// 		return DARK_GRAY;
-// 	
-// 	if (!IsInvoked())
-// 		return LIGHT_GRAY;
-// 	
-// 	switch (m_RtvInfo[0].m_nInternalJobType)
-// 	{
-// 	case enJobTypeAutoSto:		return pConfig->m_clrAutoSto;
-// 	case enJobTypeAutoPR:		
-// 	case enJobTypeAutoRet:		return pConfig->m_clrAutoRet;
-// 	case enJobTypeAutoR2R:		return pConfig->m_clrAutoR2R;
-// 	case enJobTypeAutoMove:		return pConfig->m_clrAutoMove;
-// 	case enJobTypeAutoW2W:		return pConfig->m_clrAutoW2W;
-// 	case enJobTypeSemiSto:		return pConfig->m_clrSemiSto;
-// 	case enJobTypeSemiPR:		
-// 	case enJobTypeSemiRet:		return pConfig->m_clrSemiRet;
-// 	case enJobTypeSemiR2R:		return pConfig->m_clrSemiR2R;
-// 	case enJobTypeSemiMove:		return pConfig->m_clrSemiMove;
-// 	case enJobTypeSemiW2W:		return pConfig->m_clrSemiW2W;
-// 	case enJobTypeManual:		return pConfig->m_clrManual;
-// 	}
-// 	
 	return LEGEND_IDLE_GRAY;
 }
 
 COLORREF CRtvInfo::GetForkColor1()
 {
-// 	CConfig* pConfig = m_pEquipment->m_pDoc->m_pConfig;
-// 	if(pConfig==NULL)
-// 		return LIGHT_GRAY;
-// 	
-// 	if (m_nErrorCode == enErrorCommunication)
-// 		return pConfig->m_clrDisconnect;
-// 	
-// 	if (m_ucStatus == enStatusError)
-// 		return IsAlarmCode() ? pConfig->m_clrAlarm : pConfig->m_clrError;
-// 	
-// 	if ((IsOnlineMode() == FALSE) || (IsAutoMode() == FALSE) || (IsActive() == FALSE))
-// 		return DARK_GRAY;
-// 	
-// 	if (!IsInvoked())
-// 		return LIGHT_GRAY;
-// 	
-// 	if (m_RtvInfo[0].m_nInternalLuggNum != 0)
-// 	{
-// 		switch (m_RtvInfo[0].m_nInternalJobType)
-// 		{
-// 		case enJobTypeAutoSto:		return pConfig->m_clrAutoSto;
-// 		case enJobTypeAutoPR:		
-// 		case enJobTypeAutoRet:		return pConfig->m_clrAutoRet;
-// 		case enJobTypeAutoR2R:		return pConfig->m_clrAutoR2R;
-// 		case enJobTypeAutoMove:		return pConfig->m_clrAutoMove;
-// 		case enJobTypeAutoW2W:		return pConfig->m_clrAutoW2W;
-// 		case enJobTypeSemiSto:		return pConfig->m_clrSemiSto;
-// 		case enJobTypeSemiPR:		
-// 		case enJobTypeSemiRet:		return pConfig->m_clrSemiRet;
-// 		case enJobTypeSemiR2R:		return pConfig->m_clrSemiR2R;
-// 		case enJobTypeSemiMove:		return pConfig->m_clrSemiMove;
-// 		case enJobTypeSemiW2W:		return pConfig->m_clrSemiW2W;
-// 		case enJobTypeManual:		return pConfig->m_clrManual;
-// 		}
-// 	}
-// 	
-// 	if (m_RtvInfo[1].m_nInternalJobType != 0)
-// 		return LIGHT_GRAY;
 
 	return LEGEND_IDLE_GRAY;
 	//return BLACK;
@@ -255,43 +188,6 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 
 COLORREF CRtvInfo::GetForkColor2()
 {
-// 	CConfig* pConfig = m_pEquipment->m_pDoc->m_pConfig;
-// 	if(pConfig==NULL)
-// 		return LIGHT_GRAY;	
-// 	if (m_nErrorCode == enErrorCommunication)
-// 		return pConfig->m_clrDisconnect;
-// 	
-// 	if (m_ucStatus == enStatusError)
-// 		return IsAlarmCode() ? pConfig->m_clrAlarm : pConfig->m_clrError;
-// 	
-// 	if ((IsOnlineMode() == FALSE) || (IsAutoMode() == FALSE) || (IsActive() == FALSE))
-// 		return DARK_GRAY;
-// 	
-// 	if (!IsInvoked())
-// 		return LIGHT_GRAY;
-// 	
-// 	if (m_RtvInfo[1].m_nInternalLuggNum != 0)
-// 	{
-// 		switch (m_RtvInfo[1].m_nInternalJobType)
-// 		{
-// 		case enJobTypeAutoSto:		return pConfig->m_clrAutoSto;
-// 		case enJobTypeAutoPR:		return pConfig->m_clrAutoW2W;		// %%%%%%
-// 		case enJobTypeAutoRet:		return pConfig->m_clrAutoRet;
-// 		case enJobTypeAutoR2R:		return pConfig->m_clrAutoR2R;
-// 		case enJobTypeAutoMove:		return pConfig->m_clrAutoMove;
-// 		case enJobTypeAutoW2W:		return pConfig->m_clrAutoW2W;
-// 		case enJobTypeSemiSto:		return pConfig->m_clrSemiSto;
-// 		case enJobTypeSemiPR:		return pConfig->m_clrSemiW2W;		// %%%%%%
-// 		case enJobTypeSemiRet:		return pConfig->m_clrSemiRet;
-// 		case enJobTypeSemiR2R:		return pConfig->m_clrSemiR2R;
-// 		case enJobTypeSemiMove:		return pConfig->m_clrSemiMove;
-// 		case enJobTypeSemiW2W:		return pConfig->m_clrSemiW2W;		
-// 		case enJobTypeManual:		return pConfig->m_clrManual;
-// 		}
-// 	}
-// 	
-// 	if (m_RtvInfo[0].m_nInternalJobType != 0)
-// 		return LIGHT_GRAY;
 // 	
 	return LEGEND_IDLE_GRAY;
 	//return BLACK;

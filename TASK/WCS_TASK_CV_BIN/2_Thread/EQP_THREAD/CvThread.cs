@@ -213,13 +213,9 @@ namespace WCS_TASK_CV
     public class CvThread : maindefine
     {
         #region 변수정의
-        #region ㅇㅇ
-        #endregion
         private string m_strWh_typ;
         private string m_strEqmt_typ;
         private string m_strPlc_No;
-        private string m_strMc_No;
-        private string m_strPlcNo;
         private string m_strIp;
         private int m_nCurPort;
         private int m_nFromPort;
@@ -2714,82 +2710,6 @@ namespace WCS_TASK_CV
             {
                 m_msQPlc._pBdb.Rollback();
                 MakeMsg_Error("[UpdEQMT_ERR_LOG]:: Error:PLC설비 에러 로깅 Exception 에러 실패 ", m_nthNo);
-                return false;
-            }
-        }
-        #endregion
-
-        #region [UpdateCvFlowDef] :: CV_FLOW_DEF 업데이트. FLOW BIT SET (나중에)
-        public bool UpdateCvFlowDef(string strTRACK_NO)
-        {
-            try
-            {
-
-                strSql = "";
-                strSql += CRLF + " SELECT CFD.*, COALESCE(CD2.TRACK_NO, 'PASS') AS FRONT_GET_TRACK_NO, COALESCE(CD2.SENSOR0_DATA_RD, 'PASS') AS FRONT_SENSOR_VALUE  ";
-                strSql += CRLF + "   FROM CV_FLOW_DEF CFD INNER JOIN CV_DATA CD                                                                                     ";
-                strSql += CRLF + "                                ON CFD.WH_TYP = CD.WH_TYP                                                                         ";
-                strSql += CRLF + "                               AND CFD.PLC_NO = CD.PLC_NO                                                                         ";
-                strSql += CRLF + "                               AND CFD.WH_TYP = :WH_TYP                                                                           ";
-                strSql += CRLF + "                               AND CFD.PLC_NO = :PLC_NO                                                                           ";
-                strSql += CRLF + "                               AND CFD.TRACK_NO = CD.TRACK_NO                                                                     ";
-                strSql += CRLF + "                               AND CFD.TRACK_NO <> CD.DEST_POS_RD                                                                 ";
-                strSql += CRLF + "                               AND CFD.FLOW_YN = 'Y'                                                                              ";
-                strSql += CRLF + "                               AND CD.AUTO_MODE_RD = '1'                                                                          ";
-                strSql += CRLF + "                               AND CD.LUGG_NO_RD IS NOT NULL                                                                      ";
-                strSql += CRLF + "                               AND CD.LUGG_NO_RD <> '0'                                                                           ";
-                strSql += CRLF + "                               AND CD.SENSOR0_DATA_RD = '1'                                                                       ";
-                strSql += CRLF + "                               AND (CD.ERROR_CODE IS NULL OR CD.ERROR_CODE IN ('0','00','0000',''))                               ";
-                strSql += CRLF + "                               AND CD.OD_RQ_YN = 'N'                                                                              ";
-                strSql += CRLF + "                               AND CD.CMD_RQ_YN = 'N'                                                                             ";
-                strSql += CRLF + "                               AND CD.READ_UPD_DT >= CD.WRITE_UPD_DT                                                              ";
-                //strSql += CRLF + "                               AND ((now() - CD.READ_UPD_DT) * 24 * 60 * 60) > SET_TIME                                           ";
-                //strSql += CRLF + "                               AND ((now() - CFD.OD_UPD_DT) * 24 * 60 * 60) > SET_TIME                                            ";
-                strSql += CRLF + "                   LEFT OUTER JOIN CV_DATA CD2                                                                                    ";
-                strSql += CRLF + "                                ON CD2.WH_TYP = CFD.WH_TYP                                                                        ";
-                strSql += CRLF + "                               AND CD2.PLC_NO = CFD.PLC_NO                                                                        ";
-                strSql += CRLF + "                               AND ( (CD2.TRACK_NO = CFD.FRONT_TRACK_NO                                                           ";
-                strSql += CRLF + "                               AND CD2.AUTO_MODE_RD = '1'                                                                         ";
-                strSql += CRLF + "                               AND (CD2.ERROR_CODE IS NULL OR CD2.ERROR_CODE IN ('0','00','0000',''))                              ";
-                strSql += CRLF + "                               AND CD2.SENSOR0_DATA_RD = '0'                                                                      ";
-                strSql += CRLF + "                                  ) OR (CFD.FRONT_TRACK_NO = '0' OR CFD.FRONT_TRACK_NO IS NULL) )                                 ";
-
-                m_msQPlc._pBdb.mComMain.CommandType = CommandType.Text;
-                m_msQPlc._pBdb.mComMain.Parameters.Clear();
-                m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR, 255).Value = m_strWh_typ;
-                m_msQPlc._pBdb.mComMain.Parameters.Add("PLC_NO", DbLang.VARCHAR, 255).Value = m_strPlc_No;
-
-                nSelCnt = m_msQPlc._pBdb.ExcuteQry(strSql);
-
-                if (nSelCnt < 0)
-                {
-                    MakeMsg_Error("[UpdateCvFlowDef] FLOW BIT 값 조회중 ERROR., PLC_NO [" + m_strPlc_No + "] MSG [" + m_msQPlc._pBdb.ErrMsg + "]", m_nthNo);
-                    return false;
-                }
-
-                if (nSelCnt == 0)
-                {
-                    MakeMsg_Error("[UpdateCvFlowDef] FLOW BIT 값 조회중 DATA가 없습니다., PLC_NO [" + m_strPlc_No + "]", m_nthNo);
-                    return false;
-
-                }
-
-                for (int nRows = 0; nRows < nSelCnt; nRows++)
-                {
-                    string strFRONT_GET_TRACK_NO = "" + m_msQPlc._pBdb.mDtMain.Rows[nRows]["FRONT_GET_TRACK_NO"].ToString();
-                    string strFRONT_SENSOR_VALUE = "" + m_msQPlc._pBdb.mDtMain.Rows[nRows]["FRONT_SENSOR_VALUE"].ToString();
-
-                    if (strFRONT_GET_TRACK_NO == "PASS")
-                    {
-                        continue;
-                    }
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                MakeMsg_Error("[UpdateCvFlowDef] FLOW BIT 값 조회중 ERROR., PLC_NO [" + m_strPlc_No + "] MSG [" + ex.ToString() + "]", m_nthNo);
                 return false;
             }
         }

@@ -183,8 +183,6 @@
     <Content Include="7_DeviceMap\DeviceMap08.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="bin\Debug\BAG.BAT" />
-    <None Include="bin\Debug\PACK.BAT" />
     <None Include="bin\Debug\sqlnet.log" />
     <None Include="bin\Debug\WCS_DB.INI" />
     <None Include="bin\Release\BAG.BAT" />

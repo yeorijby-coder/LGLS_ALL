@@ -138,21 +138,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     // [LGLS 2026-09-08] 최초 배치도 STATUS_POS 를 따른다.
     LayoutStatusBar(nWindowSizeX, nWindowSizeY + 40);
 
-	//m_wndStatusBar.AddPane(ID_INDICATOR_MODE, 1);
-	
-    //m_wndStatusBar.SetPaneInfo(0, ID_SEPARATOR, SBPS_NORMAL|SBPS_STRETCH, rect.Width()/4);  
-    //m_wndStatusBar.SetPaneInfo(1, ID_INDICATOR_CAPS, SBPS_NORMAL|SBPS_STRETCH, rect.Width()/4);  
-	//m_wndStatusBar.SetPaneInfo(2, ID_INDICATOR_NUM, SBPS_NORMAL|SBPS_STRETCH, rect.Width()/4);  
-	//m_wndStatusBar.SetPaneInfo(3, ID_INDICATOR_SCRL, SBPS_NORMAL|SBPS_STRETCH, 30);  
-
-    //m_wndStatusBar.SetPaneInfo(1, ID_INDICATOR_CAPS, SBPS_NORMAL|SBPS_STRETCH, rect.Width()/4);  
-	//m_wndStatusBar.SetPaneText(1, _T("TEST"));
-	//m_wndStatusBar.SetPaneInfo(ID_INDICATOR_CAPS, _T("TEST"), LIGHT_SKY, NAVY);
-	//m_wndStatusBar.SetBackColor(ID_INDICATOR_CAPS, RED);
-	//
-	//
-	//m_wndStatusBar.SetPaneInfo(2, ID_INDICATOR_NUM, SBPS_NORMAL, rect.Width()/4);  
-	//m_wndStatusBar.SetPaneText(2, _T("TE"));
 
 
 	InitializeRibbonMenu();
@@ -234,18 +219,6 @@ void CMainFrame::DisplayMessage(CString strMsg)
 }
 void CMainFrame::UpdateCommStatus(int nIndex, UINT unID, char Status)
 {
-	//CString strAppPath = _T("");
-	//CString chrFileName = _T("");
-	//
-	//strAppPath.Format(_T("%s"),chrFileName);
-	//strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_status\\");
-	////strExtension = _T(".png");
-	//strExtension = _T(".ico");
-	//
-	//m_BtnStatusCv1 = new CMFCRibbonButton(ID_STATUS_CV, _T("CV1"), HICONFromPATH(GetConcatPath(strAppPath, _T("Trffc10b"), strExtension)), TRUE);
-	//m_BtnStatusCv1->SetAlwaysLargeImage();
-	//
-	//m_BtnStatusCv1->SetImageIndex(IDI_ICON_STATUS_OK, true);
 }
 int CMainFrame::GetIndex(char Status) 
 {
@@ -578,27 +551,6 @@ void CMainFrame::AddCategoryWCS()
 		//pBtnAssemble->SetAlwaysLargeImage();
 		//pPanelMonitor->Add(pBtnAssemble);
 	}
-	//else
-	//{
-	//	CMFCRibbonButton* pBtnAssemble = new CMFCRibbonButton(ID_MONITORING_COMP, _T("COMP"), HICONFromPATH(GetConcatPath(strAppPath, _T("cmp"), strExtension)), TRUE);
-	//	pBtnAssemble->SetAlwaysLargeImage();
-	//	pPanelMonitor->Add(pBtnAssemble);
-	//}
-
-
-	//strAppPath.Format(_T("%s"),chrFileName);
-	//strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_language\\");
-	//strExtension = _T(".ico");
-	//
-	//CMFCRibbonPanel* pPanelLanguage = pCategory->AddPanel(_T("NATION"));
-	//
-	//CMFCRibbonButton* pBtnKOR = new CMFCRibbonButton(ID_LANGUAGE_KOR, _T("KOREA"), HICONFromPATH(GetConcatPath(strAppPath, _T("kor"), strExtension)), TRUE);
-	//pBtnKOR->SetAlwaysLargeImage();
-	//pPanelLanguage->Add(pBtnKOR);
-
-	//CMFCRibbonButton* pBtnENG = new CMFCRibbonButton(ID_LANGUAGE_ENGLISH, _T("US"), HICONFromPATH(GetConcatPath(strAppPath, _T("eng"), strExtension)), TRUE);
-	//pBtnENG->SetAlwaysLargeImage();
-	//pPanelLanguage->Add(pBtnENG);
 
 	/*CMFCRibbonButton* pBtnCHIN = new CMFCRibbonButton(ID_LANGUAGE_CHIN, _T("CHINA"), HICONFromPATH(GetConcatPath(strAppPath, _T("chin"), strExtension)), TRUE);
 	pBtnCHIN->SetAlwaysLargeImage();
@@ -888,23 +840,6 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 		if (pBtnAlarm != NULL && !strAlarmBtn.IsEmpty()) pBtnAlarm->SetText(strAlarmBtn);
 	}
 
-// 	CMFCRibbonButton* pBtnLogEqpLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(1);
-// 	pBtnLogEqpLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("eqp_log"), (int)penLang));
-// 	CMFCRibbonButton* pBtnLogClientLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(2);
-// 	pBtnLogClientLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("client_log"), (int)penLang));
-// 	CMFCRibbonButton* pBtnLogJobHisLog = (CMFCRibbonButton*)pPanel_Wrap_Log->GetElement(5);
-// 	pBtnLogJobHisLog->SetText(CLib::GetIniStringFromPath(strFullPath, _T("jobhislog"), (int)penLang));
-
-	//로그인 기능 없애서 유저 항목 제외
-	//strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_user\\"), _T("user"), strExtension);
-	//CMFCRibbonCategory* pCategory4 = m_wndRibbonBar.GetCategory(4);
-	//CMFCRibbonPanel_Wrap* pPanel_Wrap_User = (CMFCRibbonPanel_Wrap*)pCategory4->GetPanel(0);
-	//pPanel_Wrap_User->SetCenterColumnVert();
-	//pPanel_Wrap_User->SetJustifyColumns();
-	//pPanel_Wrap_User->SetName(CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang));
-	//
-	//CMFCRibbonButton* pBtnUserUser = (CMFCRibbonButton*)pPanel_Wrap_User->GetElement(0);
-	//pBtnUserUser->SetText(CLib::GetIniStringFromPath(strFullPath, _T("user"), (int)penLang));
 
 	m_wndRibbonBar.ForceRecalcLayout();	
 
@@ -1190,39 +1125,6 @@ void CMainFrame::AddCategoryUSER()
 
 void CMainFrame::AddCategorySTATUS()
 {
-	//TCHAR chrFileName[500];
-	//GetModuleFileName(NULL, chrFileName, MAX_PATH);
-	//CString strAppPath = _T("");
-	//strAppPath.Format(_T("%s"),chrFileName);
-	//strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_status\\");
-	//CString strExtension = _T(".png");
-	//
-	//CMFCRibbonCategory* pCategory = m_wndRibbonBar.AddCategory(_T("STATUS"), IDB_LOGO_ECS, IDB_LOGO_ECS);
-	//CMFCRibbonPanel* pPanelStatus = pCategory->AddPanel(_T("STATUS"));
-	//
-	//CMFCRibbonButton* pBtnStatusCv = new CMFCRibbonButton(ID_STATUS_CV, _T("CV1"), HICONFromPATH(GetConcatPath(strAppPath, _T("cv1"), strExtension)), TRUE);
-	//pBtnStatusCv->SetAlwaysLargeImage();
-	//pPanelStatus->Add(pBtnStatusCv);
-	//
-	//CMFCRibbonButton* pBtnStatusSc1 = new CMFCRibbonButton(ID_STATUS_SC1, _T("SC1"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc1"), strExtension)), TRUE);
-	//pBtnStatusSc1->SetAlwaysLargeImage();
-	//pPanelStatus->Add(pBtnStatusSc1);
-	//
-	//CMFCRibbonButton* pBtnStatusSc2 = new CMFCRibbonButton(ID_STATUS_SC2, _T("SC2"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc2"), strExtension)), TRUE);
-	//pBtnStatusSc2->SetAlwaysLargeImage();
-	//pPanelStatus->Add(pBtnStatusSc2);
-	//
-	//CMFCRibbonButton* pBtnStatusSc3 = new CMFCRibbonButton(ID_STATUS_SC3, _T("SC3"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc3"), strExtension)), TRUE);
-	//pBtnStatusSc3->SetAlwaysLargeImage();
-	//pPanelStatus->Add(pBtnStatusSc3);
-	//
-	//CMFCRibbonButton* pBtnStatusSc4 = new CMFCRibbonButton(ID_STATUS_SC4, _T("SC4"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc4"), strExtension)), TRUE);
-	//pBtnStatusSc4->SetAlwaysLargeImage();
-	//pPanelStatus->Add(pBtnStatusSc4);
-	//
-	//CMFCRibbonButton* pBtnStatusWc = new CMFCRibbonButton(ID_STATUS_WC1, _T("WC1"), HICONFromPATH(GetConcatPath(strAppPath, _T("wc1"), strExtension)), TRUE);
-	//pBtnStatusWc->SetAlwaysLargeImage();
-	//pPanelStatus->Add(pBtnStatusWc);
 }
 
 

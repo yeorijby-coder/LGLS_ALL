@@ -559,39 +559,6 @@ unsigned short CLib::GetCRC16(unsigned char* uszData, unsigned short nSize)
    return(nCRC);
 }
 
-// 스프레드 보류999
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// void CLib::SetTrayInfoToSpread(CSpreadSheet* pSpread, CJobItem* pJobItem1, CJobItem* pJobItem2)
-// {
-//    if (pSpread == NULL || pJobItem1 == NULL)
-//       return;
-// 
-//    pSpread->SetCurrentRow();         
-//    pSpread->SetData(1, _T("트레이정보"));                   pSpread->SetData(2, _T("하단 트레이"));               pSpread->SetData(3, _T("상단 트레이"));         
-//    if (pJobItem2 != NULL)
-//    {
-//       pSpread->SetData(4, _T("하단 트레이"));               pSpread->SetData(5, _T("상단 트레이"));
-//    }
-//    CString strTrayID1_1 = pJobItem1 ? pJobItem1->m_TrayInfo[0].m_strBarcode : _T("");
-//    CString strTrayID1_2 = pJobItem1 ? pJobItem1->m_TrayInfo[1].m_strBarcode : _T("");
-//    CString strProdID1_1 = pJobItem1 ? pJobItem1->m_TrayInfo[0].m_strProductID : _T("");
-//    CString strProdID1_2 = pJobItem1 ? pJobItem1->m_TrayInfo[1].m_strProductID : _T("");
-//    CString strProdName1_1 = pJobItem1 ? pJobItem1->m_TrayInfo[0].m_strProductName : _T("");
-//    CString strProdName1_2 = pJobItem1 ? pJobItem1->m_TrayInfo[1].m_strProductName : _T("");
-// 
-//    CString strTrayID2_1 = pJobItem2 ? pJobItem2->m_TrayInfo[0].m_strBarcode : _T("");
-//    CString strTrayID2_2 = pJobItem2 ? pJobItem2->m_TrayInfo[1].m_strBarcode : _T("");
-//    CString strProdID2_1 = pJobItem2 ? pJobItem2->m_TrayInfo[0].m_strProductID : _T("");
-//    CString strProdID2_2 = pJobItem2 ? pJobItem2->m_TrayInfo[1].m_strProductID : _T("");
-//    CString strProdName2_1 = pJobItem2 ? pJobItem2->m_TrayInfo[0].m_strProductName : _T("");
-//    CString strProdName2_2 = pJobItem2 ? pJobItem2->m_TrayInfo[1].m_strProductName : _T("");
-// 
-//    pSpread->SetCurrentRow();   pSpread->SetData(1, _T("Tray ID"));      pSpread->SetData(2, strTrayID1_1);      pSpread->SetData(3, strTrayID1_2);      pSpread->SetData(4, strTrayID2_1);      pSpread->SetData(5, strTrayID2_2);
-//    pSpread->SetCurrentRow();   pSpread->SetData(1, _T("품목코드"));   pSpread->SetData(2, strProdID1_1);      pSpread->SetData(3, strProdID1_2);      pSpread->SetData(4, strProdID2_1);      pSpread->SetData(5, strProdID2_2);
-//    pSpread->SetCurrentRow();   pSpread->SetData(1, _T("품목명"));      pSpread->SetData(2, strProdName1_1);   pSpread->SetData(3, strProdName1_2);   pSpread->SetData(4, strProdName2_1);   pSpread->SetData(5, strProdName2_2);
-// 
-//    pSpread->SetCurrentRow();
-// }
 
 /*
 void CLib::SetTogleButton(CSpreadSheet* pSpread, BOOL bCondition, CString strTogle1, CString strTogle2, int nCol, int nTagNum)

@@ -409,7 +409,6 @@ namespace TSK_COMM_IOSCH
             try
             {
                 int nJobCnt = 0;
-                int nSelCnt = 0;
                 string strSql = "";
                 string CRLF = "\r\n";
 
@@ -465,12 +464,6 @@ namespace TSK_COMM_IOSCH
                 {
                     strSql += CRLF + "    AND  DEST_POS_RD IN (" + strCHK_DEST_POS + ") ";
                 }
-
-                //_pBdb.mComMain.CommandType = CommandType.Text;
-                //_pBdb.mComMain.Parameters.Clear();
-                //_pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = strWH_TYP;
-                //_pBdb.mComMain.Parameters.Add("MC_NO", DbLang.VARCHAR).Value = strBUFFERS;
-                //_pBdb.mComMain.Parameters.Add("DEST_POS", DbLang.VARCHAR).Value = strCHK_DEST_POS;
 
                 nJobCnt = _pBdb.ExcuteQry(strSql);
                 if (nJobCnt < 0)

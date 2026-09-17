@@ -15,7 +15,6 @@ using System.Diagnostics;
 
 namespace WCS_TASK_CV
 {
-    public delegate void SampleEventDelegate(object sender, string msg);
 	public delegate void DelPsMsgLog(DateTime LogDate, string strMsg, cDefApp.eLogWriteGbn eLogGbn);
     public partial class SYS_MAIN : Form
     {
@@ -542,9 +541,6 @@ namespace WCS_TASK_CV
             }
         }
 
-
-        //public event SampleEventDelegate DspMsg;
-
         private void Thread_Tick(object sender, EventArgs e)
         {
 			try
@@ -950,15 +946,6 @@ namespace WCS_TASK_CV
                     }
                 }
                 e.Cancel = true;
-
-                //if (e.CloseReason == CloseReason.UserClosing)
-                //{
-                //    e.Cancel = true;
-                //}
-                //else
-                //{
-                //    return;
-                //}
             }
             else
             {

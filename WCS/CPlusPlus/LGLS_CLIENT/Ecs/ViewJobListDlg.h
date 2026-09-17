@@ -97,23 +97,6 @@ public:
 	CSkinButton m_btnJobScComplete;
 
 
-//
-//	CMFCMaskedEdit	   m_edtLocation1;
-//	CMFCMaskedEdit	   m_edtLocation2;
-//	CMFCMaskedEdit	   m_edtStoDate1;
-//	CMFCMaskedEdit	   m_edtStoDate2;
-//
-//	CEdit	   m_edtProdectSize;
-//	CEdit	   m_edtRemarks;
-//	CEdit      m_edtDurationTime;
-//
-
-//
-//
-///*
-//	CSkinButton m_btnJobInsert;*/
-//	CSkinButton m_btnLocationTo;
-//	CSkinButton m_btnStoDateTo;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
@@ -150,23 +133,6 @@ protected:
 	DECLARE_EVENTSINK_MAP();
 
 public:
-	//CSkinButton m_btnOk; //20190306
-	//CSkinButton m_btnCancel;
-	//CStaticTransparent m_lblLocation;
-	//CStaticTransparent m_lblStoDate;
-	//CStaticTransparent m_lblProductSize;
-	//CStaticTransparent m_lblRemarks;
-	//CStaticTransparent m_lblSelect;
-	//CStaticTransparent m_lblDurationTime;
-	//CStaticTransparent m_lblJobMstResult;
-	//
-		
-
-	//CSkinButton m_btnSearch;
-	//CSkinButton m_btnManualAdd;
-	//CSkinButton m_btnManualDelete;
-	//CSkinButton m_btnDataClear;
-	//CSkinButton m_btnCopy;
 
 
 

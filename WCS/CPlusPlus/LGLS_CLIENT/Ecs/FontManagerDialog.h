@@ -8,16 +8,6 @@ public:
 
 
 public:
-	//kdh
-	//static const int nFontSizeDefaultWidth_KOR  = 12;
-	//static const int nFontSizeDefaultWidth_ENG  = 10;
-	//static const int nFontSizeDefaultWidth_HUN  = 10;//7
-	//static const int nFontSizeDefaultWidth_CHIN = 8;
-
-	//static const int nFontSizeDefaultHeight_KOR  = 14;
-	//static const int nFontSizeDefaultHeight_ENG  = 12;
-	//static const int nFontSizeDefaultHeight_HUN  = 12;//14
-	//static const int nFontSizeDefaultHeight_CHIN = 16;
 
 	//cksrb
 	static const int nFontSizeDefaultWidth_KOR  = 7;

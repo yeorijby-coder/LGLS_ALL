@@ -33,24 +33,6 @@ CCollectDataList::~CCollectDataList(void)
 
 BOOL CCollectDataList::IsDB_POSSIBLE()
 {
-// 	if(m_pDB == NULL)
-// 	{
-// 		m_pDB = NULL;
-// 		m_pDB_ACCESS = NULL;
-// 		m_pDB = new CAdoDB(m_pDoc);
-// 		m_pDB_ACCESS->m_pAdoDB = new CURMDBAccess(m_pDoc, m_pDB);
-// 		return m_pDB->ConnectDB();
-// 	}
-// 
-// 	if(m_pDB->m_bConnected == FALSE)
-// 	{
-// 		m_pDB = NULL;
-// 		m_pDB_ACCESS = NULL;
-// 		m_pDB = new CAdoDB(m_pDoc);
-// 		m_pDB_ACCESS = new CURMDBAccess(m_pDoc, m_pDB);
-// 		return m_pDB->ConnectDB();
-// 	}
-// 	return m_pDB->m_bConnected;
 	return TRUE;
 }
 

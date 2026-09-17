@@ -810,14 +810,6 @@ void CPanelInfoDlg::BuildCmdBar()
 	//   조작은 설비 대화상자에서 한다. 명령 버튼을 아예 만들지 않으므로
 	//   LayoutCmdBar 가 목록에 판넬 높이를 모두 내준다.
 	return;
-
-	CRect rc0(0, 0, 10, 10);
-	CFont* pFont = GetFont();
-	for (int i = 0; i < CMD_COUNT; i++)
-	{
-		m_btnCmd[i].Create(CMDS[i].strCap, WS_CHILD | BS_PUSHBUTTON, rc0, this, IDC_PI_CMD_BASE + i);
-		m_btnCmd[i].SetFont(pFont);
-	}
 }
 
 // 판넬 폭에 맞춰 자동 줄바꿈 배치. 리스트는 버튼 바 높이만큼 줄인다.

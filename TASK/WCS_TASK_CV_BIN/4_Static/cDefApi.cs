@@ -19,81 +19,6 @@ namespace WCS_TASK_CV
         [DllImport("kernel32.dll")]
         public static extern uint WritePrivateProfileString(string section, string key, string val, string filePath);
 
-        // @@@.GsGetInitPorFileDB
-        public static void GsGetInitPorFileDB(ref string pHost,
-                                              ref string pServiceName,
-                                              ref string pUserID,
-                                              ref string pPassword,
-                                              ref string pPort,
-                                              ref string pRtnMsg)
-        {
-            StringBuilder sb = new StringBuilder(1000);
-
-            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
-            {
-                pRtnMsg = "[GsGetInitPorFileDB]::Not Found File";
-                return;
-            }
-
-            try
-            {
-                pRtnMsg = "";
-
-                GetPrivateProfileString("DB", "HOST", null, sb, sb.Capacity, cDefApp.GM_ENV_INI);
-                pHost = sb.ToString();
-
-                GetPrivateProfileString("DB", "SERVICENAME", null, sb, sb.Capacity, cDefApp.GM_ENV_INI);
-                pServiceName = sb.ToString();
-
-                GetPrivateProfileString("DB", "USERID", null, sb, sb.Capacity, cDefApp.GM_ENV_INI);
-                pUserID = sb.ToString();
-
-                GetPrivateProfileString("DB", "PASSWORD", null, sb, sb.Capacity, cDefApp.GM_ENV_INI);
-                pPassword = sb.ToString();
-
-                GetPrivateProfileString("DB", "PORT", null, sb, sb.Capacity, cDefApp.GM_ENV_INI);
-                pPort = sb.ToString();
-
-                pRtnMsg = "[GsGetInitPorFileDB]::Sucess";
-                return;
-            }
-            catch (Exception ex)
-            {
-                pRtnMsg = ex.Message;
-            }
-            pRtnMsg = "[GsGetInitPorFileDB]Error::" + pRtnMsg;
-        }
-
-        #region [DB_TYPE]::DB 종류 접속정보
-        public static void GsGetInitPorFileDB_TYPE(ref string pTYPE,
-                                                   ref string pRtnMsg)
-        {
-            StringBuilder sb = new StringBuilder(1000);
-
-            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
-            {
-                pRtnMsg = "[GsGetInitPorFileDB_TYPE]::Not Found File";
-                return;
-            }
-
-            try
-            {
-                pRtnMsg = "";
-
-                GetPrivateProfileString("DB_TYPE", "TYPE", null, sb, sb.Capacity, cDefApp.GM_ENV_INI);
-                pTYPE = sb.ToString();
-
-                pRtnMsg = "[GsGetInitPorFileDB_TYPE]::Sucess";
-                return;
-            }
-            catch (Exception ex)
-            {
-                pRtnMsg = ex.Message;
-            }
-            pRtnMsg = "[GsGetInitPorFileDB_TYPE]Error::" + pRtnMsg;
-        }
-        #endregion
-        
         #region [DB_1]::Oracle 접속정보
         public static void GsGetInitPorFileDB_1(ref string pProvider,
                                               ref string pAlias,
@@ -533,37 +458,6 @@ public static bool GsReadInitProfileDAddrDoc()
                 pRtnMsg = ex.Message;
             }
             pRtnMsg = "[GsReadInitProfileDelay]Error::" + pRtnMsg;
-        }
-        // @@@.GsReadInitProfileCom
-        public static bool GsReadInitProfileTrack(string pAppNm,
-                                            ref int pIdx,
-                                            ref int pFrTrack,
-                                            ref int pToTrack,
-                                            ref string pRtnMsg)
-        {
-            StringBuilder sb = new StringBuilder(1000);
-
-            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
-            {
-                pRtnMsg = "[GsReadInitProfileTrack]::Not Found File";
-                return false;
-            }
-
-            try
-            {
-                pRtnMsg = "";
-                pFrTrack = GetPrivateProfileInt(pAppNm, "FR_TRACK_" + pIdx.ToString("000"), 1, cDefApp.GM_ENV_INI);
-                pToTrack = GetPrivateProfileInt(pAppNm, "TO_TRACK_" + pIdx.ToString("000"), 1, cDefApp.GM_ENV_INI);
-
-                pRtnMsg = "[GsReadInitProfileTrack]::Sucess";
-                return true;
-            }
-            catch (Exception ex)
-            {
-                pRtnMsg = ex.Message;
-            }
-            pRtnMsg = "[GsReadInitProfileTrack]Error::" + pRtnMsg;
-            return false;
         }
     }
 }

@@ -200,7 +200,6 @@
     <Content Include="CLS\CVlog4net.xml" />
     <Content Include="CLS\IOTASKlog4net.xml" />
     <Content Include="FIND03.ico" />
-    <Content Include="Frog1.ICO" />
     <Content Include="IO.ico" />
   </ItemGroup>
   <ItemGroup>

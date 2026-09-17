@@ -641,59 +641,6 @@ void CScSkinDlg::OnPaint()
 void CScSkinDlg::RelocationControls()
 {
 	return;
-	CRect rc;
-	GetClientRect(&rc);
-
-	int x=0, y=0;
-
-
-	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
-	SIZE sizeLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-
-	CRect rc2;
-	m_btnScConfirm.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScConfirm.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScEmergency.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScEmergency.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScActive.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScActive.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScStop.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScStop.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScErrorReset.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScErrorReset.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScDelete.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScDelete.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScCallToHome.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScCallToHome.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScStoSuspend.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScStoSuspend.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScRetSuspend.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScRetSuspend.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScAllSuspend.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScAllSuspend.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnScManualRet.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnScManualRet.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
 }
 
 
@@ -920,42 +867,6 @@ void CScSkinDlg::InvalidateLangControl( EN_LANG enLangTemp )
 	if(m_pDoc == NULL)
 		return;
 
-	//언어추가할것
-	//m_lblScJobNo.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), enLangTemp));
-	//m_lblScJobNo2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호2"), enLangTemp));
-	//m_lblScJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), enLangTemp));
-	//m_lblScJobTyp2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분2"), enLangTemp));
-	//m_lblScStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치"), enLangTemp));
-	//m_lblScStartPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치2"), enLangTemp));
-	//m_lblScDestPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치"), enLangTemp));
-	//m_lblScDestPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치2"), enLangTemp));
-	//m_lblScRcMode.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("지상반"), enLangTemp));
-	//m_lblScScMode.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("기상반"), enLangTemp));
-	//m_lblScForkPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크위치"), enLangTemp));
-	//m_lblScForkPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크위치2"), enLangTemp));
-	//m_lblScForkStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크상태"), enLangTemp));
-	//m_lblScForkStatus2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크상태2"), enLangTemp));
-	//m_lblScJobStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("완료상태"), enLangTemp));
-	//m_lblScRcStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("SRC상태"), enLangTemp));
-	//m_lblScScStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("동작상태"), enLangTemp));
-	//m_lblScHorizontalPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("수평주행"), enLangTemp));
-	//m_lblScVerticalPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("수직주행"), enLangTemp));
-	//m_lblScProdLoad.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("화물유무"), enLangTemp));
-	//m_lblScJobJobNo.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), enLangTemp));
-	//m_lblScJobJobNo2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호2"), enLangTemp));
-	//m_lblScJobJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), enLangTemp));
-	//m_lblScJobJobTyp2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분2"), enLangTemp));
-	//m_lblScJobStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치"), enLangTemp));
-	//m_lblScJobStartPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치2"), enLangTemp));
-	//m_lblScJobDestPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치"), enLangTemp));
-	//m_lblScJobDestPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치2"), enLangTemp));
-	//m_lbScJobJobStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업상태"), enLangTemp));
-	//m_lbScJobJobStatus2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업상태2"), enLangTemp));
-	//m_lblScJobBcrTop.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR상단"), enLangTemp));
-	//m_lblScJobBcrTop2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR상단2"), enLangTemp));
-	//m_lblScJobBcrBottom.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR하단"), enLangTemp));
-	//m_lblScJobBcrBottom2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR하단2"), enLangTemp));
-	//m_lblScSuspend.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("SC상태"), enLangTemp));
 }
 
 
@@ -1080,23 +991,6 @@ void CScSkinDlg::OnBnClickedBtnScDelte()
 
 	UpdateScData(EN_BtnScFk1Delete);
 
-	//if (m_strScFork == _T("0")) 
-	//{
-	//	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("포크를 선택하세요.")));
-	//	return;
-	//}
-	//else if (m_strScFork == _T("1"))
-	//{
-	//	UpdateScData(EN_BtnScFk1Delete);
-	//}
-	//else if (m_strScFork == _T("2"))
-	//{
-	//	UpdateScData(EN_BtnScFk2Delete);
-	//}
-	//else if (m_strScFork == _T("3"))
-	//{
-	//	UpdateScData(EN_BtnScFk1Fk2Delete);
-	//}
 }
 //홈복귀
 void CScSkinDlg::OnBnClickedBtnScCallToHome()
@@ -1660,48 +1554,6 @@ void CScSkinDlg::OnBnClickedChkScFork2()
 void CScSkinDlg::OnBnClickedScDuplicationSto()
 {
 	return;   // [LGLS 2026-09-16] unused at this site (no dual-store/empty-retrieval) - button hidden in rc
-	UpdateData(TRUE);
-
-	CString strSql = _T("");
-	int nRowCnt = 0;
-	CString strMessage = _T("");
-
-	if(m_pSC_DATA == NULL) return;
-
-	CString strScNo = m_pSC_DATA->K_SC_NO;//SC 번호
-	CString strLuggNo = m_pSC_DATA->V_LUGG_NO_FK1_RD;//SC 번호
-
-	strSql.Format(_T(" SELECT *					 ")
-		_T("		     FROM SC_DATA_LGLS                     ")
-		_T("		    WHERE WH_TYP      = '%s'          ")
-		_T("		      AND EQP_ERR_CD   = 'E054'       ")
-		_T("		      AND SC_NO   = '%s'       "), m_pDoc->m_WH_TYP, strScNo);
-
-
-	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
-
- 	if (nRowCnt > 0)
-	{
-		strSql.Format(_T(" UPDATE JOB_MST					 ")
-			_T("		      SET JOB_STA = '44'                     ")
-			_T("		    WHERE WH_TYP  = '%s'          ")
-			_T("		      AND LUGG_NO = '%s'       "), m_pDoc->m_WH_TYP, strLuggNo);
-
-		BOOL isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
-
-		if(isSuccess == TRUE)
-		{
-			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
-			return;
-		}
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
-	}
-	else
-	{
-
-	}
-	
-
 }
 
 void CScSkinDlg::OnBnClickedScRtvFork12()
@@ -2262,30 +2114,6 @@ BOOL CScSkinDlg::ScDataDelete()
 	}
 	return FALSE;
 
-	//strSql.Format(_T("UPDATE SC_DATA_LGLS 					\n")
-    //              _T("   SET JOB_TYP_OD = '0'			 \n")
-    //              _T("      ,LUGG_NO_FK1_OD = '0000'	 \n")
-    //              _T("      ,ITN_LUGG_FK1 = '0'			 \n")
-    //              _T("      ,START_BANK_FK1_OD = '00'	 \n")
-    //              _T("      ,START_BAY_FK1_OD = '000'	 \n")
-    //              _T("      ,START_LEVEL_FK1_OD = '00'	 \n")
-    //              _T("      ,START_HSPOS_FK1_OD = '0'	 \n")
-	//              _T("      ,DEST_BANK_FK1_OD = '00'	 \n")
-    //              _T("      ,DEST_BAY_FK1_OD = '000'	 \n")
-    //              _T("      ,DEST_LEVEL_FK1_OD = '00'	 \n")
-    //              _T("      ,DEST_HSPOS_FK1_OD = '0'	 \n")
-    //              _T("      ,OD_RQ_YN = 'Y'				 \n")
-	//			  _T("    WHERE WH_TYP = '%s'			 \n")
-	//	          _T("      AND PLC_NO = '%s'			 \n")
-	//	          _T("      AND SC_NO = '%s'		       "), m_pSC_DATA->K_WH_TYP, m_pSC_DATA->K_PLC_NO, m_pSC_DATA->K_SC_NO);
-	//
-	//int isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
-	//
-	//if(isSuccess == TRUE)
-	//{
-	//	return TRUE;
-	//}
-	//return FALSE;
 }
 
 BOOL CScSkinDlg::JobMstDelete(CString pLuggNo, CString& strProductSize)
@@ -2429,45 +2257,6 @@ BOOL CScSkinDlg::CvDataUpdate(CString strMcNo, CString strLuggNo, CString strPul
 void CScSkinDlg::SetScStatus(CString pCMD, CString pSC_SUSPEND)
 {
 	return;
-	CString strCcdNmKor = _T("");
-	CString strGetErrorCode = _T("");
-
-	if (pCMD == _T("ACTIVE"))
-	{
-		SelCommonCode(_T("1"), _T("SC_ACTIVE_MODE"), strCcdNmKor);
-		m_edtScRcStatus.SetWindowText(strCcdNmKor);
-	}
-	else if (pCMD == _T("PAUSE"))
-	{
-		SelCommonCode(_T("0"), _T("SC_ACTIVE_MODE"), strCcdNmKor);
-		m_edtScRcStatus.SetWindowText(strCcdNmKor);
-	}
-	else if (pCMD == _T("EMERGENCY"))
-	{
-		SelCommonCode(_T("4"), _T("SC_UCSTATUS"), strCcdNmKor);
-		m_edtScScStatus.SetWindowText(strCcdNmKor);
-		GetErrorCode(_T("SC"), _T("0003"), 0, strGetErrorCode); 
-		m_edtScErrCode.SetWindowText(strGetErrorCode);
-	}
-	else if (pCMD == _T("RESET"))
-	{
-		SelCommonCode(_T("0"), _T("SC_UCSTATUS"), strCcdNmKor);
-		m_edtScScStatus.SetWindowText(strCcdNmKor);
-		GetErrorCode(_T("SC"), _T("0000"), 0, strGetErrorCode); 
-		m_edtScErrCode.SetWindowText(strGetErrorCode);
-	}
-	else if (pCMD == _T("DELFK1"))
-	{
-		SelCommonCode(_T("0"), _T("SC_ACTIVE_MODE"), strCcdNmKor);
-		m_edtScRcStatus.SetWindowText(strCcdNmKor);
-		SelCommonCode(_T("1"), _T("SC_UCSTATUS"), strCcdNmKor);
-		m_edtScScStatus.SetWindowText(strCcdNmKor);
-	}
-	else if (pCMD == _T("SUSPEND"))
-	{
-		SelCommonCode(pSC_SUSPEND, _T("SC_SUSPEND"), strCcdNmKor);
-		m_edtScSuspend.SetWindowText(strCcdNmKor);
-	}
 }
 
 void CScSkinDlg::SelCommonCode(CString pCCD_CD, CString pCMD, CString& pCCD_NM_KOR)

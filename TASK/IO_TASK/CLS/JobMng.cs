@@ -324,16 +324,6 @@ namespace TSK_COMM_IOSCH
                 CV_CHIP_MODE = Imsc == 1 ? true : false;
 
 
-                //if (Imsi == 1)
-                //{
-                //    CV_MERGE_STATION = true;
-                //}
-                //else
-                //{
-                //    CV_MERGE_STATION = false;
-                //}
-
-
                 Msg = "박스정보 읽기 성공";
                 return true;
             }

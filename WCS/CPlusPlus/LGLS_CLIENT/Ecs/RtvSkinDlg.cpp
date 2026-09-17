@@ -370,47 +370,6 @@ void CRtvSkinDlg::OnPaint()
 void CRtvSkinDlg::RelocationControls()
 {
 	return;
-	CRect rc;
-	GetClientRect(&rc);
-
-	int x=0, y=0;
-
-
-	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
-	SIZE sizeLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-
-	CRect rc2;
-	m_btnRtvComplete.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvComplete.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnRtvEstop.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvEstop.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnRtvActive.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvActive.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnRtvStop.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvStop.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnRtvResetError.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvResetError.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnRtvDelete.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvDelete.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnRtvCallToHome.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvCallToHome.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnRtvSuspend.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnRtvSuspend.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
 }
 
 
@@ -576,42 +535,6 @@ void CRtvSkinDlg::InvalidateLangControl( EN_LANG enLangTemp )
 	if(m_pDoc == NULL)
 		return;
 
-	//언어추가할것
-	//m_lblScJobNo.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), enLangTemp));
-	//m_lblScJobNo2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호2"), enLangTemp));
-	//m_lblScJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), enLangTemp));
-	//m_lblScJobTyp2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분2"), enLangTemp));
-	//m_lblScStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치"), enLangTemp));
-	//m_lblScStartPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치2"), enLangTemp));
-	//m_lblScDestPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치"), enLangTemp));
-	//m_lblScDestPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치2"), enLangTemp));
-	//m_lblScRcMode.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("지상반"), enLangTemp));
-	//m_lblScScMode.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("기상반"), enLangTemp));
-	//m_lblScForkPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크위치"), enLangTemp));
-	//m_lblScForkPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크위치2"), enLangTemp));
-	//m_lblScForkStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크상태"), enLangTemp));
-	//m_lblScForkStatus2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("포크상태2"), enLangTemp));
-	//m_lblScJobStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("완료상태"), enLangTemp));
-	//m_lblScRcStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("SRC상태"), enLangTemp));
-	//m_lblScScStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("동작상태"), enLangTemp));
-	//m_lblScHorizontalPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("수평주행"), enLangTemp));
-	//m_lblScVerticalPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("수직주행"), enLangTemp));
-	//m_lblScProdLoad.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("화물유무"), enLangTemp));
-	//m_lblScJobJobNo.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호"), enLangTemp));
-	//m_lblScJobJobNo2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업번호2"), enLangTemp));
-	//m_lblScJobJobTyp.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분"), enLangTemp));
-	//m_lblScJobJobTyp2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업구분2"), enLangTemp));
-	//m_lblScJobStartPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치"), enLangTemp));
-	//m_lblScJobStartPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("출발위치2"), enLangTemp));
-	//m_lblScJobDestPos.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치"), enLangTemp));
-	//m_lblScJobDestPos2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("도착위치2"), enLangTemp));
-	//m_lbScJobJobStatus.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업상태"), enLangTemp));
-	//m_lbScJobJobStatus2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("작업상태2"), enLangTemp));
-	//m_lblScJobBcrTop.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR상단"), enLangTemp));
-	//m_lblScJobBcrTop2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR상단2"), enLangTemp));
-	//m_lblScJobBcrBottom.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR하단"), enLangTemp));
-	//m_lblScJobBcrBottom2.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("BCR하단2"), enLangTemp));
-	//m_lblScSuspend.SetWindowText(m_pDoc->m_pLang->GetLangValue(_T("SC상태"), enLangTemp));
 }
 
 

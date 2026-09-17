@@ -358,33 +358,6 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 
 COLORREF CScInfo::GetForkColor()
 {
-// 	if (m_nErrorCode == enScErrorCommunication)
-// 		return pConfig->m_clrDisconnect;
-// 
-// 	if (IsErrorStatus())
-// 		return IsAlarmCode() ? pConfig->m_clrAlarm : pConfig->m_clrError;
-// 
-// 	if ((IsOnlineMode() == FALSE) || (IsAutoMode() == FALSE) || (IsActive() == FALSE))
-// 		return DARK_GRAY;
-// 
-// 	if (IsInvoked() == FALSE)
-// 		return LIGHT_GRAY;
-// 
-// 	switch (m_nInternalJobType)
-// 	{
-// 	case enJobTypeAutoSto			: return pConfig->m_clrAutoSto;
-// 	case enJobTypeAutoRet			: return pConfig->m_clrAutoRet;
-// //	case enJobTypeAutoPriorityRet	: return pConfig->m_clrAutoPriorityRet;
-// 	case enJobTypeAutoR2R			: return pConfig->m_clrAutoR2R;
-// 	case enJobTypeAutoMove			: return pConfig->m_clrAutoMove;
-// 	case enJobTypeAutoPR			: return pConfig->m_clrAutoW2W;
-// 	case enJobTypeSemiSto			: return pConfig->m_clrSemiSto;
-// 	case enJobTypeSemiRet			: return pConfig->m_clrSemiRet;
-// 	case enJobTypeSemiR2R			: return pConfig->m_clrSemiR2R;
-// 	case enJobTypeSemiMove			: return pConfig->m_clrSemiMove;
-// 	case enJobTypeSemiPR			: return pConfig->m_clrSemiW2W;
-// 	case enJobTypeManual			: return pConfig->m_clrManual;
-// 	}
 
 	return BLACK;
 }

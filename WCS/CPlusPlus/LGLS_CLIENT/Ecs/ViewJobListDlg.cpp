@@ -832,20 +832,6 @@ void CViewJobListDlg::OnPaint()
 
 void CViewJobListDlg::RelocationControls()
 {
-// 	CRect rc;
-// 	GetClientRect(&rc);
-// 
-// 	int x=0, y=0;
-// 
-// 	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
-// 
-// 	x = rc.Width() - 20 - size.cx;
-// 	y = rc.Height() - 10 - size.cy;
-// 	m_btnCancel.MoveWindow(x, y, size.cx, size.cy, TRUE);
-// 
-// 	x -= size.cx + 10; 
-// 	m_btnOk.MoveWindow(x, y, size.cx, size.cy, TRUE);
-// 	m_btnOk.Invalidate();
 }
 
 
@@ -1026,24 +1012,6 @@ void CViewJobListDlg::OnClose()
 }
 
 
-//void CViewJobListDlg::OnBnClickedCheckAll()
-//{
-//	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-//	if (m_chkCheckAll.GetCheck() == TRUE)
-//	{
-//		for(int nIdxRow = 1; nIdxRow < m_pSpreadMain.GetDataRowCnt() + 1; nIdxRow++)
-//		{
-//			m_pSpreadMain.SetText(1, nIdxRow, variant_t(_T("1")));
-//		}
-//	}
-//	else
-//	{
-//		for(int nIdxRow = 1; nIdxRow < m_pSpreadMain.GetDataRowCnt() + 1; nIdxRow++)
-//		{
-//			m_pSpreadMain.SetText(1, nIdxRow, variant_t(_T("0")));
-//		}
-//	}
-//}
 
 void CViewJobListDlg::OnBnClickedViewJoblistCancel()
 {

@@ -26,8 +26,6 @@ namespace TSK_HostCom
 		{
 			InitializeComponent();
 
-            //this.Paint += new System.Windows.Forms.PaintEventHandler(this.frmMain_Gradient);
-            //this.pnlTop.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlTop_Gradient);
             this.pnlMsg.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlMsg_Gradient);
             this.pnlMsg2.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlMsg2_Gradient);
 
@@ -62,40 +60,8 @@ namespace TSK_HostCom
             btnIni.BringToFront();
         }
 
-        // 판넬들에 덮여서 안보임
-        /*
-        private void frmMain_Gradient(object sender, PaintEventArgs e)
-        {
-            LinearGradientBrush br = new LinearGradientBrush(this.ClientRectangle,
-                                                                Color.FromArgb(129, 156, 203),
-                                                                Color.FromArgb(204, 218, 243),
-                                                                0,
-                                                                false);
-            e.Graphics.FillRectangle(br, this.ClientRectangle);
-        }
-        //*/
-
-        //Color startColor = Color.FromArgb();
-        //Color middleColor = Color.FromArgb();
-        //Color endColor = Color.FromArgb();
         Color color1 = Color.FromArgb(129, 156, 203);
         Color color2 = Color.FromArgb(204, 218, 243);
-
-
-        private void pnlTop_Gradient(object sender, PaintEventArgs e)
-        {
-            LinearGradientBrush br = new LinearGradientBrush(this.ClientRectangle,
-                                                             Color.FromArgb(129, 156, 203),
-                                                             Color.FromArgb(204, 218, 243),
-                                                             0,
-                                                             false);
-            ColorBlend cb = new ColorBlend();
-            cb.Positions = new[] { 0, 1 / 2f, 1 };
-            cb.Colors = new[] { color1, color2, color1};
-            br.InterpolationColors = cb;
-
-            e.Graphics.FillRectangle(br, this.ClientRectangle);         
-        }
 
         private void pnlMsg_Gradient(object sender, PaintEventArgs e)
         {
@@ -338,9 +304,6 @@ int i;
 
 		private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
 		{
-			string strSql = null;
-			int iCnt = 0;
-
 			if (modDefApp.g_blSTOP_REQ == false)
 			{
 				if (MessageBox.Show("종료 하시겠습니까? ", this.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Cancel)
@@ -349,8 +312,6 @@ int i;
 					return;
 				}
 			}
-
-			int i = 0;
 
 			this.Cursor = Cursors.WaitCursor;
 
@@ -380,29 +341,6 @@ int i;
 				modDefApp.g_CliWork.m_areCliExitEvent.Set();
 				modDefApp.g_CliWork.m_thrThreadObj.Join();
 			}
-
-            //modDefApp.g_CliWork.m_BDb.BeginTrans();
-            //modDefApp.g_CliWork.m_BDb.ParamsClear();
-
-            //strSql = modDefApp.CRLF + "  UPDATE SVR_PRS_INF ";
-            //strSql += modDefApp.CRLF + "    SET RUN_CPT_NM   = '' ";
-            //strSql += modDefApp.CRLF + "      , RUN_CPT_IP   = '' ";
-            //strSql += modDefApp.CRLF + "      , STOP_DT      =  " + modDateTime.SYSDATE;
-            //strSql += modDefApp.CRLF + "      , STOP_REQ_YON =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd("N");
-            //strSql += modDefApp.CRLF + "  WHERE SYS_GRP       =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd("SYS_GRP", modDefApp.SYS_GRP);
-            //strSql += modDefApp.CRLF + "    AND PRS_ID       =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd("PRS_ID", modDefApp.PRS_ID);
-
-            //iCnt = modDefApp.g_CliWork.m_BDb.ExcuteNonQry_Par(ref strSql);
-
-            //if (iCnt != 1)
-            //{
-            //    modDefApp.g_CliWork.m_BDb.trnMain.Rollback();
-            //    MessageBox.Show("TABLE[SVR_PRS_INF] Update 실패.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //}
-            //else
-            //{
-            //    modDefApp.g_CliWork.m_BDb.trnMain.Commit();
-            //}
 
 			if ((modDefApp.g_CliWork.m_BDb.conMain != null))
 			{
@@ -568,8 +506,6 @@ int i;
             string strSql = "";
             string strLog = "";
             //string strMsg = System.Text.Encoding.Default.GetString(m_bytTxBuff);
-            string strSql1 = "";
-            string strSql2 = "";
 
             strSql = "INSERT INTO HOST_IF_LOG       ";
             strSql += modDefApp.CRLF + "(  WH_TYP	";
@@ -866,152 +802,12 @@ int i;
 		//설명		: 프로그램시작(서버프로그램등록여부 및 실행여부 체크, 서버프로그램정보UPDATE)
 		private bool Pgm_Start()
 		{
-			string strSql = null;
-			int iCnt = 0;
-			int iFor = 0;
-			int iWhCnt = 0;
-
 			if (!modCmLib.DBLogIn(ref modDefApp.g_CliWork.m_BDb.conMain))
 			{
 				return false;
 			}
 
             return true;
-
-			//--------------------------------------------------
-			// IP Get 
-			// 네크워크가 연결되지 않은 상태에서 에러 발생
-			// DB Login후에 처리함
-			//--------------------------------------------------
-			modDefApp.g_strPcIp = "";
-			foreach (IPAddress MyIPAddress in Dns.GetHostAddresses(Dns.GetHostName()))
-			{
-				if (!MyIPAddress.IsIPv6LinkLocal)
-				{
-					if (string.IsNullOrEmpty(modDefApp.g_strPcIp))
-					{
-						modDefApp.g_strPcIp = MyIPAddress.ToString();
-					}
-					else
-					{
-						if (Strings.Len(modDefApp.g_strPcIp) + Strings.Len(MyIPAddress.ToString()) <= 92)
-						{
-							modDefApp.g_strPcIp += ";" + MyIPAddress.ToString();
-						}
-					}
-				}
-			}
-
-			modDefApp.g_CliWork.m_BDb.Init();
-			modDefApp.g_CliWork.m_BDb.ParamsClear();
-
-            //strSql = modDefApp.CRLF + "  SELECT * ";
-            //strSql += modDefApp.CRLF + "   FROM SVR_PRS_INF ";
-            //strSql += modDefApp.CRLF + "  WHERE SYS_GRP =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd("SYS_GRP", modDefApp.SYS_GRP);
-            //strSql += modDefApp.CRLF + "    AND PRS_ID =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd("PRS_ID", modDefApp.PRS_ID);
-
-            //iCnt = modDefApp.g_CliWork.m_BDb.ExcuteQry_Par(ref strSql);
-
-            //if (iCnt < 0)
-            //{
-            //    modDefApp.g_CliWork.m_BDb.conMain.Close();
-            //    return false;
-            //}
-            //if (iCnt == 0)
-            //{
-            //    modDefApp.g_CliWork.m_BDb.conMain.Close();
-            //    MessageBox.Show("서버프로그램으로 등록되어 있지 않습니다." + modDefApp.CRLF + modDefApp.CRLF + "프로그램으로 실행 할 수 없습니다.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //    return false;
-            //}
-            //if ("" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CHK_TYP"].ToString() != "XX")
-            //{
-            //    if ("" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CHK_TYP"].ToString() != "NM")
-            //    {
-            //        if (!string.IsNullOrEmpty("" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_IP"].ToString()))
-            //        {
-            //            if ("" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_IP"].ToString() != modDefApp.g_strPcIp)
-            //            {
-            //                modDefApp.g_CliWork.m_BDb.conMain.Close();
-            //                MessageBox.Show("실행컴퓨터명[ " + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_NM"].ToString() + ":" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_IP"].ToString() + " ]에" + modDefApp.CRLF + "해당 프로그램이 이미 실행되어 있습니다.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //                return false;
-            //            }
-            //        }
-            //    }
-            //    if ("" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CHK_TYP"].ToString() != "IP")
-            //    {
-            //        if (!string.IsNullOrEmpty("" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_NM"].ToString()))
-            //        {
-            //            if ("" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_NM"].ToString() != modDefApp.g_strPcNm)
-            //            {
-            //                modDefApp.g_CliWork.m_BDb.conMain.Close();
-            //                MessageBox.Show("실행컴퓨터명[ " + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_NM"].ToString() + ":" + modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["RUN_CPT_IP"].ToString() + " ]에" + modDefApp.CRLF + "해당 프로그램이 이미 실행되어 있습니다.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //                return false;
-            //            }
-            //        }
-            //    }
-            //}
-
-            //modDefApp.g_CliWork.m_BDb.BeginTrans();
-            //modDefApp.g_CliWork.m_BDb.ParamsClear();
-
-            //strSql = modDefApp.CRLF + "  UPDATE SVR_PRS_INF ";
-            //strSql += modDefApp.CRLF + "    SET RUN_CPT_NM   =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd(modDefApp.g_strPcNm);
-            //strSql += modDefApp.CRLF + "      , RUN_CPT_IP   =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd(modDefApp.g_strPcIp);
-            //strSql += modDefApp.CRLF + "      , RUN_DT       =  " + modDateTime.SYSDATE;
-            //strSql += modDefApp.CRLF + "      , STOP_DT      = Null ";
-            //strSql += modDefApp.CRLF + "      , STOP_REQ_DT  = Null ";
-            //strSql += modDefApp.CRLF + "      , STOP_REQ_YON = 'N' ";
-            //strSql += modDefApp.CRLF + "      , STOP_USER_ID = Null ";
-            //strSql += modDefApp.CRLF + "  WHERE SYS_GRP       =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd(modDefApp.SYS_GRP);
-            //strSql += modDefApp.CRLF + "    AND PRS_ID       =  " + modDefApp.g_CliWork.m_BDb.ParamsAdd(modDefApp.PRS_ID);
-
-            //iCnt = modDefApp.g_CliWork.m_BDb.ExcuteNonQry_Par(ref strSql);
-
-            //if (iCnt != 1)
-            //{
-            //    modDefApp.g_CliWork.m_BDb.trnMain.Rollback();
-            //    MessageBox.Show("TABLE[SVR_PRS_INF] Update 실패.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //    return false;
-            //}
-
-            //modDefApp.g_CliWork.m_BDb.trnMain.Commit();
-
-            ////01. 20161228 이길문 창고정보Get추가
-            //modDefApp.g_CliWork.m_BDb.ParamsClear();
-
-            //strSql = "";
-            //strSql += modDefApp.CRLF + " SELECT A.* ";
-            //strSql += modDefApp.CRLF + "   FROM WH_MST A ";
-            //strSql += modDefApp.CRLF + "  WHERE A.WH_CTG = 'AA' ";
-            //strSql += modDefApp.CRLF + "  ORDER BY A.WH_CD ";
-            //iCnt = modDefApp.g_CliWork.m_BDb.ExcuteQry_Par(ref strSql);
-            //if (iCnt < 0)
-            //{
-            //    modDefApp.g_CliWork.m_BDb.conMain.Close();
-            //    return false;
-            //}
-            //if (iCnt == 0)
-            //{
-            //    modDefApp.g_CliWork.m_BDb.conMain.Close();
-            //    MessageBox.Show("창고정보가 등록되어 있지 않습니다." + modDefApp.CRLF + "프로그램으로 실행 할 수 없습니다.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //    return false;
-            //}
-
-            //iWhCnt = -1;
-
-            //modDefApp.g_strWH_TYP = new String[modDefApp.g_CliWork.m_BDb.dtMain.Rows.Count];
-            //modDefApp.g_strWH_CD = new String[modDefApp.g_CliWork.m_BDb.dtMain.Rows.Count];
-            //for (iFor = 0; iFor <= modDefApp.g_CliWork.m_BDb.dtMain.Rows.Count - 1; iFor++)
-            //{
-            //    iWhCnt += 1;
-            //    modDefApp.g_strWH_TYP[iWhCnt] = modDefApp.g_CliWork.m_BDb.dtMain.Rows[iFor]["WH_CD"].ToString();
-            //    modDefApp.g_strWH_CD[iWhCnt] = modDefApp.g_CliWork.m_BDb.dtMain.Rows[iFor]["WH_CD"].ToString();
-            //}
-            ////01. END
-
-			modDefApp.g_CliWork.m_BDb.conMain.Close();
-
-			return true;
 		}
 
         #region 랙에 대한 체크 하는 함수(랙 위치) 

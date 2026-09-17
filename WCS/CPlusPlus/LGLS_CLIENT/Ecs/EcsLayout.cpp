@@ -298,17 +298,6 @@ void CEcsLayout::OnZoomOut(CWnd* pWnd)
 		return;
 	}
 
-	//strTemp.Format(_T("Zoom Count = %d\nZoom Limit= %d\nLeft = %d\nBottom = %d\nRight = %d\nTop = %d"), m_nZoomCount, m_nZoomLimit, l, t, r, b);
-//	if (--m_nZoomCount < 0)
-//	{
-//		m_nZoomCount = 0;
-////		strTemp = "이 이상은 축소할 수 없습니다\n\n" + strTemp;
-////		AfxMessageBox(strTemp);
-//		AfxMessageBox(_T("이 이상은 축소할 수 없습니다"));
-//		return;
-//	}
-
-//	AfxMessageBox(strTemp);
 
 	m_pDCI->SetLayoutL(l, t, r, b);
 	m_pDCI->RecalcLayout();

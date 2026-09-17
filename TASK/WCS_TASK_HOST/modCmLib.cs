@@ -494,11 +494,6 @@ namespace TSK_HostCom
 			return true;
 		}
 
-		public static object GetFormTitle(ref Form p_Form)
-		{
-			return p_Form.Text + "   (" + p_Form.Name.Remove(0, 3) + ") ";
-		}
-
 		//*** 응용 프로그램의 이전 인스턴스가 실행 중인지 여부를 확인 ***
 		public static bool PrevInstance()
 		{
@@ -512,123 +507,6 @@ namespace TSK_HostCom
 			}
 		}
 
-		//*** ECS 응답 에러 정보 ***
-		public static string GetEcsErrInfo(string p_strErrCode)
-		{
-			switch (p_strErrCode)
-			{
-			case "01":					return "No STX";
-			case "02":					return "No ETX";
-			case "03":					return "Luggage No. Duplicated";
-			case "04":					return "Not Exist Job";
-			case "05":					return "ECS Buffer Full";
-			case "06":					return "Invalid Header Length";
-			case "07":					return "Invalid Message Length";
-			case "08":					return "Invalid Location";
-			case "09":					return "Invalid Station No.";
-			case "10":					return "Invalid Luggage No.";
-			case "11":					return "Invalid Job Define";
-			case "12":					return "Inhibited Location";
-			case "13":					return "Invalid MailBox Name";
-			case "14":					return "Already Invoked Job";
-			case "15":					return "Invalid Content";
-			case "16":					return "Unknown Message Type";
-			case "17":					return "Improper Handshake";
-			case "18":					return "No Response from Peer";
-			case "19":					return "Socket Error";
-			case "99":					return "Internal Error";
-			default:					return "미정의 에러코드";
-			}
-		}
-
-
-		//### 문자열 길이 얻기(한글2바이트 처리) ###
-		public static int LenHan(string p_strChkBuf)
-		{
-			int iCnt;
-			int iLen;
-			int iLenHan = 0;
-			char cTmp;
-
-			iLen = p_strChkBuf.Length - 1;
-
-			for (iCnt = 0; iCnt <= iLen; iCnt++)
-			{
-				cTmp = p_strChkBuf[iCnt];
-
-				if (cTmp >= (char)13 && cTmp <= (char)128)
-				{
-					iLenHan += 1;
-				}
-				else
-				{
-					iLenHan += 2;
-				}
-			}
-			return iLenHan;
-		}
-
-		public static string CopyHan(string p_strText, int p_iStartPos, int p_iCopyLen)
-		{
-			byte[] bytTempByte = System.Text.ASCIIEncoding.GetEncoding(949).GetBytes(p_strText);
-			//Dim TempByte() As Byte = System.Text.Encoding.UTF8.GetBytes(pText) 
-			byte[] bytTempByte2 = new byte[bytTempByte.Length];
-			string strResult = "";
-
-			if (p_iStartPos < 1 | p_iCopyLen < 1)
-				return strResult;
-			if (bytTempByte.Length < p_iStartPos)
-				return strResult;
-
-			Array.Reverse(bytTempByte);
-			//ReDim Preserve TempByte(TempByte.Length - 1)
-
-
-			strResult = System.Text.ASCIIEncoding.GetEncoding(949).GetString(bytTempByte);
-
-			bytTempByte2 = new byte[bytTempByte.Length]; //20170920 권혁찬 VB와는 다르게 배열의 길이를 미리 선언해야함.
-			Array.Copy(bytTempByte, bytTempByte2, bytTempByte.Length - (p_iStartPos - 1));
-			strResult = System.Text.ASCIIEncoding.GetEncoding(949).GetString(bytTempByte2);
-
-			Array.Resize(ref bytTempByte2, (bytTempByte.Length - (p_iStartPos - 1)));
-			Array.Reverse(bytTempByte2);
-			strResult = System.Text.ASCIIEncoding.GetEncoding(949).GetString(bytTempByte2);
-
-			byte[] bytTempByte3 = new byte[bytTempByte2.Length];
-
-			if (p_iCopyLen > bytTempByte2.Length)
-			{
-				Array.Copy(bytTempByte2, bytTempByte3, bytTempByte2.Length);
-			}
-			else
-			{
-				Array.Copy(bytTempByte2, bytTempByte3, p_iCopyLen);
-			}
-
-			strResult = System.Text.ASCIIEncoding.GetEncoding(949).GetString(bytTempByte3);
-
-			return strResult;
-
-			int iLoop = 0;
-			int iCopy = 0;
-			iLoop = p_iStartPos - 1;
-			iCopy = 0;
-			while (true)
-			{
-				bytTempByte2[iCopy] = bytTempByte[iLoop];
-				iLoop += 1;
-				iCopy += 1;
-				if ((iCopy == p_iCopyLen) | (iLoop > bytTempByte.Length - 1))
-				{
-					break; // TODO: might not be correct. Was : Exit While
-				}
-			}
-
-			//Result = System.Text.Encoding.UTF8.GetString(TempByte2)
-			strResult = System.Text.ASCIIEncoding.GetEncoding(949).GetString(bytTempByte2);
-
-			return strResult;
-		}
 
 	}
 }

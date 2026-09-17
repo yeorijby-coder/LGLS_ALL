@@ -135,27 +135,6 @@ BOOL CConfigStatus::OnInitDialog()
 		m_bInitialized = TRUE;		
 	}
 
-	//m_btnAutoSto	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_STO			: LIGHT_GRAY;
-	//m_btnAutoRet	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_RET			: LIGHT_GRAY;
-	//m_btnAutoMove	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_MOVE		: LIGHT_GRAY;
-	//m_btnAutoA2A	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_ATA			: LIGHT_GRAY;
-	//m_btnAutoW2W	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_WTW			: LIGHT_GRAY;
-	//m_btnAutoR2R	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_RTR			: LIGHT_GRAY;
-	//m_btnStnSto		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_STN_STO		: LIGHT_GRAY;
-	//m_btnStnRet		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_STN_RET		: LIGHT_GRAY;
-	//m_btnHsSto		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_HS_STO		: LIGHT_GRAY;
-	//m_btnHsRet		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_HS_RET		: LIGHT_GRAY;
-	//m_btnSuspend	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_SUSPEND		: LIGHT_GRAY;
-	//m_btnErr		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_ERROR		: LIGHT_GRAY;
-	//m_btnManual		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_MANUAL		: LIGHT_GRAY;
-	//m_btnDisConnect	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_DISCONNECT	: LIGHT_GRAY;
-	//m_btnWcPass		.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_WC_PASS		: LIGHT_GRAY;
-	//m_btnCvSearch	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_CV_SEARCH	: LIGHT_GRAY;
-	//m_btnScRailSto	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_STO_SUSPEND : LIGHT_GRAY;
-	//m_btnScRailRet	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_RET_SUSPEND : LIGHT_GRAY;
-	//m_btnScRailAll	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_ALL_SUSPEND : LIGHT_GRAY;
-	//m_btnScRailErr	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_RAIL_ERROR  : LIGHT_GRAY;
-	//m_btnScRailInvk	.m_crColor = (m_pDoc != NULL && m_pDoc->m_pConfig != NULL) ? m_pDoc->m_pConfig->m_clrUSER_COLOR_SC_INVK		: LIGHT_GRAY;	
 	
 	Invalidate(TRUE);
 	return TRUE;  // return TRUE  unless you set the focus to a control

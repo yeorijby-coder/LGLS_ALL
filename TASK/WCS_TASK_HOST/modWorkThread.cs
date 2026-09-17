@@ -218,7 +218,6 @@ namespace TSK_HostCom
         //설명		: 로그 Thread
         public static void LogThread()
 		{
-			LogMsgInfo LogMsg = default(LogMsgInfo);
 			int iDelCnt = 0;
 			int iID = 0;
 			CLog Log = default(CLog);
@@ -307,7 +306,6 @@ namespace TSK_HostCom
 							strLog = string.Format("DB 연결 실패-{0}", strErrMsg);
 							modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
 							modDefAPI.SleepA(3000);
-                            modDefApp.g_CliWork.m_bFetchSimMode = false;
                             continue;
 						}
 						else
@@ -315,7 +313,6 @@ namespace TSK_HostCom
 							modDefApp.g_CliWork.m_blDbConnted = true;
 							modCmWork.ShowMsgClient("DB 로그인 성공.", modDefApp.MSG_IMP);
 							modDefApp.g_CliWork.m_BDb.Init();
-                            modDefApp.g_CliWork.m_bFetchSimMode = true;
 						}
 					}
 					//==LKM[20140430]DB연결
@@ -330,80 +327,6 @@ namespace TSK_HostCom
 							modDefApp.g_CliWork.ConnectSock();
 						}
 					}
-
-                    string strSql = "";
-                    #region 시뮬레이션 모드인지 확인해서 가져오기 - 사용안함
-                    /*
-                    if (modDefApp.g_CliWork.m_bFetchSimMode == true)
-                    {
-                        modDefApp.g_CliWork.m_BDb.ParamsClear();
-
-                        //string strLog = "";
-                        strSql = modDefApp.CRLF + "   SELECT  SIM_MODE";
-                        strSql += modDefApp.CRLF + "    FROM  HOST_IF_LOG          ";
-                        strSql += modDefApp.CRLF + "   WHERE  WH_TYP = '" + modDefApp.WH_TYP + "'";
-                        strSql += modDefApp.CRLF + "ORDER BY  INS_DT DESC     LIMIT 1";
-
-                        int iiCnt = modDefApp.g_CliWork.m_BDb.ExcuteQry_Par(ref strSql);
-
-                        // 여기서는 DB가 에러가 나도 일단 시뮬레이터 모드가 아닌것으로 체크박스를 만들것 
-                        if (iiCnt < 0)
-                        {
-                            strLog = modDefApp.g_CliWork.m_BDb.ErrMsg + strSql;
-                            modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
-                            //MessageBox.Show(strLog);
-                            modDefApp.g_frmForm.chkSimMode.Checked = false;
-                            //return;
-                        }
-
-                        if (iiCnt == 0)
-                        {
-                            strLog = "시뮬레이션 모드 정보를 가져오지 못했습니다.";
-                            modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
-                            //MessageBox.Show(strLog);
-                            modDefApp.g_frmForm.chkSimMode.Checked = false;
-                            //return;
-                        }
-
-                        // 디버깅을 위해서 변수를 생성함!
-                        int nSimMode = Convert.ToInt32(modDefApp.g_CliWork.m_BDb.dtMain.Rows[0]["SIM_MODE"].ToString());
-                        bool bSimMode = Convert.ToBoolean(nSimMode);
-                        modDefApp.g_frmForm.chkSimMode.Checked = bSimMode;
-                        modDefApp.g_CliWork.m_bFetchSimMode = false;
-                    }
-                    //*/
-                    #endregion
-
-                    #region 현재 작업이 존재하는지 체크해서 작업이 없을때만 시뮬레이션 모드 활성화 - 사용안함
-                    /*
-                    modDefApp.g_CliWork.m_BDb.ParamsClear();
-
-                    //string strLog = "";
-                    //string strSql = "";
-                    strSql = modDefApp.CRLF + "   SELECT  *";
-                    strSql += modDefApp.CRLF + "    FROM  JOB_MST          ";
-                    strSql += modDefApp.CRLF + "   WHERE  WH_TYP = '" + modDefApp.WH_TYP + "'";         
-
-                    int iSqlCnt = modDefApp.g_CliWork.m_BDb.ExcuteQry_Par(ref strSql);
-
-                    //// 쿼리가 정상 실행 되고 작업이 0개 일때만 시뮬레이션 모드 실행 가능 (DB Error 시와 작업갯수가 있을때는 시뮬레이션 모드 실행 불가)
-                    //if (iSqlCnt < 0)
-                    //{
-                    //    strLog = modDefApp.g_CliWork.m_BDb.ErrMsg + strSql;
-                    //    //modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
-                    //    return false;
-                    //}
-
-                    //if (iSqlCnt == 0)
-                    //{
-                    //    modDefApp.g_frmForm.chkSimMode.Enabled = true;
-                    //}
-                    //else
-                    //{
-                    //    modDefApp.g_frmForm.chkSimMode.Enabled = false;
-                    //}
-                    //*/
-                    #endregion
 
 					if (modDefApp.g_blSTOP_REQ == false)
 					{

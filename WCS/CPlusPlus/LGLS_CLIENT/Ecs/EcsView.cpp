@@ -790,24 +790,6 @@ void CEcsView::OnTimer(UINT_PTR nIDEvent)
 
 			CString strSTOCK_MODE_CID, strREMOTE_CONTROL_CID, strROLL_MODE_CID;
 	
-			//strREMOTE_CONTROL_CID = _T("17111101");
-			//pDciControl = pDoc->GetLayout_PARM((EN_LAYOUT)nIdxLayout)->GetDciControl(strREMOTE_CONTROL_CID);
-
-			//if(pDciControl != NULL)
-			//{
-			//	if (strREMOTE_CONTROL == _T("0"))
-			//	{
-			//		pDciControl->m_strText = _T("리모컨 OFF");
-			//		//pDciControl->m_clrFgColor = RED;
-			//	}
-			//	else
-			//	{
-			//		pDciControl->m_strText = _T("리모컨 ON");
-			//	}
-
-			//	
-			//	pDciControl->InvalidateControl(pDoc->m_hWndView, FALSE);
-			//}
 	
 			strSTOCK_MODE_CID = _T("17111149");
 			pDciControl = pDoc->GetLayout_PARM((EN_LAYOUT)nIdxLayout)->GetDciControl(strSTOCK_MODE_CID);
@@ -1650,46 +1632,6 @@ LRESULT CEcsView::OnViewLayoutInfo(WPARAM wParam, LPARAM lParam)
 void CEcsView::MoveSearchWnd(int cx, int cy, BOOL bStatus)
 {
 	// 호출 시점 : 프로그램 시작 시, 윈도우 크기 변경 시, LayOut 1-3단 클릭 시
-// 	CRect rcRect;
-// 	CEcsDoc *pDoc = GetDocument();
-// 	CEcsLayout* pLayout = pDoc->GetSelectedLayout();
-// 	if(pDoc == NULL || pLayout == NULL)
-// 		return;
-// 
-// 	if (FALSE == bStatus || NULL == pDoc) 
-// 		return; 
-// 
-// 	// ## 위치 조정 시 ## 이 변수 2개만 변경하세요.
-// 	int nWOffset = 185;		// 값이 크면 왼쪽으로~
-// 	int nHOffset = 100;		// 값이 크면 위쪽으로~
-// 
-// 	// SET SCALE FACTOR
-// 	int nScale;
-// 	CRect rc = pLayout->GetDciMaster()->GetLayoutL();
-// 
-// 	if ((rc.right / rc.top) > (cx / cy))
-// 		nScale = cx / rc.right;
-// 	else 
-// 		nScale = cy / rc.top;
-// 
-// 	while ((cx < nScale * rc.right) || (cy < nScale * rc.top))
-// 		--nScale;
-// 
-// 	nScale = (nScale > 0) ? nScale : 1;
-// 
-// 	// LayOut에 맞춘 오프셋 구하기
-// 	int nLayOutWOffset = abs(cx - nScale * rc.right) / 2;
-// 	int nLayOutHOffset = cy - abs(cy - nScale * rc.top) / 2;
-// 
-// 	// 컨트롤 배치 위치
-// 	int nPosX =  cx - nWOffset - nLayOutWOffset; 
-// 	int nPosY =  nLayOutHOffset - nHOffset;
-// 
-// 	for (int i = 0; i < 7; i++)
-// 	{
-// 		rcRect = pDoc->m_rcSerachCtrl[i];
-// 		GetDlgItem(pDoc->m_rgCtrlID[i])->SetWindowPos(NULL, nPosX + rcRect.left, nPosY + rcRect.top, 0, 0, SWP_NOSIZE);
-// 	}
 }
 
 //=============================================================================
@@ -1706,34 +1648,6 @@ void CEcsView::CalcSerachControlPos()
 	int nTop = 0;
 	int nLeft = 0;
 
-	// 컨트롤 아이디 배열 저장
-// 	pDoc->m_rgCtrlID[0] = IDC_STC_SEARCH;
-// 	pDoc->m_rgCtrlID[1] = IDC_CHECK_LUGGNUM_SEARCH;
-// 	pDoc->m_rgCtrlID[2] = IDC_CHECK_TRAYID_SEARCH;
-// 	pDoc->m_rgCtrlID[3] = IDC_CHECK_STATION_SEARCH;
-// 	pDoc->m_rgCtrlID[4] = IDC_CHECK_TRACKNUM_SEARCH;
-// 	pDoc->m_rgCtrlID[5] = IDC_EDIT_LUGGNUM_SEARCH;
-// 	pDoc->m_rgCtrlID[6] = IDC_BUTTON_TRACK_SEARCH;
-// 
-// 	// 재실행 할때마다 Control Position 값이 바뀌는데 이유를 모르겠음. 프레임->Recalclayout()과 관계 되는지?
-// 	int i = 0;
-// 	for (i = 0; i < 7; i++)
-// 	{
-// 		GetDlgItem(pDoc->m_rgCtrlID[i])->GetWindowRect(&pDoc->m_rcSerachCtrl[i]);
-// 		
-// 		if ((pDoc->m_rcSerachCtrl[i].left < nLeft) || (0 == nLeft))
-// 			nLeft = pDoc->m_rcSerachCtrl[i].left;
-// 
-// 		if ((pDoc->m_rcSerachCtrl[i].top < nTop) || (0 == nTop))
-// 			nTop = pDoc->m_rcSerachCtrl[i].top;
-// 	}
-// 
-// 	// 위치값이 실행시 마다 바뀌므로, 가장 작은값 기준으로 계산.
-// 	for (i = 0; i < 7; i++)
-// 	{
-// 		pDoc->m_rcSerachCtrl[i].left = pDoc->m_rcSerachCtrl[i].left - nLeft;
-// 		pDoc->m_rcSerachCtrl[i].top = pDoc->m_rcSerachCtrl[i].top - nTop;
-// 	}
 }
 
 BOOL CEcsView::PreTranslateMessage(MSG* pMsg) 
@@ -1756,18 +1670,6 @@ void CEcsView::OnSearch()
 	CEcsDoc* pDoc = GetDocument();
 	ASSERT(pDoc != NULL);
 
-// 	if (pDoc->m_pSearchDlg != NULL)
-// 	{
-// 		pDoc->m_pSearchDlg->ShowWindow(SW_SHOWNORMAL);
-// 		pDoc->m_pSearchDlg->BringWindowToTop();
-// 	}
-// 	else
-// 	{
-// 		pDoc->m_pSearchDlg = new CSearchDlg(this);
-// 		pDoc->m_pSearchDlg->Create(IDD_SEARCH_DLG);
-// 		pDoc->m_pSearchDlg->ShowWindow(SW_SHOW);
-// 		
-// 	}	
 }
 
 
@@ -1877,59 +1779,6 @@ void CEcsView::PreTranslateMessageSelectedLayout( CEcsDoc * pDoc, WPARAM wParam,
 
 void CEcsView::OnMouseMoveSelectedLayout( CEcsDoc* pDoc, UINT nFlags, CPoint point )
 {
- 	//CTimeSpan tTimeSpan;
- 	//tTimeSpan = CTime::GetCurrentTime() - pDoc->m_tChecktime;
- 	//if(tTimeSpan.GetTotalSeconds() < 1)
- 	//	return;
- 
- 	//CEcsLayout* pLayout = (CEcsLayout*)pDoc->GetSelectedLayout();
- 	//if(pLayout == NULL)
- 	//	return;
- 
- 	//if(pDoc->m_bMoveFlag == TRUE)
- 	//{
- 	//	if(tTimeSpan.GetTotalSeconds() < 1)
- 	//		return;
- 	//	if(pDoc->m_PrevPoint != point)
- 	//	{
- 	//		if(pDoc->m_PrevPoint.x > point.x)
- 	//		{
- 	//			if(pDoc->m_PrevPoint.x - point.x > 3)
- 	//			{
- 	//				pLayout->OnKeyDown(this, VK_RIGHT, 0, 0);	
- 
- 	//				pDoc->m_PrevPoint.x = point.x;
- 	//			}
- 	//		}
- 	//		else if(pDoc->m_PrevPoint.x < point.x)
- 	//		{
- 	//			if(point.x - pDoc->m_PrevPoint.x > 3)
- 	//			{
- 	//				pLayout->OnKeyDown(this, VK_LEFT, 0, 0);
- 
- 	//				pDoc->m_PrevPoint.x = point.x;
- 	//			}
- 	//		}
- 	//		if(pDoc->m_PrevPoint.y > point.y)
- 	//		{
- 	//			if(pDoc->m_PrevPoint.y - point.y > 5)
- 	//			{
- 	//				pLayout->OnKeyDown(this, VK_DOWN, 0, 0);
- 
- 	//				pDoc->m_PrevPoint.y = point.y;
- 	//			}
- 	//		}
- 	//		else if(pDoc->m_PrevPoint.y < point.y)
- 	//		{
- 	//			if(point.y - pDoc->m_PrevPoint.y > 5)
- 	//			{
- 	//				pLayout->OnKeyDown(this, VK_UP, 0, 0);
- 
- 	//				pDoc->m_PrevPoint.y = point.y;
- 	//			}
- 	//		}
- 	//	}
- 	//}
 }
 
 void CEcsView::GetQrySelectStatusAll( CCV_DATA* pCV_DATA, CString& pSTOCK_MODE, CString& pREMOTE_CONTROL, CString& pROLL_MODE)
