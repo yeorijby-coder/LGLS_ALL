@@ -120,7 +120,9 @@ void CLglsInfoBar::ReadHeartbeat()
 	CString strSql = _T("");
 	strSql += _T(" SELECT ISNULL((SELECT DATEDIFF(second, MAX(READ_UPD_DT), GETDATE()) FROM CV_DATA),     99999) AS EQP \n");
 	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(INS_DT),      GETDATE()) FROM HOST_IF_LOG), 99999) AS HST \n");
-	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(UPD_DT),      GETDATE()) FROM JOB_MST),     99999) AS SCH ");
+	// [LGLS 2026-09-18] 스케줄러는 하트비트(EQP_MST SCH 행 UPD_DT, IO_TASK 가 사이클마다 기록)로 본다.
+	//   종전 JOB_MST 최종 갱신은 작업이 하나도 없으면 NULL 이라 스케줄러가 살아 있어도 "확인 불가"(회색)였다.
+	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(UPD_DT),      GETDATE()) FROM EQP_MST WHERE EQP_TYP = 'SCH'), 99999) AS SCH ");
 	int nRowCnt = 0;
 	CString strMsg = _T("");
 	_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);

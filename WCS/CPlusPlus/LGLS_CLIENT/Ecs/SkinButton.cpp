@@ -487,7 +487,39 @@ void CSkinButton::DrawTheBitmap(CDC* pDC, BOOL bHasTitle, RECT* rpItem, CRect* r
 
 	hbmT = (HBITMAP)::SelectObject(hdcMem, m_csBitmaps[byIndex].hMask);
 
-	::BitBlt(pDC->m_hDC, rImage.left, rImage.top, m_csBitmaps[byIndex].dwWidth, m_csBitmaps[byIndex].dwHeight, hdcBmpMem, 0, 0, SRCCOPY);
+	// [LGLS 2026-09-18] 배경 비트맵을 버튼 크기(리소스 뷰의 크기)에 맞춰 그린다.
+	//   종전에는 비트맵 원래 크기로만 그려, rc 에서 버튼을 넓혀도 화면에서는 비트맵 폭까지만 버튼처럼 보였다.
+	//   모서리(가장자리 몇 px)는 그대로 두고 가운데만 늘려(9분할) 둥근 테두리가 번지지 않게 한다.
+	//   버튼이 비트맵과 같은 크기면 종전과 똑같이 그려진다.
+	{
+		int sw = (int)m_csBitmaps[byIndex].dwWidth, sh = (int)m_csBitmaps[byIndex].dwHeight;
+		CRect rDst(rpItem);
+		if (bIsPressed) rDst.OffsetRect(m_ptPressedOffset.x, m_ptPressedOffset.y);
+		int dw = rDst.Width(), dh = rDst.Height();
+		if (dw == sw && dh == sh)
+		{
+			::BitBlt(pDC->m_hDC, rDst.left, rDst.top, sw, sh, hdcBmpMem, 0, 0, SRCCOPY);
+		}
+		else
+		{
+			int ex = min(6, sw / 3), ey = min(6, sh / 3);
+			if (ex * 2 > dw) ex = dw / 2;
+			if (ey * 2 > dh) ey = dh / 2;
+			int sx[4] = { 0, ex, sw - ex, sw }, sy[4] = { 0, ey, sh - ey, sh };
+			int dx[4] = { rDst.left, rDst.left + ex, rDst.right - ex, rDst.right };
+			int dy[4] = { rDst.top, rDst.top + ey, rDst.bottom - ey, rDst.bottom };
+			int nOldMode = ::SetStretchBltMode(pDC->m_hDC, COLORONCOLOR);
+			for (int iy = 0; iy < 3; iy++)
+				for (int ix = 0; ix < 3; ix++)
+				{
+					int w = dx[ix + 1] - dx[ix], h = dy[iy + 1] - dy[iy];
+					int ws = sx[ix + 1] - sx[ix], hs = sy[iy + 1] - sy[iy];
+					if (w <= 0 || h <= 0 || ws <= 0 || hs <= 0) continue;
+					::StretchBlt(pDC->m_hDC, dx[ix], dy[iy], w, h, hdcBmpMem, sx[ix], sy[iy], ws, hs, SRCCOPY);
+				}
+			::SetStretchBltMode(pDC->m_hDC, nOldMode);
+		}
+	}
 
 	::SelectObject(hdcMem, hbmT);
 	::DeleteDC(hdcMem);

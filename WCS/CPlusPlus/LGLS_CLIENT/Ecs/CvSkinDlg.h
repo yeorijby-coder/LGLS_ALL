@@ -210,6 +210,8 @@ public:
 	CStaticTransparent m_lblJobStartLoc;
 	
 	CTGroupBox m_grpMgdpStatus;
+	CTGroupBox m_grpCvEject;	// [LGLS 2026-09-18] 예외 처리 그룹 - 다른 그룹과 같은 모양
+	CTGroupBox m_grpCvPause;	// [LGLS 2026-09-18] 일시정지 그룹
 	CSkinButton m_btnCvZoom;	// [LGLS 2026-08-05] 확대(통신상태 패널 예정)
 	// [LGLS 2026-08-05] 통신상태 패널(확대) - SC/RTV 와 동일 구조
 	CPtrArray m_arVehCtrl;

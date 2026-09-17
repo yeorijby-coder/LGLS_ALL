@@ -148,6 +148,8 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 
 
 	DDX_Control(pDX, IDC_GRP_MGDP_STATUS, m_grpMgdpStatus);
+	DDX_Control(pDX, IDC_LGLS_CV_EJECT_GRP, m_grpCvEject);	// [LGLS 2026-09-18] 다른 그룹과 같은 CTGroupBox
+	DDX_Control(pDX, IDC_LGLS_CV_PAUSE_GRP, m_grpCvPause);
 	DDX_Control(pDX, IDC_LGLS_CV_ZOOM, m_btnCvZoom);	// [LGLS 2026-08-05]
 }
 
