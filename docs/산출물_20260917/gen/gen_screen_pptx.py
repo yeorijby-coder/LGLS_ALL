@@ -266,4 +266,5 @@ add_table(s, 0.5, 1.2, 12.4, [
 tb(s, 0.5, 6.35, 12.4, 0.5, '캡처 : 메인 · 리본 · CV/SC/RTV 상태 · 범례 = 2026-09-17 전체화면(1920×1080). 그 밖의 대화상자 = 2026-09-09 판 캡처(구성 변경 없음).', 10, False, GRAY)
 footer(s)
 
-out = os.path.join(BASE, '06_ECS_화면설계서.pptx'); prs.save(out); print('saved', out, 'slides', len(prs.slides))
+# [2026-09-17] 06_ECS_화면설계서.pptx 는 사용자가 직접 고친 본이다 - 덮어쓰지 않고 _gen 으로 저장한다.
+out = os.path.join(BASE, '06_ECS_화면설계서_gen.pptx'); prs.save(out); print('saved', out, 'slides', len(prs.slides))
