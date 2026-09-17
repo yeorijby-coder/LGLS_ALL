@@ -154,6 +154,13 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-09-16 23:55] ENV_IOSCH.INI [CNF] OUT_HOLD_SEC (기본 3, 0 = 유예 없음). 호출마다 읽으므로 재기동 없이 바뀐다(사용자 지시).
         //   0 으로 두면 크레인 완료 직후 미러 공백에서 입고→출고 재전환(2회 전환)이 날 수 있다 - A/B before 재현용.
         private static int OUT_HOLD_SEC { get { int v = cDefApi.GsReadInitProfileCnf("OUT_HOLD_SEC", 3); return v < 0 ? 0 : v; } }
+        // [LGLS 2026-09-17 현장] ENV_IOSCH.INI [CNF] CV2_DIR_MODE - S/C#1 통로(C/V#2 103) 방향 전환 방식 (사용자 지시)
+        //   0 = 종전 : 입고 진행 우선 → 출고 진행 → 대기 순으로 수시 전환
+        //   1 = 교착 때만 : 현재 방향으로 통로를 쓰는 작업이 있으면 바꾸지 않는다. 없을 때만 바꾸고,
+        //       있더라도 CV2_STALL_SEC 동안 아무 진행이 없으면(교착) 그때 한 번 바꾼다.
+        //       RGV 가 1호기행 입고를 싣는 조건에서 출고 29(크레인이 H/S 에 막 내림)도 "출고 진행"으로 센다.
+        private static int CV2_DIR_MODE  { get { return cDefApi.GsReadInitProfileCnf("CV2_DIR_MODE", 1); } }
+        private static int CV2_STALL_SEC { get { int v = cDefApi.GsReadInitProfileCnf("CV2_STALL_SEC", 60); return v < 10 ? 10 : v; } }
         // [LGLS] RTV 출고대 반출 대기열(FIFO): RTV 는 1대뿐이라 출고대 반출 경로는 동시에 1건만 돈다.
         //   홀수(RGV 픽업)트랙에 도착한 출고 화물을 여기 쌓아두고, 출고대 반출 경로가 비면 선입선출로 하나씩 태운다.
         //   (구코드는 SC 완료 시점에 `if (m_dicOutStn.Count == 0)` 로만 출고대 반출 경로를 만들어서, 선행 화물이
@@ -1250,14 +1257,15 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                   WHERE J5.WH_TYP = JM.WH_TYP                           ";
                 strSql += CRLF + "                     AND J5.JOB_TYP IN ('2','12')                        ";
                 strSql += CRLF + "                     AND J5.START_POS = '901'                            ";
-                strSql += CRLF + "                     AND J5.JOB_STATUS IN ('25'))                   ";
+                // [LGLS 2026-09-17 현장] CV2_DIR_MODE=1 : 크레인이 막 내린 29, 통로 이동 16 도 출고 점유로 본다
+                strSql += CRLF + "                     AND J5.JOB_STATUS IN (" + (CV2_DIR_MODE == 1 ? "'25','29','16'" : "'25'") + "))    ";
                 strSql += CRLF + "       OR EXISTS (SELECT 1 FROM CV_DATA C3                               ";
                 strSql += CRLF + "                   INNER JOIN JOB_MST J6 ON J6.WH_TYP  = C3.WH_TYP       ";
                 strSql += CRLF + "                                       AND J6.LUGG_NO = C3.LUGG_NO_RD    ";
                 strSql += CRLF + "                   WHERE C3.WH_TYP = JM.WH_TYP                           ";
                 strSql += CRLF + "                     AND C3.MC_NO IN ('103','104')                       ";
                 strSql += CRLF + "                     AND J6.JOB_TYP IN ('2','12')                        ";
-                strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN ('09','19','29')) ) )       ";
+                strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN (" + (CV2_DIR_MODE == 1 ? "'09','19'" : "'09','19','29'") + ")) ) )       ";
                 strSql += CRLF + "    AND (RD.ERR_CODE_RD = '0' OR RD.ERR_CODE_RD = '0000' OR RD.ERR_CODE_RD IS NULL)";
                 strSql += CRLF + "  ORDER BY JM.INS_DT, JM.LUGG_NO                    ";   // [LGLS 2026-09-01] 오래 기다린 작업부터(라인별 FIFO 전제)
 
@@ -2440,7 +2448,12 @@ namespace TSK_COMM_IOSCH
                 //   입고가 영원히 굶는다(실측: [CV#2 교착 TEST] 중 입고 0083/0098 이 30 에서 18분 정지,
                 //   그때 RTV 는 완전 유휴였고 막은 출고 3건 중 2건은 상태 20 이었다).
                 //   20 = 대기(아무것도 점유하지 않음) → 양보 사유 아님. 21 부터가 실제 점유.
-                q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','15','" + ST_SC_WAIT + "') ";
+                // [LGLS 2026-09-17 현장] CV2_DIR_MODE=1 : 29(크레인이 H/S 에 막 내림 - 화물은 통로 위)도 점유로 센다.
+                //   종전엔 29 를 빼서 그 공백에 RGV 가 1호기행 입고를 싣고, 입고가 통로 방향을 빼앗았다.
+                if (CV2_DIR_MODE == 1)
+                    q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','15','" + ST_SC_WAIT + "') ";
+                else
+                    q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','15','" + ST_SC_WAIT + "') ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')  ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -2871,6 +2884,17 @@ namespace TSK_COMM_IOSCH
                     }
                 }
 
+                // [LGLS 2026-09-17 현장] S/C#1 통로는 CV2_DIR_MODE=1 이면 "교착 때만" 전환한다 (모든 호출부가 이 함수를 지난다)
+                if (mcNo == SC1_DUAL_CV && CV2_DIR_MODE == 1)
+                {
+                    string whyG;
+                    if (!Cv2SwitchAllowed(dir, out whyG))
+                    {
+                        DbgLog("CV2MODE", "[통로] C/V#2 방향 전환 보류 - " + whyG);
+                        return false;
+                    }
+                }
+
                 // [LGLS 2026-08-30] 겸용대 방향 전환 규약(사용자 확정):
                 //   현재 방향의 작업 화물이 아직 설비에 있으면 전환하지 않는다. 뒤집으면 이송 방향이
                 //   반대가 되어 그 화물이 갇히고(HS 미성립) 크레인 앞에서 충돌한다.
@@ -2917,6 +2941,82 @@ namespace TSK_COMM_IOSCH
                 MakeMsg_Error("[SCH][CV] RequestCvDirection 오류: " + ex.Message);
                 return false;
             }
+        }
+
+        // [LGLS 2026-09-17 현장] CV2_DIR_MODE=1 판정 ─────────────────────────────────────────────
+        //   통로 점유(현재 방향으로 통로를 쓰는 작업)
+        //     출고 : 25(크레인이 들고 오는 중) · 29(H/S 에 막 내림) · 16(104→103 이동)
+        //     입고 : 35·39(RGV 가 싣고 옴) · 25(크레인이 104 에서 뜨는 중) · 16 · 15(103/104 에 실물)
+        //   현재 방향 점유 0 → 전환 허용.
+        //   점유 있음 → 크레인 구동(25) 중이면 기다리고, 그 밖에는 CV2_STALL_SEC 동안 상태 변화가 없을 때만(교착) 한 번 전환.
+        //   강제 전환 뒤에는 다시 CV2_STALL_SEC 가 지나야 또 강제할 수 있다(왕복 방지).
+        private DateTime m_dtCv2Force = DateTime.MinValue;
+
+        private bool Cv2SwitchAllowed(string want, out string why)
+        {
+            why = "";
+            string cur = GetCvStockMode(SC1_DUAL_CV);
+            if (cur != "0" && cur != "1") return true;      // 현재 방향 미상 - 종전대로
+            if (cur == want) return true;
+
+            string q = "";
+            q += CRLF + " SELECT SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS IN ('25','29','16') THEN 1 ELSE 0 END) AS OUT_OCC, ";
+            q += CRLF + "        SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS = '25' THEN 1 ELSE 0 END) AS OUT_25, ";
+            q += CRLF + "        SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND (JM.JOB_STATUS IN ('25','35','39') ";
+            q += CRLF + "                  OR (JM.JOB_STATUS = '16' AND JM.HS_TRACK_NO IN ('103','104')) ";
+            q += CRLF + "                  OR (JM.JOB_STATUS = '15' AND JM.HS_TRACK_NO IN ('103','104') AND C1.MC_NO IS NOT NULL)) THEN 1 ELSE 0 END) AS IN_OCC, ";
+            q += CRLF + "        SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = '25' THEN 1 ELSE 0 END) AS IN_25, ";
+            q += CRLF + "        MAX(JM.UPD_DT) AS LAST_UPD ";
+            q += CRLF + "   FROM JOB_MST JM ";
+            q += CRLF + "   LEFT JOIN CV_DATA C1 ON C1.WH_TYP = JM.WH_TYP AND C1.MC_NO = JM.HS_TRACK_NO ";
+            q += CRLF + "        AND C1.SENSOR0_DATA_RD = '1' AND C1.LUGG_NO_RD = JM.LUGG_NO ";
+            q += CRLF + "  WHERE JM.WH_TYP = :WH_TYP ";
+            q += CRLF + "    AND ( (JM.JOB_TYP IN ('2','12') AND JM.START_POS = '901') ";
+            q += CRLF + "       OR (JM.JOB_TYP IN ('1','11') AND JM.DEST_POS  = '901') ) ";
+            q += CRLF + "    AND JM.JOB_STATUS NOT IN ('09','19') ";
+            q += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y') ";
+            _pBdb.mComMain.CommandType = CommandType.Text;
+            _pBdb.mComMain.Parameters.Clear();
+            _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+            if (DbQry(q) <= 0) return true;                 // 조회 실패 - 종전대로(전환을 막아 정체시키지 않는다)
+
+            DataRow r = _pBdb.mDtMain.Rows[0];
+            int outOcc, out25, inOcc, in25;
+            int.TryParse(GetVal(r, "OUT_OCC"), out outOcc);
+            int.TryParse(GetVal(r, "OUT_25"),  out out25);
+            int.TryParse(GetVal(r, "IN_OCC"),  out inOcc);
+            int.TryParse(GetVal(r, "IN_25"),   out in25);
+            DateTime lastUpd;
+            if (!DateTime.TryParse(GetVal(r, "LAST_UPD"), out lastUpd)) lastUpd = DateTime.Now;
+
+            bool   bCurOut = (cur == "1");
+            int    curOcc  = bCurOut ? outOcc : inOcc;
+            int    cur25   = bCurOut ? out25  : in25;
+            string curNm   = bCurOut ? "출고" : "입고";
+            string wantNm  = (want == "1") ? "출고" : "입고";
+
+            if (curOcc == 0)
+            {
+                MakeMsg_Imp(string.Format("[SCH][CV2] 통로 {0} 작업 없음 → {1} 전환 허용", curNm, wantNm));
+                return true;
+            }
+            if (cur25 > 0)
+            {
+                why = string.Format("현재 {0} 크레인 구동 중(25) {1}건 - 완료까지 유지", curNm, cur25);
+                return false;
+            }
+            DateTime basis = (lastUpd > m_dtCv2Force) ? lastUpd : m_dtCv2Force;
+            int idle = (int)(DateTime.Now - basis).TotalSeconds;
+            if (idle >= CV2_STALL_SEC)
+            {
+                m_dtCv2Force = DateTime.Now;
+                string msg = string.Format("[통로] C/V#2 교착 해제 전환 - {0} 작업 {1}건이 {2}초 무진행 → {3}", curNm, curOcc, idle, wantNm);
+                MakeMsg_Imp("[SCH][CV2] " + msg);
+                DbgLog("CV2FORCE", msg);
+                return true;
+            }
+            why = string.Format("현재 {0} 작업 {1}건 통로 사용 중 (무진행 {2}/{3}초)", curNm, curOcc, idle, CV2_STALL_SEC);
+            return false;
         }
 
         /// <summary>[LGLS 2026-09-17] 그 겸용대(설비 단위 - 103/104, 121/122)에 Client 수동 방향 전환이 MANUAL_DIR_HOLD_SEC 안에 있었는가.</summary>
