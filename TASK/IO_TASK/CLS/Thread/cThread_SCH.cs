@@ -161,6 +161,13 @@ namespace TSK_COMM_IOSCH
         //       RGV 가 1호기행 입고를 싣는 조건에서 출고 29(크레인이 H/S 에 막 내림)도 "출고 진행"으로 센다.
         private static int CV2_DIR_MODE  { get { return cDefApi.GsReadInitProfileCnf("CV2_DIR_MODE", 1); } }
         private static int CV2_STALL_SEC { get { int v = cDefApi.GsReadInitProfileCnf("CV2_STALL_SEC", 60); return v < 10 ? 10 : v; } }
+        //   2 = 통로 사용권 : 크레인 1호기에 출고 지시(25)를 주면 출고 사용권, RTV 에 1호기행 입고 지시(35)를 주면 입고 사용권.
+        //       상대 사용권이 있는 동안에는 지시 자체를 내지 않는다. 방향은 그 지시를 낼 때만 바꾼다(수시 정합 없음).
+        //       출고 사용권은 RTV 가 화물을 싣고 통로를 벗어나면, 입고 사용권은 크레인 1호기에 입고 지시를 주면 풀린다.
+        //       사용권은 작업 상태(DB)로 판정한다 - 재기동해도 유지된다.
+        // [CNF] CV2_FAIR (모드 2) : 0 = 출고 우선(기본 - 출고가 연달아 있으면 RTV 가 출고를 계속 싣는다)
+        //                           1 = 번갈아 쓰기 - 사용권이 비었을 때 양쪽이 기다리면 더 오래 기다린 쪽
+        private static int CV2_FAIR      { get { return cDefApi.GsReadInitProfileCnf("CV2_FAIR", 0); } }
         // [LGLS] RTV 출고대 반출 대기열(FIFO): RTV 는 1대뿐이라 출고대 반출 경로는 동시에 1건만 돈다.
         //   홀수(RGV 픽업)트랙에 도착한 출고 화물을 여기 쌓아두고, 출고대 반출 경로가 비면 선입선출로 하나씩 태운다.
         //   (구코드는 SC 완료 시점에 `if (m_dicOutStn.Count == 0)` 로만 출고대 반출 경로를 만들어서, 선행 화물이
@@ -679,8 +686,9 @@ namespace TSK_COMM_IOSCH
                                     : (nOut > 0) ? "1" : (nIn > 0) ? "0" : "";
                         // [LGLS 2026-09-17 현장] CV2_DIR_MODE=1 : 대기 작업만으로는 미리 바꾸지 않는다 - 필요할 때(지시 직전) 바꾼다.
                         //   (크레인 지시 직전 DriveSC, RGV 드롭 지시 직전 DriveRGV 가 방향을 요청한다)
-                        bool bCv2Mode1 = (CV2_DIR_MODE == 1);
+                        bool bCv2Mode1 = (CV2_DIR_MODE >= 1);
                         if (bCv2Mode1 && nInRun == 0 && nOutRun == 0) want = "";
+                        if (CV2_DIR_MODE == 2) want = "";   // [모드 2] 통로 방향은 지시를 낼 때만 바꾼다 - 수시 정합 없음
                         // [LGLS 2026-09-16] 출고 유지 유예(#5) : 출고 크레인 완료 직후 OUT_HOLD_SEC 동안은 입고로 넘기지 않는다.
                         //   미러 지연 등 순간 공백에서 입고→출고 재전환(2회 전환)이 나는 것을 막는 방어막.
                         {
@@ -1136,6 +1144,9 @@ namespace TSK_COMM_IOSCH
                         //   (출고 작업이 상태 '20' 에서 멈춘 사례). 종전에는 입출고대(C/V#11)만 전환하고
                         //   이 통로 C/V 를 전환하는 경로가 없었다 - C/V#11 과 같은 방식으로 지시 직전에 맞춘다.
                         //   RGV 접점(103)에 화물이 남아 있는 동안에는 바꾸지 않는다(이송 방향이 뒤집혀 갇힌다).
+                        // [LGLS 2026-09-17 현장] 모드 2 : 출고 사용권을 잡아야 지시한다
+                        if (scNo == SC1_NO && jobTyp == "2" && CV2_DIR_MODE == 2 && !Cv2TryTakeForOut(luggNo))
+                            continue;
                         if (scNo == SC1_NO)
                         {
                             string wantDir = (jobTyp == "2") ? "1" : "0";
@@ -1262,14 +1273,14 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "                     AND J5.JOB_TYP IN ('2','12')                        ";
                 strSql += CRLF + "                     AND J5.START_POS = '901'                            ";
                 // [LGLS 2026-09-17 현장] CV2_DIR_MODE=1 : 크레인이 막 내린 29, 통로 이동 16 도 출고 점유로 본다
-                strSql += CRLF + "                     AND J5.JOB_STATUS IN (" + (CV2_DIR_MODE == 1 ? "'25','29','16'" : "'25'") + "))    ";
+                strSql += CRLF + "                     AND J5.JOB_STATUS IN (" + (CV2_DIR_MODE >= 1 ? "'25','29','16'" : "'25'") + "))    ";
                 strSql += CRLF + "       OR EXISTS (SELECT 1 FROM CV_DATA C3                               ";
                 strSql += CRLF + "                   INNER JOIN JOB_MST J6 ON J6.WH_TYP  = C3.WH_TYP       ";
                 strSql += CRLF + "                                       AND J6.LUGG_NO = C3.LUGG_NO_RD    ";
                 strSql += CRLF + "                   WHERE C3.WH_TYP = JM.WH_TYP                           ";
                 strSql += CRLF + "                     AND C3.MC_NO IN ('103','104')                       ";
                 strSql += CRLF + "                     AND J6.JOB_TYP IN ('2','12')                        ";
-                strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN (" + (CV2_DIR_MODE == 1 ? "'09','19'" : "'09','19','29'") + ")) ) )       ";
+                strSql += CRLF + "                     AND J6.JOB_STATUS NOT IN (" + (CV2_DIR_MODE >= 1 ? "'09','19'" : "'09','19','29'") + ")) ) )       ";
                 strSql += CRLF + "    AND (RD.ERR_CODE_RD = '0' OR RD.ERR_CODE_RD = '0000' OR RD.ERR_CODE_RD IS NULL)";
                 strSql += CRLF + "  ORDER BY JM.INS_DT, JM.LUGG_NO                    ";   // [LGLS 2026-09-01] 오래 기다린 작업부터(라인별 FIFO 전제)
 
@@ -1359,6 +1370,10 @@ namespace TSK_COMM_IOSCH
                             continue;
                         }
                     }
+
+                    // [LGLS 2026-09-17 현장] 모드 2 : 1호기행 입고는 입고 사용권을 잡아야 RTV 에 지시한다
+                    if (!bOutRgv && destPos == SC1_NO && CV2_DIR_MODE == 2 && !Cv2TryTakeForIn(luggNo))
+                        continue;
 
                     // [LGLS 2026-08-22] S/C #1 겸용 통로 C/V#2(103/104) 방향 맞추기.
                     //   입고는 RGV 가 103 에 내려놓는 것이 SC 지시보다 먼저다 - SC 단계에서만 전환하면
@@ -2454,7 +2469,7 @@ namespace TSK_COMM_IOSCH
                 //   20 = 대기(아무것도 점유하지 않음) → 양보 사유 아님. 21 부터가 실제 점유.
                 // [LGLS 2026-09-17 현장] CV2_DIR_MODE=1 : 29(크레인이 H/S 에 막 내림 - 화물은 통로 위)도 점유로 센다.
                 //   종전엔 29 를 빼서 그 공백에 RGV 가 1호기행 입고를 싣고, 입고가 통로 방향을 빼앗았다.
-                if (CV2_DIR_MODE == 1)
+                if (CV2_DIR_MODE >= 1)
                     q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','15','" + ST_SC_WAIT + "') ";
                 else
                     q += CRLF + "    AND JOB_STATUS NOT IN ('09','19','29','15','" + ST_SC_WAIT + "') ";
@@ -2893,9 +2908,18 @@ namespace TSK_COMM_IOSCH
                 }
 
                 // [LGLS 2026-09-17 현장] S/C#1 통로는 CV2_DIR_MODE=1 이면 "교착 때만" 전환한다 (모든 호출부가 이 함수를 지난다)
-                bool bCv2Gate = (mcNo == SC1_DUAL_CV && CV2_DIR_MODE == 1);
+                bool bCv2Gate = (mcNo == SC1_DUAL_CV && CV2_DIR_MODE >= 1);
                 bool bForceDir = false;
-                if (bCv2Gate)
+                if (bCv2Gate && CV2_DIR_MODE == 2)
+                {
+                    string whyT;
+                    if (!Cv2TokenAllowsDir(dir, out whyT))
+                    {
+                        DbgLog("CV2MODE", "[통로 사용권] C/V#2 방향 전환 보류 - " + whyT);
+                        return false;
+                    }
+                }
+                else if (bCv2Gate)
                 {
                     string whyG;
                     if (!Cv2SwitchAllowed(dir, out whyG, out bForceDir))
@@ -2953,6 +2977,141 @@ namespace TSK_COMM_IOSCH
                 MakeMsg_Error("[SCH][CV] RequestCvDirection 오류: " + ex.Message);
                 return false;
             }
+        }
+
+        // [LGLS 2026-09-17 현장] CV2_DIR_MODE=2 통로 사용권 ────────────────────────────────────────
+        //   사용권(DB 상태)
+        //     출고 : 1호기 출고 25 · 29 · 16, 35 인데 화물이 아직 103/104 위
+        //     입고 : 1호기행 입고 35 · 39, 16(103/104), 15 인데 103/104 에 실물
+        //   예약(메모리, 20초) : 방향 지시만 내고 설비 반영을 기다리는 동안 상대가 끼어들지 못하게 한다.
+        private string   m_cv2ResvDir = "";
+        private DateTime m_cv2ResvAt  = DateTime.MinValue;
+        private const int CV2_RESV_SEC = 20;
+        private void Cv2Reserve(string dir) { m_cv2ResvDir = dir; m_cv2ResvAt = DateTime.Now; }
+        private bool Cv2Reserved(string dir) { return m_cv2ResvDir == dir && (DateTime.Now - m_cv2ResvAt).TotalSeconds < CV2_RESV_SEC; }
+
+        private struct Cv2Tok
+        {
+            public bool Ok, OutTok, InTok, Sc1Ready;
+            public DateTime OutWait, InWait;   // 대기 중인 가장 오래된 작업의 등록 시각(없으면 MaxValue)
+        }
+
+        private Cv2Tok GetSc1AisleToken()
+        {
+            Cv2Tok t = new Cv2Tok(); t.OutWait = DateTime.MaxValue; t.InWait = DateTime.MaxValue;
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT SUM(CASE WHEN JM.JOB_TYP IN ('2','12') AND (JM.JOB_STATUS IN ('25','29','16') ";
+                q += CRLF + "                  OR (JM.JOB_STATUS = '35' AND C2.MC_NO IS NOT NULL)) THEN 1 ELSE 0 END) AS OUT_TOK, ";
+                q += CRLF + "        SUM(CASE WHEN JM.JOB_TYP IN ('1','11') AND (JM.JOB_STATUS IN ('35','39') ";
+                q += CRLF + "                  OR (JM.JOB_STATUS = '16' AND JM.HS_TRACK_NO IN ('103','104')) ";
+                q += CRLF + "                  OR (JM.JOB_STATUS = '15' AND JM.HS_TRACK_NO IN ('103','104') AND C1.MC_NO IS NOT NULL)) THEN 1 ELSE 0 END) AS IN_TOK, ";
+                q += CRLF + "        MIN(CASE WHEN JM.JOB_TYP IN ('2','12') AND JM.JOB_STATUS = '" + ST_SC_WAIT + "' THEN JM.INS_DT END) AS OUT_WAIT, ";
+                q += CRLF + "        MIN(CASE WHEN JM.JOB_TYP IN ('1','11') AND JM.JOB_STATUS = '" + ST_CV_RUN + "' ";
+                q += CRLF + "                  AND (JM.HS_TRACK_NO IS NULL OR JM.HS_TRACK_NO NOT IN ('103','104')) THEN JM.INS_DT END) AS IN_WAIT, ";
+                q += CRLF + "        MAX(CASE WHEN SD.SC_NO IS NOT NULL THEN 1 ELSE 0 END) AS SC1_READY ";
+                q += CRLF + "   FROM JOB_MST JM ";
+                q += CRLF + "   LEFT JOIN CV_DATA C1 ON C1.WH_TYP = JM.WH_TYP AND C1.MC_NO = JM.HS_TRACK_NO ";
+                q += CRLF + "        AND C1.SENSOR0_DATA_RD = '1' AND C1.LUGG_NO_RD = JM.LUGG_NO ";
+                q += CRLF + "   LEFT JOIN CV_DATA C2 ON C2.WH_TYP = JM.WH_TYP AND C2.MC_NO IN ('103','104') AND C2.LUGG_NO_RD = JM.LUGG_NO ";
+                q += CRLF + "   LEFT JOIN SC_DATA_LGLS SD ON SD.WH_TYP = JM.WH_TYP AND SD.SC_NO = '" + SC1_NO + "' ";
+                q += CRLF + "        AND SD.AUTO_MODE_RD = '1' AND (SD.ERR_CODE_RD IS NULL OR SD.ERR_CODE_RD IN ('0','0000','')) ";
+                q += CRLF + "  WHERE JM.WH_TYP = :WH_TYP ";
+                q += CRLF + "    AND ( (JM.JOB_TYP IN ('2','12') AND JM.START_POS = '901') ";
+                q += CRLF + "       OR (JM.JOB_TYP IN ('1','11') AND JM.DEST_POS  = '901') ) ";
+                q += CRLF + "    AND JM.JOB_STATUS NOT IN ('09','19') ";
+                q += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y') ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return t;
+                DataRow r = _pBdb.mDtMain.Rows[0];
+                int a, b, c;
+                int.TryParse(GetVal(r, "OUT_TOK"), out a);
+                int.TryParse(GetVal(r, "IN_TOK"), out b);
+                int.TryParse(GetVal(r, "SC1_READY"), out c);
+                DateTime d;
+                if (DateTime.TryParse(GetVal(r, "OUT_WAIT"), out d)) t.OutWait = d;
+                if (DateTime.TryParse(GetVal(r, "IN_WAIT"), out d))  t.InWait  = d;
+                t.OutTok = a > 0; t.InTok = b > 0; t.Sc1Ready = c > 0; t.Ok = true;
+            }
+            catch { t.Ok = false; }
+            return t;
+        }
+
+        private DateTime GetJobInsDt(string luggNo)
+        {
+            try
+            {
+                string q = " SELECT TOP 1 INS_DT FROM JOB_MST WHERE WH_TYP = :WH_TYP AND LUGG_NO = :LUGG ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = luggNo;
+                DateTime d;
+                if (DbQry(q) > 0 && DateTime.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "INS_DT"), out d)) return d;
+            }
+            catch { }
+            return DateTime.MaxValue;
+        }
+
+        /// <summary>모드 2 : 그 방향으로 바꿔도 되는가 = 상대 사용권·예약이 없는가</summary>
+        private bool Cv2TokenAllowsDir(string dir, out string why)
+        {
+            why = "";
+            Cv2Tok t = GetSc1AisleToken();
+            if (!t.Ok) return true;   // 조회 실패 - 막아서 정체시키지 않는다
+            if (dir == "1" && (t.InTok || Cv2Reserved("0"))) { why = "입고가 통로 사용 중(출고 전환 불가)"; return false; }
+            if (dir == "0" && (t.OutTok || Cv2Reserved("1"))) { why = "출고가 통로 사용 중(입고 전환 불가)"; return false; }
+            return true;
+        }
+
+        /// <summary>모드 2 : 크레인 1호기 출고 지시를 내도 되는가. 되면 출고 예약을 건다.</summary>
+        private bool Cv2TryTakeForOut(string luggNo)
+        {
+            Cv2Tok t = GetSc1AisleToken();
+            if (!t.Ok) return true;
+            if (t.InTok || Cv2Reserved("0"))
+            {
+                DbgLog("CV2TOK_SC", "[통로 사용권] 1호기 출고 보류 - 입고가 통로 사용 중(작업 " + luggNo + ")");
+                return false;
+            }
+            if (CV2_FAIR == 1 && !t.OutTok && t.InWait < GetJobInsDt(luggNo))
+            {
+                DbgLog("CV2TOK_SC", "[통로 사용권] 번갈아 쓰기 - 더 오래 기다린 1호기 입고 먼저(출고 " + luggNo + " 대기)");
+                return false;
+            }
+            Cv2Reserve("1");
+            return true;
+        }
+
+        /// <summary>모드 2 : RTV 에 1호기행 입고 지시를 내도 되는가. 되면 입고 예약을 건다.</summary>
+        private bool Cv2TryTakeForIn(string luggNo)
+        {
+            Cv2Tok t = GetSc1AisleToken();
+            if (!t.Ok) return true;
+            if (t.OutTok || Cv2Reserved("1"))
+            {
+                DbgLog("CV2TOK_RGV", "[통로 사용권] 1호기행 입고 RTV 보류 - 출고가 통로 사용 중(작업 " + luggNo + ")");
+                return false;
+            }
+            if (CV2_FAIR == 1)
+            {
+                if (!t.InTok && t.OutWait < GetJobInsDt(luggNo))
+                {
+                    DbgLog("CV2TOK_RGV", "[통로 사용권] 번갈아 쓰기 - 더 오래 기다린 1호기 출고 먼저(입고 " + luggNo + " 대기)");
+                    return false;
+                }
+            }
+            else if (t.OutWait != DateTime.MaxValue && t.Sc1Ready)
+            {
+                // 출고 우선(기본) : 크레인 1호기가 자동·정상이고 대기 출고가 있으면 입고는 양보한다
+                DbgLog("CV2TOK_RGV", "[통로 사용권] 출고 우선 - 대기 중인 1호기 출고가 있어 입고 RTV 보류(작업 " + luggNo + ")");
+                return false;
+            }
+            Cv2Reserve("0");
+            return true;
         }
 
         // [LGLS 2026-09-17 현장] CV2_DIR_MODE=1 판정 ─────────────────────────────────────────────
