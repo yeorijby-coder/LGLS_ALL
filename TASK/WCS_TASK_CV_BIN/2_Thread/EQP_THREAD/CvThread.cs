@@ -670,6 +670,9 @@ namespace WCS_TASK_CV
                             nCycleFail++;
                         }
 
+                        // [LGLS 2026-09-17] 메인 C/V 모터 과부하 알람 비트(M5501~M550D) → CV_DATA.ERROR_CODE (사이클당 1회)
+                        CvMainAlarmBits();
+
                         // [LGLS 2026-08-01] 죽은 소켓 자동 재접속.
                         //   설비(EQP_SIM/PLC)가 재기동되면 기존 TCP 세션은 상대가 리셋한다(WSAECONNRESET:
                         //   "현재 연결은 원격 호스트에 의해 강제로 끊겼습니다"). 그런데 Send/Recv 실패는
@@ -3715,6 +3718,64 @@ namespace WCS_TASK_CV
                 MakeMsg_Error(strTitle + " Exception: " + ex.Message, m_nthNo);
                 return false;
             }
+        }
+        #endregion
+
+        #region [CvMainAlarmBits] :: [LGLS 2026-09-17] 메인 C/V 모터 과부하 알람 비트
+        /// <summary>
+        /// PLC 알람 리스트(260917) MAIN CONVEYOR : M5501~M550D = CV119~CV131 모터 과부하.
+        ///   켜지면 CV_DATA.ERROR_CODE = 트랙번호 4자리('0119') + HOST_ERR_SEND_YN='N' + EQP_ERR_HIS 적재,
+        ///   꺼지면 그 코드일 때만 '0' 으로 되돌린다(다른 경로가 넣은 코드는 건드리지 않는다).
+        ///   WCS_DB.INI [CNF] MAIN_ALM_BITS=0 이면 읽지 않는다. 읽기 실패는 60초 뒤 다시 시도(사이클 실패로 치지 않음).
+        /// </summary>
+        private readonly Dictionary<int, bool> m_dicMainOvl = new Dictionary<int, bool>();
+        private DateTime m_dtMainAlmRetry = DateTime.MinValue;
+        private void CvMainAlarmBits()
+        {
+            if (cDefApp.GM_ADDR_V09) return;
+            if (cDefApi.GsCnfInt("MAIN_ALM_BITS", 1) != 1) { m_dicMainOvl.Clear(); return; }
+            if (DateTime.Now < m_dtMainAlmRetry) return;
+            try
+            {
+                int nWord = cMainAlarmBits.CvOverloadWord;
+                byte[] buf = new byte[16];
+                if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                                   (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, nWord, 1, ref buf))
+                {
+                    m_dtMainAlmRetry = DateTime.Now.AddSeconds(60);
+                    MakeMsg_Error("[CvMainAlarmBits] 과부하 알람 워드 M" + nWord + " 읽기 실패 - 60초 뒤 다시 시도", m_nthNo, m_msQPlc.LastAddrText);
+                    return;
+                }
+                int w = buf[0] | (buf[1] << 8);
+                for (int b = cMainAlarmBits.CV_FIRST_BIT; b <= cMainAlarmBits.CV_LAST_BIT; b++)
+                {
+                    int nMc = cMainAlarmBits.CV_TRACK_OFFSET + b;
+                    bool bOn = (w & (1 << b)) != 0;
+                    bool bPrev;
+                    if (m_dicMainOvl.TryGetValue(nMc, out bPrev) && bPrev == bOn) continue;
+
+                    string strCode = nMc.ToString("0000");
+                    string sql = "";
+                    sql += CRLF + " UPDATE CV_DATA                                  ";
+                    sql += CRLF + "    SET ERROR_CODE       = '" + (bOn ? strCode : "0") + "' ";
+                    sql += CRLF + "      , HOST_ERR_SEND_YN = 'N'                   ";
+                    sql += CRLF + "  WHERE WH_TYP           = '" + m_strWh_typ + "' ";
+                    sql += CRLF + "    AND MC_NO            = '" + nMc + "'         ";
+                    sql += bOn ? CRLF + "    AND ISNULL(ERROR_CODE,'') <> '" + strCode + "' "
+                               : CRLF + "    AND ERROR_CODE = '" + strCode + "'             ";
+                    m_msQPlc._pBdb.mComMain.CommandType = CommandType.Text;
+                    m_msQPlc._pBdb.mComMain.Parameters.Clear();
+                    int n = m_msQPlc._pBdb.ExcuteNonQry(sql);
+                    if (n < 0) continue;              // DB 실패 - 다음 사이클에 다시 (캐시 갱신 안 함)
+                    m_dicMainOvl[nMc] = bOn;
+                    if (n == 0) continue;             // 이미 그 상태
+                    string msg = "[CvMainAlarmBits] CV" + nMc + " 모터 과부하 " + (bOn ? "발생 (코드 " + strCode + ")" : "해제");
+                    MakeMsg_Imp(msg, m_nthNo);
+                    InsertWcsLogPgr("", msg);
+                    if (bOn) UpdateEQMT_ERR_LOG(m_strWh_typ, "CV", nMc.ToString("000"), strCode, "");
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[CvMainAlarmBits] Exception: " + ex.Message, m_nthNo); }
         }
         #endregion
 

@@ -37,7 +37,9 @@ namespace EQP_SIM.Sim
         private int    m_lastDropPort = 0;
         private SimPallet carrying;
 
-        // [LGLS] 이중입고/공출고 에러 주입: 이 작업에서 발생시킬 에러코드 (0=정상, 54=이중입고, 58=공출고)
+        // [LGLS 2026-09-17] PLC 알람 리스트(260917) 기준 이중입고 73(좌측 렉) / 공출고 75 (종전 SFA 54 / 58)
+        private const int ERR_DUAL = 73, ERR_EMPTY = 75;
+        // [LGLS] 이중입고/공출고 에러 주입: 이 작업에서 발생시킬 에러코드 (0=정상, ERR_DUAL=이중입고, ERR_EMPTY=공출고)
         private int pendingErrCode = 0;
 
         // [LGLS 2026-07-22] 주행 보간: 출발지→도착지로 순간이동하지 않고 주행 축 좌표를 단계적으로
@@ -220,13 +222,13 @@ namespace EQP_SIM.Sim
                             bool isOutgo = !IsPort(from01, from02); // 출발지가 랙 셀 = 출고
                             if (false && (engine.InjectDoubleStorage || engine.InjectDoubleCount > 0) && isIngo)   // [LGLS 2026-09-16] 이중입고 주입 미사용(이 현장 없음)
                             {
-                                pendingErrCode = 54;
+                                pendingErrCode = ERR_DUAL;
                                 if (engine.InjectDoubleCount > 0) engine.InjectDoubleCount--; else engine.InjectDoubleStorage = false;
                                 engine.Log(Def.Id + " ★이중입고 에러 예약 (다음 입고 하차 시 발생) 잔여 " + engine.InjectDoubleCount);
                             }
                             else if (false && (engine.InjectEmptyRetrieval || engine.InjectEmptyCount > 0) && isOutgo)   // [LGLS 2026-09-16] 공출고 주입 미사용(이 현장 없음)
                             {
-                                pendingErrCode = 58;
+                                pendingErrCode = ERR_EMPTY;
                                 if (engine.InjectEmptyCount > 0) engine.InjectEmptyCount--; else engine.InjectEmptyRetrieval = false;
                                 engine.Log(Def.Id + " ★공출고 에러 예약 (출발셀 픽업 시 발생) 잔여 " + engine.InjectEmptyCount);
                             }
@@ -251,15 +253,15 @@ namespace EQP_SIM.Sim
                 case VState.ToSource:
                     EmitTravel(now);                                       // [LGLS 2026-07-22] 주행 위치 단계 반영
                     if (now < stateUntil) break;
-                    if (pendingErrCode == 58)   // 공출고: 출발 랙셀이 비어 있음 → 픽업 실패, 화물없음(SENSOR_FK=0)
+                    if (pendingErrCode == ERR_EMPTY)   // 공출고: 출발 랙셀이 비어 있음 → 픽업 실패, 화물없음(SENSOR_FK=0)
                     {
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", from01);
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", from02);
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", from03);
                         io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
-                        io.SetShort(Def.Id, "ERR_CODE_RD", 58);
-                        engine.Log(Def.Id + " ★공출고 발생: " + FromText() + " 재고없음 (ERR_CODE_RD=58)");
-                        StatusText = "★공출고 에러 (ERR 58) — 재지정 대기";
+                        io.SetShort(Def.Id, "ERR_CODE_RD", ERR_EMPTY);
+                        engine.Log(Def.Id + " ★공출고 발생: " + FromText() + " 재고없음 (ERR_CODE_RD=" + ERR_EMPTY + ")");
+                        StatusText = "★공출고 에러 (ERR " + ERR_EMPTY + ") — 재지정 대기";
                         state = VState.Error;
                         break;
                     }
@@ -434,14 +436,14 @@ namespace EQP_SIM.Sim
                 case VState.ToDest:
                     EmitTravel(now);                                       // [LGLS 2026-07-22] 주행 위치 단계 반영
                     if (now < stateUntil) break;
-                    if (pendingErrCode == 54)   // 이중입고: 목적 랙셀에 이미 화물 → 저장 실패, 화물 실은채 유지(SENSOR_FK=1)
+                    if (pendingErrCode == ERR_DUAL)   // 이중입고: 목적 랙셀에 이미 화물 → 저장 실패, 화물 실은채 유지(SENSOR_FK=1)
                     {
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", to01);
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", to02);
                         io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", to03);
-                        io.SetShort(Def.Id, "ERR_CODE_RD", 54);
-                        engine.Log(Def.Id + " ★이중입고 발생: " + ToText() + " 이미 점유 (ERR_CODE_RD=54)");
-                        StatusText = "★이중입고 에러 (ERR 54) — 재지정 대기";
+                        io.SetShort(Def.Id, "ERR_CODE_RD", ERR_DUAL);
+                        engine.Log(Def.Id + " ★이중입고 발생: " + ToText() + " 이미 점유 (ERR_CODE_RD=" + ERR_DUAL + ")");
+                        StatusText = "★이중입고 에러 (ERR " + ERR_DUAL + ") — 재지정 대기";
                         state = VState.Error;
                         break;
                     }

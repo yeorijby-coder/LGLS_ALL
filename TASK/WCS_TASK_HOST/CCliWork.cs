@@ -602,7 +602,7 @@ namespace TSK_HostCom
                     // 1.ERROR CODE에 대해 존재여부확인.
                     // [LGLS 2026-08-30] 에러코드 해석 = 구 ECS/ECP 규약(MakeErrorString + TB_CODEMASTER '025')과 동일하게
                     //   "설비 원본 코드를 그대로 상위에 올리고, 마스터는 표시문구/종류 해석에만 쓴다".
-                    //   ① 크레인 코드표는 현장 제작사(SFA) 기준 — [Host]ScErrCodeType (기본 SC_SFA).
+                    //   ① 크레인 코드표 — [Host]ScErrCodeType (09-17 부터 기본 SC_LGLS = PLC 알람 리스트).
                     //      종전 'SC'(무라타 기계코드표)에는 0058(공출고)이 없어 조인이 비고, 아래 NVL 이
                     //      이를 '0000'(정상)으로 바꿔버려 공출고 보고가 통째로 사라졌다.
                     //   ② 마스터에 없는 코드라도 A.ERR_CODE_RD 원본을 그대로 보고한다(코드 유실 금지).
@@ -696,7 +696,7 @@ namespace TSK_HostCom
                         if (!IsEmptyLugg(strLuggFix))
                         {
                             strLuggNo = strLuggFix;
-                            bool bDual = (strErrorCode == "0054" || strErrorCode == "0055");
+                            bool bDual = modDefApp.IsCodeIn(modDefApp.g_strScDualCodes, strErrorCode);   // [LGLS 2026-09-17] [Host] ScDualCodes
                             m_BDb.ParamsClear();
                             string strQ = "";
                             strQ += modDefApp.CRLF + " SELECT START_LOCATION, DEST_LOCATION FROM JOB_MST ";
@@ -717,15 +717,11 @@ namespace TSK_HostCom
                     strErrorKind = "0";         // 기계적 에러 
                     strDeviceClass = "1";       // SC
 
-                    switch (strErrorCode)
-                    {
-                    case "0054": strErrorKind = "1"; break;     // 이중입고
-                    case "0055": strErrorKind = "1"; break;     // 이중입고
-                    case "0056": strErrorKind = "2"; break;     // 입고장애
-                    case "0057": strErrorKind = "4"; break;     // 출고장애
-                    case "0058": strErrorKind = "3"; break;     // 공출고
-                    case "0059": strErrorKind = "3"; break;     // 공출고
-                    }
+                    // [LGLS 2026-09-17] 종류 판정 코드를 INI 로 뺐다 (알람 리스트 기준 73·74 이중입고 / 75 공출고)
+                    if      (modDefApp.IsCodeIn(modDefApp.g_strScDualCodes,    strErrorCode)) strErrorKind = "1";   // 이중입고
+                    else if (modDefApp.IsCodeIn(modDefApp.g_strScInFailCodes,  strErrorCode)) strErrorKind = "2";   // 입고장애
+                    else if (modDefApp.IsCodeIn(modDefApp.g_strScOutFailCodes, strErrorCode)) strErrorKind = "4";   // 출고장애
+                    else if (modDefApp.IsCodeIn(modDefApp.g_strScEmptyCodes,   strErrorCode)) strErrorKind = "3";   // 공출고
 
                     // 2.MES SEND STATUS ('N' -> 'Y') UPDATE
                     m_BDb.BeginTrans();

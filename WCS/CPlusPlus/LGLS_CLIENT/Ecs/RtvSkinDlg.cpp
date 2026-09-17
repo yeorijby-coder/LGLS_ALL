@@ -270,7 +270,7 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 			SetDlgItemText(IDC_EDT_RTV_HORIZONTAL_POS, pRsw->GetItem(_T("PH")));
 			SetDlgItemText(IDC_EDT_RTV_JISANG_MODE, (err == _T("0000") || err == _T("0")) ? _T("정상") : (_T("에러 ") + err));
 			// [LGLS 2026-08-05] 에러 그룹에 화물번호(lod)가 나오던 버그 - 에러코드(ERR_CODE_RD)로 교정
-			SetDlgItemText(IDC_EDT_RTV_DIAGNOSIS,   (err.IsEmpty() || err == _T("0") || err == _T("0000")) ? _T("-") : err);
+			SetDlgItemText(IDC_EDT_RTV_DIAGNOSIS,   (err.IsEmpty() || err == _T("0") || err == _T("0000")) ? CString(_T("-")) : CLib::ErrCodeText(m_pDoc, _T("RTV"), err));	// [LGLS 2026-09-17] 코드 + 알람 문구
 			SetDlgItemText(IDC_EDT_RTV_SUSPEND,     (sus == _T("1")) ? _T("정지") : _T("-"));
 
 			CString sLoc, dLoc;

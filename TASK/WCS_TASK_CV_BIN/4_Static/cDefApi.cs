@@ -397,16 +397,16 @@ public static bool GsReadInitProfileDAddrDoc()
         /// <summary>
         /// [LGLS 2026-08-30] 설비 에러이력(EQP_ERR_HIS)에 남길 EQP_TYP — [CNF] SC_ERR_TYP / RTV_ERR_TYP.
         ///   Client 설비에러이력 창이 이 값으로 EQP_ECD_MST 를 조인해 메시지를 표시한다.
-        ///   크레인 기본 'SC_SFA'(현장 SFA 코드표 = 이중입고/공출고 정의 보유).
+        ///   크레인 기본 'SC_LGLS'(2026-09-17 PLC 알람 리스트 지상반 코드표).
         /// </summary>
         public static void GsReadInitProfileErrCodeTyp(ref string pScTyp, ref string pRtvTyp)
         {
-            pScTyp = "SC_SFA";
+            pScTyp = "SC_LGLS";
             pRtvTyp = "RTV";
             if (!System.IO.File.Exists(cDefApp.GM_ENV_INI)) return;
 
             StringBuilder sb = new StringBuilder(64);
-            GetPrivateProfileString("CNF", "SC_ERR_TYP", "SC_SFA", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            GetPrivateProfileString("CNF", "SC_ERR_TYP", "SC_LGLS", sb, sb.Capacity, cDefApp.GM_ENV_INI);
             if (sb.ToString().Trim().Length > 0) pScTyp = sb.ToString().Trim();
 
             sb = new StringBuilder(64);

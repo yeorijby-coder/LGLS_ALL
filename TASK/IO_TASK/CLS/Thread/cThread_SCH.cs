@@ -4514,6 +4514,40 @@ namespace TSK_COMM_IOSCH
         //   "왜 안 움직이는지" 를 작업 목록만 보고는 알 수 없었다.
         //   에러 상태로 바꿔두면 ① 화면에 사유가 드러나고 ② 정상 지시 쿼리(JOB_STATUS = 20/30 …)에
         //   더는 걸리지 않아 조치 전까지 재지시되지 않는다.
+        // [LGLS 2026-09-17] 크레인 이중입고·공출고 에러코드 - ENV_IOSCH.INI [CNF] SC_DUAL_CODES / SC_EMPTY_CODES.
+        //   PLC 알람 리스트(260917) 기준 73 좌측 렉 이중입고 / 74 우측 렉 이중입고 / 75 공출고.
+        //   (종전 SFA 코드표 54·55 / 58·59 는 새 리스트에서 54 주행 후진 시간초과, 55 포크 시간초과라 쓰면 안 된다)
+        private static string SC_DUAL_CODES  { get { return cDefApi.GsReadInitProfileCnfStr("SC_DUAL_CODES", "73,74"); } }
+        private static string SC_EMPTY_CODES { get { return cDefApi.GsReadInitProfileCnfStr("SC_EMPTY_CODES", "75"); } }
+
+        /// <summary>코드 목록("73,74")에 에러코드("0073")가 있는지 - 숫자로 비교</summary>
+        private static bool IsScCodeIn(string pList, string pCode)
+        {
+            int nCode;
+            if (pList == null || !int.TryParse(("" + pCode).Trim(), out nCode) || nCode == 0) return false;
+            foreach (string t in pList.Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                int n;
+                if (int.TryParse(t.Trim(), out n) && n == nCode) return true;
+            }
+            return false;
+        }
+
+        /// <summary>SQL IN 목록 - 코드마다 원값·4자리 두 가지를 넣는다 ('73','0073'). 숫자가 아닌 항목은 버린다.</summary>
+        private static string ScCodeSqlList(params string[] pLists)
+        {
+            var lst = new System.Collections.Generic.List<string>();
+            foreach (string l in pLists)
+                foreach (string t in ("" + l).Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    int n;
+                    if (!int.TryParse(t.Trim(), out n) || n <= 0) continue;
+                    lst.Add("'" + n + "'"); lst.Add("'" + n.ToString("0000") + "'");
+                }
+            if (lst.Count == 0) lst.Add("'-'");   // 목록이 비면 아무것도 걸리지 않게
+            return string.Join(",", lst.ToArray());
+        }
+
         private const string ST_ERR_DUAL_STORE   = "08";   // 이중입고 에러  [LGLS 2026-08-30] 09 → 08 (09 는 완료가 가져감)
         private const string ST_ERR_EMPTY_RETR   = "07";   // 공출고 에러    [LGLS 2026-08-30] 08 → 07
         private const string ST_RETRY_DUAL_STORE = "06";   // 이중입고 재지정 (상위가 새 셀을 내려준 상태)  [LGLS 2026-08-30] 07 → 06
@@ -4619,7 +4653,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "      , COALESCE(NULLIF(SD.PALLET_ON_VEHICLE_RD,''), NULLIF(SD.ITN_LUGG_FK1,''), NULLIF(SD.LUGG_NO_FK1_RD,'')) AS LUGG ";
                 q += CRLF + "   FROM SC_DATA_LGLS SD                                                 ";
                 q += CRLF + "  WHERE SD.WH_TYP       = :WH_TYP                                       ";
-                q += CRLF + "    AND SD.ERR_CODE_RD IN ('54','0054','58','0058')                     ";
+                q += CRLF + "    AND SD.ERR_CODE_RD IN (" + ScCodeSqlList(SC_DUAL_CODES, SC_EMPTY_CODES) + ") ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
@@ -4633,8 +4667,8 @@ namespace TSK_COMM_IOSCH
                     string lugg = (GetVal(dt.Rows[i], "LUGG") ?? "").Trim();
                     if (lugg.Length == 0 || lugg == "0" || lugg == "0000") continue;   // 실을 화물이 없으면 귀속할 작업도 없다
 
-                    int nEc; int.TryParse(ec, out nEc);
-                    string want = (nEc == 54) ? ST_ERR_DUAL_STORE : ST_ERR_EMPTY_RETR;
+                    bool bDualEc = IsScCodeIn(SC_DUAL_CODES, ec);   // [LGLS 2026-09-17] 이중입고 코드 = [CNF] SC_DUAL_CODES
+                    string want = bDualEc ? ST_ERR_DUAL_STORE : ST_ERR_EMPTY_RETR;
 
                     // 이미 그 상태면 조용히 넘어간다(폴링마다 UPDATE 하지 않도록)
                     string u = "";
@@ -4659,7 +4693,7 @@ namespace TSK_COMM_IOSCH
                     int n = DbNonQry(u);
                     if (n > 0)
                         MakeMsg_Imp(string.Format("[SCH][ERR] S/C #{0} {1} (코드 {2}) - 작업 {3} 상태 → '{4}'",
-                            scNo, (nEc == 54) ? "이중입고" : "공출고", ec, lugg, want));
+                            scNo, bDualEc ? "이중입고" : "공출고", ec, lugg, want));
                 }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][ERR] MarkErrorJobStatus 오류: " + ex.Message); }
@@ -5428,10 +5462,10 @@ namespace TSK_COMM_IOSCH
                 strSql += CRLF + "    AND SC_NO          = :SC_NO                 ";
                 strSql += CRLF + "    AND OD_RQ_YN       = 'N'                    ";
                 // [LGLS 2026-09-05] 평소에는 무에러일 때만 지시한다. 다만 ★재지정★ 은 예외다 :
-                //   이중입고(54/55)·공출고(58/59)는 크레인이 새 지시를 받아야 비로소 에러가 풀리므로,
+                //   이중입고·공출고([CNF] SC_DUAL_CODES / SC_EMPTY_CODES)는 크레인이 새 지시를 받아야 비로소 에러가 풀리므로,
                 //   에러가 남아 있다는 이유로 재지정 지시를 막으면 영영 회복하지 못한다(닭과 달걀).
                 if (bAllowRedirectErr)
-                    strSql += CRLF + "    AND (ERR_CODE_RD IN ('0','00','0000','') OR ERR_CODE_RD IS NULL OR ERR_CODE_RD IN ('54','0054','55','0055','58','0058','59','0059')) ";
+                    strSql += CRLF + "    AND (ERR_CODE_RD IN ('0','00','0000','') OR ERR_CODE_RD IS NULL OR ERR_CODE_RD IN (" + ScCodeSqlList(SC_DUAL_CODES, SC_EMPTY_CODES) + ")) ";
                 else
                     strSql += CRLF + "    AND ERR_CODE_RD    = '0000'                 ";
 

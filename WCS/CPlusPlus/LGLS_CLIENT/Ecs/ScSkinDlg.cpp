@@ -836,7 +836,7 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 			SetDlgItemText(IDC_EDT_SC_FORK_POS,      fkpTxt);
 			SetDlgItemText(IDC_EDT_SC_HORIZONTAL_POS, pRsw->GetItem(_T("PH")));
 			SetDlgItemText(IDC_EDT_SC_VERTICAL_POS,   pRsw->GetItem(_T("PV")));
-			SetDlgItemText(IDC_EDT_SC_JOB_SC_ERR_CODE, err);
+			SetDlgItemText(IDC_EDT_SC_JOB_SC_ERR_CODE, CLib::ErrCodeText(m_pDoc, CLib::ScErrTyp(), err));	// [LGLS 2026-09-17] 코드 + 알람 문구
 			SetDlgItemText(IDC_EDT_SC_JOB_SC_SUSPEND,
 				(sus == _T("1")) ? _T("입고정지") : (sus == _T("2")) ? _T("출고정지") : (sus == _T("3")) ? _T("전체정지") : _T("-"));
 
@@ -1206,13 +1206,13 @@ void CScSkinDlg::UpdateScData(int nBtnJob)
 	//공출고, 이중입고일 때 에러처리
 	if (strCmdId == _T("RESET"))
 	{
-		if (m_pSC_DATA->V_ERR_CODE_RD == _T("0058") || m_pSC_DATA->V_ERR_CODE_RD == _T("0059"))
+		if (CLib::IsScEmptyErr(m_pSC_DATA->V_ERR_CODE_RD))
 		{
 			if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("현재 공출고 에러상태 입니다.\n에러해제 시 수동조작을 해야합니다.\n그래도 하시겠습니까?")), MB_YESNO) != IDYES)
 				return;
 		}
 
-		if (m_pSC_DATA->V_ERR_CODE_RD == _T("0054") || m_pSC_DATA->V_ERR_CODE_RD == _T("0055"))
+		if (CLib::IsScDualErr(m_pSC_DATA->V_ERR_CODE_RD))
 		{
 			if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("현재 이중입고 에러상태 입니다.\n에러해제 시 수동조작을 해야합니다.\n그래도 하시겠습니까?")), MB_YESNO) != IDYES)
 				return;
@@ -1224,7 +1224,7 @@ void CScSkinDlg::UpdateScData(int nBtnJob)
 	//공출고 일 때 삭제처리
 	if(strCmdId == _T("DELFK1"))
 	{
-		if (m_pSC_DATA->V_ERR_CODE_RD == _T("0058") || m_pSC_DATA->V_ERR_CODE_RD == _T("0059"))
+		if (CLib::IsScEmptyErr(m_pSC_DATA->V_ERR_CODE_RD))
 		{
 			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("현재 공출고 에러상태 입니다.\nECS 작업도 삭제됩니다.\nWMS 작업도 삭제해주세요.")));
 

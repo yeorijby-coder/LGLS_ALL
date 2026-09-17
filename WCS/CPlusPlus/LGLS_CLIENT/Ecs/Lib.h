@@ -12,6 +12,13 @@ class CLib
 
 public:
 	static CString GetTupleKeyEQP_ECD_MST(CString pstrEQP_TYP, CString pstrERROR_CODE);
+	// [LGLS 2026-09-17] 크레인 에러코드 판정 - Ecs.ini [SC_ERR] DUAL_CODES(기본 73,74) / EMPTY_CODES(기본 75)
+	static BOOL IsScDualErr(CString strErr);
+	static BOOL IsScEmptyErr(CString strErr);
+	static BOOL IsCodeInList(CString strList, CString strErr);
+	// [LGLS 2026-09-17] 에러코드 + 마스터 문구 ("0073 좌측 렉 이중입고"). 정상/빈 값은 그대로, 마스터에 없으면 코드만
+	static CString ErrCodeText(CEcsDoc* pDoc, CString strEqpTyp, CString strErr);
+	static CString ScErrTyp();
 
 
 public:

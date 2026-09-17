@@ -253,9 +253,18 @@ namespace TSK_HostCom
             // [LGLS] IMS(WMS) 스테이션 코드 해석 기준 적재 ([Host]StationMapMode = ECS | WMS)
             modStationMap.LoadFromIni();
 
-            // [LGLS 2026-08-30] 크레인 에러코드 마스터 구분 ([Host]ScErrCodeType, 기본 SC_SFA)
-            modDefAPI.GetPrivateProfileString("Host", "ScErrCodeType", "SC_SFA", sb, sb.Capacity, modDefApp.MAIN_INI);
+            // [LGLS 2026-08-30] 크레인 에러코드 마스터 구분 ([Host]ScErrCodeType, 기본 SC_LGLS)
+            modDefAPI.GetPrivateProfileString("Host", "ScErrCodeType", "SC_LGLS", sb, sb.Capacity, modDefApp.MAIN_INI);
             if (sb.ToString().Trim().Length > 0) modDefApp.g_strScErrCodeTyp = sb.ToString().Trim();
+            // [LGLS 2026-09-17] 크레인 에러 종류 판정 코드 ([Host] ScDualCodes / ScEmptyCodes / ScInFailCodes / ScOutFailCodes)
+            modDefAPI.GetPrivateProfileString("Host", "ScDualCodes", "73,74", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScDualCodes = sb.ToString().Trim();
+            modDefAPI.GetPrivateProfileString("Host", "ScEmptyCodes", "75", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScEmptyCodes = sb.ToString().Trim();
+            modDefAPI.GetPrivateProfileString("Host", "ScInFailCodes", "", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScInFailCodes = sb.ToString().Trim();
+            modDefAPI.GetPrivateProfileString("Host", "ScOutFailCodes", "", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScOutFailCodes = sb.ToString().Trim();
 
             //이중입고재지정횟수추가
             modDefAPI.GetPrivateProfileString("Property", "RE_DRCT_CNT", "", sb, sb.Capacity, modDefApp.MAIN_INI);
@@ -393,9 +402,18 @@ namespace TSK_HostCom
             // [LGLS] IMS(WMS) 스테이션 코드 해석 기준 적재 ([Host]StationMapMode = ECS | WMS)
             modStationMap.LoadFromIni();
 
-            // [LGLS 2026-08-30] 크레인 에러코드 마스터 구분 ([Host]ScErrCodeType, 기본 SC_SFA)
-            modDefAPI.GetPrivateProfileString("Host", "ScErrCodeType", "SC_SFA", sb, sb.Capacity, modDefApp.MAIN_INI);
+            // [LGLS 2026-08-30] 크레인 에러코드 마스터 구분 ([Host]ScErrCodeType, 기본 SC_LGLS)
+            modDefAPI.GetPrivateProfileString("Host", "ScErrCodeType", "SC_LGLS", sb, sb.Capacity, modDefApp.MAIN_INI);
             if (sb.ToString().Trim().Length > 0) modDefApp.g_strScErrCodeTyp = sb.ToString().Trim();
+            // [LGLS 2026-09-17] 크레인 에러 종류 판정 코드 ([Host] ScDualCodes / ScEmptyCodes / ScInFailCodes / ScOutFailCodes)
+            modDefAPI.GetPrivateProfileString("Host", "ScDualCodes", "73,74", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScDualCodes = sb.ToString().Trim();
+            modDefAPI.GetPrivateProfileString("Host", "ScEmptyCodes", "75", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScEmptyCodes = sb.ToString().Trim();
+            modDefAPI.GetPrivateProfileString("Host", "ScInFailCodes", "", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScInFailCodes = sb.ToString().Trim();
+            modDefAPI.GetPrivateProfileString("Host", "ScOutFailCodes", "", sb, sb.Capacity, modDefApp.MAIN_INI);
+            modDefApp.g_strScOutFailCodes = sb.ToString().Trim();
 
             //이중입고재지정횟수추가
             modDefAPI.GetPrivateProfileString("Property", "RE_DRCT_CNT", "", sb, sb.Capacity, modDefApp.MAIN_INI);

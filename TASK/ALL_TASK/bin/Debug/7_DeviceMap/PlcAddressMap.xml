@@ -155,6 +155,16 @@
     <Signal name="AlarmResetAck" addr="1540" legacy="M0964" />
   </Global>
 
+  <!-- [2026-09-17] PLC 알람 리스트(260917_1동 자동창고_알람리스트.xlsx) - 메인 PLC 알람 비트.
+       addr = 워드의 비트0 주소. 워드 10진 + 비트 16진 표기 (M5501 = 550*16+1 = 8801)
+       CvOverloadWord : bit1~D = CV119~CV131 모터 과부하 → CV_DATA.ERROR_CODE '0119'~'0131'
+       RgvAlarmWord   : bit1~F = RGV 알람 12,14,15,33,34,42,45,53,54,55,61,62,81,82,91 → RTV_DATA_LGLS.ERR_CODE_RD
+       사용 여부 = WCS_DB.INI [CNF] MAIN_ALM_BITS (1 사용 / 0 안 읽음) -->
+  <Global name="MainAlarm" device="M" desc="메인 C/V 과부하·RGV 알람 비트">
+    <Signal name="CvOverloadWord" addr="8800" legacy="M5500" />
+    <Signal name="RgvAlarmWord" addr="8960" legacy="M5600" />
+  </Global>
+
   <!-- ══ 설비 레이아웃 (SYS_MAIN 하드코딩 배열 대체) ══ -->
   <Equipments>
     <Equip plc="01" type="CV" no="1" frTrack="101" toTrack="102" />

@@ -55,7 +55,29 @@ namespace TSK_HostCom
 		//   현장 크레인은 SFA 제작이라 이중입고/공출고 의미코드(0054~0059)가 'SC_SFA' 에 있다.
 		//   'SC' 는 무라타 기계코드표(같은 번호, 다른 의미)라 0058(공출고)이 아예 없다.
 		//   EcsComA.ini [Host] ScErrCodeType 으로 전환.
-		public static string g_strScErrCodeTyp = "SC_SFA";
+		// [LGLS 2026-09-17] PLC 알람 리스트(260917_1동 자동창고_알람리스트.xlsx) 적용 → 기본 'SC_LGLS'.
+		//   지상반 코드 11~93·101~118 은 SC_SFA 의 같은 번호와 뜻이 달라 별도 구분으로 넣었다.
+		public static string g_strScErrCodeTyp = "SC_LGLS";
+		// [LGLS 2026-09-17] 크레인 에러의 상위 보고 종류(ErrorKind) 판정 코드 - [Host] ScDualCodes 등.
+		//   알람 리스트 기준 : 73 좌측 렉 이중입고 / 74 우측 렉 이중입고 / 75 공출고. 입고·출고장애 코드는 없다.
+		//   (종전 SC_SFA 기준 54·55 이중입고 / 56 입고장애 / 57 출고장애 / 58·59 공출고)
+		public static string g_strScDualCodes    = "73,74";
+		public static string g_strScEmptyCodes   = "75";
+		public static string g_strScInFailCodes  = "";
+		public static string g_strScOutFailCodes = "";
+
+		/// <summary>[LGLS 2026-09-17] 코드 목록("73,74")에 에러코드("0073")가 들어 있는지 - 숫자로 비교한다.</summary>
+		public static bool IsCodeIn(string pList, string pCode)
+		{
+			int nCode;
+			if (pList == null || !int.TryParse(("" + pCode).Trim(), out nCode) || nCode == 0) return false;
+			foreach (string s in pList.Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+			{
+				int n;
+				if (int.TryParse(s.Trim(), out n) && n == nCode) return true;
+			}
+			return false;
+		}
 		public static string[] g_strWH_CD;
         public static string[] g_strWH_TYP;
         public static string[] g_strCvNo;

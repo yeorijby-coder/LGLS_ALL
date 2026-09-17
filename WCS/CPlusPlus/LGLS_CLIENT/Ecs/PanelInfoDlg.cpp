@@ -1166,12 +1166,12 @@ void CPanelInfoDlg::DoVehCmd(BOOL bRtv, LPCTSTR strCmdIdIn, LPCTSTR strAskMsg)
 	// ERROR RESET : 공출고/이중입고 상태 재확인 (ScSkinDlg 와 동일)
 	if (!bRtv && strCmdId == _T("RESET"))
 	{
-		if (strErr == _T("0058") || strErr == _T("0059"))
+		if (CLib::IsScEmptyErr(strErr))
 		{
 			if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("현재 공출고 에러상태 입니다. 에러해제 시 수동조작을 해야합니다. 그래도 하시겠습니까?")), MB_YESNO) != IDYES)
 				return;
 		}
-		if (strErr == _T("0054") || strErr == _T("0055"))
+		if (CLib::IsScDualErr(strErr))
 		{
 			if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("현재 이중입고 에러상태 입니다. 에러해제 시 수동조작을 해야합니다. 그래도 하시겠습니까?")), MB_YESNO) != IDYES)
 				return;
@@ -1201,7 +1201,7 @@ void CPanelInfoDlg::DoVehCmd(BOOL bRtv, LPCTSTR strCmdIdIn, LPCTSTR strAskMsg)
 	else
 	{
 		// 공출고 에러 상태의 삭제는 ECS 작업정보도 지운다 (ScSkinDlg 와 동일)
-		if (strCmdId == _T("DELFK1") && (strErr == _T("0058") || strErr == _T("0059")) && !strLugg.IsEmpty() && strLugg != _T("0"))
+		if (strCmdId == _T("DELFK1") && CLib::IsScEmptyErr(strErr) && !strLugg.IsEmpty() && strLugg != _T("0"))
 		{
 			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("현재 공출고 에러상태 입니다. ECS 작업도 삭제됩니다. WMS 작업도 삭제해주세요.")));
 			CString strDel;

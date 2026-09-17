@@ -25,6 +25,58 @@ CString CLib::GetTupleKeyEQP_ECD_MST(CString pstrEQP_TYP, CString pstrERROR_CODE
 }
 
 
+// [LGLS 2026-09-17] PLC 알람 리스트(260917) 기준 73 좌측 렉 이중입고 / 74 우측 렉 이중입고 / 75 공출고.
+//   종전 SFA 코드표(54/55, 58/59)로 되돌리려면 Ecs.ini [SC_ERR] DUAL_CODES=54,55 / EMPTY_CODES=58,59
+BOOL CLib::IsCodeInList(CString strList, CString strErr)
+{
+   strErr.Trim();
+   int nCode = _ttoi(strErr);
+   if (nCode <= 0) return FALSE;
+   int nPos = 0;
+   CString strTok = strList.Tokenize(_T(", "), nPos);
+   while (!strTok.IsEmpty())
+   {
+      if (_ttoi(strTok) == nCode) return TRUE;
+      strTok = strList.Tokenize(_T(", "), nPos);
+   }
+   return FALSE;
+}
+
+CString CLib::ScErrTyp()
+{
+   TCHAR sz[64] = { 0 };
+   ::GetPrivateProfileString(_T("SC_ERR"), _T("ERR_TYP"), _T("SC_LGLS"), sz, 64, ECS_INI_FILE);
+   return CString(sz);
+}
+
+CString CLib::ErrCodeText(CEcsDoc* pDoc, CString strEqpTyp, CString strErr)
+{
+   strErr.Trim();
+   if (strErr.IsEmpty() || _ttoi(strErr) == 0) return strErr;
+   if (pDoc == NULL || pDoc->m_pErrorMst == NULL || pDoc->m_pErrorMst->m_Map == NULL) return strErr;
+   CEQP_ECD_MST* p = NULL;
+   if (!pDoc->m_pErrorMst->m_Map->Lookup(GetTupleKeyEQP_ECD_MST(strEqpTyp, strErr), p) || p == NULL) return strErr;
+   CString strMsg = p->m_MSG[EN_KOR];
+   strMsg.Trim();
+   if (strMsg.IsEmpty()) return strErr;
+   return strErr + _T(" ") + strMsg;
+}
+
+BOOL CLib::IsScDualErr(CString strErr)
+{
+   TCHAR sz[256] = { 0 };
+   ::GetPrivateProfileString(_T("SC_ERR"), _T("DUAL_CODES"), _T("73,74"), sz, 256, ECS_INI_FILE);
+   return IsCodeInList(sz, strErr);
+}
+
+BOOL CLib::IsScEmptyErr(CString strErr)
+{
+   TCHAR sz[256] = { 0 };
+   ::GetPrivateProfileString(_T("SC_ERR"), _T("EMPTY_CODES"), _T("75"), sz, 256, ECS_INI_FILE);
+   return IsCodeInList(sz, strErr);
+}
+
+
 BOOL CLib::IsSet(BYTE Byte, int nPos)
 {
    DEBUGER_ASSERT_RANGE(nPos, 8);

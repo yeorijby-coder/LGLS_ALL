@@ -677,7 +677,8 @@ CString CLogEqpErrHisSkinDlg::GetQrySelect_Main(int nRowCheck,BOOL bSearch)
 
 	if(strEQP_TYP != _T("ALL"))
 	{
-		strSql += CRLF + _T("    AND EEH.EQP_TYP = ") + CLib::Quot(strEQP_TYP);
+		// [LGLS 2026-09-17] 크레인 이력은 코드표 구분(SC_LGLS 등)으로 적재된다 - 'SC' 를 고르면 SC_* 도 함께 보인다
+		strSql += CRLF + _T("    AND (EEH.EQP_TYP = ") + CLib::Quot(strEQP_TYP) + _T(" OR EEH.EQP_TYP LIKE '") + strEQP_TYP + _T("[_]%')");
 	}
 	//if(strTRAY_BOTTOM != _T(""))
 	//{

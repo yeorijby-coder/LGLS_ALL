@@ -322,6 +322,19 @@ namespace TSK_COMM_IOSCH
         }
 
 
+        // [LGLS 2026-09-17] @@@.GsReadInitProfileCnfStr : [CNF] 섹션 문자열 설정 읽기 (예: SC_DUAL_CODES)
+        public static string GsReadInitProfileCnfStr(string pKey, string pDefault)
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI)) return pDefault;
+            try
+            {
+                StringBuilder sb = new StringBuilder(256);
+                GetPrivateProfileString("CNF", pKey, pDefault, sb, sb.Capacity, cDefApp.GM_ENV_INI);
+                return sb.ToString().Trim();
+            }
+            catch { return pDefault; }
+        }
+
         // [LGLS 2026-09-03] @@@.GsReadInitProfileViewYN : [VIEW] 섹션 Y/N 설정 읽기 (예: LOG_FILTER_BTN)
         //   INI 나 키가 없으면 pDefault 를 그대로 돌려준다. 'Y'/'1'/'T' 로 시작하면 참.
         public static bool GsReadInitProfileViewYN(string pKey, bool pDefault)

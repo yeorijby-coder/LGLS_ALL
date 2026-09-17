@@ -56,11 +56,11 @@ namespace WCS_TASK_CV
         private string m_strRtnMsg = "";
 
         // [LGLS 2026-08-30] 설비 에러이력(EQP_ERR_HIS) 에 남길 EQP_TYP.
-        //   Client 설비에러이력 창은 EQP_ERR_HIS.EQP_TYP 로 EQP_ECD_MST 를 조인해 메시지를 표시하므로
-        //   현장 크레인(SFA) 코드표 'SC_SFA' 를 써야 이중입고/공출고 문구가 뜬다.
-        //   ('SC' 는 무라타 기계코드표라 같은 번호가 다른 뜻이고 0058 은 아예 없다)
+        //   Client 설비에러이력 창은 EQP_ERR_HIS.EQP_TYP 로 EQP_ECD_MST 를 조인해 메시지를 표시한다.
+        //   [LGLS 2026-09-17] PLC 알람 리스트(260917) 적용 → 크레인 기본 'SC_LGLS' (지상반 코드 11~93, 101~118).
+        //   ('SC_SFA'·'SC' 는 같은 번호가 다른 뜻이라 쓰지 않는다)
         //   WCS_DB.INI [CNF] SC_ERR_TYP / RTV_ERR_TYP 로 전환.
-        private static string s_strScErrTyp = "SC_SFA";
+        private static string s_strScErrTyp = "SC_LGLS";
         private static string s_strRtvErrTyp = "RTV";
         public static void SetErrCodeTypes(string scTyp, string rtvTyp)
         {
@@ -285,6 +285,24 @@ namespace WCS_TASK_CV
             if (!PlcReadWords(d.Device, d.Address, 1, buf)) return false;
             value = buf[0] | (buf[1] << 8);
             return true;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-17] RGV 알람 비트 워드(M560x)에서 켜진 가장 낮은 비트의 알람 코드. 없거나 못 읽으면 0.
+        ///   읽기 실패(주소 미지원 등)는 60초 동안 다시 시도하지 않는다.
+        /// </summary>
+        private DateTime m_dtRgvAlmRetry = DateTime.MinValue;
+        private int ReadRgvAlarmBitCode()
+        {
+            if (cDefApi.GsCnfInt("MAIN_ALM_BITS", 1) != 1 || DateTime.Now < m_dtRgvAlmRetry) return 0;
+            byte[] buf = new byte[8];
+            if (!PlcReadWords('M', cMainAlarmBits.RgvAlarmWord, 1, buf))
+            {
+                m_dtRgvAlmRetry = DateTime.Now.AddSeconds(60);
+                LogDb("[VEH_RTV] RGV 알람 비트 워드 M" + cMainAlarmBits.RgvAlarmWord + " 읽기 실패 - 60초 뒤 다시 시도");
+                return 0;
+            }
+            return cMainAlarmBits.RgvCodeFromWord(buf[0] | (buf[1] << 8));
         }
 
         /// <summary>워드당 2문자(하위→상위) 패킹 문자열 (EQP_SIM PlcMemory.GetString 과 동일 규격)</summary>
@@ -905,6 +923,13 @@ namespace WCS_TASK_CV
                     v.Cache.Remove("__almErrCode");
                     v.Cache.Remove("__almErrClr");
                     string strErrNow = (nAlmCodeNow != 0) ? nAlmCodeNow.ToString("0000") : "0000";
+                    // [LGLS 2026-09-17] 워드가 0 인데 RGV 알람 비트(M5601~M560F)가 켜져 있으면 그 코드를 쓴다
+                    //   (PLC 알람 리스트는 RGV 알람을 비트로 준다 - [CNF] MAIN_ALM_BITS=0 이면 읽지 않는다)
+                    if (strErrNow == "0000" && m_strKind == "RTV")
+                    {
+                        int nBitCode = ReadRgvAlarmBitCode();
+                        if (nBitCode > 0) strErrNow = nBitCode.ToString("0000");
+                    }
                     string strErrPrev = (Cached(v, "ERR_CODE_RD") ?? "");
                     bNewErr = (strErrNow != "0000") && (strErrPrev != strErrNow);
                     if (strErrPrev != strErrNow && strErrNow == "0000" && strErrPrev.Length > 0
@@ -1107,6 +1132,32 @@ namespace WCS_TASK_CV
 
             LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 반송지시 기록 - JOB " + pid +
                   " From " + f1 + "/" + f2 + "/" + f3 + " To " + t1 + "/" + t2 + "/" + t3);
+        }
+    }
+
+    /// <summary>
+    /// [LGLS 2026-09-17] PLC 알람 리스트(260917_1동 자동창고_알람리스트.xlsx)의 메인 PLC 알람 비트.
+    ///   MAIN CONVEYOR : M5501~M550D = CV119~CV131 모터 과부하  → 에러코드 = 트랙번호(0119~0131), EQP_TYP 'CV'
+    ///   RGV           : M5601~M560F = 아래 코드표               → 에러코드 12~91, EQP_TYP 'RTV'
+    ///   주소 표기는 워드 10진 + 비트 16진 1자리 (M5501 = 550*16+1 = 8801).
+    ///   주소맵 XML &lt;Global name="MainAlarm"&gt; 의 CvOverloadWord / RgvAlarmWord(비트 0 주소)가 있으면 그 값을 쓴다.
+    /// </summary>
+    public static class cMainAlarmBits
+    {
+        public static int CvOverloadWord { get { int a = cPlcAddrMap.GlobalBit("CvOverloadWord"); return (a >= 0 ? a : 8800) / 16; } }
+        public static int RgvAlarmWord   { get { int a = cPlcAddrMap.GlobalBit("RgvAlarmWord");   return (a >= 0 ? a : 8960) / 16; } }
+
+        /// <summary>CV 과부하 : 비트 1~13 → 트랙 119~131</summary>
+        public const int CV_FIRST_BIT = 1, CV_LAST_BIT = 13, CV_TRACK_OFFSET = 118;
+
+        /// <summary>RGV : 비트 번호(1~15) → 알람 코드</summary>
+        public static readonly int[] RGV_CODE_BY_BIT = { 0, 12, 14, 15, 33, 34, 42, 45, 53, 54, 55, 61, 62, 81, 82, 91 };
+
+        public static int RgvCodeFromWord(int word)
+        {
+            for (int b = 1; b < RGV_CODE_BY_BIT.Length; b++)
+                if ((word & (1 << b)) != 0) return RGV_CODE_BY_BIT[b];
+            return 0;
         }
     }
 }
