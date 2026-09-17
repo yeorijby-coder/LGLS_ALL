@@ -51,6 +51,7 @@ namespace EQP_SIM.Sim
 
         // [LGLS 2026-07-20] 설비군별 처리 스레드 3개 (CV/SC/RTV — 사용자 요구 구조)
         private Thread cvTickThread, scTickThread, rtvTickThread;
+        private DateTime lastTickAt = DateTime.MinValue;   // [LGLS 2026-09-17] 세 틱 스레드 공용(sync 안에서만 읽고 쓴다) - 시계 건너뜀 감지
         private volatile bool running;
         private volatile bool paused;   // [LGLS 2026-07-24] [시나리오 테스트] 자동 운전 일시정지
         private string dataDir;
@@ -242,6 +243,22 @@ namespace EQP_SIM.Sim
                 {
                     lock (sync)
                     {
+                        // [LGLS 2026-09-17] PC 절전·일시정지로 시계가 건너뛰면(틱 간격 3초 초과) 그 공백만큼
+                        //   Ack 대기 기한을 뒤로 민다. 종전에는 깨어난 첫 틱에 기한이 모두 지난 것으로 보고
+                        //   하역완료 보고를 스스로 내려, WCS 가 한 번도 못 본 채 크레인 완료(29)가 유실됐다(8283, 08:33 절전).
+                        if (lastTickAt != DateTime.MinValue)
+                        {
+                            double gapMs = (now - lastTickAt).TotalMilliseconds;
+                            if (gapMs > 3000)
+                            {
+                                TimeSpan shift = TimeSpan.FromMilliseconds(gapMs - 100);
+                                foreach (var pe in pendingEvents)
+                                    if (pe.ExpireAt != DateTime.MaxValue) pe.ExpireAt = pe.ExpireAt + shift;
+                                Log("[시계 건너뜀] 틱 공백 " + (int)(gapMs / 1000) + "초 - Ack 대기 기한 " + pendingEvents.Count + "건을 그만큼 연장 (" + kind + ")");
+                            }
+                        }
+                        lastTickAt = now;
+
                         // [LGLS 2026-07-24] [시나리오 테스트] 일시정지 중에는 자동 운전(핸드셰이크/설비 Tick)을 멈춘다.
                         //   단 XGT 서버·메모리 저장(아래)은 계속 → 사용자가 수동으로 세팅한 EQP 메모리에 WCS 가 반응할 수 있음.
                         if (!paused)
