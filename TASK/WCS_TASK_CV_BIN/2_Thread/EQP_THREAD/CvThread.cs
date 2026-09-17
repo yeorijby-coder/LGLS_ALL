@@ -1557,7 +1557,9 @@ namespace WCS_TASK_CV
                     // [LGLS 2026-09-17 06:35] DIRM = Client 화면 더블클릭(수동) 방향 전환 - 화물 보류 게이트 없이 ★즉시★ 쓴다(사용자 지시 "바로 바뀌면 좋겠어").
                     //   IO_TASK 는 OD_USER_ID='MANUAL_DIR' + OD_UPD_DT 를 보고 [CNF] MANUAL_DIR_HOLD_SEC 동안 자동 정합을 억제한다.
                     bool bManualDir = (CMD_RQ_ID == "DIRM");
-                    if (CMD_RQ_ID == "DIR" || bManualDir)
+                    // [LGLS 2026-09-17 현장] DIRF = IO_TASK 의 C/V#2 교착 해제 전환(CV2_DIR_MODE=1) - 화물 보류 없이 즉시 쓰되 수동 표시는 남기지 않는다.
+                    bool bForceDir  = (CMD_RQ_ID == "DIRF");
+                    if (CMD_RQ_ID == "DIR" || bManualDir || bForceDir)
                     {
                         // [LGLS 2026-08-30] 겸용대(C/V#2, C/V#11) 방향 전환 규약 - 사용자 확정.
                         //   "현재 방향의 화물이 설비에 남아 있으면, 그 화물이 빠진 뒤에 전환한다."
@@ -1565,7 +1567,7 @@ namespace WCS_TASK_CV
                         //   갇히고(HS 가 서지 않아 지시가 영영 보류) 크레인 앞에서 충돌한다. 반대도 같다.
                         //   지시를 소비하지 않고 보류만 하므로 다음 폴링에 자동 재시도된다.
                         //   ※방향전환형은 C/V#2·#11 뿐이다(PlcAddressMap CraneMap). 그 외 설비는 종전대로.
-                        if (!bManualDir && IsDualCvDirChangeHeld(TRACK_NO, nCMD_RQ_PARM, JOB_TYP_RD))
+                        if (!bManualDir && !bForceDir && IsDualCvDirChangeHeld(TRACK_NO, nCMD_RQ_PARM, JOB_TYP_RD))
                         {
                             continue;   // CMD_RQ_YN 을 지우지 않는다 - 화물이 빠지면 다음 폴링에 전환
                         }
@@ -1614,7 +1616,7 @@ namespace WCS_TASK_CV
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 방향지시 " +
                                       ((nCMD_RQ_PARM == 1) ? "출고" : "입고") + "('" + (char)cDefApp.GsDirChar(nCMD_RQ_PARM == 1) + "')"
-                                      + " → D워드 " + nDirAddr + (cDefApp.GM_DIR_IN1 ? " [IN1]" : "") + (bManualDir ? " [수동-즉시]" : "");
+                                      + " → D워드 " + nDirAddr + (cDefApp.GM_DIR_IN1 ? " [IN1]" : "") + (bManualDir ? " [수동-즉시]" : bForceDir ? " [교착해제-즉시]" : "");
                         MakeMsg_Imp(m_strLogMsg, m_nthNo, m_msQPlc.LastAddrText);
                         if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg))
                         {
