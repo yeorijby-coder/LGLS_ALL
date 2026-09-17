@@ -3129,6 +3129,8 @@
 #define IDC_PI_BTN_FORCE                2364
 #define IDC_PANEL_VEH_LIST              2365
 #define IDC_PI_BTN_ABORT                2366
+#define IDC_GRP_FK_FK_STATUS_ITEM4      2367
+#define IDC_GRP_FK_FK_STATUS_RTV2       2368
 #define IDC_CUSTOM1                     2396
 #define IDC_STATIC_SPREAD               2398
 #define IDC_PI_CMD_BASE                 2400
@@ -3508,8 +3510,6 @@
 
 // Next default values for new objects
 // 
-#define IDC_GRP_FK_FK_STATUS_ITEM4      2367
-#define IDC_GRP_FK_FK_STATUS_RTV2       2368
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
