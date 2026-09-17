@@ -76,14 +76,8 @@ void CRtvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	// [LGLS 2026-08-05] DDX 가 없어서 명령 버튼이 CSkinButton 에 붙지 않았고,
 	//   이미 있던 SetBitmaps/SetIcon 이 전부 무효(m_hWnd=NULL)라 아이콘이 안 나왔다.
 	DDX_Control(pDX, IDC_BTN_RTV_COMPLETE,      m_btnRtvComplete);
-	DDX_Control(pDX, IDC_BTN_RTV_ESTOP,         m_btnRtvEstop);
-	DDX_Control(pDX, IDC_BTN_RTV_ACTIVE,        m_btnRtvActive);
-	DDX_Control(pDX, IDC_BTN_RTV_STOP,          m_btnRtvStop);
-	DDX_Control(pDX, IDC_BTN_RTV_RESET_ERROR,   m_btnRtvResetError);
-	DDX_Control(pDX, IDC_BTN_RTV_DELETE,        m_btnRtvDelete);
 	DDX_Control(pDX, IDC_LGLS_RTV_ZOOM,         m_btnVehZoom);	// [LGLS 2026-08-05] 확대/축소
 	DDX_Control(pDX, IDC_LGLS_RTV_RESEND,       m_btnRtvResend);	// [LGLS 2026-08-12] 지시 재전송
-	DDX_Control(pDX, IDC_BTN_RTV_CALL_TO_HOME,  m_btnRtvCallToHome);
 	DDX_Control(pDX, IDC_BTN_RTV_MANUAL,        m_btnRtvManual);
 	DDX_Control(pDX, IDC_BTN_RTV_SUSPEND,       m_btnRtvSuspend);
 }
@@ -93,12 +87,6 @@ BEGIN_MESSAGE_MAP(CRtvSkinDlg, CSkinDialog)
 		ON_WM_TIMER()
 		ON_WM_CLOSE()
 		ON_BN_CLICKED(IDC_BTN_RTV_COMPLETE, &CRtvSkinDlg::OnBnClickedBtnRtvComplete)
-		ON_BN_CLICKED(IDC_BTN_RTV_ESTOP, &CRtvSkinDlg::OnBnClickedBtnRtvEstop)
-		ON_BN_CLICKED(IDC_BTN_RTV_ACTIVE, &CRtvSkinDlg::OnBnClickedBtnRtvActive)
-		ON_BN_CLICKED(IDC_BTN_RTV_STOP, &CRtvSkinDlg::OnBnClickedBtnRtvStop)
-		ON_BN_CLICKED(IDC_BTN_RTV_RESET_ERROR, &CRtvSkinDlg::OnBnClickedBtnRtvResetError)
-		ON_BN_CLICKED(IDC_BTN_RTV_DELETE, &CRtvSkinDlg::OnBnClickedBtnRtvDelete)
-		ON_BN_CLICKED(IDC_BTN_RTV_CALL_TO_HOME, &CRtvSkinDlg::OnBnClickedBtnRtvCallToHome)
 		ON_BN_CLICKED(IDC_BTN_RTV_SUSPEND, &CRtvSkinDlg::OnBnClickedBtnRtvSuspend)
 		ON_BN_CLICKED(IDC_CHK_RTV_FORK1, &CRtvSkinDlg::OnBnClickedChkRtvFork1)
 		ON_BN_CLICKED(IDC_CHK_RTV_FORK2, &CRtvSkinDlg::OnBnClickedChkRtvFork2)
@@ -268,7 +256,6 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 			SetDlgItemText(IDC_EDT_RTV_COMPLETE,    (cmp == _T("1")) ? _T("완료") : _T("-"));
 			SetDlgItemText(IDC_EDT_RTV_PRODLOAD,    (sen == _T("1")) ? _T("있음") : _T("없음"));
 			SetDlgItemText(IDC_EDT_RTV_HORIZONTAL_POS, pRsw->GetItem(_T("PH")));
-			SetDlgItemText(IDC_EDT_RTV_JISANG_MODE, (err == _T("0000") || err == _T("0")) ? _T("정상") : (_T("에러 ") + err));
 			// [LGLS 2026-08-05] 에러 그룹에 화물번호(lod)가 나오던 버그 - 에러코드(ERR_CODE_RD)로 교정
 			SetDlgItemText(IDC_EDT_RTV_DIAGNOSIS,   (err.IsEmpty() || err == _T("0") || err == _T("0000")) ? CString(_T("-")) : CLib::ErrCodeText(m_pDoc, _T("RTV"), err));	// [LGLS 2026-09-17] 코드 + 알람 문구
 			SetDlgItemText(IDC_EDT_RTV_SUSPEND,     (sus == _T("1")) ? _T("정지") : _T("-"));
@@ -420,23 +407,11 @@ void CRtvSkinDlg::RedrawImage()
 	m_btnRtvComplete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnRtvComplete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("forcecompletion"), strExtension)), NULL, 5, 5);
 
-	m_btnRtvEstop.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0 ,0);
-	m_btnRtvEstop.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("emergencystop"), strExtension)), NULL, 5, 5);
 
-	m_btnRtvActive.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnRtvActive.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("active"), strExtension)), NULL, 5, 5);
 
-	m_btnRtvStop.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnRtvStop.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("stop"), strExtension)), NULL, 5, 5);
 
-	m_btnRtvResetError.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnRtvResetError.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("errorreset"), strExtension)), NULL, 5, 5);
 
-	m_btnRtvDelete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnRtvDelete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("delete"), strExtension)), NULL, 5, 5);
 
-	m_btnRtvCallToHome.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnRtvCallToHome.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("calltohome"), strExtension)), NULL, 5, 5);
 
 	m_btnRtvManual.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnRtvManual.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("manual"), strExtension)), NULL, 5, 5);
@@ -489,13 +464,7 @@ void CRtvSkinDlg::RedrawImage()
 				m_bSuspendPlaced = TRUE;
 			}
 		}
-		UINT nHide[] = { IDC_BTN_RTV_ESTOP, IDC_BTN_RTV_ACTIVE, IDC_BTN_RTV_STOP, IDC_BTN_RTV_RESET_ERROR,
-		                 IDC_BTN_RTV_CALL_TO_HOME, IDC_BTN_RTV_DELETE };
-		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
-		{
-			CWnd* pHide = GetDlgItem(nHide[h]);
-			if (pHide != NULL) pHide->ShowWindow(SW_HIDE);
-		}
+		// [LGLS 2026-09-17] 항상 숨겨 두던 비상정지/ACTIVE/정지/에러해제/복귀명령/삭제 버튼은 rc 와 코드에서 지웠다(사용자 지시).
 	}
 
 }
@@ -612,36 +581,12 @@ void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("forcecompletion"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_COMPLETE, strValue);
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("emergencystop"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_ESTOP, strValue);
 
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("active"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_ACTIVE, strValue);
-
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("stop"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_STOP, strValue);
-
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("errorreset"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_RESET_ERROR, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("delete"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_DELETE, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("resend"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_RESEND, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("calltohome"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_CALL_TO_HOME, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("manualorder"), (int)m_enLang);
@@ -686,10 +631,6 @@ void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("horizontallocation"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_HORIZONTAL_POS, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("ground"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JISANG_MODE, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobno"), (int)m_enLang);
@@ -743,18 +684,6 @@ void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobsta"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_JOB_STATUS, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("command"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_JOB_STATUS_COMMAND, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("item"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_JOB_STATUS_ITEM, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("fork1"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_JOB_STATUS_FK1, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("fork2"), (int)m_enLang);
@@ -827,86 +756,6 @@ void CRtvSkinDlg::OnBnClickedBtnRtvComplete()
 	}
 
 	UpdateRtvData(EN_BtnRtvConfirm);
-}
-
-//비상정지
-void CRtvSkinDlg::OnBnClickedBtnRtvEstop()
-{
-
-	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateRtvData(EN_BtnRtvEmergency);
-}
-
-//ACTIVE
-void CRtvSkinDlg::OnBnClickedBtnRtvActive()
-{
-
-	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateRtvData(EN_BtnRtvActive);
-	
-}
-
-//정지
-void CRtvSkinDlg::OnBnClickedBtnRtvStop()
-{
-
-	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateRtvData(EN_BtnRtvStop);
-}
-
-//에러리셋
-void CRtvSkinDlg::OnBnClickedBtnRtvResetError()
-{
-
-	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateRtvData(EN_BtnRtvErrReset);
-}
-
-//삭제
-void CRtvSkinDlg::OnBnClickedBtnRtvDelete()
-{
-
-	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	// [LGLS] RTV는 싱글 포크 → 포크 선택 없이 바로 삭제
-	UpdateRtvData(EN_BtnRtvFk1Delete);
-}
-
-//홈복귀
-void CRtvSkinDlg::OnBnClickedBtnRtvCallToHome()
-{
-
-	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateRtvData(EN_BtnRtvCallToHome);
 }
 
 void CRtvSkinDlg::UpdateRtvData(int nBtnJob)
@@ -1445,21 +1294,8 @@ HBRUSH CRtvSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 //   rc 를 고치지 않고 실제 컨트롤 위치로 계산해 이동한다.
 void CRtvSkinDlg::CompactJobStatusArea()
 {
-	// ── ① COMMAND 열 정리 ─────────────────────────────────────────
-	CWnd* pCmdGrp = GetDlgItem(IDC_GRP_RTV_JOB_STATUS_COMMAND);
-	CWnd* pSusEdt = GetDlgItem(IDC_EDT_RTV_SUSPEND);
-	CWnd* pSusBtn = GetDlgItem(IDC_BTN_RTV_SUSPEND);
-	if (pCmdGrp != NULL && pSusEdt != NULL && pSusBtn != NULL)
-	{
-		CRect rcGrp, rcEdt, rcBtn;
-		pCmdGrp->GetWindowRect(&rcGrp); ScreenToClient(&rcGrp);
-		pSusEdt->GetWindowRect(&rcEdt); ScreenToClient(&rcEdt);
-		pSusBtn->GetWindowRect(&rcBtn); ScreenToClient(&rcBtn);
-
-		// [LGLS 2026-09-03] 일시정지 상태 에디트/버튼은 명령 열(확대 아래)에 배치한다 - 여기서 옮기지 않음
-
-		// [LGLS 2026-09-03] 일시정지 버튼은 명령 열(StackCommandButtons)에서 배치한다 - 여기서는 건드리지 않음
-	}
+	// [LGLS 2026-09-17] ① COMMAND 열 정리 블록은 지웠다 - 기준이던 숨김 명령 소그룹을 rc 에서 삭제했고,
+	//   일시정지 에디트/버튼 배치는 RedrawImage(명령 그룹 바닥)에서 한다(여기서는 원래 옮기지 않았다).
 
 	// ── ② ERROR INFORMATION 그룹을 위로 당기고 창 축소 ────────────
 	CWnd* pJobGrp = GetDlgItem(IDC_GRP_RTV_JOB_STATUS);
@@ -1507,8 +1343,7 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 
 	// [LGLS 2026-08-01] 도착지 아래에 [적재 용기](JOB_MST.LOT_NO) / [제품 정보](JOB_MST.PRODUCT_ID) 두 행 추가
 	{
-		const int nGrps[] = { IDC_GRP_RTV_JOB_STATUS, IDC_GRP_RTV_JOB_STATUS_ITEM,
-		                      IDC_GRP_RTV_JOB_STATUS_FK1, IDC_GRP_RTV_JOB_STATUS_COMMAND };
+		const int nGrps[] = { IDC_GRP_RTV_JOB_STATUS };	// [LGLS 2026-09-17] 숨김 소그룹 3개는 rc 에서 삭제(최하단은 이 그룹이 기준이라 결과 동일)
 		// ★ID 이름과 실제 라벨이 반대다 : IDC_..._DEST_POS='도착위치', IDC_..._DEST_LOC='도착지'(마지막 행)
 		CLib::AddTwoRowsBelow(this, IDC_LBL_RTV_JOB_DEST_POS, IDC_LBL_RTV_JOB_DEST_LOC, IDC_EDT_RTV_JOB_DEST_LOC,
 		                      _T("적재용기"), IDC_LGLS_RTV_LOT_LBL, IDC_LGLS_RTV_LOT_VAL,
@@ -1878,9 +1713,7 @@ void CRtvSkinDlg::LglsRelayoutJobStatus()
 		if (pL) pL->MoveWindow(nRLbl, y, nLblW, rcLbl.Height());
 		if (pV) pV->MoveWindow(nREd,  y + (rcLbl.Height() - nEdH) / 2, nREdW, nEdH);
 	}
-	const int nHide[] = { IDC_GRP_RTV_JOB_STATUS_ITEM, IDC_GRP_RTV_JOB_STATUS_FK1, IDC_GRP_RTV_JOB_STATUS_COMMAND,
-	                      IDC_EDIT_RTV_JOB_JOB_NO2, IDC_CBX_RTV_JOB_JOB_TYP2, IDC_CBX_RTV_JOB_START_POS2, IDC_CBX_RTV_JOB_DEST_POS2 };
-	for (i = 0; i < (int)(sizeof(nHide)/sizeof(nHide[0])); i++) { CWnd* pH = GetDlgItem(nHide[i]); if (pH) pH->ShowWindow(SW_HIDE); }
+	// [LGLS 2026-09-17] 숨기던 항목/FORK1/명령 소그룹은 rc 에서 지웠다(사용자 지시).
 	int nNewBottom = nTop0 + nPitch * 5 + 6;
 	if (rcGrp.bottom > nNewBottom) { rcGrp.bottom = nNewBottom; pGrp->MoveWindow(rcGrp); }   // 창 축소는 CompactJobStatusArea 가 이어서
 	Invalidate();

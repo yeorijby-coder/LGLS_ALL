@@ -67,22 +67,12 @@ void CScSkinDlg::DoDataExchange(CDataExchange* pDX)
 	//   붙지 않았다. 그래서 이미 있던 SetBitmaps/SetIcon 호출이 전부 무효였고(m_hWnd=NULL)
 	//   CV 와 달리 아이콘이 안 나왔다. 버튼만 연결해 주면 기존 코드가 그대로 살아난다.
 	DDX_Control(pDX, IDC_BTN_SC_CONFIRM,        m_btnScConfirm);
-	DDX_Control(pDX, IDC_BTN_SC_EMERGENCY,      m_btnScEmergency);
-	DDX_Control(pDX, IDC_BTN_SC_ACTIVE,         m_btnScActive);
-	DDX_Control(pDX, IDC_BTN_SC_STOP,           m_btnScStop);
-	DDX_Control(pDX, IDC_BTN_SC_ERROR_RESET,    m_btnScErrorReset);
-	DDX_Control(pDX, IDC_BTN_SC_DELTE,          m_btnScDelete);
-	DDX_Control(pDX, IDC_BTN_SC_CALL_TO_HOME,   m_btnScCallToHome);
 	DDX_Control(pDX, IDC_BTN_SC_MANUAL,         m_btnScManual);
 	DDX_Control(pDX, IDC_BTN_SC_STO_SUSPEND,    m_btnScStoSuspend);
 	DDX_Control(pDX, IDC_BTN_SC_RET_SUSPEND,    m_btnScRetSuspend);
 	DDX_Control(pDX, IDC_BTN_SC_ALL_SUSPEND,    m_btnScAllSuspend);
-	DDX_Control(pDX, IDC_BTN_SC_MANUAL_RET,     m_btnScManualRet);
 	DDX_Control(pDX, IDC_LGLS_SC_ZOOM,          m_btnVehZoom);	// [LGLS 2026-08-05] 확대/축소
 	DDX_Control(pDX, IDC_LGLS_SC_RESEND,        m_btnScResend);	// [LGLS 2026-08-12] 지시 재전송
-	DDX_Control(pDX, IDC_BTN_DUPL_STO,          m_btnDuplSto);
-	DDX_Control(pDX, ID_BTN_SC_OK,              m_btnScOk);
-	DDX_Control(pDX, ID_BTN_SC_CANCEL,          m_btnScCancel);
 }
 
 BEGIN_MESSAGE_MAP(CScSkinDlg, CSkinDialog)
@@ -91,26 +81,16 @@ BEGIN_MESSAGE_MAP(CScSkinDlg, CSkinDialog)
 
 	ON_BN_CLICKED(IDC_BTN_SC_CONFIRM, &CScSkinDlg::OnBnClickedBtnScConfirm)
 
-	ON_BN_CLICKED(IDC_BTN_SC_EMERGENCY, &CScSkinDlg::OnBnClickedBtnScEmergency)
-	ON_BN_CLICKED(IDC_BTN_SC_ACTIVE, &CScSkinDlg::OnBnClickedBtnScActive)
-	ON_BN_CLICKED(IDC_BTN_SC_STOP, &CScSkinDlg::OnBnClickedBtnScStop)
-	ON_BN_CLICKED(IDC_BTN_SC_ERROR_RESET, &CScSkinDlg::OnBnClickedBtnScErrorReset)
 
-	ON_BN_CLICKED(IDC_BTN_SC_CALL_TO_HOME, &CScSkinDlg::OnBnClickedBtnScCallToHome)
 	ON_BN_CLICKED(IDC_BTN_SC_MANUAL, &CScSkinDlg::OnBnClickedBtnScManual)
-	ON_BN_CLICKED(ID_BTN_SC_OK, &CScSkinDlg::OnBnClickedBtnScOk)
 
-	ON_BN_CLICKED(ID_BTN_SC_CANCEL, &CScSkinDlg::OnBnClickedBtnScCancel)
 	ON_WM_CLOSE()
-	ON_BN_CLICKED(IDC_BTN_SC_DELTE, &CScSkinDlg::OnBnClickedBtnScDelte)
 	ON_BN_CLICKED(IDC_BTN_SC_STO_SUSPEND, &CScSkinDlg::OnBnClickedBtnCvStoSuspend)
 	ON_BN_CLICKED(IDC_BTN_SC_RET_SUSPEND, &CScSkinDlg::OnBnClickedBtnScRetSuspend)
 	ON_BN_CLICKED(IDC_BTN_SC_ALL_SUSPEND, &CScSkinDlg::OnBnClickedBtnScAllSuspend)
 	//ON_BN_CLICKED(IDC_CHK_SC_FORK1, &CScSkinDlg::OnBnClickedChkScFork1)
 	//ON_BN_CLICKED(IDC_CHK_SC_FORK2, &CScSkinDlg::OnBnClickedChkScFork2)
 	//ON_BN_CLICKED(IDC_CHK_SC_FORK12, &CScSkinDlg::OnBnClickedScRtvFork12)
-	ON_BN_CLICKED(IDC_BTN_DUPL_STO, &CScSkinDlg::OnBnClickedScDuplicationSto)
-	ON_BN_CLICKED(IDC_BTN_SC_MANUAL_RET, &CScSkinDlg::OnBnClickedBtnScManualRet)
 	ON_WM_CTLCOLOR()
 	ON_BN_CLICKED(IDC_SCV_RESEND, &CScSkinDlg::OnBnClickedScvResend)
 	ON_BN_CLICKED(IDC_SCV_OK, &CScSkinDlg::OnBnClickedScvOk)
@@ -142,8 +122,7 @@ BOOL CScSkinDlg::OnInitDialog()
 	int _scvRo[] = { IDC_EDT_SC_JOB_NO, IDC_EDT_SC_RC_MODE, IDC_EDT_SC_SC_MODE, IDC_EDT_SC_FORK_POS,
 		IDC_EDT_SC_JOB_STATUS, IDC_EDT_SC_RC_STATUS, IDC_EDT_SC_SC_STATUS,
 		IDC_EDT_SC_HORIZONTAL_POS, IDC_EDT_SC_VERTICAL_POS, IDC_EDT_SC_PROD_LOAD,
-		IDC_EDT_SC_JOB_START_LOC, IDC_EDT_SC_JOB_DEST_LOC, IDC_EDT_SC_JOB_JOB_NO,
-		IDC_EDT_SC_JOB_BCR_TOP, IDC_EDT_SC_JOB_BCR_BOTTOM };
+		IDC_EDT_SC_JOB_START_LOC, IDC_EDT_SC_JOB_DEST_LOC, IDC_EDT_SC_JOB_JOB_NO };
 	for (int _i = 0; _i < sizeof(_scvRo)/sizeof(int); _i++)
 		SendDlgItemMessage(_scvRo[_i], EM_SETREADONLY, TRUE, 0);
 	BuildVehStatusPanel();	// [LGLS 2026-08-01] 통신상태 패널 생성(rc 미포함 컨트롤 보완)
@@ -225,38 +204,14 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_CONFIRM, strValue);
 
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("emergencystop"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_EMERGENCY, strValue);
 
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("active"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_ACTIVE, strValue);
 
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("stop"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_STOP, strValue);
-
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("errorreset"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_ERROR_RESET, strValue);
-
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("delete"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_DELTE, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("resend"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_SC_RESEND, strValue);
 
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("calltohome"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_CALL_TO_HOME, strValue);
 
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
@@ -342,14 +297,6 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_PROD_LOAD, strValue);
 
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("bcrbottom"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_JOB_BCR_BOTTOM, strValue);
-
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("bcrtop"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_JOB_BCR_TOP, strValue);
 
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
@@ -442,28 +389,12 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_JOB_STATUS, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("item"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_SC_STATUS_ITEM9, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("value"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_SC_STATUS_VALUE8, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("command"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_JOB_STATUS_COMMAND, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("startloc"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_JOB_START_LOC, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("destloc"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_JOB_DEST_LOC, strValue);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("manualret"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_SC_MANUAL_RET, strValue);
 
 	// [LGLS 2026-08-05] 런타임/신규 라벨도 다국어 대상에 포함한다.
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
@@ -527,23 +458,11 @@ void CScSkinDlg::RedrawImage()
 	m_btnScConfirm.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnScConfirm.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("forcecompletion"), strExtension)), NULL, 5, 5);
 
-	m_btnScEmergency.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0 ,0);
-	m_btnScEmergency.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("emergencystop"), strExtension)), NULL, 5, 5);
 
-	m_btnScActive.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnScActive.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("active"), strExtension)), NULL, 5, 5);
 
-	m_btnScStop.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnScStop.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("stop"), strExtension)), NULL, 5, 5);
 
-	m_btnScErrorReset.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnScErrorReset.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("errorreset"), strExtension)), NULL, 5, 5);
 
-	m_btnScDelete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnScDelete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("delete"), strExtension)), NULL, 5, 5);
 
-	m_btnScCallToHome.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnScCallToHome.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("calltohome"), strExtension)), NULL, 5, 5);
 
 	m_btnScManual.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnScManual.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("manual"), strExtension)), NULL, 5, 5);
@@ -568,14 +487,14 @@ void CScSkinDlg::RedrawImage()
 	m_btnScAllSuspend.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnScAllSuspend.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("save"), strExtension)), NULL, 5, 5);
 
-	m_btnScManualRet.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
-	m_btnScManualRet.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("save"), strExtension)), NULL, 5, 5);
 
 	// [LGLS 2026-08-13] 명령 버튼 크기 통일(비트맵 110x27) + 세로 재배치
 	{
 		SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
 		// [LGLS 2026-09-03] 사용자 지시 : 지시 재전송 / 지시 삭제 / 지시 완료 / 확대 네 개만 위에서부터 남기고
-		//   나머지 명령 버튼은 숨긴다(핸들러/기능은 그대로 두어 판넬 등 다른 경로에는 영향 없음).
+		//   나머지 명령 버튼은 숨긴다.
+		// [LGLS 2026-09-17] 항상 숨겨 두던 컨트롤(비상정지/액티브/정지/에러해제/삭제/복귀명령/강제배출/
+		//   이중입고/확인/취소/BCR/소그룹 3개)은 rc 와 코드에서 지웠다(사용자 지시). 숨기는 루프도 없앴다.
 		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>크레인 창을 여는 두 번째 경로
 		{ CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
 		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
@@ -608,14 +527,6 @@ void CScSkinDlg::RedrawImage()
 				pB->MoveWindow(xs, ys, szL.cx, szL.cy);
 				ys += szL.cy + 1;
 			}
-		}
-		UINT nHide[] = { IDC_BTN_SC_DELTE,
-		                 IDC_BTN_SC_EMERGENCY, IDC_BTN_SC_ACTIVE, IDC_BTN_SC_STOP, IDC_BTN_SC_ERROR_RESET,
-		                 IDC_BTN_SC_MANUAL_RET, IDC_BTN_SC_CALL_TO_HOME, IDC_BTN_DUPL_STO };
-		for (int h = 0; h < (int)(sizeof(nHide) / sizeof(nHide[0])); h++)
-		{
-			CWnd* pHide = GetDlgItem(nHide[h]);
-			if (pHide != NULL) pHide->ShowWindow(SW_HIDE);
 		}
 	}
 }
@@ -928,83 +839,6 @@ void CScSkinDlg::OnBnClickedBtnScConfirm()
 	UpdateScData(EN_BtnScConfirm);
 }
 
-//비상정지
-void CScSkinDlg::OnBnClickedBtnScEmergency()
-{
-
-	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateScData(EN_BtnScEmergency);
-}
-
-//ACTIVE
-void CScSkinDlg::OnBnClickedBtnScActive()
-{
-
-	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateScData(EN_BtnScActive);
-}
-
-//정지
-void CScSkinDlg::OnBnClickedBtnScStop()
-{
-	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateScData(EN_BtnScStop);
-}
-
-//에러리셋
-void CScSkinDlg::OnBnClickedBtnScErrorReset()
-{
-
-	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateScData(EN_BtnScErrReset);
-}
-
-//삭제
-void CScSkinDlg::OnBnClickedBtnScDelte()
-{
-
-	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateScData(EN_BtnScFk1Delete);
-
-}
-//홈복귀
-void CScSkinDlg::OnBnClickedBtnScCallToHome()
-{
-
-	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	UpdateScData(EN_BtnScCallToHome);
-}
-
 //사용안함
 void CScSkinDlg::OnBnClickedBtnScManual()
 {
@@ -1014,19 +848,6 @@ void CScSkinDlg::OnBnClickedBtnScManual()
 
 
 
-void CScSkinDlg::OnBnClickedBtnScOk()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-}
-
-
-void CScSkinDlg::OnBnClickedBtnScCancel()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	m_pDoc->m_pScSkinDlg = NULL;
-	//CSkinDialog::OnClose();
-	//OnClose();
-}
 
 void CScSkinDlg::OnTimer(UINT_PTR nIDEvent)
 {
@@ -1551,11 +1372,6 @@ void CScSkinDlg::OnBnClickedChkScFork2()
 	return;
 }
 
-void CScSkinDlg::OnBnClickedScDuplicationSto()
-{
-	return;   // [LGLS 2026-09-16] unused at this site (no dual-store/empty-retrieval) - button hidden in rc
-}
-
 void CScSkinDlg::OnBnClickedScRtvFork12()
 {
 	UpdateData(TRUE);
@@ -1856,193 +1672,6 @@ CString CScSkinDlg::GetQrySelectSC_STATUS_CCD( CSC_DATA* pSC_DATA )
 	
 
 	return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
-}
-
-
-//=====================================================================================
-// [LGLS 2026-08-24] [강제 배출] 버튼 = 작업 일괄 완료
-//
-//  배경 : 크레인이 작업 도중 멈춰 화물을 강제로 배출해야 할 때, 남은 스텝을 사람이
-//         하나씩 완료 처리하지 않고 한 번에 정리한다.
-//
-//  동작 (크레인이 물고 있는 작업 기준)
-//   · 입고 중 : 붕괴 화물 등으로 랙에 넣으면 안 되는 경우이므로 WCS 작업을 삭제한다.
-//               - 자동(온라인) 작업  : 삭제 + "WMS 에서도 삭제하라" 안내 (상위 보고 없음)
-//               - 반자동/수동 작업   : 삭제만 (안내 없음)
-//   · 출고 중 : 크레인이 랙에서 꺼내 HS 로 배출한 상태이므로 이후 흐름은 그대로 진행한다.
-//               - 자동(온라인) 작업  : JOB_STATUS=22 로 두어 HOST_TASK 가
-//                                      완료 차수 1(1차 완료) 로 F 보고를 보내게 한다.
-//                                      (CCliWork.GetLoadArrivalReport 가 22 를 폴링)
-//               - 반자동/수동 작업   : 보고 없이 원래 흐름 그대로 진행 (작업 변경 없음)
-//
-//  자동/반자동 판정은 HOST_TASK 와 동일 : LUGG_NO 9000 이상 또는 JOB_TYP 10 이상이면 반자동.
-//  ※ 종전 동작(수동 반출 대화상자 열기)은 아래 주석으로 남겨둔다.
-//=====================================================================================
-void CScSkinDlg::OnBnClickedBtnScManualRet()
-{
-	// [종전] 수동 반출 대화상자
-	//CString strSC_NO = m_pSC_DATA->K_SC_NO;
-	//m_pDoc->OnCreateScManualRet(strSC_NO);
-	//return;
-
-	if (!m_pDoc->Permission(_T("CScSkinDlg"), EXE_YN))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
-		return;
-	}
-
-	CString strWH_TYP  = m_pDoc->m_WH_TYP;
-	CString strLuggNo  = m_pSC_DATA->V_ITN_LUGG_FK1;		// 크레인이 물고 있는 작업번호
-	strLuggNo.Trim();
-
-	if (strLuggNo.IsEmpty() || strLuggNo == _T("0") || strLuggNo == _T("0000"))
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("크레인에 진행 중인 작업이 없습니다.")));
-		return;
-	}
-
-	// ---- 작업 정보 조회 ----
-	int      nRowCnt   = 0;
-	CString  strMessage = _T("");
-	CString  strSql     = _T("");
-
-	strSql.Format(_T(" SELECT LUGG_NO, JOB_TYP, JOB_STATUS, START_POS, DEST_POS  \n")
-	              _T("   FROM JOB_MST                                            \n")
-	              _T("  WHERE WH_TYP  = '%s'                                     \n")
-	              _T("    AND LUGG_NO = '%s'                                      "),
-	              strWH_TYP, strLuggNo);
-
-	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
-
-	if (nRowCnt <= 0)
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("해당 작업번호의 작업 정보가 없습니다. 작업번호 : ")) + strLuggNo);
-		return;
-	}
-
-	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
-	pRsw->MoveFirst();
-
-	CString strJobTyp    = pRsw->GetItem(_T("JOB_TYP"));
-	CString strJobStatus = pRsw->GetItem(_T("JOB_STATUS"));
-	CString strStartPos  = pRsw->GetItem(_T("START_POS"));
-	CString strDestPos   = pRsw->GetItem(_T("DEST_POS"));
-
-	delete pRsw;
-
-	strJobTyp.Trim();  strJobStatus.Trim();  strStartPos.Trim();  strDestPos.Trim();
-
-	// ---- 입고/출고 판정 : 도착지가 크레인(9xx) 이면 입고, 아니면 출고 ----
-	int  nDestPos = CConvert::ToInt(strDestPos);
-	BOOL bStore   = (nDestPos >= 900);
-
-	// ---- 자동(온라인) / 반자동 판정 : HOST_TASK 와 동일 기준 ----
-	int  nLuggNo  = CConvert::ToInt(strLuggNo);
-	int  nJobTyp  = CConvert::ToInt(strJobTyp);
-	BOOL bOnline  = (nLuggNo < 9000 && nJobTyp < 10);
-
-	CString strInfo;
-	strInfo.Format(_T("\n\n[작업번호 : %s]  [작업구분 : %s]  [작업상태 : %s]\n[출발 : %s]  [도착 : %s]  [구분 : %s]"),
-		strLuggNo, strJobTyp, strJobStatus, strStartPos, strDestPos,
-		bOnline ? m_pDoc->GetMsgLangDef(_T("자동")) : m_pDoc->GetMsgLangDef(_T("반자동")));
-
-	//=================================================================================
-	// 출고 중 : 크레인이 HS 로 배출한 상태 → 이후 흐름은 그대로 진행
-	//=================================================================================
-	if (bStore == FALSE)
-	{
-		if (bOnline == FALSE)
-		{
-			// 반자동 : 보고 없이 원래 흐름 그대로 (작업 변경 없음)
-			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("반자동 출고 작업입니다. 상위 보고 없이 기존 흐름 그대로 진행합니다.")) + strInfo);
-			return;
-		}
-
-		if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 1차 완료(완료 차수 1)로 상위에 보고하시겠습니까?")) + strInfo,
-			MB_YESNO | MB_ICONQUESTION) != IDYES)
-			return;
-
-		m_pDoc->BeginTrans_DLG();
-
-		CString strLogMsg;
-		strLogMsg.Format(_T("강제배출(일괄완료) 출고 : JOB_STATUS %s -> 22 (완료차수 1 보고 요청), 출발[%s], 도착[%s]"),
-			strJobStatus, strStartPos, strDestPos);
-
-		if (!m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), strLuggNo, _T(""), _T(""), strLogMsg))
-		{
-			m_pDoc->RollbackTrans_DLG();
-			return;
-		}
-
-		// JOB_STATUS = 22 : HOST_TASK(GetLoadArrivalReport) 가 폴링하여
-		//                   F + 완료차수 1 로 보고한 뒤 28 로 갱신한다.
-		strSql.Format(_T(" UPDATE JOB_MST                              \n")
-		              _T("    SET JOB_STATUS  = '22'                   \n")
-		              _T("      , UPD_USER_ID = 'CLIENT'               \n")
-		              _T("      , UPD_DT      = ") + m_pDoc->SYSDATE + _T(" \n")
-		              _T("  WHERE WH_TYP      = '%s'                   \n")
-		              _T("    AND LUGG_NO     = '%s'                    "),
-		              strWH_TYP, strLuggNo);
-
-		if (m_pDoc->ExcuteQueryString_DLG(strSql) == FALSE)
-		{
-			m_pDoc->RollbackTrans_DLG();
-			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
-			return;
-		}
-
-		m_pDoc->CommitTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출고 1차 완료 보고를 요청했습니다. 이후 반송은 기존 흐름대로 진행됩니다.")) + strInfo);
-		return;
-	}
-
-	//=================================================================================
-	// 입고 중 : 랙에 넣으면 안 되는 화물 → WCS 작업 삭제
-	//=================================================================================
-	CString strAsk = bOnline
-		? m_pDoc->GetMsgLangDef(_T("자동 입고 작업입니다. WCS 작업을 삭제합니다.\n(상위에는 보고하지 않으므로 WMS 에서도 별도로 삭제해야 합니다)\n진행하시겠습니까?"))
-		: m_pDoc->GetMsgLangDef(_T("반자동 입고 작업입니다. WCS 작업을 삭제하시겠습니까?"));
-
-	if (AfxMessageBox(strAsk + strInfo, MB_YESNO | MB_ICONQUESTION) != IDYES)
-		return;
-
-	m_pDoc->BeginTrans_DLG();
-
-	CString strLogMsg2;
-	strLogMsg2.Format(_T("강제배출(일괄완료) 입고 : 작업 삭제, JOB_STATUS[%s], 출발[%s], 도착[%s], 구분[%s]"),
-		strJobStatus, strStartPos, strDestPos, bOnline ? _T("자동") : _T("반자동"));
-
-	if (!m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), strLuggNo, _T(""), _T(""), strLogMsg2))
-	{
-		m_pDoc->RollbackTrans_DLG();
-		return;
-	}
-
-	strSql.Format(_T(" DELETE FROM JOB_MST      \n")
-	              _T("  WHERE WH_TYP  = '%s'    \n")
-	              _T("    AND LUGG_NO = '%s'     "), strWH_TYP, strLuggNo);
-
-	if (m_pDoc->ExcuteQueryString_DLG(strSql) == FALSE)
-	{
-		m_pDoc->RollbackTrans_DLG();
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
-		return;
-	}
-
-	m_pDoc->CommitTrans_DLG();
-
-	if (bOnline)
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("WCS 입고 작업을 삭제했습니다.\n\n★ WMS(상위)에서도 해당 작업을 반드시 삭제해 주십시오. ★")) + strInfo,
-			MB_OK | MB_ICONEXCLAMATION);
-	}
-	else
-	{
-		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("반자동 입고 작업을 삭제했습니다.")) + strInfo);
-	}
-
-	return;
-
 }
 
 

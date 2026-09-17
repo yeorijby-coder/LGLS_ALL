@@ -199,7 +199,6 @@ public:
 	// [LGLS 2026-09-06] [H/S 배출] - 출고 H/S 에 놓인 작업 없는 화물을 출고대로 내보낸다.
 	CSkinButton m_btnCvHsEject;
 	CEdit m_edtCvTrackPause;
-	CStaticTransparent m_lblCvTrackPause;
 
 	CSkinButton m_btnStockMode;
 	CEdit m_edtCvSuspend2;
@@ -291,9 +290,7 @@ public:
 	void SelStnKind(int& nCNT);
 	CEdit m_edtTrack;
 	CButton m_chkAutoSel;
-	CButton m_chkDebugMode;
 	afx_msg void OnBnClickedChkAutoSel();
 	BOOL m_blAutoSel;
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	afx_msg void OnBnClickedChkAutoSel2();
 };

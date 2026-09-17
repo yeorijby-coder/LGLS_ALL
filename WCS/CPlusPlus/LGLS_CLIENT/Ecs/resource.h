@@ -739,7 +739,6 @@
 #define IDC_EDIT_RTV_JOB_JOB_NO         1112
 #define IDC_EDT_JBATCH_NO3              1113
 #define IDC_EDT_JOB_BCR_TOP2            1113
-#define IDC_EDT_SC_JOB_BCR_TOP          1113
 #define IDC_EDIT_RTV_JOB_JOB_NO2        1113
 #define IDC_EDT_PLAN_CNT3               1114
 #define IDC_EDT_JOB_BCR_TOP_USER2       1114
@@ -748,7 +747,6 @@
 #define IDC_EDT_RTV_SUSPEND             1114
 #define IDC_CBX_PLAN2                   1115
 #define IDC_EDT_JOB_BCR_BOTTOM2         1115
-#define IDC_EDT_SC_JOB_BCR_BOTTOM       1115
 #define IDC_EDT_PINFO2                  1116
 #define IDC_EDT_JOB_BCR_BOTTOM_USER2    1116
 #define IDC_EDT_SC_JOB_BCR_BOTTOM2      1116
@@ -1171,7 +1169,6 @@
 #define IDC_BTN_REQUEST_PLT             1315
 #define IDC_BTN_ERROR_RESET             1316
 #define IDC_BTN_ERR_RESET               1316
-#define IDC_BTN_SC_ERROR_RESET          1316
 #define IDC_SCCTRL4                     1324
 #define IDC_BUTTON2                     1325
 #define IDC_BUTTON_REQUEST_AGV_STATUS   1325
@@ -1246,7 +1243,6 @@
 #define IDC_CHK_BCR2                    1495
 #define IDC_CV_DATA_CHECK_ALL           1495
 #define IDC_CHECK_LOG_CLIENT_CHK2       1495
-#define IDC_CHK_AUTO_SEL2               1495
 #define IDC_IPADDRESS1                  1496
 #define IDC_IPADDRESS                   1496
 #define IDC_CHECK_BIG                   1496
@@ -1858,7 +1854,6 @@
 #define IDC_BTN_CV_WRITE2               1790
 #define IDC_BTN_CALL_TO_HOME            1790
 #define IDC_BTN_BCR_REQUEST_STORE       1790
-#define IDC_BTN_SC_CALL_TO_HOME         1790
 #define IDC_BTN_BCR_READ_BARCODE2       1790
 #define IDC_BTN_BCR_MES_REPORT          1790
 #define IDC_BTN_AGING_TYP_3             1790
@@ -1909,7 +1904,6 @@
 #define IDC_BTN_SC_ALL_SUSPEND          1800
 #define ID_BTN_CV_OK                    1801
 #define IDC_BTN_SC_ALL_SUSPEND2         1801
-#define IDC_BTN_DUPL_STO                1801
 #define IDC_STATIC_EDGE                 1802
 #define ID_BTN_CV_CANEL                 1802
 #define ID_BTN_CV_CANCEL                1802
@@ -1963,11 +1957,6 @@
 #define IDC_BTN_DRIV_BACKWARD_POS       1817
 #define IDC_LBL_SC_PROD_LOAD            1818
 #define IDC_LBL_SC_JOB_JOB_NO           1819
-#define IDC_LBL_SC_JOB_BCR_TOP          1820
-#define IDC_LBL_SC_JOB_BCR_BOTTOM       1821
-#define IDC_BTN_SC_EMERGENCY            1822
-#define IDC_BTN_SC_ACTIVE               1823
-#define IDC_BTN_SC_STOP                 1824
 #define IDC_CHK_SUSPENT_STORE           1825
 #define IDC_CHK_SC_SUSPENT_STORE        1825
 #define IDC_LBL_SC_JOB_START_LOC        1825
@@ -1981,7 +1970,6 @@
 #define IDC_LBL_ITN_LUGG_NO             1827
 #define IDC_EDT_SC_JOB_NO               1828
 #define IDC_CBX_SC_JOB_TYP              1829
-#define IDC_LBL_SC_JOB_SC_SUSPEND       1830
 #define IDC_EDT_SC_JOB_BCR_TOP_USER     1831
 #define IDC_LBL_SC_JOB_NO2              1831
 #define IDC_EDT_SC_JOB_NO3              1831
@@ -1989,12 +1977,10 @@
 #define IDC_EDT_SC_JOB_BCR_BOTTOM_USER  1832
 #define IDC_LBL_SC_JOB_TYP2             1832
 #define IDC_LBL_SC_FORK_STATUS2         1833
-#define ID_BTN_SC_CANCEL                1834
 #define IDC_BTN_SC_JOB_BCR_TOP_TRANSFER 1835
 #define IDC_LBL_SC_START_POS2           1835
 #define IDC_BTN_SC_JOB_BCR_BOTTOM_TRANSFER 1836
 #define IDC_LBL_SC_DEST_POS2            1836
-#define IDC_BTN_SC_DELTE                1837
 #define IDC_GRP_CV_CV_STATUS_ITEM       1838
 #define IDC_EDT_SC_JOB_NO2              1838
 #define IDC_LIST_WARNING                1839
@@ -2012,7 +1998,6 @@
 #define IDC_LBL_SC_JOB_JOB_NO2          1843
 #define IDC_BUTTON_NEXT                 1844
 #define IDC_GRP_CV_JOB_STATUS_COMMAND   1844
-#define IDC_LBL_SC_JOB_SC_SUSPEND2      1844
 #define IDC_GRP_CV_JOB_STATUS_ITEM3     1844
 #define IDC_BUTTON_PREV                 1845
 #define IDC_GRP_CV_STATUS               1845
@@ -2062,11 +2047,8 @@
 #define IDC_GRP_SC_SC_STATUS_VALUE5     1855
 #define IDC_GRP_SC_JOB_STATUS           1856
 #define IDC_GRP_SC_JOB_STATUS_ITEM      1857
-#define IDC_GRP_SC_SC_STATUS_ITEM9      1857
 #define IDC_GRP_SC_JOB_STATUS_VALUE     1858
-#define IDC_GRP_SC_SC_STATUS_VALUE8     1858
 #define IDC_GRP                         1859
-#define IDC_GRP_SC_JOB_STATUS_COMMAND   1859
 #define IDC_GRP_SC_SC_STATUS_ITEM10     1860
 #define IDC_GRP_SC_JOB_STATUS_COMMAND2  1860
 #define IDC_VIEW_JOBLIST_EDIT_LOCATION1 1861
@@ -2441,7 +2423,6 @@
 #define IDC_LBL_AGING                   1974
 #define ID_BTN_SC_CANNEL                1975
 #define IDC_LBL_WH                      1975
-#define ID_BTN_SC_OK                    1976
 #define IDC_LBL_CELL_CNT                1976
 #define IDC_GRP_SEARCH                  1977
 #define IDC_LBL_AC_TRAY                 1977

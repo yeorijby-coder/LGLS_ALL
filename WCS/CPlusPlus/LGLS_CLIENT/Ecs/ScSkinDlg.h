@@ -98,8 +98,6 @@ public:
 	void GetErrorCode(CString strEqpTyp, CString strErrorCode, int nEN_LANG, CString& strGetErrorCode);
 
 public:
-	CSkinButton m_btnScOk;
-	CSkinButton m_btnScCancel;
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 
 public:
@@ -221,24 +219,16 @@ public:
 
 	//COMMAND
 	CSkinButton m_btnScConfirm;
-	CSkinButton m_btnScEmergency;
-	CSkinButton m_btnScActive;
-	CSkinButton m_btnScStop;
-	CSkinButton m_btnScErrorReset;
-	CSkinButton m_btnScDelete;
-	CSkinButton m_btnScCallToHome;
 	CSkinButton m_btnScManual;
 	CSkinButton m_btnScStoSuspend;
 	CSkinButton m_btnScRetSuspend;
 	CSkinButton m_btnScAllSuspend;
-	CSkinButton m_btnDuplSto;
 
 	CButton m_chkScFork1;
 	CButton m_chkScFork2;
 	CButton m_chkScFork1Fork2;
 
 	BOOL    m_ChkSuspend;
-	CSkinButton m_btnScManualRet;
 	CEdit m_edtScItnLuggNo;
 	CStaticTransparent m_lblItnLuggNo;
 	//--COMMAND
@@ -258,28 +248,18 @@ public:
 
 
 	afx_msg void OnBnClickedBtnScConfirm();
-	afx_msg void OnBnClickedBtnScEmergency();
-	afx_msg void OnBnClickedBtnScActive();
-	afx_msg void OnBnClickedBtnScStop();
-	afx_msg void OnBnClickedBtnScErrorReset();
-	afx_msg void OnBnClickedBtnScCallToHome();
 	afx_msg void OnBnClickedBtnScManual();
 
-	afx_msg void OnBnClickedBtnScOk();
-	afx_msg void OnBnClickedBtnScCancel();
 	afx_msg void OnClose();
-	afx_msg void OnBnClickedBtnScDelte();
 	afx_msg void OnBnClickedBtnCvStoSuspend();
 	afx_msg void OnBnClickedBtnScRetSuspend();
 	afx_msg void OnBnClickedBtnScAllSuspend();
 	afx_msg void OnBnClickedChkScFork1();
 	afx_msg void OnBnClickedChkScFork2();
 	afx_msg void OnBnClickedScRtvFork12();
-	afx_msg void OnBnClickedScDuplicationSto();
 	CString GetQrySelectJOB_MST_FK1( CSC_DATA * pSC_DATA );
 	CString GetQrySelectJOB_MST_FK2( CSC_DATA * pSC_DATA );
 	CString GetQrySelectSC_STATUS_CCD( CSC_DATA* pSC_DATA );
-	afx_msg void OnBnClickedBtnScManualRet();
 
 	BOOL RetHsDataSelect(CString& strHS_MC_NO, CString& strSensor0DataRd);
 	BOOL JobMstInsert(CString pHsMcNo, CString& pLuggNo, CString& strProductSize);

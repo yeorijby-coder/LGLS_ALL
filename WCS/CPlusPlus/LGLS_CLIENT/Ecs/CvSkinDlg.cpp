@@ -138,7 +138,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDT_CV_TRACK_PAUSE, m_edtCvTrackPause);
 	// [LGLS 2026-08-05] 이 DDX 가 주석 처리되어 있어서 [일시정지] 라벨만 회색 배경으로 그려졌다.
 	//   다른 라벨과 같이 CStaticTransparent 로 묶어 배경이 비치게 한다.
-	DDX_Control(pDX, IDC_LBL_CV_TRACK_PAUSE, m_lblCvTrackPause);
 	DDX_Control(pDX, IDC_BTN_STOCK_MODE, m_btnStockMode);
 	DDX_Control(pDX, IDC_CBX_JOB_DEST_LOC, m_cbxJobDestLoc);
 	DDX_Control(pDX, IDC_CBX_JOB_START_LOC, m_cbxJobStartLoc);
@@ -146,7 +145,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LBL_JOB_START_LOC, m_lblJobStartLoc);
 	DDX_Control(pDX, IDC_EDT_TRACK, m_edtTrack);
 	DDX_Control(pDX, IDC_CHK_AUTO_SEL, m_chkAutoSel);
-	DDX_Control(pDX, IDC_CHK_AUTO_SEL2, m_chkDebugMode);
 
 
 	DDX_Control(pDX, IDC_GRP_MGDP_STATUS, m_grpMgdpStatus);
@@ -175,7 +173,6 @@ BEGIN_MESSAGE_MAP(CCvSkinDlg, CSkinDialog)
 	ON_BN_CLICKED(IDC_LGLS_CV_HS_EJECT, &CCvSkinDlg::OnBnClickedBtnCvHsEject)	// [LGLS 2026-09-06]
 	ON_BN_CLICKED(IDC_CHK_AUTO_SEL, &CCvSkinDlg::OnBnClickedChkAutoSel)
 	ON_WM_TIMER()
-	ON_BN_CLICKED(IDC_CHK_AUTO_SEL2, &CCvSkinDlg::OnBnClickedChkAutoSel2)
 END_MESSAGE_MAP()
 
 
@@ -219,10 +216,6 @@ BOOL CCvSkinDlg::OnInitDialog()
 		m_bInitialized = TRUE;	
 	}
 	InitializeResource(pEn);
-
-	int nTemp = (int)m_pDoc->m_bDebugMode;
-
-	m_chkDebugMode.SetCheck(nTemp);
 
 	UpdateData(FALSE);
 
@@ -405,10 +398,6 @@ void CCvSkinDlg::RenameResource( EN_LANG m_enLang)
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("waitscretjob"), (int)m_enLang);
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("trackpause"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_CV_TRACK_PAUSE, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("pulpsensor"), (int)m_enLang);
@@ -2106,23 +2095,6 @@ void CCvSkinDlg::OnTimer(UINT_PTR nIDEvent)
 		//조회
 		InvalidateTrackData(m_nLang);   /* [LGLS 2026-08-23] EN_KOR 고정을 현재 언어로 */
 	}
-}
-
-void CCvSkinDlg::OnBnClickedChkAutoSel2()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	int nChk = m_chkDebugMode.GetCheck();
-
-	if(nChk == true)
-	{
-		m_pDoc->m_bDebugMode = TRUE;
-	}
-	else
-	{
-		m_pDoc->m_bDebugMode = FALSE;
-	}
-
-	return;
 }
 
 // [LGLS 2026-08-05] CV 통신상태 패널 ─────────────────────────────────────────

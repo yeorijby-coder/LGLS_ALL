@@ -172,12 +172,6 @@ public:
 
 	//Button
 	CSkinButton m_btnRtvComplete;
-	CSkinButton m_btnRtvEstop;
-	CSkinButton m_btnRtvActive;
-	CSkinButton m_btnRtvStop;
-	CSkinButton m_btnRtvResetError;
-	CSkinButton m_btnRtvDelete;
-	CSkinButton m_btnRtvCallToHome;
 	CSkinButton m_btnRtvManual;
 	CSkinButton m_btnRtvSuspend;
 	//
@@ -191,12 +185,6 @@ public:
 
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedBtnRtvComplete();
-	afx_msg void OnBnClickedBtnRtvEstop();
-	afx_msg void OnBnClickedBtnRtvActive();
-	afx_msg void OnBnClickedBtnRtvStop();
-	afx_msg void OnBnClickedBtnRtvResetError();
-	afx_msg void OnBnClickedBtnRtvDelete();
-	afx_msg void OnBnClickedBtnRtvCallToHome();
 	afx_msg void OnBnClickedBtnRtvSuspend();
 	afx_msg void OnBnClickedChkRtvFork1();
 	afx_msg void OnBnClickedChkRtvFork2();
