@@ -609,10 +609,12 @@ void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("item"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_ITEM3, strValue);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_ITEM4, strValue);	// [LGLS 2026-09-17] RTV상태 두 번째 열(사용자 배치)
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvstauts"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_RTV, strValue);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_RTV2, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobsta"), (int)m_enLang);
