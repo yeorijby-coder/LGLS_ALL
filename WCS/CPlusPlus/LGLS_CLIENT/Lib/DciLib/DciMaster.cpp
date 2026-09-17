@@ -342,6 +342,73 @@ void CDciMaster::DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strT
 		pDC->SelectObject(pOldFont);
 }
 
+// [LGLS 2026-09-17] 두 색 글자 (DciMaster.h 설명 참조)
+void CDciMaster::DrawTextFit2(CDC* pDC, const CRect& rcRectS, const CString& strText, COLORREF clrText1, COLORREF clrText2, int nBaseFontSize)
+{
+	if (pDC == NULL || strText.IsEmpty())
+		return;
+	int nSplit = strText.Find(_T('|'));
+	if (nSplit < 0)
+	{
+		COLORREF clrOld = pDC->SetTextColor(clrText1);
+		DrawTextFit(pDC, rcRectS, strText, nBaseFontSize);
+		pDC->SetTextColor(clrOld);
+		return;
+	}
+	CString str1 = strText.Left(nSplit);
+	CString str2 = strText.Mid(nSplit + 1);
+	CString strAll = str1 + str2;
+
+	// 글꼴 크기는 DrawTextFit 과 같게 정한다 : 한 번 그려 캐시를 채운 뒤(보이지 않게) 같은 키로 꺼낸다
+	int nW = abs(rcRectS.Width());
+	int nH = abs(rcRectS.Height());
+	if (nW < 2 || nH < 2)
+		return;
+	int nFont = nBaseFontSize;
+	if (nBaseFontSize <= 0)
+	{
+		CString strKey;
+		strKey.Format(_T("%d|%d|%s"), nW, nH, (LPCTSTR)strAll);
+		BOOL bHit;
+		{
+			CSingleLock lock(&m_csFit, TRUE);
+			bHit = m_mapFitHeight.Lookup(strKey, nFont);
+		}
+		if (!bHit)
+		{
+			CRect rcOff(-30000, -30000, -30000 + nW, -30000 + nH);	// 화면 밖에 그려 크기만 계산
+			DrawTextFit(pDC, rcOff, strAll, nBaseFontSize);
+			CSingleLock lock(&m_csFit, TRUE);
+			if (!m_mapFitHeight.Lookup(strKey, nFont))
+				return;
+		}
+	}
+	CFont* pFont;
+	{
+		CSingleLock lock(&m_csFit, TRUE);
+		pFont = GetFitFont(nFont);
+	}
+	if (pFont == NULL)
+		return;
+	CFont* pOldFont = pDC->SelectObject(pFont);
+	CSize szAll = pDC->GetTextExtent(strAll);
+	CSize sz1 = pDC->GetTextExtent(str1);
+	CRect rc(rcRectS);
+	rc.NormalizeRect();
+	int x0 = rc.left + (rc.Width() - szAll.cx) / 2;
+	CRect rc1(x0, rc.top, x0 + sz1.cx + 2, rc.bottom);
+	CRect rc2(x0 + sz1.cx, rc.top, rc.right + szAll.cx, rc.bottom);
+	COLORREF clrOld = pDC->SetTextColor(clrText1);
+	if (!str1.IsEmpty())
+		pDC->DrawText(str1, rc1, DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_NOCLIP);
+	pDC->SetTextColor(clrText2);
+	if (!str2.IsEmpty())
+		pDC->DrawText(str2, rc2, DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_NOCLIP);
+	pDC->SetTextColor(clrOld);
+	if (pOldFont != NULL)
+		pDC->SelectObject(pOldFont);
+}
+
 // [LGLS 2026-09-14] 높이별 글꼴을 한 번만 만든다 (굵게, Arial - 종전 DrawTextFit 과 같은 속성)
 CFont* CDciMaster::GetFitFont(int nHeight)
 {

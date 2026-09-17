@@ -29,6 +29,8 @@ public:
 	COLORREF m_clrPen;
 	CRect m_rcGap;
 	int m_nFontSizeTemp;
+	// [LGLS 2026-09-17] 글자에 '|' 가 있으면 뒤쪽을 이 색으로 그린다. CLR_INVALID = 한 색(종전). 레이아웃 파일에는 저장하지 않는다.
+	COLORREF m_clrFgColor2;
 
 public:
 	virtual void InitControl(CDciMaster* pDCI);

@@ -11,6 +11,7 @@ IMPLEMENT_SERIAL(CDciStaticCtrl, CDciControl, DCI_SIRIALIZE_SCHEMA)
 // CDciStaticCtrl
 CDciStaticCtrl::CDciStaticCtrl(void)
 {
+	m_clrFgColor2 = CLR_INVALID;
 }
 
 CDciStaticCtrl::~CDciStaticCtrl(void)
@@ -179,7 +180,10 @@ void CDciStaticCtrl::UpdateControl(CDC* pDC)
 		//   재는 동안(GetTextExtent + 폰트 생성) 수집 스레드가 m_strText 를 바꾸면
 		//   버퍼가 사라져 DrawText 안에서 죽는다.
 		CString strDraw = GetTextSafe();
-		m_pDCI->DrawTextFit(pDC, rcControlS, strDraw, m_nFontSize);
+		if (m_clrFgColor2 != CLR_INVALID && strDraw.Find(_T('|')) >= 0)
+			m_pDCI->DrawTextFit2(pDC, rcControlS, strDraw, m_clrFgColor, m_clrFgColor2, m_nFontSize);	// [LGLS 2026-09-17] 두 색 글자
+		else
+			m_pDCI->DrawTextFit(pDC, rcControlS, strDraw, m_nFontSize);
 
 		if (pOldPen != NULL)	pDC->SelectObject(pOldPen);
 		if (pOldBrush != NULL)	pDC->SelectObject(pOldBrush);

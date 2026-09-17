@@ -76,6 +76,9 @@ public:
 	//   nBaseFontSize >  0 : 그 값을 그대로 쓴다(종전 동작).
 	//   랙 / 트랙 / RV / 리프터 / 스태틱이 모두 이 함수를 쓴다.
 	void	DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strText, int nBaseFontSize);
+	// [LGLS 2026-09-17] 두 색 글자 : 글자 안의 '|' 앞은 clrText1, 뒤는 clrText2 로 그린다('|' 는 그리지 않는다).
+	//   글꼴 크기와 가운데 맞춤은 '|' 를 뺀 글자로 DrawTextFit 과 같게 정한다. (작업대 명칭 - 입출고대 = 입고색+출고색)
+	void	DrawTextFit2(CDC* pDC, const CRect& rcRectS, const CString& strText, COLORREF clrText1, COLORREF clrText2, int nBaseFontSize);
 
 protected:
 	// [LGLS 2026-09-14] 글자 맞춤 캐시 (화면 지연 개선).

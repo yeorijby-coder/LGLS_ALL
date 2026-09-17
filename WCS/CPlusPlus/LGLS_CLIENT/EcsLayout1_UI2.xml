@@ -84,7 +84,7 @@
 	</Group>
 	<Group gname="RACK_INFO" gid="7" show="1">
 		<CDciStaticCtrl>
-			<Control id="" l="7" b="2" r="13" t="3" text="[101] 외부 입고 전용 입출고대" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="ff00ff" enable="1" visible="1" fontsize="0" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="10" gr="10" gb="10"/>
+			<Control id="90000705" l="7" b="2" r="13" t="3" text="[101] 외부 입고 전용 입출고대" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="ff00ff" enable="1" visible="1" fontsize="0" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="10" gr="10" gb="10"/>
 			<Control id="90000122" l="6" b="1" r="8" t="2" text="입고 모드" bgmode="1" fgmode="1" bgcolor="f0f0f0" fgcolor="0000cf" enable="1" visible="1" fontsize="0" border="0" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="40" gr="10" gb="10"/>
 			
 			<Control id="" l="7" b="18" r="8" t="19" text="1" bgmode="2" fgmode="1" bgcolor="6f6f00" fgcolor="ffffff" enable="1" visible="1" fontsize="14" border="1" pstyle="0" pwidth="1" pcolor="000000" gl="10" gt="10" gr="10" gb="10"/>

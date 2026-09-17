@@ -39,6 +39,7 @@
 #include "ConfigStatus.h"
 #include "DciRvCtrl.h"		// [LGLS 2026-09-09] 범례 rv 견본 색
 #include "DciTrackCtrl.h"	// [LGLS 2026-09-09] 범례 트랙 견본 아이템 색
+#include "DciStaticCtrl.h"	// [LGLS 2026-09-17] 작업대 명칭 두 색 글자
 #include "ConfigLogDelete.h"
 
 
@@ -1705,6 +1706,18 @@ static void PfSetLegendRv(CEcsDoc* pDoc, LPCTSTR pszCID, COLORREF clrRail, COLOR
 	pRv->SetExtraTextSafe(_T(" "), RGB(0, 0, 0));   // 견본에는 작업번호를 찍지 않는다
 }
 
+// [LGLS 2026-09-17] 작업대 명칭(스태틱) 글자색. clr2 != CLR_INVALID 이면 '|' 뒤쪽 글자를 clr2 로 그린다.
+static void PfSetStationLabel(CEcsDoc* pDoc, LPCTSTR pszCID, COLORREF clr1, COLORREF clr2)
+{
+	if (pDoc == NULL) return;
+	CString strCID = pszCID;
+	CDciControl* pCtl = pDoc->GetDciControl_FindAllLayout(strCID);
+	if (pCtl == NULL) return;
+	pCtl->m_clrFgColor = clr1;
+	CDciStaticCtrl* pSt = dynamic_cast<CDciStaticCtrl*>(pCtl);
+	if (pSt != NULL) pSt->m_clrFgColor2 = clr2;
+}
+
 void CEcsDoc::ApplyLegendColors()
 {
 	if (m_pConfig == NULL) return;
@@ -1745,6 +1758,17 @@ void CEcsDoc::ApplyLegendColors()
 	PfSetLegendRv(this, _T("90009203"), p->m_clrUSER_COLOR_ALL_SUSPEND, 0, FALSE);  // 입출고 정지
 	PfSetLegendRv(this, _T("90009204"), p->m_clrUSER_COLOR_RAIL_ERROR,  0, FALSE);  // 에러
 	PfSetLegendRv(this, _T("90009205"), p->m_clrUSER_COLOR_SC_INVK,     0, FALSE);  // 작업중
+
+	// --- [LGLS 2026-09-17] 작업대 명칭 글자색 = 범례 작업 색상 (사용자 지시)
+	//   입고대 = 입고색, 출고대 = 출고색, 입출고대(101) = 핑크 고정. (두 색 글자 기능은 DciLib 에 남겨 둔다)
+	//   90000701 103 제품 입고대(TR#24)      90000702 104 원부자재 불출대(TR#26)
+	//   90000703 102 피킹 작업대(출고대, TR#29)  90000704 102 피킹 작업대(입고대, TR#30)
+	//   90000705 101 외부 전용 입출고대(TR#22)
+	PfSetStationLabel(this, _T("90000701"), p->m_clrUSER_COLOR_STO, CLR_INVALID);
+	PfSetStationLabel(this, _T("90000702"), p->m_clrUSER_COLOR_RET, CLR_INVALID);
+	PfSetStationLabel(this, _T("90000703"), p->m_clrUSER_COLOR_RET, CLR_INVALID);
+	PfSetStationLabel(this, _T("90000704"), p->m_clrUSER_COLOR_STO, CLR_INVALID);
+	PfSetStationLabel(this, _T("90000705"), RGB(255, 0, 255), CLR_INVALID);	// 101 입출고대 = 핑크 고정 (사용자 지시)
 }
 
 CDciControl* CEcsDoc::GetDciControl_FindAllLayout(CString& strCID)
