@@ -2398,7 +2398,7 @@ void CEcsDoc::OnCommandTrackTextMode(UINT nID)
 	{
 	case ID_MONITORING_VIEW_JOBNO:    m_nTrackTextMode = 1; break;	// 작업번호
 	case ID_MONITORING_VIEW_TRACKNO:  m_nTrackTextMode = 0; break;	// 트랙번호
-	case ID_MONITORING_VIEW_PRODINFO: m_nTrackTextMode = 2; break;	// 제품정보
+	case ID_MONITORING_VIEW_PRODINFO: m_nTrackTextMode = 2; break;	// 적재용기 끝 4자리 (2026-09-17, 종전 제품정보)
 	default: return;
 	}
 	m_dwAliveJobTick = 0;			// 보기를 바꾸면 작업번호 캐시를 즉시 갱신

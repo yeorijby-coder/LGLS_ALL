@@ -561,9 +561,10 @@ void CMainFrame::AddCategoryWCS()
 		pPanelMonitor->Add(pBtnViewTrackNo);
 
 		// [LGLS 2026-09-03] 제품정보 : Ecs.ini [MENU] PRODINFO_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
+		// [LGLS 2026-09-17] 버튼 이름 제품정보 → 적재용기. 누르면 트랙·크레인·RGV 에 적재용기(LOT_NO) 끝 4자리를 표시 (사용자 지시)
 		if (::GetPrivateProfileInt(_T("MENU"), _T("PRODINFO_MENU"), 1, ECS_INI_FILE) != 0)
 		{
-			CMFCRibbonButton* pBtnViewProd = new CMFCRibbonButton(ID_MONITORING_VIEW_PRODINFO, _T("제품정보"), HICONFromPATH(GetConcatPath(strAppPath, _T("p"), strExtension)), TRUE);
+			CMFCRibbonButton* pBtnViewProd = new CMFCRibbonButton(ID_MONITORING_VIEW_PRODINFO, _T("적재용기"), HICONFromPATH(GetConcatPath(strAppPath, _T("p"), strExtension)), TRUE);
 			TipReg(pBtnViewProd, GetConcatPath(strAppPath, _T("p"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
 			pBtnViewProd->SetAlwaysLargeImage();
 			pPanelMonitor->Add(pBtnViewProd);

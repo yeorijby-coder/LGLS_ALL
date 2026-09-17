@@ -118,7 +118,8 @@ void CTrackInfo::ApplyTrackTextMode(CDciTrackCtrl* pTrackCtrl)
 				m_strProdLugg = CString((LPCTSTR)m_pCV_DATA->V_LUGG_NO_RD);   // [LGLS 2026-07-22] 깊은 복사(레이스 방어)
 				m_strProdVal = _T("");
 				CString strSql;
-				strSql.Format(_T(" SELECT TOP 1 ISNULL(BCR_BOTTOM, ' ') AS BCR FROM JOB_MST WHERE LUGG_NO = '%s' ORDER BY INS_DT DESC "), m_strProdLugg);
+				// [LGLS 2026-09-17] 리본 [적재용기] : JOB_MST.LOT_NO 끝 4자리 (종전 BCR_BOTTOM 제품정보, 사용자 지시)
+				strSql.Format(_T(" SELECT TOP 1 RIGHT(RTRIM(ISNULL(LOT_NO, '')), 4) AS BCR FROM JOB_MST WHERE LUGG_NO = '%s' ORDER BY INS_DT DESC "), m_strProdLugg);
 				int nRowCnt = 0;
 				CString strMsg = _T("");
 				_RecordsetPtr pRs = m_pEquipment->m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
