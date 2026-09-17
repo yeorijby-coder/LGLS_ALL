@@ -789,11 +789,17 @@ namespace TSK_COMM_IOSCH
                 if (nCnt <= 0) return;
 
                 DataTable dt = _pBdb.mDtMain.Copy();
+                // [LGLS 2026-09-17] 한 사이클에 같은 트랙으로 두 작업을 내지 않는다.
+                //   조회 결과에 같은 입고대의 대기 작업이 둘 있으면(한 입고대에 입고 지시 2건) 첫 건을 내고 나서도
+                //   조회 시점의 행(OD_RQ_YN='N', 15 없음)으로 둘째 건까지 내 버려, 트랙 트래킹이 둘째 작업번호로
+                //   덮여 첫 화물이 떠난 뒤 둘째 작업이 영영 출발하지 못했다(모드 2 재시험 9812, 122 에서 15분 정체).
+                var setIssuedTrk = new HashSet<string>();
 
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     string plcNo    = GetVal(dt.Rows[i], "PLC_NO");
                     string trackNo  = GetVal(dt.Rows[i], "MC_NO");   // [LGLS] 설비 키 = MC_NO (TRACK_NO 는 '1'+MC_NO 표시용)
+                    if (setIssuedTrk.Contains(trackNo)) continue;    // [LGLS 2026-09-17] 이번 사이클에 이미 낸 트랙
                     string luggNo   = GetVal(dt.Rows[i], "LUGG_NO");
                     string jobTyp   = GetVal(dt.Rows[i], "JOB_TYP");
                     if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
@@ -863,6 +869,7 @@ namespace TSK_COMM_IOSCH
                     {
                         _pBdb.Commit();
                         m_dicPrevCV[key] = luggNo;  m_dicPrevAt[key] = DateTime.Now;
+                        setIssuedTrk.Add(trackNo);
                         MakeMsg_Imp(string.Format("[SCH][CV] CV TRACK:{0} 명령 발행 완료, 작업 {1} 상태 '{2}'", trackNo, luggNo, ST_CV_RUN));
                         // [LGLS 2026-07-21] 실경로: 출고 CV 발행과 동시에 출고대 반출 대기열(FIFO) 등록.
                         //   (구 경로에선 ProcessCvMove 가 홀수 트랙 도착 시 등록했으나, 실경로는 라인 이동을
