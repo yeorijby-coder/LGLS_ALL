@@ -55,7 +55,6 @@ protected:
 
 	HICON m_hIcon;
 	BOOL m_bInitialized;
-	void RelocationControls();
 
 	virtual BOOL OnInitDialog();
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);

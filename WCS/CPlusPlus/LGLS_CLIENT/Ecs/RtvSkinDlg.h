@@ -18,7 +18,6 @@ public:
 	// [LGLS 2026-08-01] 설비 통신상태 패널(IDC_RTVV_*)을 런타임 생성 - rc 에 컨트롤이 없어 값이 안 보이던 문제
 	void BuildVehStatusPanel();
 	CPtrArray m_arVehCtrl;
-	CPtrArray m_arLglsCtrl;		// [LGLS 2026-08-01] 적재 용기/제품 정보 행(확대·축소와 무관하게 항상 표시)
 	CSkinButton m_btnVehZoom;	// [LGLS 2026-08-01] [확대]/[축소] 토글 버튼
 	CSkinButton m_btnRtvResend;	// [LGLS 2026-08-12] 지시 재전송(원 대화상자)
 	BOOL    m_bVehExpanded;	// TRUE=확대(상태 패널 표시)
@@ -26,15 +25,11 @@ public:
 	int     m_nVehPanelH;	// 상태 패널 높이
 	int     m_nVehBaseW;	// [LGLS 2026-09-12] 축소 상태 창 폭 (오른쪽 확대)
 	int     m_nVehPanelW;	// [LGLS 2026-09-12] 오른쪽 패널 폭
-	void CompactJobStatusArea();	// [LGLS 2026-08-01] 빈 공간 제거(사용자 지시 사진)
 	void SetVehPanelExpanded(BOOL bExpand);
 	void ApplyZoomBtnIni();		// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN 재적용(창 생성 시·ini 저장 감지 시)
 	afx_msg void OnBnClickedVehZoom();
 	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
 	afx_msg void OnBnClickedBtnRtvManual();   // [LGLS 2026-09-03] 수동지시
-	void LglsRelayoutJobStatus();      // [LGLS 2026-09-03] 작업상태 두 열 배치
-	BOOL m_bJobStatusRelayout;
-	BOOL m_bSuspendPlaced;
 	CRtvSkinDlg(CWnd* pParent = NULL);   // 표준 생성자입니다.
 	CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);   // 표준 생성자입니다.
 	virtual ~CRtvSkinDlg();
@@ -75,7 +70,6 @@ protected:
 	
 	HICON m_hIcon;
 	BOOL m_bInitialized;
-	void RelocationControls();
 
 public:
 	void RenameResource( EN_LANG m_enLang = EN_ENG );

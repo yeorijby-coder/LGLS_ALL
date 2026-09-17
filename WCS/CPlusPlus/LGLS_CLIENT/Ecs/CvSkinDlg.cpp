@@ -210,11 +210,8 @@ BOOL CCvSkinDlg::OnInitDialog()
 	InitializeFontManager(this);
 	SetFontNation((int)pEn);
 	CSkinDialog::SetFont(this->GetFont());
-	if( !m_bInitialized )
-	{	
-		RelocationControls();
-		m_bInitialized = TRUE;	
-	}
+	// [LGLS 2026-09-17] 컨트롤 위치·크기는 Ecs.rc 가 최종값이다(런타임 재배치 없음 - 리소스 뷰 = 실행 화면).
+	m_bInitialized = TRUE;
 	InitializeResource(pEn);
 
 	UpdateData(FALSE);
@@ -611,62 +608,6 @@ HCURSOR CCvSkinDlg::OnQueryDragIcon()
 void CCvSkinDlg::OnPaint()
 {
 	CSkinDialog::OnPaint();
-}
-
-void CCvSkinDlg::RelocationControls()
-{
-	CRect rc;
-	GetClientRect(&rc);
-
-	int x=0, y=0;
-
-	SIZE size = Global.GetBitmapSize(IDX_BMP_BTN_BASE);
-	SIZE sizeLarge = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-
-	CRect rc2;
-	m_btnCvWrite.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnCvWrite.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-
-	
-	
-
-	m_btnCvDelete.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnCvDelete.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnCvCopy.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnCvCopy.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnCvCut.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnCvCut.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-	m_btnCvPaste.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnCvPaste.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-
-
-	m_btnCvTrackPause.GetWindowRect(&rc2);
-	ScreenToClient(&rc2);
-	m_btnCvTrackPause.MoveWindow(rc2.left, rc2.top, sizeLarge.cx,  sizeLarge.cy);
-	// [LGLS 2026-09-06] [H/S 배출]도 다른 명령 버튼과 같은 비트맵 크기로 맞춘다.
-	if (::IsWindow(m_btnCvHsEject.m_hWnd))
-	{
-		m_btnCvHsEject.GetWindowRect(&rc2);
-		ScreenToClient(&rc2);
-		m_btnCvHsEject.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-	}
-
-	// [LGLS 2026-08-13] MG 이동/[확대]도 다른 버튼처럼 비트맵 크기로 - 확대 버튼 잘림 해결
-	if (::IsWindow(m_btnCvZoom.m_hWnd))
-	{
-		m_btnCvZoom.GetWindowRect(&rc2);
-		ScreenToClient(&rc2);
-		m_btnCvZoom.MoveWindow(rc2.left, rc2.top, sizeLarge.cx, sizeLarge.cy);
-	}
 }
 
 

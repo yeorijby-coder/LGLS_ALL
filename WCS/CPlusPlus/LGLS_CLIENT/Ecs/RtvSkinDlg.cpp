@@ -18,8 +18,6 @@ CRtvSkinDlg::CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CRtvSkinDlg::IDD, pParent)
 {
 	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;	// [LGLS 2026-09-12]
-	m_bJobStatusRelayout = FALSE;   // [LGLS 2026-09-03]
-	m_bSuspendPlaced = FALSE;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pDoc = pDoc;
@@ -111,11 +109,8 @@ BOOL CRtvSkinDlg::OnInitDialog()
 	InitializeFontManager(this);
 	SetFontNation((int)pEn);
 	CSkinDialog::SetFont(this->GetFont());
-	if( !m_bInitialized )
-	{		
-		RelocationControls();
-		m_bInitialized = TRUE;		
-	}
+	// [LGLS 2026-09-17] 컨트롤 위치·크기는 Ecs.rc 가 최종값이다(런타임 재배치 없음 - 리소스 뷰 = 실행 화면).
+	m_bInitialized = TRUE;
 	m_strRtvFork = _T("0");
 
 	InitializeResource(pEn);
@@ -341,8 +336,6 @@ void CRtvSkinDlg::OnSize(UINT nType, int cx, int cy)
 
 	// TODO: Add your message handler code here
 
-	if( m_bInitialized )
-		RelocationControls();
 }
 HCURSOR CRtvSkinDlg::OnQueryDragIcon()
 {
@@ -354,37 +347,6 @@ void CRtvSkinDlg::OnPaint()
 	CSkinDialog::OnPaint();
 }
 
-void CRtvSkinDlg::RelocationControls()
-{
-	return;
-}
-
-
-// [LGLS 2026-08-13] 그룹박스 안 명령 버튼들을 스킨 비트맵 크기로 세로 정렬.
-//   rc 크기가 비트맵(110x27)보다 작으면 가장자리가 잘려 보이고 버튼마다 크기가 달라지므로
-//   전부 비트맵 크기로 맞춘다. 그룹 높이가 모자라면 그룹을 아래로 늘린다.
-static void StackCommandButtons(CWnd* pDlg, UINT nGrpId, const UINT* pIds, int nCnt, SIZE szL, int nGap, BOOL bBottom)
-{
-	CWnd* pGrp = pDlg->GetDlgItem(nGrpId);
-	if (pGrp == NULL || !::IsWindow(pGrp->m_hWnd)) return;
-	CRect rcGrp; pGrp->GetWindowRect(&rcGrp); pDlg->ScreenToClient(&rcGrp);
-	int nPitch = szL.cy + nGap;
-	int nNeed  = 13 + nCnt * nPitch - nGap + 5;
-	if (!bBottom && rcGrp.Height() < nNeed)
-	{
-		rcGrp.bottom = rcGrp.top + nNeed;
-		pGrp->MoveWindow(&rcGrp);
-	}
-	int x = rcGrp.left + (rcGrp.Width() - szL.cx) / 2;
-	int y = bBottom ? (rcGrp.bottom - 5 - (nCnt * nPitch - nGap)) : (rcGrp.top + 13);
-	for (int i = 0; i < nCnt; i++)
-	{
-		CWnd* pBtn = pDlg->GetDlgItem(pIds[i]);
-		if (pBtn == NULL || !::IsWindow(pBtn->m_hWnd)) continue;
-		pBtn->MoveWindow(x, y, szL.cx, szL.cy);
-		y += nPitch;
-	}
-}
 
 void CRtvSkinDlg::RedrawImage()
 {
@@ -430,42 +392,13 @@ void CRtvSkinDlg::RedrawImage()
 	m_btnVehZoom.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnVehZoom.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("arrow-down"), strExtension)), NULL, 5, 5);
 
-	// [LGLS 2026-08-13] 명령 버튼 크기 통일(비트맵 110x27) + 세로 재배치
-	{
-		SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-		// [LGLS 2026-09-03] 사용자 지시 : 지시 재전송 / 지시 삭제 / 지시 완료(강제완료) / 확대 네 개만
-		//   위에서부터 남기고 나머지 명령 버튼은 숨긴다.
-		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>RTV 창을 여는 두 번째 경로
-		{ CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
-		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
-		BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
-		// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - S/C 와 같은 이유다.
-		//   RGV(VEHICLE:1) 의 구 ECS 태그도 29개뿐이고 취소·삭제 신호가 없다
-		//   (ECS→PLC 쓰기 = FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack).
-		//   구 ECS RGVForm 도 IO_TRANSFER_REQUEST 를 true 로만 썼다(재전송뿐, 철회 없음).
-		ApplyZoomBtnIni();		// [LGLS 2026-09-12] 명령 버튼 쌓기 + [확대] 표시/숨김 - ini 저장 감지 시 같은 함수로 재적용
-		// [LGLS 2026-09-03] 확대 아래 빈 자리(사용자 지정)에 일시정지 상태 에디트 + [일시정지] 버튼을 함께 둔다
-		{
-			CWnd* pZoom = GetDlgItem(bZoom ? IDC_LGLS_RTV_ZOOM : IDC_BTN_RTV_MANUAL);   // 확대 숨김이면 그 위 버튼 기준
-			CWnd* pEdt  = GetDlgItem(IDC_EDT_RTV_SUSPEND);
-			CWnd* pBtn  = GetDlgItem(IDC_BTN_RTV_SUSPEND);
-			if (pZoom && pEdt && pBtn)
-			{
-				CRect rz, re, rg; pZoom->GetWindowRect(&rz); ScreenToClient(&rz); pEdt->GetWindowRect(&re); ScreenToClient(&re);
-				CWnd* pCmdGrp = GetDlgItem(IDC_GRP_FK_FK_STATUS_COMMAND);
-				if (pCmdGrp) { pCmdGrp->GetWindowRect(&rg); ScreenToClient(&rg); } else { rg = rz; rg.bottom = rz.bottom + 6 + re.Height() + 4 + rz.Height() + 8; }
-				// [LGLS 2026-09-03] 명령 그룹박스의 맨 아래에 붙인다(사용자 지정) : 버튼이 바닥, 그 위에 상태 에디트
-				int yBtn = rg.bottom - 8 - rz.Height();
-				int yEdt = yBtn - 4 - re.Height();
-				if (yEdt < rz.bottom + 4) { yEdt = rz.bottom + 4; yBtn = yEdt + re.Height() + 4; }
-				pEdt->MoveWindow(rz.left, yEdt, rz.Width(), re.Height());
-				pBtn->MoveWindow(rz.left, yBtn, rz.Width(), rz.Height());
-				pEdt->ShowWindow(SW_SHOW); pBtn->ShowWindow(SW_SHOW);
-				m_bSuspendPlaced = TRUE;
-			}
-		}
-		// [LGLS 2026-09-17] 항상 숨겨 두던 비상정지/ACTIVE/정지/에러해제/복귀명령/삭제 버튼은 rc 와 코드에서 지웠다(사용자 지시).
-	}
+	// [LGLS 2026-09-17] 명령 버튼(지시 재전송/강제완료/수동지시/확대)과 일시정지 에디트·버튼의 위치·크기(비트맵 110x27)는
+	//   Ecs.rc 에 최종값으로 넣었다. 종전의 런타임 세로 쌓기(StackCommandButtons)·명령 그룹 바닥 붙이기·수동지시 표시는 없앴다.
+	// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - S/C 와 같은 이유다.
+	//   RGV(VEHICLE:1) 의 구 ECS 태그도 29개뿐이고 취소·삭제 신호가 없다
+	//   (ECS→PLC 쓰기 = FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack).
+	// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
+	ApplyZoomBtnIni();
 
 }
 
@@ -1288,43 +1221,6 @@ HBRUSH CRtvSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 //   조용히 실패하므로 "대화상자에 값이 하나도 안 나오는" 증상이 됐다.
 //   → rc 를 손대는 대신 동일한 ID 로 컨트롤을 직접 만들어 기존 표시 코드가 그대로 동작하게 한다.
 
-// [LGLS 2026-08-01] RTV 대화상자 여백 정리(사용자 지시 사진).
-//   ① JOB_STATUS 의 COMMAND 열 : "-" 표시란과 [RTV SUSPEND] 버튼이 아래로 떨어져 있어 위로 올린다.
-//   ② ERROR INFORMATION 그룹 : JOB_STATUS 그룹과의 빈 공간만큼 위로 당기고 창 높이도 줄인다.
-//   rc 를 고치지 않고 실제 컨트롤 위치로 계산해 이동한다.
-void CRtvSkinDlg::CompactJobStatusArea()
-{
-	// [LGLS 2026-09-17] ① COMMAND 열 정리 블록은 지웠다 - 기준이던 숨김 명령 소그룹을 rc 에서 삭제했고,
-	//   일시정지 에디트/버튼 배치는 RedrawImage(명령 그룹 바닥)에서 한다(여기서는 원래 옮기지 않았다).
-
-	// ── ② ERROR INFORMATION 그룹을 위로 당기고 창 축소 ────────────
-	CWnd* pJobGrp = GetDlgItem(IDC_GRP_RTV_JOB_STATUS);
-	CWnd* pErrGrp = GetDlgItem(IDC_GRP_RTV_STATUS_SENSOR);
-	if (pJobGrp != NULL && pErrGrp != NULL)
-	{
-		CRect rcJob, rcErr;
-		pJobGrp->GetWindowRect(&rcJob); ScreenToClient(&rcJob);
-		pErrGrp->GetWindowRect(&rcErr); ScreenToClient(&rcErr);
-
-		int nShift = rcErr.top - (rcJob.bottom + 10);	// 10px 여백만 남긴다
-		if (nShift > 0)
-		{
-			int nThreshold = rcErr.top - 2;
-			for (CWnd* pChild = GetWindow(GW_CHILD); pChild != NULL; pChild = pChild->GetWindow(GW_HWNDNEXT))
-			{
-				CRect rc; pChild->GetWindowRect(&rc); ScreenToClient(&rc);
-				if (rc.top >= nThreshold)
-				{
-					rc.OffsetRect(0, -nShift);
-					pChild->MoveWindow(rc);
-				}
-			}
-			CRect rcWin; GetWindowRect(&rcWin);
-			SetWindowPos(NULL, 0, 0, rcWin.Width(), rcWin.Height() - nShift, SWP_NOMOVE | SWP_NOZORDER);
-		}
-	}
-}
-
 void CRtvSkinDlg::BuildVehStatusPanel()
 {
 	// [LGLS 2026-08-01] 다른 호기를 선택하면 대화상자 창이 다시 만들어져 런타임 컨트롤이 사라진다.
@@ -1336,23 +1232,11 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 			return;
 		int i;
 		for (i = 0; i < m_arVehCtrl.GetCount(); i++)  { CWnd* p = (CWnd*)m_arVehCtrl.GetAt(i);  if (p != NULL) delete p; }
-		for (i = 0; i < m_arLglsCtrl.GetCount(); i++) { CWnd* p = (CWnd*)m_arLglsCtrl.GetAt(i); if (p != NULL) delete p; }
 		m_arVehCtrl.RemoveAll();
-		m_arLglsCtrl.RemoveAll();
 	}
 
-	// [LGLS 2026-08-01] 도착지 아래에 [적재 용기](JOB_MST.LOT_NO) / [제품 정보](JOB_MST.PRODUCT_ID) 두 행 추가
-	{
-		const int nGrps[] = { IDC_GRP_RTV_JOB_STATUS };	// [LGLS 2026-09-17] 숨김 소그룹 3개는 rc 에서 삭제(최하단은 이 그룹이 기준이라 결과 동일)
-		// ★ID 이름과 실제 라벨이 반대다 : IDC_..._DEST_POS='도착위치', IDC_..._DEST_LOC='도착지'(마지막 행)
-		CLib::AddTwoRowsBelow(this, IDC_LBL_RTV_JOB_DEST_POS, IDC_LBL_RTV_JOB_DEST_LOC, IDC_EDT_RTV_JOB_DEST_LOC,
-		                      _T("적재용기"), IDC_LGLS_RTV_LOT_LBL, IDC_LGLS_RTV_LOT_VAL,
-		                      _T("제품정보"), IDC_LGLS_RTV_PRD_LBL, IDC_LGLS_RTV_PRD_VAL,
-		                      nGrps, sizeof(nGrps)/sizeof(nGrps[0]), m_arLglsCtrl);
-	}		// 1회만 생성
-
-	LglsRelayoutJobStatus();   // [LGLS 2026-09-03] 작업상태 두 열 배치(1회) - 아래 압축보다 먼저
-	CompactJobStatusArea();		// [LGLS 2026-08-01] 빈 공간 정리 후 패널을 붙인다
+	// [LGLS 2026-09-17] 적재용기/제품정보 두 행(종전 CLib::AddTwoRowsBelow 런타임 생성), 작업상태 두 열 배치,
+	//   ERROR INFORMATION 끌어올림·창 높이 축소는 모두 Ecs.rc 에 최종 위치로 옮겼다(런타임 재배치 없음).
 
 	CRect rcCli; GetClientRect(&rcCli);
 	CRect rcWin; GetWindowRect(&rcWin);
@@ -1665,60 +1549,6 @@ void CRtvSkinDlg::OnBnClickedBtnRtvManual()
 	if (m_pDoc != NULL) m_pDoc->OnCommandRangeMainFrameMANUAL(ID_MANUAL_RTV);
 }
 
-// [LGLS 2026-09-03] 작업상태 영역 두 열 배치 (크레인 창과 동일, 사용자 요청)
-//   왼쪽 : 작업번호/작업구분/작업상태/적재용기/제품정보, 오른쪽 : 출발지/출발위치/도착지/도착위치
-//   항목/FORK1/명령 소그룹은 숨기고, RTV SUSPEND 상태 에디트도 명령 그룹과 함께 숨긴다.
-void CRtvSkinDlg::LglsRelayoutJobStatus()
-{
-	if (m_bJobStatusRelayout) return;
-	CWnd* pGrp   = GetDlgItem(IDC_GRP_RTV_JOB_STATUS);
-	CWnd* pLblNo = GetDlgItem(IDC_LBL_RTV_JOB_JOB_NO);
-	CWnd* pEdNo  = GetDlgItem(IDC_EDIT_RTV_JOB_JOB_NO);
-	CWnd* pLblTy = GetDlgItem(IDC_LBL_RTV_JOB_JOB_TYP);
-	if (pGrp == NULL || pLblNo == NULL || pEdNo == NULL || pLblTy == NULL) return;
-	m_bJobStatusRelayout = TRUE;
-
-	CRect rcGrp, rcLbl, rcEd, rcTy;
-	pGrp->GetWindowRect(&rcGrp);   ScreenToClient(&rcGrp);
-	pLblNo->GetWindowRect(&rcLbl); ScreenToClient(&rcLbl);
-	pEdNo->GetWindowRect(&rcEd);   ScreenToClient(&rcEd);
-	pLblTy->GetWindowRect(&rcTy);  ScreenToClient(&rcTy);
-	int nPitch = rcTy.top - rcLbl.top; if (nPitch <= 0) nPitch = rcLbl.Height() + 6;
-	int nGap   = rcEd.left - rcLbl.right;  if (nGap < 4) nGap = 6;
-	int nInnerL = rcGrp.left + 8, nInnerR = rcGrp.right - 8;
-	int nColW   = (nInnerR - nInnerL) / 2;
-	int nLblW   = rcLbl.Width();
-	int nEdH    = rcEd.Height();
-	int nTop0   = rcLbl.top;
-	int nLLbl = rcLbl.left;
-	int nLEd  = nLLbl + nLblW + nGap;
-	int nLEdW = (nInnerL + nColW - 4) - nLEd;
-	int nRLbl = nInnerL + nColW + 2;
-	int nREd  = nRLbl + nLblW + nGap;
-	int nREdW = nInnerR - nREd;
-	const int nLeftL[]  = { IDC_LBL_RTV_JOB_JOB_NO, IDC_LBL_RTV_JOB_JOB_TYP, IDC_LBL_RTV_JOB_JOB_STATUS, IDC_LGLS_RTV_LOT_LBL, IDC_LGLS_RTV_PRD_LBL };
-	const int nLeftV[]  = { IDC_EDIT_RTV_JOB_JOB_NO, IDC_CBX_RTV_JOB_JOB_TYP, IDC_CBX_RTV_JOB_JOB_STATUS, IDC_LGLS_RTV_LOT_VAL, IDC_LGLS_RTV_PRD_VAL };
-	const int nRightL[] = { IDC_LBL_RTV_JOB_START_POS, IDC_LBL_RTV_JOB_START_LOC, IDC_LBL_RTV_JOB_DEST_POS, IDC_LBL_RTV_JOB_DEST_LOC };
-	const int nRightV[] = { IDC_CBX_RTV_JOB_START_POS, IDC_EDT_RTV_JOB_START_LOC, IDC_CBX_RTV_JOB_DEST_POS, IDC_EDT_RTV_JOB_DEST_LOC };
-	int i;
-	for (i = 0; i < 5; i++)
-	{
-		CWnd* pL = GetDlgItem(nLeftL[i]); CWnd* pV = GetDlgItem(nLeftV[i]); int y = nTop0 + nPitch * i;
-		if (pL) pL->MoveWindow(nLLbl, y, nLblW, rcLbl.Height());
-		if (pV) pV->MoveWindow(nLEd,  y + (rcLbl.Height() - nEdH) / 2, nLEdW, nEdH);
-	}
-	for (i = 0; i < 4; i++)
-	{
-		CWnd* pL = GetDlgItem(nRightL[i]); CWnd* pV = GetDlgItem(nRightV[i]); int y = nTop0 + nPitch * i;
-		if (pL) pL->MoveWindow(nRLbl, y, nLblW, rcLbl.Height());
-		if (pV) pV->MoveWindow(nREd,  y + (rcLbl.Height() - nEdH) / 2, nREdW, nEdH);
-	}
-	// [LGLS 2026-09-17] 숨기던 항목/FORK1/명령 소그룹은 rc 에서 지웠다(사용자 지시).
-	int nNewBottom = nTop0 + nPitch * 5 + 6;
-	if (rcGrp.bottom > nNewBottom) { rcGrp.bottom = nNewBottom; pGrp->MoveWindow(rcGrp); }   // 창 축소는 CompactJobStatusArea 가 이어서
-	Invalidate();
-}
-
 // [LGLS 2026-09-12] 확대 패널 [쓰기] : 완료 Ack 를 운전원이 직접 켜고/끈다 (상황 A 구제).
 //   Client 는 PLC 에 직접 쓰지 않는다. RTV_DATA_LGLS 의 명령 컬럼에 "ACKW:..=1|0" 을 남기면
 //   WCS_TASK_CV 의 해당 스레드가 소비해 그 스레드가 쓴다 - 같은 Ack 워드를 만지는 다른 손이 없게 하고,
@@ -1784,17 +1614,14 @@ void CRtvSkinDlg::OnAckWrite(UINT nID)
 	m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), m_pRTV_DATA->V_ITN_LUGG_FK1, _T(""), _T(""), strLog);
 }
 
-// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → 명령 버튼을 4개/3개로 다시 쌓고 [확대] 를 표시/숨김.
+// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → [확대] 를 표시/숨김.
 //   창을 만들 때(RedrawImage)와 CEcsView 가 ini 저장을 감지했을 때 부른다. 숨길 때 패널이 펼쳐져 있으면 먼저 접는다.
-//   (일시정지 에디트·버튼은 명령 그룹 바닥에 붙어 있어 버튼 수가 바뀌어도 자리를 옮길 필요가 없다)
+//   [LGLS 2026-09-17] [확대] 는 rc 에서 명령 버튼 맨 아래에 있으므로 숨겨도 빈틈이 생기지 않는다(버튼 재배치 없음).
 void CRtvSkinDlg::ApplyZoomBtnIni()
 {
 	if (GetSafeHwnd() == NULL) return;
-	SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
 	BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
 	if (!bZoom && m_bVehExpanded) SetVehPanelExpanded(FALSE);
-	UINT nCol1[] = { IDC_LGLS_RTV_RESEND, IDC_BTN_RTV_COMPLETE, IDC_BTN_RTV_MANUAL, IDC_LGLS_RTV_ZOOM };
-	StackCommandButtons(this, IDC_GRP_FK_FK_STATUS_COMMAND, nCol1, bZoom ? 4 : 3, szL, 0, FALSE);
 	CWnd* pZ = GetDlgItem(IDC_LGLS_RTV_ZOOM);
 	if (pZ) pZ->ShowWindow(bZoom ? SW_SHOW : SW_HIDE);
 }

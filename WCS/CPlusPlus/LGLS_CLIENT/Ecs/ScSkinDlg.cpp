@@ -18,8 +18,6 @@ IMPLEMENT_DYNAMIC(CScSkinDlg, CSkinDialog)
 	CScSkinDlg::CScSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CScSkinDlg::IDD, pParent)
 {
-	m_bForkRowCompacted = FALSE;
-	m_bJobStatusRelayout = FALSE;   // [LGLS 2026-09-03]
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pDoc = pDoc;
@@ -108,11 +106,8 @@ BOOL CScSkinDlg::OnInitDialog()
 	InitializeFontManager(this);
 	SetFontNation((int)pEn);
 	CSkinDialog::SetFont(this->GetFont());
-	if( !m_bInitialized )
-	{	
-		RelocationControls();
-		m_bInitialized = TRUE;	
-	}
+	// [LGLS 2026-09-17] 컨트롤 위치·크기는 Ecs.rc 가 최종값이다(런타임 재배치 없음 - 리소스 뷰 = 실행 화면).
+	m_bInitialized = TRUE;
 
 	m_strScFork = _T("0");
 	m_brLedOn = ::CreateSolidBrush(RGB(0,200,0)); m_brLedOff = ::CreateSolidBrush(RGB(90,90,90)); m_brStatus = ::CreateSolidBrush(RGB(255,255,150));
@@ -121,7 +116,7 @@ BOOL CScSkinDlg::OnInitDialog()
 	// [LGLS] 모든 값 TextBox ReadOnly
 	int _scvRo[] = { IDC_EDT_SC_JOB_NO, IDC_EDT_SC_RC_MODE, IDC_EDT_SC_SC_MODE, IDC_EDT_SC_FORK_POS,
 		IDC_EDT_SC_JOB_STATUS, IDC_EDT_SC_RC_STATUS, IDC_EDT_SC_SC_STATUS,
-		IDC_EDT_SC_HORIZONTAL_POS, IDC_EDT_SC_VERTICAL_POS, IDC_EDT_SC_PROD_LOAD,
+		IDC_EDT_SC_HORIZONTAL_POS, IDC_EDT_SC_PROD_LOAD,
 		IDC_EDT_SC_JOB_START_LOC, IDC_EDT_SC_JOB_DEST_LOC, IDC_EDT_SC_JOB_JOB_NO };
 	for (int _i = 0; _i < sizeof(_scvRo)/sizeof(int); _i++)
 		SendDlgItemMessage(_scvRo[_i], EM_SETREADONLY, TRUE, 0);
@@ -252,11 +247,6 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("horizontaldrive"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_HORIZONTAL_POS, strValue);
-
-
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("verticaldrive"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_VERTICAL_POS, strValue);
 
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
@@ -412,32 +402,6 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 }
 
 
-// [LGLS 2026-08-13] 그룹박스 안 명령 버튼들을 스킨 비트맵 크기로 세로 정렬.
-//   rc 크기가 비트맵(110x27)보다 작으면 가장자리가 잘려 보이고 버튼마다 크기가 달라지므로
-//   전부 비트맵 크기로 맞춘다. 그룹 높이가 모자라면 그룹을 아래로 늘린다.
-static void StackCommandButtons(CWnd* pDlg, UINT nGrpId, const UINT* pIds, int nCnt, SIZE szL, int nGap, BOOL bBottom)
-{
-	CWnd* pGrp = pDlg->GetDlgItem(nGrpId);
-	if (pGrp == NULL || !::IsWindow(pGrp->m_hWnd)) return;
-	CRect rcGrp; pGrp->GetWindowRect(&rcGrp); pDlg->ScreenToClient(&rcGrp);
-	int nPitch = szL.cy + nGap;
-	int nNeed  = 13 + nCnt * nPitch - nGap + 5;
-	if (!bBottom && rcGrp.Height() < nNeed)
-	{
-		rcGrp.bottom = rcGrp.top + nNeed;
-		pGrp->MoveWindow(&rcGrp);
-	}
-	int x = rcGrp.left + (rcGrp.Width() - szL.cx) / 2;
-	int y = bBottom ? (rcGrp.bottom - 5 - (nCnt * nPitch - nGap)) : (rcGrp.top + 13);
-	for (int i = 0; i < nCnt; i++)
-	{
-		CWnd* pBtn = pDlg->GetDlgItem(pIds[i]);
-		if (pBtn == NULL || !::IsWindow(pBtn->m_hWnd)) continue;
-		pBtn->MoveWindow(x, y, szL.cx, szL.cy);
-		y += nPitch;
-	}
-}
-
 void CScSkinDlg::RedrawImage()
 {
 	// [LGLS 2026-08-05] 여기 있던 return; 때문에 버튼 스킨/아이콘 지정이 통째로 죽어 있었다.
@@ -488,47 +452,13 @@ void CScSkinDlg::RedrawImage()
 	m_btnScAllSuspend.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("save"), strExtension)), NULL, 5, 5);
 
 
-	// [LGLS 2026-08-13] 명령 버튼 크기 통일(비트맵 110x27) + 세로 재배치
-	{
-		SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
-		// [LGLS 2026-09-03] 사용자 지시 : 지시 재전송 / 지시 삭제 / 지시 완료 / 확대 네 개만 위에서부터 남기고
-		//   나머지 명령 버튼은 숨긴다.
-		// [LGLS 2026-09-17] 항상 숨겨 두던 컨트롤(비상정지/액티브/정지/에러해제/삭제/복귀명령/강제배출/
-		//   이중입고/확인/취소/BCR/소그룹 3개)은 rc 와 코드에서 지웠다(사용자 지시). 숨기는 루프도 없앴다.
-		// [LGLS 2026-09-03] 강제완료와 확대 사이에 [수동지시] - MANUAL>크레인 창을 여는 두 번째 경로
-		{ CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL); if (pM) pM->ShowWindow(SW_SHOW); }
-		// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
-		// [LGLS 2026-09-12] ZOOM_BTN 판단과 명령 버튼 쌓기는 ApplyZoomBtnIni() 로 - ini 저장 감지 시 같은 함수로 재적용
-		// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - 설비 인터페이스에 반송지시 취소 신호가 없다.
-		//   구 ECS 운영 DB(TB_OBSERVABLE) 기준 S/C·RGV 의 ECS→PLC 쓰기 태그는
-		//   FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack 뿐이고 취소·삭제 태그가 없다.
-		//   구 ECS 도 IO_TRANSFER_REQUEST 를 true 로만 썼고 false 로 내린 곳이 한 군데도 없다.
-		//   시나리오 규약(PPT 슬라이드6)도 "Cmd Strobe Reset - Reseted By PLC When Cmd Start" 라
-		//   PLC 가 지시를 집어든 뒤에는 되돌릴 방법이 없다.
-		ApplyZoomBtnIni();
-		// [LGLS 2026-09-09] ★정지 버튼 3개를 다시 보이게 한다★ (사용자 요청)
-		//   입고 정지 / 출고 정지 / 작업금지 - 핸들러(OnBnClickedBtnCvStoSuspend 등)는 원래 있었고
-		//   여기서 숨기기만 하고 있었다. [입출고상태] 그룹 안에 세로로 세운다.
-		//   [입출고상태] 값 칸 바로 아래에서부터 세로로 세운다(그룹 아래쪽에 몰리지 않게).
-		UINT nSus[] = { IDC_BTN_SC_STO_SUSPEND, IDC_BTN_SC_RET_SUSPEND, IDC_BTN_SC_ALL_SUSPEND };
-		CWnd* pGrpSus = GetDlgItem(IDC_GRP_SC_SUSPEND);
-		CWnd* pEdtSus = GetDlgItem(IDC_EDT_SC_JOB_SC_SUSPEND);
-		if (pGrpSus != NULL && pEdtSus != NULL)
-		{
-			CRect rcG, rcE;
-			pGrpSus->GetWindowRect(&rcG); ScreenToClient(&rcG);
-			pEdtSus->GetWindowRect(&rcE); ScreenToClient(&rcE);
-			int xs = rcG.left + (rcG.Width() - szL.cx) / 2;
-			int ys = rcE.bottom + 6;
-			for (int s = 0; s < 3; s++)
-			{
-				CWnd* pB = GetDlgItem(nSus[s]);
-				if (pB == NULL) continue;
-				pB->MoveWindow(xs, ys, szL.cx, szL.cy);
-				ys += szL.cy + 1;
-			}
-		}
-	}
+	// [LGLS 2026-09-17] 명령 버튼(지시 재전송/강제완료/수동지시/확대)과 정지 버튼 3개의 위치·크기(비트맵 110x27)는
+	//   Ecs.rc 에 최종값으로 넣었다. 종전의 런타임 세로 쌓기(StackCommandButtons)와 수동지시 표시는 없앴다.
+	// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - 설비 인터페이스에 반송지시 취소 신호가 없다.
+	//   구 ECS 운영 DB(TB_OBSERVABLE) 기준 S/C·RGV 의 ECS→PLC 쓰기 태그는
+	//   FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack 뿐이고 취소·삭제 태그가 없다.
+	// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
+	ApplyZoomBtnIni();
 }
 void CScSkinDlg::OnSize(UINT nType, int cx, int cy)
 {
@@ -536,8 +466,6 @@ void CScSkinDlg::OnSize(UINT nType, int cx, int cy)
 
 	// TODO: Add your message handler code here
 
-	if( m_bInitialized )
-		RelocationControls();
 }
 HCURSOR CScSkinDlg::OnQueryDragIcon()
 {
@@ -547,11 +475,6 @@ HCURSOR CScSkinDlg::OnQueryDragIcon()
 void CScSkinDlg::OnPaint()
 {
 	CSkinDialog::OnPaint();
-}
-
-void CScSkinDlg::RelocationControls()
-{
-	return;
 }
 
 
@@ -611,7 +534,7 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 		+ N + _T("(ONLINE_MODE_RD,'0') AS ONL, ") + N + _T("(AUTO_MODE_RD,'0') AS AUT, ")
 		+ N + _T("(ACTIVE_MODE_RD,'0') AS ACT, ") + N + _T("(ERR_CODE_RD,'0000') AS ERR, ")
 		+ N + _T("(FORKPOS_FK1_RD,'0') AS FKP, ")
-		+ N + _T("(POS_H_RD,'0') AS PH, ")  + N + _T("(POS_V_RD,'0') AS PV, ")
+		+ N + _T("(POS_H_RD,'0') AS PH, ")	// [LGLS 2026-09-17] 수직주행(POS_V_RD) 제거 - 현장 값 없음(사용자 지시)
 		+ N + _T("(ITN_LUGG_FK1,'0') AS ITN, ") + N + _T("(LUGG_NO_FK1_OD,'0') AS LOD, ")
 		+ N + _T("(COMPLETE_RD,'0') AS CMPRD ")
 		+ _T("FROM SC_DATA_LGLS WHERE WH_TYP='") + m_pDoc->m_WH_TYP + _T("' AND PLC_NO='") + m_pSC_DATA->K_PLC_NO + _T("' AND MC_NO='") + m_pSC_DATA->K_SC_NO + _T("'");
@@ -693,7 +616,6 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 			               : (fkp == _T("2")) ? _T("우출") : fkp;
 			SetDlgItemText(IDC_EDT_SC_FORK_POS,      fkpTxt);
 			SetDlgItemText(IDC_EDT_SC_HORIZONTAL_POS, pRsw->GetItem(_T("PH")));
-			SetDlgItemText(IDC_EDT_SC_VERTICAL_POS,   pRsw->GetItem(_T("PV")));
 			SetDlgItemText(IDC_EDT_SC_JOB_SC_ERR_CODE, CLib::ErrCodeText(m_pDoc, CLib::ScErrTyp(), err));	// [LGLS 2026-09-17] 코드 + 알람 문구
 			SetDlgItemText(IDC_EDT_SC_JOB_SC_SUSPEND,
 				(sus == _T("1")) ? _T("입고정지") : (sus == _T("2")) ? _T("출고정지") : (sus == _T("3")) ? _T("전체정지") : _T("-"));
@@ -2003,89 +1925,6 @@ HBRUSH CScSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 //   그 컨트롤들이 하나도 없었다(리소스 편집 미완). SetDlgItemText/GetDlgItem 은 없는 ID 에 대해
 //   조용히 실패하므로 "대화상자에 값이 하나도 안 나오는" 증상이 됐다.
 //   → rc 를 손대는 대신 동일한 ID 로 컨트롤을 직접 만들어 기존 표시 코드가 그대로 동작하게 한다.
-// [LGLS 2026-08-01] SC 상태 항목에서 "포크 상태" 행을 없애고 아래 행(수직주행/수평주행)을 한 칸 끌어올린다.
-//   rc 를 고치지 않고 런타임 좌표로 처리한다(리소스 인코딩 파손 회피).
-void CScSkinDlg::CompactForkStatusRow()
-{
-	// [LGLS 2026-09-02] 호기 전환 재구성 때마다 다시 호출되면 승강/주행 행이 한 칸씩 더 올라가
-	//   서로 겹쳤다("그래도 겹침"). 창 생애 동안 1회만 수행한다.
-	if (m_bForkRowCompacted) return;
-	m_bForkRowCompacted = TRUE;
-	// [LGLS 2026-08-04] 포크상태 행은 리소스에서 삭제했다. 그 자리(빈 한 행)만큼
-	//   아래 행(수직주행/수평주행)을 위로 당긴다. 행 높이는 화물유무->포크위치 간격으로 구한다.
-	CWnd* pLblPl = GetDlgItem(IDC_LBL_SC_PROD_LOAD);		// 화물유무 (윗 행)
-	CWnd* pLblFp = GetDlgItem(IDC_LBL_SC_FORK_POS);			// 포크위치 (기준 행)
-	if (pLblPl == NULL || pLblFp == NULL) return;
-
-	CRect rcPl, rcFp;
-	pLblPl->GetWindowRect(&rcPl); ScreenToClient(&rcPl);
-	pLblFp->GetWindowRect(&rcFp); ScreenToClient(&rcFp);
-
-	int nPitch = rcFp.top - rcPl.top;						// 한 행 높이
-	if (nPitch <= 0) return;
-
-	// [LGLS 2026-09-08] ★한 칸 당기기를 없앴다★ - 이제 Ecs.rc 에 최종 위치가 그대로 들어 있다.
-	//   (포크상태 행은 리소스에서 이미 지웠고, 아래 행도 rc 좌표가 최종값이다)
-	//   런타임에서 다시 옮기면 rc 를 고칠 때마다 두 번 움직여 어긋난다.
-	(void)nPitch;
-
-	// [LGLS 2026-09-08] 행 간격은 rc 에서 맞췄다. 아래 함수는 쓰지 않는다.
-	//   위쪽은 13DLU, 여기는 16DLU 라 눈에 띄게 달랐다.
-	//   ★rc 는 손대지 않는다★ - 이 대화상자는 rc 좌표를 기준으로 런타임 재배치를 하는 곳이
-	//   여럿(CompactForkStatusRow / AddTwoRowsBelow / LglsRelayoutJobStatus)이라,
-	//   rc 를 바꾸면 그 계산이 전부 어긋난다(적재용기·제품정보 행이 사라지는 것을 확인했다).
-	//LglsMatchRowPitch();	// rc 에서 맞췄으므로 사용하지 않는다
-}
-
-// [LGLS 2026-09-08] 위쪽 [SC상태] 항목 간격을 기준으로 아래 두 열의 행 간격을 다시 잡는다.
-void CScSkinDlg::LglsMatchRowPitch()
-{
-	CWnd* pR1 = GetDlgItem(IDC_LBL_SC_JOB_NO);
-	CWnd* pR2 = GetDlgItem(IDC_LBL_SC_JOB_TYP);
-	if (pR1 == NULL || pR2 == NULL) return;
-	CRect r1, r2;
-	pR1->GetWindowRect(&r1); ScreenToClient(&r1);
-	pR2->GetWindowRect(&r2); ScreenToClient(&r2);
-	int nWant = r2.top - r1.top;				// 기준 간격(px)
-	if (nWant <= 0) return;
-
-	const int nColL[] = { IDC_LBL_SC_RC_MODE, IDC_LBL_SC_SC_MODE, IDC_LBL_SC_RC_STATUS,
-	                      IDC_LBL_SC_SC_STATUS, IDC_LBL_SC_JOB_STATUS };
-	const int nColLV[]= { IDC_EDT_SC_RC_MODE, IDC_EDT_SC_SC_MODE, IDC_EDT_SC_RC_STATUS,
-	                      IDC_EDT_SC_SC_STATUS, IDC_EDT_SC_JOB_STATUS };
-	const int nColR[] = { IDC_LBL_SC_PROD_LOAD, IDC_LBL_SC_FORK_POS,
-	                      IDC_LBL_SC_VERTICAL_POS, IDC_LBL_SC_HORIZONTAL_POS };
-	const int nColRV[]= { IDC_EDT_SC_PROD_LOAD, IDC_EDT_SC_FORK_POS,
-	                      IDC_EDT_SC_VERTICAL_POS, IDC_EDT_SC_HORIZONTAL_POS };
-
-	int i;
-	for (i = 0; i < 5; i++) LglsPlaceRow(nColL[i], nColLV[i], nColL[0], nWant, i);
-	for (i = 0; i < 4; i++) LglsPlaceRow(nColR[i], nColRV[i], nColR[0], nWant, i);
-}
-
-// 첫 행(nIdTop) 기준으로 nIndex 번째 행을 nPitch 간격에 놓는다. x/폭/높이는 그대로.
-void CScSkinDlg::LglsPlaceRow(int nIdLbl, int nIdVal, int nIdTop, int nPitch, int nIndex)
-{
-	CWnd* pTop = GetDlgItem(nIdTop);
-	if (pTop == NULL) return;
-	CRect rcTop;
-	pTop->GetWindowRect(&rcTop); ScreenToClient(&rcTop);
-	int nY = rcTop.top + nPitch * nIndex;
-
-	int ids[2]; ids[0] = nIdLbl; ids[1] = nIdVal;
-	for (int k = 0; k < 2; k++)
-	{
-		CWnd* p = GetDlgItem(ids[k]);
-		if (p == NULL) continue;
-		CRect rc;
-		p->GetWindowRect(&rc); ScreenToClient(&rc);
-		int nH = rc.Height();
-		rc.top = nY + (rcTop.Height() - nH) / 2;
-		rc.bottom = rc.top + nH;
-		p->MoveWindow(rc);
-	}
-}
-
 // [LGLS 2026-09-01] 확대 패널 재빌드 - 호기 전환 시 주소 라벨을 현재 호기 것으로.
 void CScSkinDlg::RebuildVehStatusPanel()
 {
@@ -2116,14 +1955,12 @@ void CScSkinDlg::BuildVehStatusPanel()
 		m_arVehCtrl.RemoveAll();
 	}
 
-	CompactForkStatusRow();		// [LGLS] 포크 상태 행 제거		// 1회만 생성
 
 	// [LGLS 2026-08-01] 도착위치 아래에 [적재 용기](JOB_MST.LOT_NO) / [제품 정보](JOB_MST.PRODUCT_ID) 두 행 추가
 	// [LGLS 2026-09-08] 적재 용기 / 제품 정보는 이제 Ecs.rc 에 실물 컨트롤로 들어 있다.
 	//   런타임 추가(CLib::AddTwoRowsBelow)는 rc 좌표를 기준으로 계산해서, rc 를 고칠 때마다
 	//   두 행이 창 밖으로 밀려 사라졌다. rc 를 기준으로 삼기로 했으므로 호출하지 않는다.
 
-	LglsRelayoutJobStatus();   // [LGLS 2026-09-03] 작업상태 두 열 배치(1회)
 
 	CRect rcCli; GetClientRect(&rcCli);
 	CRect rcWin; GetWindowRect(&rcWin);
@@ -2435,19 +2272,6 @@ void CScSkinDlg::OnBnClickedScvOk()
 	delete this;
 }
 
-// [LGLS 2026-09-03] 작업상태 영역 두 열 배치 (사용자 요청)
-//   왼쪽 열 : 작업번호 / 작업구분 / 작업상태 / 적재용기 / 제품정보
-//   오른쪽 열: 출발지 / 출발위치 / 도착지 / 도착위치
-//   [명령] 그룹(작업상태 쪽)은 지우고 항목/값 소그룹도 숨긴다. 값 칸 폭은 열 폭에 맞춘다.
-void CScSkinDlg::LglsRelayoutJobStatus()
-{
-	// [LGLS 2026-09-09] ★두 열 배치를 Ecs.rc 로 옮겼다★ (사용자 지시)
-	//   종전에는 여기서 런타임에 좌표를 다시 잡고 창까지 줄였다. rc 를 고치면
-	//   그 계산과 이중으로 움직여 어긋나므로, rc 를 유일한 기준으로 삼는다.
-	//   쓰지 않는 소그룹(항목/값/명령)도 rc 에서 NOT WS_VISIBLE 로 감췄다.
-	m_bJobStatusRelayout = TRUE;
-}
-
 // [LGLS 2026-09-12] 확대 패널 [쓰기] : 완료 Ack 를 운전원이 직접 켜고/끈다 (상황 A 구제).
 //   Client 는 PLC 에 직접 쓰지 않는다. SC_DATA_LGLS 의 명령 컬럼에 "ACKW:..=1|0" 을 남기면
 //   WCS_TASK_CV 의 해당 스레드가 소비해 그 스레드가 쓴다 - 같은 Ack 워드를 만지는 다른 손이 없게 하고,
@@ -2513,16 +2337,14 @@ void CScSkinDlg::OnAckWrite(UINT nID)
 	m_pDoc->GetQueryInsertClientLog(_T("CScSkinDlg"), m_pSC_DATA->V_ITN_LUGG_FK1, _T(""), _T(""), strLog);
 }
 
-// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → 명령 버튼을 4개/3개로 다시 쌓고 [확대] 를 표시/숨김.
+// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → [확대] 를 표시/숨김.
 //   창을 만들 때(RedrawImage)와 CEcsView 가 ini 저장을 감지했을 때 부른다. 숨길 때 패널이 펼쳐져 있으면 먼저 접는다.
+//   [LGLS 2026-09-17] [확대] 는 rc 에서 명령 버튼 맨 아래에 있으므로 숨겨도 빈틈이 생기지 않는다(버튼 재배치 없음).
 void CScSkinDlg::ApplyZoomBtnIni()
 {
 	if (GetSafeHwnd() == NULL) return;
-	SIZE szL = Global.GetBitmapSize(IDX_BMP_BTN_BASE_LARGE);
 	BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
 	if (!bZoom && m_bVehExpanded) SetVehPanelExpanded(FALSE);
-	UINT nCol1[] = { IDC_LGLS_SC_RESEND, IDC_BTN_SC_CONFIRM, IDC_BTN_SC_MANUAL, IDC_LGLS_SC_ZOOM };
-	StackCommandButtons(this, IDC_GRP_SC_SC_STATUS_COMMAND, nCol1, bZoom ? 4 : 3, szL, 1, FALSE);
 	CWnd* pZ = GetDlgItem(IDC_LGLS_SC_ZOOM);
 	if (pZ) pZ->ShowWindow(bZoom ? SW_SHOW : SW_HIDE);
 }
