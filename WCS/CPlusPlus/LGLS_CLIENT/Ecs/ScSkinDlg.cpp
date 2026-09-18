@@ -2347,4 +2347,10 @@ void CScSkinDlg::ApplyZoomBtnIni()
 	if (!bZoom && m_bVehExpanded) SetVehPanelExpanded(FALSE);
 	CWnd* pZ = GetDlgItem(IDC_LGLS_SC_ZOOM);
 	if (pZ) pZ->ShowWindow(bZoom ? SW_SHOW : SW_HIDE);
+
+	// [LGLS 2026-09-18] [수동지시] 표시 여부 - Ecs.ini [MENU] SC_MANUAL_BTN=1/0 (기본 1)
+	//   숨겨도 다른 버튼은 옮기지 않는다(자리는 rc 가 정한다). 그 자리는 빈칸으로 남는다.
+	BOOL bManual = (::GetPrivateProfileInt(_T("MENU"), _T("SC_MANUAL_BTN"), 1, ECS_INI_FILE) != 0);
+	CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL);
+	if (pM) pM->ShowWindow(bManual ? SW_SHOW : SW_HIDE);
 }
