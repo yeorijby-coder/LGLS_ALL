@@ -627,6 +627,18 @@ void CMainFrame::AddCategoryWCS()
 }
 	
 
+// [LGLS 2026-09-18] 리본 패널에서 명령 ID 로 버튼 찾기 (ini 로 숨긴 버튼이 있어 순번으로 찾으면 안 된다)
+static CMFCRibbonButton* PfFindRibbonBtn(CMFCRibbonPanel* pPanel, UINT nID)
+{
+	if (pPanel == NULL) return NULL;
+	for (int i = 0; i < pPanel->GetCount(); i++)
+	{
+		CMFCRibbonBaseElement* pEl = pPanel->GetElement(i);
+		if (pEl != NULL && pEl->GetID() == nID) return (CMFCRibbonButton*)pEl;
+	}
+	return NULL;
+}
+
 void CMainFrame::AddCategoryMANUAL()
 {
 	TCHAR chrFileName[500];
@@ -645,20 +657,28 @@ void CMainFrame::AddCategoryMANUAL()
 	pBtnManualJob->SetAlwaysLargeImage();
 	pPanelManual->Add(pBtnManualJob);
 
-	CMFCRibbonButton* pBtnManualSc = new CMFCRibbonButton(ID_MANUAL_SC, _T("SC"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc"), strExtension)), TRUE);
-	TipReg(pBtnManualSc, GetConcatPath(strAppPath, _T("sc"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-	pBtnManualSc->SetAlwaysLargeImage();
-	pPanelManual->Add(pBtnManualSc);
+	// [LGLS 2026-09-18] 크레인 수동지시 - Ecs.ini [MENU] SC_MANUAL_BTN=1/0 (설비 상태창 [수동지시] 와 같은 키, 기본 1)
+	if (::GetPrivateProfileInt(_T("MENU"), _T("SC_MANUAL_BTN"), 1, ECS_INI_FILE) != 0)
+	{
+		CMFCRibbonButton* pBtnManualSc = new CMFCRibbonButton(ID_MANUAL_SC, _T("SC"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc"), strExtension)), TRUE);
+		TipReg(pBtnManualSc, GetConcatPath(strAppPath, _T("sc"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
+		pBtnManualSc->SetAlwaysLargeImage();
+		pPanelManual->Add(pBtnManualSc);
+	}
 
 	//[LGLS 공PLT→RTV 대체] EMPTY 버튼 제거
 	//CMFCRibbonButton* pBtnManualEmpty = new CMFCRibbonButton(IDD_MANUAL_EMPTY, _T("EMPTY"), HICONFromPATH(GetConcatPath(strAppPath, _T("empty"), strExtension)), TRUE);
 	//pBtnManualEmpty->SetAlwaysLargeImage();
 	//pPanelManual->Add(pBtnManualEmpty);
 
-	CMFCRibbonButton* pBtnManualRtv = new CMFCRibbonButton(ID_MANUAL_RTV, _T("RTV"), HICONFromPATH(GetConcatPath(strAppPath, _T("rtv"), strExtension)), TRUE);
-	TipReg(pBtnManualRtv, GetConcatPath(strAppPath, _T("rtv"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-	pBtnManualRtv->SetAlwaysLargeImage();
-	pPanelManual->Add(pBtnManualRtv);
+	// [LGLS 2026-09-18] RGV 수동지시 - Ecs.ini [MENU] RTV_MANUAL_BTN=1/0 (기본 1)
+	if (::GetPrivateProfileInt(_T("MENU"), _T("RTV_MANUAL_BTN"), 1, ECS_INI_FILE) != 0)
+	{
+		CMFCRibbonButton* pBtnManualRtv = new CMFCRibbonButton(ID_MANUAL_RTV, _T("RTV"), HICONFromPATH(GetConcatPath(strAppPath, _T("rtv"), strExtension)), TRUE);
+		TipReg(pBtnManualRtv, GetConcatPath(strAppPath, _T("rtv"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
+		pBtnManualRtv->SetAlwaysLargeImage();
+		pPanelManual->Add(pBtnManualRtv);
+	}
 
 	// [LGLS 2026-08-13] 반자동 TEST 그룹 - Ecs.ini [MENU] SEMITEST_MENU=1/0 으로 표시 선택(기본 1=표시)
 	if (::GetPrivateProfileInt(_T("MENU"), _T("SEMITEST_MENU"), 1, ECS_INI_FILE) != 0)
@@ -800,12 +820,14 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 	pPanel_Wrap_Manual->SetCenterColumnVert();
 	pPanel_Wrap_Manual->SetJustifyColumns();
 	pPanel_Wrap_Manual->SetName(CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang));
-	CMFCRibbonButton* pBtnManualJob = (CMFCRibbonButton*)pPanel_Wrap_Manual->GetElement(0);
-	pBtnManualJob->SetText(CLib::GetIniStringFromPath(strFullPath, _T("job"), (int)penLang));
-	CMFCRibbonButton* pBtnManualSc = (CMFCRibbonButton*)pPanel_Wrap_Manual->GetElement(1);
-	pBtnManualSc->SetText(CLib::GetIniStringFromPath(strFullPath, _T("sc"), (int)penLang));
-	CMFCRibbonButton* pBtnManualRtv = (CMFCRibbonButton*)pPanel_Wrap_Manual->GetElement(2);
-	pBtnManualRtv->SetText(CLib::GetIniStringFromPath(strFullPath, _T("rtv"), (int)penLang));
+	// [LGLS 2026-09-18] 버튼을 ini 로 숨길 수 있으므로 순번이 아니라 명령 ID 로 찾는다.
+	//   (SC_MANUAL_BTN / RTV_MANUAL_BTN = 0 이면 그 버튼이 없어 GetElement(1)/(2) 가 빈 값이었다)
+	CMFCRibbonButton* pBtnManualJob = PfFindRibbonBtn(pPanel_Wrap_Manual, ID_MANUAL_JOB);
+	if (pBtnManualJob) pBtnManualJob->SetText(CLib::GetIniStringFromPath(strFullPath, _T("job"), (int)penLang));
+	CMFCRibbonButton* pBtnManualSc = PfFindRibbonBtn(pPanel_Wrap_Manual, ID_MANUAL_SC);
+	if (pBtnManualSc) pBtnManualSc->SetText(CLib::GetIniStringFromPath(strFullPath, _T("sc"), (int)penLang));
+	CMFCRibbonButton* pBtnManualRtv = PfFindRibbonBtn(pPanel_Wrap_Manual, ID_MANUAL_RTV);
+	if (pBtnManualRtv) pBtnManualRtv->SetText(CLib::GetIniStringFromPath(strFullPath, _T("rtv"), (int)penLang));
 	//[공PLT→RTV] EMPTY 라벨 제거
 
 	strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_log\\"), _T("log"), strExtension);

@@ -76,6 +76,7 @@ public:
 
 	CComboBoxWrapper m_cbxMesLogDirection;
 	CComboBoxWrapper m_cbxMesLogHostCmd;
+	CButton m_chkMesNoStatus;	// [LGLS 2026-09-18] 상태 보고(S) 제외 체크박스
 	CStaticTransparent m_lblMesLogDirection;
 	CStaticTransparent m_lblMesLogHostCmd;
 

@@ -91,6 +91,7 @@ void CLogMesSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CBX_MES_JOB_DEFINE, m_cbxJobDefine);
 	DDX_Control(pDX, IDC_LBL_MES_LUGG_NO, m_lblHostLuggNo);
 	DDX_Control(pDX, IDC_EDT_MES_LUGG_NO, m_edtHostLuggNo);
+	DDX_Control(pDX, IDC_CHK_MES_NO_STATUS, m_chkMesNoStatus);	// [LGLS 2026-09-18]
 	DDX_Control(pDX, IDC_LBL_MES_STN_NO, m_lblStnNo);
 	DDX_Control(pDX, IDC_EDT_MES_STN_NO, m_edtStnNo);
 }
@@ -726,6 +727,12 @@ CString CLogMesSkinDlg::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 		strSql += CRLF + _T("    AND ( SUBSTRING(HIL.MESSAGE,19,4) = ") + CLib::Quot(strLuggNo);
 		strSql += CRLF + _T("       OR SUBSTRING(HIL.MESSAGE,21,4) = ") + CLib::Quot(strLuggNo);
 		strSql += CRLF + _T("       OR ") + m_pDoc->NVL + _T("(HIL.LUGG_NO,'') = ") + CLib::Quot(strLuggNo) + _T(" )");
+	}
+
+	// [LGLS 2026-09-18] 상태 보고(S) 제외 - 30초마다 올라오는 S 전문을 빼고 본다(사용자 요청)
+	if (m_chkMesNoStatus.GetSafeHwnd() != NULL && m_chkMesNoStatus.GetCheck() == BST_CHECKED)
+	{
+		strSql += CRLF + _T("    AND ") + m_pDoc->NVL + _T("(HIL.HOST_CMD,'') <> 'S'");
 	}
 
 	if(strStnNo != _T(""))
