@@ -3131,6 +3131,7 @@
 #define IDC_PI_BTN_ABORT                2366
 #define IDC_GRP_FK_FK_STATUS_ITEM4      2367
 #define IDC_GRP_FK_FK_STATUS_RTV2       2368
+#define IDC_CHK_MES_NO_STATUS           2369
 #define IDC_CUSTOM1                     2396
 #define IDC_STATIC_SPREAD               2398
 #define IDC_PI_CMD_BASE                 2400
@@ -3510,7 +3511,6 @@
 
 // Next default values for new objects
 // 
-#define IDC_CHK_MES_NO_STATUS           2369
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
