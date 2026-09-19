@@ -55,7 +55,7 @@ END_MESSAGE_MAP()
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [LGLS 2026-09-13] 메인 화면 새 배치 (Ecs.ini [MENU] MAIN_UI=2) - 사용자 지시 1안
+// [LGLS 2026-09-13] 메인 화면 새 배치 - 사용자 지시 1안 (2026-09-19 MAIN_UI=2 확정, 키 삭제 - 옛 배치 분기 없음)
 //   종전 범례 표(69칸)가 화면 왼쪽 절반을 먹어 지도로 눈이 가지 않았다.
 //   그 자리를 위에서부터 [통신 상태] [범례] [작업정보] 로 나눈다. 지도는 손대지 않는다.
 //   세 칸의 경계에 손잡이를 두어 마우스로 크기를 조절하고, 놓은 크기는 Ecs.ini 에 남긴다.
@@ -395,11 +395,10 @@ void CLglsSplitBar::OnLButtonUp(UINT nFlags, CPoint point)
 	if (m_pView != NULL) m_pView->SaveUiSizes();
 }
 
-// 왼쪽 고정 칸(통신 / 범례 / 설비반송 / 작업정보)과 손잡이 4개를 만든다. Ecs.ini [MENU] MAIN_UI=2 일 때만.
+// 왼쪽 고정 칸(통신 / 범례 / 설비반송 / 작업정보)과 손잡이 4개를 만든다. (OnInitialUpdate 에서 1회)
 void CEcsView::CreateMainUi2()
 {
-	m_nMainUi = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI"), 1, ECS_INI_FILE);
-	if (m_nMainUi != 2) return;
+	m_bUi2Ready = TRUE;	// [LGLS 2026-09-19] MAIN_UI=2 확정 - 이 뒤부터 배치/손잡이가 동작한다
 	CEcsDoc* pDoc = GetDocument();
 	if (pDoc == NULL) return;
 
@@ -467,7 +466,7 @@ void CEcsView::CreateMainUi2()
 // 손잡이를 끌면 그 칸만 늘리고 나머지는 따라 움직인다.
 void CEcsView::OnUiDrag(int nWhich, int nDelta)
 {
-	if (m_nMainUi != 2) return;
+	if (!m_bUi2Ready) return;	// 왼쪽 칸을 만들기 전(OnInitialUpdate 전)
 	CRect rc;
 	GetClientRect(&rc);
 	if (nWhich == 0)
@@ -494,7 +493,7 @@ void CEcsView::OnUiDrag(int nWhich, int nDelta)
 
 void CEcsView::SaveUiSizes()
 {
-	if (m_nMainUi != 2) return;
+	if (!m_bUi2Ready) return;	// 왼쪽 칸을 만들기 전(OnInitialUpdate 전)
 	CString s;
 	s.Format(_T("%d"), m_nUiLeftW); ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_LEFT_W"), s, ECS_INI_FILE);
 	s.Format(_T("%d"), m_nUiCommH); ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_COMM_H"), s, ECS_INI_FILE);
@@ -521,7 +520,7 @@ void CEcsView::RelayoutMap()
 // 왼쪽 칸의 기본 폭은 종전 범례가 쓰던 만큼(격자 42칸 중 19칸)이다.
 void CEcsView::LayoutMainUi2()
 {
-	if (m_nMainUi != 2) return;
+	if (!m_bUi2Ready) return;	// 왼쪽 칸을 만들기 전(OnInitialUpdate 전)
 	CRect rc;
 	GetClientRect(&rc);
 	if (rc.Width() < 300 || rc.Height() < 300) return;
@@ -579,8 +578,8 @@ CEcsView::CEcsView()
 	: CFormView(CEcsView::IDD)
 {
 	m_ullIniWriteTime = 0; m_ullIniPendingTime = 0; m_nIniZoomBtn = -1;	// [LGLS 2026-09-12] ini 핫 리로드
-	// [LGLS 2026-09-13] 메인 화면 새 배치 (MAIN_UI=2)
-	m_nMainUi = 1; m_nUiLeftW = 0; m_nUiCommH = 0; m_nUiLegH = 0;
+	// [LGLS 2026-09-13] 메인 화면 새 배치 (MAIN_UI=2 확정)
+	m_bUi2Ready = FALSE; m_nUiLeftW = 0; m_nUiCommH = 0; m_nUiLegH = 0;
 	m_nUiVehH = 0;
 	m_pCommBar = NULL; m_pLegBar = NULL; m_pVehFixed = NULL; m_pJobFixed = NULL;
 	m_pSplitV = NULL; m_pSplitH1 = NULL; m_pSplitH2 = NULL; m_pSplitH3 = NULL;
@@ -705,7 +704,7 @@ void CEcsView::OnInitialUpdate()
 
 	pDoc->UpdateRibbonLang();
 	::SetTimer(this->m_hWnd, 1000, NULL, NULL);
-	CreateMainUi2();		// [LGLS 2026-09-13] MAIN_UI=2 이면 왼쪽 고정 칸을 만든다
+	CreateMainUi2();		// [LGLS 2026-09-13] 왼쪽 고정 칸을 만든다 (MAIN_UI=2 확정)
 	Invalidate(TRUE);
 }
 
@@ -1407,20 +1406,6 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			CTrackInfo* pTrackInfo = pDoc->GetTrackInfoNew(strEqpKey);
 			if(pTrackInfo == NULL){ return 0; };
 
-			// [LGLS 2026-09-01] 판넬 모드 : 상세정보 판넬 CV 탭으로 전환(대화상자 대신)
-			{
-				CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
-				if (pFrame != NULL && pFrame->m_bUiModePanel && pFrame->m_bPanelBarsCreated
-					&& pFrame->m_InfoPane.IsVisible())
-				{
-					CString strMcNo = strEqpKey;
-					if (pTrackInfo->m_pCV_DATA != NULL) strMcNo = pTrackInfo->m_pCV_DATA->V_MC_NO;
-					pFrame->m_PanelInfoDlg.SetEquip(0 /*TAB_CV*/, strMcNo);
-					// [LGLS 2026-09-10] 판넬만 바꾸고 끝내지 않는다.
-					//   판넬 보기가 기본이 되면서 대화상자를 쓸 길이 막혔다는 지적.
-					//   판넬은 그대로 따라가고, 아래로 내려가 대화상자도 띄운다.
-				}
-			}
 			if (pDoc->m_pCvSkinDlg == NULL)
 			{
 
@@ -1482,18 +1467,6 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 
-			// [LGLS 2026-09-01] 판넬 모드 : 상세정보 판넬 SC 탭으로 전환
-			{
-				CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
-				if (pFrame != NULL && pFrame->m_bUiModePanel && pFrame->m_bPanelBarsCreated
-					&& pFrame->m_InfoPane.IsVisible())
-				{
-					pFrame->m_PanelInfoDlg.SetEquip(1 /*TAB_SC*/, strEqpKey);
-					// [LGLS 2026-09-10] 판넬만 바꾸고 끝내지 않는다.
-					//   판넬 보기가 기본이 되면서 대화상자를 쓸 길이 막혔다는 지적.
-					//   판넬은 그대로 따라가고, 아래로 내려가 대화상자도 띄운다.
-				}
-			}
 			if (pDoc->m_pScSkinDlg == NULL)
 			{
 				if (!pDoc->Permission(_T("CScSkinDlg"), SEL_YN))
@@ -1546,18 +1519,6 @@ LRESULT CEcsView::OnControlClick(WPARAM wParam, LPARAM lParam)
 			CRTV_DATA* pRTV_DATA = pDoc->GetRTV_DATA(strEqpKey);
 			if(pRTV_DATA == NULL){ return 0; };
 
-			// [LGLS 2026-09-01] 판넬 모드 : 상세정보 판넬 RTV 탭으로 전환
-			{
-				CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
-				if (pFrame != NULL && pFrame->m_bUiModePanel && pFrame->m_bPanelBarsCreated
-					&& pFrame->m_InfoPane.IsVisible())
-				{
-					pFrame->m_PanelInfoDlg.SetEquip(2 /*TAB_RTV*/, strEqpKey);
-					// [LGLS 2026-09-10] 판넬만 바꾸고 끝내지 않는다.
-					//   판넬 보기가 기본이 되면서 대화상자를 쓸 길이 막혔다는 지적.
-					//   판넬은 그대로 따라가고, 아래로 내려가 대화상자도 띄운다.
-				}
-			}
 			if (pDoc->m_pRtvSkinDlg == NULL)
 			{
 				if (!pDoc->Permission(_T("CRtvSkinDlg"), SEL_YN))
@@ -1858,13 +1819,11 @@ void CEcsView::ReloadIniHot()
 	}
 
 	{
-		int nTr0 = CLib::IniUiTrace(), nGt0 = CLib::IniLoadBitGate(), nVc0 = CLib::IniVehClearMode();
+		int nTr0 = CLib::IniUiTrace(), nGt0 = CLib::IniLoadBitGate();
 		CLib::IniCacheReset();
-		int nTr1 = CLib::IniUiTrace(), nGt1 = CLib::IniLoadBitGate(), nVc1 = CLib::IniVehClearMode();
+		int nTr1 = CLib::IniUiTrace(), nGt1 = CLib::IniLoadBitGate();
 		if (nTr0 != nTr1) strChg.AppendFormat(_T(" UI_TRACE=%d"), nTr1);
 		if (nGt0 != nGt1) { strChg.AppendFormat(_T(" LOADBIT_GATE=%d"), nGt1); Invalidate(FALSE); }
-		// [LGLS 2026-09-14] 크레인·RTV 색 지우는 시점 (0 종전 / 1 적재 비트 / 2 H/S 기록). 다음 수집 주기에 다시 칠해진다
-		if (nVc0 != nVc1) { strChg.AppendFormat(_T(" VEH_CLEAR_MODE=%d"), nVc1); Invalidate(FALSE); }
 	}
 
 	{

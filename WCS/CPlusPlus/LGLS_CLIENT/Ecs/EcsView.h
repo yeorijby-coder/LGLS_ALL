@@ -86,10 +86,10 @@ public:
 	int       m_nIniZoomBtn;		// 마지막으로 반영한 ZOOM_BTN 값
 	void CheckIniHotReload();
 
-	// [LGLS 2026-09-13] 메인 화면 2안 (Ecs.ini [MENU] MAIN_UI=2, 기동 시 1회 판단 - 바꾸면 재기동)
+	// [LGLS 2026-09-13] 메인 화면 2안 (2026-09-19 MAIN_UI=2 확정, 키 삭제)
 	//   종전 범례가 있던 왼쪽 자리에 [통신 상태 + 축소 범례] 와 [작업정보] 를 고정한다.
 	//   짝이 되는 레이아웃 XML 에서는 범례 칸을 빼 둔다. 지도는 그대로다.
-	int   m_nMainUi;			// 1=종전 화면, 2=왼쪽 고정 배치(통신/범례/작업정보 3단)
+	BOOL  m_bUi2Ready;		// 왼쪽 고정 칸을 만들었나 (CreateMainUi2 이후 TRUE)
 	int   m_nUiLeftW;			// 왼쪽 칸 폭   (0=기본값 : 격자 42칸 중 19칸)
 	int   m_nUiCommH;			// 통신 칸 높이 (0=기본값)
 	int   m_nUiLegH;			// 범례 칸 높이 (0=기본값)

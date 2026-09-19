@@ -124,25 +124,8 @@ public:
 	
 	CEcsDoc * m_pDoc;
 
-	// [LGLS 2026-09-01] 우측 도킹 판넬 2종 (구 SPL EcsSv CPanelJobDlg/CPanelInfoDlg 참고)
-	CPanelDockPane m_JobPane;
-	CPanelDockPane m_InfoPane;
-	CPanelJobDlg   m_PanelJobDlg;
-	CPanelInfoDlg  m_PanelInfoDlg;
-	CPanelDockPane m_VehPane;
-	CPanelVehDlg   m_PanelVehDlg;    // Crane & Vehicle 반송 현황
-	BOOL           m_bPanelBarsCreated;
-	BOOL           m_bUiModePanel;        // [LGLS 2026-09-01] UI모드 : TRUE=판넬, FALSE=대화상자
-
-	// [LGLS 2026-09-09] 리본 [판넬 보기] : 판넬 3개를 각각 켜고 끈다.
-	CDockablePane* PaneOf(UINT nID);
-	afx_msg void OnPaneShow(UINT nID);
-	afx_msg void OnUpdatePaneShow(CCmdUI* pCmdUI);
-	void ShowPanelBars(CEcsDoc* pDoc, BOOL bShow);
-	void SetInfoPaneTitle(CString strTitle);   // 상세정보 판넬 캡션 변경
-	void TogglePanelBars(CEcsDoc* pDoc);   // 리본 [작업정보] 진입점
-	void ShowJobDetail(CString strLuggNo); // 작업 판넬 선택 -> 정보 판넬 연동
-	virtual void RecalcLayout(BOOL bNotify = TRUE);   // [LGLS] 판넬이 상태바를 침범하지 않게 클램프
+	// [LGLS 2026-09-19] 옛 도킹 판넬(작업정보/상세정보/설비반송)과 [판넬 보기] 토글은 폐지.
+	//   MAIN_UI=2 확정으로 작업정보·설비반송 판넬은 CEcsView 왼쪽 고정 칸(m_pJobFixed/m_pVehFixed)에 있다.
 
 	// [LGLS 2026-09-12] 제목줄 "Ecs V1.0   [Build:빌드시각] [DB:DB명@서버][실행경로]" - Ecs.ini [Title] BuildDate/DbInfo/Path 로 켜고 끔.
 	//   창 폭보다 길면 0.2초마다 한 글자씩 흘린다(마퀴). [RibbonMenu] ToolTip=1 이면 리본 버튼 툴팁을 "탭 > 패널 > 버튼" 경로로.
@@ -216,15 +199,6 @@ protected:
 	afx_msg void OnRbnBtnToolbarInterface (); 
 	afx_msg void OnAppLook(UINT id);
 	afx_msg void OnConfigIniOpen();
-	// [LGLS 2026-09-05] [환경설정] > [시간 기반 자동 처리] 토글
-	//   선택 = 스케줄러가 설비 신호 없이 경과시간으로 완료를 추정하는 처리를 사용한다.
-	//   상태는 DB(COMMON_CODE : CDX_CD='SCH_OPT', CCD_CD='AUTO_TIME')에 두어 IO_TASK 가 함께 본다.
-	afx_msg void OnConfigAutoTime();
-	afx_msg void OnUpdateConfigAutoTime(CCmdUI* pCmdUI);
-	BOOL  ReadAutoTimeFlag();
-	BOOL  m_bAutoTimeProc;
-	DWORD m_dwAutoTimeRead;   // [LGLS 2026-09-03] 리본 [INI 열기]
-	afx_msg void OnUiModeDlg();            // [LGLS 2026-09-01] UI모드
 	DECLARE_MESSAGE_MAP()
 	void AddCategoryUSER();
 	UINT	m_nAppLook;
@@ -237,15 +211,12 @@ public:
 	afx_msg void OnUpdateStatusCv(CCmdUI *pCmdUI);
 
 	// [LGLS 2026-09-08] 통신상태(EQUIP/HOST/SCH) 표시 위치.
-	//   Ecs.ini [MENU] STATUS_POS = TOP(리본 오른쪽 빈자리) / BOTTOM(종전 하단 상태바).
+	//   2026-09-19 STATUS_POS=RIBBON, COMM_MODE=2 확정 : 탭마다 [통신] 그룹, 떠 있는 상태바는 감춤.
 	// [LGLS 2026-09-08] 리본에 붙인 통신상태 요소들(카테고리마다 한 벌 - 어느 탭에서도 보인다)
 	CObArray m_arRbnComm;
-	BOOL IsStatusOnRibbon();
-	int  GetCommMode();		// Ecs.ini [MENU] COMM_MODE : 1 = 탭 줄 / 2 = 리본 그룹
-	void AddCommToTabs();	// 모드 1 : 리본 탭 줄 오른쪽 끝
-	void AddCommPanel(CMFCRibbonCategory* pCategory);	// 모드 2 : 탭마다 [통신] 그룹(오른쪽 끝)
+	void AddCommToTabs();	// 리본 탭 줄 오른쪽 끝 [통신] 이름표
+	void AddCommPanel(CMFCRibbonCategory* pCategory);	// 탭마다 [통신] 그룹(오른쪽 끝)
 	void SetCommColor(UINT nID, COLORREF clr);
-	BOOL IsStatusBarOnTop();
 	void LayoutStatusBar(int cx, int cy);
 	void AddStatusBarPane();
 	void InsertLabelPainToStatusBar(CString strCaption, int nID, int nPos, int nWidth);

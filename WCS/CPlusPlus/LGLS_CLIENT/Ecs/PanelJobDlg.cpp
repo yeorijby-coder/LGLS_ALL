@@ -33,7 +33,6 @@ void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
 	ON_WM_SIZE()
 	ON_WM_TIMER()
-	ON_NOTIFY(NM_CLICK, IDC_PANEL_JOB_LIST, OnListClick)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_PANEL_JOB_TAB, OnTabChanged)
 END_MESSAGE_MAP()
 
@@ -178,22 +177,3 @@ void CPanelJobDlg::OnTabChanged(NMHDR* pNMHDR, LRESULT* pResult)
 	Refresh();
 }
 
-// [LGLS 2026-09-02] LVN_ITEMCHANGED 는 자동갱신의 선택 복원 때도 발화해
-//   3초마다 상세판넬이 작업 탭으로 강제 전환되던 문제 - 사용자 클릭(NM_CLICK)만 전달한다.
-void CPanelJobDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	NMITEMACTIVATE* pNMIA = (NMITEMACTIVATE*)pNMHDR;
-	*pResult = 0;
-	if (pNMIA->iItem < 0)
-		return;
-
-	CString strLugg = m_list.GetItemText(pNMIA->iItem, 0);
-	strLugg.Trim();
-	if (strLugg.IsEmpty())
-		return;
-
-	// [LGLS] 선택한 작업을 상세정보 판넬(작업 탭)에 표시
-	CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
-	if (pFrame != NULL)
-		pFrame->ShowJobDetail(strLugg);
-}

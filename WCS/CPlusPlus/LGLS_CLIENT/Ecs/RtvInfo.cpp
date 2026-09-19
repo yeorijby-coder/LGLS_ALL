@@ -68,43 +68,18 @@ BOOL CRtvInfo::IsRtvDown(CRTV_DATA* pRTV_DATA)
 	return FALSE;
 }
 
-// [LGLS 2026-09-14] RTV 가 화물을 내려놓은 것으로 볼 것인가 (Ecs.ini [MENU] VEH_CLEAR_MODE, 사용자 지시)
+// [LGLS 2026-09-14] RTV 가 화물을 내려놓은 것으로 볼 것인가 (사용자 지시)
 //   크레인과 같은 이유 - 화면에 보이는 칸(GetForkColor2)은 설비 작업구분을 먼저 보고 적재 비트를 보지 않았다.
-//   0 = 판정하지 않음(종전) / 1 = 차상 적재 비트 0 / 2 = 물었던 화물번호가 C/V 트랙에 기록됨
+// [LGLS 2026-09-19] VEH_CLEAR_MODE=3 확정 (사용자 지시) - 키 삭제, 0/1/2 분기 삭제.
+//   색이 뜨는 시점은 종전과 같다. 지우는 시점 : 물린 작업(35) 없음 / 시작 때 없던 트랙에 화물 기록(착지)
 BOOL CRtvInfo::IsVehicleDisplayOff(CRTV_DATA* pRTV_DATA)
 {
 	if (pRTV_DATA == NULL || m_pEquipment == NULL || m_pEquipment->m_pDoc == NULL) return FALSE;
-	int nMode = CLib::IniVehClearMode();
-	if (nMode == 1)
-	{
-		CString strSen = pRTV_DATA->V_SENSOR_FK_RD;
-		strSen.Trim();
-		return (!strSen.IsEmpty() && strSen == _T("0"));	// 비트를 못 받으면(빈 값) 판정하지 않는다
-	}
-	if (nMode == 3)
-	{
-		// 색이 뜨는 시점은 종전(0)과 같다. 지우는 시점 : 물린 작업(35) 없음 / 시작 때 없던 트랙에 화물 기록(착지)
-		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
-		CString strHeld = pDoc->GetVehicleJobNo(pRTV_DATA->K_RTV_NO);
-		strHeld.Trim();
-		if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
-		return pDoc->IsLuggOnNewTrack(pRTV_DATA->K_RTV_NO, strHeld);
-	}
-	if (nMode == 2)
-	{
-		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
-		CString arrLugg[3];
-		arrLugg[0] = pDoc->GetVehicleJobNo(pRTV_DATA->K_RTV_NO);
-		arrLugg[1] = pRTV_DATA->V_LUGG_NO_FK1_RD;
-		arrLugg[2] = pRTV_DATA->V_ITN_LUGG_FK1;
-		for (int i = 0; i < 3; i++)
-			if (pDoc->IsLuggOnCvTrack(arrLugg[i])) return TRUE;
-		// 작업정보에 물린 작업(35)이 없는데 설비값만 남은 것은 완료 보고 전 잔재다
-		CString strHeld = arrLugg[0];
-		strHeld.Trim();
-		if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
-	}
-	return FALSE;
+	CEcsDoc* pDoc = m_pEquipment->m_pDoc;
+	CString strHeld = pDoc->GetVehicleJobNo(pRTV_DATA->K_RTV_NO);
+	strHeld.Trim();
+	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
+	return pDoc->IsLuggOnNewTrack(pRTV_DATA->K_RTV_NO, strHeld);
 }
 
 COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
@@ -430,8 +405,7 @@ void CRtvInfo::InvokeControl(CRTV_DATA* pRTV_DATA)
 		}
 	}
 
-	// [LGLS 2026-09-14] 모드 2/3 은 트랙 화물번호 변화로도 판정이 바뀐다 - 판정이 바뀌면 다시 그린다
-	if (CLib::IniVehClearMode() >= 2)
+	// [LGLS 2026-09-14] 트랙 화물번호 변화로도 판정이 바뀐다 - 판정이 바뀌면 다시 그린다
 	{
 		int nOff = IsVehicleDisplayOff(pRTV_DATA) ? 1 : 0;
 		if (nOff != pRTV_DATA->m_nLglsDispOff) { pRTV_DATA->m_nLglsDispOff = nOff; pRTV_DATA->m_bModified = TRUE; }

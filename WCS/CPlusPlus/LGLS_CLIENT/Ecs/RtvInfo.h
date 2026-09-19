@@ -93,7 +93,7 @@ public:
 	BOOL IsRtvDown(CRTV_DATA* pRTV_DATA);   // [LGLS 2026-09-03] DOWN 판정
 	COLORREF GetForkColor1(CRTV_DATA* pRTV_DATA);
 	COLORREF GetForkColor2(CRTV_DATA* pRTV_DATA);
-	BOOL IsVehicleDisplayOff(CRTV_DATA* pRTV_DATA);	// [LGLS 2026-09-14] VEH_CLEAR_MODE : 내려놓은 것으로 볼지
+	BOOL IsVehicleDisplayOff(CRTV_DATA* pRTV_DATA);	// [LGLS 2026-09-14] 내려놓은 것으로 볼지 (VEH_CLEAR_MODE=3 고정)
 	COLORREF GetRailColor(CRTV_DATA* pRTV_DATA);
 	COLORREF GetPostColor(CRTV_DATA* pRTV_DATA);
 

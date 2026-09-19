@@ -33,11 +33,6 @@ const int iCategoryIndex_CC = 4;
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_WM_TIMER()		// [LGLS 2026-09-12] 제목줄 마퀴
 	ON_COMMAND(ID_CONFIG_INI_OPEN, &CMainFrame::OnConfigIniOpen)
-	ON_COMMAND(ID_CONFIG_AUTO_TIME, &CMainFrame::OnConfigAutoTime)
-	ON_UPDATE_COMMAND_UI(ID_CONFIG_AUTO_TIME, &CMainFrame::OnUpdateConfigAutoTime)
-	// [LGLS 2026-09-09] [판넬 보기] : 판넬 3개 개별 표시 토글
-	ON_COMMAND_RANGE(ID_PANE_SHOW_JOB, ID_PANE_SHOW_VEH, &CMainFrame::OnPaneShow)
-	ON_UPDATE_COMMAND_UI_RANGE(ID_PANE_SHOW_JOB, ID_PANE_SHOW_VEH, &CMainFrame::OnUpdatePaneShow)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_VIEW_CUSTOMIZE, &CMainFrame::OnViewCustomize)
 	ON_REGISTERED_MESSAGE(AFX_WM_CREATETOOLBAR, &CMainFrame::OnToolbarCreateNew)
@@ -89,11 +84,7 @@ static UINT indicators[] =
 
 CMainFrame::CMainFrame()
 {
-	m_bPanelBarsCreated = FALSE;   // [LGLS 2026-09-01] 도킹 판넬
-	m_bUiModePanel = FALSE;        // 기본 = 대화상자 모드
 	m_pDoc = NULL;                 // [LGLS 2026-09-01] 종전에 초기화 누락(쓰레기 포인터)
-	m_bAutoTimeProc = FALSE;       // [LGLS 2026-09-05] 시간 기반 자동 처리(첫 갱신 전 기본 = 사용 안 함)
-	m_dwAutoTimeRead = 0;
 	// TODO: 여기에 멤버 초기화 코드를 추가합니다.
 	theApp.m_nAppLook = theApp.GetInt(_T("ApplicationLook"), ID_VIEW_APPLOOK_VS_2008);
 	m_bNotDockingJob = false;
@@ -135,7 +126,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	int nWindowSizeX = rect.Width() - 4;
 	int nWindowSizeY = rect.Height() - 80;
 
-    // [LGLS 2026-09-08] 최초 배치도 STATUS_POS 를 따른다.
+    // [LGLS 2026-09-19] 통신상태는 리본 [통신] 그룹에 있으므로 떠 있는 상태바는 감춘다(STATUS_POS=RIBBON 확정).
     LayoutStatusBar(nWindowSizeX, nWindowSizeY + 40);
 
 
@@ -470,17 +461,7 @@ void CMainFrame::AddCategoryWCS()
 		pPanelConfig->Add(pBtnIniOpen);
 	}
 
-	// [LGLS 2026-08-12] 사용자 메뉴는 Ecs.ini [MENU] USER_MENU=1/0 으로 표시 여부 선택(기본 1=표시)
-	if (::GetPrivateProfileInt(_T("MENU"), _T("USER_MENU"), 1, ECS_INI_FILE) != 0)
-	{
-		// [LGLS 2026-08-05] 사용자 관리 대화상자는 메뉴가 없어 접근 자체가 불가능했다 -> CONFIG 패널에 추가.
-		//   ID_USER_USER 는 이미 ON_COMMAND_RANGE(ID_USER_USER, ID_USER_GROUP) 로 라우팅되어 있다.
-		//   RenameRibbonText 는 이 패널의 0~2번만 다시 이름 붙이므로 여기 캡션이 그대로 유지된다.
-		CMFCRibbonButton* pBtnUserUser = new CMFCRibbonButton(ID_USER_USER, _T("사용자"), HICONFromPATH(GetConcatPath(strAppPath, _T("sign"), strExtension)), TRUE);
-		TipReg(pBtnUserUser, GetConcatPath(strAppPath, _T("sign"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-		pBtnUserUser->SetAlwaysLargeImage();
-		pPanelConfig->Add(pBtnUserUser);
-	}
+	// [LGLS 2026-09-19] [사용자] 버튼 폐지 (사용자 지시 - Ecs.ini USER_MENU 키 삭제)
 
 	//
 	strAppPath.Format(_T("%s"),chrFileName);
@@ -560,70 +541,10 @@ void CMainFrame::AddCategoryWCS()
 	//pBtnHUN->SetAlwaysLargeImage();
 	//pPanelLanguage->Add(pBtnHUN);
 
-	// [LGLS 2026-09-09] [판넬 보기] 그룹 : 판넬 3개를 각각 켜고 끈다(선택=표시).
-	//   종전 [UI모드](대화상자/판넬 모드 2버튼)를 대체한다.
-	//   Ecs.ini [MENU] UIMODE_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
-	// [LGLS 2026-09-13] 새 배치(MAIN_UI=2)에서는 판넬이 왼쪽에 늘 떠 있어 이 그룹을 숨긴다(사용자 지시).
-	//   필요하면 Ecs.ini [MENU] PANEVIEW_MENU=1 로 되살린다.
-	int nMainUiPv = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI"), 1, ECS_INI_FILE);
-	int nPaneView = ::GetPrivateProfileInt(_T("MENU"), _T("PANEVIEW_MENU"), (nMainUiPv == 2) ? 0 : 1, ECS_INI_FILE);
-	if (::GetPrivateProfileInt(_T("MENU"), _T("UIMODE_MENU"), 1, ECS_INI_FILE) != 0 && nPaneView != 0)
-	{
-		// 이 시점의 strAppPath 는 직전 패널(창고 모니터링) 폴더라 다시 지정한다.
-		strAppPath.Format(_T("%s"), chrFileName);
-		strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_view\\");
-		CMFCRibbonPanel* pPanelPaneView = pCategory->AddPanel(_T("판넬 보기"));
-		m_wndRibbonBar.SetPanelIni(pPanelPaneView, _T("view"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
+	// [LGLS 2026-09-19] [판넬 보기] 그룹과 [처리] 그룹([시간기반 자동처리])은 폐지 (사용자 지시 -
+	//   Ecs.ini UIMODE_MENU / PANEVIEW_MENU / PROCESS_MENU / AUTOTIME_MENU 키 삭제).
 
-		CMFCRibbonButton* pBtnPaneJob = new CMFCRibbonButton(ID_PANE_SHOW_JOB, _T("작업정보"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_job"), strExtension)), TRUE);
-		TipReg(pBtnPaneJob, GetConcatPath(strAppPath, _T("pane_job"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-		pBtnPaneJob->SetAlwaysLargeImage();
-		pPanelPaneView->Add(pBtnPaneJob);
-
-		CMFCRibbonButton* pBtnPaneInfo = new CMFCRibbonButton(ID_PANE_SHOW_INFO, _T("상세정보"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_info"), strExtension)), TRUE);
-		TipReg(pBtnPaneInfo, GetConcatPath(strAppPath, _T("pane_info"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-		pBtnPaneInfo->SetAlwaysLargeImage();
-		pPanelPaneView->Add(pBtnPaneInfo);
-
-		CMFCRibbonButton* pBtnPaneVeh = new CMFCRibbonButton(ID_PANE_SHOW_VEH, _T("설비반송"),
-			HICONFromPATH(GetConcatPath(strAppPath, _T("pane_veh"), strExtension)), TRUE);
-		TipReg(pBtnPaneVeh, GetConcatPath(strAppPath, _T("pane_veh"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-		pBtnPaneVeh->SetAlwaysLargeImage();
-		pPanelPaneView->Add(pBtnPaneVeh);
-	}
-
-	// [LGLS 2026-09-06] [처리] 그룹 : 스케줄러의 처리 방식과 관련된 메뉴를 모은다.
-	//   Ecs.ini [MENU] PROCESS_MENU=1/0 으로 그룹 표시 여부 선택(기본 1=표시)
-	//   그룹 안의 버튼은 각자의 키로 따로 숨길 수 있다(예: AUTOTIME_MENU).
-	//   표시할 버튼이 하나도 없으면 빈 그룹이 생기지 않도록 패널 자체를 만들지 않는다.
-	{
-		BOOL bProcessGrp = (::GetPrivateProfileInt(_T("MENU"), _T("PROCESS_MENU"),  1, ECS_INI_FILE) != 0);
-		BOOL bAutoTime   = (::GetPrivateProfileInt(_T("MENU"), _T("AUTOTIME_MENU"), 1, ECS_INI_FILE) != 0);
-		if (bProcessGrp && bAutoTime)
-		{
-			// 아이콘(autotime.png)은 mainframe_config 폴더에 있다. 직전 패널에서 넘어온
-			//   strAppPath 는 mainframe_view 라 그대로 쓰면 아이콘을 못 찾는다(UI모드에서 겪은 문제).
-			strAppPath.Format(_T("%s"), chrFileName);
-			strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
-			CMFCRibbonPanel* pPanelProcess = pCategory->AddPanel(_T("처리"));
-			m_wndRibbonBar.SetPanelIni(pPanelProcess, _T("config"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
-
-			// [시간 기반 자동 처리] : 스케줄러가 설비 신호 대신 경과시간으로 완료를 추정하는
-			//   처리의 사용 여부를 켜고 끈다. 선택 = 사용, 해제 = 사용 안 함(설비 신호로만 처리).
-			//   상태는 DB(COMMON_CODE SCH_OPT/AUTO_TIME)에 있어 IO_TASK 가 같은 값을 본다.
-			CMFCRibbonButton* pBtnAutoTime = new CMFCRibbonButton(ID_CONFIG_AUTO_TIME, _T("시간기반 자동처리"),
-				HICONFromPATH(GetConcatPath(strAppPath, _T("autotime"), strExtension)), TRUE);
-			TipReg(pBtnAutoTime, GetConcatPath(strAppPath, _T("autotime"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-			pBtnAutoTime->SetAlwaysLargeImage();
-			pBtnAutoTime->SetToolTipText(_T("시간 기반 자동 처리"));
-			pBtnAutoTime->SetDescription(_T("설비 완료 신호가 오지 않아도 경과시간으로 완료를 추정할지 선택합니다."));
-			pPanelProcess->Add(pBtnAutoTime);
-		}
-	}
-
-	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 모드 2 : [통신] 그룹
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
 }
 	
 
@@ -697,7 +618,7 @@ void CMainFrame::AddCategoryMANUAL()
 		pPanelSemiTest->Add(pBtnTestClear);
 	}
 
-	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 모드 2 : [통신] 그룹
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
 }
 
 void CMainFrame::AddCategoryLOG()
@@ -758,7 +679,7 @@ void CMainFrame::AddCategoryLOG()
 	//pBtnCLIENT_LOG->SetAlwaysLargeImage();
 	//pPanelLog->Add(pBtnCLIENT_LOG);
 
-	AddCommPanel(pCategory);	// [LGLS 2026-09-08] 모드 2 : [통신] 그룹
+	AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
 }
 
 void CMainFrame::RenameRibbonText(EN_LANG penLang)
@@ -775,14 +696,15 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 	CString strFullPath = GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\"), _T("config"), strExtension);
 	CMFCRibbonPanel_Wrap* pPanel_Wrap_Config = (CMFCRibbonPanel_Wrap*)pCategory->GetPanel(0);
 
-	CMFCRibbonButton* pButton_sign = (CMFCRibbonButton*)pPanel_Wrap_Config->GetElement(0);
-	pButton_sign->SetText(CLib::GetIniStringFromPath(strFullPath, _T("eqpsuspend"), (int)penLang));
+	// [LGLS 2026-09-19] 순번(GetElement) 대신 명령 ID 로 찾는다 - 버튼을 ini 로 숨기거나 빼도 어긋나지 않게.
+	CMFCRibbonButton* pButton_sign = PfFindRibbonBtn(pPanel_Wrap_Config, ID_SYSTEM_EQP_SUSPEND);
+	if (pButton_sign) pButton_sign->SetText(CLib::GetIniStringFromPath(strFullPath, _T("eqpsuspend"), (int)penLang));
 
-	CMFCRibbonButton* pButton_log_delete = (CMFCRibbonButton*)pPanel_Wrap_Config->GetElement(1);
-	pButton_log_delete->SetText(CLib::GetIniStringFromPath(strFullPath, _T("configlogdelete"), (int)penLang));
+	CMFCRibbonButton* pButton_log_delete = PfFindRibbonBtn(pPanel_Wrap_Config, IDD_CONFIG_LOG_DELETE);
+	if (pButton_log_delete) pButton_log_delete->SetText(CLib::GetIniStringFromPath(strFullPath, _T("configlogdelete"), (int)penLang));
 
-	CMFCRibbonButton* pButton_config_status = (CMFCRibbonButton*)pPanel_Wrap_Config->GetElement(2);
-	pButton_config_status->SetText(CLib::GetIniStringFromPath(strFullPath, _T("configstatus"), (int)penLang));
+	CMFCRibbonButton* pButton_config_status = PfFindRibbonBtn(pPanel_Wrap_Config, IDD_CONFIG_STATUS);
+	if (pButton_config_status) pButton_config_status->SetText(CLib::GetIniStringFromPath(strFullPath, _T("configstatus"), (int)penLang));
 
 	pPanel_Wrap_Config->SetName(CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang));
 
@@ -798,10 +720,10 @@ void CMainFrame::RenameRibbonText(EN_LANG penLang)
 	pPanel_Wrap_View->SetCenterColumnVert();
 	pPanel_Wrap_View->SetJustifyColumns();
 	pPanel_Wrap_View->SetName(CLib::GetIniStringFromPath(strFullPath, _T("categoryname"), (int)penLang));
-	CMFCRibbonButton* pButton_Rack = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(0);
-	pButton_Rack->SetText(CLib::GetIniStringFromPath(strFullPath, _T("job-info"), (int)penLang));
+	CMFCRibbonButton* pButton_Rack = PfFindRibbonBtn(pPanel_Wrap_View, ID_VIEW_JOBLIST);
+	if (pButton_Rack) pButton_Rack->SetText(CLib::GetIniStringFromPath(strFullPath, _T("job-info"), (int)penLang));
 	// [LGLS 2026-09-10] 공PLT작업 버튼을 없앴으므로 [찾기] 가 바로 다음 자리다.
-	CMFCRibbonButton* pButton_Search = (CMFCRibbonButton*)pPanel_Wrap_View->GetElement(1);
+	CMFCRibbonButton* pButton_Search = PfFindRibbonBtn(pPanel_Wrap_View, ID_VIEW_SEARCH);
 
 	if (pButton_Search != NULL)
 		pButton_Search->SetText(CLib::GetIniStringFromPath(strFullPath, _T("search"), (int)penLang));
@@ -889,203 +811,6 @@ void CMainFrame::ExcuteTheme()
 	theApp.WriteInt (_T("ApplicationLook"), m_nAppLook);
 }
 
-// [LGLS 2026-09-01] 리본 [작업정보] 진입점 : 우측 도킹 판넬 생성/토글
-//   구 SPL EcsSv CreateDockingBar 를 MFC Feature Pack(CDockablePane)으로 재구현.
-void CMainFrame::TogglePanelBars(CEcsDoc* pDoc)
-{
-	BOOL bShow = TRUE;
-	if (m_bPanelBarsCreated)
-		bShow = !m_JobPane.IsVisible();
-	ShowPanelBars(pDoc, bShow);
-}
-
-// [LGLS 2026-09-01] 우측 도킹 판넬 생성/표시 (구 SPL EcsSv CreateDockingBar 를 CDockablePane 으로 재구현)
-void CMainFrame::ShowPanelBars(CEcsDoc* pDoc, BOOL bShow)
-{
-	if (!m_bPanelBarsCreated)
-	{
-		if (!bShow || pDoc == NULL)
-			return;
-
-		EnableDocking(CBRS_ALIGN_ANY);
-
-		m_pDoc = pDoc;
-		m_PanelJobDlg.m_pDoc  = pDoc;
-		m_PanelInfoDlg.m_pDoc = pDoc;
-		m_JobPane.m_pDlg  = &m_PanelJobDlg;   m_JobPane.m_nIDD  = IDD_PANEL_JOB;
-		m_InfoPane.m_pDlg = &m_PanelInfoDlg;  m_InfoPane.m_nIDD = IDD_PANEL_INFO;
-		m_PanelVehDlg.m_pDoc = pDoc;
-		m_VehPane.m_pDlg = &m_PanelVehDlg;    m_VehPane.m_nIDD = IDD_PANEL_VEH;
-
-		// [LGLS 2026-09-09] 판넬 배치 변경(사용자 요청)
-		//   작업 정보 : 상단에 가로로 넓게 도킹 (작업 목록이 열 수가 많아 가로가 필요하다)
-		//   상세정보 / Crane & Vehicle : 오른쪽에, 작업 정보 판넬 아래로 위아래 배치
-		DWORD dwStyleTop   = WS_CHILD | WS_VISIBLE | CBRS_TOP   | CBRS_FLOAT_MULTI;
-		DWORD dwStyleRight = WS_CHILD | WS_VISIBLE | CBRS_RIGHT | CBRS_FLOAT_MULTI;
-
-		if (!m_JobPane.Create(_T("작업 정보"), this, CRect(0, 0, 1200, 240), TRUE,
-				ID_PANE_JOB, dwStyleTop, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
-			return;
-		if (!m_InfoPane.Create(_T("상세정보"), this, CRect(0, 0, 480, 460), TRUE,
-				ID_PANE_INFO, dwStyleRight, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
-			return;
-		if (!m_VehPane.Create(_T("Crane && Vehicle 반송 현황"), this, CRect(0, 0, 480, 260), TRUE,
-				ID_PANE_VEH, dwStyleRight, AFX_CBRS_REGULAR_TABS, AFX_CBRS_RESIZE | AFX_CBRS_CLOSE))
-			return;
-
-		m_JobPane.EnableDocking(CBRS_ALIGN_ANY);
-		m_InfoPane.EnableDocking(CBRS_ALIGN_ANY);
-		m_VehPane.EnableDocking(CBRS_ALIGN_ANY);
-
-		DockPane(&m_JobPane);            // 상단 전폭
-		RecalcLayout();
-		DockPane(&m_InfoPane);           // 오른쪽 (상단 판넬 아래로 자리잡는다)
-		RecalcLayout();
-		m_VehPane.DockToWindow(&m_InfoPane, CBRS_ALIGN_BOTTOM);   // 상세정보 아래
-
-		m_bPanelBarsCreated = TRUE;
-		RecalcLayout();
-		return;
-	}
-
-	m_JobPane.ShowPane(bShow, FALSE, TRUE);
-	m_InfoPane.ShowPane(bShow, FALSE, TRUE);
-	m_VehPane.ShowPane(bShow, FALSE, TRUE);
-	RecalcLayout();
-}
-
-// [LGLS 2026-09-01] 상세정보 판넬 캡션 변경 (탭 선택에 따라 "CV 상세정보" 등)
-void CMainFrame::SetInfoPaneTitle(CString strTitle)
-{
-	if (m_bPanelBarsCreated && ::IsWindow(m_InfoPane.m_hWnd))
-		m_InfoPane.SetWindowText(strTitle);
-}
-
-// ---------------------------------------------------------------------------
-// [LGLS 2026-09-09] [판넬 보기] : 판넬 3개를 각각 켜고 끈다.
-//   버튼이 눌린 상태(체크) = 그 판넬이 보이는 상태다.
-//   판넬은 처음 켤 때 3개를 한꺼번에 만들고(도킹 위치를 함께 잡아야 한다),
-//   그 자리에서 누르지 않은 둘은 접어 둔다.
-// ---------------------------------------------------------------------------
-CDockablePane* CMainFrame::PaneOf(UINT nID)
-{
-	switch (nID)
-	{
-	case ID_PANE_SHOW_JOB:  return &m_JobPane;
-	case ID_PANE_SHOW_INFO: return &m_InfoPane;
-	case ID_PANE_SHOW_VEH:  return &m_VehPane;
-	default: break;
-	}
-	return NULL;
-}
-
-void CMainFrame::OnPaneShow(UINT nID)
-{
-	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
-	if (m_pDoc == NULL) return;
-
-	if (!m_bPanelBarsCreated)
-	{
-		ShowPanelBars(m_pDoc, TRUE);          // 3개 생성 + 도킹
-		if (!m_bPanelBarsCreated) return;     // 생성 실패
-
-		// 설비를 눌렀을 때 상세정보 판넬로 보내려면 판넬 모드여야 한다(EcsView 참조).
-		m_bUiModePanel = TRUE;
-
-		// 누른 것만 남기고 나머지는 접는다.
-		m_JobPane.ShowPane(nID == ID_PANE_SHOW_JOB,   FALSE, TRUE);
-		m_InfoPane.ShowPane(nID == ID_PANE_SHOW_INFO, FALSE, TRUE);
-		m_VehPane.ShowPane(nID == ID_PANE_SHOW_VEH,   FALSE, TRUE);
-		RecalcLayout();
-
-		// [LGLS 2026-09-11] 작업정보 판넬을 켜면 작업정보 창도 함께 띄운다(사용자 요청).
-		//   판넬은 그대로 동작하고 창이 하나 더 뜬다. 끌 때는 창을 닫지 않는다
-		//   - 판넬을 접고 창만 보는 쓰임이 있다.
-		if (nID == ID_PANE_SHOW_JOB)
-			m_pDoc->OpenJobListDialog();
-		return;
-	}
-
-	CDockablePane* pPane = PaneOf(nID);
-	if (pPane == NULL || !::IsWindow(pPane->GetSafeHwnd())) return;
-
-	BOOL bShow = !pPane->IsVisible();
-	pPane->ShowPane(bShow, FALSE, TRUE);
-	if (bShow) m_bUiModePanel = TRUE;
-	RecalcLayout();
-
-	// [LGLS 2026-09-11] 작업정보 판넬을 켜면 작업정보 창도 함께 띄운다(사용자 요청).
-	//   판넬은 그대로 동작하고 창이 하나 더 뜬다. 끌 때는 창을 닫지 않는다
-	//   - 판넬을 접고 창만 보는 쓰임이 있다.
-	if (bShow && nID == ID_PANE_SHOW_JOB)
-		m_pDoc->OpenJobListDialog();
-}
-
-void CMainFrame::OnUpdatePaneShow(CCmdUI* pCmdUI)
-{
-	if (pCmdUI == NULL) return;
-	CDockablePane* pPane = PaneOf(pCmdUI->m_nID);
-	BOOL bOn = (m_bPanelBarsCreated && pPane != NULL
-				&& ::IsWindow(pPane->GetSafeHwnd()) && pPane->IsVisible());
-	pCmdUI->SetCheck(bOn ? 1 : 0);
-	pCmdUI->Enable(TRUE);
-}
-
-// [LGLS 2026-09-05] 시간 기반 자동 처리 사용 여부를 DB 에서 읽는다.
-//   행이 없거나 조회 실패면 FALSE(사용 안 함) - "모르면 자동 처리하지 않는다" 가 안전한 쪽이다.
-BOOL CMainFrame::ReadAutoTimeFlag()
-{
-	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
-	if (m_pDoc == NULL) return FALSE;
-	try
-	{
-		CString strSql;
-		strSql.Format(_T(" SELECT CCD_CD_YN FROM COMMON_CODE \n")
-			_T("  WHERE WH_TYP = '%s' AND CDX_CD = 'SCH_OPT' AND CCD_CD = 'AUTO_TIME' "), m_pDoc->m_WH_TYP);
-		int nCnt = 0; CString strErr;
-		_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nCnt, strErr);
-		if (nCnt <= 0) return FALSE;
-		CRecordSetWrap rsw(pRs); rsw.MoveFirst();
-		CString strYn = rsw.GetItem(_T("CCD_CD_YN")); strYn.Trim();
-		return (strYn == _T("Y")) ? TRUE : FALSE;
-	}
-	catch (...) { return FALSE; }
-}
-
-// [LGLS 2026-09-05] [시간 기반 자동 처리] 토글. 확인 후 DB 값을 뒤집는다.
-void CMainFrame::OnConfigAutoTime()
-{
-	if (m_pDoc == NULL) m_pDoc = (CEcsDoc*)GetActiveDocument();
-	if (m_pDoc == NULL) return;
-	BOOL bNew = !ReadAutoTimeFlag();
-	CString strMsg = bNew
-		? _T("시간 기반 자동 처리를 [사용] 합니다.\n\n설비 완료 신호가 오지 않아도 경과시간으로 완료를 추정합니다.\n계속하시겠습니까?")
-		: _T("시간 기반 자동 처리를 [사용 안 함] 으로 바꿉니다.\n\n설비 완료 신호로만 처리합니다. 신호가 오지 않으면 작업이 그 상태에 남습니다.\n계속하시겠습니까?");
-	if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return;
-	CString strSql;
-	strSql.Format(_T(" UPDATE COMMON_CODE SET CCD_CD_YN = '%s' \n")
-		_T("  WHERE WH_TYP = '%s' AND CDX_CD = 'SCH_OPT' AND CCD_CD = 'AUTO_TIME' "),
-		bNew ? _T("Y") : _T("N"), m_pDoc->m_WH_TYP);
-	m_pDoc->ExcuteQueryString_DLG(strSql);
-	m_pDoc->GetQueryInsertClientLog(_T("CMainFrame"), _T(""), _T(""), _T(""),
-		CString(_T("CONFIG AUTO TIME -> ")) + (bNew ? _T("Y") : _T("N")));
-	m_dwAutoTimeRead = 0;
-	m_bAutoTimeProc = ReadAutoTimeFlag();
-}
-
-// [LGLS 2026-09-05] 버튼 선택 표시. 다른 화면에서 바꿨을 수도 있어 10초마다 DB 를 다시 읽는다.
-void CMainFrame::OnUpdateConfigAutoTime(CCmdUI* pCmdUI)
-{
-	DWORD dwNow = ::GetTickCount();
-	if (m_dwAutoTimeRead == 0 || (dwNow - m_dwAutoTimeRead) > 10000)
-	{
-		m_dwAutoTimeRead = dwNow;
-		m_bAutoTimeProc = ReadAutoTimeFlag();
-	}
-	pCmdUI->SetCheck(m_bAutoTimeProc ? 1 : 0);
-	pCmdUI->Enable(TRUE);
-}
-
 void CMainFrame::OnConfigIniOpen()
 {
 	// [LGLS 2026-09-03] 접속/화면 설정 파일(Ecs.ini)을 메모장으로 연다.
@@ -1114,12 +839,6 @@ void CMainFrame::OnConfigIniOpen()
 	HINSTANCE hRet = ::ShellExecute(GetSafeHwnd(), _T("open"), strNotepad, strParam, NULL, SW_SHOWNORMAL);
 	if ((INT_PTR)hRet <= 32)
 		::ShellExecute(GetSafeHwnd(), _T("open"), strIni, NULL, NULL, SW_SHOWNORMAL);
-}
-
-void CMainFrame::ShowJobDetail(CString strLuggNo)
-{
-	if (m_bPanelBarsCreated && ::IsWindow(m_PanelInfoDlg.m_hWnd))
-		m_PanelInfoDlg.SetJob(strLuggNo);
 }
 
 void CMainFrame::AddCategoryUSER()
@@ -1162,12 +881,9 @@ void CMainFrame::OnUpdateStatusCv(CCmdUI *pCmdUI)
 }
 
 // [LGLS 2026-09-08] 통신상태 표시를 리본 오른쪽 빈자리로 올린다. (사용자 요청)
-//   현장 화면이 1024x768 이라 하단 40px 를 통째로 쓰는 것이 아깝고, 리본 오른쪽은
-//   비어 있다. Ecs.ini [MENU] STATUS_POS 로 고른다(TOP 기본 / BOTTOM 이면 종전 그대로).
-#define LGLS_STATUS_TOP_W   300   // 위로 올렸을 때 상태바 폭(버튼 80 x 3 + 여백)
-#define LGLS_STATUS_TOP_H   34    // 〃 높이
-#define LGLS_STATUS_TOP_Y   34    // 〃 리본 위쪽에서의 거리
-#define LGLS_STATUS_TOP_MGN 26    // 〃 오른쪽 여백(마지막 버튼이 잘리지 않게)
+//   현장 화면이 1024x768 이라 하단 40px 를 통째로 쓰는 것이 아깝고, 리본 오른쪽은 비어 있다.
+// [LGLS 2026-09-19] STATUS_POS=RIBBON, COMM_MODE=2 로 확정 (사용자 지시) - 두 키 삭제.
+//   탭마다 [통신] 그룹을 두어 리본 오른쪽 끝에 붙이고, 떠 있던 상태바는 늘 감춘다.
 
 // [LGLS 2026-09-08] 통신상태 색 (사용자 지정) : 정상=푸른색 / 단절=붉은색
 #define LGLS_COMM_OK   RGB(0, 112, 224)
@@ -1230,14 +946,6 @@ void CLglsRibbonComm::SetStateColor(COLORREF clr)
 	Redraw();
 }
 
-// [LGLS 2026-09-08] STATUS_POS=RIBBON 이면 리본 안(각 탭의 마지막 그룹)에 붙인다.
-BOOL CMainFrame::IsStatusOnRibbon()
-{
-	TCHAR szTemp[64] = {0};
-	::GetPrivateProfileString(_T("MENU"), _T("STATUS_POS"), _T("RIBBON"), szTemp, 64, ECS_INI_FILE);
-	CString str(szTemp); str.Trim(); str.MakeUpper();
-	return (str == _T("RIBBON")) ? TRUE : FALSE;
-}
 
 // [LGLS 2026-09-08] 기본 배치 뒤 [통신] 탭만 오른쪽 끝으로 민다.
 // [LGLS 2026-09-12] 그룹(패널) 위 마우스 → 그 그룹의 문구 ini 경로 툴팁 (사용자 지시)
@@ -1368,7 +1076,7 @@ void CLglsRibbonBar::RecalcLayout()
 		}
 	}
 
-	// ── [통신] 그룹을 리본 오른쪽 끝으로 (COMM_MODE=2) ──
+	// ── [통신] 그룹을 리본 오른쪽 끝으로 ──
 	//   활성 탭의 그룹만 자리(rect)가 잡힌다. 비활성 탭의 것은 비어 있으므로 건너뛴다.
 	BOOL bMoved = FALSE;
 	for (int i = 0; i < m_arRightPanels.GetCount(); i++)
@@ -1396,18 +1104,11 @@ void CLglsRibbonBar::RecalcLayout()
 		Invalidate(FALSE);
 }
 
-// [LGLS 2026-09-08] 통신상태 표시 방식.  Ecs.ini [MENU] COMM_MODE
-//   1 = 리본 탭 줄 오른쪽 끝 (기본)   2 = 탭마다 [통신] 그룹, 리본 오른쪽 끝
-int CMainFrame::GetCommMode()
-{
-	return ::GetPrivateProfileInt(_T("MENU"), _T("COMM_MODE"), 1, ECS_INI_FILE);
-}
-
-// [모드 2] 카테고리(탭)마다 [통신] 그룹을 하나씩 붙인다 - 어느 탭에서도 보인다.
+// 카테고리(탭)마다 [통신] 그룹을 하나씩 붙인다 - 어느 탭에서도 보인다.
 //   그룹 위치는 CLglsRibbonBar::RecalcLayout 이 리본 오른쪽 끝으로 옮긴다.
 void CMainFrame::AddCommPanel(CMFCRibbonCategory* pCategory)
 {
-	if (pCategory == NULL || !IsStatusOnRibbon() || GetCommMode() != 2) return;
+	if (pCategory == NULL) return;
 
 	CMFCRibbonPanel* pPanel = pCategory->AddPanel(_T("통신"), 0, RUNTIME_CLASS(CLglsRibbonPanel));
 	m_wndRibbonBar.SetPanelIni(pPanel, _T("config"));	// [LGLS 2026-09-12] 그룹 툴팁 = 이 그룹의 문구 ini 경로
@@ -1436,52 +1137,13 @@ void CMainFrame::AddCommPanel(CMFCRibbonCategory* pCategory)
 	m_wndRibbonBar.AddRightPanel((CLglsRibbonPanel*)pPanel);
 }
 
-// [LGLS 2026-09-08] ★리본 탭 줄 오른쪽 끝★ 에 [통신] 표시를 붙인다. (사용자 확정)
-//   별도 탭(카테고리)으로 만들었더니 그 탭을 눌러야만 보였고, 탭이 두 번 그려졌다.
-//   AddToTabs 는 어느 탭을 보고 있든 항상 같은 자리에 남는다 - 이쪽이 맞다.
+// [LGLS 2026-09-08] 리본 탭 줄 오른쪽 끝에 [통신] 이름표를 붙인다. (사용자 요청)
+//   상태는 탭마다 붙인 [통신] 그룹(AddCommPanel)에 있고, 탭 줄 오른쪽 끝에는 그 그룹이
+//   무엇인지 알리는 이름만 둔다. (2026-09-19 COMM_MODE=2 확정 - 탭 줄에 램프를 두던 모드 1 삭제)
 void CMainFrame::AddCommToTabs()
 {
-	if (!IsStatusOnRibbon()) return;
-
-	if (GetCommMode() == 2)
-	{
-		// [LGLS 2026-09-08] 모드 2 : 상태는 아래 [통신] 그룹에 있고,
-		//   탭 줄 오른쪽 끝에는 그 그룹이 무엇인지 알리는 이름만 둔다. (사용자 요청)
-		m_wndRibbonBar.AddToTabs(new CLglsRibbonTabLabel(_T("  통신  ")));
-		m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("     ")));	// 오른쪽 여백
-		return;
-	}
-
-	TCHAR chrFileName[500];
-	GetModuleFileName(NULL, chrFileName, MAX_PATH);
-	CString strAppPath;
-	strAppPath.Format(_T("%s"), chrFileName);
-	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
-	HICON hOn  = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_on16"),  _T(".png")));
-	HICON hOff = HICONFromPATH(GetConcatPath(strAppPath, _T("comm_off16"), _T(".png")));
-
-	m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("통신 ")));
-
-	struct D2 { UINT id; LPCTSTR s; LPCTSTR d; };
-	D2 defs[] = { { ID_STATUS_CV_1, _T("EQUIP  "), _T("설비 통신 (WCS_TASK_CV)") },
-	              { ID_STATUS_HOST, _T("HOST  "),  _T("상위 통신 (WCS_TASK_HOST)") },
-	              { ID_STATUS_SCH,  _T("SCH"),    _T("스케줄러 (IO_TASK)") } };
-	// 탭 줄에서는 아이콘만 그려지고 글자는 빠진다. 그래서 이름은 라벨로 따로 붙인다.
-	for (int i = 0; i < 3; i++)
-	{
-		CLglsRibbonComm* p = new CLglsRibbonComm(defs[i].id, _T(""), hOn, hOff);
-		p->SetToolTipText(defs[i].d);
-		p->SetDescription(defs[i].d);
-		m_wndRibbonBar.AddToTabs(p);
-		m_arRbnComm.Add(p);
-
-		CMFCRibbonLabel* pNm = new CMFCRibbonLabel(defs[i].s);
-		pNm->SetToolTipText(defs[i].d);
-		m_wndRibbonBar.AddToTabs(pNm);
-	}
-
-	// 마지막 항목이 창 오른쪽 끝에 붙어 잘리지 않도록 여백을 둔다.
-	m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("    ")));
+	m_wndRibbonBar.AddToTabs(new CLglsRibbonTabLabel(_T("  통신  ")));
+	m_wndRibbonBar.AddToTabs(new CMFCRibbonLabel(_T("     ")));	// 오른쪽 여백
 }
 
 void CMainFrame::SetCommColor(UINT nID, COLORREF clr)
@@ -1493,68 +1155,13 @@ void CMainFrame::SetCommColor(UINT nID, COLORREF clr)
 	}
 }
 
-BOOL CMainFrame::IsStatusBarOnTop()
-{
-	TCHAR szTemp[64] = {0};
-	::GetPrivateProfileString(_T("MENU"), _T("STATUS_POS"), _T("TOP"), szTemp, 64, ECS_INI_FILE);
-	CString str(szTemp); str.Trim(); str.MakeUpper();
-	return (str == _T("BOTTOM")) ? FALSE : TRUE;
-}
-
+// [LGLS 2026-09-19] 통신상태는 리본 [통신] 그룹에 있으므로 떠 있는 상태바는 늘 감춘다
+//   (STATUS_POS=RIBBON 확정). 상태바 객체는 통신 버튼 갱신(OnUpdateStatus*)에 그대로 쓰인다.
 void CMainFrame::LayoutStatusBar(int cx, int cy)
 {
 	if (!::IsWindow(m_wndStatusBar.GetSafeHwnd()) || cx <= 0 || cy <= 0)
 		return;
-	if (IsStatusOnRibbon())
-	{
-		// 리본 안에 붙였으므로 떠 있는 상태바는 감춘다(하단 40px 도 돌려준다).
-		m_wndStatusBar.ShowWindow(SW_HIDE);
-		return;
-	}
-	m_wndStatusBar.ShowWindow(SW_SHOW);
-	if (IsStatusBarOnTop())
-	{
-		int w = LGLS_STATUS_TOP_W;
-		if (w > cx - 40) w = cx - 40;		// 창이 좁으면 줄인다
-		m_wndStatusBar.MoveWindow(cx - w - LGLS_STATUS_TOP_MGN, LGLS_STATUS_TOP_Y, w, LGLS_STATUS_TOP_H);
-	}
-	else
-	{
-		m_wndStatusBar.MoveWindow(0, cy - 40, cx, 40);
-	}
-	m_wndStatusBar.BringWindowToTop();
-}
-
-// [LGLS 2026-09-01] 도킹 판넬이 하단 커스텀 상태바(40px, 통신상태 버튼)를 침범해
-//   통신상태 표시가 가려지던 문제 - 레이아웃 후 판넬 높이를 상태바 위까지로 클램프한다.
-void CMainFrame::RecalcLayout(BOOL bNotify)
-{
-	CFrameWndEx::RecalcLayout(bNotify);
-
-	if (!m_bPanelBarsCreated || !::IsWindow(m_wndStatusBar.GetSafeHwnd()))
-		return;
-	CRect rcCli; GetClientRect(&rcCli);
-	LayoutStatusBar(rcCli.Width(), rcCli.Height());
-	// [LGLS 2026-09-08] 위로 올렸으면 하단을 비워 두지 않아도 된다 - 클램프는 하단일 때만.
-	if (IsStatusOnRibbon() || IsStatusBarOnTop())
-	{
-		if (!IsStatusOnRibbon()) m_wndStatusBar.BringWindowToTop();
-		return;
-	}
-	int nBarTop = rcCli.Height() - 40;
-
-	CDockablePane* pPanes[] = { &m_JobPane, &m_InfoPane, &m_VehPane };
-	for (int i = 0; i < 3; i++)
-	{
-		CDockablePane* p = pPanes[i];
-		if (!::IsWindow(p->m_hWnd) || !p->IsVisible() || p->IsFloating())
-			continue;
-		CRect rc; p->GetWindowRect(rc); ScreenToClient(rc);
-		if (rc.bottom > nBarTop && rc.top < nBarTop)
-			p->SetWindowPos(NULL, 0, 0, rc.Width(), nBarTop - rc.top,
-				SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-	}
-	m_wndStatusBar.BringWindowToTop();   // 통신상태 버튼이 항상 보이게
+	m_wndStatusBar.ShowWindow(SW_HIDE);
 }
 
 void CMainFrame::OnSize(UINT nType, int cx, int cy)
@@ -1583,7 +1190,7 @@ void CMainFrame::AddStatusBarPane()
 
 	// [LGLS] only EQUIP (equipment TASK program) + HOST are actually communicated with
 	// [LGLS 2026-09-08] 리본 오른쪽으로 올리면 자리가 좁으므로 버튼도 좁게 만든다.
-	int nBtnW = IsStatusBarOnTop() ? 80 : 100;
+	int nBtnW = 80;
 	InsertButtonPainToStatusBar(_T("EQUIP"), ID_STATUS_CV_1, i+1, nBtnW);
 	InsertButtonPainToStatusBar(_T("HOST"), ID_STATUS_HOST, i+2, nBtnW);
 	// [LGLS] SCH = IO_TASK (scheduler) health, read from EQP_MST heartbeat (EQP_TYP='SCH').

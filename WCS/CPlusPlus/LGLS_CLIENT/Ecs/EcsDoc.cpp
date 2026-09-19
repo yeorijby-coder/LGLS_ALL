@@ -716,12 +716,8 @@ void CEcsDoc::OnCommandRangeMainFrameVIEW(UINT nID)
 	{
 	case ID_VIEW_JOBLIST:
 		{
-			// [LGLS 2026-09-01] UI모드 선택에 따라 팝업(대화상자) 또는 우측 도킹 판넬
-			CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
-			if (pFrame != NULL && pFrame->m_bUiModePanel)
-				pFrame->TogglePanelBars(this);
-			else
-				OpenJobListDialog();
+			// [LGLS 2026-09-19] 옛 도킹 판넬 폐지 - 늘 작업정보 대화상자를 연다.
+			OpenJobListDialog();
 			break;
 		}
 	case ID_VIEW_USAGE:
@@ -2403,37 +2399,6 @@ CString CEcsDoc::GetVehicleJobSta(LPCTSTR lpszVehNo)
 	return strSta;
 }
 
-// [LGLS 2026-09-14] 그 화물번호가 어느 C/V 트랙의 화물번호(LUGG_NO_RD)로 올라가 있는가.
-//   크레인·RTV 가 내려놓은 화물이 H/S 트랙에 기록되는 시점을 잡는다 (VEH_CLEAR_MODE=2).
-//   설비 수집 스레드가 이미 m_csEqpData 를 쥔 채 부른다 - 같은 스레드 재진입이라 괜찮다.
-BOOL CEcsDoc::IsLuggOnCvTrack(const CString& strLuggIn)
-{
-	CString strLugg(strLuggIn);
-	strLugg.Trim();
-	if (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000")) return FALSE;
-	CSingleLock _lockEqp(&m_csEqpData, TRUE);
-	CString strKey;
-	CEquipment* pEqp = NULL;
-	for (POSITION pPos = m_MapEqps.GetStartPosition(); pPos != NULL; )
-	{
-		m_MapEqps.GetNextAssoc(pPos, strKey, pEqp);
-		if (pEqp == NULL || pEqp->m_enKind != CEquipment::enCV) continue;
-		CCv* pCv = (CCv*)pEqp;
-		if (pCv->m_pInfo == NULL) continue;
-		CString strTrk;
-		CTrackInfo* pTrk = NULL;
-		for (POSITION pT = pCv->m_pInfo->m_MapTrackInfo.GetStartPosition(); pT != NULL; )
-		{
-			pCv->m_pInfo->m_MapTrackInfo.GetNextAssoc(pT, strTrk, pTrk);
-			if (pTrk == NULL || pTrk->m_pCV_DATA == NULL) continue;
-			CString strOn = pTrk->m_pCV_DATA->V_LUGG_NO_RD;
-			strOn.Trim();
-			if (strOn == strLugg) return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 // [LGLS 2026-09-14] 그 화물번호가 올라가 있는 C/V 트랙 목록 (예 "00104,00103,"). 없으면 빈 문자열.
 CString CEcsDoc::GetTracksWithLugg(const CString& strLuggIn)
 {
@@ -2464,7 +2429,8 @@ CString CEcsDoc::GetTracksWithLugg(const CString& strLuggIn)
 	return strOut;
 }
 
-// [LGLS 2026-09-14] VEH_CLEAR_MODE=3 판정 (사용자 지시 : 색이 뜨는 시점은 종전대로, 지우는 시점만 2 처럼).
+// [LGLS 2026-09-14] VEH_CLEAR_MODE=3 판정 (사용자 지시 : 색이 뜨는 시점은 종전대로, 지우는 시점만 새 트랙 기록으로).
+//   [LGLS 2026-09-19] 모드 3 으로 확정 - 키 삭제, 모드 2 전용 IsLuggOnCvTrack 삭제.
 //   호기가 그 화물의 작업을 처음 물었을 때 화물이 있던 트랙 목록을 기억해 두고,
 //   그 목록에 없는 트랙에 화물번호가 기록되면 "내려놓았다"로 본다.
 //   - 출고 크레인 : 시작 때 트랙 없음(랙) -> H/S 트랙에 기록되는 순간 지운다
@@ -2533,7 +2499,7 @@ void CEcsDoc::RefreshJobCache()
 
 				// [LGLS 2026-08-22] 진행 중(20/21/25) 작업은 그 호기에 물려 있는 것으로 본다.
 				CString strSt = pRsw->GetItem(_T("JOB_STATUS")); strSt.Trim();
-				if (CLib::IniVehClearMode() >= 2) strSig += strSt + _T(";");	// [LGLS 2026-09-14] 모드 2 : 상태 전이도 다시 칠함
+				strSig += strSt + _T(";");	// [LGLS 2026-09-14] 상태 전이도 다시 칠함 (VEH_CLEAR_MODE=3 고정)
 				// [LGLS 2026-08-24] 20(구동대기)은 아직 크레인에 지시가 나가기 전이다.
 				//   그때부터 표시하면 크레인에는 작업이 없는데 화면에만 번호가 뜬다
 				//   (SC 상태창 작업번호는 비어 있는데 뷰에는 번호가 보이는 현상).

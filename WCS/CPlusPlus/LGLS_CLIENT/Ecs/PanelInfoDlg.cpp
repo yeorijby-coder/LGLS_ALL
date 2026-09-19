@@ -199,9 +199,7 @@ void CPanelInfoDlg::UpdateTitle()
 	case TAB_RTV: strTitle = _T("RTV 상세정보"); break;
 	case TAB_JOB: strTitle = _T("JOB 상세정보"); break;
 	}
-	CMainFrame* pFrame = (CMainFrame*)AfxGetApp()->GetMainWnd();
-	if (pFrame != NULL)
-		pFrame->SetInfoPaneTitle(strTitle);
+	SetWindowText(strTitle);	// [LGLS 2026-09-19] 옛 도킹 판넬 폐지 - 판넬 캡션 대신 자기 제목
 }
 
 void CPanelInfoDlg::FillUnits()

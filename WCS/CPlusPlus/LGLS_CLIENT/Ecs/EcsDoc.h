@@ -419,7 +419,6 @@ public:
 	CString GetVehicleJobNo(LPCTSTR lpszVehNo);
 	CString GetVehicleJobTyp(LPCTSTR lpszVehNo);
 	CString GetVehicleJobSta(LPCTSTR lpszVehNo);	// [LGLS 2026-09-14] 그 호기에 물린 작업의 상태
-	BOOL IsLuggOnCvTrack(const CString& strLugg);	// [LGLS 2026-09-14] 그 화물번호가 C/V 트랙에 올라가 있나
 	CString GetTracksWithLugg(const CString& strLugg);	// [LGLS 2026-09-14] 그 화물번호가 올라가 있는 트랙 목록 ("104,103,")
 	BOOL IsLuggOnNewTrack(LPCTSTR lpszVehNo, const CString& strLugg);	// [LGLS 2026-09-14] 모드 3 : 작업 시작 때 없던 트랙에 기록됐나
 	CMapStringToString m_mapVehClear3;	// [LGLS 2026-09-14] 모드 3 : 호기 -> "화물번호|시작 때 트랙 목록"

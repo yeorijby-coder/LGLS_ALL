@@ -14,7 +14,7 @@ public:
 
 public:
 	DWORD m_dwJobVerSeen = 0;	// [LGLS 2026-08-31] 마지막으로 반영한 작업정보 캐시 버전(호기별)
-	int m_nLglsDispOff = -1;	// [LGLS 2026-09-14] VEH_CLEAR_MODE 2/3 의 마지막 판정(-1 미정) - 바뀌면 다시 그린다
+	int m_nLglsDispOff = -1;	// [LGLS 2026-09-14] IsVehicleDisplayOff 의 마지막 판정(-1 미정) - 바뀌면 다시 그린다
 	BOOL m_bModified;
 
 public:

@@ -121,47 +121,21 @@ COLORREF CScInfo::GetForkColor1()
 	return BLACK;
 }
 
-// [LGLS 2026-09-14] 크레인이 화물을 내려놓은 것으로 볼 것인가 (Ecs.ini [MENU] VEH_CLEAR_MODE, 사용자 지시)
+// [LGLS 2026-09-14] 크레인이 화물을 내려놓은 것으로 볼 것인가 (사용자 지시)
 //   종전에는 설비가 반송 완료를 보고할 때까지(하역 뒤 약 10초) 작업구분·차상번호를 들고 있어
-//   화면에 보이는 칸(GetForkColor2)에 출고색이 남았다. 9/11 의 적재 비트 게이트는 이 레이아웃에서
-//   그려지지 않는 둘째 칸(GetForkColor1)과 번호에만 걸려 있었다.
-//   0 = 판정하지 않음(종전) / 1 = 차상 적재 비트 0 / 2 = 물었던 화물번호가 C/V 트랙에 기록됨, 또는 크레인 완료(29)
+//   화면에 보이는 칸(GetForkColor2)에 출고색이 남았다.
+// [LGLS 2026-09-19] VEH_CLEAR_MODE=3 확정 (사용자 지시) - 키 삭제, 0/1/2 분기 삭제.
+//   색이 뜨는 시점은 종전과 같다(작업이 물리면 바로). 지우는 시점 : 크레인 완료(29) / 물린 작업 없음 /
+//   작업 시작 때 없던 트랙에 화물 기록(IsLuggOnNewTrack).
 BOOL CScInfo::IsVehicleDisplayOff(CSC_DATA* pSC_DATA)
 {
 	if (pSC_DATA == NULL || m_pEquipment == NULL || m_pEquipment->m_pDoc == NULL) return FALSE;
-	int nMode = CLib::IniVehClearMode();
-	if (nMode == 1)
-	{
-		CString strSen = pSC_DATA->V_SENSOR_FK_RD;
-		strSen.Trim();
-		return (!strSen.IsEmpty() && strSen == _T("0"));	// 비트를 못 받으면(빈 값) 판정하지 않는다
-	}
-	if (nMode == 3)
-	{
-		// 색이 뜨는 시점은 종전(0)과 같다. 지우는 시점 : 크레인 완료(29) / 물린 작업 없음 / 시작 때 없던 트랙에 화물 기록
-		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
-		CString strHeld = pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO);
-		strHeld.Trim();
-		if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
-		if (pDoc->GetVehicleJobSta(pSC_DATA->K_SC_NO) == _T("29")) return TRUE;
-		return pDoc->IsLuggOnNewTrack(pSC_DATA->K_SC_NO, strHeld);
-	}
-	if (nMode == 2)
-	{
-		CEcsDoc* pDoc = m_pEquipment->m_pDoc;
-		if (pDoc->GetVehicleJobSta(pSC_DATA->K_SC_NO) == _T("29")) return TRUE;
-		CString arrLugg[3];
-		arrLugg[0] = pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO);
-		arrLugg[1] = pSC_DATA->V_LUGG_NO_FK1_RD;
-		arrLugg[2] = pSC_DATA->V_ITN_LUGG_FK1;
-		for (int i = 0; i < 3; i++)
-			if (pDoc->IsLuggOnCvTrack(arrLugg[i])) return TRUE;
-		// 작업정보에 물린 작업이 없는데 설비값만 남은 것은 완료 보고 전 잔재다
-		CString strHeld = arrLugg[0];
-		strHeld.Trim();
-		if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
-	}
-	return FALSE;
+	CEcsDoc* pDoc = m_pEquipment->m_pDoc;
+	CString strHeld = pDoc->GetVehicleJobNo(pSC_DATA->K_SC_NO);
+	strHeld.Trim();
+	if (strHeld.IsEmpty() || strHeld == _T("0") || strHeld == _T("0000")) return TRUE;
+	if (pDoc->GetVehicleJobSta(pSC_DATA->K_SC_NO) == _T("29")) return TRUE;
+	return pDoc->IsLuggOnNewTrack(pSC_DATA->K_SC_NO, strHeld);
 }
 
 COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
@@ -691,8 +665,7 @@ void CScInfo::InvokeControl(CSC_DATA*	    pSC_DATA)
 		}
 	}
 
-	// [LGLS 2026-09-14] 모드 2/3 은 트랙 화물번호 변화로도 판정이 바뀐다 - 설비값이 그대로여도 판정이 바뀌면 다시 그린다
-	if (CLib::IniVehClearMode() >= 2)
+	// [LGLS 2026-09-14] 트랙 화물번호 변화로도 판정이 바뀐다 - 설비값이 그대로여도 판정이 바뀌면 다시 그린다
 	{
 		int nOff = IsVehicleDisplayOff(pSC_DATA) ? 1 : 0;
 		if (nOff != pSC_DATA->m_nLglsDispOff) { pSC_DATA->m_nLglsDispOff = nOff; pSC_DATA->m_bModified = TRUE; }
