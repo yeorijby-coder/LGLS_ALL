@@ -170,7 +170,7 @@ static CString PfStateText(int nAge, int nOk, int nWarn)
 void CLglsInfoBar::PaintComm(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 {
 	struct { LPCTSTR name; int ok; int warn; } CM[3] = {
-		{ _T("설비 통신"), 10, 60 }, { _T("상위 통신"), 60, 300 }, { _T("스케줄러"), 120, 900 } };
+		{ _T("설비(PLC) 통신"), 10, 60 }, { _T("상위(WMS) 통신"), 60, 300 }, { _T("스케줄러"), 120, 900 } };
 	BOOL bTall = (rc.Height() >= 70);
 	for (int i = 0; i < 3; i++)
 	{
@@ -225,8 +225,8 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 		{ 1, 0, pCfg->m_clrUSER_COLOR_DISCONNECT, _T("통신두절") },
 		{ 1, 0, pCfg->m_clrUSER_COLOR_CV_SEARCH,  _T("검색") },
 		{ 1, 0, pCfg->m_clrUSER_COLOR_TRACKING,   _T("작업번호 있음") },
-		{ 2, 0, LEGEND_IDLE_GRAY,                 _T("작업없음(정상)") },
-		{ 2, 0, pCfg->m_clrUSER_COLOR_MANUAL,     _T("미가동(수동)") },
+		{ 2, 0, LEGEND_IDLE_GRAY,                 _T("정상") },
+		{ 2, 0, pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
 		{ 2, 0, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") },
 		{ 3, 1, pCfg->m_clrUSER_COLOR_STO_SUSPEND,  _T("입고 금지") },
 		{ 3, 1, pCfg->m_clrUSER_COLOR_RET_SUSPEND,  _T("출고 금지") },
