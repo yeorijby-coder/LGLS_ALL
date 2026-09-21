@@ -1657,8 +1657,8 @@ namespace TSK_COMM_IOSCH
                     //   실측 7052 : 크레인이 지시를 잃은 상태(시뮬 재기동)에서 체류복구가 "완료신호 유실"로 오판해
                     //   화물이 H/S(104)에 그대로 있는데 09 로 완료·상위 보고·삭제 → 유령 재고 + 104 잔재로 1호기 라인 정체.
                     //   작업정보가 지워지면 실물 위치를 되찾을 길이 없다. 체류는 ★경고만★ 남기고 사람이 처리한다.
-                    //   (m_setAutoTimeGrant 는 더 이상 채우지 않는다 - CompleteSC/CompleteRGVReal 의 시간 기반 분기는
-                    //    [환경설정] > [시간 기반 자동 처리] 를 명시적으로 켰을 때만 남는다)
+                    //   (CompleteSC/CompleteRGVReal 의 시간 기반 분기는 [환경설정] > [시간 기반 자동 처리] 를
+                    //    명시적으로 켰을 때만 남는다 - 2026-09-21 그때 쓰던 허용 이력 집합은 삭제)
                 }
 
                 // 정상 진행으로 돌아선 작업은 경고 이력에서 제거
@@ -1667,9 +1667,6 @@ namespace TSK_COMM_IOSCH
                     if (!lstAlive.Contains(k)) lstDrop.Add(k);
                 foreach (string k in lstDrop) m_dicStallWarned.Remove(k);
 
-                // [LGLS 2026-09-06] 사라진(완료/삭제된) 작업의 1회 허용 이력도 함께 정리한다.
-                //   JOB_MST 에 없는 작업번호를 계속 들고 있을 이유가 없다.
-                CleanupAutoTimeSets();
             }
             catch (Exception ex)
             {
@@ -1682,45 +1679,10 @@ namespace TSK_COMM_IOSCH
         //   이보다 빨리 오는 '완료' 는 이전 작업의 잔류 신호로 본다.
         private const int SC_MIN_RUN_SEC = 8;
 
-        // [LGLS 2026-09-06] 체류 시 1회 한정 시간 기반 자동 처리 (사용자 확정)
-        //   Grant   : 지금 1회 허용된 작업 / Used : 이미 1회 써버린 작업(다시는 자동 처리하지 않는다)
-        //   UsedSc  : 그 호기가 자동 처리를 쓴 뒤 아직 ★정상 완료신호★ 를 한 번도 못 낸 상태.
-        //             신호가 계속 죽어 있으면 작업마다 1회씩 복구되어 결함이 영영 가려지므로,
-        //             호기 단위로도 한 번만 허용하고 그 뒤에는 멈춰 세운다.
-        //             그 호기가 완료신호로 정상 완료하면 신호가 살아난 것이므로 해제한다.
-        //             [LGLS 2026-09-06] S/C(901~905) 와 RTV(801) 를 같은 집합에 담는다 - 번호가 겹치지 않는다.
-        //   RefuseLogged : 같은 작업에 대한 거부 메시지를 한 번만 남기기 위한 표시.
-        private readonly HashSet<string> m_setAutoTimeGrant   = new HashSet<string>();
-        private readonly HashSet<string> m_setAutoTimeUsed    = new HashSet<string>();
-        private readonly HashSet<string> m_setAutoTimeUsedSc  = new HashSet<string>();
-        private readonly HashSet<string> m_setAutoTimeRefused = new HashSet<string>();
-
-        /// <summary>[LGLS 2026-09-06] JOB_MST 에 없는 작업번호를 허용/사용 이력에서 지운다.</summary>
-        private void CleanupAutoTimeSets()
-        {
-            try
-            {
-                if (m_setAutoTimeGrant.Count == 0 && m_setAutoTimeUsed.Count == 0) return;
-                string q = "";
-                q += CRLF + " SELECT LUGG_NO FROM JOB_MST WHERE WH_TYP = :WH_TYP ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                var setAlive = new HashSet<string>();
-                if (DbQry(q) > 0)
-                {
-                    DataTable dt = _pBdb.mDtMain.Copy();
-                    for (int i = 0; i < dt.Rows.Count; i++)
-                        setAlive.Add(GetVal(dt.Rows[i], "LUGG_NO"));
-                }
-                m_setAutoTimeGrant.RemoveWhere(k => !setAlive.Contains(k));
-                m_setAutoTimeUsed.RemoveWhere(k => !setAlive.Contains(k));
-                m_setAutoTimeRefused.RemoveWhere(k => !setAlive.Contains(k));
-                // m_setAutoTimeUsedSc 는 호기 단위라 작업 소멸로 지우지 않는다.
-                //   그 호기가 정상 완료신호를 낼 때(CompleteSC)만 해제된다.
-            }
-            catch { }
-        }
+        // [LGLS 2026-09-17] 체류복구(시간 기반 자동 완료 1회 허용) 폐기 - 사용자 지시.
+        //   [LGLS 2026-09-21] 그때 쓰던 허용/사용 이력 집합(m_setAutoTime*)과 CleanupAutoTimeSets() 를 없앴다.
+        //   채우는 곳이 없어 늘 비어 있던 죽은 코드다. 시간 기반 분기는 [환경설정] > [시간 기반 자동 처리]
+        //   (AutoTimeProcEnabled, COMMON_CODE SCH_OPT/AUTO_TIME) 하나로만 열린다.
 
         private void CompleteSC()
         {
@@ -1800,10 +1762,6 @@ namespace TSK_COMM_IOSCH
                     string rtn = "";
 
                     bool bBySignal = (GetVal(dt.Rows[i], "BY_SIGNAL") == "1");
-
-                    // [LGLS 2026-09-06] 완료신호로 정상 완료했다면 그 호기의 신호는 살아 있는 것이다.
-                    //   자동 처리 사용 표시를 풀어, 다음에 한 번 더 구제받을 수 있게 한다.
-                    if (bBySignal) m_setAutoTimeUsedSc.Remove(scNo);
 
                     // 설비 완료신호가 아니라 ★시간 기반★ 으로 걸린 행이면,
                     //   [시간 기반 자동 처리] 가 켜져 있거나 그 작업에 1회 허용이 있어야 한다.
@@ -4121,7 +4079,6 @@ namespace TSK_COMM_IOSCH
                     bool bBySignal = RtvCompleteFor(luggNo);
                     if (bBySignal)
                     {
-                        m_setAutoTimeUsedSc.Remove(RTV_NO);
                     }
                     else
                     {

@@ -28,24 +28,24 @@ OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATE = '2026-09-21'
 VER = '2.0'
 NAVY = RGBColor(0x1E, 0x27, 0x61)
-BLUE = RGBColor(0x26, 0x6E, 0xBE)
+BLUE = RGBColor(0x1B, 0x5F, 0xB0)
 ICE = RGBColor(0xCA, 0xDC, 0xFC)
 LIGHT = RGBColor(0xEE, 0xF1, 0xF7)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 GRAY = RGBColor(0x59, 0x59, 0x59)
 LINE = RGBColor(0xB6, 0xBF, 0xD0)
-GREEN = RGBColor(0x2E, 0x86, 0x4B)
-AMBER = RGBColor(0xC8, 0x7A, 0x0E)
+GREEN = RGBColor(0x23, 0x79, 0x4A)
+AMBER = RGBColor(0xB5, 0x72, 0x0A)
 RED = RGBColor(0xB0, 0x2E, 0x2E)
-TEAL = RGBColor(0x1F, 0x7A, 0x8C)
+TEAL = RGBColor(0x6B, 0x3F, 0xA0)   # [LGLS 2026-09-21] 청록 → 보라 (파랑과 구분)
 FONT = '맑은 고딕'
 
 # 프로세스별 색 : 범례와 각 단계 상자가 같은 색을 쓴다
 PROC = {
-    'HOST': (BLUE,  RGBColor(0xEC, 0xF2, 0xFB), 'WCS_TASK_HOST'),
-    'SCH':  (GREEN, RGBColor(0xEC, 0xF6, 0xEF), 'IO_TASK'),
-    'CV':   (AMBER, RGBColor(0xFB, 0xF4, 0xE8), 'WCS_TASK_CV / CvThread'),
-    'VEH':  (TEAL,  RGBColor(0xEA, 0xF4, 0xF6), 'WCS_TASK_CV / VehThread'),
+    'HOST': (BLUE,  RGBColor(0xCF, 0xE0, 0xFA), 'WCS_TASK_HOST'),
+    'SCH':  (GREEN, RGBColor(0xD4, 0xF0, 0xD8), 'IO_TASK'),
+    'CV':   (AMBER, RGBColor(0xFD, 0xE3, 0xBF), 'WCS_TASK_CV / CvThread'),
+    'VEH':  (TEAL,  RGBColor(0xE8, 0xDA, 0xF6), 'WCS_TASK_CV / VehThread'),
     'EQP':  (GRAY,  LIGHT,                      '설비 (PLC)'),
 }
 
