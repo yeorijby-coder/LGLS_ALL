@@ -163,6 +163,18 @@ namespace EQP_SIM.Sim
             }
         }
 
+        /// <summary>[LGLS 2026-09-21] 설비 운전모드(자동/수동) 전환. 설비를 못 찾으면 false.</summary>
+        public bool SetVehicleOperationMode(string id, bool bAuto)
+        {
+            lock (sync)
+            {
+                var v = Vehicle(id);
+                if (v == null) { Log("[운전모드] 알 수 없는 설비 " + id); return false; }
+                v.SetOperationMode(bAuto);
+                return true;
+            }
+        }
+
         /// <summary>[LGLS 2026-09-21] C/V 포트(트랙)에 에러 코드 주입 (시뮬 화면 [에러 발생]).</summary>
         public bool RaiseConveyorError(int port, int code)
         {
@@ -207,6 +219,7 @@ namespace EQP_SIM.Sim
                 int n = 0;
                 foreach (var v in vehicles.Values) if (v.ClearError()) n++;
                 foreach (var c in conveyors.Values) n += c.ClearAllErrors();   // [LGLS 2026-09-21] C/V 주입 에러도 함께
+                foreach (var v in vehicles.Values) if (v.IsManualMode) { v.SetOperationMode(true); n++; }   // [LGLS 2026-09-21] 수동 전환도 자동 복귀
                 if (n == 0) Log("[설비 에러 해제] 에러 상태인 설비가 없습니다");
                 return n;
             }

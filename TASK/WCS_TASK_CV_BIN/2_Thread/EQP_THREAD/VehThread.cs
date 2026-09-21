@@ -807,10 +807,28 @@ namespace WCS_TASK_CV
                 //   크레인을 사용정지해도 HOST_TASK 가 항상 '가능(0)' 으로 보고했다.
                 //   HOST_TASK 의 불가 판정 : ONLINE/AUTO/ACTIVE != "1" 또는 UCSTATUS=="4"(에러)
                 bool bDown = (status == 0);                       // DOWN = 사용정지/이상
-                //   ※ OPERATION_MODE(운전모드) 비트는 실 PLC 에서 채워지는지 확인되지 않았고
-                //     시뮬레이터는 채우지 않아 0 으로 읽힌다 → 오판 방지를 위해 지금은 쓰지 않는다.
-                //     DOWN 판정만으로 사용정지를 반영한다(실 PLC 확인 후 확장).
-                chg("AUTO_MODE_RD", bDown ? "0" : "1");
+                // [LGLS 2026-09-21] 운전모드(OPERATION_MODE, D0160+10k 의 +9 워드) 반영 - 사용자 지시
+                //   구 ECS Vehicle.OnOperationMode : 0=MANUAL(수동) / 그 외=AUTO(자동). 구 ECS 는 읽기만 하고 쓰지 않았다.
+                //   ★실 PLC 가 이 워드를 채우는지 미확인★ → WCS_DB.INI [CNF] OP_MODE_USE=1 일 때만 쓴다(기본 0=종전 DOWN 파생).
+                //   값이 0 이면 기상반 수동으로 보고 AUTO_MODE_RD=0 → 운전 화면이 그 크레인을 에러색으로 그린다.
+                bool bManual = false;
+                if (cDefApi.GsCnfInt("OP_MODE_USE", 0) == 1)
+                {
+                    int nOpMode = 0;
+                    ObsDef oOp = O(v, "OPERATION_MODE");
+                    if (oOp != null && ReadShort(oOp, ref nOpMode))
+                    {
+                        bManual = (nOpMode == 0);
+                        string strPrev = Cached(v, "__opMode") ?? "";
+                        if (strPrev != nOpMode.ToString())
+                        {
+                            v.Cache["__opMode"] = nOpMode.ToString();
+                            if (strPrev.Length > 0)
+                                LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전모드 " + (bManual ? "수동" : "자동") + " (OPERATION_MODE=" + nOpMode + ")");
+                        }
+                    }
+                }
+                chg("AUTO_MODE_RD", (bDown || bManual) ? "0" : "1");
                 chg("UCSTATUS_RD", bDown ? "4" : (status == 1 ? "1" : "2"));   // 4 = 에러/사용정지
                 chg("ONLINE_MODE_RD", bDown ? "0" : "1");
                 chg("ACTIVE_MODE_RD", bDown ? "0" : "1");
@@ -890,7 +908,15 @@ namespace WCS_TASK_CV
                 chg("SENSOR_FK1_RD", sen);
                 chg("WAITING_ORDER_RD", status == 1 ? "1" : "0");
                 // [LGLS 2026-09-21] RTV 도 SUBSYSTEM_STATUS=0(DOWN) 이면 자동 아님(0) - 운전 화면이 RTV 를 에러색으로 그린다 (사용자 지시)
-                chg("AUTO_MODE_RD", (status == 0) ? "0" : "1");
+                //   운전모드(OPERATION_MODE)도 크레인과 같게 [CNF] OP_MODE_USE=1 일 때만 본다.
+                bool bRtvManual = false;
+                if (cDefApi.GsCnfInt("OP_MODE_USE", 0) == 1)
+                {
+                    int nOpMode = 0;
+                    ObsDef oOp = O(v, "OPERATION_MODE");
+                    if (oOp != null && ReadShort(oOp, ref nOpMode)) bRtvManual = (nOpMode == 0);
+                }
+                chg("AUTO_MODE_RD", (status == 0 || bRtvManual) ? "0" : "1");
                 // [LGLS 2026-07-22] 표시용 레일 위치: LOCATION 포트(00/00/pp) → Client EcsDefine <Position> plc 값.
                 //   (Client RtvInfo 는 RTV_DATA_LGLS.POS_H_RD 를 m_MapRtvPosition[plc]→view 로 재매핑해 그린다.
                 //    구 경로에선 IO_TASK WriteCranePos 가 채웠으나 실경로는 관측 파생으로 채운다)

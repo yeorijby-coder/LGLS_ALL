@@ -144,6 +144,16 @@ namespace EQP_SIM.Sim
 
         public bool IsError { get { return state == VState.Error; } }
 
+        /// <summary>[LGLS 2026-09-21] 운전모드(OPERATION_MODE, Status +9) 자동/수동 전환 - 조작반 스위치 흉내 (사용자 지시).
+        ///   WCS 는 WCS_DB.INI [CNF] OP_MODE_USE=1 일 때 이 워드를 읽어 AUTO_MODE_RD 에 반영한다.</summary>
+        public void SetOperationMode(bool bAuto)
+        {
+            io.SetShort(Def.Id, "OPERATION_MODE", (ushort)(bAuto ? 1 : 0));
+            engine.Log(Def.Id + " 운전모드 " + (bAuto ? "자동" : "★수동") + " (OPERATION_MODE=" + (bAuto ? 1 : 0) + ")");
+        }
+
+        public bool IsManualMode { get { return io.GetShort(Def.Id, "OPERATION_MODE") == 0; } }
+
         // [LGLS 2026-09-21] 관측점이 주소맵에 있는지 (RGV 에는 ERR_CODE_RD 블록이 없다)
         private bool HasSig(string name) { ObservableDef d; return io.Map.TryGet(Def.Id, name, out d); }
 

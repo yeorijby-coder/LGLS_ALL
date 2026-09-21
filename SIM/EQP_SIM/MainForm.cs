@@ -439,6 +439,24 @@ namespace EQP_SIM
                                : (it.Text + " 에러 주입 실패");
         }
 
+        // [LGLS 2026-09-21] 운전모드 수동/자동 (사용자 지시) - 콤보에서 고른 설비의 OPERATION_MODE 워드를 바꾼다.
+        private void btnOpManual_Click(object sender, EventArgs e) { SetOpMode(false); }
+        private void btnOpAuto_Click(object sender, EventArgs e) { SetOpMode(true); }
+
+        private void SetOpMode(bool bAuto)
+        {
+            if (engine == null) return;
+            var it = SelectedErrEqp(); if (it == null) return;
+            if (it.Id.StartsWith("CV:"))
+            {
+                lblStatus.Text = "운전모드 전환은 S/C·RTV 만 됩니다 (C/V 는 해당 없음)";
+                return;
+            }
+            if (!engine.SetVehicleOperationMode(it.Id, bAuto)) return;
+            lblStatus.Text = it.Text + " 운전모드 " + (bAuto ? "자동" : "수동")
+                + " — WCS 에 전달되려면 WCS_DB.INI [CNF] OP_MODE_USE=1 (기본 0)";
+        }
+
         private void btnErrClearSel_Click(object sender, EventArgs e)
         {
             if (engine == null) return;

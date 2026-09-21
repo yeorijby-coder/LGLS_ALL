@@ -83,6 +83,8 @@
             this.pnlTop.Controls.Add(this.txtErrCode);
             this.pnlTop.Controls.Add(this.btnErrRaise);
             this.pnlTop.Controls.Add(this.btnErrClearSel);
+            this.pnlTop.Controls.Add(this.btnOpManual);
+            this.pnlTop.Controls.Add(this.btnOpAuto);
             this.pnlTop.Controls.Add(this.lblErrHint);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlTop.Height = 176;   // [LGLS 2026-09-06] 화물 생성 행 추가 / [LGLS 2026-09-12] 고장 주입 행 추가 / [LGLS 2026-09-21] 설비 에러 주입 행 추가
@@ -144,9 +146,24 @@
             this.btnErrClearSel.BackColor = System.Drawing.Color.LightYellow;
             this.btnErrClearSel.UseVisualStyleBackColor = false;
             this.btnErrClearSel.Click += new System.EventHandler(this.btnErrClearSel_Click);
-            this.lblErrHint.Location = new System.Drawing.Point(580, 149);
-            this.lblErrHint.Size = new System.Drawing.Size(560, 20);
-            this.lblErrHint.Text = "코드는 PLC 알람 리스트 번호(예 S/C 11~118, RTV 12~91). 발생 시 ALARM_SET_CODE·DOWN 으로 세우고, 해제는 여기나 [설비 에러 해제]";
+            // [LGLS 2026-09-21] 운전모드(OPERATION_MODE) 수동/자동 - 선택한 설비의 조작반 스위치 흉내
+            this.btnOpManual.Location = new System.Drawing.Point(576, 145);
+            this.btnOpManual.Size = new System.Drawing.Size(110, 26);
+            this.btnOpManual.Text = "기상반 수동";
+            this.btnOpManual.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnOpManual.BackColor = System.Drawing.Color.Lavender;
+            this.btnOpManual.UseVisualStyleBackColor = false;
+            this.btnOpManual.Click += new System.EventHandler(this.btnOpManual_Click);
+            this.btnOpAuto.Location = new System.Drawing.Point(690, 145);
+            this.btnOpAuto.Size = new System.Drawing.Size(96, 26);
+            this.btnOpAuto.Text = "자동 복귀";
+            this.btnOpAuto.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnOpAuto.BackColor = System.Drawing.Color.Honeydew;
+            this.btnOpAuto.UseVisualStyleBackColor = false;
+            this.btnOpAuto.Click += new System.EventHandler(this.btnOpAuto_Click);
+            this.lblErrHint.Location = new System.Drawing.Point(794, 149);
+            this.lblErrHint.Size = new System.Drawing.Size(420, 20);
+            this.lblErrHint.Text = "코드=PLC 알람 리스트 번호. 수동은 WCS_DB.INI [CNF] OP_MODE_USE=1 일 때만 WCS 에 전달";
             this.lblErrHint.ForeColor = System.Drawing.Color.DimGray;
             //
             // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (상황 A / 상황 B)
@@ -376,6 +393,8 @@
         private System.Windows.Forms.Button btnErrRaise = new System.Windows.Forms.Button();
         private System.Windows.Forms.Button btnErrClearSel = new System.Windows.Forms.Button();
         private System.Windows.Forms.Label lblErrHint = new System.Windows.Forms.Label();
+        private System.Windows.Forms.Button btnOpManual = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Button btnOpAuto = new System.Windows.Forms.Button();
         private System.Windows.Forms.Button btnScenarioTest;
         private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.ListView lvDevices;
