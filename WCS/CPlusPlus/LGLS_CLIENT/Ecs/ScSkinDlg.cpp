@@ -338,17 +338,11 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("item"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_SC_STATUS_ITEM2, strValue);
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("item"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_SC_STATUS_ITEM6, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("value"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_SC_STATUS_VALUE1, strValue);
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("value"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_SC_SC_STATUS_VALUE5, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("value"), (int)m_enLang);
