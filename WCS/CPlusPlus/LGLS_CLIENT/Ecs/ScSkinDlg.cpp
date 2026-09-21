@@ -1867,6 +1867,15 @@ HBRUSH CScSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));	// [LGLS 2026-08-05] 잔상 방지
 		return ::GetSysColorBrush(COLOR_WINDOW);
 	}
+	else if (nId == IDC_EDT_SC_SC_STATUS || nId == IDC_EDT_SC_SC_MODE)
+	{
+		// [LGLS 2026-09-21] 동작상태가 DOWN 이거나 기상반이 수동이면 붉은 글씨 (사용자 지시)
+		CString t; pWnd->GetWindowText(t);
+		BOOL bRed = (nId == IDC_EDT_SC_SC_STATUS) ? (t.Find(_T("DOWN")) >= 0) : (t == _T("수동"));
+		pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));
+		pDC->SetTextColor(bRed ? RGB(255,0,0) : ::GetSysColor(COLOR_WINDOWTEXT));
+		return ::GetSysColorBrush(COLOR_WINDOW);
+	}
 	else
 	{
 		// [LGLS 2026-08-05] CV 대화상자처럼 라벨 배경이 비치게 한다.

@@ -32,7 +32,8 @@ BOOL CRecordSetWrap::MoveNext()
 		return FALSE;
 	}
 
-	if(m_pRecordSet->adoEOF == TRUE)
+	// [LGLS 2026-09-21] adoEOF 는 VARIANT_BOOL(참=-1)이라 "== TRUE(1)" 비교는 늘 거짓이었다 - EOF 에서 GetItem 이 _com_error 를 던졌다
+	if(m_pRecordSet->adoEOF != VARIANT_FALSE)
 	{
 		return FALSE;
 	}
@@ -50,7 +51,7 @@ BOOL CRecordSetWrap::MovePrevious()
 		return FALSE;
 	}
 
-	if(m_pRecordSet->adoEOF == TRUE)
+	if(m_pRecordSet->adoEOF != VARIANT_FALSE)
 	{
 		return FALSE;
 	}
@@ -68,7 +69,7 @@ BOOL CRecordSetWrap::MoveFirst()
 		return FALSE;
 	}
 
-	if(m_pRecordSet->adoEOF == TRUE)
+	if(m_pRecordSet->adoEOF != VARIANT_FALSE)
 	{
 		return FALSE;
 	}
@@ -85,7 +86,7 @@ CString CRecordSetWrap::GetItem(CString strFiledName)
 		return _T("");
 	}
 
-	if(m_pRecordSet->adoEOF == TRUE)
+	if(m_pRecordSet->adoEOF != VARIANT_FALSE)
 	{
 		return _T("");
 	}

@@ -1924,17 +1924,23 @@ void CEcsDoc::InitializeErrorMst()
 	CString strSql = m_pErrorMst->GetQrySelect();
 	_RecordsetPtr pRspError = m_pUrmDBAccess->m_pAdoDB->SelectSqlForThread_RecordSet(strSql, nRowCnt, strMessage);
 	CRecordSetWrap* pRswError = new CRecordSetWrap(pRspError); 
-	if(nRowCnt > 1)
+	// [LGLS 2026-09-21] ADO forward-only 커서는 RecordCount 가 -1 이라 nRowCnt > 1 조건이 늘 거짓이었다
+	//   → 코드표가 빈 채로 떠서 상태창 에러 칸에 코드만 나오던 결함. 행 수에 기대지 않고 EOF 까지 읽는다.
+	int nLoaded = 0;
+	if(pRspError != NULL && nRowCnt != 0)
 	{
-		m_pErrorMst->m_Map->InitHashTable(nRowCnt);
-		pRswError->MoveFirst();
-		for(int nIdxForError = 0; nIdxForError < nRowCnt; nIdxForError++)
+		m_pErrorMst->m_Map->InitHashTable((nRowCnt > 1) ? nRowCnt : 1021);
+		// MoveFirst 는 부르지 않는다 - 서버측 forward-only 커서는 뒤로 못 가서 _com_error 를 던진다(기동 직후 0xc0000409).
+		//   열린 직후 커서는 이미 첫 행이다. ADO 예외는 여기서 막아 코드표 없이라도 기동되게 한다.
+		try {
+		for(int nIdxForError = 0; nIdxForError < 100000; nIdxForError++)
 		{
 			CString strEQP_TYP, strERROR_CODE;
 			CString strACTION_KOR, strACTION_ENG, strACTION_CHIN, strACTION_HUN;
 			CString strMSG_KOR, strMSG_ENG, strMSG_CHIN, strMSG_HUN;
 			strEQP_TYP = pRswError->GetItem(_T("EQP_TYP"));
-			// [LGLS] CString 자기참조 Format 은 VS2019 UCRT 에서 해제된 버퍼 참조로 AV -> 임시변수로 분리
+			if (strEQP_TYP.IsEmpty()) break;	// EOF (COALESCE 라 데이터가 있으면 빈 값이 아니다)
+			if (nRowCnt > 0 && nIdxForError >= nRowCnt) break;	// 행 수를 알면 그만큼만 (커서 끝 넘어 읽지 않게)
 			CString strCodeTmp = pRswError->GetItem(_T("EQP_ERR_CD"));
 			strERROR_CODE.Format(_T("%04s"), (LPCTSTR)strCodeTmp);
 			CEQP_ECD_MST* pMapItem = new CEQP_ECD_MST(strEQP_TYP, strERROR_CODE);
@@ -1942,7 +1948,6 @@ void CEcsDoc::InitializeErrorMst()
 			strACTION_ENG = pRswError->GetItem(_T("ACTION_ENG"));
 			strACTION_CHIN = pRswError->GetItem(_T("ACTION_CHIN"));
 			strACTION_HUN = pRswError->GetItem(_T("ACTION_HUN"));
-
 			strMSG_KOR = pRswError->GetItem(_T("MSG_KOR"));
 			strMSG_ENG = pRswError->GetItem(_T("MSG_ENG"));
 			strMSG_CHIN = pRswError->GetItem(_T("MSG_CHIN"));
@@ -1950,9 +1955,16 @@ void CEcsDoc::InitializeErrorMst()
 			pMapItem->SetValues_ACTION(strACTION_KOR, strACTION_ENG, strACTION_CHIN, strACTION_HUN);
 			pMapItem->SetValues_MSG(strMSG_KOR, strMSG_ENG, strMSG_CHIN, strMSG_HUN);
 			m_pErrorMst->m_Map->SetAt(pMapItem->GetTupleKeyEQP_ECD_MST(), pMapItem);
-			pRswError->MoveNext();
+			nLoaded++;
+			if (nRowCnt > 0 && nLoaded >= nRowCnt) break;
+			if (!pRswError->MoveNext()) break;
 		}
+		}
+		catch (_com_error& e) { strMessage.Format(_T("ADO %s"), (LPCTSTR)e.Description()); }
+		catch (...) { strMessage = _T("exception"); }
 	}
+	CLib::UiLog(_T("[ERRMST] EQP_ECD_MST %d건 적재 (RecordCount=%d)%s"), nLoaded, nRowCnt,
+		strMessage.IsEmpty() ? _T("") : (LPCTSTR)(_T(" ERR ") + strMessage));
 	delete pRswError;	// [LGLS 2026-09-10] 누수(기동 시 1회)
 }
 
@@ -2005,7 +2017,7 @@ CFireParms* CEcsDoc::CreateFireParm(CRecordSetWrap* pRsw)
 
 int CEcsDoc::GetFireMessage()
 {
-	m_pErrorMst = new CErrorMst(this);
+	if (m_pErrorMst == NULL) m_pErrorMst = new CErrorMst(this);	// [LGLS 2026-09-21] 적재된 코드표를 빈 것으로 덮지 않게
 	//if(m_pUrmDB == NULL){ return -1; };
 	
 	CString strSql;

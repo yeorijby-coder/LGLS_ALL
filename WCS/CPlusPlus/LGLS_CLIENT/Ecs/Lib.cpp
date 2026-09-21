@@ -53,13 +53,31 @@ CString CLib::ErrCodeText(CEcsDoc* pDoc, CString strEqpTyp, CString strErr)
 {
    strErr.Trim();
    if (strErr.IsEmpty() || _ttoi(strErr) == 0) return strErr;
-   if (pDoc == NULL || pDoc->m_pErrorMst == NULL || pDoc->m_pErrorMst->m_Map == NULL) return strErr;
+   // [LGLS 2026-09-21] 표시 형식 "[코드]문구" (사용자 지시). 코드표 키는 4자리 0채움이라 자리수가 다른 값(82, 00082)도 맞춰 찾는다.
+   CString strCode; strCode.Format(_T("%04d"), _ttoi(strErr));
+   CString strHead = _T("[") + strCode + _T("]");
+   if (pDoc == NULL || pDoc->m_pErrorMst == NULL || pDoc->m_pErrorMst->m_Map == NULL) return strHead;
    CEQP_ECD_MST* p = NULL;
-   if (!pDoc->m_pErrorMst->m_Map->Lookup(GetTupleKeyEQP_ECD_MST(strEqpTyp, strErr), p) || p == NULL) return strErr;
-   CString strMsg = p->m_MSG[EN_KOR];
+   if (!pDoc->m_pErrorMst->m_Map->Lookup(GetTupleKeyEQP_ECD_MST(strEqpTyp, strCode), p) || p == NULL)
+   {
+      if (!pDoc->m_pErrorMst->m_Map->Lookup(GetTupleKeyEQP_ECD_MST(strEqpTyp, strErr), p) || p == NULL)
+      {
+         static CString s_strLastMiss;	// 같은 코드는 한 번만 남긴다(상태창은 1초마다 갱신)
+         CString strMiss = strEqpTyp + _T("#") + strCode;
+         if (strMiss != s_strLastMiss)
+         {
+            s_strLastMiss = strMiss;
+            UiLog(_T("[ERRMST] 문구 없음 %s (코드표 %d건)"), (LPCTSTR)strMiss, (int)pDoc->m_pErrorMst->m_Map->GetCount());
+         }
+         return strHead;
+      }
+   }
+   int nLang = (int)pDoc->m_enLang;
+   CString strMsg = (nLang >= 0 && nLang < p->m_MSG.GetSize()) ? p->m_MSG[nLang] : _T("");
    strMsg.Trim();
-   if (strMsg.IsEmpty()) return strErr;
-   return strErr + _T(" ") + strMsg;
+   if (strMsg.IsEmpty() || strMsg == _T("0")) { strMsg = p->m_MSG[EN_KOR]; strMsg.Trim(); }
+   if (strMsg.IsEmpty() || strMsg == _T("0")) return strHead;
+   return strHead + strMsg;
 }
 
 BOOL CLib::IsScDualErr(CString strErr)
