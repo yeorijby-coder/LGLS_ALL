@@ -246,8 +246,7 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 			CString sen = pRsw->GetItem(_T("A7"));
 			CString lod = pRsw->GetItem(_T("LOD"));
 
-			SetDlgItemText(IDC_EDT_RTV_MODE,        (aut == _T("1")) ? _T("자동") : _T("수동"));
-			SetDlgItemText(IDC_EDT_RTV_ACTIVE,      (st == _T("2")) ? _T("가동") : _T("대기"));
+			// [LGLS 2026-09-21] 운영모드·ACTIVE 칸 제거 (사용자 지시) - SUBSYSTEM_STATUS 파생값
 			SetDlgItemText(IDC_EDT_RTV_STATUS,      stTxt);
 			SetDlgItemText(IDC_EDT_RTV_COMPLETE,    (cmp == _T("1")) ? _T("완료") : _T("-"));
 			SetDlgItemText(IDC_EDT_RTV_PRODLOAD,    (sen == _T("1")) ? _T("있음") : _T("없음"));
@@ -542,9 +541,6 @@ void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobtyp"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JOB_TYP, strValue);
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("ordermode"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_MODE, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("completestatus"), (int)m_enLang);
@@ -558,9 +554,6 @@ void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvstauts"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_STATUS, strValue);
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("active"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_ACTIVE, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("horizontallocation"), (int)m_enLang);

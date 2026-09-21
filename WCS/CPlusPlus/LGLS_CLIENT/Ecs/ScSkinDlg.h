@@ -104,12 +104,9 @@ public:
 	CStaticTransparent m_lblScStartPos;
 	CStaticTransparent m_lblScDestPos;
 
-	CStaticTransparent m_lblScRcMode;
-	CStaticTransparent m_lblScScMode;
 	CStaticTransparent m_lblScForkPos;
 	CStaticTransparent m_lblScForkPos2;
 	CStaticTransparent m_lblScJobStatus;
-	CStaticTransparent m_lblScRcStatus;
 	CStaticTransparent m_lblScScStatus;
 	CStaticTransparent m_lblScHorizontalPos;
 	CStaticTransparent m_lblScVerticalPos;

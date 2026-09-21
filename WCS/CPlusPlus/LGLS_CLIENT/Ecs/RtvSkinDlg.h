@@ -105,7 +105,6 @@ public:
 	CStaticTransparent m_lblStartPos;
 	CStaticTransparent m_lblDestPos;
 	CStaticTransparent m_lblJobTyp;
-	CStaticTransparent m_lblRtvMode;
 	CStaticTransparent m_lblComplete;
 	CStaticTransparent m_lblRtvProdLoad;
 	CStaticTransparent m_lblRtvStatus;

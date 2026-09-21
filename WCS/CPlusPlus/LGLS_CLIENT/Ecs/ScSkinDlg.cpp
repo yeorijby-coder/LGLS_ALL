@@ -115,8 +115,8 @@ BOOL CScSkinDlg::OnInitDialog()
 
 	InitializeResource(pEn);
 	// [LGLS] 모든 값 TextBox ReadOnly
-	int _scvRo[] = { IDC_EDT_SC_JOB_NO, IDC_EDT_SC_RC_MODE, IDC_EDT_SC_SC_MODE, IDC_EDT_SC_FORK_POS,
-		IDC_EDT_SC_JOB_STATUS, IDC_EDT_SC_RC_STATUS, IDC_EDT_SC_SC_STATUS,
+	int _scvRo[] = { IDC_EDT_SC_JOB_NO, IDC_EDT_SC_FORK_POS,
+		IDC_EDT_SC_JOB_STATUS, IDC_EDT_SC_SC_STATUS,
 		IDC_EDT_SC_HORIZONTAL_POS, IDC_EDT_SC_PROD_LOAD,
 		IDC_EDT_SC_JOB_START_LOC, IDC_EDT_SC_JOB_DEST_LOC, IDC_EDT_SC_JOB_JOB_NO };
 	for (int _i = 0; _i < sizeof(_scvRo)/sizeof(int); _i++)
@@ -235,14 +235,8 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_DEST_POS, strValue);
 
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("ground"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_RC_MODE, strValue);
 
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rising"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_SC_MODE, strValue);
 
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
@@ -268,9 +262,6 @@ void CScSkinDlg::RenameResource( EN_LANG m_enLang)
 	//strValue = CLib::GetIniStringFromPath(strFullPath, _T("forkstatus2"), (int)m_enLang);
 
 
-	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
-	strValue = CLib::GetIniStringFromPath(strFullPath, _T("srcstatus"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_SC_RC_STATUS, strValue);
 
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\"), _T("dlg_sc"), strExtension);
@@ -605,9 +596,7 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 			if (jt.IsEmpty() || jt == _T("0")) jt = pRsw->GetItem(_T("JT"));
 
 			SetDlgItemText(IDC_EDT_SC_JOB_NO,        (itn == _T("0") || itn == _T("0000")) ? _T("-") : itn);
-			SetDlgItemText(IDC_EDT_SC_RC_MODE,       (onl == _T("1")) ? _T("온라인") : _T("오프라인"));
-			SetDlgItemText(IDC_EDT_SC_SC_MODE,       (aut == _T("1")) ? _T("자동") : _T("수동"));
-			SetDlgItemText(IDC_EDT_SC_RC_STATUS,     (act == _T("1")) ? _T("가동") : _T("정지"));
+			// [LGLS 2026-09-21] 지상반·기상반·SRC상태 칸 제거 (사용자 지시) - 셋 다 SUBSYSTEM_STATUS 파생값이라 동작상태와 늘 같았다
 			SetDlgItemText(IDC_EDT_SC_SC_STATUS,     stTxt);
 			SetDlgItemText(IDC_EDT_SC_JOB_STATUS,    (cmp == _T("1")) ? _T("완료") : _T("-"));
 			SetDlgItemText(IDC_EDT_SC_PROD_LOAD,     (sen == _T("1")) ? _T("있음") : _T("없음"));
