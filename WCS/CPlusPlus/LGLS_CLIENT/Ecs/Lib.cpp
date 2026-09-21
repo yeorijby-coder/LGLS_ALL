@@ -80,6 +80,69 @@ CString CLib::ErrCodeText(CEcsDoc* pDoc, CString strEqpTyp, CString strErr)
    return strHead + strMsg;
 }
 
+// [LGLS 2026-09-21] 설비 대화상자 EDIT 흐름 표시 (사용자 지시)
+//   대화상자의 모든 EDIT 자식을 훑어, 글자 폭이 칸보다 넓으면 "글자 + 공백 5칸" 을 고리로 돌려 한 틱에 한 글자씩 흘린다.
+//   대화상자가 1.5초마다 같은 값을 다시 써도(SetDlgItemText) 원문이 같으면 흐르던 자리를 이어 간다.
+//   포커스가 있는 칸(입력 중)은 건드리지 않는다. 항목은 HWND 로 기억하고 창이 사라지면 지운다.
+struct CMarqueeEntry { CString strFull; CString strShown; int nOff; };
+static CMap<HWND, HWND, CMarqueeEntry*, CMarqueeEntry*> s_mapMarquee;
+
+void CLib::MarqueeTick(CWnd* pDlg)
+{
+   if (pDlg == NULL || !::IsWindow(pDlg->GetSafeHwnd())) return;
+   HWND hFocus = ::GetFocus();
+   for (HWND h = ::GetWindow(pDlg->GetSafeHwnd(), GW_CHILD); h != NULL; h = ::GetWindow(h, GW_HWNDNEXT))
+   {
+      TCHAR szCls[32] = { 0 };
+      ::GetClassName(h, szCls, 31);
+      if (_tcsicmp(szCls, _T("Edit")) != 0) continue;
+      if (!::IsWindowVisible(h) || h == hFocus) continue;
+      if (::GetWindowLong(h, GWL_STYLE) & ES_MULTILINE) continue;
+
+      CString strCur;
+      int nLen = ::GetWindowTextLength(h);
+      ::GetWindowText(h, strCur.GetBuffer(nLen + 1), nLen + 1);
+      strCur.ReleaseBuffer();
+
+      CMarqueeEntry* p = NULL;
+      if (!s_mapMarquee.Lookup(h, p) || p == NULL) { p = new CMarqueeEntry; p->nOff = 0; s_mapMarquee.SetAt(h, p); }
+      // 밖에서 새 글자를 썼다(우리가 마지막에 보인 것도, 원문도 아니다) → 원문 갱신, 처음부터
+      if (strCur != p->strShown && strCur != p->strFull) { p->strFull = strCur; p->strShown = strCur; p->nOff = 0; }
+      if (p->strFull.IsEmpty()) continue;
+
+      // 글자 폭 측정 (칸의 글꼴로)
+      CWnd* pEdit = CWnd::FromHandle(h);
+      CRect rc; pEdit->GetClientRect(&rc);
+      CDC* pDC = pEdit->GetDC();
+      if (pDC == NULL) continue;
+      CFont* pFont = pEdit->GetFont();
+      CFont* pOld = (pFont != NULL) ? pDC->SelectObject(pFont) : NULL;
+      int cxText = pDC->GetTextExtent(p->strFull).cx;
+      if (pOld != NULL) pDC->SelectObject(pOld);
+      pEdit->ReleaseDC(pDC);
+
+      if (cxText <= rc.Width() - 6)
+      {
+         // 들어간다 - 흐르던 중이었으면 원문으로 되돌린다
+         if (p->strShown != p->strFull) { p->strShown = p->strFull; p->nOff = 0; ::SetWindowText(h, p->strFull); }
+         continue;
+      }
+      CString strLoop = p->strFull + _T("     ");
+      p->nOff = (p->nOff + 1) % strLoop.GetLength();
+      CString strRot = strLoop.Mid(p->nOff) + strLoop.Left(p->nOff);
+      p->strShown = strRot;
+      ::SetWindowText(h, strRot);
+   }
+   // 사라진 창의 항목 정리
+   POSITION pos = s_mapMarquee.GetStartPosition();
+   while (pos != NULL)
+   {
+      HWND hKey; CMarqueeEntry* pv;
+      s_mapMarquee.GetNextAssoc(pos, hKey, pv);
+      if (!::IsWindow(hKey)) { delete pv; s_mapMarquee.RemoveKey(hKey); }
+   }
+}
+
 BOOL CLib::IsScDualErr(CString strErr)
 {
    TCHAR sz[256] = { 0 };

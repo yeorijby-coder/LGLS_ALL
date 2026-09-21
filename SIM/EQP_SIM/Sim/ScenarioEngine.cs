@@ -149,6 +149,56 @@ namespace EQP_SIM.Sim
         public IEnumerable<ConveyorSim> AllConveyors { get { return conveyors.Values; } }
         public IEnumerable<VehicleSim> AllVehicles { get { return vehicles.Values; } }
 
+        public VehicleSim Vehicle(string id) { VehicleSim v; return vehicles.TryGetValue(id, out v) ? v : null; }
+
+        /// <summary>[LGLS 2026-09-21] 지정 설비에 에러 코드 주입 (시뮬 화면 [에러 발생]). 성공 여부.</summary>
+        public bool RaiseVehicleError(string id, int code)
+        {
+            lock (sync)
+            {
+                var v = Vehicle(id);
+                if (v == null) { Log("[설비 에러 주입] 알 수 없는 설비 " + id); return false; }
+                if (v.IsError) v.ClearError();   // 이미 에러면 새 코드로 갈아 끼운다
+                return v.RaiseError(code);
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-21] C/V 포트(트랙)에 에러 코드 주입 (시뮬 화면 [에러 발생]).</summary>
+        public bool RaiseConveyorError(int port, int code)
+        {
+            lock (sync)
+            {
+                var def = World.FindByPort(port);
+                if (def == null) { Log("[C/V 에러 주입] 알 수 없는 포트 " + port); return false; }
+                return Conveyor(def.Id).RaiseError(port, code);
+            }
+        }
+
+        public bool ClearConveyorError(int port)
+        {
+            lock (sync)
+            {
+                var def = World.FindByPort(port);
+                if (def == null) return false;
+                bool b = Conveyor(def.Id).ClearError(port);
+                if (!b) Log("[C/V 에러 해제] P" + port + " 는 에러 상태가 아닙니다");
+                return b;
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-21] 지정 설비만 에러 해제. 해제했으면 true.</summary>
+        public bool ClearVehicleError(string id)
+        {
+            lock (sync)
+            {
+                var v = Vehicle(id);
+                if (v == null) return false;
+                bool b = v.ClearError();
+                if (!b) Log("[설비 에러 해제] " + id + " 는 에러 상태가 아닙니다");
+                return b;
+            }
+        }
+
         /// <summary>[LGLS 2026-09-05] 설비(현장 조작반) 에러 해제 - 에러 상태인 차량을 모두 푼다. 해제한 대수를 돌려준다.</summary>
         public int ClearVehicleErrors()
         {
@@ -156,6 +206,7 @@ namespace EQP_SIM.Sim
             {
                 int n = 0;
                 foreach (var v in vehicles.Values) if (v.ClearError()) n++;
+                foreach (var c in conveyors.Values) n += c.ClearAllErrors();   // [LGLS 2026-09-21] C/V 주입 에러도 함께
                 if (n == 0) Log("[설비 에러 해제] 에러 상태인 설비가 없습니다");
                 return n;
             }

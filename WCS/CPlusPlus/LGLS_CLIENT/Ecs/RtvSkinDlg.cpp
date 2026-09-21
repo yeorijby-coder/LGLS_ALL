@@ -104,6 +104,7 @@ BOOL CRtvSkinDlg::OnInitDialog()
 	m_bDisableMaximize = TRUE;	// [LGLS] ÃÖ´ëÈ­ ¹öÆ° ¼û±è+Å©±â°íÁ¤
 	CSkinDialog::OnInitDialog();
 	SetTimer(1, 1500, NULL);
+	SetTimer(7, 300, NULL);	// [LGLS 2026-09-21] EDIT Èå¸§ Ç¥½Ã (CLib::MarqueeTick)
 
 	EN_LANG pEn = (m_pDoc == NULL) ? EN_ENG : m_pDoc->m_enLang;
 	InitializeFontManager(this);
@@ -668,6 +669,7 @@ void CRtvSkinDlg::InitializeResource(EN_LANG nEN_LANG)
 
 void CRtvSkinDlg::OnTimer(UINT_PTR nIDEvent)
 {
+	if (nIDEvent == 7) { CLib::MarqueeTick(this); return; }	// [LGLS 2026-09-21] EDIT Èå¸§ Ç¥½Ã
 	if (nIDEvent == 1 && m_pDoc != NULL)
 		InvalidateRtvData(m_pDoc->m_enLang);
 	CSkinDialog::OnTimer(nIDEvent);

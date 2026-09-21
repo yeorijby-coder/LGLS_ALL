@@ -230,6 +230,7 @@ BOOL CCvSkinDlg::OnInitDialog()
 	// [LGLS 2026-08-23] 표시 전용 항목 상시 갱신(1초). [자동조회] 와 별개로 항상 돈다.
 	//   타이머 1 = [자동조회](전체 재조회, 입력값도 덮어씀) / 타이머 2 = 표시 전용.
 	SetTimer(2, 1000, NULL);
+	SetTimer(7, 300, NULL);	// [LGLS 2026-09-21] EDIT 흐름 표시 (CLib::MarqueeTick)
 
 	return TRUE;
 }
@@ -2027,6 +2028,7 @@ void CCvSkinDlg::OnBnClickedChkAutoSel()
 
 void CCvSkinDlg::OnTimer(UINT_PTR nIDEvent)
 {
+	if (nIDEvent == 7) { CLib::MarqueeTick(this); return; }	// [LGLS 2026-09-21] EDIT 흐름 표시
 	if (nIDEvent == 2)
 	{	// [LGLS 2026-08-23] 표시 전용 항목만 갱신 - 입력 중인 값은 보존
 		InvalidateReadOnlyData(m_nLang);

@@ -19,6 +19,8 @@ public:
 	// [LGLS 2026-09-17] 에러코드 + 마스터 문구 ("0073 좌측 렉 이중입고"). 정상/빈 값은 그대로, 마스터에 없으면 코드만
 	static CString ErrCodeText(CEcsDoc* pDoc, CString strEqpTyp, CString strErr);
 	static CString ScErrTyp();
+	// [LGLS 2026-09-21] 설비 대화상자 EDIT 흐름 표시 - 글자가 칸보다 길면 한 글자씩 왼쪽으로 흘린다 (사용자 지시)
+	static void MarqueeTick(CWnd* pDlg);
 
 
 public:

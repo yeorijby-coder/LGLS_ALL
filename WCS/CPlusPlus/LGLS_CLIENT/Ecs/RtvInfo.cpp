@@ -62,7 +62,7 @@ BOOL CRtvInfo::IsRtvDown(CRTV_DATA* pRTV_DATA)
 
 	if (strAuto == _T("0"))
 		return TRUE;
-	if (strStat.IsEmpty() || strStat == _T("0"))
+	if (strStat.IsEmpty() || strStat == _T("0") || strStat == _T("4"))	// [LGLS 2026-09-21] 4 = WCS 가 DOWN 을 내린 값
 		return TRUE;
 
 	return FALSE;
@@ -92,7 +92,7 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 
 	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
 	if (IsRtvDown(pRTV_DATA))
-		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
+		return pConfig->m_clrUSER_COLOR_ERROR;	// [LGLS 2026-09-21] DOWN·수동은 에러색 (사용자 지시, 종전 미가동 회색)
 
 	//if (pRTV_DATA->V_ERR_STA_FK2_RD != _T("0"))
 	//	return pConfig->m_clrUSER_COLOR_ERROR;
@@ -178,7 +178,7 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 
 	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
 	if (IsRtvDown(pRTV_DATA))
-		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
+		return pConfig->m_clrUSER_COLOR_ERROR;	// [LGLS 2026-09-21] DOWN·수동은 에러색 (사용자 지시, 종전 미가동 회색)
 	// [LGLS 2026-09-14] 화면에 보이는 칸. 내려놓았으면 설비 잔류값으로 칠하지 않는다
 	if (IsVehicleDisplayOff(pRTV_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		return LEGEND_IDLE_GRAY;

@@ -31,6 +31,65 @@ namespace EQP_SIM.Sim
         /// </summary>
         public int WcsTrackBase = 0;
 
+        // [LGLS 2026-09-21] 포트별 주입 에러코드 (사용자 지시 - 시뮬 화면 에러 주입기에 C/V 트랙 추가).
+        //   WCS 트랙 모델 D워드 +6(ErrorCode) 에 그대로 실려 CV_DATA.ERROR_CODE 가 되고, 그 포트를 지나는 벨트 이동은 멈춘다.
+        public readonly Dictionary<int, int> PortErr = new Dictionary<int, int>();
+
+        // [LGLS 2026-09-21] 현행 WCS(CvStatusScenario)는 트랙 D워드의 에러코드를 읽지 않는다. WCS 가 보는 C/V 에러는
+        //   PLC 알람 리스트(260917)의 메인 C/V 모터 과부하 비트 하나뿐이다 : M550 워드 bit1~13 = 트랙 119~131
+        //   (WCS CvMainAlarmBits → CV_DATA.ERROR_CODE = 트랙번호 4자리). 그 밖의 트랙(103~118)은 PLC 에 에러 신호가 없다.
+        private const int CV_OVERLOAD_WORD = 550, CV_OVL_TRACK_FIRST = 119, CV_OVL_TRACK_LAST = 131;
+        public static bool IsWcsAlarmTrack(int track) { return track >= CV_OVL_TRACK_FIRST && track <= CV_OVL_TRACK_LAST; }
+        private void SetOverloadBit(int track, bool on)
+        {
+            if (!IsWcsAlarmTrack(track)) return;
+            int bit = track - (CV_OVL_TRACK_FIRST - 1);
+            ushort w = io.Memory.GetWord('M', CV_OVERLOAD_WORD);
+            w = on ? (ushort)(w | (1 << bit)) : (ushort)(w & ~(1 << bit));
+            io.Memory.SetWord('M', CV_OVERLOAD_WORD, w);
+        }
+
+        public int TrackOfPort(int port)
+        {
+            if (WcsTrackBase <= 0) return 0;
+            int minPort = int.MaxValue;
+            for (int k = 0; k < Def.Ports.Length; k++) if (Def.Ports[k] < minPort) minPort = Def.Ports[k];
+            return WcsTrackBase + (port - minPort);
+        }
+
+        public bool RaiseError(int port, int code)
+        {
+            if (code <= 0 || Array.IndexOf(Def.Ports, port) < 0) return false;
+            PortErr[port] = code;
+            MirrorWcsTracks();
+            int trk = TrackOfPort(port);
+            SetOverloadBit(trk, true);
+            engine.Log(Def.Id + " ★C/V 에러 주입: P" + port + " (트랙 " + trk + ") 코드 " + code.ToString("0000") + " - 벨트 정지"
+                       + (IsWcsAlarmTrack(trk) ? ", 과부하 알람 비트 M550." + (trk - 118) + " ON (WCS 코드 " + trk.ToString("0000") + ")"
+                                               : " ※이 트랙은 PLC 알람 신호가 없어 WCS 에는 전달되지 않는다"));
+            return true;
+        }
+
+        public bool ClearError(int port)
+        {
+            if (!PortErr.Remove(port)) return false;
+            MirrorWcsTracks();
+            SetOverloadBit(TrackOfPort(port), false);
+            engine.Log(Def.Id + " C/V 에러 해제: P" + port + " (트랙 " + TrackOfPort(port) + ")");
+            return true;
+        }
+
+        public int ClearAllErrors()
+        {
+            int n = PortErr.Count;
+            if (n > 0)
+            {
+                foreach (int port in new List<int>(PortErr.Keys)) SetOverloadBit(TrackOfPort(port), false);
+                PortErr.Clear(); MirrorWcsTracks(); engine.Log(Def.Id + " C/V 에러 해제 " + n + "건");
+            }
+            return n;
+        }
+
         public ConveyorSim(ConveyorDef def, PlcIo io, ScenarioEngine engine)
         {
             Def = def;
@@ -862,7 +921,8 @@ namespace EQP_SIM.Sim
 
                 var mem = io.Memory;
                 mem.SetWord('D', baseWord + 0, (ushort)lugg);                    // LuggNum
-                mem.SetWord('D', baseWord + 6, 0);                               // ErrorCode
+                int errCode; if (!PortErr.TryGetValue(Def.Ports[pi], out errCode)) errCode = 0;   // [LGLS 2026-09-21] 주입 에러코드
+                mem.SetWord('D', baseWord + 6, (ushort)errCode);                 // ErrorCode
                 mem.SetWord('D', baseWord + 7, (ushort)(0x01 | 0x02 | 0x04));    // AUTO|입고대|출고대
                 mem.SetWord('D', baseWord + 8, (ushort)((exist && !p.Discharged) ? 1 : 0));   // Sensor(화물감지) — 배출 1단계면 OFF
             }
@@ -910,6 +970,8 @@ namespace EQP_SIM.Sim
                 //   입고로 복귀하면 이 이동이 배출 화물을 출고대(22)에서 안쪽(21)으로
                 //   되끌어 들였다. 제거 단계는 출고대만 보므로 화물이 121 에 영구 잔류했다.
                 if (p.DischargedAt != DateTime.MinValue) continue;
+                // [LGLS 2026-09-21] 에러(주입)가 걸린 포트에서 나가거나 그리로 들어가는 이동은 하지 않는다(벨트 정지)
+                if (PortErr.ContainsKey(path[i]) || PortErr.ContainsKey(path[i + 1])) continue;
                 // [LGLS 2026-09-12] 차량 하역 핸드셰이크가 안 끝난 화물은 PLC 가 인수하지 않는다(상황 A/B 재현).
                 if (p.HandoverBlocked) continue;
                 if (!bDualCv && p.Dir != dir) continue;             // 전용 컨베이어는 종전대로 적재 주체로 판정

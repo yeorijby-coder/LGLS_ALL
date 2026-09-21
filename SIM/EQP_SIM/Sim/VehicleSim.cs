@@ -126,8 +126,7 @@ namespace EQP_SIM.Sim
         public bool ClearError()
         {
             if (state != VState.Error) return false;
-            io.SetShort(Def.Id, "ERR_CODE_RD", 0);
-            pendingErrCode = 0;
+            ClearErrorSignals();
             bool bHadCargo = (carrying != null && io.GetBool(Def.Id, "PALLET_EXIST_FLAG"));
             if (!bHadCargo)
             {
@@ -141,6 +140,58 @@ namespace EQP_SIM.Sim
             StatusText = bHadCargo ? "에러 해제 (화물 실은 채 대기)" : "에러 해제 (IDLE)";
             engine.Log(Def.Id + " 설비 에러 해제" + (bHadCargo ? " - 화물을 실은 채 대기한다" : " - 포크 빔, IDLE 복귀"));
             return true;
+        }
+
+        public bool IsError { get { return state == VState.Error; } }
+
+        // [LGLS 2026-09-21] 관측점이 주소맵에 있는지 (RGV 에는 ERR_CODE_RD 블록이 없다)
+        private bool HasSig(string name) { ObservableDef d; return io.Map.TryGet(Def.Id, name, out d); }
+
+        // [LGLS 2026-09-21] RGV 알람 비트 워드 M560 (비트주소 8960 = 구 M5600, WCS 는 8960/16 워드를 읽는다) : bit1~F 가 PLC 알람 리스트의 RGV 코드에 대응
+        //   (WCS VehThread.cMainAlarmBits.RGV_CODE_BY_BIT 와 같은 표)
+        private const int RGV_ALARM_WORD = 560;
+        private static readonly int[] RGV_CODE_BY_BIT = { 0, 12, 14, 15, 33, 34, 42, 45, 53, 54, 55, 61, 62, 81, 82, 91 };
+
+        /// <summary>
+        /// [LGLS 2026-09-21] 설비 에러 발생 주입 (사용자 지시 - 시뮬 화면에서 설비·코드를 골라 누른다).
+        ///   실 PLC 가 알람을 올릴 때와 같은 신호를 세운다 :
+        ///   ALARM_SET_CODE 워드 = 코드 (WCS 는 이 워드를 상시 상태로 본다), ERR_CODE_RD(SC 전용 블록) = 코드,
+        ///   SUBSYSTEM_STATUS = 0(DOWN) → WCS 가 AUTO/ONLINE/ACTIVE 0·UCSTATUS 4 로 내려 운전 화면에 "DOWN"·"수동"이 붉게 뜬다,
+        ///   ALARM_SET_REPORT 비트 → Ack 핸드셰이크, RGV 는 알람 비트 워드(M8960)의 해당 비트도 켠다.
+        ///   해제는 [설비 에러 해제](ClearError) 또는 재지정 수신.
+        /// </summary>
+        public bool RaiseError(int code)
+        {
+            if (code <= 0) return false;
+            pendingErrCode = code;
+            if (HasSig("ALARM_SET_CODE")) io.SetShort(Def.Id, "ALARM_SET_CODE", (ushort)code);
+            if (HasSig("ERR_CODE_RD"))    io.SetShort(Def.Id, "ERR_CODE_RD", (ushort)code);
+            if (Def.IsRgv)
+            {
+                int bit = Array.IndexOf(RGV_CODE_BY_BIT, code);
+                if (bit > 0) io.Memory.SetWord('M', RGV_ALARM_WORD, (ushort)(io.Memory.GetWord('M', RGV_ALARM_WORD) | (1 << bit)));
+            }
+            io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 0);   // DOWN
+            if (HasSig("ALARM_SET_REPORT") && HasSig("ALARM_SET_REPORT_ACK"))
+                engine.RaiseEvent(Def.Id, "ALARM_SET_REPORT", "ALARM_SET_REPORT_ACK");
+            state = VState.Error;
+            StatusText = "★설비 에러 " + code.ToString("0000") + " (주입) — DOWN, 해제 대기";
+            engine.Log(Def.Id + " ★설비 에러 주입: 코드 " + code.ToString("0000") + " (ALARM_SET_CODE, SUBSYSTEM_STATUS=DOWN"
+                       + (Def.IsRgv ? ", RGV 알람 비트" : ", ERR_CODE_RD") + ")");
+            return true;
+        }
+
+        // [LGLS 2026-09-21] 에러 관련 신호를 모두 내린다 (해제·재지정 공통). 실 PLC 의 알람 해제 보고와 같은 순서.
+        private void ClearErrorSignals()
+        {
+            int code = pendingErrCode;
+            if (HasSig("ERR_CODE_RD"))    io.SetShort(Def.Id, "ERR_CODE_RD", 0);
+            if (HasSig("ALARM_SET_CODE")) io.SetShort(Def.Id, "ALARM_SET_CODE", 0);
+            if (Def.IsRgv) io.Memory.SetWord('M', RGV_ALARM_WORD, 0);
+            if (code > 0 && HasSig("ALARM_RESET_CODE")) io.SetShort(Def.Id, "ALARM_RESET_CODE", (ushort)code);
+            if (code > 0 && HasSig("ALARM_RESET_REPORT") && HasSig("ALARM_RESET_REPORT_ACK"))
+                engine.RaiseEvent(Def.Id, "ALARM_RESET_REPORT", "ALARM_RESET_REPORT_ACK");
+            pendingErrCode = 0;
         }
 
         public VehicleSim(VehicleDef def, PlcIo io, ScenarioEngine engine)
@@ -199,7 +250,8 @@ namespace EQP_SIM.Sim
         {
             // [LGLS 2026-09-02] 상태워드 하트비트 - 잔재 메모리/외부 덮어쓰기(구 트랙테이블 D 충돌 등)가 있어도
             //   매 틱 현재 상태를 다시 기록해 항상 참값을 유지한다 (IDLE=1, 동작중=2).
-            io.SetShort(Def.Id, "SUBSYSTEM_STATUS", (ushort)(state == VState.Idle ? 1 : 2));
+            //   [LGLS 2026-09-21] 에러(주입 포함)면 DOWN=0 - 종전에는 여기서 2 로 되덮어 DOWN 이 WCS 에 닿지 않았다.
+            io.SetShort(Def.Id, "SUBSYSTEM_STATUS", (ushort)(state == VState.Error ? 0 : (state == VState.Idle ? 1 : 2)));
 
             switch (state)
             {
@@ -497,8 +549,7 @@ namespace EQP_SIM.Sim
                     // [LGLS] 이중입고/공출고 에러 정지. 재지정 명령(새 TRANSFER_REQUEST) 수신 시 에러 해제 후 재작업.
                     if (io.GetBool(Def.Id, "TRANSFER_REQUEST"))
                     {
-                        if (!Def.IsRgv) io.SetShort(Def.Id, "ERR_CODE_RD", 0);
-                        pendingErrCode = 0;
+                        ClearErrorSignals();   // [LGLS 2026-09-21] ERR_CODE_RD·ALARM_SET_CODE·RGV 알람 비트 함께 내린다
                         io.SetBool(Def.Id, "TRANSFER_REQUEST", false);      // PLC 가 스트로브 리셋
                         io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 2);         // RUN
 

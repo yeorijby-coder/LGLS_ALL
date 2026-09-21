@@ -102,6 +102,7 @@ BOOL CScSkinDlg::OnInitDialog()
 	m_bDisableMaximize = TRUE;	// [LGLS] 최대화 버튼 숨김+크기고정
 	CSkinDialog::OnInitDialog();
 	SetTimer(1, 1500, NULL);
+	SetTimer(7, 300, NULL);	// [LGLS 2026-09-21] EDIT 흐름 표시 (CLib::MarqueeTick)
 	EN_LANG pEn = (m_pDoc == NULL) ? EN_ENG : m_pDoc->m_enLang;
 	InitializeFontManager(this);
 	SetFontNation((int)pEn);
@@ -773,6 +774,7 @@ void CScSkinDlg::OnBnClickedBtnScManual()
 
 void CScSkinDlg::OnTimer(UINT_PTR nIDEvent)
 {
+	if (nIDEvent == 7) { CLib::MarqueeTick(this); return; }	// [LGLS 2026-09-21] EDIT 흐름 표시
 	if (nIDEvent == 1 && m_pDoc != NULL)
 		InvalidateScData(m_pDoc->m_enLang);
 	CSkinDialog::OnTimer(nIDEvent);
@@ -1865,15 +1867,6 @@ HBRUSH CScSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	{
 		pDC->SetTextColor(RGB(0,0,200));
 		pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));	// [LGLS 2026-08-05] 잔상 방지
-		return ::GetSysColorBrush(COLOR_WINDOW);
-	}
-	else if (nId == IDC_EDT_SC_SC_STATUS || nId == IDC_EDT_SC_SC_MODE)
-	{
-		// [LGLS 2026-09-21] 동작상태가 DOWN 이거나 기상반이 수동이면 붉은 글씨 (사용자 지시)
-		CString t; pWnd->GetWindowText(t);
-		BOOL bRed = (nId == IDC_EDT_SC_SC_STATUS) ? (t.Find(_T("DOWN")) >= 0) : (t == _T("수동"));
-		pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));
-		pDC->SetTextColor(bRed ? RGB(255,0,0) : ::GetSysColor(COLOR_WINDOWTEXT));
 		return ::GetSysColorBrush(COLOR_WINDOW);
 	}
 	else

@@ -77,8 +77,15 @@
             this.pnlTop.Controls.Add(this.chkSpawnOut);
             this.pnlTop.Controls.Add(this.btnSpawnPallet);
             this.pnlTop.Controls.Add(this.lblSpawnHint);
+            this.pnlTop.Controls.Add(this.lblErrInj);
+            this.pnlTop.Controls.Add(this.cboErrEqp);
+            this.pnlTop.Controls.Add(this.lblErrCode);
+            this.pnlTop.Controls.Add(this.txtErrCode);
+            this.pnlTop.Controls.Add(this.btnErrRaise);
+            this.pnlTop.Controls.Add(this.btnErrClearSel);
+            this.pnlTop.Controls.Add(this.lblErrHint);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTop.Height = 146;   // [LGLS 2026-09-06] 화물 생성 행 추가 / [LGLS 2026-09-12] 고장 주입 행 추가
+            this.pnlTop.Height = 176;   // [LGLS 2026-09-06] 화물 생성 행 추가 / [LGLS 2026-09-12] 고장 주입 행 추가 / [LGLS 2026-09-21] 설비 에러 주입 행 추가
             //
             // lblServer
             //
@@ -105,6 +112,42 @@
             this.chkInjectEmpty.Text = "공출고 에러 (다음 출고 크레인)";
             this.chkInjectEmpty.ForeColor = System.Drawing.Color.DarkBlue;
             this.chkInjectEmpty.CheckedChanged += new System.EventHandler(this.chkInjectEmpty_CheckedChanged);
+            //
+            // [LGLS 2026-09-21] 설비 에러 주입 행 (사용자 지시) : 설비(S/C 1~5, RTV 1) 고르고 코드 넣고 [에러 발생]
+            //
+            this.lblErrInj.Location = new System.Drawing.Point(12, 149);
+            this.lblErrInj.Size = new System.Drawing.Size(90, 20);
+            this.lblErrInj.Text = "설비 에러 주입";
+            this.lblErrInj.ForeColor = System.Drawing.Color.DarkRed;
+            this.lblErrInj.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.cboErrEqp.Location = new System.Drawing.Point(104, 146);
+            this.cboErrEqp.Size = new System.Drawing.Size(110, 25);
+            this.cboErrEqp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.lblErrCode.Location = new System.Drawing.Point(222, 149);
+            this.lblErrCode.Size = new System.Drawing.Size(64, 20);
+            this.lblErrCode.Text = "에러코드";
+            this.txtErrCode.Location = new System.Drawing.Point(286, 146);
+            this.txtErrCode.Size = new System.Drawing.Size(60, 25);
+            this.txtErrCode.Text = "11";
+            this.txtErrCode.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.btnErrRaise.Location = new System.Drawing.Point(352, 145);
+            this.btnErrRaise.Size = new System.Drawing.Size(96, 26);
+            this.btnErrRaise.Text = "에러 발생";
+            this.btnErrRaise.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnErrRaise.BackColor = System.Drawing.Color.MistyRose;
+            this.btnErrRaise.UseVisualStyleBackColor = false;
+            this.btnErrRaise.Click += new System.EventHandler(this.btnErrRaise_Click);
+            this.btnErrClearSel.Location = new System.Drawing.Point(452, 145);
+            this.btnErrClearSel.Size = new System.Drawing.Size(120, 26);
+            this.btnErrClearSel.Text = "선택 설비 해제";
+            this.btnErrClearSel.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnErrClearSel.BackColor = System.Drawing.Color.LightYellow;
+            this.btnErrClearSel.UseVisualStyleBackColor = false;
+            this.btnErrClearSel.Click += new System.EventHandler(this.btnErrClearSel_Click);
+            this.lblErrHint.Location = new System.Drawing.Point(580, 149);
+            this.lblErrHint.Size = new System.Drawing.Size(560, 20);
+            this.lblErrHint.Text = "코드는 PLC 알람 리스트 번호(예 S/C 11~118, RTV 12~91). 발생 시 ALARM_SET_CODE·DOWN 으로 세우고, 해제는 여기나 [설비 에러 해제]";
+            this.lblErrHint.ForeColor = System.Drawing.Color.DimGray;
             //
             // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (상황 A / 상황 B)
             //
@@ -325,6 +368,14 @@
         private System.Windows.Forms.CheckBox chkSpawnOut = new System.Windows.Forms.CheckBox();
         private System.Windows.Forms.Button btnSpawnPallet = new System.Windows.Forms.Button();
         private System.Windows.Forms.Label lblSpawnHint = new System.Windows.Forms.Label();
+        // [LGLS 2026-09-21] 설비 에러 주입
+        private System.Windows.Forms.Label lblErrInj = new System.Windows.Forms.Label();
+        private System.Windows.Forms.ComboBox cboErrEqp = new System.Windows.Forms.ComboBox();
+        private System.Windows.Forms.Label lblErrCode = new System.Windows.Forms.Label();
+        private System.Windows.Forms.TextBox txtErrCode = new System.Windows.Forms.TextBox();
+        private System.Windows.Forms.Button btnErrRaise = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Button btnErrClearSel = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Label lblErrHint = new System.Windows.Forms.Label();
         private System.Windows.Forms.Button btnScenarioTest;
         private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.ListView lvDevices;

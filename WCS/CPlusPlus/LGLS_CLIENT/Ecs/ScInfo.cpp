@@ -52,7 +52,11 @@ COLORREF CScInfo::GetForkColor1()
  	if (m_pSC_DATA->V_ERR_STA_FK1_RD != _T("0"))
  		return pConfig->m_clrUSER_COLOR_ERROR;
  
- 	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
+ 	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+	if (m_pSC_DATA->V_UCSTATUS_RD == _T("4") || m_pSC_DATA->V_AUTO_MODE_RD == _T("0"))
+		return pConfig->m_clrUSER_COLOR_ERROR;
+
+	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
  		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
  
  	// [LGLS 2026-08-23] 크레인이 작업을 받아 화물을 뜨러 가는 동안에는 설비에 작업번호가
@@ -149,6 +153,10 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	if (pSC_DATA->V_ERR_STA_FK1_RD != _T("0"))
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
+	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+	if (pSC_DATA->V_UCSTATUS_RD == _T("4") || pSC_DATA->V_AUTO_MODE_RD == _T("0"))
+		return pConfig->m_clrUSER_COLOR_ERROR;
+
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("0") || 
 		pSC_DATA->V_AUTO_MODE_RD   == _T("0") || 
 		pSC_DATA->V_ACTIVE_MODE_RD == _T("0"))
@@ -240,6 +248,10 @@ COLORREF CScInfo::GetForkColor2()
 	if (m_pSC_DATA->V_ERR_STA_FK2_RD != _T("0"))
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
+	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+	if (m_pSC_DATA->V_UCSTATUS_RD == _T("4") || m_pSC_DATA->V_AUTO_MODE_RD == _T("0"))
+		return pConfig->m_clrUSER_COLOR_ERROR;
+
 	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
 		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
 
@@ -275,6 +287,10 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
 	if (pSC_DATA->V_ERR_STA_FK1_RD != _T("0"))
+		return pConfig->m_clrUSER_COLOR_ERROR;
+
+	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+	if (pSC_DATA->V_UCSTATUS_RD == _T("4") || pSC_DATA->V_AUTO_MODE_RD == _T("0"))
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("0") || 

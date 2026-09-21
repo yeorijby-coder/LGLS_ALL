@@ -889,7 +889,8 @@ namespace WCS_TASK_CV
                 chg("SENSOR_RTV_RD", sen);
                 chg("SENSOR_FK1_RD", sen);
                 chg("WAITING_ORDER_RD", status == 1 ? "1" : "0");
-                chg("AUTO_MODE_RD", "1");
+                // [LGLS 2026-09-21] RTV 도 SUBSYSTEM_STATUS=0(DOWN) 이면 자동 아님(0) - 운전 화면이 RTV 를 에러색으로 그린다 (사용자 지시)
+                chg("AUTO_MODE_RD", (status == 0) ? "0" : "1");
                 // [LGLS 2026-07-22] 표시용 레일 위치: LOCATION 포트(00/00/pp) → Client EcsDefine <Position> plc 값.
                 //   (Client RtvInfo 는 RTV_DATA_LGLS.POS_H_RD 를 m_MapRtvPosition[plc]→view 로 재매핑해 그린다.
                 //    구 경로에선 IO_TASK WriteCranePos 가 채웠으나 실경로는 관측 파생으로 채운다)

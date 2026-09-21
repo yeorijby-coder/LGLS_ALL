@@ -97,6 +97,7 @@ namespace EQP_SIM
                 }
                 catch { }
 
+                InitErrInjectUi();     // [LGLS 2026-09-21] 설비 에러 주입 콤보 채우기
                 BuildMemToolPanel();   // [LGLS 2026-09-02] 수동 메모리 쓰기/읽기 + 구ECS 주소 변환
                 timerUi.Start();
             }
@@ -382,6 +383,69 @@ namespace EQP_SIM
                 int n = engine.ReleaseBlockedHandovers();
                 lblStatus.Text = "상황 B 해제 — 보류 화물 " + n + "건 수동 인수(벨트 재개)";
             }
+        }
+
+        // ── [LGLS 2026-09-21] 설비 에러 주입 (사용자 지시) ─────────────────────────
+        //   콤보에서 설비(S/C 1~5호기, RTV 1호기)를 고르고 에러코드를 넣어 [에러 발생]을 누르면
+        //   그 설비가 실 PLC 알람과 같은 신호(ALARM_SET_CODE, ERR_CODE_RD, SUBSYSTEM_STATUS=DOWN, 알람 보고 비트)를 세운다.
+        private sealed class ErrEqpItem
+        {
+            public string Id, Text;
+            public override string ToString() { return Text; }
+        }
+
+        private void InitErrInjectUi()
+        {
+            cboErrEqp.Items.Clear();
+            for (int k = 1; k <= 5; k++)
+                cboErrEqp.Items.Add(new ErrEqpItem { Id = "VEHICLE:1" + k, Text = "S/C " + k + "호기" });
+            cboErrEqp.Items.Add(new ErrEqpItem { Id = "VEHICLE:1", Text = "RTV 1호기" });
+            // [LGLS 2026-09-21] C/V 트랙 전부 (사용자 지시) - 포트 번호 순, 트랙 번호(WCS 미러) 병기
+            var cvs = new List<ConveyorSim>(engine.AllConveyors);
+            cvs.Sort((a, b) => a.Def.No.CompareTo(b.Def.No));
+            foreach (var cv in cvs)
+            {
+                var ports = (int[])cv.Def.Ports.Clone(); Array.Sort(ports);
+                foreach (int port in ports)
+                {
+                    int trk = cv.TrackOfPort(port);
+                    cboErrEqp.Items.Add(new ErrEqpItem { Id = "CV:" + port, Text = "C/V#" + cv.Def.No + " P" + port + (trk > 0 ? " (트랙 " + trk + (ConveyorSim.IsWcsAlarmTrack(trk) ? "" : ", 알람신호 없음") + ")" : "") });
+                }
+            }
+            cboErrEqp.SelectedIndex = 0;
+        }
+
+        private ErrEqpItem SelectedErrEqp()
+        {
+            var it = cboErrEqp.SelectedItem as ErrEqpItem;
+            if (it == null) lblStatus.Text = "설비를 먼저 고르십시오";
+            return it;
+        }
+
+        private void btnErrRaise_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            var it = SelectedErrEqp(); if (it == null) return;
+            int code;
+            if (!int.TryParse((txtErrCode.Text ?? "").Trim(), out code) || code <= 0 || code > 9999)
+            {
+                lblStatus.Text = "에러코드는 1~9999 숫자로 넣으십시오";
+                txtErrCode.Focus(); txtErrCode.SelectAll();
+                return;
+            }
+            bool ok = it.Id.StartsWith("CV:") ? engine.RaiseConveyorError(int.Parse(it.Id.Substring(3)), code)
+                                              : engine.RaiseVehicleError(it.Id, code);
+            lblStatus.Text = ok ? (it.Text + " 에러 " + code.ToString("0000") + " 발생 — " + (it.Id.StartsWith("CV:") ? "벨트 정지" + (ConveyorSim.IsWcsAlarmTrack(engine.Conveyor(engine.World.FindByPort(int.Parse(it.Id.Substring(3))).Id).TrackOfPort(int.Parse(it.Id.Substring(3)))) ? " + 과부하 알람 비트(WCS 코드=트랙번호)" : " (PLC 알람 신호 없는 트랙 - WCS 미전달)") : "설비 DOWN") + ". 해제는 [선택 설비 해제] 또는 [설비 에러 해제]")
+                               : (it.Text + " 에러 주입 실패");
+        }
+
+        private void btnErrClearSel_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            var it = SelectedErrEqp(); if (it == null) return;
+            bool ok = it.Id.StartsWith("CV:") ? engine.ClearConveyorError(int.Parse(it.Id.Substring(3)))
+                                              : engine.ClearVehicleError(it.Id);
+            lblStatus.Text = ok ? (it.Text + " 에러 해제" + (it.Id.StartsWith("CV:") ? "" : " — IDLE 복귀")) : (it.Text + " 는 에러 상태가 아닙니다");
         }
 
         // [LGLS 2026-09-05] [설비 에러 해제] : 현장 조작반에서 사람이 크레인 에러를 푸는 동작을 흉내낸다.
