@@ -425,7 +425,6 @@ keytable(d, 'CLI', 'MENU', [
     ['PANEVIEW_MENU', 'MAIN_UI=2 이면 0, 아니면 1', '[판넬 보기] 그룹 강제 지정 1/0. 파일에는 주석(;)으로만 있음', RST, MF, ''],
     ['PROCESS_MENU', '1', '리본 [처리] 그룹 표시 1/0 (그룹 안 버튼은 각자의 키)', RST, MF, ''],
     ['PRODINFO_MENU', '1', '창고 모니터링 [제품정보] 버튼 표시 1/0', RST, MF, ''],
-    ['AUTOTIME_MENU', '1', '[처리] 그룹 [시간 기반 자동 처리] 버튼 표시 1/0 (선택 여부는 DB COMMON_CODE SCH_OPT/AUTO_TIME)', RST, MF, ''],
     ['ZOOM_BTN', '1', 'CV/SC/RTV 상태창 [확대] 버튼 표시 1/0 (숨기면 펼친 패널도 접음)', HOT, 'EcsView.cpp:ReloadIniHot, CvSkinDlg.cpp', '현장 점검 [쓰기] 절차 때 1'],
     ['MAIN_UI', '1', '메인 화면 배치. 1 = 종전(범례 큰 표) / 2 = 왼쪽에 통신 상태 · 축소 범례 · 작업정보 고정 (범례 칸 뺀 EcsLayout1.xml 필요)', RST, 'EcsView.cpp:CreateMainUi2, ' + MF, ''],
     ['MAIN_UI_LEFT_W', '0 (기본 크기)', '왼쪽 칸 폭(px). 손잡이를 끌면 프로그램이 저장', RST, 'EcsView.cpp:CreateMainUi2', ''],

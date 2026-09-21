@@ -1681,8 +1681,8 @@ namespace TSK_COMM_IOSCH
 
         // [LGLS 2026-09-17] 체류복구(시간 기반 자동 완료 1회 허용) 폐기 - 사용자 지시.
         //   [LGLS 2026-09-21] 그때 쓰던 허용/사용 이력 집합(m_setAutoTime*)과 CleanupAutoTimeSets() 를 없앴다.
-        //   채우는 곳이 없어 늘 비어 있던 죽은 코드다. 시간 기반 분기는 [환경설정] > [시간 기반 자동 처리]
-        //   (AutoTimeProcEnabled, COMMON_CODE SCH_OPT/AUTO_TIME) 하나로만 열린다.
+        //   채우는 곳이 없어 늘 비어 있던 죽은 코드다.
+        //   [LGLS 2026-09-21] 남아 있던 시간 기반 분기(AutoTimeProcEnabled)도 제거 - 완료는 설비 신호로만.
 
         private void CompleteSC()
         {
@@ -1725,24 +1725,9 @@ namespace TSK_COMM_IOSCH
                 //   올리기만 하고 내리지 않아 설비가 다음 이벤트를 즉시 지움 - 같은 날 수정).
                 //   그런 유실 대비 백업(유휴+포크빔+스트로브 내려감+경과)은 ★[환경설정] > [시간 기반 자동 처리]★
                 //   가 선택돼 있을 때만 쓴다. 해제 상태면 설비 완료신호로만 처리한다(기본).
-                // [LGLS 2026-09-06] 시간 기반 분기는 두 경우에 연다 :
-                //   ① [환경설정] > [시간 기반 자동 처리] 가 켜져 있을 때 (종전 동작 - 상시)
-                //   ② 체류경고로 그 작업에 1회 허용이 떨어졌을 때 (CheckStalledJobs)
-                //   어느 행이 어느 분기로 걸렸는지는 BY_SIGNAL 로 구분해 아래 루프에서 판정한다.
-                // [LGLS 2026-09-17 00:20] 체류복구(②) 폐기 - 시간 기반 분기는 [환경설정] 옵션(①)일 때만 연다(사용자 지시).
-                bool bAutoTime = AutoTimeProcEnabled();
-                if (bAutoTime)
-                {
-                    strSql += CRLF + "    AND ( ( SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ) ";
-                    strSql += CRLF + "       OR ( SD.UCSTATUS_RD = '1'                              ";
-                    strSql += CRLF + "            AND SD.TRANSFER_REQUEST_OD = 'N'                   ";
-                    strSql += CRLF + "            AND ISNULL(SD.ITN_LUGG_FK1,'0') IN ('0','00','0000','') ";
-                    strSql += CRLF + "            AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= 3 ) ) ";
-                }
-                else
-                {
-                    strSql += CRLF + "    AND SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ";
-                }
+                // [LGLS 2026-09-21] ★시간 기반 자동 처리 폐기★ (사용자 지시) - 완료는 설비 완료신호로만 한다.
+                //   09-17 체류복구에 이어 [환경설정] 옵션(AutoTimeProcEnabled)까지 없앴다. 신호가 없으면 그대로 세워 두고 사람이 처리한다.
+                strSql += CRLF + "    AND SD.COMPLETE_RD IS NOT NULL AND SD.COMPLETE_RD NOT IN ('0','00','0000','') ";
 
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -1763,10 +1748,8 @@ namespace TSK_COMM_IOSCH
 
                     bool bBySignal = (GetVal(dt.Rows[i], "BY_SIGNAL") == "1");
 
-                    // 설비 완료신호가 아니라 ★시간 기반★ 으로 걸린 행이면,
-                    //   [시간 기반 자동 처리] 가 켜져 있거나 그 작업에 1회 허용이 있어야 한다.
-                    // [LGLS 2026-09-17 00:20] 체류복구 폐기 - 완료신호 없이 걸린 행은 옵션이 꺼져 있으면 그대로 세워 둔다.
-                    if (!bBySignal && !bAutoTime) continue;
+                    // [LGLS 2026-09-21] 완료신호로 걸린 행만 처리한다(위 조회가 이미 그렇게 뽑지만 한 번 더 막는다).
+                    if (!bBySignal) continue;
 
                     // [LGLS] 출고(2)는 CV 처리로 인계, 입고(1)는 최종 완료
                     // [LGLS 2026-09-16] 완료 시점 처리(사용자 지시) :
@@ -1995,37 +1978,8 @@ namespace TSK_COMM_IOSCH
             } catch { return false; }
         }
 
-        // ─────────────────────────────────────────────────────────────────
-        // [LGLS 2026-09-05] 시간 기반 자동 처리 사용 여부
-        //   운전 화면 리본 [환경설정] > [시간 기반 자동 처리] 버튼이 켜고 끈다.
-        //   저장 위치 : COMMON_CODE (CDX_CD='SCH_OPT', CCD_CD='AUTO_TIME', CCD_CD_YN='Y'/'N')
-        //   ★기본은 사용 안 함★ - 행이 없거나 조회에 실패하면 자동 처리하지 않는다.
-        //   설비 신호 없이 경과시간으로 완료를 추정하는 처리는 모두 이 게이트를 통과해야 한다.
-        // ─────────────────────────────────────────────────────────────────
-        private bool     m_bAutoTimeProc = false;
-        private DateTime m_dtAutoTimeRead = DateTime.MinValue;
-        private const int AUTO_TIME_CACHE_SEC = 5;
-        private bool AutoTimeProcEnabled()
-        {
-            try
-            {
-                if ((DateTime.Now - m_dtAutoTimeRead).TotalSeconds < AUTO_TIME_CACHE_SEC) return m_bAutoTimeProc;
-                m_dtAutoTimeRead = DateTime.Now;
-                string q = "";
-                q += CRLF + " SELECT CCD_CD_YN FROM COMMON_CODE                                     ";
-                q += CRLF + "  WHERE WH_TYP = :WH_TYP AND CDX_CD = 'SCH_OPT' AND CCD_CD = 'AUTO_TIME' ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (DbQry(q) <= 0) { m_bAutoTimeProc = false; return false; }
-                bool bNew = ((GetVal(_pBdb.mDtMain.Rows[0], "CCD_CD_YN") ?? "").Trim().ToUpper() == "Y");
-                if (bNew != m_bAutoTimeProc)
-                    MakeMsg_Imp("[SCH] 시간 기반 자동 처리 " + (bNew ? "사용" : "사용 안 함") + " (운전 화면 설정 변경 감지)");
-                m_bAutoTimeProc = bNew;
-                return m_bAutoTimeProc;
-            }
-            catch { return m_bAutoTimeProc; }
-        }
+        // [LGLS 2026-09-21] 시간 기반 자동 처리(AutoTimeProcEnabled, COMMON_CODE SCH_OPT/AUTO_TIME) 제거 - 사용자 지시.
+        //   완료는 설비 완료신호로만 한다. 신호가 없으면 작업을 세워 두고 체류 경고만 남긴다.
 
         /// <summary>[LGLS 2026-09-04] 도착트랙에 "RGV 완료(39) + HS_TRACK_NO = 트랙" 인 다른 작업이 있으면 그 작업번호, 없으면 "".</summary>
         private string RgvDoneNotLanded(string dropTrack, string exceptLugg)
@@ -3470,35 +3424,7 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-09-06] 체류 1회 자동 처리에서 쓰는 RTV 호기 식별자(현장 RGV 는 1대).
         private const string RTV_NO = "801";
 
-        /// <summary>
-        /// [LGLS 2026-09-06] 완료신호 없이 "물리적으로 끝난 정황" 판정 (RTV 판).
-        ///   CompleteSC 의 시간 기반 분기와 같은 취지 : 유휴 + 지시 없음 + 차상 화물 없음 + 최소 경과.
-        ///   이 조건이 서지 않으면 아직 반송 중이므로 절대 완료로 보지 않는다.
-        /// </summary>
-        private bool RtvIdleEmptyFor(string lugg)
-        {
-            try {
-                string q = "";
-                q += CRLF + " SELECT COUNT(*) AS CNT                                        ";
-                q += CRLF + "   FROM RTV_DATA_LGLS RD                                       ";
-                q += CRLF + "  INNER JOIN JOB_MST JM ON JM.WH_TYP = RD.WH_TYP               ";
-                q += CRLF + "                       AND JM.LUGG_NO = :LG                    ";
-                q += CRLF + "  WHERE RD.WH_TYP              = :WH_TYP                       ";
-                q += CRLF + "    AND RD.RTV_NO              = '" + RTV_NO + "'              ";
-                q += CRLF + "    AND RD.OD_RQ_YN            = 'N'                           ";
-                q += CRLF + "    AND RD.TRANSFER_REQUEST_OD = 'N'                           ";
-                q += CRLF + "    AND ISNULL(RD.SUBSYSTEM_STATUS_RD,'1') = '1'               ";   // IDLE
-                q += CRLF + "    AND ISNULL(RD.PALLET_ON_VEHICLE_RD,'') IN ('','0','00','0000') ";   // 차상 비었음
-                q += CRLF + "    AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= 3            ";
-                _pBdb.mComMain.CommandType = CommandType.Text;
-                _pBdb.mComMain.Parameters.Clear();
-                _pBdb.mComMain.Parameters.Add("LG",     DbLang.VARCHAR).Value = lugg;
-                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
-                if (DbQry(q) <= 0) return false;
-                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
-                return n > 0;
-            } catch { return false; }
-        }
+        // [LGLS 2026-09-21] RtvIdleEmptyFor() 제거 - 시간 기반 완료 추정에만 쓰이던 보조 판정이라 호출처가 사라졌다.
 
         private bool RtvCompleteFor(string lugg)
         {
@@ -3773,29 +3699,8 @@ namespace TSK_COMM_IOSCH
                             continue;
                         }
                         DbgLog("LANDRGV_" + luggNo, "[착지대기] " + luggNo + " RGV 도착지 " + hs + " 에 아직 화물 없음");
-                        // [LGLS 2026-09-01] ★겸용 출고대(122) 직행 드롭의 최종 구간 특례★ (9007 실측)
-                        //   RGV 가 121 에 내려놓으면 벨트가 즉시 121→122 로 옮기고, 출고대 신호
-                        //   ON 3초 뒤 지게차가 가져간다. RGV 완료 감지(폴링)가 그보다 늦으면
-                        //   39 가 된 시점엔 화물이 이미 배출된 뒤라 여기서 영영 기다렸다.
-                        //   조건을 좁혀 판정한다 : 출고 작업 + 도착지가 최종 출고대(DEST=122)
-                        //   + 그 짝(121/122) 모두 빔 + RGV 가 이 화물을 더 이상 물고 있지 않음
-                        //   + 39 로 20초 경과 → 배출 완료로 보고 19(출고 최종)로 올린다.
-                        {
-                            string jTyp2   = GetVal(dt.Rows[i], "JOB_TYP");
-                            string dest2   = (GetVal(dt.Rows[i], "DEST_POS") ?? "").Trim();
-                            int elapsed; int.TryParse(GetVal(dt.Rows[i], "ELAPSED"), out elapsed);
-                            if (AutoTimeProcEnabled() &&
-                                (jTyp2 == "2" || jTyp2 == "12") && dest2 == "122" && elapsed >= 20 &&
-                                IsTrackEmpty("121") && IsTrackEmpty("122"))
-                            {
-                                string rtnF = "";
-                                if ((jTyp2 == "12") ? DeleteJobNow(luggNo, ref rtnF) : UpdateJobStatus("09", luggNo, ref rtnF))   // [LGLS 2026-09-16 2안] 19→09/삭제
-                                    MakeMsg_Imp(string.Format(
-                                        "[SCH][RGV] 작업 {0} 겸용 출고대 배출 확인(라인 빔, {1}초 경과) → 상태 '{2}' (출고 최종)",
-                                        luggNo, elapsed, (jTyp2 == "12") ? "삭제" : "09"));
-                                continue;
-                            }
-                        }
+                        // [LGLS 2026-09-21] 겸용 출고대(122) 배출을 경과시간으로 추정하던 특례 제거 (사용자 지시).
+                        //   시간 기반 자동 처리를 폐기했으므로 여기서도 추정하지 않는다. 도착 트랙에 실물 기록이 보일 때까지 기다린다.
                         continue;
                     }
 
@@ -4076,17 +3981,8 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-09-06] RTV 도 COMPLETE_RD 를 래치하므로 S/C 와 같은 유실 위험이 있다.
                     //   ① 완료신호가 있으면 그대로 완료(정상). 그 호기의 신호가 살아 있다는 뜻이므로 잠금 해제.
                     //   ② 신호가 없으면 체류 1회 허용이 있을 때만 시간 기반으로 완료한다.
-                    bool bBySignal = RtvCompleteFor(luggNo);
-                    if (bBySignal)
-                    {
-                    }
-                    else
-                    {
-                        // [LGLS 2026-09-17 00:20] 체류복구 폐기(사용자 지시) - 완료신호가 없으면 [환경설정] > [시간 기반 자동 처리] 가
-                        //   켜져 있고 물리적으로 끝난 정황(유휴 + 지시 없음 + 차상 화물 없음 + 경과)이 있을 때만 완료. 아니면 세워 둔다.
-                        if (!AutoTimeProcEnabled()) continue;
-                        if (!RtvIdleEmptyFor(luggNo)) continue;
-                    }
+                    // [LGLS 2026-09-21] 완료신호가 없으면 그대로 세워 둔다 - 시간 기반 추정 폐기(사용자 지시)
+                    if (!RtvCompleteFor(luggNo)) continue;
                     string rtn = "";
                     // [LGLS 2026-08-31] RGV 반송 완료 = 39. 도착지에 데이터를 기록하는 것은
                     //   LandRgvDrop() 이 도착 신호가 꺼진 것을 보고 한다(그때 15 가 된다).

@@ -431,7 +431,7 @@ box(s, 0.45, yl + 0.1, 6.1, 2.1,
      ('MarkErrorJobStatus() - 이중입고/공출고 → 08/07', 9, False, GRAY),
      ('ResumeRedirectedJobs() - 재지정 06/05 → 새 셀 재개', 9, False, GRAY),
      ('   "이 현장은 이중입고/공출고가 없다" (사용자 확인 09-16)', 9, False, GRAY),
-     ('※ 2026-09-17 미사용 함수 13개 삭제, 체류 복구(시간 기반 자동 완료) 폐기', 9, False, GRAY)],
+     ('※ 2026-09-17 미사용 함수 13개 삭제 / 2026-09-21 시간 기반 자동 완료 관련 함수 3개 삭제', 9, False, GRAY)],
     WHITE, RED, GRAY, 9, MSO_SHAPE.ROUNDED_RECTANGLE, False, PP_ALIGN.LEFT)
 grouplist(s, 6.85, 1.25, [
     ('③ 구동 지시', AMBER, [
@@ -693,11 +693,9 @@ footer(s, '알람 · 에러 흐름')
 # ══════════════════════════════════════════════════════════════════
 s = prs.slides.add_slide(blank)
 head(s, '예외 · 정리 함수 — 체류 / 강제완료 / 잔류 정리',
-     '완료는 설비 신호로만 판정한다. 시간 기반 자동 완료(체류 복구)는 2026-09-17 폐기했다.')
+     '완료는 설비 신호로만 판정한다. 시간 기반 자동 완료는 폐기했다(체류 복구 2026-09-17, 환경설정 옵션 2026-09-21).')
 exc = [
     ('CheckStalledJobs()', '1분 주기. 19/29 가 아닌 작업이 JOB_STALL_WARN_SEC(300초) 넘게 멈추면 경고만 남긴다', RED),
-    ('CleanupAutoTimeSets()', 'JOB_MST 에 없는 작업번호를 시간 기반 허용·사용 이력에서 지운다', GRAY),
-    ('AutoTimeProcEnabled()', "COMMON_CODE SCH_OPT/AUTO_TIME = 'Y' 일 때만 CompleteSC/CompleteRGVReal 의 경과시간 분기를 연다(기본 N)", GRAY),
     ('ConsumeForceComplete()', '운전 화면 [강제완료](FCMP) 소비 → ForceCompleteSc() 25→29 / ForceCompleteRtv() 35→39', GREEN),
     ('  ForceCompleteSc() / ForceCompleteRtv()', '설비가 화물을 들고 있으면 처리하지 않는다 (사람이 이미 내려놓았다는 전제)', GREEN),
     ('SweepOrphanVehicleData()', '지시 소비 · 차상 빔 · 유휴 · JOB_MST 에 없음 → ClearRvData() / ClearScOd() / ResetScComplete()', AMBER),
