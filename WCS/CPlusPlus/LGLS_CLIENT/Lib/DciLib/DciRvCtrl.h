@@ -89,8 +89,8 @@ public:
 	int m_nCol;
 
 protected:
-	// 포크 논리사각형에 row/col 을 적용한 뒤 화면좌표로 바꾼다.
-	CRect ForkRectS(CRect rcForkL);
+	// 포크 ★논리★ 사각형에 row/col 을 적용한다 (윙 계산이 끝난 뒤에 부른다 - 윙은 건드리지 않는다).
+	void ApplyForkGridL(CRect& rcForkL);
 };
 
 //#undef AFX_DATA
