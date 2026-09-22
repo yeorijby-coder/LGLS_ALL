@@ -18,7 +18,7 @@ public:
 	virtual ~CDciRvCtrl(void);
 
 public:
-	enum { enRvCtrlPropSize = CDciControl::enControlPropSize + 8 };
+	enum { enRvCtrlPropSize = CDciControl::enControlPropSize + 10 };
 	enum EN_TYPE { enL2R, enR2L, enT2B, enB2T,  enTypeSize };
 	enum EN_FORK_TYPE { enSingle, enTwin, enDouble, /*enGap2, */enenForkTypeSize };	// m_nIncrease 사용함으로 enGap2은 사용하지 않음!
 
@@ -42,8 +42,6 @@ public:
 	COLORREF m_clrExtraText;
 	void    SetExtraTextSafe(LPCTSTR s, COLORREF c);
 	CString GetExtraTextSafe(COLORREF* pColor);
-//	int m_nCol;
-//	int m_nRow;
 //	int m_nFontSize;
 
 private:
@@ -80,6 +78,19 @@ public:
 
 public:
 	virtual BOOL SetClick(CWnd* pWnd, const CPoint& ptClickS);
+
+	// [LGLS 2026-09-22] 포크 크기를 격자 칸 수로 지정한다 (사용자 지시).
+	//   레이아웃을 3배 격자로 늘려 트랙을 3x2 로 키웠는데, 포크는 짧은 변 기준 정사각형으로만
+	//   그려져 크기를 맞출 수 없었다. row=세로 칸, col=가로 칸.
+	//   0(기본) 이면 종전 그대로. 포크의 중심은 그대로 두고 크기만 바꾸므로 forkpos 의미는 그대로다.
+	//   ※ 멤버를 클래스 맨 뒤에 둔 이유 : 앞에 끼우면 기존 멤버 오프셋이 밀려
+	//     예전에 빌드한 Ecs.exe 와 어긋난다(DciLib.dll 만 바꿔 끼울 수 없게 된다).
+	int m_nRow;
+	int m_nCol;
+
+protected:
+	// 포크 논리사각형에 row/col 을 적용한 뒤 화면좌표로 바꾼다.
+	CRect ForkRectS(CRect rcForkL);
 };
 
 //#undef AFX_DATA

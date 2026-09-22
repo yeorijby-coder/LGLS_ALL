@@ -52,8 +52,8 @@ void CDciRvCtrl::InitControl(CDciMaster* pDCI)
 	m_clrWing = ::GetSysColor(COLOR_BTNFACE);
 	m_clrRail = RGB(0,0,0);
 	m_nIncrease = 0;
-//	m_nCol		= 1;
-//	m_nRow		= 1;
+	m_nRow		= 0;	// [LGLS 2026-09-22] 0 = 종전(짧은 변 기준 정사각형)
+	m_nCol		= 0;
 	m_nProd		= 0;
 //	m_nFontSize = 10;
 	m_rcForkS.SetRect(0, 0, 0, 0);
@@ -66,8 +66,6 @@ int CDciRvCtrl::UpdatePropNames(CDciPropertyArray& properties)
 	int i = CDciControl::UpdatePropNames(properties);
 
 	properties.SetSize(enRvCtrlPropSize);
-//	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("col"));
-//	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("row"));
 	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("prod"));
 	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("forktype"));
 	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("type"));
@@ -77,6 +75,9 @@ int CDciRvCtrl::UpdatePropNames(CDciPropertyArray& properties)
 	properties[i++].SetProperty(CDciProperty::PT_COLOR, _T("railcolor"));
 //	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("fontsize"));
 	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("Increase"));
+	// [LGLS 2026-09-22] 포크 크기(격자 칸) - 0 이면 종전
+	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("row"));
+	properties[i++].SetProperty(CDciProperty::PT_DEC, _T("col"));
 	ASSERT(properties.GetSize() == i);
 	
 	return i;
@@ -88,8 +89,6 @@ int CDciRvCtrl::UpdatePropValues(CDciPropertyArray& properties, BOOL bSaveObject
 
 	if (bSaveObject)
 	{
-//		m_nCol		= CConvert::ToInt(properties[i++].m_strValue);
-//		m_nRow		= CConvert::ToInt(properties[i++].m_strValue);
 		m_nProd		= CConvert::ToInt(properties[i++].m_strValue);
 		m_nForkType	= CConvert::ToInt(properties[i++].m_strValue);
 		m_nType		= CConvert::ToInt(properties[i++].m_strValue);
@@ -99,13 +98,13 @@ int CDciRvCtrl::UpdatePropValues(CDciPropertyArray& properties, BOOL bSaveObject
 		m_clrRail	= CConvert::ToColor(properties[i++].m_strValue);
 //		m_nFontSize	= CConvert::ToInt(properties[i++].m_strValue);
 		m_nIncrease = CConvert::ToInt(properties[i++].m_strValue);
+		m_nRow		= CConvert::ToInt(properties[i++].m_strValue);	// [LGLS 2026-09-22]
+		m_nCol		= CConvert::ToInt(properties[i++].m_strValue);
 		m_clrFork2	= m_clrFork;
 		
 	}
 	else
 	{
-//		properties[i++].m_strValue.Format(_T("%d"), m_nCol);
-//		properties[i++].m_strValue.Format(_T("%d"), m_nRow);
 		properties[i++].m_strValue.Format(_T("%d"), m_nProd);
 		properties[i++].m_strValue.Format(_T("%d"), m_nForkType);
 		properties[i++].m_strValue.Format(_T("%d"), m_nType);
@@ -115,6 +114,8 @@ int CDciRvCtrl::UpdatePropValues(CDciPropertyArray& properties, BOOL bSaveObject
 		properties[i++].m_strValue.Format(_T("%s"), CConvert::ToString(m_clrRail));
 //		properties[i++].m_strValue.Format(_T("%d"), m_nFontSize);
 		properties[i++].m_strValue.Format(_T("%d"), m_nIncrease);
+		properties[i++].m_strValue.Format(_T("%d"), m_nRow);	// [LGLS 2026-09-22]
+		properties[i++].m_strValue.Format(_T("%d"), m_nCol);
 	}
 	
 	return i;
@@ -122,6 +123,40 @@ int CDciRvCtrl::UpdatePropValues(CDciPropertyArray& properties, BOOL bSaveObject
 //===============================================================================================================================================
 // 포크 컨트롤 수정 :	- 세로타입일경우 - 
 //===============================================================================================================================================
+//===============================================================================================================================================
+// [LGLS 2026-09-22] 포크 논리사각형에 row/col 을 적용한 뒤 화면좌표로 바꾼다 (사용자 지시).
+//   종전 포크는 "짧은 변 기준 정사각형" 이었다 - 가로형이면 컨트롤 높이, 세로형이면 폭이 한 변.
+//   격자를 3배로 늘려 트랙을 3x2 로 키운 레이아웃에서는 그 크기를 맞출 수 없었다.
+//   row(세로 칸) / col(가로 칸) 이 0 보다 크면 그 크기로 그린다. 0 이면 손대지 않는다.
+//   ★중심은 그대로 두고 크기만 바꾼다★ - forkpos(이동 위치)의 의미가 달라지지 않고,
+//   방향(L2R/R2L/T2B/B2T)에 상관없이 같은 규칙이 된다.
+//   논리좌표는 위아래가 뒤집힌 경우가 있어(top > bottom) 폭·높이의 부호를 보존한다.
+//===============================================================================================================================================
+CRect CDciRvCtrl::ForkRectS(CRect rcForkL)
+{
+	if (m_nCol > 0 || m_nRow > 0)
+	{
+		int nW  = rcForkL.right  - rcForkL.left;		// 부호 포함
+		int nH  = rcForkL.bottom - rcForkL.top;
+		int nCx = (rcForkL.left + rcForkL.right)  / 2;
+		int nCy = (rcForkL.top  + rcForkL.bottom) / 2;
+
+		if (m_nCol > 0)
+		{
+			int nNew = (nW >= 0) ? m_nCol : -m_nCol;
+			rcForkL.left  = nCx - nNew / 2;
+			rcForkL.right = rcForkL.left + nNew;
+		}
+		if (m_nRow > 0)
+		{
+			int nNew = (nH >= 0) ? m_nRow : -m_nRow;
+			rcForkL.top    = nCy - nNew / 2;
+			rcForkL.bottom = rcForkL.top + nNew;
+		}
+	}
+	return m_pDCI->ConvertRectS(rcForkL);
+}
+
 void CDciRvCtrl::UpdateControlHorizental(int nType , 
 										 CPoint & ptRailS1, CPoint & ptRailS2, 
 										 CRect & rcRailS1, CRect & rcRailS2, 
@@ -155,7 +190,7 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 		rcForkL1.top = m_rcControlL.top;
 		rcForkL1.right = m_rcControlL.left + (nForkPos+1)*nForkSize;
 		rcForkL1.bottom = m_rcControlL.bottom;
-		m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+		m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 		rcWingS1.left = rcForkS.left - rcForkS.Width()*nWingGapRatio/100 - rcForkS.Width()*nWingScaleRatio/100;
 		rcWingS1.top = rcForkS.top + rcForkS.Height()/2 - rcForkS.Height()*nWingScaleRatio/100;
@@ -175,7 +210,7 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 			rcForkL2.top = m_rcControlL.top;
 			rcForkL2.right = m_rcControlL.left + (nForkPos+2)*nForkSize;
 			rcForkL2.bottom = m_rcControlL.bottom;
-			m_rcForkT = rcForkT = m_pDCI->ConvertRectS(rcForkL2);
+			m_rcForkT = rcForkT = ForkRectS(rcForkL2);
 
 			rcWingS2.left = rcForkT.right + rcForkT.Width()*nWingGapRatio/100;
 			rcWingS2.top = rcForkT.top + rcForkT.Height()/2 - rcForkT.Height()*nWingScaleRatio/100;
@@ -205,7 +240,7 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 			rcForkL1.top	= m_rcControlL.top;
 			rcForkL1.right	= m_rcControlL.left			+ ((nForkPos + 1)	* nForkSize);
 			rcForkL1.bottom = m_rcControlL.top								- nForkSize;
-			m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+			m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 			// 윙 #1 세팅
 			rcWingS1.left	= rcForkS.left		- rcForkS.Width()*nWingGapRatio/100 - rcForkS.Width()*nWingScaleRatio/100;
@@ -224,7 +259,7 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 			rcForkL2.top	= m_rcControlL.bottom						+ nForkSize;
 			rcForkL2.right	= m_rcControlL.left		+ ((nForkPos + 1)	* nForkSize);
 			rcForkL2.bottom = m_rcControlL.bottom;	
-			m_rcForkD = rcForkD = m_pDCI->ConvertRectS(rcForkL2);		
+			m_rcForkD = rcForkD = ForkRectS(rcForkL2);		
 		}
 	}
 	else //if (nType == enR2L)
@@ -233,7 +268,7 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 		rcForkL1.top = m_rcControlL.top;									
 		rcForkL1.right = m_rcControlL.right - nForkPos*nForkSize;			
 		rcForkL1.bottom = m_rcControlL.bottom;								
-		m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);				
+		m_rcForkS = rcForkS = ForkRectS(rcForkL1);				
 
 		rcWingS1.left = rcForkS.left - rcForkS.Width()*nWingGapRatio/100 - rcForkS.Width()*nWingScaleRatio/100;
 		rcWingS1.top = rcForkS.top + rcForkS.Height()/2 - rcForkS.Height()*nWingScaleRatio/100;
@@ -253,7 +288,7 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 			rcForkL2.top = m_rcControlL.top;								
 			rcForkL2.right = m_rcControlL.right - (nForkPos+1)*nForkSize;	
 			rcForkL2.bottom = m_rcControlL.bottom;							
-			m_rcForkT = rcForkT = m_pDCI->ConvertRectS(rcForkL2);			
+			m_rcForkT = rcForkT = ForkRectS(rcForkL2);			
 
 			rcWingS1.left = rcForkT.left - rcForkT.Width()*nWingGapRatio/100 - rcForkT.Width()*nWingScaleRatio/100;
 			rcWingS1.top = rcForkT.top + rcForkT.Height()/2 - rcForkT.Height()*nWingScaleRatio/100;
@@ -276,20 +311,20 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 //			rcForkL1.top	= m_rcControlL.top;
 //			rcForkL1.right	= m_rcControlL.right		-  nForkPos			* nForkSize;
 //			rcForkL1.bottom = m_rcControlL.top								- nForkSize;
-//			m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+//			m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 //			// 포크 #1 세팅
 			rcForkL1.left	= m_rcControlL.right	- (nForkPos + 1)	* nForkSize;
 			rcForkL1.top	= m_rcControlL.bottom						+ nForkSize;
 			rcForkL1.right	= m_rcControlL.right	-  nForkPos			* nForkSize;
 			rcForkL1.bottom = m_rcControlL.bottom;	
-			m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+			m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 //			// 포크 #2 세팅
 			rcForkL2.left	= m_rcControlL.right		- (nForkPos + 1)	* nForkSize;
 			rcForkL2.top	= m_rcControlL.top;
 			rcForkL2.right	= m_rcControlL.right		-  nForkPos			* nForkSize;
 			rcForkL2.bottom = m_rcControlL.top								- nForkSize;
-			m_rcForkD = rcForkD = m_pDCI->ConvertRectS(rcForkL2);		
+			m_rcForkD = rcForkD = ForkRectS(rcForkL2);		
 
 			// 윙 #1 세팅
 			rcWingS1.left	= rcForkD.left		- rcForkD.Width()*nWingGapRatio/100 - rcForkD.Width()*nWingScaleRatio/100;
@@ -341,7 +376,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 		rcForkL1.top = m_rcControlL.top - nForkPos*nForkSize;
 		rcForkL1.right = m_rcControlL.right;
 		rcForkL1.bottom = m_rcControlL.top - (nForkPos+1)*nForkSize;
-		m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+		m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 		rcWingS1.left = rcForkS.left + rcForkS.Width()/2 - rcForkS.Width()*nWingScaleRatio/100;
 		rcWingS1.top = rcForkS.top - rcForkS.Height()*nWingGapRatio/100 - rcForkS.Height()*nWingScaleRatio/100;
@@ -359,7 +394,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 			rcForkL2.top = m_rcControlL.top - (nForkPos+1)*nForkSize;
 			rcForkL2.right = m_rcControlL.right;
 			rcForkL2.bottom = m_rcControlL.top - (nForkPos+2)*nForkSize;
-			m_rcForkT = rcForkT = m_pDCI->ConvertRectS(rcForkL2);
+			m_rcForkT = rcForkT = ForkRectS(rcForkL2);
 
 			rcWingS2.left = rcForkT.left + rcForkT.Width()/2 - rcForkT.Width()*nWingScaleRatio/100;
 			rcWingS2.top = rcForkT.bottom + rcForkT.Height()*nWingGapRatio/100;
@@ -382,7 +417,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 			rcForkL1.top	= m_rcControlL.top			- (nForkPos + 1)	* nForkSize;
 			rcForkL1.right	= m_rcControlL.right							- nForkSize;
 			rcForkL1.bottom = m_rcControlL.top			-  nForkPos			* nForkSize;
-			m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+			m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 			// 윙 #1 세팅
 			rcWingS1.left	= rcForkS.right		- rcForkS.Width()/2						- rcForkS.Width()*nWingScaleRatio/100;
@@ -401,7 +436,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 			rcForkL2.top	= m_rcControlL.top		- (nForkPos + 1)	* nForkSize;
 			rcForkL2.right	= m_rcControlL.right;
 			rcForkL2.bottom = m_rcControlL.top		-  nForkPos			* nForkSize;	
-			m_rcForkD = rcForkD = m_pDCI->ConvertRectS(rcForkL2);		
+			m_rcForkD = rcForkD = ForkRectS(rcForkL2);		
 		}
 	}
 	else //if (nType == enB2T)
@@ -410,7 +445,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 		rcForkL1.top = m_rcControlL.bottom + (nForkPos+1)*nForkSize;
 		rcForkL1.right = m_rcControlL.right;
 		rcForkL1.bottom = m_rcControlL.bottom + nForkPos*nForkSize;
-		m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+		m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 		rcWingS1.left = rcForkS.left + rcForkS.Width()/2 - rcForkS.Width()*nWingScaleRatio/100;
 		rcWingS1.top = rcForkS.top - rcForkS.Height()*nWingGapRatio/100 - rcForkS.Height()*nWingScaleRatio/100;
@@ -428,7 +463,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 			rcForkL2.top = m_rcControlL.bottom + (nForkPos+2)*nForkSize;
 			rcForkL2.right = m_rcControlL.right;
 			rcForkL2.bottom = m_rcControlL.bottom + (nForkPos+1)*nForkSize;
-			m_rcForkT = rcForkT = m_pDCI->ConvertRectS(rcForkL2);
+			m_rcForkT = rcForkT = ForkRectS(rcForkL2);
 
 			rcWingS1.left = rcForkT.left + rcForkT.Width()/2 - rcForkT.Width()*nWingScaleRatio/100;
 			rcWingS1.top = rcForkT.top - rcForkT.Height()*nWingGapRatio/100 - rcForkT.Height()*nWingScaleRatio/100;
@@ -445,7 +480,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 					rcForkL1.top = m_rcControlL.bottom + (nForkPos + 1) * nForkSize;
 					rcForkL1.right = m_rcControlL.right;
 					rcForkL1.bottom = m_rcControlL.bottom + nForkPos * nForkSize;
-					m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+					m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 					rcWingS1.left = rcForkS.left + rcForkS.Width() / 2 - rcForkS.Width() * nWingScaleRatio / 100;
 					rcWingS1.top = rcForkS.top - rcForkS.Height() * nWingGapRatio / 100 - rcForkS.Height() * nWingScaleRatio / 100;
@@ -461,7 +496,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 					rcForkL2.top = m_rcControlL.bottom + (nForkPos + 2) * nForkSize;
 					rcForkL2.right = m_rcControlL.right;
 					rcForkL2.bottom = m_rcControlL.bottom + (nForkPos + 1) * nForkSize;
-					m_rcForkT = rcForkT = m_pDCI->ConvertRectS(rcForkL2);
+					m_rcForkT = rcForkT = ForkRectS(rcForkL2);
 
 					rcWingS1.left = rcForkT.left + rcForkT.Width() / 2 - rcForkT.Width() * nWingScaleRatio / 100;
 					rcWingS1.top = rcForkT.top - rcForkT.Height() * nWingGapRatio / 100 - rcForkT.Height() * nWingScaleRatio / 100;
@@ -484,7 +519,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 						rcForkL1.top = m_rcControlL.bottom + ((nForkPos / m_nIncrease) + 1) * nForkSize;
 						rcForkL1.right = m_rcControlL.right;
 						rcForkL1.bottom = m_rcControlL.bottom + (nForkPos / m_nIncrease) * nForkSize;
-						m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+						m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 						rcWingS2.left = rcForkS.left + rcForkS.Width() / 2 - rcForkS.Width() * nWingScaleRatio / 100;
 						rcWingS2.top = rcForkS.bottom + rcForkS.Height() * nWingGapRatio / 100;
@@ -495,7 +530,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 						rcForkL2.top = m_rcControlL.bottom + ((nForkPos / m_nIncrease) + 2) * nForkSize;
 						rcForkL2.right = m_rcControlL.right;
 						rcForkL2.bottom = m_rcControlL.bottom + ((nForkPos / m_nIncrease) + 1) * nForkSize;
-						m_rcForkT = rcForkT = m_pDCI->ConvertRectS(rcForkL2);
+						m_rcForkT = rcForkT = ForkRectS(rcForkL2);
 
 						rcWingS1.left = rcForkT.left + rcForkT.Width() / 2 - rcForkT.Width() * nWingScaleRatio / 100;
 						rcWingS1.top = rcForkT.top - rcForkT.Height() * nWingGapRatio / 100 - rcForkT.Height() * nWingScaleRatio / 100;
@@ -513,7 +548,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 						rcForkL1.top = m_rcControlL.bottom + ((nForkPos / m_nIncrease) + 1) * nForkSize;
 						rcForkL1.right = m_rcControlL.right;
 						rcForkL1.bottom = m_rcControlL.bottom + (nForkPos / m_nIncrease) * nForkSize;
-						m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+						m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 						rcWingS2.left = rcForkS.left + rcForkS.Width() / 2 - rcForkS.Width() * nWingScaleRatio / 100;
 						rcWingS2.top = rcForkS.bottom + rcForkS.Height() * nWingGapRatio / 100;
@@ -524,7 +559,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 						rcForkL2.top = m_rcControlL.bottom + ((nForkPos / m_nIncrease) + 2) * nForkSize;
 						rcForkL2.right = m_rcControlL.right;
 						rcForkL2.bottom = m_rcControlL.bottom + ((nForkPos / m_nIncrease) + 1) * nForkSize;
-						m_rcForkT = rcForkT = m_pDCI->ConvertRectS(rcForkL2);
+						m_rcForkT = rcForkT = ForkRectS(rcForkL2);
 
 						rcWingS1.left = rcForkT.left + rcForkT.Width() / 2 - rcForkT.Width() * nWingScaleRatio / 100;
 						rcWingS1.top = rcForkT.top - rcForkT.Height() * nWingGapRatio / 100 - rcForkT.Height() * nWingScaleRatio / 100;
@@ -550,7 +585,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 			rcForkL1.top = m_rcControlL.bottom + (nForkPos+1)*nForkSize;
 			rcForkL1.right = m_rcControlL.right - nForkSize;
 			rcForkL1.bottom = m_rcControlL.bottom + nForkPos*nForkSize;
-			m_rcForkS = rcForkS = m_pDCI->ConvertRectS(rcForkL1);
+			m_rcForkS = rcForkS = ForkRectS(rcForkL1);
 
 			// 윙 #1 세팅
 			rcWingS1.left	= rcForkS.right		- rcForkS.Width()/2						- rcForkS.Width()*nWingScaleRatio/100;
@@ -569,7 +604,7 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 			rcForkL2.top	= m_rcControlL.bottom	+ (nForkPos+1)	* nForkSize;
 			rcForkL2.right	= m_rcControlL.right;//	+ nForkSize;
 			rcForkL2.bottom = m_rcControlL.bottom	+ nForkPos		* nForkSize;	
-			m_rcForkD = rcForkD = m_pDCI->ConvertRectS(rcForkL2);		
+			m_rcForkD = rcForkD = ForkRectS(rcForkL2);		
 		}
 	}
 }
@@ -924,24 +959,24 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 		// 1번 포크
 		if (m_nProd == 1)
 		{
-			rcTemp = m_pDCI->ConvertRectS(rcForkL1);
+			rcTemp = ForkRectS(rcForkL1);
 			IndicateProdSensor(pDC, rcTemp, g, s, 0x000000);
 		}
 		// 2번 포크
 		else if (m_nProd == 2)
 		{
-			rcTemp = m_pDCI->ConvertRectS(rcForkL2);
+			rcTemp = ForkRectS(rcForkL2);
 			IndicateProdSensor(pDC, rcTemp, g, s, 0x000000);
 		}
 		// 화물 2개 동시감지
 		else if (m_nProd == 3)
 		{
 			// 1번 포크
-			rcTemp = m_pDCI->ConvertRectS(rcForkL1);
+			rcTemp = ForkRectS(rcForkL1);
 			IndicateProdSensor(pDC, rcTemp, g, s, 0x000000);
 
 			// 2번 포크
-			rcTemp = m_pDCI->ConvertRectS(rcForkL2);
+			rcTemp = ForkRectS(rcForkL2);
 			IndicateProdSensor(pDC, rcTemp, g, s, 0x000000);
 		}
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
