@@ -3754,7 +3754,13 @@ namespace TSK_COMM_IOSCH
                     // [LGLS 2026-09-17 01:00] ENV_IOSCH.INI [CNF] IN_HS_STATUS : 입고가 통로(H/S)에 내려진 뒤의 상태값.
                     //   15(기본, 종전) 또는 16(통로CV 구동중 - 출고와 같은 표시). 호출마다 읽어 재기동 불필요(사용자 지시).
                     //   읽는 쪽(DriveSC/IN_RUN/규칙3/드롭칸/DriveRGV)은 15·16 을 모두 받으므로 값을 바꿔도 진행 중 작업이 서지 않는다.
-                    string stInHs = (cDefApi.GsReadInitProfileCnf("IN_HS_STATUS", 15) == 16) ? ST_CV_RUN2 : ST_CV_RUN;
+                    // [LGLS 2026-09-22] IN_HS_STATUS(15/16)는 ★입고★ 가 통로에 내려진 뒤의 상태값이다.
+                    //   출고는 언제나 15 로 둔다 - ReportOutStationArrival() 이 15 를 보고 출고대 도착을 기다린다.
+                    //   (출고를 16 으로 두면 그 판정에 걸리지 않아 통로에서 영영 서 있었다)
+                    string jTypHs = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
+                    bool bOutHs = (jTypHs == "2" || jTypHs == "12");
+                    string stInHs = bOutHs ? ST_CV_RUN
+                                           : ((cDefApi.GsReadInitProfileCnf("IN_HS_STATUS", 15) == 16) ? ST_CV_RUN2 : ST_CV_RUN);
                     if (UpdateJobStatus(stInHs, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RGV 도착지 {1} 기록 완료 → 상태 '{2}'",
                                     luggNo, landTrk, stInHs));
