@@ -146,14 +146,14 @@ BOOL CManualJob::OnInitDialog()
 		//InitializeResource(0);
 	}
 
-	m_edtManualJobStartLocation.SetWindowText(_T("01-001-01"));
-	m_edtManualJobDestLocation.SetWindowText(_T("01-002-01"));
+	m_edtManualJobStartLocation.SetWindowText(_T("00-000-00"));
+	m_edtManualJobDestLocation.SetWindowText(_T("00-000-00"));
 
 	m_maskedtManualJobLocationFr.EnableMask(_T("dd ddd dd"), _T("__-___-__"), _T(' '));
-	m_maskedtManualJobLocationFr.SetWindowText(_T("01-001-01"));
+	m_maskedtManualJobLocationFr.SetWindowText(_T("00-000-00"));
 
 	m_maskedtManualJobLocationTo.EnableMask(_T("dd ddd dd"), _T("__-___-__"), _T(' '));
-	m_maskedtManualJobLocationTo.SetWindowText(_T("01-002-01"));
+	m_maskedtManualJobLocationTo.SetWindowText(_T("00-000-00"));
 
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -350,6 +350,23 @@ void CManualJob::RedrawImage()
 	m_btnManualJobDataClear.MoveWindow(rc.left, rc.top, szLarge.cx, szLarge.cy);
 }
 
+// [LGLS 2026-09-22] 로케이션이 비어 있는가 (사용자 지시 - 초기값 00-000-00 그대로면 생성 금지).
+//   마스크 에디트는 구분자를 뺀 7자리("0100101")로 돌려주지만, 표기가 바뀌어도 되도록
+//   숫자만 골라내 전부 0 이면 "안 채운 것" 으로 본다. 빈 값도 마찬가지.
+static BOOL IsEmptyLocation(const CString& strLoc)
+{
+	CString strNum;
+	for (int i = 0; i < strLoc.GetLength(); i++)
+	{
+		TCHAR c = strLoc.GetAt(i);
+		if (c >= _T('0') && c <= _T('9')) strNum += c;
+	}
+	if (strNum.IsEmpty()) return TRUE;
+	for (int i = 0; i < strNum.GetLength(); i++)
+		if (strNum.GetAt(i) != _T('0')) return FALSE;
+	return TRUE;
+}
+
 void CManualJob::OnBnClickedBtnManulJobInsert()
 {
 	// [LGLS 2026-09-06] MANUAL 수동 조작은 비상 상황 전용이다(수동 작업 등록).
@@ -433,6 +450,29 @@ void CManualJob::OnBnClickedBtnManulJobInsert()
 		CString strJobTypBase = strJobTyp;
 		if (strJobTyp.GetLength() == 2 && strJobTyp.GetAt(0) == _T('1'))
 			strJobTypBase = (strJobTyp == _T("10")) ? _T("6") : CString(strJobTyp.GetAt(1));
+
+		// [LGLS 2026-09-22] 위치를 안 채우고 만드는 것을 막는다 (사용자 지시).
+		//   초기값 00-000-00 을 그대로 두고 누르면 여기서 되돌린다.
+		//   그 작업이 ★실제로 쓰는 칸★ 만 본다 - 코드가 0 으로 덮는 칸까지 막으면 만들 수가 없다.
+		//     도착 = 셀 : 입고(1) / RACK 이동(4) / 호기간 이동(5)
+		//     출발 = 셀 : 출고(2) / RACK 이동(4) / 호기간 이동(5)
+		//     PICKING 출고(3) 와 작업대 이동(6) 은 셀을 쓰지 않으므로 검사하지 않는다.
+		{
+			BOOL bNeedStart = (strJobTypBase == _T("2") || strJobTypBase == _T("4") || strJobTypBase == _T("5"));
+			BOOL bNeedDest  = (strJobTypBase == _T("1") || strJobTypBase == _T("4") || strJobTypBase == _T("5"));
+			if (bNeedStart && IsEmptyLocation(strStartLocation))
+			{
+				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("출발위치를 입력해주세요.")));
+				m_maskedtManualJobLocationFr.SetFocus();
+				return ;
+			}
+			if (bNeedDest && IsEmptyLocation(strDestLocation))
+			{
+				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("도착위치를 입력해주세요.")));
+				m_maskedtManualJobLocationTo.SetFocus();
+				return ;
+			}
+		}
 
 		//출발위치
 		strStartPos = m_cbxManualJobStartPos.GetItemKey(m_cbxManualJobStartPos.GetCurSel());
@@ -1088,13 +1128,13 @@ void CManualJob::refresh_Chk()
 	m_cbxManualJobPriority.SetCurSel(0);
 	m_cbxManualJobCnt.SetCurSel(0);
 
-	m_edtManualJobStartLocation.SetWindowText(_T("01-001-01")); //출발 롴
-	m_edtManualJobDestLocation.SetWindowText(_T("01-002-01")); //도착 롴
+	m_edtManualJobStartLocation.SetWindowText(_T("00-000-00")); //출발 롴
+	m_edtManualJobDestLocation.SetWindowText(_T("00-000-00")); //도착 롴
 	m_maskedtManualJobLocationFr.EnableMask(_T("dd ddd dd"), _T("__-___-__"), _T(' '));
-	m_maskedtManualJobLocationFr.SetWindowText(_T("01-001-01"));
+	m_maskedtManualJobLocationFr.SetWindowText(_T("00-000-00"));
 
 	m_maskedtManualJobLocationTo.EnableMask(_T("dd ddd dd"), _T("__-___-__"), _T(' '));
-	m_maskedtManualJobLocationTo.SetWindowText(_T("01-002-01"));
+	m_maskedtManualJobLocationTo.SetWindowText(_T("00-000-00"));
 
 }
 
