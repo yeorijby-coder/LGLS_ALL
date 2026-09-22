@@ -3929,9 +3929,12 @@ namespace TSK_COMM_IOSCH
         ///   → 상위에서 받은 반자동 입고 작업을 [SC완료] 하면 29 에 그대로 서 있었다.
         ///   설비 완료신호 경로(CompleteSC)는 입고를 09/삭제로 곧장 보내므로,
         ///   ★입고가 29 에 서 있는 것은 사람이 손으로 만든 상태뿐이다★ - 자동 흐름과 부딪히지 않는다.
-        ///     · 반자동 입고(11) 29 → 즉시 삭제  (반자동은 상위 보고 없음 - 절대 원칙)
-        ///     · 자동   입고(1)  29 → 09        (상위 완료보고 대상)
-        ///     · 반자동 출고(12) 19 → 즉시 삭제  (19 로 두면 상위에 완료보고가 나간다)
+        ///     · ★반자동(10~15) 은 19 든 29 든 즉시 삭제★ (2026-09-22 사용자 지시)
+        ///       반자동은 상위 보고가 없으므로 화면에서 끝냈다고 하면 그것이 끝이다(절대 원칙).
+        ///       Client 는 반자동에 두 버튼을 다 허용한다 - [CV완료] 는 작업구분 1/4/5 만,
+        ///       [SC완료] 는 2/3/6 만 막으므로 반자동 10~15 는 어느 쪽이든 눌린다.
+        ///       (10 이동 / 11 입고 / 12 출고 / 13 PICKING 출고 / 14 RACK 이동 / 15 호기간 이동)
+        ///     · 자동 입고(1) 29 → 09 (상위 완료보고 대상)
         ///   자동 출고(2)의 19 는 정상 흐름이므로 건드리지 않는다.
         /// </summary>
         private void FinishManualComplete()
@@ -3942,8 +3945,10 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + " SELECT LUGG_NO, JOB_TYP, JOB_STATUS                          ";
                 q += CRLF + "   FROM JOB_MST                                               ";
                 q += CRLF + "  WHERE WH_TYP = :WH_TYP                                      ";
-                q += CRLF + "    AND ( (JOB_TYP IN ('1','11') AND JOB_STATUS = '29')       ";
-                q += CRLF + "       OR (JOB_TYP  = '12'       AND JOB_STATUS = '19') )     ";
+                // [LGLS 2026-09-22] 반자동(10~15) 은 19/29 어느 쪽이든, 자동 입고(1)는 29 만
+                q += CRLF + "    AND ( (JOB_TYP IN ('10','11','12','13','14','15')          ";
+                q += CRLF + "           AND JOB_STATUS IN ('19','29'))                      ";
+                q += CRLF + "       OR (JOB_TYP  = '1' AND JOB_STATUS = '29') )             ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')                     ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
@@ -3956,7 +3961,8 @@ namespace TSK_COMM_IOSCH
                     string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
                     string rawTyp = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
                     string stNow  = (GetVal(dt.Rows[i], "JOB_STATUS") ?? "").Trim();
-                    bool bSemi    = (rawTyp == "11" || rawTyp == "12");
+                    // 반자동은 두 자리 코드 10~15 다 (01~06 은 자동)
+                    int nTyp; bool bSemi = int.TryParse(rawTyp, out nTyp) && nTyp >= 10 && nTyp <= 15;
                     string rtn = "";
 
                     if (bSemi)
@@ -3966,8 +3972,8 @@ namespace TSK_COMM_IOSCH
                             ClearScOd(luggNo);
                             ClearCvOd(luggNo);
                             MakeMsg_Imp(string.Format(
-                                "[SCH] 반자동 {0} {1} 화면에서 수동 완료(상태 {2}) → 즉시 삭제(상위 보고 없음)",
-                                (rawTyp == "11") ? "입고" : "출고", luggNo, stNow));
+                                "[SCH] 반자동 {0} {1} 화면에서 {2} → 즉시 삭제(상위 보고 없음)",
+                                SemiTypName(rawTyp), luggNo, (stNow == "29") ? "[SC완료]" : "[CV완료]"));
                         }
                         else
                             MakeMsg_Error(string.Format("[SCH] 반자동 수동 완료 삭제 실패({0}): {1}", luggNo, rtn));
@@ -3984,6 +3990,21 @@ namespace TSK_COMM_IOSCH
                 }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH] FinishManualComplete 오류: " + ex.Message); }
+        }
+
+        /// <summary>[LGLS 2026-09-22] 반자동 작업구분 코드를 사람이 읽는 이름으로 (로그용).</summary>
+        private static string SemiTypName(string pTyp)
+        {
+            switch ((pTyp ?? "").Trim())
+            {
+                case "10": return "이동";
+                case "11": return "입고";
+                case "12": return "출고";
+                case "13": return "PICKING 출고";
+                case "14": return "RACK 이동";
+                case "15": return "호기간 이동";
+                default:   return "작업(" + pTyp + ")";
+            }
         }
 
         /// <summary>
