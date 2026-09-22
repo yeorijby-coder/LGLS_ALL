@@ -65,7 +65,13 @@ void CPanelVehDlg::Refresh()
 		_T("       ,") + m_pDoc->NVL + _T("(J.START_POS, '') + ' ' + ") + m_pDoc->NVL + _T("(J.START_LOCATION, '') AS S_POS ")
 		_T("       ,") + m_pDoc->NVL + _T("(J.DEST_POS, '') + ' ' + ") + m_pDoc->NVL + _T("(J.DEST_LOCATION, '') AS D_POS ")
 		_T("   FROM ( SELECT MC_NO AS UNIT_NO ")
-		_T("               , CASE WHEN LTRIM(RTRIM(") + m_pDoc->NVL + _T("(PALLET_ON_VEHICLE_RD,''))) NOT IN ('','0','0000') THEN PALLET_ON_VEHICLE_RD ELSE PALLET_ID_OD END AS LUGG ")
+		// [LGLS 2026-09-22] S/C 행은 ★지시가 살아 있을 때만★ PALLET_ID_OD 를 쓴다 (사용자 보고).
+		//   ClearScOd(IO_TASK)는 작업이 끝나도 PALLET_ID_OD 를 지우지 않는다(지시 삭제 명령에서만 지운다).
+		//   그 잔값이 남은 채 같은 작업을 RGV 가 이어받으면, JOB_MST 에 그 번호가 살아 있으므로
+		//   RGV 행과 S/C 행에 같은 정보가 나란히 떴다. LUGG_NO_FK1_OD 는 ClearScOd 가 지우므로 믿을 수 있다.
+		_T("               , CASE WHEN LTRIM(RTRIM(") + m_pDoc->NVL + _T("(PALLET_ON_VEHICLE_RD,''))) NOT IN ('','0','0000') THEN PALLET_ON_VEHICLE_RD ")
+		_T("                       WHEN LTRIM(RTRIM(") + m_pDoc->NVL + _T("(LUGG_NO_FK1_OD,'')))       NOT IN ('','0','0000') THEN PALLET_ID_OD ")
+		_T("                       ELSE '' END AS LUGG ")
 		_T("               , CASE WHEN LTRIM(RTRIM(") + m_pDoc->NVL + _T("(PALLET_ON_VEHICLE_RD,''))) NOT IN ('','0','0000') THEN 1 ELSE 0 END AS ON_BOARD ")
 		_T("            FROM SC_DATA_LGLS WHERE WH_TYP = '%s' ")
 		_T("          UNION ALL ")
