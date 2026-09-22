@@ -669,6 +669,9 @@ namespace WCS_TASK_CV
                         // [LGLS 2026-09-17] 메인 C/V 모터 과부하 알람 비트(M5501~M550D) → CV_DATA.ERROR_CODE (사이클당 1회)
                         CvMainAlarmBits();
 
+                        // [LGLS 2026-09-22] RGV 비상정지(82) → C/V 11~15 전파 : RTV 에러를 사이클당 1회 읽어 둔다
+                        CvEstopSpread();
+
                         // [LGLS 2026-08-01] 죽은 소켓 자동 재접속.
                         //   설비(EQP_SIM/PLC)가 재기동되면 기존 TCP 세션은 상대가 리셋한다(WSAECONNRESET:
                         //   "현재 연결은 원격 호스트에 의해 강제로 끊겼습니다"). 그런데 Send/Recv 실패는
@@ -1175,6 +1178,17 @@ namespace WCS_TASK_CV
                             //D10n+6
                             nErrorCode = (byRxBuff[13 + nArrayIdx] << 8) + byRxBuff[12 + nArrayIdx]; //에러코드 int형
                             ERROR_CODE = ((byRxBuff[13 + nArrayIdx] << 8) + byRxBuff[12 + nArrayIdx]).ToString("0000");	//에러코드
+
+                            // [LGLS 2026-09-22] ★RGV 비상정지 전파★ (현장 요구)
+                            //   RTV 에 비상정지(82)가 서면 그 라인이 통째로 멈추므로 C/V 11~15 도 같은 에러로 본다.
+                            //   트랙 자체 에러가 있으면 그것이 우선이다(전파로 덮지 않는다).
+                            //   여기서(관측값을 만드는 자리에서) 세워야 UpdateCvData 에 그대로 실려 유지되고,
+                            //   RTV 에러가 풀리면 다음 사이클에 저절로 사라진다.
+                            if (nErrorCode == 0 && m_nEstopCode > 0 && m_lstEstopTrk.Contains(nCvNo))
+                            {
+                                nErrorCode = m_nEstopCode;
+                                ERROR_CODE = m_nEstopCode.ToString("0000");
+                            }
 
                             //7번, 8번 영역은 값이 변경되면 상위에 보고함.
                             //10n+7
@@ -3638,6 +3652,103 @@ namespace WCS_TASK_CV
                 MakeMsg_Error(strTitle + " Exception: " + ex.Message, m_nthNo);
                 return false;
             }
+        }
+        #endregion
+
+        #region [CvEstopSpread] :: [LGLS 2026-09-22] RGV 비상정지 전파
+        /// <summary>
+        /// 현장 요구 : "82 번 에러가 나면 RTV 와 C/V 11~15 가 다 에러가 나야 한다" (크레인은 대상 아님 - 사용자 확정).
+        ///   82 = OP-8 비상정지(RGV 알람 비트 M560E). 그 구간 전체가 멈추므로 C/V 트랙에도 같은 코드를 세워
+        ///   운전 화면(빨강 + 경고창)과 상위 보고(E 전문)에 함께 드러나게 한다.
+        ///   WCS_DB.INI [CNF]
+        ///     ESTOP_RTV_CODES : 전파를 일으키는 RTV 에러코드(콤마 구분). 기본 82. 0 또는 빈 값이면 전파하지 않는다.
+        ///     ESTOP_CV_TRACKS : 전파 대상 트랙(MC_NO). 기본 121~132 (C/V#11·12·13·14·15 전부)
+        ///   해제는 따로 하지 않는다 - RTV 코드가 내려가면 다음 사이클 관측값이 그대로 0 이 된다.
+        /// </summary>
+        private int m_nEstopCode = 0;                                   // 지금 전파 중인 코드 (0 = 없음)
+        private readonly List<int> m_lstEstopTrk = new List<int>();     // 전파 대상 트랙
+        private string m_strEstopTrkCnf = null;                         // 트랙 목록 INI 원문 (바뀔 때만 다시 푼다)
+        private int m_nEstopLogged = -1;                                // 로그 중복 방지
+
+        private void CvEstopSpread()
+        {
+            try
+            {
+                string strCodes = cDefApi.GsCnfStr("ESTOP_RTV_CODES", "82").Trim();
+                if (strCodes.Length == 0 || strCodes == "0") { m_nEstopCode = 0; return; }
+
+                // 대상 트랙 목록 (INI 원문이 바뀔 때만 다시 푼다)
+                string strTracks = cDefApi.GsCnfStr("ESTOP_CV_TRACKS", "121,122,123,124,125,126,127,128,129,130,131,132");
+                if (m_strEstopTrkCnf != strTracks)
+                {
+                    m_strEstopTrkCnf = strTracks;
+                    m_lstEstopTrk.Clear();
+                    foreach (string t in strTracks.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        int nTrk;
+                        if (int.TryParse(t.Trim(), out nTrk) && nTrk > 0 && !m_lstEstopTrk.Contains(nTrk)) m_lstEstopTrk.Add(nTrk);
+                    }
+                }
+                if (m_lstEstopTrk.Count == 0) { m_nEstopCode = 0; return; }
+
+                // RTV 에러코드 읽기 (이 창고의 RGV 는 1대)
+                strSql = "";
+                strSql += cDefApp.CRLF + " SELECT TOP 1 ERR_CODE_RD                            ";
+                strSql += cDefApp.CRLF + "   FROM RTV_DATA_LGLS                                ";
+                strSql += cDefApp.CRLF + "  WHERE WH_TYP = :WH_TYP                             ";
+                strSql += cDefApp.CRLF + "    AND ISNULL(ERR_CODE_RD,'0') NOT IN ('0','00','0000','') ";
+                m_msQPlc._pBdb.mComMain.CommandType = CommandType.Text;
+                m_msQPlc._pBdb.mComMain.Parameters.Clear();
+                m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR, 255).Value = m_strWh_typ;
+                int nCnt = m_msQPlc._pBdb.ExcuteQry(strSql);
+                if (nCnt < 0) return;                       // DB 실패 - 종전 상태를 그대로 둔다
+
+                int nRtvErr = 0;
+                if (nCnt > 0) int.TryParse(m_msQPlc._pBdb.mDtMain.Rows[0]["ERR_CODE_RD"].ToString().Trim(), out nRtvErr);
+
+                int nNew = 0;
+                if (nRtvErr != 0)
+                {
+                    foreach (string t in strCodes.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        int nOne;
+                        if (int.TryParse(t.Trim(), out nOne) && nOne != 0 && nOne == nRtvErr) { nNew = nRtvErr; break; }
+                    }
+                }
+                m_nEstopCode = nNew;
+
+                if (m_nEstopLogged != nNew)
+                {
+                    // ★ 트랙 CV_DATA 를 곧바로 고쳐 준다 ★
+                    //   관측부의 덮어쓰기만으로는 부족하다 - UpdateCvData 는 PLC 원문(HEX)이 바뀐 트랙만 쓴다.
+                    //   멈춰 있는 트랙은 원문이 그대로라 영영 갱신되지 않는다(2026-09-22 실측).
+                    //   해제할 때는 우리가 세운 코드와 같은 트랙만 내린다 - 그 트랙 자체 에러는 남긴다.
+                    string strIn = "'" + string.Join("','",
+                        m_lstEstopTrk.ConvertAll<string>(delegate(int x) { return x.ToString(); }).ToArray()) + "'";
+                    string strCode = m_nEstopLogged > 0 ? m_nEstopLogged.ToString() : nNew.ToString();
+                    string sqlU = "";
+                    sqlU += cDefApp.CRLF + " UPDATE CV_DATA                                      ";
+                    sqlU += cDefApp.CRLF + "    SET ERROR_CODE       = '" + (nNew > 0 ? nNew.ToString() : "0") + "' ";
+                    sqlU += cDefApp.CRLF + "      , HOST_ERR_SEND_YN = 'N'                       ";
+                    sqlU += cDefApp.CRLF + "  WHERE WH_TYP           = '" + m_strWh_typ + "'     ";
+                    sqlU += cDefApp.CRLF + "    AND MC_NO           IN (" + strIn + ")           ";
+                    sqlU += nNew > 0
+                          ? cDefApp.CRLF + "    AND ISNULL(ERROR_CODE,'0') IN ('0','00','0000','') "
+                          : cDefApp.CRLF + "    AND ERROR_CODE       = '" + strCode + "'         ";
+                    m_msQPlc._pBdb.mComMain.CommandType = CommandType.Text;
+                    m_msQPlc._pBdb.mComMain.Parameters.Clear();
+                    if (m_msQPlc._pBdb.ExcuteNonQry(sqlU) < 0) return;   // DB 실패 - 다음 사이클에 다시
+
+                    m_nEstopLogged = nNew;
+                    string msg = (nNew > 0)
+                        ? "[CvEstopSpread] ★RGV 비상정지 전파★ RTV 에러 " + nNew.ToString("0000") + " → C/V 트랙 "
+                          + string.Join(",", m_lstEstopTrk.ConvertAll<string>(delegate(int x) { return x.ToString(); }).ToArray()) + " 도 에러 표시"
+                        : "[CvEstopSpread] RGV 비상정지 해제 → 전파했던 C/V 트랙 에러 해제";
+                    MakeMsg_Imp(msg, m_nthNo);
+                    InsertWcsLogPgr("", msg);
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[CvEstopSpread] Exception: " + ex.Message, m_nthNo); }
         }
         #endregion
 

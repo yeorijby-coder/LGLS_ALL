@@ -218,6 +218,32 @@ namespace WCS_TASK_CV
                 return v;
             }
         }
+
+        /// <summary>
+        /// [LGLS 2026-09-22] [CNF] 문자열 키 (2초 캐시). 종전엔 정수(GsCnfInt) 만 있었다.
+        ///   비상정지 전파 대상 코드·트랙처럼 목록을 받아야 하는 키에 쓴다.
+        /// </summary>
+        private static readonly Dictionary<string, string> s_cnfStrCache = new Dictionary<string, string>();
+        private static DateTime s_cnfStrLoaded = DateTime.MinValue;
+        public static string GsCnfStr(string pKey, string pDefault)
+        {
+            lock (s_cnfLock)
+            {
+                if ((DateTime.Now - s_cnfStrLoaded).TotalMilliseconds >= 2000) { s_cnfStrCache.Clear(); s_cnfStrLoaded = DateTime.Now; }
+                string v;
+                if (s_cnfStrCache.TryGetValue(pKey, out v)) return v;
+                v = pDefault;
+                if (System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                {
+                    StringBuilder sb = new StringBuilder(512);
+                    GetPrivateProfileString("CNF", pKey, pDefault, sb, sb.Capacity, cDefApp.GM_ENV_INI);
+                    string t = sb.ToString().Trim();
+                    if (t.Length > 0) v = t;
+                }
+                s_cnfStrCache[pKey] = v;
+                return v;
+            }
+        }
         #endregion
 
         #region [CNF]::M 비트 쓰기 방식  [LGLS 2026-09-14]

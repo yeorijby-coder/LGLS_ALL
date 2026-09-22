@@ -349,6 +349,7 @@ namespace TSK_COMM_IOSCH
                     CompleteRGVReal();  // 35 → 39 (RTV COMPLETE_RD 소비)
                     CompleteRGVManual(); // [LGLS 2026-09-04] 수동지시(9998) 완료 정리 - 종료 이벤트/이력
                     CompleteSCManual();  // [LGLS 2026-09-05] SC 수동지시(9999) 완료 정리 - RTV 와 대칭
+                    FinishManualComplete(); // [LGLS 2026-09-22] 운전 화면 [SC완료]/[CV완료] 로 손수 끝낸 작업 마무리
 
                     // ── ② 착지 처리 : 도착 신호 대신 ★화물 위치★ 로 판정해 다음 구간에 인계
                     LandRgvDrop();      // 39 + HS_TRACK_NO 에 화물 → 15 (CV/SC 인계)
@@ -3920,6 +3921,69 @@ namespace TSK_COMM_IOSCH
                 MakeMsg_Imp("[SCH]" + msg);
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][RGV] CompleteRGVManual 오류: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-22] 운전 화면 작업정보 창의 [SC완료]/[CV완료] 로 손수 끝낸 작업을 마무리한다 (사용자 보고).
+        ///   그 버튼들은 JOB_MST.JOB_STATUS 를 29(SC완료) / 19(CV완료) 로 바꿀 뿐이고, 그 뒤를 보는 곳이 없었다.
+        ///   → 상위에서 받은 반자동 입고 작업을 [SC완료] 하면 29 에 그대로 서 있었다.
+        ///   설비 완료신호 경로(CompleteSC)는 입고를 09/삭제로 곧장 보내므로,
+        ///   ★입고가 29 에 서 있는 것은 사람이 손으로 만든 상태뿐이다★ - 자동 흐름과 부딪히지 않는다.
+        ///     · 반자동 입고(11) 29 → 즉시 삭제  (반자동은 상위 보고 없음 - 절대 원칙)
+        ///     · 자동   입고(1)  29 → 09        (상위 완료보고 대상)
+        ///     · 반자동 출고(12) 19 → 즉시 삭제  (19 로 두면 상위에 완료보고가 나간다)
+        ///   자동 출고(2)의 19 는 정상 흐름이므로 건드리지 않는다.
+        /// </summary>
+        private void FinishManualComplete()
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT LUGG_NO, JOB_TYP, JOB_STATUS                          ";
+                q += CRLF + "   FROM JOB_MST                                               ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP                                      ";
+                q += CRLF + "    AND ( (JOB_TYP IN ('1','11') AND JOB_STATUS = '29')       ";
+                q += CRLF + "       OR (JOB_TYP  = '12'       AND JOB_STATUS = '19') )     ";
+                q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')                     ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return;
+
+                DataTable dt = _pBdb.mDtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
+                    string rawTyp = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
+                    string stNow  = (GetVal(dt.Rows[i], "JOB_STATUS") ?? "").Trim();
+                    bool bSemi    = (rawTyp == "11" || rawTyp == "12");
+                    string rtn = "";
+
+                    if (bSemi)
+                    {
+                        if (DeleteJobNow(luggNo, ref rtn))
+                        {
+                            ClearScOd(luggNo);
+                            ClearCvOd(luggNo);
+                            MakeMsg_Imp(string.Format(
+                                "[SCH] 반자동 {0} {1} 화면에서 수동 완료(상태 {2}) → 즉시 삭제(상위 보고 없음)",
+                                (rawTyp == "11") ? "입고" : "출고", luggNo, stNow));
+                        }
+                        else
+                            MakeMsg_Error(string.Format("[SCH] 반자동 수동 완료 삭제 실패({0}): {1}", luggNo, rtn));
+                    }
+                    else if (UpdateJobStatus("09", luggNo, ref rtn))
+                    {
+                        ClearScOd(luggNo);
+                        ClearCvOd(luggNo);
+                        MakeMsg_Imp(string.Format(
+                            "[SCH] 입고 {0} 화면에서 수동 완료(상태 29) → 09 (상위 완료보고 대상)", luggNo));
+                    }
+                    else
+                        MakeMsg_Error(string.Format("[SCH] 수동 완료 전이 실패({0}): {1}", luggNo, rtn));
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH] FinishManualComplete 오류: " + ex.Message); }
         }
 
         /// <summary>
