@@ -232,6 +232,27 @@ BOOL CCvSkinDlg::OnInitDialog()
 	SetTimer(2, 1000, NULL);
 	SetTimer(7, 300, NULL);	// [LGLS 2026-09-21] EDIT 흐름 표시 (CLib::MarqueeTick)
 
+	// [LGLS 2026-09-22] Ecs.ini [MENU] 로 감출 수 있는 항목 (사용자 지시).
+	//   CV_STOCKMODE_BTN  입고/출고 모드
+	//   CV_SC_LOCK_BTN    SC 인터락
+	//   CV_RGV_LOCK_BTN   RGV 인터락
+	//   1(기본)=보임 / 0=감춤. 창을 열 때 읽으므로 ini 를 고친 뒤 창을 다시 열면 반영된다.
+	{
+		struct { LPCTSTR strKey; UINT nId; } HIDE[] = {
+			{ _T("CV_STOCKMODE_BTN"), IDC_BTN_STOCK_MODE    },
+			{ _T("CV_SC_LOCK_BTN"),   IDC_BTN_RTV_INTERLOCK },
+			{ _T("CV_RGV_LOCK_BTN"),  IDC_BTN_RGV_INTERLOCK },
+		};
+		for (int i = 0; i < (int)(sizeof(HIDE)/sizeof(HIDE[0])); i++)
+		{
+			if (::GetPrivateProfileInt(_T("MENU"), HIDE[i].strKey, 1, ECS_INI_FILE) != 0)
+				continue;
+			CWnd* pWnd = GetDlgItem(HIDE[i].nId);
+			if (pWnd != NULL) pWnd->ShowWindow(SW_HIDE);
+		}
+	}
+
+
 	return TRUE;
 }
 
