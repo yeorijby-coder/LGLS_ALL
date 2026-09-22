@@ -119,8 +119,11 @@ BOOL CManualJob::OnInitDialog()
 	InitializeFontManager(this);
 	SetFontNation((int)pEn, 0);
 
-	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobStartPos, m_pDoc, _T("126"));  // [LGLS 2026-09-16] start combo excludes 126 (out station)
-	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobDestPos, m_pDoc, _T("124"));  // [LGLS 2026-09-16] dest combo excludes 124 (in station)
+	// [LGLS 2026-09-22] 출발지 = 입고대·겸용대(124/130/122), 도착지 = 출고대·겸용대(126/129/122) (사용자 지시)
+	//   종전에는 한 칸씩만 뺄 수 있어 도착지에 입고대 130(C/V#15 피킹입고)이 그대로 떠 있었다.
+	//   피킹 출고대는 129(C/V#14 TR#29) 다.
+	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobStartPos, m_pDoc, _T("126,129"));
+	CLib::SetBindCombo_DEST_POS_DEF(m_cbxManualJobDestPos,  m_pDoc, _T("124,130"));
 
 	// [LGLS 2026-09-16] IMS STATION label made entries longer - widen dropdown so text is not clipped
 	m_cbxManualJobStartPos.SetDroppedWidth(300);

@@ -205,6 +205,7 @@ public:
 	// [LGLS 2026-09-03] 크레인 N호기의 H/S 트랙(해당 S/C측 C/V 의 두 트랙) - CV_DATA 이름 기준
 	static bool BindCombo_SC_HS_TRACK(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG, int nScIdx);
 	static BOOL BindCombo_RTV_NO(CComboBoxWrapper& cbx, CEcsDoc *pDoc, int nEN_LANG);
+	// [LGLS 2026-09-22] strExcludeMc : 목록에서 뺄 MC_NO. 콤마로 여럿 줄 수 있다 (예 _T("124,130")).
 	static bool SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, LPCTSTR strExcludeMc = _T(""));
 	static bool BindSpreadCommonCode(CString pCDX_CD, CString pCCD_NM_XXX, CString& pCCD_CD, CEcsDoc *pDoc);
 

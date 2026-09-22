@@ -2086,9 +2086,27 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, LPCTS
 	CString strDEST_POS;
 	CString strMessage;
 	cbx.ResetContent();
+	// [LGLS 2026-09-22] 뺄 MC_NO 를 콤마로 여럿 받는다 (사용자 지시 - 수동지시 창 도착지에 입고대가 떴다).
+	//   예) 출발지 "126,129"(출고 전용대 제외) / 도착지 "124,130"(입고 전용대 제외). 겸용대 122 는 양쪽에 남는다.
 	CString strWhere = _T("");
 	if (strExcludeMc != NULL && _tcslen(strExcludeMc) > 0)
-		strWhere.Format(_T(" WHERE MC_NO <> '%s' "), strExcludeMc);  // [LGLS 2026-09-16] 출발/도찬 콘보 제외(사용자 지시)
+	{
+		CString strIn, strTok;
+		int nPos = 0;
+		CString strSrc(strExcludeMc);
+		strTok = strSrc.Tokenize(_T(", \t"), nPos);
+		while (!strTok.IsEmpty())
+		{
+			strTok.Trim();
+			if (!strTok.IsEmpty())
+			{
+				if (!strIn.IsEmpty()) strIn += _T(",");
+				strIn += _T("'") + strTok + _T("'");
+			}
+			strTok = strSrc.Tokenize(_T(", \t"), nPos);
+		}
+		if (!strIn.IsEmpty()) strWhere.Format(_T(" WHERE MC_NO NOT IN (%s) "), (LPCTSTR)strIn);
+	}
 	strSql.Format(_T("  SELECT TRACK_NO, REMARKS, GROUP_NO, MC_NO FROM DEST_POS_DEF %s ORDER BY GROUP_NO, MC_NO "), (LPCTSTR)strWhere);
 
 	_RecordsetPtr pRsptr = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
