@@ -522,7 +522,7 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "     ON CD.WH_TYP           = JM.WH_TYP                        ";
                 q += CRLF + "    AND CD.MC_NO            = JM.DEST_POS                      ";
                 q += CRLF + "  WHERE JM.WH_TYP           = :WH_TYP                          ";
-                q += CRLF + "    AND JM.JOB_TYP         IN ('2','12')                       ";
+                q += CRLF + "    AND JM.JOB_TYP          = '2'                              ";   // [LGLS 2026-09-22] 자동 출고만 - 반자동(12)은 아래에서 삭제
                 q += CRLF + "    AND JM.JOB_STATUS      IN ('15')                      ";   // CV 구동지시/구동중
                 q += CRLF + "    AND CD.LUGG_NO_RD       = JM.LUGG_NO                       ";   // 그 화물이 출고대에 도착
                 q += CRLF + "    AND CD.SENSOR0_DATA_RD  = '1'                              ";
@@ -534,6 +534,37 @@ namespace TSK_COMM_IOSCH
                 int n = DbNonQry(q);
                 if (n > 0)
                     MakeMsg_Imp(string.Format("[SCH][CV] 출고대 도착 - {0}건 출고 완료(19)로 전환 → 상위 완료보고", n));
+
+                // [LGLS 2026-09-22] 반자동 출고(12)는 상위에 보고하지 않는다(절대 원칙) - 출고대 도착을 보면 곧바로 지운다.
+                string qs = "";
+                qs += CRLF + " SELECT JM.LUGG_NO                                             ";
+                qs += CRLF + "   FROM JOB_MST JM                                             ";
+                qs += CRLF + "  INNER JOIN CV_DATA CD                                        ";
+                qs += CRLF + "     ON CD.WH_TYP           = JM.WH_TYP                        ";
+                qs += CRLF + "    AND CD.MC_NO            = JM.DEST_POS                      ";
+                qs += CRLF + "  WHERE JM.WH_TYP           = :WH_TYP                          ";
+                qs += CRLF + "    AND JM.JOB_TYP          = '12'                             ";
+                qs += CRLF + "    AND JM.JOB_STATUS      IN ('15')                           ";
+                qs += CRLF + "    AND CD.LUGG_NO_RD       = JM.LUGG_NO                       ";
+                qs += CRLF + "    AND CD.SENSOR0_DATA_RD  = '1'                              ";
+                qs += CRLF + "    AND CD.RET_READY_RD     = '1'                              ";
+                qs += CRLF + "    AND (JM.DEL_YN IS NULL OR JM.DEL_YN <> 'Y')                ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(qs) > 0)
+                {
+                    DataTable dtSemi = _pBdb.mDtMain.Copy();
+                    for (int i = 0; i < dtSemi.Rows.Count; i++)
+                    {
+                        string luggSemi = GetVal(dtSemi.Rows[i], "LUGG_NO");
+                        string rtnSemi = "";
+                        if (DeleteJobNow(luggSemi, ref rtnSemi))
+                            MakeMsg_Imp(string.Format("[SCH][CV] 반자동 출고 {0} 출고대 도착 → 즉시 삭제(상위 보고 없음)", luggSemi));
+                        else
+                            MakeMsg_Error(string.Format("[SCH][CV] 반자동 출고 삭제 실패({0}): {1}", luggSemi, rtnSemi));
+                    }
+                }
             }
             catch (Exception ex) { MakeMsg_Error("[SCH][CV] ReportOutStationArrival 오류: " + ex.Message); }
         }
@@ -3704,21 +3735,12 @@ namespace TSK_COMM_IOSCH
                         continue;
                     }
 
-                    // [LGLS 2026-09-16 2안, 사용자 확정] 출고: 도착 트랙에 실물(작업번호)이 기록된 것을 확인한 뒤에야 완료.
-                    //   자동(2)=09(HOST 재보고 대상) / 반자동(12)=즉시 삭제. 입고(1/11)는 종전대로 15(CV 인계).
-                    {
-                        string jTypL = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
-                        if (jTypL == "2" || jTypL == "12")
-                        {
-                            string rtnO = ""; bool bSemiO = (jTypL == "12");
-                            if (bSemiO ? DeleteJobNow(luggNo, ref rtnO) : UpdateJobStatus("09", luggNo, ref rtnO))
-                                MakeMsg_Imp(string.Format("[SCH][RGV] 출고 {0} RGV 도착지 {1} 실물 기록 확인 → {2}",
-                                            luggNo, landTrk, bSemiO ? "즉시 삭제(반자동)" : "완료(09)"));
-                            else
-                                MakeMsg_Error(string.Format("[SCH][RGV] 출고 완료 전이 실패({0}): {1}", luggNo, rtnO));
-                            continue;
-                        }
-                    }
+                    // [LGLS 2026-09-22 현장 요구] ★출고 완료는 최종 출고대 도착 + 출고대 신호 ON 에서 낸다★
+                    //   종전(09-16 2안)에는 RTV 가 도착 트랙에 실물을 기록한 것만 보고 여기서 09/삭제했다.
+                    //   그러면 화물이 아직 통로·중간 트랙에 있는데도 상위에 완료(F)가 나간다.
+                    //   이제 RTV 착지는 15(CV 인계)로만 두고, 벨트가 최종 출고대(DEST_POS)로 옮겨
+                    //   출고대 신호(CV_DATA.RET_READY_RD)가 ON 되면 ReportOutStationArrival() 이 완료시킨다.
+                    //   (자동 2 = 19 → F 보고 → 09,  반자동 12 = 즉시 삭제 - 상위 보고 없음)
                     string rtn = "";
                     // [LGLS 2026-08-31] ★착지 기록(트랙 R영역 쓰기)을 폐기했다★ - 구 ECS 기준 확인 결과.
                     //   구 ECS 는 ECSDispatcher.cs:592 에서 SetPallet(fromPort, palletId) 단 한 곳,
@@ -4001,7 +4023,7 @@ namespace TSK_COMM_IOSCH
                         RtvResetComplete();
                         m_dicPrevRGV.Remove("RGV_801");
                         MakeMsg_Imp(string.Format("[SCH][RGV] 작업 {0} RTV 반송 완료 → 상태 '{1}' ({2})",
-                                    luggNo, stNextRgv, (jTyp == "2") ? "출고 - 도착 실물 기록 확인 후 완료" : "도착지 기록 대기"));
+                                    luggNo, stNextRgv, (jTyp == "2") ? "출고 - 출고대 도착 신호로 완료" : "도착지 기록 대기"));
                     }
                     else
                         MakeMsg_Error(string.Format("[SCH][RGV] 완료 전이 실패({0}): {1}", luggNo, rtn));

@@ -2046,6 +2046,31 @@ void CLib::RenameColumn(CStringArray& pColArray, int pLang, CStringArray& pColRe
    }
 }
 
+// [LGLS 2026-09-22] 콤보 드롭다운 폭 자동 맞춤 (사용자 지시 - 조회 조건 글자가 잘리던 것).
+//   항목마다 실제 글꼴로 폭을 재서 가장 긴 것 + 스크롤바 + 여백으로 SetDroppedWidth 한다.
+void CLib::AutoDroppedWidth(CComboBox& cbx, int nExtra)
+{
+	if (cbx.GetSafeHwnd() == NULL) return;
+	CDC* pDC = cbx.GetDC();
+	if (pDC == NULL) return;
+	CFont* pOld = pDC->SelectObject(cbx.GetFont());
+	int nMax = 0;
+	for (int i = 0; i < cbx.GetCount(); i++)
+	{
+		CString strText;
+		cbx.GetLBText(i, strText);
+		int cx = pDC->GetTextExtent(strText).cx;
+		if (cx > nMax) nMax = cx;
+	}
+	if (pOld != NULL) pDC->SelectObject(pOld);
+	cbx.ReleaseDC(pDC);
+
+	int nWidth = nMax + ::GetSystemMetrics(SM_CXVSCROLL) + nExtra;
+	CRect rc; cbx.GetWindowRect(&rc);
+	if (nWidth < rc.Width()) nWidth = rc.Width();
+	cbx.SetDroppedWidth(nWidth);
+}
+
 bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, LPCTSTR strExcludeMc)
 {
 	if (pDoc   == NULL)                     
@@ -2084,6 +2109,7 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, LPCTS
 		pRsw->MoveNext();
 	}
 	cbx.SetCurSel(0);
+	AutoDroppedWidth(cbx);	// [LGLS 2026-09-22] IMS Station 이 들어간 긴 문구가 잘리지 않게
 	delete pRsw;
 	return true;
 }

@@ -25,18 +25,15 @@ public:
 	enum { IDD = IDD_WARNING_DLG };
 	enum { TIMER_SCAN = 7301 };
 
-	// 체류 판정 기준(초). Ecs.ini [USER] JOB_STALL_WARN_SEC, 기본 300
-	int  m_nStallSec;
-	void ReloadIni();		// [LGLS 2026-09-12] Ecs.ini 저장 감지 시 JOB_STALL_WARN_SEC 다시 읽기
 	// 자동 표시 억제(STOP 버튼)
 	BOOL m_bMute;
 	// 이미 알린 작업 : "작업번호|상태" 목록 (같은 상태로 머무는 동안 1회만 알림)
-	CStringArray m_arrNotified;
+	CStringArray m_arrNotified;	// 이미 알린 설비·코드 (해제되면 지운다)
 	// 목록 순회 위치 (|<< << >> >>| 버튼). -1 = 선택 없음
 	int m_nCursor;
 
 public:
-	void ScanStalledJobs();
+	void ScanEquipErrors();	// [LGLS 2026-09-22] 설비 에러(SC/RTV/CV)만 알린다 - 체류 알람 폐기
 	void ScanAlarmLogs();          // WCS_CLIENT_LOG 의 미확인 알람(ALARM_YN='Y')을 띄운다
 	void PumpupAlarm(LPCTSTR lpszWinId, LPCTSTR lpszLugg, LPCTSTR lpszMessage);  // 즉시 표시(구 CLog::PumpupAlarm 대응)
 	void ShowRow(int nIndex);      // 지정 행을 상단 팁에 표시하고 선택

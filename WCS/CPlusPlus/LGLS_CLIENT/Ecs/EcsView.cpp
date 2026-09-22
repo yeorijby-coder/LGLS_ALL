@@ -1799,7 +1799,6 @@ void CEcsView::CheckIniHotReload()
 //   · [ETC] ViewRetCnt        : CConfig 값만 바꾸면 트랙 그리기(TrackInfo)가 다음 갱신에 반영
 //   · [MENU] UI_TRACE/LOADBIT_GATE : CLib 캐시 비우기
 //   · [MENU] ZOOM_BTN         : 이미 만들어진 CV/SC/RTV 상태창의 [확대] 버튼 표시/숨김(숨기면 펼친 패널도 접음)
-//   · [USER] JOB_STALL_WARN_SEC : 체류 경고창 기준 초
 //   (USER_COLOR_* 27개는 사용자 지시로 제외)
 void CEcsView::ReloadIniHot()
 {
@@ -1840,13 +1839,7 @@ void CEcsView::ReloadIniHot()
 		}
 	}
 
-	if (pDoc->m_pWarningDlg != NULL)
-	{
-		CWarningDlg* pWarn = (CWarningDlg*)pDoc->m_pWarningDlg;
-		int nOld = pWarn->m_nStallSec;
-		pWarn->ReloadIni();
-		if (nOld != pWarn->m_nStallSec) strChg.AppendFormat(_T(" JOB_STALL_WARN_SEC=%d"), pWarn->m_nStallSec);
-	}
+	// [LGLS 2026-09-22] 체류 알람 폐기 - 경고창의 JOB_STALL_WARN_SEC 핫 리로드도 제거
 
 	// [Title] BuildDate/DbInfo/Path · [RibbonMenu] ToolTip → 메인 프레임(제목줄·리본 툴팁)
 	{

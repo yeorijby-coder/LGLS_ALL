@@ -21,19 +21,13 @@ CWarningDlg::CWarningDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	m_pDoc = pDoc;
 	m_bMute = FALSE;
 	m_nCursor = -1;
-	ReloadIni();
 }
 
 CWarningDlg::~CWarningDlg()
 {
 }
 
-// [LGLS 2026-09-12] 체류 판정 기준(초)을 Ecs.ini 에서 읽는다. 생성 시와 ini 저장 감지 시(CEcsView::ReloadIniHot) 부른다.
-void CWarningDlg::ReloadIni()
-{
-	m_nStallSec = ::GetPrivateProfileInt(_T("USER"), _T("JOB_STALL_WARN_SEC"), 300, ECS_INI_FILE);
-	if (m_nStallSec < 10) m_nStallSec = 10;
-}
+// [LGLS 2026-09-22] 체류(지연) 알람 폐기 - ReloadIni()/JOB_STALL_WARN_SEC 제거. 경고창은 설비 에러만 알린다.
 
 void CWarningDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -64,7 +58,7 @@ BOOL CWarningDlg::OnInitDialog()
 	m_ctlList.InsertColumn(0, _T("시각"),     LVCFMT_CENTER,  80);
 	m_ctlList.InsertColumn(1, _T("작업번호"), LVCFMT_CENTER,  80);
 	m_ctlList.InsertColumn(2, _T("구분"),     LVCFMT_CENTER, 120);
-	m_ctlList.InsertColumn(3, _T("체류(초)"), LVCFMT_RIGHT,   70);
+	m_ctlList.InsertColumn(3, _T("에러코드"), LVCFMT_CENTER,  70);	// [LGLS 2026-09-22] 체류(초) → 에러코드
 	m_ctlList.InsertColumn(4, _T("내용"),     LVCFMT_LEFT,   280);
 
 	SetDlgItemText(IDC_STATIC_TIP, _T(""));
@@ -90,7 +84,7 @@ void CWarningDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == TIMER_SCAN)
 	{
-		ScanStalledJobs();
+		ScanEquipErrors();	// [LGLS 2026-09-22] 설비 에러만 (체류 알람 폐기)
 		ScanAlarmLogs();
 	}
 	CDialog::OnTimer(nIDEvent);
@@ -254,88 +248,102 @@ void CWarningDlg::ScanAlarmLogs()
 	}
 }
 
-// 완료(29/19)가 아닌 작업이 기준시간 넘게 갱신되지 않으면 경고.
-//   같은 상태로 머무는 동안 1회만 알리고, 상태가 바뀌면 다시 알린다.
-//   자동 회복은 하지 않는다 - 실물 설비 상태를 모른 채 DB 를 건드리는 편이 더 위험하다.
-void CWarningDlg::ScanStalledJobs()
+// [LGLS 2026-09-22] ★설비 에러 감시★ (사용자 지시 - 작업 지연 알람은 폐기)
+//   크레인(SC_DATA_LGLS) · RGV(RTV_DATA_LGLS) · 컨베이어(CV_DATA) 의 에러코드가 서면 그 설비를 알린다.
+//   문구는 EQP_ECD_MST 에서 설비 구분과 코드로 찾는다(크레인은 Ecs.ini [SC_ERR] ERR_TYP 코드표).
+//   같은 설비·같은 코드는 한 번만 알리고, 해제되면 기억에서 지워 다시 나면 또 알린다.
+void CWarningDlg::ScanEquipErrors()
 {
 	if (m_pDoc == NULL) return;
 
-	// [LGLS 2026-08-22] 상태는 코드값 대신 COMMON_CODE(JOB_STATUS)의 이름으로 보여준다.
-	//   언어 설정에 따라 KOR/ENG/HUN/CHIN 컬럼을 고르고, 코드가 없으면 원래 숫자를 그대로 쓴다.
-	CString strNmCol = _T("CCD.CCD_NM_KOR");
-	switch (m_pDoc->m_enLang)
-	{
-	case EN_ENG:  strNmCol = _T("CCD.CCD_NM_ENG");  break;
-	case EN_HUN:  strNmCol = _T("CCD.CCD_NM_HUN");  break;
-	case EN_CHIN: strNmCol = _T("CCD.CCD_NM_CHIN"); break;
-	default: break;
-	}
-
+	CString strScTyp = CLib::ScErrTyp();	// 크레인 코드표 구분 (기본 SC_LGLS)
 	CString strSql;
 	strSql.Format(
-		_T("SELECT JM.LUGG_NO, JM.JOB_STATUS, JM.START_POS, JM.DEST_POS, ")
-		_T("       DATEDIFF(second, JM.UPD_DT, GETDATE()) AS IDLE_SEC, ")
-		_T("       %s(NULLIF(LTRIM(RTRIM(%s)),''), JM.JOB_STATUS) AS STATUS_NM ")
-		_T("  FROM JOB_MST JM ")
-		_T("  LEFT OUTER JOIN COMMON_CODE CCD ")
-		_T("         ON CCD.CDX_CD = 'JOB_STATUS' ")
-		_T("        AND CCD.CCD_CD = JM.JOB_STATUS ")
-		_T("        AND CCD.WH_TYP LIKE '%%' + JM.WH_TYP + '%%' ")
-		_T(" WHERE JM.JOB_STATUS NOT IN ('29','19') ")
-		_T("   AND DATEDIFF(second, JM.UPD_DT, GETDATE()) >= %d "),
-		m_pDoc->NVL, strNmCol, m_nStallSec);
+		_T("SELECT 'SC' AS KIND, SD.MC_NO AS EQP_NO, SD.ERR_CODE_RD AS ERR_CD, ")
+		_T("       %s(NULLIF(LTRIM(RTRIM(EM.MSG_KOR)),''), '') AS ERR_MSG ")
+		_T("  FROM SC_DATA_LGLS SD LEFT OUTER JOIN EQP_ECD_MST EM ")
+		_T("         ON EM.EQP_TYP = '%s' AND EM.EQP_ERR_CD = SD.ERR_CODE_RD ")
+		_T(" WHERE %s(SD.ERR_CODE_RD,'0000') NOT IN ('0','00','0000','') ")
+		_T(" UNION ALL ")
+		_T("SELECT 'RTV' AS KIND, RD.RTV_NO AS EQP_NO, RD.ERR_CODE_RD AS ERR_CD, ")
+		_T("       %s(NULLIF(LTRIM(RTRIM(EM.MSG_KOR)),''), '') AS ERR_MSG ")
+		_T("  FROM RTV_DATA_LGLS RD LEFT OUTER JOIN EQP_ECD_MST EM ")
+		_T("         ON EM.EQP_TYP = 'RTV' AND EM.EQP_ERR_CD = RD.ERR_CODE_RD ")
+		_T(" WHERE %s(RD.ERR_CODE_RD,'0000') NOT IN ('0','00','0000','') ")
+		_T(" UNION ALL ")
+		_T("SELECT 'CV' AS KIND, CD.MC_NO AS EQP_NO, CD.ERROR_CODE AS ERR_CD, ")
+		_T("       %s(NULLIF(LTRIM(RTRIM(EM.MSG_KOR)),''), '') AS ERR_MSG ")
+		_T("  FROM CV_DATA CD LEFT OUTER JOIN EQP_ECD_MST EM ")
+		_T("         ON EM.EQP_TYP = 'CV' AND EM.EQP_ERR_CD = CD.ERROR_CODE ")
+		_T(" WHERE %s(CD.ERROR_CODE,'0') NOT IN ('0','00','0000','') "),
+		m_pDoc->NVL, (LPCTSTR)strScTyp, m_pDoc->NVL,
+		m_pDoc->NVL, m_pDoc->NVL,
+		m_pDoc->NVL, m_pDoc->NVL);
 
 	int nRowCnt = -1;
 	CString strMessage;
 	_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
-	if (nRowCnt <= 0) return;
 
-	CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
+	CStringArray arrNow;	// 지금 에러가 선 설비·코드
 	CString strLast;
 	int nNew = 0;
 
-	pRsw->MoveFirst();
-	for (int i = 0; i < nRowCnt; i++)
+	if (nRowCnt > 0)
 	{
-		CString strLugg   = pRsw->GetItem(_T("LUGG_NO"));
-		CString strStatus = pRsw->GetItem(_T("JOB_STATUS"));
-		CString strStatNm = pRsw->GetItem(_T("STATUS_NM"));
-		if (strStatNm.Trim().IsEmpty()) strStatNm = strStatus;
-		CString strIdle   = pRsw->GetItem(_T("IDLE_SEC"));
-		CString strStart  = pRsw->GetItem(_T("START_POS"));
-		CString strDest   = pRsw->GetItem(_T("DEST_POS"));
-
-		CString strKey;
-		strKey.Format(_T("%s|%s"), strLugg, strStatus);
-
-		BOOL bKnown = FALSE;
-		for (int k = 0; k < m_arrNotified.GetSize(); k++)
+		CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
+		pRsw->MoveFirst();
+		for (int i = 0; i < nRowCnt; i++)
 		{
-			if (m_arrNotified.GetAt(k) == strKey) { bKnown = TRUE; break; }
-		}
-		if (!bKnown)
-		{
-			m_arrNotified.Add(strKey);
+			CString strKind = pRsw->GetItem(_T("KIND"));
+			CString strEqp  = pRsw->GetItem(_T("EQP_NO"));
+			CString strCd   = pRsw->GetItem(_T("ERR_CD"));
+			CString strMsg  = pRsw->GetItem(_T("ERR_MSG"));
+			strCd.Trim(); strMsg.Trim();
 
-			CTime tmNow = CTime::GetCurrentTime();
-			CString strRoute;
-			strRoute.Format(_T("%s -> %s"), strStart, strDest);
-			AddRow(tmNow.Format(_T("%H:%M:%S")), strLugg, strStatNm, strIdle, strRoute);
+			CString strName;	// 보여줄 설비 이름
+			if      (strKind == _T("SC"))  strName.Format(_T("크레인 %s"), (LPCTSTR)strEqp);
+			else if (strKind == _T("RTV")) strName.Format(_T("RGV %s"), (LPCTSTR)strEqp);
+			else                            strName.Format(_T("C/V 트랙 %s"), (LPCTSTR)strEqp);
 
-			strLast.Format(_T("작업 %s 이(가) 상태 '%s' 로 %s초째 진행되지 않습니다.\r\n%s\r\n설비 응답을 확인하세요."),
-			                strLugg, strStatNm, strIdle, strRoute);
-			nNew++;
+			CString strKey;
+			strKey.Format(_T("%s|%s|%s"), (LPCTSTR)strKind, (LPCTSTR)strEqp, (LPCTSTR)strCd);
+			arrNow.Add(strKey);
+
+			BOOL bKnown = FALSE;
+			for (int k = 0; k < m_arrNotified.GetSize(); k++)
+				if (m_arrNotified.GetAt(k) == strKey) { bKnown = TRUE; break; }
+			if (!bKnown)
+			{
+				m_arrNotified.Add(strKey);
+				CTime tmNow = CTime::GetCurrentTime();
+				AddRow(tmNow.Format(_T("%H:%M:%S")), _T(""), strName, strCd, strMsg);
+				if (strMsg.IsEmpty())
+					strLast.Format(_T("%s 에 에러 [%s] 가 발생했습니다.\r\n설비 상태를 확인하세요."), (LPCTSTR)strName, (LPCTSTR)strCd);
+				else
+					strLast.Format(_T("%s 에러 [%s] %s\r\n설비 상태를 확인하세요."), (LPCTSTR)strName, (LPCTSTR)strCd, (LPCTSTR)strMsg);
+				nNew++;
+			}
+			pRsw->MoveNext();
 		}
-		pRsw->MoveNext();
+		delete pRsw;
 	}
-	delete pRsw;
+
+	// 해제된 설비는 기억에서 지운다 - 같은 에러가 다시 나면 또 알리기 위해
+	for (int k = (int)m_arrNotified.GetSize() - 1; k >= 0; k--)
+	{
+		BOOL bAlive = FALSE;
+		for (int m = 0; m < arrNow.GetSize(); m++)
+			if (arrNow.GetAt(m) == m_arrNotified.GetAt(k)) { bAlive = TRUE; break; }
+		if (!bAlive) m_arrNotified.RemoveAt(k);
+	}
 
 	if (nNew > 0)
 	{
-		m_nCursor = 0;                     // 새 경고가 들어오면 최신 행을 가리킨다
+		m_nCursor = 0;
 		SetDlgItemText(IDC_STATIC_TIP, strLast);
 		if (!m_bMute && !IsWindowVisible())
-			ShowWindow(SW_SHOWNA);        // 포커스를 뺏지 않고 띄운다
+			ShowWindow(SW_SHOWNA);	// 포커스를 뺏지 않고 띄운다
 	}
 }
+
+

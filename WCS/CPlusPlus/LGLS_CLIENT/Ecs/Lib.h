@@ -108,6 +108,10 @@ public:
 	static int  IniLoadBitGate();	// [MENU] LOADBIT_GATE (캐시)
 	static int  IniVehDownColor();	// [MENU] VEH_DOWN_COLOR (캐시) 1=에러색 0=미가동(회색)
 
+	// [LGLS 2026-09-22] 콤보 드롭다운 목록 폭을 가장 긴 항목에 맞춘다 (글자 잘림 방지, 사용자 지시)
+	//   닫힌 상태의 폭은 rc 가 정하고, 펼쳤을 때는 이 함수가 넓혀 준다.
+	static void AutoDroppedWidth(CComboBox& cbx, int nExtra = 24);
+
 public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);
 

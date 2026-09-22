@@ -223,6 +223,12 @@ BOOL CViewJobListDlg::OnInitDialog()
 	CLib::BindCombo(m_cbxProductSize, _T("PRODUCT_SIZE"), m_pDoc, int(pEn), FALSE);
 	CLib::SetBindCombo_DEST_POS_DEF(m_cmbStartPos, m_pDoc);
 	CLib::SetBindCombo_DEST_POS_DEF(m_cmbDestPos, m_pDoc);
+	// [LGLS 2026-09-22] 나머지 조회 조건 콤보도 드롭다운 폭을 글자에 맞춘다 (사용자 지시)
+	CLib::AutoDroppedWidth(m_cmbWhTyp);
+	CLib::AutoDroppedWidth(m_cmbJobTyp);
+	CLib::AutoDroppedWidth(m_cmbJobStatus);
+	CLib::AutoDroppedWidth(m_cmbJobStatus2);
+	CLib::AutoDroppedWidth(m_cbxJobPriority);
 
 	InitializeControlLanguage();
 	
@@ -512,6 +518,7 @@ void CViewJobListDlg::AddCodePrefixToCombo(CComboBoxWrapper& cbx)
 		cbx.AddString(arrText.GetAt(i));
 	}
 	cbx.SetCurSel(nSel < 0 ? 0 : nSel);
+	CLib::AutoDroppedWidth(cbx);	// [LGLS 2026-09-22] "[코드] 이름" 이 길어져 잘리던 것
 }
 
 void CViewJobListDlg::CreateAutoRefreshCheck()
