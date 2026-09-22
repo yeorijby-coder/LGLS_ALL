@@ -91,6 +91,9 @@ public:
 protected:
 	// 포크 ★논리★ 사각형에 row/col 을 적용한다 (윙 계산이 끝난 뒤에 부른다 - 윙은 건드리지 않는다).
 	void ApplyForkGridL(CRect& rcForkL);
+	// 포크 논리사각형을 보정하고(참조) 화면좌표로 바꿔 돌려준다.
+	//   포크를 만든 직후에 부른다 - 뒤따르는 윙 계산이 보정된 포크를 기준으로 삼아 비례한다.
+	CRect ForkRectS(CRect& rcForkL);
 };
 
 //#undef AFX_DATA
