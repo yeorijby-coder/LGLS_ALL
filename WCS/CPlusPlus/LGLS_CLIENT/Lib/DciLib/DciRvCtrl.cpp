@@ -145,13 +145,13 @@ void CDciRvCtrl::ApplyForkGridL(CRect& rcForkL)
 	int nCx = (rcForkL.left + rcForkL.right)  / 2;
 	int nCy = (rcForkL.top  + rcForkL.bottom) / 2;
 
-	if (m_nCol > 0)
+	if (m_nCol > 0 && abs(nW) != m_nCol)		// 이미 그 크기면 그대로 둔다
 	{
 		int nNew = (nW >= 0) ? m_nCol : -m_nCol;
 		rcForkL.left  = nCx - nNew / 2;
 		rcForkL.right = rcForkL.left + nNew;
 	}
-	if (m_nRow > 0)
+	if (m_nRow > 0 && abs(nH) != m_nRow)		// 이미 그 크기면 그대로 둔다
 	{
 		int nNew = (nH >= 0) ? m_nRow : -m_nRow;
 		rcForkL.top    = nCy - nNew / 2;
@@ -190,6 +190,9 @@ void CDciRvCtrl::UpdateControlHorizental(int nType ,
 	rcRailS2.SetRect(ptRailS2.x, ptRailS2.y - nRailEndS/2, ptRailS2.x - nRailEndS, ptRailS2.y + nRailEndS/2);
 
 	nForkSize = abs(m_rcControlL.Height()) ? abs(m_rcControlL.Height()) : 1;
+	// [LGLS 2026-09-22] 가로형은 좌우로 움직인다 - 이동 단위는 가로 칸(col) (사용자 지시).
+	//   종전에는 컨트롤 높이에 고정돼 있어, row/col 을 줘도 예전 간격으로 움직였다.
+	if (m_nCol > 0) nForkSize = m_nCol;
 //	if (nForkType == enGap2)
 //		nForkSize = abs(m_rcControlL.Height()) ? abs(m_rcControlL.Height())*m_nLen : m_nLen;
 
@@ -373,6 +376,9 @@ void CDciRvCtrl::UpdateControlVertical(	int nType ,
 	rcRailS2.SetRect(ptRailS2.x - nRailEndS/2, ptRailS2.y - nRailEndS, ptRailS2.x + nRailEndS/2, ptRailS2.y);
 
 	nForkSize = abs(m_rcControlL.Width()) ? abs(m_rcControlL.Width()) : 1;
+	// [LGLS 2026-09-22] 세로형은 위아래로 움직인다 - 이동 단위는 세로 칸(row) (사용자 지시).
+	//   종전에는 컨트롤 폭에 고정돼 있어, RTV 에 row=2 를 줘도 3칸씩 움직였다.
+	if (m_nRow > 0) nForkSize = m_nRow;
 
 //	if (nForkType == enGap2)
 //		nForkSize = abs(m_rcControlL.Width()) ? abs(m_rcControlL.Width())*m_nLen : m_nLen;
