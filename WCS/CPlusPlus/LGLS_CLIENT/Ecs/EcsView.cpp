@@ -1819,11 +1819,13 @@ void CEcsView::ReloadIniHot()
 	}
 
 	{
-		int nTr0 = CLib::IniUiTrace(), nGt0 = CLib::IniLoadBitGate();
+		int nTr0 = CLib::IniUiTrace(), nGt0 = CLib::IniLoadBitGate(), nDc0 = CLib::IniVehDownColor();
 		CLib::IniCacheReset();
-		int nTr1 = CLib::IniUiTrace(), nGt1 = CLib::IniLoadBitGate();
+		int nTr1 = CLib::IniUiTrace(), nGt1 = CLib::IniLoadBitGate(), nDc1 = CLib::IniVehDownColor();
 		if (nTr0 != nTr1) strChg.AppendFormat(_T(" UI_TRACE=%d"), nTr1);
 		if (nGt0 != nGt1) { strChg.AppendFormat(_T(" LOADBIT_GATE=%d"), nGt1); Invalidate(FALSE); }
+		// [LGLS 2026-09-22] DOWN·수동 색 옵션도 저장 즉시 반영한다
+		if (nDc0 != nDc1) { strChg.AppendFormat(_T(" VEH_DOWN_COLOR=%d"), nDc1); Invalidate(FALSE); }
 	}
 
 	{

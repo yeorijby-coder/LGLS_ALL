@@ -2094,7 +2094,8 @@ bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, LPCTS
 // [LGLS 2026-09-12] Ecs.ini 핫 리로드용 캐시. CEcsView::CheckIniHotReload() 가 저장을 감지하면 비운다.
 static int s_nIniUiTrace     = -1;
 static int s_nIniLoadBitGate = -1;
-void CLib::IniCacheReset() { s_nIniUiTrace = -1; s_nIniLoadBitGate = -1; }
+static int s_nIniVehDownColor = -1;
+void CLib::IniCacheReset() { s_nIniUiTrace = -1; s_nIniLoadBitGate = -1; s_nIniVehDownColor = -1; }
 int  CLib::IniUiTrace()
 {
 	if (s_nIniUiTrace < 0) s_nIniUiTrace = ::GetPrivateProfileInt(_T("MENU"), _T("UI_TRACE"), 1, ECS_INI_FILE);
@@ -2105,6 +2106,16 @@ int  CLib::IniLoadBitGate()
 	if (s_nIniLoadBitGate < 0) s_nIniLoadBitGate = ::GetPrivateProfileInt(_T("MENU"), _T("LOADBIT_GATE"), 1, ECS_INI_FILE);
 	return s_nIniLoadBitGate;
 }
+// [LGLS 2026-09-22] 설비 동작상태가 DOWN(UCSTATUS 4 / SUBSYSTEM_STATUS 0) 이거나 지상반·기상반이 수동일 때
+//   크레인·RGV 컨트롤을 어떤 색으로 칠할지 (사용자 지시로 옵션화).
+//   1 = 에러색(빨강, 기본)   0 = 미가동(회색, 2026-09-21 이전 동작)
+//   ※ 에러코드(ERR_CODE_RD)가 선 경우는 이 옵션과 무관하게 항상 에러색이다 - 그 판정은 건드리지 않는다.
+int  CLib::IniVehDownColor()
+{
+	if (s_nIniVehDownColor < 0) s_nIniVehDownColor = ::GetPrivateProfileInt(_T("MENU"), _T("VEH_DOWN_COLOR"), 1, ECS_INI_FILE);
+	return s_nIniVehDownColor;
+}
+
 
 // [LGLS 2026-09-19] VEH_CLEAR_MODE 는 3 으로 확정 (사용자 지시) - 키와 IniVehClearMode() 삭제.
 //   판정은 CScInfo / CRtvInfo::IsVehicleDisplayOff 에 모드 3 동작만 남겼다.

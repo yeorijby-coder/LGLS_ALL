@@ -91,8 +91,9 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
 	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
+	// [LGLS 2026-09-22] DOWN·수동 색 - Ecs.ini [MENU] VEH_DOWN_COLOR : 1(기본)=에러색 / 0=미가동(회색)
 	if (IsRtvDown(pRTV_DATA))
-		return pConfig->m_clrUSER_COLOR_ERROR;	// [LGLS 2026-09-21] DOWN·수동은 에러색 (사용자 지시, 종전 미가동 회색)
+		return CLib::IniVehDownColor() ? pConfig->m_clrUSER_COLOR_ERROR : pConfig->m_clrUSER_COLOR_MANUAL;
 
 	//if (pRTV_DATA->V_ERR_STA_FK2_RD != _T("0"))
 	//	return pConfig->m_clrUSER_COLOR_ERROR;
@@ -177,8 +178,9 @@ COLORREF CRtvInfo::GetForkColor2(CRTV_DATA* pRTV_DATA)
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
 	// [LGLS 2026-09-03] DOWN 이면 짙은 회색
+	// [LGLS 2026-09-22] DOWN·수동 색 - Ecs.ini [MENU] VEH_DOWN_COLOR : 1(기본)=에러색 / 0=미가동(회색)
 	if (IsRtvDown(pRTV_DATA))
-		return pConfig->m_clrUSER_COLOR_ERROR;	// [LGLS 2026-09-21] DOWN·수동은 에러색 (사용자 지시, 종전 미가동 회색)
+		return CLib::IniVehDownColor() ? pConfig->m_clrUSER_COLOR_ERROR : pConfig->m_clrUSER_COLOR_MANUAL;
 	// [LGLS 2026-09-14] 화면에 보이는 칸. 내려놓았으면 설비 잔류값으로 칠하지 않는다
 	if (IsVehicleDisplayOff(pRTV_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		return LEGEND_IDLE_GRAY;

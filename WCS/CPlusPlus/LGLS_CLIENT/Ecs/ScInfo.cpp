@@ -52,9 +52,10 @@ COLORREF CScInfo::GetForkColor1()
  	if (m_pSC_DATA->V_ERR_STA_FK1_RD != _T("0"))
  		return pConfig->m_clrUSER_COLOR_ERROR;
  
- 	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+ 	// [LGLS 2026-09-22] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) - Ecs.ini [MENU] VEH_DOWN_COLOR
+	//   1(기본) = 에러색 / 0 = 미가동(회색)
 	if (m_pSC_DATA->V_UCSTATUS_RD == _T("4") || m_pSC_DATA->V_AUTO_MODE_RD == _T("0"))
-		return pConfig->m_clrUSER_COLOR_ERROR;
+		return CLib::IniVehDownColor() ? pConfig->m_clrUSER_COLOR_ERROR : pConfig->m_clrUSER_COLOR_MANUAL;
 
 	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
  		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
@@ -153,9 +154,10 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 	if (pSC_DATA->V_ERR_STA_FK1_RD != _T("0"))
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
-	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+	// [LGLS 2026-09-22] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) - Ecs.ini [MENU] VEH_DOWN_COLOR
+	//   1(기본) = 에러색 / 0 = 미가동(회색)
 	if (pSC_DATA->V_UCSTATUS_RD == _T("4") || pSC_DATA->V_AUTO_MODE_RD == _T("0"))
-		return pConfig->m_clrUSER_COLOR_ERROR;
+		return CLib::IniVehDownColor() ? pConfig->m_clrUSER_COLOR_ERROR : pConfig->m_clrUSER_COLOR_MANUAL;
 
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("0") || 
 		pSC_DATA->V_AUTO_MODE_RD   == _T("0") || 
@@ -248,9 +250,10 @@ COLORREF CScInfo::GetForkColor2()
 	if (m_pSC_DATA->V_ERR_STA_FK2_RD != _T("0"))
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
-	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+	// [LGLS 2026-09-22] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) - Ecs.ini [MENU] VEH_DOWN_COLOR
+	//   1(기본) = 에러색 / 0 = 미가동(회색)
 	if (m_pSC_DATA->V_UCSTATUS_RD == _T("4") || m_pSC_DATA->V_AUTO_MODE_RD == _T("0"))
-		return pConfig->m_clrUSER_COLOR_ERROR;
+		return CLib::IniVehDownColor() ? pConfig->m_clrUSER_COLOR_ERROR : pConfig->m_clrUSER_COLOR_MANUAL;
 
 	if (m_pSC_DATA->V_ONLINE_MODE_RD != _T("1") || m_pSC_DATA->V_AUTO_MODE_RD != _T("1") || m_pSC_DATA->V_ACTIVE_MODE_RD != _T("1"))
 		return pConfig->m_clrUSER_COLOR_MANUAL;	// [LGLS 2026-09-17] 범례 22 미가동(수동)
@@ -289,9 +292,10 @@ COLORREF CScInfo::GetForkColor2(CSC_DATA* pSC_DATA)
 	if (pSC_DATA->V_ERR_STA_FK1_RD != _T("0"))
 		return pConfig->m_clrUSER_COLOR_ERROR;
 
-	// [LGLS 2026-09-21] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) 이면 에러색 (사용자 지시)
+	// [LGLS 2026-09-22] 동작상태 DOWN(UCSTATUS 4) 이거나 기상반 수동(AUTO_MODE 0) - Ecs.ini [MENU] VEH_DOWN_COLOR
+	//   1(기본) = 에러색 / 0 = 미가동(회색)
 	if (pSC_DATA->V_UCSTATUS_RD == _T("4") || pSC_DATA->V_AUTO_MODE_RD == _T("0"))
-		return pConfig->m_clrUSER_COLOR_ERROR;
+		return CLib::IniVehDownColor() ? pConfig->m_clrUSER_COLOR_ERROR : pConfig->m_clrUSER_COLOR_MANUAL;
 
 	if (pSC_DATA->V_ONLINE_MODE_RD == _T("0") || 
 		pSC_DATA->V_AUTO_MODE_RD   == _T("0") || 

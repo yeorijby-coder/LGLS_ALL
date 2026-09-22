@@ -106,6 +106,7 @@ public:
 	static void IniCacheReset();
 	static int  IniUiTrace();		// [MENU] UI_TRACE (캐시)
 	static int  IniLoadBitGate();	// [MENU] LOADBIT_GATE (캐시)
+	static int  IniVehDownColor();	// [MENU] VEH_DOWN_COLOR (캐시) 1=에러색 0=미가동(회색)
 
 public:
 	static BOOL ParsingStackerID(CString& strStackerCrane, CString& strStackerStation, CString& strLog, int& nScNum);
