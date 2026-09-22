@@ -3847,7 +3847,7 @@ namespace TSK_COMM_IOSCH
                     //   (우리 쪽 SetPallet 대응물은 UpdateCvData - CV 반송지시 시 출발 트랙에 쓴다)
                     if (UpdateJobStatus(ST_CV_RUN2, luggNo, ref rtn))
                         MakeMsg_Imp(string.Format("[SCH][SC] 작업 {0} SC 도착지 {1} 기록 완료 → 상태 '{2}'",
-                                    luggNo, landTrk, ST_CV_RUN));
+                                    luggNo, landTrk, ST_CV_RUN2));   // [LGLS 2026-09-22] 기록은 16 인데 로그만 15 로 찍고 있었다
                     else
                         MakeMsg_Error(string.Format("[SCH][SC] 착지 전이 실패({0}): {1}", luggNo, rtn));
                 }
