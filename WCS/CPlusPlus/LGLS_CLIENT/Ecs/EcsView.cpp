@@ -69,8 +69,9 @@ class CLglsInfoBar : public CWnd
 public:
 	CEcsDoc* m_pDoc;
 	int      m_nKind;			// 0 = 통신 상태, 1 = 범례
-	CLglsInfoBar() { m_pDoc = NULL; m_nKind = 0; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
-	enum { TIMER_HB = 7501, CHIP_CNT = 28 };
+	CLglsInfoBar() { m_pDoc = NULL; m_nKind = 0; m_bBlink = FALSE; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
+	// [LGLS 2026-09-23] TIMER_BLINK = 정상 램프의 파랑↔노랑 1초 교대 (사용자 지시)
+	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 28 };
 	// 이름이 잘리지 않을 만큼만 열을 둔다(폭이 좁으면 줄 수가 는다).
 	static int ChipCols(int nWidth) { if (nWidth < 420) return 3; if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
 	// 그룹 4개(10/10/3/5개)를 다 담는 데 필요한 높이 - 범례 칸의 기본값으로 쓴다
@@ -81,7 +82,11 @@ public:
 		return h;
 	}
 protected:
-	int m_nAge[3];			// 설비 / 상위 / 스케줄 마지막 갱신 경과(초). -1 = 아직 모름
+	int m_nAge[3];			// (구) 설비 / 상위 / 스케줄 경과(초) - 남겨 둠
+	// [LGLS 2026-09-23] 설비별 통신 램프 (EQP_MST 한 행 = 신호등 한 칸)
+	struct LAMP { CString strName; BOOL bOk; };
+	CArray<LAMP, LAMP&> m_arrLamp;
+	BOOL m_bBlink;			// 파랑/노랑 교대 위상
 	void ReadHeartbeat();
 	void PaintComm(CDC& dc, CRect rc, CFont& fnt, CFont& fntB);
 	void PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB);
@@ -111,33 +116,67 @@ void CLglsInfoBar::OnTimer(UINT_PTR nIDEvent)
 		Invalidate(FALSE);
 		return;
 	}
+	// [LGLS 2026-09-23] 정상 램프를 1초마다 파랑↔노랑으로 바꿔 살아 있음을 보인다 (사용자 지시)
+	if (nIDEvent == TIMER_BLINK)
+	{
+		m_bBlink = !m_bBlink;
+		Invalidate(FALSE);
+		return;
+	}
 	CWnd::OnTimer(nIDEvent);
 }
 
+// [LGLS 2026-09-23] 설비별 통신 상태를 EQP_MST 에서 그대로 읽는다 (사용자 지시 - 신호등 줄).
+//   USE_YN='Y' 인 행이 그대로 칸이 된다. 표시 이름은 종류+번호로 만든다.
+//     HOST→WMS1  HOST2→WMS2  CV→CV01~CV15  SC→SC1~SC5  RTV→RTV  SCH→SCH
+//   끊김 판정 : CONNECTED_YN <> 'Y' 이거나 UPD_DT 가 종류별 허용 시간을 넘었을 때.
+//     HOST/HOST2 300초 · SCH 900초 · 그 밖(CV/SC/RTV) 60초
 void CLglsInfoBar::ReadHeartbeat()
 {
 	if (m_pDoc == NULL || m_nKind != 0) return;
-	CString strSql = _T("");
-	strSql += _T(" SELECT ISNULL((SELECT DATEDIFF(second, MAX(READ_UPD_DT), GETDATE()) FROM CV_DATA),     99999) AS EQP \n");
-	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(INS_DT),      GETDATE()) FROM HOST_IF_LOG), 99999) AS HST \n");
-	// [LGLS 2026-09-18] 스케줄러는 하트비트(EQP_MST SCH 행 UPD_DT, IO_TASK 가 사이클마다 기록)로 본다.
-	//   종전 JOB_MST 최종 갱신은 작업이 하나도 없으면 NULL 이라 스케줄러가 살아 있어도 "확인 불가"(회색)였다.
-	strSql += _T("      , ISNULL((SELECT DATEDIFF(second, MAX(UPD_DT),      GETDATE()) FROM EQP_MST WHERE EQP_TYP = 'SCH'), 99999) AS SCH ");
+	CString strSql;
+	strSql  = _T(" SELECT EQP_TYP, PLC_NO                                              \n");
+	strSql += _T("      , CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0             \n");
+	strSql += _T("             WHEN DATEDIFF(second, UPD_DT, GETDATE()) >                \n");
+	strSql += _T("                  CASE WHEN EQP_TYP IN ('HOST','HOST2') THEN 300      \n");
+	strSql += _T("                       WHEN EQP_TYP = 'SCH'              THEN 900      \n");
+	strSql += _T("                       ELSE 60 END                        THEN 0       \n");
+	strSql += _T("             ELSE 1 END AS OKY                                         \n");
+	strSql += _T("   FROM EQP_MST                                                        \n");
+	strSql += _T("  WHERE ISNULL(USE_YN,'Y') = 'Y'                                      \n");
+	strSql += _T("  ORDER BY CASE EQP_TYP WHEN 'HOST' THEN 1 WHEN 'HOST2' THEN 2        \n");
+	strSql += _T("                        WHEN 'CV'   THEN 3 WHEN 'SC'    THEN 4        \n");
+	strSql += _T("                        WHEN 'RTV'  THEN 5 ELSE 6 END, PLC_NO          ");
 	int nRowCnt = 0;
-	CString strMsg = _T("");
+	CString strMsg;
 	_RecordsetPtr pRs = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
-	if (nRowCnt <= 0)
-	{
-		for (int i = 0; i < 3; i++) m_nAge[i] = -1;		// 조회 실패 = 회색(모름)
-		return;
-	}
+	if (nRowCnt <= 0) return;			// 조회 실패 - 직전 표시를 그대로 둔다
+
+	m_arrLamp.RemoveAll();
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
 	pRsw->MoveFirst();
-	m_nAge[0] = _ttoi(pRsw->GetItem(_T("EQP")));
-	m_nAge[1] = _ttoi(pRsw->GetItem(_T("HST")));
-	m_nAge[2] = _ttoi(pRsw->GetItem(_T("SCH")));
+	for (int r = 0; r < nRowCnt; r++)
+	{
+		CString strTyp = pRsw->GetItem(_T("EQP_TYP")); strTyp.Trim();
+		CString strNo  = pRsw->GetItem(_T("PLC_NO"));  strNo.Trim();
+		LAMP lp;
+		if      (strTyp == _T("HOST"))  lp.strName = _T("WMS1");
+		else if (strTyp == _T("HOST2")) lp.strName = _T("WMS2");
+		else if (strTyp == _T("SCH"))   lp.strName = _T("SCH");
+		else if (strTyp == _T("RTV"))   lp.strName = _T("RTV");
+		else
+		{
+			int n = _ttoi(strNo);
+			if (strTyp == _T("SC")) lp.strName.Format(_T("SC%d"), n);
+			else                    lp.strName.Format(_T("CV%02d"), n);
+		}
+		lp.bOk = (pRsw->GetItem(_T("OKY")) == _T("1"));
+		m_arrLamp.Add(lp);
+		pRsw->MoveNext();
+	}
 	delete pRsw;
 }
+
 
 // 경과 초 → 램프 색 (초록 정상 / 주황 늦음 / 빨강 끊김 / 회색 모름)
 static COLORREF PfLamp(int nAge, int nOk, int nWarn)
@@ -167,35 +206,57 @@ static CString PfStateText(int nAge, int nOk, int nWarn)
 }
 
 // 통신 상태 : 칸이 낮으면 한 줄에 3개, 높으면 한 줄에 하나씩 크게
+// [LGLS 2026-09-23] 통신 상태 = 설비마다 작은 신호등 (사용자 지시 + 첨부 사진).
+//   몸체(짙은 회색) 안에 등 두 개. 끊기면 위 등이 빨강, 정상이면 아래 등이 파랑↔노랑 1초 교대.
+//   칸이 모자라면 줄을 늘려 접는다.
 void CLglsInfoBar::PaintComm(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 {
-	struct { LPCTSTR name; int ok; int warn; } CM[3] = {
-		{ _T("설비(PLC) 통신"), 10, 60 }, { _T("상위(WMS) 통신"), 60, 300 }, { _T("스케줄러"), 120, 900 } };
-	BOOL bTall = (rc.Height() >= 70);
-	for (int i = 0; i < 3; i++)
+	int nCnt = (int)m_arrLamp.GetSize();
+	if (nCnt <= 0)
 	{
-		CRect rcC;
-		if (bTall) rcC.SetRect(6, 4 + i * (rc.Height() - 8) / 3, rc.right - 6, 4 + (i + 1) * (rc.Height() - 8) / 3);
-		else       rcC.SetRect(6 + i * rc.Width() / 3, 3, (i + 1) * rc.Width() / 3 - 2, rc.bottom - 3);
-		int nCy = (rcC.top + rcC.bottom) / 2;
-		CRect rcDot(rcC.left, nCy - 6, rcC.left + 12, nCy + 6);
-		CBrush br(PfLamp(m_nAge[i], CM[i].ok, CM[i].warn));
-		CBrush* pOldBr = dc.SelectObject(&br);
-		dc.Ellipse(rcDot);
-		dc.SelectObject(pOldBr);
-		CRect rcT(rcDot.right + 6, rcC.top, rcC.right, rcC.bottom);
-		dc.SelectObject(&fntB);
-		dc.SetTextColor(RGB(20, 32, 41));
-		dc.DrawText(bTall ? CM[i].name : CString(CM[i].name).Left(2), rcT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 		dc.SelectObject(&fnt);
-		dc.SetTextColor(RGB(90, 108, 118));
-		CString strR = PfAgeText(m_nAge[i]);
-		if (bTall) strR = PfStateText(m_nAge[i], CM[i].ok, CM[i].warn) + _T("  ·  ") + strR;
-		dc.DrawText(strR, rcT, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
-		if (bTall && i < 2)
-			dc.FillSolidRect(CRect(6, rcC.bottom, rc.right - 6, rcC.bottom + 1), RGB(228, 234, 236));
+		dc.SetTextColor(RGB(120, 130, 138));
+		dc.DrawText(_T("통신 상태를 읽는 중..."), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+		return;
+	}
+
+	const int CW = 34, CH = 46;					// 한 칸(신호등 + 이름)
+	int nCols = max(1, (rc.Width() - 8) / CW);
+	int nRows = (nCnt + nCols - 1) / nCols;
+	int nTop  = rc.top + max(2, (rc.Height() - nRows * CH) / 2);
+
+	CBrush brBody(RGB(70, 78, 84));
+	CBrush brOff (RGB(46, 52, 57));
+	CBrush brRed (RGB(228, 46, 38));
+	CBrush brOn  (m_bBlink ? RGB(40, 110, 240) : RGB(250, 205, 40));	// 파랑 ↔ 노랑
+
+	for (int i = 0; i < nCnt; i++)
+	{
+		int cx = rc.left + 4 + (i % nCols) * CW;
+		int cy = nTop + (i / nCols) * CH;
+
+		CRect rcBody(cx + 8, cy + 2, cx + 26, cy + 30);
+		CBrush* pOld = dc.SelectObject(&brBody);
+		CPen penNone(PS_NULL, 0, RGB(0, 0, 0));
+		CPen* pOldPen = dc.SelectObject(&penNone);
+		dc.RoundRect(rcBody, CPoint(6, 6));
+
+		BOOL bOk = m_arrLamp[i].bOk;
+		CRect rcUp (cx + 11, cy +  5, cx + 23, cy + 17);		// 위 등 (끊김)
+		CRect rcDn (cx + 11, cy + 16, cx + 23, cy + 28);		// 아래 등 (정상)
+		dc.SelectObject(bOk ? &brOff : &brRed); dc.Ellipse(rcUp);
+		dc.SelectObject(bOk ? &brOn  : &brOff); dc.Ellipse(rcDn);
+
+		dc.SelectObject(pOldPen);
+		dc.SelectObject(pOld);
+
+		CRect rcT(cx, cy + 30, cx + CW, cy + CH - 2);
+		dc.SelectObject(&fnt);
+		dc.SetTextColor(bOk ? RGB(40, 50, 58) : RGB(190, 40, 34));
+		dc.DrawText(m_arrLamp[i].strName, rcT, DT_CENTER | DT_TOP | DT_SINGLELINE);
 	}
 }
+
 
 // 범례 : 예전 범례표처럼 ★그룹으로 묶어★ 그린다(작업 색상 / C/V 상태 / S/C·RGV 상태 / 레일).
 //   칸을 줄이면 열 수를 늘려 접고, 아주 낮으면 제목을 빼고 색칩만 늘어놓는다.
@@ -421,6 +482,7 @@ void CEcsView::CreateMainUi2()
 		if (pBar->CreateEx(0, pszCls, _T(""), WS_CHILD | WS_VISIBLE | WS_BORDER, CRect(0, 0, 10, 10), this, 0))
 		{
 			if (k == 0) pBar->SetTimer(CLglsInfoBar::TIMER_HB, 5000, NULL);
+			if (k == 0) pBar->SetTimer(CLglsInfoBar::TIMER_BLINK, 1000, NULL);	// [LGLS 2026-09-23] 파랑↔노랑 교대
 			*ppDst = pBar;
 		}
 		else
