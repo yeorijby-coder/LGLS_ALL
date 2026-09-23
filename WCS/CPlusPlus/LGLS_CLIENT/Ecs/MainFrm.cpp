@@ -8,6 +8,10 @@
 #include "MFCRibbonPanel_Wrap.h"
 #include "MinButton.h"
 #include "RecordSetWrap.h"
+#include <iphlpapi.h>	// [LGLS 2026-09-23] 신호등 누를 때 핑/포트 확인
+#include <icmpapi.h>
+#pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "ws2_32.lib")
 #include "Lib.h"		// [LGLS 2026-09-12] UiLog (리본 툴팁 적용 증거)
 
 #ifdef _DEBUG
@@ -33,6 +37,7 @@ const int iCategoryIndex_CC = 4;
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_WM_TIMER()		// [LGLS 2026-09-12] 제목줄 마퀴
 	ON_UPDATE_COMMAND_UI_RANGE(ID_LGLS_LAMP_BASE, ID_LGLS_LAMP_BASE + 3, &CMainFrame::OnUpdateCommLamp)
+	ON_COMMAND_RANGE(ID_LGLS_LAMP_BASE, ID_LGLS_LAMP_BASE + 3, &CMainFrame::OnCommLampClicked)
 	ON_COMMAND(ID_CONFIG_INI_OPEN, &CMainFrame::OnConfigIniOpen)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_VIEW_CUSTOMIZE, &CMainFrame::OnViewCustomize)
@@ -1000,6 +1005,16 @@ static void DrawTrafficLamp(CDC& dc, int cx, int cy, int nOn)
 	dc.SelectObject(pOldPen);
 }
 
+// [LGLS 2026-09-23] 눌렀을 때 - 주 프레임에 명령을 보내 핑/포트 확인을 돌린다 (사용자 지시).
+//   리본이 명령을 걸러내지 않도록 우리가 직접 보낸다(그리기도 우리가 한다).
+void CLglsRibbonLamp::OnLButtonUp(CPoint point)
+{
+	UNREFERENCED_PARAMETER(point);
+	CWnd* pMain = AfxGetMainWnd();
+	if (pMain != NULL && ::IsWindow(pMain->GetSafeHwnd()))
+		pMain->PostMessage(WM_COMMAND, MAKEWPARAM(GetID(), 0), 0);
+}
+
 CSize CLglsRibbonLamp::GetRegularSize(CDC* pDC)
 {
 	UNREFERENCED_PARAMETER(pDC);
@@ -1186,6 +1201,175 @@ void CLglsRibbonBar::RecalcLayout()
 
 // 카테고리(탭)마다 [통신] 그룹을 하나씩 붙인다 - 어느 탭에서도 보인다.
 //   그룹 위치는 CLglsRibbonBar::RecalcLayout 이 리본 오른쪽 끝으로 옮긴다.
+//===============================================================================================
+// [LGLS 2026-09-23] 신호등을 누르면 상대를 실제로 찔러 본다 (사용자 지시).
+//   ① 핑(ICMP) - 상대 장비가 살아 있는가
+//   ② 포트 접속 - 그 포트가 열려 있는가
+//   주소는 EQP_MST 의 PLC_IP / PLC_PORT 를 쓴다. 우리가 열어 두는 쪽(0.0.0.0)은
+//   상대가 없으므로 우리 포트가 열려 있는지만 본다.
+//===============================================================================================
+static BOOL LglsPing(LPCTSTR pszIp, DWORD& dwRtt)
+{
+	dwRtt = 0;
+	CStringA strA(pszIp);
+	unsigned long ulAddr = inet_addr((LPCSTR)strA);
+	if (ulAddr == INADDR_NONE || ulAddr == 0) return FALSE;
+
+	HANDLE hIcmp = IcmpCreateFile();
+	if (hIcmp == INVALID_HANDLE_VALUE) return FALSE;
+
+	char  chSend[32];
+	memset(chSend, 0x61, sizeof(chSend));
+	BYTE  bytReply[sizeof(ICMP_ECHO_REPLY) + sizeof(chSend) + 8];
+	BOOL  bOk = FALSE;
+	DWORD dwCnt = IcmpSendEcho(hIcmp, ulAddr, chSend, sizeof(chSend), NULL,
+	                           bytReply, sizeof(bytReply), 1000);
+	if (dwCnt > 0)
+	{
+		PICMP_ECHO_REPLY pRep = (PICMP_ECHO_REPLY)bytReply;
+		bOk   = (pRep->Status == IP_SUCCESS);
+		dwRtt = pRep->RoundTripTime;
+	}
+	IcmpCloseHandle(hIcmp);
+	return bOk;
+}
+
+static BOOL LglsPortOpen(LPCTSTR pszIp, int nPort, int nTimeoutMs)
+{
+	if (nPort <= 0 || nPort > 65535) return FALSE;
+	CStringA strA(pszIp);
+	unsigned long ulAddr = inet_addr((LPCSTR)strA);
+	if (ulAddr == INADDR_NONE) return FALSE;
+
+	SOCKET sk = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sk == INVALID_SOCKET) return FALSE;
+
+	u_long ulNb = 1;
+	ioctlsocket(sk, FIONBIO, &ulNb);
+
+	sockaddr_in sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sin_family      = AF_INET;
+	sa.sin_port        = htons((u_short)nPort);
+	sa.sin_addr.s_addr = ulAddr;
+	connect(sk, (sockaddr*)&sa, sizeof(sa));
+
+	fd_set fdW;  FD_ZERO(&fdW);  FD_SET(sk, &fdW);
+	fd_set fdE;  FD_ZERO(&fdE);  FD_SET(sk, &fdE);
+	timeval tv;
+	tv.tv_sec  = nTimeoutMs / 1000;
+	tv.tv_usec = (nTimeoutMs % 1000) * 1000;
+
+	BOOL bOk = FALSE;
+	if (select(0, NULL, &fdW, &fdE, &tv) > 0 && FD_ISSET(sk, &fdW))
+	{
+		int nErr = 0, nLen = sizeof(nErr);
+		if (getsockopt(sk, SOL_SOCKET, SO_ERROR, (char*)&nErr, &nLen) == 0 && nErr == 0)
+			bOk = TRUE;
+	}
+	closesocket(sk);
+	return bOk;
+}
+
+void CMainFrame::OnCommLampClicked(UINT nID)
+{
+	int nKind = (int)(nID - ID_LGLS_LAMP_BASE);	// 0 WMS1 · 1 WMS2 · 2 EQP · 3 SCH
+	if (nKind < 0 || nKind > 3) return;
+
+	CEcsDoc* pDoc = (CEcsDoc*)GetActiveDocument();
+	if (pDoc == NULL) return;
+
+	static LPCTSTR pszTyp[4]  = { _T("HOST"), _T("HOST2"), _T("CV"), _T("SCH") };
+	static LPCTSTR pszName[4] = { _T("WMS1"), _T("WMS2"), _T("EQP"),  _T("SCH") };
+
+	CString strSql;
+	strSql.Format(
+		_T(" SELECT PLC_NO, ISNULL(PLC_IP,'') AS IPA, ISNULL(PLC_PORT,'') AS PRT      \n")
+		_T("      , CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0 ELSE 1 END AS CN \n")
+		_T("      , DATEDIFF(second, UPD_DT, GETDATE()) AS AGE                        \n")
+		_T("   FROM EQP_MST                                                           \n")
+		_T("  WHERE ISNULL(USE_YN,'Y') = 'Y' AND EQP_TYP = '%s' ORDER BY PLC_NO         "),
+		pszTyp[nKind]);
+
+	int nRowCnt = 0;
+	CString strMsg;
+	_RecordsetPtr pRs = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+	if (nRowCnt <= 0)
+	{
+		strMsg.Format(_T("[%s] EQP_MST 에 등록된 행이 없습니다."), pszName[nKind]);
+		AfxMessageBox(strMsg, MB_ICONINFORMATION);
+		return;
+	}
+
+	CWaitCursor wc;
+	CString strOut;
+	strOut.Format(_T("[%s] 통신 점검\r\n\r\n"), pszName[nKind]);
+
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+	pRsw->MoveFirst();
+	int nDone = 0;
+	for (int r = 0; r < nRowCnt; r++)
+	{
+		CString strNo  = pRsw->GetItem(_T("PLC_NO")); strNo.Trim();
+		CString strIp  = pRsw->GetItem(_T("IPA"));    strIp.Trim();
+		CString strPrt = pRsw->GetItem(_T("PRT"));    strPrt.Trim();
+		CString strCn  = pRsw->GetItem(_T("CN"));
+		int     nAge   = _ttoi(pRsw->GetItem(_T("AGE")));
+		pRsw->MoveNext();
+		if (nDone >= 8) continue;		// 너무 오래 잡고 있지 않는다
+		nDone++;
+
+		int nPort = _ttoi(strPrt);
+		CString strLine;
+		strLine.Format(_T("· %s %s   (DB : %s, %d초 전)\r\n"), pszName[nKind], strNo,
+			(strCn == _T("1")) ? _T("연결") : _T("끊김"), nAge);
+		strOut += strLine;
+
+		if (strIp.IsEmpty())
+		{
+			strOut += _T("    주소가 등록되어 있지 않습니다.\r\n\r\n");
+			continue;
+		}
+
+		if (strIp == _T("0.0.0.0"))
+		{
+			// 우리가 열어 두는 쪽 - 상대가 없으므로 우리 포트가 열렸는지만 본다
+			BOOL bOpen = LglsPortOpen(_T("127.0.0.1"), nPort, 1000);
+			strLine.Format(_T("    우리가 여는 포트 %d : %s\r\n\r\n"), nPort,
+				bOpen ? _T("열려 있음") : _T("닫혀 있음 (상위 통신 TASK 가 떠 있는지 보십시오)"));
+			strOut += strLine;
+			continue;
+		}
+
+		DWORD dwRtt = 0;
+		BOOL  bPing = LglsPing(strIp, dwRtt);
+		if (bPing) strLine.Format(_T("    핑 %s : 응답 %dms\r\n"), strIp, dwRtt);
+		else       strLine.Format(_T("    핑 %s : 응답 없음\r\n"), strIp);
+		strOut += strLine;
+
+		if (nPort <= 0)
+			strOut += _T("    포트가 등록되어 있지 않습니다.\r\n\r\n");
+		else if (!bPing)
+			strOut += _T("    핑이 되지 않아 포트는 건너뜁니다.\r\n\r\n");
+		else
+		{
+			BOOL bOpen = LglsPortOpen(strIp, nPort, 1000);
+			strLine.Format(_T("    포트 %d : %s\r\n\r\n"), nPort,
+				bOpen ? _T("열려 있음") : _T("닫혀 있음 (상대 프로그램이 떠 있는지 보십시오)"));
+			strOut += strLine;
+		}
+	}
+	delete pRsw;
+
+	if (nRowCnt > nDone)
+	{
+		CString strMore;
+		strMore.Format(_T("(%d 대 가운데 %d 대만 점검했습니다)"), nRowCnt, nDone);
+		strOut += strMore;
+	}
+	AfxMessageBox(strOut, MB_ICONINFORMATION);
+}
+
 // [LGLS 2026-09-23] 리본 마지막 그룹으로 [통신] 을 붙인다 (사용자 지시).
 //   WMS1 / WMS2 / EQP / SCH 네 칸 - 상태는 CMainFrame::UpdateCommLamps 가 채운다.
 void CMainFrame::AddLampPanel(CMFCRibbonCategory* pCategory)
@@ -1219,7 +1403,7 @@ void CMainFrame::OnUpdateCommLamp(CCmdUI* pCmdUI)
 
 // EQP_MST 에서 네 칸의 통신 상태를 읽어 램프에 넣는다.
 //   끊김 판정 : CONNECTED_YN <> Y 이거나 UPD_DT 가 종류별 허용 시간을 넘었을 때
-//     HOST/HOST2 300초, SCH 900초, 그 밖(C/V) 60초
+//     HOST/HOST2 120초, SCH 120초, 그 밖(C/V) 60초 (2026-09-23 - 300/900 은 너무 길었다)
 void CMainFrame::UpdateCommLamps()
 {
 	if (m_arRbnLamp.GetCount() <= 0) return;
@@ -1239,8 +1423,8 @@ void CMainFrame::UpdateCommLamps()
 	strSql += _T("             WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 9 END AS GRP        \n");
 	strSql += _T("      , MAX(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0        \n");
 	strSql += _T("                 WHEN DATEDIFF(second, UPD_DT, GETDATE()) >          \n");
-	strSql += _T("                      CASE WHEN EQP_TYP IN ('HOST','HOST2') THEN 300 \n");
-	strSql += _T("                           WHEN EQP_TYP = 'SCH' THEN 900             \n");
+	strSql += _T("                      CASE WHEN EQP_TYP IN ('HOST','HOST2') THEN 120 \n");
+	strSql += _T("                           WHEN EQP_TYP = 'SCH' THEN 120             \n");
 	strSql += _T("                           ELSE 60 END              THEN 0           \n");
 	strSql += _T("                 ELSE 1 END) AS OKY                                  \n");
 	strSql += _T("   FROM EQP_MST                                                      \n");
@@ -1267,10 +1451,12 @@ void CMainFrame::UpdateCommLamps()
 	}
 	delete pRsw;
 
-	for (int k = 0; k < 4 && k < m_arRbnLamp.GetCount(); k++)
+	// [LGLS 2026-09-23] ★탭(ECS/MANUAL/LOG)마다 램프가 따로 있다★ - 전부 채운다 (사용자 지적).
+	//   종전에는 앞 네 개(ECS 탭)만 채워, 다른 탭은 만들어진 그대로 끊김으로 보였다.
+	for (int k = 0; k < m_arRbnLamp.GetCount(); k++)
 	{
 		CLglsRibbonLamp* p = (CLglsRibbonLamp*)m_arRbnLamp.GetAt(k);
-		if (p != NULL) p->m_bOk = bOk[k];
+		if (p != NULL) p->m_bOk = bOk[k % 4];
 	}
 }
 

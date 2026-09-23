@@ -71,10 +71,13 @@ public:
 	BOOL        m_bOk;		// 이 칸의 통신 상태
 	static BOOL m_bBlink;	// 정상일 때 노랑/초록 교대 (네 칸이 같이 움직인다)
 	virtual CSize GetRegularSize(CDC* pDC);
+	// [LGLS 2026-09-23] 우리가 직접 그리고 직접 명령을 낸다 - 리본의 사용 가능/불가 판정을 타지 않는다.
+	virtual BOOL  IsDisabled() const { return FALSE; }
 	virtual CSize GetCompactSize(CDC* pDC)      { return GetRegularSize(pDC); }
 	virtual CSize GetIntermediateSize(CDC* pDC) { return GetRegularSize(pDC); }
 protected:
 	virtual void OnDraw(CDC* pDC);
+	virtual void OnLButtonUp(CPoint point);	// 눌러서 핑/포트 확인
 };
 
 class CLglsRibbonBar : public CMFCRibbonBar
@@ -242,6 +245,7 @@ public:
 	void AddLampPanel(CMFCRibbonCategory* pCategory);
 	void UpdateCommLamps();
 	afx_msg void OnUpdateCommLamp(CCmdUI* pCmdUI);
+	afx_msg void OnCommLampClicked(UINT nID);	// [LGLS 2026-09-23] 눌러서 핑·포트 확인
 	void AddCommPanel(CMFCRibbonCategory* pCategory);	// 탭마다 [통신] 그룹(오른쪽 끝)
 	void SetCommColor(UINT nID, COLORREF clr);
 	void LayoutStatusBar(int cx, int cy);

@@ -207,9 +207,55 @@ int i;
 
 		}
 
+		// [LGLS 2026-09-23] ★통신 상태를 EQP_MST 에 주기로 남긴다★ (사용자 지적).
+		//   종전에는 전문을 주고받을 때만 CONNECTED_YN='Y' 를 적고, 끊길 때는 아무도 적지 않았다.
+		//   그래서 HOST_SIM 을 내려도 운전 화면의 [통신] 신호등이 한참 정상으로 보였다
+		//   (UPD_DT 가 낡기를 기다릴 수밖에 없었다).
+		//   1초 타이머에 얹어 5초마다 지금 상태를 그대로 적는다 - 표시용이라 통신 규약과 무관하다.
+		//     HOST  = 수신(서버) 소켓 - 상위가 우리에게 붙어 있는가
+		//     HOST2 = 송신(클라이언트) 소켓 - 우리가 상위에 붙어 있는가
+		private CUserDb m_DbCommHb    = new CUserDb("Multi", false);
+		private int     m_nCommHbTick = 0;
+
+		private void WriteCommHeartbeat()
+		{
+			try
+			{
+				string strErr = "";
+				if (m_DbCommHb.conMain == null || m_DbCommHb.conMain.State != ConnectionState.Open)
+				{
+					// DBLogIn 은 Connection 개체를 ★새로 만들어 대입★ 하고 접속 문자열만 채운다.
+					//   그래서 Init() 으로 Command 에 다시 물리고, 직접 열어야 한다.
+					if (!modCmLib.DBLogIn(ref m_DbCommHb.conMain, ref strErr)) return;
+					m_DbCommHb.Init();
+					m_DbCommHb.conMain.Open();
+				}
+
+				bool blCli = (modDefApp.g_CliWork != null) && modDefApp.g_CliWork.m_blSockConnected;
+				bool blSrv = (modDefApp.g_SrvWork != null) && (modDefApp.g_SrvWork.m_sktSock != null)
+				          && modDefApp.g_SrvWork.m_sktSock.Connected;
+
+				for (int i = 0; i < 2; i++)
+				{
+					m_DbCommHb.ParamsClear();
+					string strSql = "";
+					strSql += modDefApp.CRLF + " UPDATE EQP_MST                                        ";
+					strSql += modDefApp.CRLF + "    SET CONNECTED_YN = " + m_DbCommHb.ParamsAdd("CONN", ((i == 0) ? blSrv : blCli) ? "Y" : "N");
+					strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
+					strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_DbCommHb.ParamsAdd("WHTY", modDefApp.WH_TYP);
+					strSql += modDefApp.CRLF + "    AND EQP_TYP      = " + m_DbCommHb.ParamsAdd("EQTY", (i == 0) ? "HOST" : "HOST2");
+					m_DbCommHb.ExcuteNonQry_Par(ref strSql, false);
+				}
+			}
+			catch { }   // 표시용 기록이다 - 실패해도 통신을 방해하지 않는다
+		}
+
 		private void tmrSTOP_REQ_Tick(System.Object sender, System.EventArgs e)
 		{
 			tmrSTOP_REQ.Enabled = false;
+
+			// [LGLS 2026-09-23] 5초마다 통신 상태를 EQP_MST 에 남긴다 (사용자 지적)
+			if (++m_nCommHbTick >= 5) { m_nCommHbTick = 0; WriteCommHeartbeat(); }
 
 			//### Client Work
 			// DB LOG IN
