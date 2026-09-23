@@ -111,7 +111,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 
 	//SENSOR
 	DDX_Control(pDX, IDC_BTN_SENSOR_PROD0,             m_btnCvSenserProd0);
-	DDX_Control(pDX, IDC_BTN_RTV_INTERLOCK,            m_btnCvRtvLockSign);
 	//--SENSOR
 
 	//STATUS
@@ -120,7 +119,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_STATUS_RET_READY,         m_btnCvRetReady);
 	DDX_Control(pDX, IDC_BTN_STATUS_STOHS_READY,       m_btnCvStoHsReady);
 	DDX_Control(pDX, IDC_BTN_STATUS_RETHS_READY,       m_btnCvRetHsReady);
-	DDX_Control(pDX, IDC_BTN_RGV_INTERLOCK,             m_btnCvRgvInterlock);
 	DDX_Control(pDX, IDC_BTN_STATUS_RTV_DEPARTHS_READY, m_btnCvRtvDepartHsReady);
 	DDX_Control(pDX, IDC_BTN_STATUS_RTV_ARRIVEHS_READY, m_btnCvRtvArriveHsReady);
 	//--STATUS
@@ -138,7 +136,6 @@ void CCvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDT_CV_TRACK_PAUSE, m_edtCvTrackPause);
 	// [LGLS 2026-08-05] 이 DDX 가 주석 처리되어 있어서 [일시정지] 라벨만 회색 배경으로 그려졌다.
 	//   다른 라벨과 같이 CStaticTransparent 로 묶어 배경이 비치게 한다.
-	DDX_Control(pDX, IDC_BTN_STOCK_MODE, m_btnStockMode);
 	DDX_Control(pDX, IDC_CBX_JOB_DEST_LOC, m_cbxJobDestLoc);
 	DDX_Control(pDX, IDC_CBX_JOB_START_LOC, m_cbxJobStartLoc);
 	DDX_Control(pDX, IDC_LBL_JOB_DEST_LOC, m_lblJobDestLoc);
@@ -232,17 +229,7 @@ BOOL CCvSkinDlg::OnInitDialog()
 	SetTimer(2, 1000, NULL);
 	SetTimer(7, 300, NULL);	// [LGLS 2026-09-21] EDIT 흐름 표시 (CLib::MarqueeTick)
 
-	// [LGLS 2026-09-23] ★[입고모드] · [SC 인터락] · [RGV 인터락] 을 없앤다★ (사용자 지시).
-	//   9/22 에 Ecs.ini 로 감출 수 있게 해 두었던 것을 아예 제거했다 - ini 키도 지웠다.
-	//   화면에서 지우기만 한다. 값을 읽어 오는 경로(SetVar)는 그대로라 로직에는 영향이 없다.
-	{
-		const UINT HIDE[] = { IDC_BTN_STOCK_MODE, IDC_BTN_RTV_INTERLOCK, IDC_BTN_RGV_INTERLOCK };
-		for (int i = 0; i < (int)(sizeof(HIDE)/sizeof(HIDE[0])); i++)
-		{
-			CWnd* pWnd = GetDlgItem(HIDE[i]);
-			if (pWnd != NULL) pWnd->ShowWindow(SW_HIDE);
-		}
-	}
+	// [LGLS 2026-09-23] 입고모드·SC 인터락·RGV 인터락 제거 (사용자 지시) - 리소스에서도 뺐다.
 
 
 	return TRUE;
@@ -504,7 +491,6 @@ void CCvSkinDlg::RenameResource( EN_LANG m_enLang)
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("scinterlock"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_INTERLOCK, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("stohssig"), (int)m_enLang);
@@ -516,7 +502,6 @@ void CCvSkinDlg::RenameResource( EN_LANG m_enLang)
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rgvinterlock"), (int)m_enLang);
-	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RGV_INTERLOCK, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_cv\\"), _T("dlg_cv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvdeparthssig"), (int)m_enLang);
@@ -587,7 +572,6 @@ void CCvSkinDlg::RedrawImage()
 
 
 	m_btnCvSenserProd0.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
-	m_btnCvRtvLockSign.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 
 	m_btnCvAutoMode.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvStoReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
@@ -595,11 +579,9 @@ void CCvSkinDlg::RedrawImage()
 	m_btnCvStoHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvRetHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	// [LGLS 2026-08-22] RGV 표시행(인터락 / 출발HS / 도착HS) 초기 아이콘
-	m_btnCvRgvInterlock.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvRtvDepartHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 	m_btnCvRtvArriveHsReady.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 
-	m_btnStockMode.SetIcon(Global.GetIcon(Global.ICO_CV_ON));
 }
 
 
@@ -788,7 +770,6 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 		strSTOCK_MODE = s_strStockModeLast;
 	}
 
-	m_btnStockMode.SetIcon((strSTOCK_MODE == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	// [LGLS 2026-09-06] ★라벨 반전 수정★ CV_DATA.STOCK_MODE 는 '0'=입고 / '1'=출고 다.
 	//   근거 : IO_TASK cThread_SCH 의 겸용대 게이트 "입고 작업은 GetCvStockMode()=='0' 일 때만 발행",
 	//          WCS_TASK_CV 의 방향지시 기록 byTxBuff[0] = (PARM==1) ? '1'(출고) : '0'(입고).
@@ -796,12 +777,10 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	//   ※ strKIND(공파렛트 요청 종류)는 원래 맞다 - 입고모드면 입고요청(1) 이므로 그대로 둔다.
 	if(strSTOCK_MODE == _T("0"))
 	{
-		m_btnStockMode.SetWindowText(_T("입고모드"));
 		strKIND = _T("1"); // 공팔레트 입고요청
 	}
 	else
 	{
-		m_btnStockMode.SetWindowText(_T("출고모드"));
 		strKIND = _T("2"); // 공팔레트 출고요청
 	}
 
@@ -816,9 +795,7 @@ void CCvSkinDlg::InvalidateReadOnlyData(EN_LANG pLang)
 	m_btnCvSenserProd0.SetIcon((m_pTrackInfo->m_pCV_DATA->V_SENSOR0_DATA_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	//m_btnCvSenserProd3.SetIcon((m_pTrackInfo->m_pCV_DATA->V_SENSOR3_DATA_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	//m_btnCvSenserProd4.SetIcon((m_pTrackInfo->m_pCV_DATA->V_SENSOR4_DATA_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
-	m_btnCvRtvLockSign.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_LOCK_SIGN == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	// [LGLS 2026-08-22] RGV 인터락 : SC 인터락과 동일 조건(RTV_LOCK_SIGN)
-	m_btnCvRgvInterlock.SetIcon((m_pTrackInfo->m_pCV_DATA->V_RTV_LOCK_SIGN == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 
 	m_btnCvAutoMode.SetIcon((m_pTrackInfo->m_pCV_DATA->V_AUTO_MODE_RD == _T("1")) ? Global.GetIcon(Global.ICO_CV_ON) : Global.GetIcon(Global.ICO_CV_OFF));
 	if (m_pTrackInfo->m_pCV_DATA->V_AUTO_MODE_RD == _T("0"))

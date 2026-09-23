@@ -168,7 +168,6 @@ public:
 
 	CSkinButton m_btnCvRtvInSign;
 	CSkinButton m_btnCvRtvOutSign;
-	CSkinButton m_btnCvRtvLockSign;
 
 	//--SENSOR
 
@@ -179,7 +178,6 @@ public:
 	CSkinButton m_btnCvStoHsReady;
 	CSkinButton m_btnCvRetHsReady;
 	// [LGLS 2026-08-22] RGV 핸드셰이크 표시행 (RGV 인터락 / 출발HS / 도착HS)
-	CSkinButton m_btnCvRgvInterlock;
 	CSkinButton m_btnCvRtvDepartHsReady;
 	CSkinButton m_btnCvRtvArriveHsReady;
 	CSkinButton m_btnCvRtyDptReady;
@@ -199,7 +197,6 @@ public:
 	CSkinButton m_btnCvHsEject;
 	CEdit m_edtCvTrackPause;
 
-	CSkinButton m_btnStockMode;
 	CEdit m_edtCvSuspend2;
 	CTGroupBox m_grpCvSuspend;
 
