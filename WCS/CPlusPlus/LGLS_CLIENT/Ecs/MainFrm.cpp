@@ -1011,12 +1011,16 @@ void CLglsCommLamps::ReadState()
 
 	// [LGLS 2026-09-23] 네 칸으로 묶는다 (사용자 지시).
 	//   WMS1 = HOST · WMS2 = HOST2 · SCH = IO_TASK
-	//   EQP  = 설비(CV·SC·RTV) - ★하나라도 끊기면 끊김★
+	//   EQP  = ★EQP TASK(WCS_TASK_CV) 가 붙어 있는가★ (사용자 정정)
+	//     WCS_TASK_CV 가 갱신하는 C/V 행 중 ★하나라도 살아 있으면 정상★ 으로 본다.
+	//     TASK 가 죽으면 C/V 행이 통째로 갱신을 멈추므로 전부 끊김이 된다.
+	//     S/C·RTV 는 다른 경로라 여기에 넣지 않는다 (넣으면 설비 한 대 때문에 늘 빨강).
 	CString strSql;
 	strSql  = _T(" SELECT CASE WHEN EQP_TYP = 'HOST'  THEN 0                          \n");
 	strSql += _T("             WHEN EQP_TYP = 'HOST2' THEN 1                          \n");
-	strSql += _T("             WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 2 END AS GRP        \n");
-	strSql += _T("      , MIN(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0        \n");
+	strSql += _T("             WHEN EQP_TYP = 'CV'    THEN 2                          \n");
+	strSql += _T("             WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 9 END AS GRP        \n");
+	strSql += _T("      , MAX(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0        \n");
 	strSql += _T("                 WHEN DATEDIFF(second, UPD_DT, GETDATE()) >          \n");
 	strSql += _T("                      CASE WHEN EQP_TYP IN ('HOST','HOST2') THEN 300 \n");
 	strSql += _T("                           WHEN EQP_TYP = 'SCH' THEN 900             \n");
@@ -1026,7 +1030,8 @@ void CLglsCommLamps::ReadState()
 	strSql += _T("  WHERE ISNULL(USE_YN,'Y') = 'Y'                                     \n");
 	strSql += _T("  GROUP BY CASE WHEN EQP_TYP = 'HOST'  THEN 0                        \n");
 	strSql += _T("                WHEN EQP_TYP = 'HOST2' THEN 1                        \n");
-	strSql += _T("                WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 2 END              ");
+	strSql += _T("                WHEN EQP_TYP = 'CV'    THEN 2                        \n");
+	strSql += _T("                WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 9 END              ");
 
 	int nRowCnt = 0;
 	CString strMsg;
