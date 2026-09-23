@@ -66,6 +66,21 @@ BEGIN_EVENTSINK_MAP(CViewJobListDlg, CSkinDialog)
 //	ON_EVENT(CViewRackDlg, IDC_VIEW_JOB_LIST_SPD_MAIN, 5, CViewJobListDlg::ClickSpread, VTS_I4 VTS_I4)
 END_EVENTSINK_MAP()
 
+// [LGLS 2026-09-23] 표 칸의 출발지/도착지에서 ★코드만★ 뽑는다 (사용자 지시로 표시를 바꿨다).
+//   표시 : [104]124  ·  901 (S/C#1)
+//   코드 : 124       ·  901
+//   수정·복사는 종전처럼 코드로 돌아야 하므로 읽는 자리마다 이걸 거친다.
+static CString LglsPosCode(CString strCell)
+{
+	strCell.Trim();
+	int nPos = strCell.Find(_T(']'));
+	if (nPos >= 0) strCell = strCell.Mid(nPos + 1);	// [104]124 -> 124
+	nPos = strCell.FindOneOf(_T(" ("));
+	if (nPos >= 0) strCell = strCell.Left(nPos);		// 901 (S/C#1) -> 901
+	strCell.Trim();
+	return strCell;
+}
+
 void CViewJobListDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CSkinDialog::DoDataExchange(pDX); 
@@ -878,13 +893,13 @@ void CViewJobListDlg::DeleteJob()
 	strLUGG_NO = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
 
 	//m_pSpreadMain.GetText(3, nActiveRow, &val);
-	strSTART_POS = m_SpreadSheet.GetValueTXT(3, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	strSTART_POS = LglsPosCode(m_SpreadSheet.GetValueTXT(3, m_nActiveRow));	// (LPCTSTR)(_bstr_t)val;
 
 	//m_pSpreadMain.GetText(4, nActiveRow, &val);
 	strSTART_LOCATION = m_SpreadSheet.GetValueTXT(4, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
 
 	//m_pSpreadMain.GetText(5, nActiveRow, &val);
-	strDEST_POS = m_SpreadSheet.GetValueTXT(5, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	strDEST_POS = LglsPosCode(m_SpreadSheet.GetValueTXT(5, m_nActiveRow));	// (LPCTSTR)(_bstr_t)val;
 
 	//m_pSpreadMain.GetText(6, nActiveRow, &val);
 	strDEST_LOCATION = m_SpreadSheet.GetValueTXT(6, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
@@ -1257,9 +1272,15 @@ CString CViewJobListDlg::GetQrySelect_Main(BOOL bSearch)
 	
 	strSql.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(CCD_WH_TYP.CCD_NM_KOR, JM.WH_TYP) AS WH_TYP 								\n")	
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.LUGG_NO, ' ') AS LUGG_NO											\n")	
-			  _T("		     ,JM.START_POS AS START_POS																	\n")	
+			  // [LGLS 2026-09-23] 출발지는 [IMS Station No]Track No 로 보인다 (사용자 지시).
+			  //   예) 124 -> [104]124.  IMS 번호가 없는 자리(S/C 등)는 코드 그대로 둔다.
+			  _T("		     ,CASE WHEN SP.REMARKS LIKE 'IMS%%'                                          \n")
+			  _T("		            THEN '[' + SUBSTRING(SP.REMARKS, 4, CHARINDEX(' ', SP.REMARKS + ' ') - 4) + ']' + JM.START_POS \n")
+			  _T("		            ELSE JM.START_POS END AS START_POS                                   \n")
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.START_LOCATION, ' ') AS START_LOCATION										\n")	
-			  _T("		     ,JM.DEST_POS AS DEST_POS																	\n")	
+			  // [LGLS 2026-09-23] 도착지는 콤보에 보이는 그대로 (사용자 지시). 예) 901 -> 901 (S/C#1)
+			  _T("		     ,CASE WHEN DP.REMARKS IS NULL THEN JM.DEST_POS                              \n")
+			  _T("		            ELSE JM.DEST_POS + ' (' + DP.REMARKS + ')' END AS DEST_POS          \n")
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, ' ') AS DEST_LOCATION											\n")	
 			  _T("		     ,") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR, JM.JOB_TYP) AS JOB_TYP											\n")	
 			  _T("		     ,") + _T("'[' + JM.JOB_STATUS + '] ' + ") + m_pDoc->NVL + _T("(CC.CCD_NM_KOR, JM.JOB_STATUS) AS JOB_STATUS										\n")	
@@ -1267,7 +1288,13 @@ CString CViewJobListDlg::GetQrySelect_Main(BOOL bSearch)
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.PRODUCT_ID, ' ') AS PRODUCT_ID										\n")	
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.JOB_PRIORITY, ' ') AS JOB_PRIORITY											\n")		
 			  _T("		     ,JM.UPD_DT AS UPD_DT																		\n")	
-			  _T("       FROM JOB_MST JM LEFT OUTER JOIN COMMON_CODE CC													\n")	
+			  _T("       FROM JOB_MST JM                                                               \n")
+			  // [LGLS 2026-09-23] 출발지/도착지 이름표 (DEST_POS_DEF)
+			  _T("                   LEFT OUTER JOIN DEST_POS_DEF SP                                   \n")
+			  _T("                                ON SP.WH_TYP = JM.WH_TYP AND SP.MC_NO = JM.START_POS \n")
+			  _T("                   LEFT OUTER JOIN DEST_POS_DEF DP                                   \n")
+			  _T("                                ON DP.WH_TYP = JM.WH_TYP AND DP.MC_NO = JM.DEST_POS  \n")
+			  _T("                   LEFT OUTER JOIN COMMON_CODE CC                                    \n")
 			  _T("				            ON CC.WH_TYP LIKE '%%%s%%'													\n")	
 			  _T("				           AND CC.CDX_CD = 'JOB_STATUS'													\n")	
 			  _T("				           AND JM.JOB_STATUS = CC.CCD_CD												\n")	
@@ -1674,9 +1701,9 @@ void CViewJobListDlg::CopyJob()
 	//m_pSpreadMain.GetText(2, m_nActiveRow, &val);
 	strLUGG_NO = m_SpreadSheet.GetValueTXT(2, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
 	//m_pSpreadMain.GetText(3, m_nActiveRow, &val);
-	strSTART_POS = m_SpreadSheet.GetValueTXT(3, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	strSTART_POS = LglsPosCode(m_SpreadSheet.GetValueTXT(3, m_nActiveRow));	// (LPCTSTR)(_bstr_t)val;
 	//m_pSpreadMain.GetText(5, m_nActiveRow, &val);
-	strDEST_POS = m_SpreadSheet.GetValueTXT(5, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
+	strDEST_POS = LglsPosCode(m_SpreadSheet.GetValueTXT(5, m_nActiveRow));	// (LPCTSTR)(_bstr_t)val;
 	//m_pSpreadMain.GetText(8, m_nActiveRow, &val);
 	strJOB_TYP = m_SpreadSheet.GetValueTXT(7, m_nActiveRow);	// (LPCTSTR)(_bstr_t)val;
 	// [LGLS 2026-08-01] PULP 단수 컬럼이 그리드에서 빠져 값을 읽을 수 없으므로 원본 작업에서 직접 읽는다.

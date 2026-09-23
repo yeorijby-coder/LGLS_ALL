@@ -700,8 +700,8 @@ void CCvSkinDlg::InvalidateTrackData(EN_LANG pLang)
 	//ITEM NO 표시
 
 	//CV 명칭 표시 : [LGLS] 트랙번호는 마지막 2자리만 표시
-	CString strTrNo2 = m_pTrackInfo->m_pCV_DATA->V_MC_NO;
-	if (strTrNo2.GetLength() > 2) strTrNo2 = strTrNo2.Right(2);
+	// [LGLS 2026-09-23] 자릿수는 Ecs.ini [MENU] TRACK_NO_DIGITS 로 정한다 (사용자 지시)
+	CString strTrNo2 = CLib::TrimTrackNo(CString((LPCTSTR)m_pTrackInfo->m_pCV_DATA->V_MC_NO));
 	if(m_pTrackInfo->m_pCV_DATA->V_MC_NO_NM == " ") // 명칭이 없으면 그냥 2자리 NO 
 	{
 		m_edtCvTrackNo.SetWindowText(strTrNo2);

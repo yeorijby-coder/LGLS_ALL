@@ -154,6 +154,10 @@ public:
 	static int GetSpreadRowValueToComboBoxIndex(CString strComboBoxEnum, CString strSpreadValue);
 
 public:
+	// [LGLS 2026-09-23] 트랙번호를 화면에 몇 자리로 보일지 (사용자 지시).
+	//   Ecs.ini [MENU] TRACK_NO_DIGITS : 2 = 뒤 2자리(기본) · 3 = 세 자리 · 0 = 자르지 않음
+	static int     TrackNoDigits();
+	static CString TrimTrackNo(const CString& strNo);
 	static int GetStationNumByTrackNum(int nTrackNum);
 	static int GetTrackNumByFloor(int nTrackNum);
 	static int CenterEquipFloor(int nCenterEquipNum);

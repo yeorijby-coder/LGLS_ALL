@@ -2071,6 +2071,34 @@ void CLib::AutoDroppedWidth(CComboBox& cbx, int nExtra)
 	cbx.SetDroppedWidth(nWidth);
 }
 
+// [LGLS 2026-09-23] 트랙번호 표시 자릿수 (사용자 지시 - ini 로 정하게 해 달라).
+//   Ecs.ini [MENU] TRACK_NO_DIGITS
+//     2 = 뒤 2자리만 (기본 · 종전 동작)   3 = 세 자리 그대로   0 = 자르지 않음
+//   그리기마다 부르는 자리라 3초 동안은 읽은 값을 쓴다 - ini 를 고치면 곧 반영된다.
+int CLib::TrackNoDigits()
+{
+	static int   s_nDigits = -1;
+	static DWORD s_dwTick  = 0;
+	DWORD dwNow = ::GetTickCount();
+	if (s_nDigits < 0 || dwNow - s_dwTick >= 3000)
+	{
+		s_dwTick  = dwNow;
+		s_nDigits = ::GetPrivateProfileInt(_T("MENU"), _T("TRACK_NO_DIGITS"), 2, ECS_INI_FILE);
+		if (s_nDigits < 0) s_nDigits = 0;
+	}
+	return s_nDigits;
+}
+
+CString CLib::TrimTrackNo(const CString& strNo)
+{
+	CString strOut = strNo;
+	strOut.Trim();
+	int nDigits = TrackNoDigits();
+	if (nDigits > 0 && strOut.GetLength() > nDigits)
+		strOut = strOut.Right(nDigits);
+	return strOut;
+}
+
 bool CLib::SetBindCombo_DEST_POS_DEF(CComboBoxWrapper& cbx, CEcsDoc *pDoc, LPCTSTR strExcludeMc)
 {
 	if (pDoc   == NULL)                     

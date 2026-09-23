@@ -141,8 +141,8 @@ void CTrackInfo::ApplyTrackTextMode(CDciTrackCtrl* pTrackCtrl)
 	else
 	{
 		// 트랙번호 모드: 레이아웃 토글 상태와 무관하게 트랙번호(끝 2자리)를 명시 표시
-		CString strTr = m_pCV_DATA->K_TRACK_NO;
-		if (strTr.GetLength() > 2) strTr = strTr.Right(2);
+		// [LGLS 2026-09-23] 자릿수는 Ecs.ini [MENU] TRACK_NO_DIGITS 로 정한다 (사용자 지시)
+		CString strTr = CLib::TrimTrackNo(CString((LPCTSTR)m_pCV_DATA->K_TRACK_NO));
 		pTrackCtrl->SetExtraTextSafe(strTr, RGB(0,0,0));
 	}
 }
