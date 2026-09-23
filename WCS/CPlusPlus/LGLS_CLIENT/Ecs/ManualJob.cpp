@@ -777,6 +777,14 @@ void CManualJob::OnBnClickedBtnManulJobInsert()
 			nJobCnt = 1;
 		}
 
+		// [LGLS 2026-09-23] 수동지시로 만드는 작업은 ★반자동★ 이다 (사용자 지시).
+		//   자동 코드로 골랐어도 반자동 코드로 승격해 넣는다 - 그래야 상위 보고를 타지 않고
+		//   완료 시 바로 지워진다(반자동은 HOST 보고 금지 - 절대 원칙).
+		//     1 입고→11  2 출고→12  3→13  4→14  5→15  6 작업대이동→10
+		//   이미 반자동(10~15)을 고른 경우는 그대로 둔다.
+		if (strJobTyp.GetLength() == 1)
+			strJobTyp = (strJobTyp == _T("6")) ? CString(_T("10")) : (CString(_T("1")) + strJobTyp);
+
 		m_pDoc->BeginTrans_DLG();
 
 		for(int i = 0; i < nJobCnt; i++)

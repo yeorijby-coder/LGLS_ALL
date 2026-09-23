@@ -1605,7 +1605,7 @@ namespace TSK_COMM_IOSCH
                     }
                     // [LGLS 2026-09-23] ★반자동 출고는 19 로 올리지 않고 여기서 지운다★ (사용자 확인 - 19 에 남았다)
                     //   반자동은 상위 보고가 없으므로(절대 원칙) 출고대에 내어 놓았으면 그것으로 끝이다.
-                    if (rawTyp == "12")
+                    if (jobTyp == "2" && IsSemiJob(luggNo, rawTyp))
                     {
                         if (DeleteJobNow(luggNo, ref rtn))
                         {
@@ -1806,7 +1806,8 @@ namespace TSK_COMM_IOSCH
                     //   · 반자동 입고(11) : S/C 완료 = 작업 완료 → 즉시 삭제(상위 보고 없음)
                     //   · 자동   입고(1)  : S/C 완료 = 작업 완료 → 09(HOST 응답 받을 때까지 60초 주기 재보고)
                     //   · 출고(2/12)      : S/C 완료 = 1차(랙 셀 해제) → 29 로 두고 RGV 처리로 인계
-                    bool bSemiIn = (rawTyp == "11");
+                    // [LGLS 2026-09-23] 9000대(수동지시)도 반자동으로 본다 - 상위 보고 없이 바로 지운다
+                    bool bSemiIn = (jobTyp == "1") && IsSemiJob(luggNo, rawTyp);
                     string stNext = (jobTyp == "1") ? "09" : ST_SC_DONE;
 
                     if ((bSemiIn ? DeleteJobNow(luggNo, ref rtn) : UpdateJobStatus(stNext, luggNo, ref rtn)))
@@ -3974,6 +3975,22 @@ namespace TSK_COMM_IOSCH
         ///     · 자동 입고(1) 29 → 09 (상위 완료보고 대상)
         ///   자동 출고(2)의 19 는 정상 흐름이므로 건드리지 않는다.
         /// </summary>
+        /// <summary>
+        /// [LGLS 2026-09-23] 반자동 작업인가 (사용자 지시).
+        ///   · 작업구분이 10~15 이거나
+        ///   · 작업번호가 9000대(Client 수동지시 채번 9001~9900) 이면 반자동으로 본다.
+        ///   수동지시로 만든 것은 작업구분을 입고/출고로 골랐어도 상위 보고 대상이 아니다.
+        /// </summary>
+        private static bool IsSemiJob(string strLuggNo, string strJobTyp)
+        {
+            string t = (strJobTyp ?? "").Trim();
+            int nTyp;
+            if (int.TryParse(t, out nTyp) && nTyp >= 10 && nTyp <= 15) return true;
+            string g = (strLuggNo ?? "").Trim();
+            int nLugg;
+            return (g.Length == 4 && int.TryParse(g, out nLugg) && nLugg >= 9000);
+        }
+
         private void FinishManualComplete()
         {
             try
@@ -3984,8 +4001,11 @@ namespace TSK_COMM_IOSCH
                 q += CRLF + "   FROM JOB_MST                                               ";
                 q += CRLF + "  WHERE WH_TYP = :WH_TYP                                      ";
                 // [LGLS 2026-09-22] 반자동(10~15) 은 19/29 어느 쪽이든, 자동 입고(1)는 29 만
-                q += CRLF + "    AND ( (JOB_TYP IN ('10','11','12','13','14','15')          ";
-                q += CRLF + "           AND JOB_STATUS IN ('09','19','29'))                 ";   // [LGLS 2026-09-23] 09 추가
+                q += CRLF + "    AND ( ( ( JOB_TYP IN ('10','11','12','13','14','15')        ";
+                // [LGLS 2026-09-23] 작업번호 9000대(수동지시)도 반자동으로 본다 (사용자 지시)
+                q += CRLF + "             OR (LEN(LTRIM(RTRIM(LUGG_NO))) = 4                ";
+                q += CRLF + "                 AND LTRIM(RTRIM(LUGG_NO)) LIKE '9[0-9][0-9][0-9]') ) ";
+                q += CRLF + "           AND JOB_STATUS IN ('09','19','29'))                 ";
                 q += CRLF + "       OR (JOB_TYP  = '1' AND JOB_STATUS = '29') )             ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')                     ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
@@ -4000,8 +4020,8 @@ namespace TSK_COMM_IOSCH
                     string rawTyp = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
                     string stNow  = (GetVal(dt.Rows[i], "JOB_STATUS") ?? "").Trim();
                     int nAgo = 0; int.TryParse(GetVal(dt.Rows[i], "AGO"), out nAgo);
-                    // 반자동은 두 자리 코드 10~15 다 (01~06 은 자동)
-                    int nTyp; bool bSemi = int.TryParse(rawTyp, out nTyp) && nTyp >= 10 && nTyp <= 15;
+                    // 반자동 = 구분 10~15 이거나 작업번호 9000대 (2026-09-23)
+                    bool bSemi = IsSemiJob(luggNo, rawTyp);
                     string rtn = "";
 
                     if (bSemi)

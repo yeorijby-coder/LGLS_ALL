@@ -341,6 +341,8 @@ namespace TSK_HostCom
                 //   09 를 치우는 루프는 반자동을 제외하므로 그대로 남았다(출고는 19 에 남았다).
                 //   제외하면 19·09 로 올라가는 일 자체가 없어지고, IO_TASK 가 제 경로로 지운다.
                 m_strSql += modDefApp.CRLF + "    AND JOB_TYP NOT IN ('10','11','12','13','14','15') ";
+                // [LGLS 2026-09-23] 작업번호 9000대(수동지시 채번 9001~9900)도 반자동으로 본다 (사용자 지시)
+                m_strSql += modDefApp.CRLF + "    AND NOT (LEN(LTRIM(RTRIM(LUGG_NO))) = 4 AND LTRIM(RTRIM(LUGG_NO)) LIKE '9[0-9][0-9][0-9]') ";
                 // [LGLS 2026-08-31] 19 는 출고 계열 전용이다. 입고는 19 를 지나지 않는다.
                 //   29 는 좁히지 않는다 - ★출고의 29 도 보고 대상★ 이기 때문이다(아래 1차/2차 참조).
                 if (nJobStatus == 19)
