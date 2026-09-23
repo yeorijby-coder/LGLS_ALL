@@ -727,7 +727,8 @@ namespace TSK_COMM_IOSCH
                     //   22:33:29 겸용대 122 입고 복귀 → 화물 9012 가 122 에서 121 로 옮겨져 갇힘).
                     //   IsDualCvBusyWithJob 은 작업번호로 방향을 판별하므로 ★작업이 지워진 화물★ 은
                     //   막지 못한다. 물리적으로 화물이 있으면 작업 유무와 무관하게 보류한다.
-                    if (!IsTrackEmpty(sp))
+                    // [LGLS 2026-09-23] [CNF] DUAL_DIR_CARGO_GUARD=0 이면 화물이 있어도 전환한다(사용자 지시).
+                    if (DualDirCargoGuard() && !IsTrackEmpty(sp))
                     {
                         DbgLog("DIRRST_" + sp, "[겸용대] 입고 방향 복귀 보류 - 출고 화물이 아직 작업대에 있음(트랙 " + sp + ")");
                         continue;
@@ -3031,10 +3032,27 @@ namespace TSK_COMM_IOSCH
         /// [LGLS 2026-09-16 23:20] 겸용 입출고대(122)를 입고로 돌려도 되는가 - DUAL_LINE_CV11 주석의 ①②.
         ///   122 가 아니면 항상 true(기존 규칙만 적용). 보류 사유는 why 로 돌려준다.
         /// </summary>
+        /// <summary>
+        /// [LGLS 2026-09-23] 겸용 입출고대 입고 전환의 ★화물 가드★ 사용 여부 (사용자 지시).
+        ///   ENV_IOSCH.INI [CNF] DUAL_DIR_CARGO_GUARD
+        ///     1(기본) : 그 작업대에 화물·트래킹이 남아 있으면 입고로 되돌리지 않는다(종전).
+        ///     0       : 화물이 있어도 입고로 전환한다.
+        ///   ★0 으로 두면 이런 사고가 다시 날 수 있다★ (2026-08-31 실측) :
+        ///     출고 완료(19)로 작업은 지워졌는데 지게차가 아직 안 가져간 화물이 있을 때 입고로 뒤집으면
+        ///     그 화물이 입고 경로로 끌려 들어간다 - 작업 9012 가 122 에서 121 로 옮겨져 갇혔다.
+        ///   호출마다 읽으므로 재기동 없이 바뀐다.
+        /// </summary>
+        private bool DualDirCargoGuard()
+        {
+            return cDefApi.GsReadInitProfileCnf("DUAL_DIR_CARGO_GUARD", 1) != 0;
+        }
+
         private bool IsDualStnClearForInbound(string stn, out string why)
         {
             why = "";
             if (stn != "122") return true;
+            // [LGLS 2026-09-23] 화물 가드를 끄면 이 판정(화물·트래킹·안정화·출고 유예)도 통째로 건너뛴다.
+            if (!DualDirCargoGuard()) return true;
             try
             {
                 DateTime now = DateTime.Now;
@@ -3929,7 +3947,9 @@ namespace TSK_COMM_IOSCH
         ///   → 상위에서 받은 반자동 입고 작업을 [SC완료] 하면 29 에 그대로 서 있었다.
         ///   설비 완료신호 경로(CompleteSC)는 입고를 09/삭제로 곧장 보내므로,
         ///   ★입고가 29 에 서 있는 것은 사람이 손으로 만든 상태뿐이다★ - 자동 흐름과 부딪히지 않는다.
-        ///     · ★반자동(10~15) 은 19 든 29 든 즉시 삭제★ (2026-09-22 사용자 지시)
+        ///     · ★반자동(10~15) 은 09·19·29 어느 상태든 즉시 삭제★ (2026-09-22, 09 는 09-23 추가)
+        ///       09 는 HOST_TASK 완료보고가 올린 상태다. 그 뒤 09 를 치우는 루프는 반자동을 제외하므로
+        ///       (CCliWork.cs "JOB_TYP NOT IN (10..15)") 여기서 지우지 않으면 영영 남는다.
         ///       반자동은 상위 보고가 없으므로 화면에서 끝냈다고 하면 그것이 끝이다(절대 원칙).
         ///       Client 는 반자동에 두 버튼을 다 허용한다 - [CV완료] 는 작업구분 1/4/5 만,
         ///       [SC완료] 는 2/3/6 만 막으므로 반자동 10~15 는 어느 쪽이든 눌린다.
@@ -3943,11 +3963,12 @@ namespace TSK_COMM_IOSCH
             {
                 string q = "";
                 q += CRLF + " SELECT LUGG_NO, JOB_TYP, JOB_STATUS                          ";
+                q += CRLF + "      , DATEDIFF(second, ISNULL(UPD_DT, INS_DT), " + DbLang.SYSDATE + ") AS AGO ";
                 q += CRLF + "   FROM JOB_MST                                               ";
                 q += CRLF + "  WHERE WH_TYP = :WH_TYP                                      ";
                 // [LGLS 2026-09-22] 반자동(10~15) 은 19/29 어느 쪽이든, 자동 입고(1)는 29 만
                 q += CRLF + "    AND ( (JOB_TYP IN ('10','11','12','13','14','15')          ";
-                q += CRLF + "           AND JOB_STATUS IN ('19','29'))                      ";
+                q += CRLF + "           AND JOB_STATUS IN ('09','19','29'))                 ";   // [LGLS 2026-09-23] 09 추가
                 q += CRLF + "       OR (JOB_TYP  = '1' AND JOB_STATUS = '29') )             ";
                 q += CRLF + "    AND (DEL_YN IS NULL OR DEL_YN <> 'Y')                     ";
                 _pBdb.mComMain.CommandType = CommandType.Text;
@@ -3961,6 +3982,7 @@ namespace TSK_COMM_IOSCH
                     string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
                     string rawTyp = (GetVal(dt.Rows[i], "JOB_TYP") ?? "").Trim();
                     string stNow  = (GetVal(dt.Rows[i], "JOB_STATUS") ?? "").Trim();
+                    int nAgo = 0; int.TryParse(GetVal(dt.Rows[i], "AGO"), out nAgo);
                     // 반자동은 두 자리 코드 10~15 다 (01~06 은 자동)
                     int nTyp; bool bSemi = int.TryParse(rawTyp, out nTyp) && nTyp >= 10 && nTyp <= 15;
                     string rtn = "";
@@ -3972,8 +3994,10 @@ namespace TSK_COMM_IOSCH
                             ClearScOd(luggNo);
                             ClearCvOd(luggNo);
                             MakeMsg_Imp(string.Format(
-                                "[SCH] 반자동 {0} {1} 화면에서 {2} → 즉시 삭제(상위 보고 없음)",
-                                SemiTypName(rawTyp), luggNo, (stNow == "29") ? "[SC완료]" : "[CV완료]"));
+                                "[SCH] 반자동 {0} {1} {2} → 삭제(상위 보고 없음){3}",
+                                SemiTypName(rawTyp), luggNo,
+                                (stNow == "09") ? "완료(09)" : ((stNow == "29") ? "화면에서 [SC완료]" : "화면에서 [CV완료]"),
+                                (nAgo >= 60) ? string.Format(" ★지연 청소 - {0}초 남아 있었다★", nAgo) : ""));
                         }
                         else
                             MakeMsg_Error(string.Format("[SCH] 반자동 수동 완료 삭제 실패({0}): {1}", luggNo, rtn));
