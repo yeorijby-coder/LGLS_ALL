@@ -72,8 +72,17 @@ namespace WCS_TASK_CV
         //   false(IN0, 현행) : 입고='0'(0x30) 출고='1'(0x31)   /   true(IN1) : 입고='1' 출고='0'
         //   현장 PLC 담당자가 래더에서 확인한 값이 입고=1/출고=0 이라 바꿔 쓸 수 있게 둔다. 쓰기·판독 양쪽에 적용.
         public static bool GM_DIR_IN1 = false;
-        public static byte GsDirChar(bool bOut) { return (byte)((bOut ^ GM_DIR_IN1) ? 0x31 : 0x30); }
-        public static string GsDirModeText() { return GM_DIR_IN1 ? "입고=1 / 출고=0 (IN1)" : "입고=0 / 출고=1 (IN0, 현행)"; }
+        // [LGLS 2026-09-23] C/V#11 은 따로 잡는다 (사용자 지시).
+        //   현장 조작반에 C/V#11 전용 입고/출고 모드 스위치가 있어 부호 규약이 다를 수 있다.
+        //   WCS_DB.INI [PLC] DIR_CODE_CV11. 값이 없으면 DIR_CODE 를 따른다(하위 호환).
+        public const int DIR_CV11 = 11;
+        public static bool GM_DIR_IN1_CV11 = false;
+        /// <summary>그 설비의 방향 부호가 IN1(입고=1/출고=0) 인가. nCvNo 는 C/V 기계번호(11 이면 C/V#11).</summary>
+        public static bool GsDirIn1(int nCvNo) { return (nCvNo == DIR_CV11) ? GM_DIR_IN1_CV11 : GM_DIR_IN1; }
+        public static byte GsDirChar(bool bOut, int nCvNo) { return (byte)((bOut ^ GsDirIn1(nCvNo)) ? 0x31 : 0x30); }
+        public static byte GsDirChar(bool bOut) { return GsDirChar(bOut, 0); }   // 설비 미지정 - 공통 부호
+        public static string GsDirModeText(bool bIn1) { return bIn1 ? "입고=1 / 출고=0 (IN1)" : "입고=0 / 출고=1 (IN0, 현행)"; }
+        public static string GsDirModeText() { return GsDirModeText(GM_DIR_IN1); }
         // [LGLS 2026-09-02] 구 트랙테이블(트랙x10) D영역 지시 쓰기 - V1.1 확정 주소(크레인 D160~/RGV D210/방향 D300~)와
         //   정면 충돌(RGV 상태를 0으로 덮어씀)해 기본 차단. 구 방식 PLC 필요 시 INI [PLC] CV_DTRACK_WRITE=ON.
         public static bool GM_CV_DTRACK_WRITE = false;

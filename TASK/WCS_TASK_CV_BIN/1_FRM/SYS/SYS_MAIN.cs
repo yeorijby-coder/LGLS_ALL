@@ -208,7 +208,7 @@ namespace WCS_TASK_CV
             cDefApp.GM_DIR_IN1 = cDefApi.GsReadInitProfileDirIn1();
             //   [사용자 지적] 첫 줄 오른쪽에 두니 글자가 잘리고 겹쳤다 - 위 패널을 한 줄 늘려 셋째 줄에 따로 둔다.
             pnlTop.Height += 24;
-            m_rdoDirIn0 = new RadioButton { Text = "C/V 방향 부호 : 입고=0 / 출고=1 (현행)", AutoSize = true,
+            m_rdoDirIn0 = new RadioButton { Text = "C/V 방향 부호(#11 제외) : 입고=0 / 출고=1", AutoSize = true,
                 BackColor = System.Drawing.Color.MistyRose };
             m_rdoDirIn1 = new RadioButton { Text = "입고=1 / 출고=0 (PLC 담당자 확인값)", AutoSize = true,
                 BackColor = System.Drawing.Color.MistyRose };
@@ -224,6 +224,28 @@ namespace WCS_TASK_CV
             m_bDirLoading = false;
             m_rdoDirIn0.CheckedChanged += rdoDirCode_CheckedChanged;
             m_rdoDirIn1.CheckedChanged += rdoDirCode_CheckedChanged;
+
+            // [LGLS 2026-09-23] C/V#11 전용 부호 라디오 (사용자 지시).
+            //   C/V#11 은 현장 조작반에 입고/출고 모드 스위치가 따로 있어 규약이 다를 수 있다.
+            //   [PLC] DIR_CODE_CV11 에 저장. 미설정이면 위 공통값을 따른다.
+            cDefApp.GM_DIR_IN1_CV11 = cDefApi.GsReadInitProfileDirIn1Cv11();
+            pnlTop.Height += 24;
+            m_rdoDirCv11In0 = new RadioButton { Text = "C/V#11 방향 부호 : 입고=0 / 출고=1", AutoSize = true,
+                BackColor = System.Drawing.Color.Lavender };
+            m_rdoDirCv11In1 = new RadioButton { Text = "입고=1 / 출고=0", AutoSize = true,
+                BackColor = System.Drawing.Color.Lavender };
+            var pnlDirCv11 = new Panel { Location = new System.Drawing.Point(rdoRHex.Left, rdoRHex.Top + 72),
+                Size = new System.Drawing.Size(560, 20), BackColor = System.Drawing.Color.Transparent };
+            m_rdoDirCv11In0.Location = new System.Drawing.Point(0, 0);
+            m_rdoDirCv11In1.Location = new System.Drawing.Point(270, 0);
+            pnlDirCv11.Controls.Add(m_rdoDirCv11In0); pnlDirCv11.Controls.Add(m_rdoDirCv11In1);
+            rdoRHex.Parent.Controls.Add(pnlDirCv11); pnlDirCv11.BringToFront();
+            m_bDirLoading = true;
+            m_rdoDirCv11In0.Checked = !cDefApp.GM_DIR_IN1_CV11;
+            m_rdoDirCv11In1.Checked = cDefApp.GM_DIR_IN1_CV11;
+            m_bDirLoading = false;
+            m_rdoDirCv11In0.CheckedChanged += rdoDirCodeCv11_CheckedChanged;
+            m_rdoDirCv11In1.CheckedChanged += rdoDirCodeCv11_CheckedChanged;
 
             // [LGLS 2026-09-02] 환경 INI(WCS_DB.INI) 바로 열기 - [정리] 버튼 왼쪽 빈 자리(둘째 줄, 겹침 없음)
             var btnIni = new Button { Text = "INI 열기", Size = new System.Drawing.Size(72, 23),
@@ -968,7 +990,8 @@ namespace WCS_TASK_CV
         //   ※ 통신 중 전환하면 다음 사이클부터 새 주소로 읽고 쓴다.
         private bool m_bRAddrLoading = false;
         private RadioButton m_rdoDDoc, m_rdoDLegacy;   // [LGLS 2026-09-01] D 해석 모드 라디오(런타임 생성)
-        private RadioButton m_rdoDirIn0, m_rdoDirIn1;  // [LGLS 2026-09-15] C/V 방향 부호 라디오(런타임 생성)
+        private RadioButton m_rdoDirIn0, m_rdoDirIn1;
+        private RadioButton m_rdoDirCv11In0, m_rdoDirCv11In1;   // [LGLS 2026-09-23] C/V#11 전용 방향 부호 라디오  // [LGLS 2026-09-15] C/V 방향 부호 라디오(런타임 생성)
         private bool m_bDirLoading;
         private bool m_bDAddrLoading;
 
@@ -1004,7 +1027,20 @@ namespace WCS_TASK_CV
             if (rdo == null || !rdo.Checked) return;
             cDefApp.GM_DIR_IN1 = m_rdoDirIn1.Checked;
             cDefApi.GsWriteInitProfileDirIn1(cDefApp.GM_DIR_IN1);
-            string strMsg = "[방향부호] " + cDefApp.GsDirModeText() + " - 다음 방향지시·판독부터 적용 (WCS_DB.INI [PLC] DIR_CODE)";
+            string strMsg = "[방향부호] C/V#11 제외 : " + cDefApp.GsDirModeText() + " - 다음 방향지시·판독부터 적용 (WCS_DB.INI [PLC] DIR_CODE)";
+            try { PsMsgView_IMP(strMsg, 0); } catch { }
+        }
+
+        // [LGLS 2026-09-23] C/V#11 전용 방향 부호 전환 (사용자 지시)
+        private void rdoDirCodeCv11_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bDirLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+            cDefApp.GM_DIR_IN1_CV11 = m_rdoDirCv11In1.Checked;
+            cDefApi.GsWriteInitProfileDirIn1Cv11(cDefApp.GM_DIR_IN1_CV11);
+            string strMsg = "[방향부호] C/V#11 : " + cDefApp.GsDirModeText(cDefApp.GM_DIR_IN1_CV11)
+                          + " - 다음 방향지시·판독부터 적용 (WCS_DB.INI [PLC] DIR_CODE_CV11)";
             try { PsMsgView_IMP(strMsg, 0); } catch { }
         }
 

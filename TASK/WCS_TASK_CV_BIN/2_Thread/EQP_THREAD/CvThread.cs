@@ -1611,7 +1611,7 @@ namespace WCS_TASK_CV
 
                         Array.Clear(byTxBuff, 0, byTxBuff.Length);
                         // [LGLS 2026-09-15] 부호는 SYS_MAIN 라디오([PLC] DIR_CODE) 를 따른다 - IN0 '1'=출고/'0'=입고, IN1 은 반대
-                        byTxBuff[0] = cDefApp.GsDirChar(nCMD_RQ_PARM == 1);
+                        byTxBuff[0] = cDefApp.GsDirChar(nCMD_RQ_PARM == 1, nDirCv);   // [LGLS 2026-09-23] 설비별 부호
                         byTxBuff[1] = 0;
 
                         if (m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
@@ -1628,8 +1628,8 @@ namespace WCS_TASK_CV
                         }
 
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] 방향지시 " +
-                                      ((nCMD_RQ_PARM == 1) ? "출고" : "입고") + "('" + (char)cDefApp.GsDirChar(nCMD_RQ_PARM == 1) + "')"
-                                      + " → D워드 " + nDirAddr + (cDefApp.GM_DIR_IN1 ? " [IN1]" : "") + (bManualDir ? " [수동-즉시]" : bForceDir ? " [교착해제-즉시]" : "");
+                                      ((nCMD_RQ_PARM == 1) ? "출고" : "입고") + "('" + (char)cDefApp.GsDirChar(nCMD_RQ_PARM == 1, nDirCv) + "')"
+                                      + " → D워드 " + nDirAddr + (cDefApp.GsDirIn1(nDirCv) ? " [IN1]" : "") + (bManualDir ? " [수동-즉시]" : bForceDir ? " [교착해제-즉시]" : "");
                         MakeMsg_Imp(m_strLogMsg, m_nthNo, m_msQPlc.LastAddrText);
                         if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg))
                         {
@@ -4034,7 +4034,8 @@ namespace WCS_TASK_CV
                 //   CV_DATA.STOCK_MODE 가 48/49 로 저장됐고, HOST_TASK 의 "1" 비교가 영영 성립하지 않아
                 //   상위 상태보고의 PLC Mode 가 항상 '입고(0)' 로 나갔다 → '0'/'1' 로 정규화한다.
                 // [LGLS 2026-09-15] 부호 반전(IN1)이면 판독도 뒤집어 논리값(1=출고)으로 맞춘다
-                string STOCK     = ((nDir == 0x31 || nDir == 1) ^ cDefApp.GM_DIR_IN1) ? "1" : "0";
+                // [LGLS 2026-09-23] 판독도 그 설비의 부호로 뒤집는다 (C/V#11 은 DIR_CODE_CV11)
+                string STOCK     = ((nDir == 0x31 || nDir == 1) ^ cDefApp.GsDirIn1(cvMachineNo)) ? "1" : "0";
                 string STO_READY = inReady2 ? "1" : "0";
                 string RET_READY = waitIn   ? "1" : "0";
 

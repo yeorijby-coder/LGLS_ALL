@@ -346,6 +346,27 @@ public static bool GsReadInitProfileDAddrDoc()
         }
 
         /// <summary>
+        /// [LGLS 2026-09-23] C/V#11 전용 방향 부호 - [PLC] DIR_CODE_CV11 (사용자 지시).
+        ///   C/V#11 은 현장 조작반에 입고/출고 모드 스위치가 따로 있어 부호 규약이 다를 수 있다.
+        ///   키가 없으면 공통 DIR_CODE 를 따른다(하위 호환 - 종전 설치본은 동작이 달라지지 않는다).
+        /// </summary>
+        public static bool GsReadInitProfileDirIn1Cv11()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return GsReadInitProfileDirIn1();
+            StringBuilder sb = new StringBuilder(32);
+            GetPrivateProfileString("PLC", "DIR_CODE_CV11", "", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            string v = sb.ToString().Trim().ToUpper();
+            if (v.Length == 0) return GsReadInitProfileDirIn1();   // 미설정 - 공통값
+            return (v == "IN1");
+        }
+
+        public static void GsWriteInitProfileDirIn1Cv11(bool pIn1)
+        {
+            WritePrivateProfileString("PLC", "DIR_CODE_CV11", pIn1 ? "IN1" : "IN0", cDefApp.GM_ENV_INI);
+        }
+
+        /// <summary>
         /// [LGLS 2026-08-30] 설비 에러이력(EQP_ERR_HIS)에 남길 EQP_TYP — [CNF] SC_ERR_TYP / RTV_ERR_TYP.
         ///   Client 설비에러이력 창이 이 값으로 EQP_ECD_MST 를 조인해 메시지를 표시한다.
         ///   크레인 기본 'SC_LGLS'(2026-09-17 PLC 알람 리스트 지상반 코드표).
