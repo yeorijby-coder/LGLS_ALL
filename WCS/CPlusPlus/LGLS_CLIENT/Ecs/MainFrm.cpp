@@ -1065,12 +1065,12 @@ static void DrawTrafficLamp(CDC& dc, int cx, int cy, int nOn)
 	CPen*   pOldPen = dc.SelectObject(&penNone);
 	CBrush* pOldBr  = dc.SelectObject(&brBody);
 
-	// 좌우 챙 - 등마다 한 쌍, 바깥으로 갈수록 처지는 쐐기
+	// 좌우 챙 - 등마다 한 쌍, 바깥으로 갈수록 ★올라가는★ 쐐기 (2026-09-23 사용자 지적)
 	for (int k = 0; k < 3; k++)
 	{
 		int yc = cy + 11 + k * 12;
-		CPoint ptL[3] = { CPoint(cx + 23, yc - 6), CPoint(cx + 23, yc + 5), CPoint(cx + 13, yc + 7) };
-		CPoint ptR[3] = { CPoint(cx + 39, yc - 6), CPoint(cx + 39, yc + 5), CPoint(cx + 49, yc + 7) };
+		CPoint ptL[3] = { CPoint(cx + 23, yc - 5), CPoint(cx + 23, yc + 6), CPoint(cx + 13, yc - 7) };
+		CPoint ptR[3] = { CPoint(cx + 39, yc - 5), CPoint(cx + 39, yc + 6), CPoint(cx + 49, yc - 7) };
 		dc.Polygon(ptL, 3);
 		dc.Polygon(ptR, 3);
 	}
