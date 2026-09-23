@@ -984,7 +984,7 @@ BEGIN_MESSAGE_MAP(CLglsCommLamps, CWnd)
 	ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
 
-static const int LAMP_CW = 33, LAMP_CH = 44;	// ÇÑ Ä­(½ÅÈ£µî + ÀÌ¸§)
+static const int LAMP_CW = 62, LAMP_CH = 56;	// ÇÑ Ä­(½ÅÈ£µî 62x42 + ÀÌ¸§)
 
 BOOL CLglsCommLamps::OnEraseBkgnd(CDC* pDC)
 {
@@ -1009,48 +1009,83 @@ void CLglsCommLamps::ReadState()
 	CEcsDoc* pDoc = (CEcsDoc*)pFrm->GetActiveDocument();
 	if (pDoc == NULL) return;
 
+	// [LGLS 2026-09-23] ³× Ä­À¸·Î ¹­´Â´Ù (»ç¿ëÀÚ Áö½Ã).
+	//   WMS1 = HOST ¡¤ WMS2 = HOST2 ¡¤ SCH = IO_TASK
+	//   EQP  = ¼³ºñ(CV¡¤SC¡¤RTV) - ¡ÚÇÏ³ª¶óµµ ²÷±â¸é ²÷±è¡Ú
 	CString strSql;
-	strSql  = _T(" SELECT EQP_TYP, PLC_NO                                              \n");
-	strSql += _T("      , CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0             \n");
-	strSql += _T("             WHEN DATEDIFF(second, UPD_DT, GETDATE()) >                \n");
-	strSql += _T("                  CASE WHEN EQP_TYP IN ('HOST','HOST2') THEN 300      \n");
-	strSql += _T("                       WHEN EQP_TYP = 'SCH'              THEN 900      \n");
-	strSql += _T("                       ELSE 60 END                        THEN 0       \n");
-	strSql += _T("             ELSE 1 END AS OKY                                         \n");
-	strSql += _T("   FROM EQP_MST                                                        \n");
-	strSql += _T("  WHERE ISNULL(USE_YN,'Y') = 'Y'                                      \n");
-	strSql += _T("  ORDER BY CASE EQP_TYP WHEN 'HOST' THEN 1 WHEN 'HOST2' THEN 2        \n");
-	strSql += _T("                        WHEN 'CV'   THEN 3 WHEN 'SC'    THEN 4        \n");
-	strSql += _T("                        WHEN 'RTV'  THEN 5 ELSE 6 END, PLC_NO          ");
+	strSql  = _T(" SELECT CASE WHEN EQP_TYP = 'HOST'  THEN 0                          \n");
+	strSql += _T("             WHEN EQP_TYP = 'HOST2' THEN 1                          \n");
+	strSql += _T("             WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 2 END AS GRP        \n");
+	strSql += _T("      , MIN(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0        \n");
+	strSql += _T("                 WHEN DATEDIFF(second, UPD_DT, GETDATE()) >          \n");
+	strSql += _T("                      CASE WHEN EQP_TYP IN ('HOST','HOST2') THEN 300 \n");
+	strSql += _T("                           WHEN EQP_TYP = 'SCH' THEN 900             \n");
+	strSql += _T("                           ELSE 60 END              THEN 0           \n");
+	strSql += _T("                 ELSE 1 END) AS OKY                                  \n");
+	strSql += _T("   FROM EQP_MST                                                      \n");
+	strSql += _T("  WHERE ISNULL(USE_YN,'Y') = 'Y'                                     \n");
+	strSql += _T("  GROUP BY CASE WHEN EQP_TYP = 'HOST'  THEN 0                        \n");
+	strSql += _T("                WHEN EQP_TYP = 'HOST2' THEN 1                        \n");
+	strSql += _T("                WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 2 END              ");
 
 	int nRowCnt = 0;
 	CString strMsg;
 	_RecordsetPtr pRs = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
 	if (nRowCnt <= 0) return;			// Á¶È¸ ½ÇÆÐ - Á÷Àü Ç¥½Ã¸¦ ±×´ë·Î µÐ´Ù
 
-	m_arrLamp.RemoveAll();
+	BOOL bOk[4] = { FALSE, FALSE, FALSE, FALSE };
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
 	pRsw->MoveFirst();
 	for (int r = 0; r < nRowCnt; r++)
 	{
-		CString strTyp = pRsw->GetItem(_T("EQP_TYP")); strTyp.Trim();
-		CString strNo  = pRsw->GetItem(_T("PLC_NO"));  strNo.Trim();
-		LAMP lp;
-		if      (strTyp == _T("HOST"))  lp.strName = _T("WMS1");
-		else if (strTyp == _T("HOST2")) lp.strName = _T("WMS2");
-		else if (strTyp == _T("SCH"))   lp.strName = _T("SCH");
-		else if (strTyp == _T("RTV"))   lp.strName = _T("RTV");
-		else
-		{
-			int n = _ttoi(strNo);
-			if (strTyp == _T("SC")) lp.strName.Format(_T("SC%d"), n);
-			else                    lp.strName.Format(_T("CV%02d"), n);
-		}
-		lp.bOk = (pRsw->GetItem(_T("OKY")) == _T("1"));
-		m_arrLamp.Add(lp);
+		int nGrp = _ttoi(pRsw->GetItem(_T("GRP")));
+		if (nGrp >= 0 && nGrp < 4)
+			bOk[nGrp] = (pRsw->GetItem(_T("OKY")) == _T("1"));
 		pRsw->MoveNext();
 	}
 	delete pRsw;
+
+	static LPCTSTR pszName[4] = { _T("WMS1"), _T("WMS2"), _T("EQP"), _T("SCH") };
+	m_arrLamp.RemoveAll();
+	for (int k = 0; k < 4; k++)
+	{
+		LAMP lp;
+		lp.strName = pszName[k];
+		lp.bOk     = bOk[k];
+		m_arrLamp.Add(lp);
+	}
+}
+
+// ½ÅÈ£µî ÇÑ °³¸¦ ±×¸°´Ù (»çÁø ¸ð¾ç : °ËÀº ¸öÃ¼ + ÁÂ¿ì Ã¬ 3½Ö + µî 3°³).
+//   nOn : 0 = »¡°­(²÷±è) ¡¤ 1 = ³ë¶û ¡¤ 2 = ÃÊ·Ï
+static void DrawTrafficLamp(CDC& dc, int cx, int cy, int nOn)
+{
+	CBrush brBody(RGB(28, 28, 28));
+	CPen   penNone(PS_NULL, 0, RGB(0, 0, 0));
+	CPen*   pOldPen = dc.SelectObject(&penNone);
+	CBrush* pOldBr  = dc.SelectObject(&brBody);
+
+	// ÁÂ¿ì Ã¬ - µî¸¶´Ù ÇÑ ½Ö, ¹Ù±ùÀ¸·Î °¥¼ö·Ï Ã³Áö´Â ½û±â
+	for (int k = 0; k < 3; k++)
+	{
+		int yc = cy + 11 + k * 12;
+		CPoint ptL[3] = { CPoint(cx + 23, yc - 6), CPoint(cx + 23, yc + 5), CPoint(cx + 13, yc + 7) };
+		CPoint ptR[3] = { CPoint(cx + 39, yc - 6), CPoint(cx + 39, yc + 5), CPoint(cx + 49, yc + 7) };
+		dc.Polygon(ptL, 3);
+		dc.Polygon(ptR, 3);
+	}
+	dc.RoundRect(CRect(cx + 22, cy + 2, cx + 40, cy + 42), CPoint(6, 6));	// ¸öÃ¼
+
+	// µî ¼¼ °³ - ÄÑÁø °Í¸¸ ¹à°Ô, ³ª¸ÓÁö´Â ¾îµÓ°Ô(²¨Áø Àü±¸µµ º¸ÀÌ°Ô)
+	CBrush brRed (nOn == 0 ? RGB(255,  32,  24) : RGB(104,  26,  22));
+	CBrush brYel (nOn == 1 ? RGB(238, 200,   0) : RGB(106,  94,  14));
+	CBrush brGrn (nOn == 2 ? RGB( 26, 200,  52) : RGB( 18,  92,  32));
+	dc.SelectObject(&brRed); dc.Ellipse(CRect(cx + 25, cy +  5, cx + 37, cy + 17));
+	dc.SelectObject(&brYel); dc.Ellipse(CRect(cx + 25, cy + 17, cx + 37, cy + 29));
+	dc.SelectObject(&brGrn); dc.Ellipse(CRect(cx + 25, cy + 29, cx + 37, cy + 41));
+
+	dc.SelectObject(pOldBr);
+	dc.SelectObject(pOldPen);
 }
 
 void CLglsCommLamps::OnPaint()
@@ -1069,43 +1104,27 @@ void CLglsCommLamps::OnPaint()
 	if (nCnt > 0)
 	{
 		CFont fnt;
-		fnt.CreateFont(12, 0, 0, 0, FW_BOLD, FALSE, FALSE, 0, DEFAULT_CHARSET,
+		fnt.CreateFont(13, 0, 0, 0, FW_BOLD, FALSE, FALSE, 0, DEFAULT_CHARSET,
 			OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, _T("¸¼Àº °íµñ"));
 		dc.SetBkMode(TRANSPARENT);
 
-		int nCols = max(1, rc.Width() / LAMP_CW);
-		int nRows = (nCnt + nCols - 1) / nCols;
-		int nTop  = max(0, (rc.Height() - nRows * LAMP_CH) / 2);
-		int nLeft = max(0, (rc.Width() - min(nCnt, nCols) * LAMP_CW) / 2);
-
-		CBrush brBody(RGB(70, 78, 84)), brOff(RGB(46, 52, 57));
-		CBrush brRed(RGB(228, 46, 38)), brYel(RGB(250, 205, 40)), brGrn(RGB(40, 190, 90));
-		CPen   penNone(PS_NULL, 0, RGB(0, 0, 0));
+		// [LGLS 2026-09-23] ¡ÚÇÑ ÁÙ¡Ú ·Î¸¸ ´Ã¾î³õ´Â´Ù (»ç¿ëÀÚ Áö½Ã). Á¼À¸¸é Ä­ ÆøÀ» ÁÙÀÎ´Ù.
+		int nCw = LAMP_CW;
+		if (nCnt * nCw > rc.Width()) nCw = max(24, rc.Width() / nCnt);
+		int nLeft = max(0, (rc.Width()  - nCnt * nCw) / 2);
+		int nTop  = max(0, (rc.Height() - LAMP_CH)    / 2);
 
 		for (int i = 0; i < nCnt; i++)
 		{
-			int cx = nLeft + (i % nCols) * LAMP_CW;
-			int cy = nTop  + (i / nCols) * LAMP_CH;
+			int cx = nLeft + i * nCw;
 			BOOL bOk = m_arrLamp[i].bOk;
-
-			CPen*   pOldPen = dc.SelectObject(&penNone);
-			CBrush* pOldBr  = dc.SelectObject(&brBody);
-			dc.RoundRect(CRect(cx + 9, cy + 1, cx + 25, cy + 32), CPoint(6, 6));
-
-			// »ï»ö : À§ »¡°­(²÷±è) / °¡¿îµ¥ ³ë¶û, ¾Æ·¡ ÃÊ·Ï(Á¤»óÀÏ ¶§ 1ÃÊ ±³´ë)
-			dc.SelectObject(bOk ? &brOff : &brRed);
-			dc.Ellipse(CRect(cx + 12, cy +  3, cx + 22, cy + 13));
-			dc.SelectObject((bOk &&  m_bBlink) ? &brYel : &brOff);
-			dc.Ellipse(CRect(cx + 12, cy + 12, cx + 22, cy + 22));
-			dc.SelectObject((bOk && !m_bBlink) ? &brGrn : &brOff);
-			dc.Ellipse(CRect(cx + 12, cy + 21, cx + 22, cy + 31));
-
-			dc.SelectObject(pOldBr);
-			dc.SelectObject(pOldPen);
+			// ²÷±è -> »¡°­,  Á¤»ó -> ³ë¶û <-> ÃÊ·Ï 1ÃÊ ±³´ë(»ì¾Æ ÀÖÀ½À» ´«À¸·Î)
+			int nOn = !bOk ? 0 : (m_bBlink ? 1 : 2);
+			DrawTrafficLamp(dc, cx + (nCw - LAMP_CW) / 2, nTop, nOn);
 
 			CFont* pOldFont = dc.SelectObject(&fnt);
-			dc.SetTextColor(bOk ? RGB(40, 50, 58) : RGB(190, 40, 34));
-			dc.DrawText(m_arrLamp[i].strName, CRect(cx, cy + 32, cx + LAMP_CW, cy + LAMP_CH),
+			dc.SetTextColor(bOk ? RGB(30, 60, 150) : RGB(190, 40, 34));
+			dc.DrawText(m_arrLamp[i].strName, CRect(cx, nTop + 42, cx + nCw, nTop + LAMP_CH),
 			            DT_CENTER | DT_TOP | DT_SINGLELINE);
 			dc.SelectObject(pOldFont);
 		}
@@ -1114,7 +1133,6 @@ void CLglsCommLamps::OnPaint()
 	dcPaint.BitBlt(0, 0, rc.Width(), rc.Height(), &dc, 0, 0, SRCCOPY);
 	dc.SelectObject(pOldBmp);
 }
-
 BEGIN_MESSAGE_MAP(CLglsRibbonBar, CMFCRibbonBar)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSELEAVE()
