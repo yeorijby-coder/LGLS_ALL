@@ -875,8 +875,11 @@ namespace WCS_TASK_CV
                 strSql += CRLF + "      ,PLC_IP            = :PLC_IP                ";
                 strSql += CRLF + "      ,PLC_PORT_FROM     = :PLC_PORT              ";
                 strSql += CRLF + "WHERE  WH_TYP            = :WH_TYP                ";
-                strSql += CRLF + "AND    EQP_TYP           = :EQP_TYP               ";
-                strSql += CRLF + "AND    PLC_NO            IN (" + strIn + ")       ";
+                // [LGLS 2026-09-23] 설비종류 'EQP' 행(EQP_TASK 설비통신 - 마스터 PLC)도 함께 갱신한다.
+                //   EQP 정보 창이 보여 주던 대표 한 줄을 EQP_MST 에 실제 행으로 넣었다(사용자 지시).
+                //   접속은 마스터 PLC 한 소켓이라 C/V 행과 상태가 늘 같다 - 같은 UPDATE 로 적는다.
+                strSql += CRLF + "AND  ( (EQP_TYP = :EQP_TYP AND PLC_NO IN (" + strIn + "))";
+                strSql += CRLF + "       OR EQP_TYP = 'EQP' )                         ";
 
                 m_msQPlc._pBdb.mComMain.CommandType = CommandType.Text;
                 m_msQPlc._pBdb.mComMain.Parameters.Clear();

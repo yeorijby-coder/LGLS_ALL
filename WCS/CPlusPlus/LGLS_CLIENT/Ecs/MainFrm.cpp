@@ -1279,8 +1279,9 @@ void CMainFrame::OnCommLampClicked(UINT nID)
 	CEcsDoc* pDoc = (CEcsDoc*)GetActiveDocument();
 	if (pDoc == NULL) return;
 
-	static LPCTSTR pszTyp[4]  = { _T("HOST"), _T("HOST2"), _T("CV"), _T("SCH") };
-	static LPCTSTR pszName[4] = { _T("WMS1"), _T("WMS2"), _T("EQP"),  _T("SCH") };
+	// [LGLS 2026-09-23] EQP 는 'EQP'(마스터 PLC 대표 행) 와 'CV' 를 함께 본다 - 같은 소켓이다.
+	static LPCTSTR pszIn[4]   = { _T("'HOST'"), _T("'HOST2'"), _T("'EQP','CV'"), _T("'SCH'") };
+	static LPCTSTR pszName[4] = { _T("WMS1"),   _T("WMS2"),    _T("EQP"),        _T("SCH")   };
 
 	// [LGLS 2026-09-23] ★접속 한 개당 한 번★ 만 찌른다 (사용자 지적).
 	//   설비는 마스터 PLC 한 소켓이다 - EQP_MST 의 C/V 15행은 논리 설비일 뿐
@@ -1292,10 +1293,10 @@ void CMainFrame::OnCommLampClicked(UINT nID)
 		_T("      , MAX(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0 ELSE 1 END) AS CN \n")
 		_T("      , MIN(DATEDIFF(second, UPD_DT, GETDATE())) AS AGE                  \n")
 		_T("   FROM EQP_MST                                                          \n")
-		_T("  WHERE ISNULL(USE_YN,'Y') = 'Y' AND EQP_TYP = '%s'                      \n")
+		_T("  WHERE ISNULL(USE_YN,'Y') = 'Y' AND EQP_TYP IN (%s)                       \n")
 		_T("  GROUP BY ISNULL(PLC_IP,''), ISNULL(PLC_PORT,'')                        \n")
 		_T("  ORDER BY MIN(PLC_NO)                                                     "),
-		pszTyp[nKind]);
+		pszIn[nKind]);
 
 	int nRowCnt = 0;
 	CString strMsg;
@@ -1415,13 +1416,14 @@ void CMainFrame::UpdateCommLamps()
 	// [LGLS 2026-09-23] 네 칸으로 묶는다 (사용자 지시).
 	//   WMS1 = HOST · WMS2 = HOST2 · SCH = IO_TASK
 	//   EQP  = ★EQP TASK(WCS_TASK_CV) 가 붙어 있는가★ (사용자 정정)
+	//     EQP_MST 의 'EQP' 행(마스터 PLC 대표)과 C/V 행을 함께 본다 - 둘은 같은 소켓이다.
 	//     WCS_TASK_CV 가 갱신하는 C/V 행 중 ★하나라도 살아 있으면 정상★ 으로 본다.
 	//     TASK 가 죽으면 C/V 행이 통째로 갱신을 멈추므로 전부 끊김이 된다.
 	//     S/C·RTV 는 다른 경로라 여기에 넣지 않는다 (넣으면 설비 한 대 때문에 늘 빨강).
 	CString strSql;
 	strSql  = _T(" SELECT CASE WHEN EQP_TYP = 'HOST'  THEN 0                          \n");
 	strSql += _T("             WHEN EQP_TYP = 'HOST2' THEN 1                          \n");
-	strSql += _T("             WHEN EQP_TYP = 'CV'    THEN 2                          \n");
+	strSql += _T("             WHEN EQP_TYP IN ('EQP','CV') THEN 2                      \n");
 	strSql += _T("             WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 9 END AS GRP        \n");
 	strSql += _T("      , MAX(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0        \n");
 	strSql += _T("                 WHEN DATEDIFF(second, UPD_DT, GETDATE()) >          \n");
@@ -1433,7 +1435,7 @@ void CMainFrame::UpdateCommLamps()
 	strSql += _T("  WHERE ISNULL(USE_YN,'Y') = 'Y'                                     \n");
 	strSql += _T("  GROUP BY CASE WHEN EQP_TYP = 'HOST'  THEN 0                        \n");
 	strSql += _T("                WHEN EQP_TYP = 'HOST2' THEN 1                        \n");
-	strSql += _T("                WHEN EQP_TYP = 'CV'    THEN 2                        \n");
+	strSql += _T("                WHEN EQP_TYP IN ('EQP','CV') THEN 2                    \n");
 	strSql += _T("                WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 9 END              ");
 
 	int nRowCnt = 0;

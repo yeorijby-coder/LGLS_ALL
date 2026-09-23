@@ -638,17 +638,10 @@ CString CEqpSuspendDlg::GetQrySelect_Main()
 		strSql += _T("AND EM.CONNECTED_YN ='") + strCONNECTED_YN + _T("' \n");	
 	}
 	
-	// [LGLS 2026-07-22] 설비와 통신하는 프로그램은 EQP_TASK 하나뿐 ? 설비별(CV/SC/RTV) 나열 대신
-	//   대표 1행(마스터 PLC 소켓 정의 = CV#11 행의 IP/PORT)으로 표현한다.
-	CString strUnion;
-	strUnion.Format(_T(" UNION ALL SELECT ") + m_pDoc->NVL + _T("(CCD_WH_TYP.CCD_NM_KOR, EM.WH_TYP), 'EQP', 'EQP_TASK 설비통신 (마스터 PLC)', EM.PLC_IP, EM.PLC_PORT	\n")
-		_T("   FROM EQP_MST EM LEFT OUTER JOIN COMMON_CODE CCD_WH_TYP										\n")
-		_T("     ON CCD_WH_TYP.WH_TYP LIKE '%%%s%%' AND CCD_WH_TYP.CDX_CD = 'WH_TYP' AND EM.WH_TYP = CCD_WH_TYP.CCD_CD	\n")
-		_T("  WHERE EM.WH_TYP = '%s' AND EM.EQP_TYP = 'CV' AND EM.PLC_NO = '11'						\n"), m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP);
-	// [LGLS 2026-09-03] EQP 대표 행은 설비 구분이 ALL 또는 EQP 일 때만 붙인다
-	//   (SCH/HOST 를 골라도 EQP 행이 같이 나오던 것 - 사용자 지적)
-	if (strEQP_TYP == _T("") || strEQP_TYP == _T("ALL") || strEQP_TYP == _T("EQP"))
-		strSql += strUnion;
+	// [LGLS 2026-09-23] 종전에는 여기서 UNION ALL 로 EQP 한 줄을 ★만들어★ 붙였다.
+	//   (C/V#11 행의 IP/PORT 를 빌려 쓰는 가상 행이라 테이블에는 없는 줄이었다.)
+	//   이제 EQP_MST 에 EQP_TYP='EQP' 행을 실제로 두었으므로(사용자 지시) 그 행을 그대로 읽는다.
+	//   상태는 WCS_TASK_CV 가 C/V 행과 같이 갱신한다 - 마스터 PLC 한 소켓이라 상태가 같다.
 	strSql += _T("   ORDER BY 2 \n");
 
 
