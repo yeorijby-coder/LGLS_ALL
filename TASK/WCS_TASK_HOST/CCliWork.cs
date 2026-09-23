@@ -336,6 +336,11 @@ namespace TSK_HostCom
                 m_strSql = modDefApp.CRLF + " SELECT * FROM JOB_MST                   ";
                 m_strSql += modDefApp.CRLF + "  WHERE JOB_STATUS = " + m_BDb.ParamsAdd("JOB_STATUS", nJobStatus.ToString());
                 m_strSql += modDefApp.CRLF + "    AND WH_TYP     = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                // [LGLS 2026-09-23] ★반자동(10~15)은 상위 보고 대상이 아니다★ (절대 원칙, 사용자 확인)
+                //   종전에는 여기서 걸러지지 않아 반자동 입고가 29 → 보고 → 09 가 됐고,
+                //   09 를 치우는 루프는 반자동을 제외하므로 그대로 남았다(출고는 19 에 남았다).
+                //   제외하면 19·09 로 올라가는 일 자체가 없어지고, IO_TASK 가 제 경로로 지운다.
+                m_strSql += modDefApp.CRLF + "    AND JOB_TYP NOT IN ('10','11','12','13','14','15') ";
                 // [LGLS 2026-08-31] 19 는 출고 계열 전용이다. 입고는 19 를 지나지 않는다.
                 //   29 는 좁히지 않는다 - ★출고의 29 도 보고 대상★ 이기 때문이다(아래 1차/2차 참조).
                 if (nJobStatus == 19)

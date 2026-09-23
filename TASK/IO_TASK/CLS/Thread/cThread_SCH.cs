@@ -1501,7 +1501,8 @@ namespace TSK_COMM_IOSCH
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     string luggNo = GetVal(dt.Rows[i], "LUGG_NO");
-                    string jobTyp = GetVal(dt.Rows[i], "JOB_TYP");
+                    string rawTyp = GetVal(dt.Rows[i], "JOB_TYP");   // [LGLS 2026-09-23] 반자동 판별용 원본
+                    string jobTyp = rawTyp;
                     if (jobTyp == "11") jobTyp = "1"; else if (jobTyp == "12") jobTyp = "2";   // [LGLS 2026-07-20] 반자동(11/12) → 기본형 정규화(JOB_MST 원본은 유지)
                     string mcNo   = GetVal(dt.Rows[i], "MC_NO");
                     string cvSen  = GetVal(dt.Rows[i], "SENSOR0_DATA_RD");
@@ -1602,6 +1603,22 @@ namespace TSK_COMM_IOSCH
                         m_dicPrevCV.Remove("CV_" + mcNo);
                         continue;
                     }
+                    // [LGLS 2026-09-23] ★반자동 출고는 19 로 올리지 않고 여기서 지운다★ (사용자 확인 - 19 에 남았다)
+                    //   반자동은 상위 보고가 없으므로(절대 원칙) 출고대에 내어 놓았으면 그것으로 끝이다.
+                    if (rawTyp == "12")
+                    {
+                        if (DeleteJobNow(luggNo, ref rtn))
+                        {
+                            ClearScOd(luggNo);
+                            ClearCvOd(luggNo);
+                            m_dicPrevCV.Remove("CV_" + mcNo);
+                            MakeMsg_Imp(string.Format("[SCH][CV] 반자동 출고 {0} 출고대 도착 → 즉시 삭제(상위 보고 없음)", luggNo));
+                        }
+                        else
+                            MakeMsg_Error(string.Format("[SCH][CV] 반자동 출고 삭제 실패({0}): {1}", luggNo, rtn));
+                        continue;
+                    }
+
                     string stNext = ST_CV_DONE;
 
                     if (UpdateJobStatus(stNext, luggNo, ref rtn))
