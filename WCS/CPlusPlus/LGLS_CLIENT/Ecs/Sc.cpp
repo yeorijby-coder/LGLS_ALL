@@ -103,8 +103,12 @@ CString CSc::GetSelectQry() //kdh20190521
 		_T("				  ") + m_pDoc->NVL + _T("(SD.MC_NO_NM,' ') AS MC_NO_NM,						 																	\n")
 		_T("	     CASE WHEN DATEDIFF(SECOND, EM.UPD_DT, GETDATE()) > 5 THEN 6 ELSE 0 END AS EQP_TIME,		  											\n")
 		_T("	     EM.CONNECTED_YN															  																			\n")
-		_T("			 FROM SC_DATA_LGLS SD INNER JOIN (SELECT PLC_NO, PLC_IP, PLC_PORT_FROM, CONNECTED_YN, UPD_DT FROM EQP_MST WHERE WH_TYP = '%s' AND EQP_TYP = 'SC') EM		\n")
-		_T("                                     ON SD.PLC_NO = EM.PLC_NO \n")
+		// [LGLS 2026-09-23] 접속은 마스터 PLC 한 소켓 - 대표 한 행을 모든 크레인에 붙인다 (사용자 지시)
+		_T("			 FROM SC_DATA_LGLS SD INNER JOIN (SELECT TOP 1 PLC_IP, PLC_PORT_FROM, CONNECTED_YN, UPD_DT \n")
+		_T("                                            FROM EQP_MST WHERE WH_TYP = '%s'                     \n")
+		_T("                                             AND EQP_TYP IN ('EQP','SC') AND ISNULL(USE_YN,'Y') = 'Y' \n")
+		_T("                                           ORDER BY CASE EQP_TYP WHEN 'EQP' THEN 0 ELSE 1 END, PLC_NO) EM \n")
+		_T("                                     ON 1 = 1 \n")
 		_T("            WHERE SD.WH_TYP = '%s'                            \n")
 		_T("		ORDER BY SD.SC_NO		"),  m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP);
 

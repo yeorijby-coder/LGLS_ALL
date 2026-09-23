@@ -101,8 +101,13 @@ CString CCv::GetSelectQry() //kdh20190521
 				  _T("	     ,CASE WHEN DATEDIFF(SECOND, EM.UPD_DT, GETDATE()) > 120 THEN 121 ELSE DATEDIFF(SECOND, EM.UPD_DT, GETDATE()) END AS EQP_TIME			\n")
 				  _T("	     ,EM.CONNECTED_YN															  									\n")
 				  _T(" FROM CV_DATA CD 																										\n")
-				  _T(" INNER JOIN (SELECT PLC_NO, CONNECTED_YN, UPD_DT FROM EQP_MST WHERE WH_TYP = '%02s' AND EQP_TYP = 'CV') EM			\n")
-				  _T("         ON CD.PLC_NO = EM.PLC_NO																						\n")
+				  // [LGLS 2026-09-23] 접속은 마스터 PLC ★한 소켓★ 이다 (사용자 지시).
+				  //   EQP_MST 에서 설비(CV/SC/RTV) 행을 정리하고 대표 행 하나(EQP_TYP='EQP')만 둔다.
+				  //   종전처럼 PLC_NO 로 조인하면 그 행이 없어 화면에서 설비가 사라지므로,
+				  //   대표 한 행을 모든 설비에 붙인다. 옛 DB(EQP 행 없음)도 되도록 종전 종류를 뒤로 둔다.
+				  _T(" INNER JOIN (SELECT TOP 1 CONNECTED_YN, UPD_DT FROM EQP_MST WHERE WH_TYP = '%02s'			\n")
+				  _T("               AND EQP_TYP IN ('EQP','CV') AND ISNULL(USE_YN,'Y') = 'Y'						\n")
+				  _T("             ORDER BY CASE EQP_TYP WHEN 'EQP' THEN 0 ELSE 1 END, PLC_NO) EM ON 1 = 1			\n")
 				  _T("WHERE CD.WH_TYP = '%02s'																								\n")
 				  _T("  AND CD.PLC_NO IN (%s)																								\n")
 				  _T("ORDER BY TRACK_NO																										\n"),m_WH_TYP, m_WH_TYP, m_strInPlc);

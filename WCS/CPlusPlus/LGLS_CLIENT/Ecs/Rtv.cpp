@@ -134,12 +134,14 @@ CString CRtv::GetSelectQry() //kdh20190521
 		_T("		") + m_pDoc->NVL + _T("(RD.LUGG_OD,'0') AS ITN_LUGG_FK1, \n")
 		_T("		'0' AS ITN_LUGG_FK2, \n")
 		_T("		EM.PLC_IP, EM.PLC_PORT_FROM, EM.CONNECTED_YN, EM.USE_YN \n")
-		_T("  FROM RTV_DATA_LGLS RD INNER JOIN EQP_MST EM \n")
-		_T("                           ON EM.WH_TYP = RD.WH_TYP \n")
-		_T("                          AND RIGHT('00'+RD.PLC_NO,2) = RIGHT('00'+EM.PLC_NO,2) \n")
+		// [LGLS 2026-09-23] 접속은 마스터 PLC 한 소켓 - 대표 한 행을 붙인다 (사용자 지시)
+		_T("  FROM RTV_DATA_LGLS RD INNER JOIN (SELECT TOP 1 PLC_IP, PLC_PORT_FROM, CONNECTED_YN, USE_YN \n")
+		_T("                                      FROM EQP_MST WHERE WH_TYP = '%s'                       \n")
+		_T("                                       AND EQP_TYP IN ('EQP','RTV') AND ISNULL(USE_YN,'Y') = 'Y' \n")
+		_T("                                     ORDER BY CASE EQP_TYP WHEN 'EQP' THEN 0 ELSE 1 END, PLC_NO) EM \n")
+		_T("                                  ON 1 = 1 \n")
 		_T(" WHERE RD.WH_TYP = '%s' \n")
-		_T("   AND EM.EQP_TYP = '%s' \n")
-		, m_pDoc->m_WH_TYP, _T("RTV"));
+		, m_pDoc->m_WH_TYP, m_pDoc->m_WH_TYP);
 
 	return strSql;
 }
