@@ -1282,13 +1282,19 @@ void CMainFrame::OnCommLampClicked(UINT nID)
 	static LPCTSTR pszTyp[4]  = { _T("HOST"), _T("HOST2"), _T("CV"), _T("SCH") };
 	static LPCTSTR pszName[4] = { _T("WMS1"), _T("WMS2"), _T("EQP"),  _T("SCH") };
 
+	// [LGLS 2026-09-23] ★접속 한 개당 한 번★ 만 찌른다 (사용자 지적).
+	//   설비는 마스터 PLC 한 소켓이다 - EQP_MST 의 C/V 15행은 논리 설비일 뿐
+	//   주소(PLC_IP/PLC_PORT)는 하나다. 그래서 주소로 묶어 대표 한 줄만 본다.
 	CString strSql;
 	strSql.Format(
-		_T(" SELECT PLC_NO, ISNULL(PLC_IP,'') AS IPA, ISNULL(PLC_PORT,'') AS PRT      \n")
-		_T("      , CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0 ELSE 1 END AS CN \n")
-		_T("      , DATEDIFF(second, UPD_DT, GETDATE()) AS AGE                        \n")
-		_T("   FROM EQP_MST                                                           \n")
-		_T("  WHERE ISNULL(USE_YN,'Y') = 'Y' AND EQP_TYP = '%s' ORDER BY PLC_NO         "),
+		_T(" SELECT ISNULL(PLC_IP,'') AS IPA, ISNULL(PLC_PORT,'') AS PRT             \n")
+		_T("      , COUNT(*) AS CNT, MIN(PLC_NO) AS NOA                              \n")
+		_T("      , MAX(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0 ELSE 1 END) AS CN \n")
+		_T("      , MIN(DATEDIFF(second, UPD_DT, GETDATE())) AS AGE                  \n")
+		_T("   FROM EQP_MST                                                          \n")
+		_T("  WHERE ISNULL(USE_YN,'Y') = 'Y' AND EQP_TYP = '%s'                      \n")
+		_T("  GROUP BY ISNULL(PLC_IP,''), ISNULL(PLC_PORT,'')                        \n")
+		_T("  ORDER BY MIN(PLC_NO)                                                     "),
 		pszTyp[nKind]);
 
 	int nRowCnt = 0;
@@ -1307,22 +1313,23 @@ void CMainFrame::OnCommLampClicked(UINT nID)
 
 	CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
 	pRsw->MoveFirst();
-	int nDone = 0;
 	for (int r = 0; r < nRowCnt; r++)
 	{
-		CString strNo  = pRsw->GetItem(_T("PLC_NO")); strNo.Trim();
-		CString strIp  = pRsw->GetItem(_T("IPA"));    strIp.Trim();
-		CString strPrt = pRsw->GetItem(_T("PRT"));    strPrt.Trim();
+		CString strIp  = pRsw->GetItem(_T("IPA")); strIp.Trim();
+		CString strPrt = pRsw->GetItem(_T("PRT")); strPrt.Trim();
 		CString strCn  = pRsw->GetItem(_T("CN"));
+		int     nCnt   = _ttoi(pRsw->GetItem(_T("CNT")));
 		int     nAge   = _ttoi(pRsw->GetItem(_T("AGE")));
 		pRsw->MoveNext();
-		if (nDone >= 8) continue;		// 너무 오래 잡고 있지 않는다
-		nDone++;
 
 		int nPort = _ttoi(strPrt);
 		CString strLine;
-		strLine.Format(_T("· %s %s   (DB : %s, %d초 전)\r\n"), pszName[nKind], strNo,
-			(strCn == _T("1")) ? _T("연결") : _T("끊김"), nAge);
+		if (nCnt > 1)
+			strLine.Format(_T("· %s   (DB : %s, %d초 전 · 설비 %d대가 이 접속을 함께 씁니다)\r\n"),
+				pszName[nKind], (strCn == _T("1")) ? _T("연결") : _T("끊김"), nAge, nCnt);
+		else
+			strLine.Format(_T("· %s   (DB : %s, %d초 전)\r\n"),
+				pszName[nKind], (strCn == _T("1")) ? _T("연결") : _T("끊김"), nAge);
 		strOut += strLine;
 
 		if (strIp.IsEmpty())
@@ -1361,12 +1368,7 @@ void CMainFrame::OnCommLampClicked(UINT nID)
 	}
 	delete pRsw;
 
-	if (nRowCnt > nDone)
-	{
-		CString strMore;
-		strMore.Format(_T("(%d 대 가운데 %d 대만 점검했습니다)"), nRowCnt, nDone);
-		strOut += strMore;
-	}
+
 	AfxMessageBox(strOut, MB_ICONINFORMATION);
 }
 
