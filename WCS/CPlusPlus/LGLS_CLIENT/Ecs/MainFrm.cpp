@@ -1116,7 +1116,7 @@ void CLglsCommLamps::OnPaint()
 		// [LGLS 2026-09-23] ★한 줄★ 로만 늘어놓는다 (사용자 지시). 좁으면 칸 폭을 줄인다.
 		int nCw = LAMP_CW;
 		if (nCnt * nCw > rc.Width()) nCw = max(24, rc.Width() / nCnt);
-		int nLeft = max(0, rc.Width() - nCnt * nCw);	// [LGLS 2026-09-23] 리본 오른쪽 끝에 붙인다 (사용자 지시)
+		int nLeft = 0;	// [LGLS 2026-09-23] 마지막 그룹 바로 뒤에 붙인다 - 리본의 마지막 아이템처럼 (사용자 지시)
 		int nTop  = max(0, (rc.Height() - LAMP_CH)    / 2);
 
 		for (int i = 0; i < nCnt; i++)
