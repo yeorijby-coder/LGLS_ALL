@@ -133,6 +133,22 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	InitializeRibbonMenu();
 	AddStatusBarPane();
+
+	// [LGLS 2026-09-23] 리본 가운데 빈 자리에 통신 신호등을 얹는다 (사용자 지시 + 사진).
+	//   리본바를 부모로 하는 자식 창이다 - 자리는 CLglsRibbonBar::RecalcLayout 이 잡는다.
+	{
+		LPCTSTR pszClsLamp = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW,
+			::LoadCursor(NULL, IDC_ARROW), (HBRUSH)::GetStockObject(NULL_BRUSH), NULL);
+		if (m_wndCommLamps.CreateEx(0, pszClsLamp, _T(""), WS_CHILD, CRect(0, 0, 10, 10),
+			&m_wndRibbonBar, 0))
+		{
+			m_wndCommLamps.SetTimer(CLglsCommLamps::TIMER_HB,    5000, NULL);
+			m_wndCommLamps.SetTimer(CLglsCommLamps::TIMER_BLINK, 1000, NULL);
+			m_wndRibbonBar.SetLamps(&m_wndCommLamps);
+			m_wndCommLamps.ReadState();	// 첫 표시를 위해 한 번 읽어 둔다 (자리는 리본이 잡는다)
+		}
+	}
+
 	CSplashWnd::ShowSplashScreen(this);
 
 	//m_hIcon = LoadIcon(::AfxGetInstanceHandle(), _T("WCS.exe"));
@@ -544,7 +560,8 @@ void CMainFrame::AddCategoryWCS()
 	// [LGLS 2026-09-19] [판넬 보기] 그룹과 [처리] 그룹([시간기반 자동처리])은 폐지 (사용자 지시 -
 	//   Ecs.ini UIMODE_MENU / PANEVIEW_MENU / PROCESS_MENU / AUTOTIME_MENU 키 삭제).
 
-	AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
+	// [LGLS 2026-09-23] 오른쪽 [통신] 그룹 제거 - 리본 가운데 삼색 신호등으로 대체 (사용자 지시)
+	//AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
 }
 	
 
@@ -618,7 +635,8 @@ void CMainFrame::AddCategoryMANUAL()
 		pPanelSemiTest->Add(pBtnTestClear);
 	}
 
-	AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
+	// [LGLS 2026-09-23] 오른쪽 [통신] 그룹 제거 - 리본 가운데 삼색 신호등으로 대체 (사용자 지시)
+	//AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
 }
 
 void CMainFrame::AddCategoryLOG()
@@ -679,7 +697,8 @@ void CMainFrame::AddCategoryLOG()
 	//pBtnCLIENT_LOG->SetAlwaysLargeImage();
 	//pPanelLog->Add(pBtnCLIENT_LOG);
 
-	AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
+	// [LGLS 2026-09-23] 오른쪽 [통신] 그룹 제거 - 리본 가운데 삼색 신호등으로 대체 (사용자 지시)
+	//AddCommPanel(pCategory);	// [LGLS 2026-09-08] [통신] 그룹
 }
 
 void CMainFrame::RenameRibbonText(EN_LANG penLang)
@@ -951,6 +970,151 @@ void CLglsRibbonComm::SetStateColor(COLORREF clr)
 // [LGLS 2026-09-12] 그룹(패널) 위 마우스 → 그 그룹의 문구 ini 경로 툴팁 (사용자 지시)
 //   MFC 리본은 버튼(CMFCRibbonBaseElement)에만 툴팁을 붙인다. 그룹은 원소가 아니라 붙일 자리가 없어
 //   마우스를 따라가며 추적(TTF_TRACK) 툴팁을 직접 띄운다. 버튼 위에서는 MFC 것(아이콘 경로)에 양보한다.
+//===============================================================================================
+// [LGLS 2026-09-23] 리본 통신 신호등 (사용자 지시 + 사진 2장)
+//   · 삼색 : 위 빨강 / 가운데 노랑 / 아래 초록
+//   · 끊김 -> 위 빨강 점등,  정상 -> 가운데 노랑 <-> 아래 초록 1초 교대
+//   · EQP_MST(USE_YN=Y) 를 그대로 읽어 칸을 만든다 (WMS1 WMS2 CV01~15 SC1~5 RTV SCH)
+//   · 자리 : 리본 가운데 빈 영역 - CLglsRibbonBar::RecalcLayout 이 잡아 준다.
+//     종전의 오른쪽 [통신] 그룹(AddCommPanel)과 왼쪽 패널 통신 칸은 이것으로 대체했다.
+//===============================================================================================
+BEGIN_MESSAGE_MAP(CLglsCommLamps, CWnd)
+	ON_WM_PAINT()
+	ON_WM_TIMER()
+	ON_WM_ERASEBKGND()
+END_MESSAGE_MAP()
+
+static const int LAMP_CW = 33, LAMP_CH = 44;	// 한 칸(신호등 + 이름)
+
+BOOL CLglsCommLamps::OnEraseBkgnd(CDC* pDC)
+{
+	UNREFERENCED_PARAMETER(pDC);
+	return TRUE;		// 바탕은 OnPaint 에서 한 번에 (깜빡임 방지)
+}
+
+void CLglsCommLamps::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == TIMER_HB)    { ReadState(); Invalidate(FALSE); return; }
+	if (nIDEvent == TIMER_BLINK) { m_bBlink = !m_bBlink; Invalidate(FALSE); return; }
+	CWnd::OnTimer(nIDEvent);
+}
+
+// EQP_MST 에서 설비별 통신 상태를 읽는다.
+//   끊김 판정 : CONNECTED_YN <> Y 이거나 UPD_DT 가 종류별 허용 시간을 넘었을 때
+//     HOST/HOST2 300초, SCH 900초, 그 밖(CV/SC/RTV) 60초
+void CLglsCommLamps::ReadState()
+{
+	CFrameWnd* pFrm = (CFrameWnd*)AfxGetMainWnd();
+	if (pFrm == NULL) return;
+	CEcsDoc* pDoc = (CEcsDoc*)pFrm->GetActiveDocument();
+	if (pDoc == NULL) return;
+
+	CString strSql;
+	strSql  = _T(" SELECT EQP_TYP, PLC_NO                                              \n");
+	strSql += _T("      , CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0             \n");
+	strSql += _T("             WHEN DATEDIFF(second, UPD_DT, GETDATE()) >                \n");
+	strSql += _T("                  CASE WHEN EQP_TYP IN ('HOST','HOST2') THEN 300      \n");
+	strSql += _T("                       WHEN EQP_TYP = 'SCH'              THEN 900      \n");
+	strSql += _T("                       ELSE 60 END                        THEN 0       \n");
+	strSql += _T("             ELSE 1 END AS OKY                                         \n");
+	strSql += _T("   FROM EQP_MST                                                        \n");
+	strSql += _T("  WHERE ISNULL(USE_YN,'Y') = 'Y'                                      \n");
+	strSql += _T("  ORDER BY CASE EQP_TYP WHEN 'HOST' THEN 1 WHEN 'HOST2' THEN 2        \n");
+	strSql += _T("                        WHEN 'CV'   THEN 3 WHEN 'SC'    THEN 4        \n");
+	strSql += _T("                        WHEN 'RTV'  THEN 5 ELSE 6 END, PLC_NO          ");
+
+	int nRowCnt = 0;
+	CString strMsg;
+	_RecordsetPtr pRs = pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+	if (nRowCnt <= 0) return;			// 조회 실패 - 직전 표시를 그대로 둔다
+
+	m_arrLamp.RemoveAll();
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+	pRsw->MoveFirst();
+	for (int r = 0; r < nRowCnt; r++)
+	{
+		CString strTyp = pRsw->GetItem(_T("EQP_TYP")); strTyp.Trim();
+		CString strNo  = pRsw->GetItem(_T("PLC_NO"));  strNo.Trim();
+		LAMP lp;
+		if      (strTyp == _T("HOST"))  lp.strName = _T("WMS1");
+		else if (strTyp == _T("HOST2")) lp.strName = _T("WMS2");
+		else if (strTyp == _T("SCH"))   lp.strName = _T("SCH");
+		else if (strTyp == _T("RTV"))   lp.strName = _T("RTV");
+		else
+		{
+			int n = _ttoi(strNo);
+			if (strTyp == _T("SC")) lp.strName.Format(_T("SC%d"), n);
+			else                    lp.strName.Format(_T("CV%02d"), n);
+		}
+		lp.bOk = (pRsw->GetItem(_T("OKY")) == _T("1"));
+		m_arrLamp.Add(lp);
+		pRsw->MoveNext();
+	}
+	delete pRsw;
+}
+
+void CLglsCommLamps::OnPaint()
+{
+	CPaintDC dcPaint(this);
+	CRect rc; GetClientRect(&rc);
+	if (rc.Width() <= 0 || rc.Height() <= 0) return;
+
+	CDC dc; CBitmap bmp;			// 이중 버퍼 (깜빡임 방지)
+	dc.CreateCompatibleDC(&dcPaint);
+	bmp.CreateCompatibleBitmap(&dcPaint, rc.Width(), rc.Height());
+	CBitmap* pOldBmp = dc.SelectObject(&bmp);
+	dc.FillSolidRect(rc, afxGlobalData.clrBarFace);		// 리본 바탕과 같은 색
+
+	int nCnt = (int)m_arrLamp.GetSize();
+	if (nCnt > 0)
+	{
+		CFont fnt;
+		fnt.CreateFont(12, 0, 0, 0, FW_BOLD, FALSE, FALSE, 0, DEFAULT_CHARSET,
+			OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, _T("맑은 고딕"));
+		dc.SetBkMode(TRANSPARENT);
+
+		int nCols = max(1, rc.Width() / LAMP_CW);
+		int nRows = (nCnt + nCols - 1) / nCols;
+		int nTop  = max(0, (rc.Height() - nRows * LAMP_CH) / 2);
+		int nLeft = max(0, (rc.Width() - min(nCnt, nCols) * LAMP_CW) / 2);
+
+		CBrush brBody(RGB(70, 78, 84)), brOff(RGB(46, 52, 57));
+		CBrush brRed(RGB(228, 46, 38)), brYel(RGB(250, 205, 40)), brGrn(RGB(40, 190, 90));
+		CPen   penNone(PS_NULL, 0, RGB(0, 0, 0));
+
+		for (int i = 0; i < nCnt; i++)
+		{
+			int cx = nLeft + (i % nCols) * LAMP_CW;
+			int cy = nTop  + (i / nCols) * LAMP_CH;
+			BOOL bOk = m_arrLamp[i].bOk;
+
+			CPen*   pOldPen = dc.SelectObject(&penNone);
+			CBrush* pOldBr  = dc.SelectObject(&brBody);
+			dc.RoundRect(CRect(cx + 9, cy + 1, cx + 25, cy + 32), CPoint(6, 6));
+
+			// 삼색 : 위 빨강(끊김) / 가운데 노랑, 아래 초록(정상일 때 1초 교대)
+			dc.SelectObject(bOk ? &brOff : &brRed);
+			dc.Ellipse(CRect(cx + 12, cy +  3, cx + 22, cy + 13));
+			dc.SelectObject((bOk &&  m_bBlink) ? &brYel : &brOff);
+			dc.Ellipse(CRect(cx + 12, cy + 12, cx + 22, cy + 22));
+			dc.SelectObject((bOk && !m_bBlink) ? &brGrn : &brOff);
+			dc.Ellipse(CRect(cx + 12, cy + 21, cx + 22, cy + 31));
+
+			dc.SelectObject(pOldBr);
+			dc.SelectObject(pOldPen);
+
+			CFont* pOldFont = dc.SelectObject(&fnt);
+			dc.SetTextColor(bOk ? RGB(40, 50, 58) : RGB(190, 40, 34));
+			dc.DrawText(m_arrLamp[i].strName, CRect(cx, cy + 32, cx + LAMP_CW, cy + LAMP_CH),
+			            DT_CENTER | DT_TOP | DT_SINGLELINE);
+			dc.SelectObject(pOldFont);
+		}
+	}
+
+	dcPaint.BitBlt(0, 0, rc.Width(), rc.Height(), &dc, 0, 0, SRCCOPY);
+	dc.SelectObject(pOldBmp);
+}
+
 BEGIN_MESSAGE_MAP(CLglsRibbonBar, CMFCRibbonBar)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSELEAVE()
@@ -1102,7 +1266,38 @@ void CLglsRibbonBar::RecalcLayout()
 	//   RecalcLayout 은 그리기(WM_PAINT)에서 불리지 않으므로 되돌이 걱정은 없다.
 	if (bMoved)
 		Invalidate(FALSE);
+
+	// [LGLS 2026-09-23] 통신 신호등을 가운데 빈 영역에 놓는다 (사용자 지시 - 사진).
+	//   활성 탭의 그룹들이 차지한 오른쪽 끝을 구해, 그 뒤부터 리본 오른쪽 끝까지가 빈 자리다.
+	if (m_pLamps != NULL && ::IsWindow(m_pLamps->GetSafeHwnd()))
+	{
+		CMFCRibbonCategory* pCat = GetActiveCategory();
+		CRect rcRow(0, 0, 0, 0);
+		if (pCat != NULL)
+		{
+			for (int i = 0; i < pCat->GetPanelCount(); i++)
+			{
+				CMFCRibbonPanel* pPn = pCat->GetPanel(i);
+				if (pPn == NULL) continue;
+				CRect r = pPn->GetRect();
+				if (r.IsRectEmpty()) continue;
+				if (rcRow.IsRectEmpty()) rcRow = r;
+				else                     rcRow.UnionRect(rcRow, r);
+			}
+		}
+		int nL = rcRow.right + 10;
+		int nR = rcCli.right - 12;
+		if (rcRow.IsRectEmpty() || nR - nL < 40)
+			m_pLamps->ShowWindow(SW_HIDE);
+		else
+		{
+			m_pLamps->SetWindowPos(&wndTop, nL, rcRow.top, nR - nL, rcRow.Height(),
+				SWP_SHOWWINDOW | SWP_NOACTIVATE);
+			m_pLamps->Invalidate(FALSE);
+		}
+	}
 }
+
 
 // 카테고리(탭)마다 [통신] 그룹을 하나씩 붙인다 - 어느 탭에서도 보인다.
 //   그룹 위치는 CLglsRibbonBar::RecalcLayout 이 리본 오른쪽 끝으로 옮긴다.

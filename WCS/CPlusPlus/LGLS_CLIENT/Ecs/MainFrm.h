@@ -57,14 +57,35 @@ public:
 	void LglsMoveTo(CDC* pDC, const CRect& rc) { Reposition(pDC, rc); }
 };
 
+// [LGLS 2026-09-23] 리본 빈 자리에 다는 통신 신호등 (사용자 지시 + 사진).
+//   EQP_MST(USE_YN=Y) 한 행 = 신호등 한 칸. 삼색(위 빨강 / 가운데 노랑 / 아래 초록).
+//     끊김 -> 위 빨강 점등,  정상 -> 가운데 노랑 <-> 아래 초록 1초 교대
+class CLglsCommLamps : public CWnd
+{
+public:
+	CLglsCommLamps() { m_bBlink = FALSE; }
+	enum { TIMER_HB = 7611, TIMER_BLINK = 7612 };
+	struct LAMP { CString strName; BOOL bOk; };
+	CArray<LAMP, LAMP&> m_arrLamp;
+	BOOL m_bBlink;
+	void ReadState();
+protected:
+	afx_msg void OnPaint();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	DECLARE_MESSAGE_MAP()
+};
+
 class CLglsRibbonBar : public CMFCRibbonBar
 {
 public:
-	CLglsRibbonBar() : m_pRightCat(NULL), m_pTipPanel(NULL), m_bPathTip(TRUE) {}
+	CLglsRibbonBar() : m_pRightCat(NULL), m_pTipPanel(NULL), m_bPathTip(TRUE), m_pLamps(NULL) {}
+	void SetLamps(CWnd* p) { m_pLamps = p; }	// [LGLS 2026-09-23] 가운데 빈 자리에 놓을 신호등
 	void SetRightCategory(CMFCRibbonCategory* p) { m_pRightCat = p; }
 	void AddRightPanel(CLglsRibbonPanel* p)      { if (p != NULL) m_arRightPanels.Add(p); }
 protected:
 	CMFCRibbonCategory* m_pRightCat;
+	CWnd*               m_pLamps;	// [LGLS 2026-09-23] 통신 신호등 (자식 창)
 	CObArray            m_arRightPanels;	// 각 탭의 [통신] 그룹(활성인 것만 자리가 잡힌다)
 	virtual void RecalcLayout();
 
@@ -120,6 +141,7 @@ public:
 
 public:
 	CLglsRibbonBar		    m_wndRibbonBar;	// [LGLS 2026-09-08] 탭 오른쪽 정렬 지원
+	CLglsCommLamps		    m_wndCommLamps;	// [LGLS 2026-09-23] 리본 가운데 통신 신호등
 	CStatusBarEx			m_wndStatusBar;
 	
 	CEcsDoc * m_pDoc;

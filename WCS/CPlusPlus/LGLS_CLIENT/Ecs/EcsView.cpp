@@ -472,7 +472,8 @@ void CEcsView::CreateMainUi2()
 	LPCTSTR pszCls = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW,
 		::LoadCursor(NULL, IDC_ARROW), (HBRUSH)::GetStockObject(WHITE_BRUSH), NULL);
 
-	for (int k = 0; k < 2; k++)			// 0 = 통신, 1 = 범례
+	// [LGLS 2026-09-23] 통신 칸(k=0)은 만들지 않는다 - 리본 가운데 삼색 신호등으로 옮겼다 (사용자 지시).
+	for (int k = 1; k < 2; k++)			// 1 = 범례 (0 = 통신 : 폐기)
 	{
 		CWnd** ppDst = (k == 0) ? &m_pCommBar : &m_pLegBar;
 		if (*ppDst != NULL) continue;
@@ -590,7 +591,7 @@ void CEcsView::LayoutMainUi2()
 	int nLeft = (m_nUiLeftW > 0) ? m_nUiLeftW : rc.Width() * 19 / 42;
 	if (nLeft < 320) nLeft = 320;
 	if (nLeft > rc.Width() - 360) nLeft = rc.Width() - 360;
-	int nCommH = (m_nUiCommH > 0) ? m_nUiCommH : 96;
+	int nCommH = 0;		// [LGLS 2026-09-23] 통신 칸 폐기 - 리본 신호등으로 옮겼다 (사용자 지시)
 	int nLegH  = m_nUiLegH;
 	if (nLegH <= 0)			// 기본값 = 그룹 4개가 다 들어가는 높이(폭에 따라 다르다)
 	{
@@ -611,10 +612,8 @@ void CEcsView::LayoutMainUi2()
 	int x = 6, w = nLeft - 12, y = 6;
 	if (w < 100) w = 100;
 
-	if (m_pCommBar  != NULL && ::IsWindow(m_pCommBar->m_hWnd))  m_pCommBar->SetWindowPos(&wndTop, x, y, w, nCommH, SWP_SHOWWINDOW);
-	y += nCommH;
-	if (m_pSplitH1  != NULL && ::IsWindow(m_pSplitH1->m_hWnd))  m_pSplitH1->SetWindowPos(&wndTop, x, y, w, nSp, SWP_SHOWWINDOW);
-	y += nSp;
+	// [LGLS 2026-09-23] 통신 칸과 그 밑 경계선은 없앴다 - 범례부터 시작한다.
+	if (m_pSplitH1  != NULL && ::IsWindow(m_pSplitH1->m_hWnd))  m_pSplitH1->ShowWindow(SW_HIDE);
 	if (m_pLegBar   != NULL && ::IsWindow(m_pLegBar->m_hWnd))   m_pLegBar->SetWindowPos(&wndTop, x, y, w, nLegH, SWP_SHOWWINDOW);
 	y += nLegH;
 	if (m_pSplitH2  != NULL && ::IsWindow(m_pSplitH2->m_hWnd))  m_pSplitH2->SetWindowPos(&wndTop, x, y, w, nSp, SWP_SHOWWINDOW);
