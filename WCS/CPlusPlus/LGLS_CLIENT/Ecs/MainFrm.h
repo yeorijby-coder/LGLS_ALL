@@ -57,35 +57,34 @@ public:
 	void LglsMoveTo(CDC* pDC, const CRect& rc) { Reposition(pDC, rc); }
 };
 
-// [LGLS 2026-09-23] 리본 빈 자리에 다는 통신 신호등 (사용자 지시 + 사진).
-//   EQP_MST(USE_YN=Y) 한 행 = 신호등 한 칸. 삼색(위 빨강 / 가운데 노랑 / 아래 초록).
-//     끊김 -> 위 빨강 점등,  정상 -> 가운데 노랑 <-> 아래 초록 1초 교대
-class CLglsCommLamps : public CWnd
+// [LGLS 2026-09-23] 리본 [통신] 그룹에 들어가는 신호등 한 칸 (사용자 지시).
+//   EQP_MST 를 읽어 WMS1 / WMS2 / EQP / SCH 네 칸으로 보인다.
+//     끊김 -> 위 빨강,  정상 -> 가운데 노랑 <-> 아래 초록 1초 교대
+#define ID_LGLS_LAMP_BASE	59500	// 램프 4개가 쓰는 명령 ID (Resource.h 를 건드리지 않는다)
+
+class CLglsRibbonLamp : public CMFCRibbonButton
 {
+	DECLARE_DYNCREATE(CLglsRibbonLamp)
 public:
-	CLglsCommLamps() { m_bBlink = FALSE; }
-	enum { TIMER_HB = 7611, TIMER_BLINK = 7612 };
-	struct LAMP { CString strName; BOOL bOk; };
-	CArray<LAMP, LAMP&> m_arrLamp;
-	BOOL m_bBlink;
-	void ReadState();
+	CLglsRibbonLamp() { m_bOk = FALSE; }
+	CLglsRibbonLamp(UINT nID, LPCTSTR lpszText) : CMFCRibbonButton(nID, lpszText) { m_bOk = FALSE; }
+	BOOL        m_bOk;		// 이 칸의 통신 상태
+	static BOOL m_bBlink;	// 정상일 때 노랑/초록 교대 (네 칸이 같이 움직인다)
+	virtual CSize GetRegularSize(CDC* pDC);
+	virtual CSize GetCompactSize(CDC* pDC)      { return GetRegularSize(pDC); }
+	virtual CSize GetIntermediateSize(CDC* pDC) { return GetRegularSize(pDC); }
 protected:
-	afx_msg void OnPaint();
-	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-	DECLARE_MESSAGE_MAP()
+	virtual void OnDraw(CDC* pDC);
 };
 
 class CLglsRibbonBar : public CMFCRibbonBar
 {
 public:
-	CLglsRibbonBar() : m_pRightCat(NULL), m_pTipPanel(NULL), m_bPathTip(TRUE), m_pLamps(NULL) {}
-	void SetLamps(CWnd* p) { m_pLamps = p; }	// [LGLS 2026-09-23] 가운데 빈 자리에 놓을 신호등
+	CLglsRibbonBar() : m_pRightCat(NULL), m_pTipPanel(NULL), m_bPathTip(TRUE) {}
 	void SetRightCategory(CMFCRibbonCategory* p) { m_pRightCat = p; }
 	void AddRightPanel(CLglsRibbonPanel* p)      { if (p != NULL) m_arRightPanels.Add(p); }
 protected:
 	CMFCRibbonCategory* m_pRightCat;
-	CWnd*               m_pLamps;	// [LGLS 2026-09-23] 통신 신호등 (자식 창)
 	CObArray            m_arRightPanels;	// 각 탭의 [통신] 그룹(활성인 것만 자리가 잡힌다)
 	virtual void RecalcLayout();
 
@@ -141,7 +140,6 @@ public:
 
 public:
 	CLglsRibbonBar		    m_wndRibbonBar;	// [LGLS 2026-09-08] 탭 오른쪽 정렬 지원
-	CLglsCommLamps		    m_wndCommLamps;	// [LGLS 2026-09-23] 리본 가운데 통신 신호등
 	CStatusBarEx			m_wndStatusBar;
 	
 	CEcsDoc * m_pDoc;
@@ -237,6 +235,13 @@ public:
 	// [LGLS 2026-09-08] 리본에 붙인 통신상태 요소들(카테고리마다 한 벌 - 어느 탭에서도 보인다)
 	CObArray m_arRbnComm;
 	void AddCommToTabs();	// 리본 탭 줄 오른쪽 끝 [통신] 이름표
+	// [LGLS 2026-09-23] 리본 [통신] 그룹 - 신호등 네 칸 (사용자 지시)
+	CObArray m_arRbnLamp;
+	DWORD    m_dwLampBlink;
+	DWORD    m_dwLampRead;
+	void AddLampPanel(CMFCRibbonCategory* pCategory);
+	void UpdateCommLamps();
+	afx_msg void OnUpdateCommLamp(CCmdUI* pCmdUI);
 	void AddCommPanel(CMFCRibbonCategory* pCategory);	// 탭마다 [통신] 그룹(오른쪽 끝)
 	void SetCommColor(UINT nID, COLORREF clr);
 	void LayoutStatusBar(int cx, int cy);
