@@ -100,7 +100,12 @@ CMainFrame::CMainFrame()
 	m_bToolNMenuBar = false;
 	m_nAppLook = theApp.GetInt (_T("ApplicationLook"), 0);
 	// [LGLS 2026-09-12] 제목줄·리본 툴팁 ini
-	m_nTitleOfs = 0; m_nTitleBuild = -1; m_nTitleDb = -1; m_nTitlePath = -1; m_nRibbonTip = -1; m_bRibbonTipApplied = FALSE;
+	m_nTitleOfs = 0; 
+	m_nTitleBuild = -1; 
+	m_nTitleDb = -1; 
+	m_nTitlePath = -1; 
+	m_nRibbonTip = -1; 
+	m_bRibbonTipApplied = FALSE;
 }
 CMainFrame::~CMainFrame()
 {
@@ -1234,6 +1239,65 @@ static BOOL LglsPing(LPCTSTR pszIp, DWORD& dwRtt)
 	return bOk;
 }
 
+// [LGLS 2026-09-27] ★ping 을 명령프롬프트 창으로 4회 보여 준다★ (사용자 지시).
+//   패킷이 나가는 모습을 눈으로 보고 싶다는 요청 - 창이 끝나면 결과 상자를 띄운다.
+//   Ecs.ini [MENU] PING_CONSOLE : 1(기본) 창을 띄운다 / 0 창 없이 조용히 한 번만 본다.
+static BOOL LglsPingConsoleOn()
+{
+	return (::GetPrivateProfileInt(_T("MENU"), _T("PING_CONSOLE"), 1, ECS_INI_FILE) != 0);
+}
+
+// 기다리는 동안에도 화면이 멈추지 않도록 메시지를 돌려 준다.
+static BOOL LglsWaitProcess(HANDLE hProc, DWORD dwTimeoutMs)
+{
+	DWORD dwStart = ::GetTickCount();
+	for (;;)
+	{
+		DWORD dwGone = ::GetTickCount() - dwStart;
+		if (dwGone >= dwTimeoutMs) return FALSE;
+		DWORD dwRes = ::MsgWaitForMultipleObjects(1, &hProc, FALSE, dwTimeoutMs - dwGone, QS_ALLINPUT);
+		if (dwRes == WAIT_OBJECT_0) return TRUE;
+		if (dwRes == WAIT_OBJECT_0 + 1)
+		{
+			MSG msg;
+			while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+				{ ::TranslateMessage(&msg); ::DispatchMessage(&msg); }
+			continue;
+		}
+		return FALSE;		// 실패/시간 초과
+	}
+}
+
+// ping 창을 띄우고 끝날 때까지 기다린다. 돌아오는 값은 "응답이 있었는가".
+//   ping.exe 는 한 번이라도 응답을 받으면 0, 모두 못 받으면 0 이 아닌 값을 준다.
+//   왕복 시간은 창에서 지나가 버리므로, 숫자로 남기려고 한 번 더 조용히 재 본다.
+static BOOL LglsPingShow(LPCTSTR pszIp, DWORD& dwRtt, int nCount)
+{
+	CString strParam;
+	strParam.Format(_T("/c ping -n %d %s"), nCount, pszIp);
+
+	SHELLEXECUTEINFO sei;
+	ZeroMemory(&sei, sizeof(sei));
+	sei.cbSize       = sizeof(sei);
+	sei.fMask        = SEE_MASK_NOCLOSEPROCESS;
+	sei.lpVerb       = _T("open");
+	sei.lpFile       = _T("cmd.exe");
+	sei.lpParameters = strParam;
+	sei.nShow        = SW_SHOWNORMAL;
+
+	if (!::ShellExecuteEx(&sei) || sei.hProcess == NULL)
+		return LglsPing(pszIp, dwRtt);		// 창을 못 띄우면 조용히 한 번만
+
+	BOOL bDone = LglsWaitProcess(sei.hProcess, 30000);
+	DWORD dwExit = 1;
+	if (bDone) ::GetExitCodeProcess(sei.hProcess, &dwExit);
+	::CloseHandle(sei.hProcess);
+
+	DWORD dwTmp = 0;
+	if (LglsPing(pszIp, dwTmp)) dwRtt = dwTmp;
+	return (bDone && dwExit == 0);
+}
+
 static BOOL LglsPortOpen(LPCTSTR pszIp, int nPort, int nTimeoutMs)
 {
 	if (nPort <= 0 || nPort > 65535) return FALSE;
@@ -1349,10 +1413,12 @@ void CMainFrame::OnCommLampClicked(UINT nID)
 			continue;
 		}
 
-		DWORD dwRtt = 0;
-		BOOL  bPing = LglsPing(strIp, dwRtt);
-		if (bPing) strLine.Format(_T("    핑 %s : 응답 %dms\r\n"), strIp, dwRtt);
-		else       strLine.Format(_T("    핑 %s : 응답 없음\r\n"), strIp);
+		// [LGLS 2026-09-27] 명령프롬프트 창으로 4회 보낸다 (사용자 지시). 0 이면 종전처럼 조용히.
+		DWORD dwRtt  = 0;
+		BOOL  bShow  = LglsPingConsoleOn();
+		BOOL  bPing  = bShow ? LglsPingShow(strIp, dwRtt, 4) : LglsPing(strIp, dwRtt);
+		if (bPing) strLine.Format(_T("    핑 %s : 응답 %dms%s\r\n"), strIp, dwRtt, bShow ? _T(" (4회 보냄)") : _T(""));
+		else       strLine.Format(_T("    핑 %s : 응답 없음%s\r\n"), strIp, bShow ? _T(" (4회 보냄)") : _T(""));
 		strOut += strLine;
 
 		if (nPort <= 0)
