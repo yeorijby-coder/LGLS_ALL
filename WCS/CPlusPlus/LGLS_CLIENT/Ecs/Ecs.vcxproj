@@ -484,7 +484,6 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClInclude Include="ScSkinDlg.h" />
     <ClInclude Include="EqpSuspendDlg.h" />
     <ClInclude Include="SC_DATA.h" />
-    <ClInclude Include="SearchDlg.h" />
     <ClInclude Include="SizingControlBar.h" />
     <ClInclude Include="SkinButton.h" />
     <ClInclude Include="SkinDialog.h" />
@@ -595,7 +594,6 @@ copy "$(TargetDir)*.pdb" "$(TargetDir)Ecs\mapfile\"%DirName%</Command>
     <ClCompile Include="ScSkinDlg.cpp" />
     <ClCompile Include="EqpSuspendDlg.cpp" />
     <ClCompile Include="SC_DATA.cpp" />
-    <ClCompile Include="SearchDlg.cpp" />
     <ClCompile Include="SizingControlBar.cpp" />
     <ClCompile Include="SkinButton.cpp" />
     <ClCompile Include="SkinDialog.cpp" />
