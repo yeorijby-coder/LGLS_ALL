@@ -318,7 +318,6 @@ void CSkinDialog::OnSize(UINT nType, int cx, int cy)
 					nr.bottom = nr.top + r.Height();
 				pC->MoveWindow(&nr);
 			}
-			OnLglsResized(sx, sy);		// [LGLS 2026-09-27] 창별 뒷정리(목록 열 너비 등)
 			Invalidate();
 		}
 	}
