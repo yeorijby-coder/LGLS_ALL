@@ -393,7 +393,7 @@ keytable(d, 'CLI', 'USER', [
      '입고 · 출고 · 이동 · 랙간 작업색 (16진 6자리, BGR 순서 - 예 0000ff = 빨강)', RST + ' (핫 리로드 제외)', CF + ':LoadConfigUSER', ''],
     ['USER_COLOR_WTW / ATA', 'SITE / MAGENTA', 'WTW 는 사용 안 함. ATA 는 읽는 줄이 WTW 변수에 대입되는 결함이 있어 ini 값이 반영되지 않음(부록 A)', RST, CF + ':LoadConfigUSER', ''],
     ['USER_COLOR_STN_STO / STN_RET', 'GREEN / BLUE', '작업대 입고/출고 색', RST, CF + ':LoadConfigUSER', ''],
-    ['USER_COLOR_HS_STO / HS_RET', '오렌지 / 진초록', '핸드셰이크 색 (싣는 곳 / 내려놓는 곳)', RST, CF + ':LoadConfigUSER', ''],
+    ['USER_COLOR_HS_STO / HS_RET', '오렌지 / 진초록', 'H/S 색 (싣는 곳 / 내려놓는 곳)', RST, CF + ':LoadConfigUSER', ''],
     ['USER_COLOR_SUSPEND · STO_SUSPEND · RET_SUSPEND · STORET_SUSPEND', 'RED · 주황빨강 · 자홍빨강 · 진빨강', '정지 · 입고 금지 · 출고 금지 · 입출고 정지 레일색', RST, CF + ':LoadConfigUSER', ''],
     ['USER_COLOR_RAIL_ERROR', '보라', '레일 설비 에러색', RST, CF + ':LoadConfigUSER', ''],
     ['USER_COLOR_MANUAL · DISCONNECT · ERROR', 'YELLOW · WHITE · RED', '수동 · 통신 끊김 · 에러색', RST, CF + ':LoadConfigUSER', ''],

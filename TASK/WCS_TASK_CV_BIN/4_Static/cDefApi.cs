@@ -151,6 +151,21 @@ namespace WCS_TASK_CV
         }
         #endregion
 
+        #region [CNF]::창 아이콘 고르기  [LGLS 2026-09-28 사용자 지시]
+        //   WCS_DB.INI [CNF] APP_ICON = CV(기본) / EQP
+        //   실행 폴더의 <이름>.ico 를 읽어 창·작업표시줄 아이콘으로 쓴다.
+        //   파일이 없으면 빌드에 박힌 기본 아이콘(cv.ico)을 그대로 둔다.
+        public static string GsReadInitProfileAppIcon()
+        {
+            if (!System.IO.File.Exists(cDefApp.GM_ENV_INI))
+                return "CV";
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(64);
+            GetPrivateProfileString("CNF", "APP_ICON", "CV", sb, sb.Capacity, cDefApp.GM_ENV_INI);
+            string strName = sb.ToString().Trim();
+            return (strName.Length == 0) ? "CV" : strName;
+        }
+        #endregion
+
         #region [CNF]::CV 스레드의 "전 설비 공통 알람" 처리 사용 여부  [LGLS 2026-09-11]
         //   CvAlarmCheck 가 보는 M786/787·쓰는 M1539/1540 은 실은 S/C#1 자신의 알람 비트다.
         //   VehThread 가 08-21 부터 호기별로 처리하므로 중복이고, 비트 쓰기가 워드 단위라

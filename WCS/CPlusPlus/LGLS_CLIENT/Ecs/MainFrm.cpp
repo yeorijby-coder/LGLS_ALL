@@ -590,28 +590,15 @@ void CMainFrame::AddCategoryMANUAL()
 	pBtnManualJob->SetAlwaysLargeImage();
 	pPanelManual->Add(pBtnManualJob);
 
-	// [LGLS 2026-09-18] 크레인 수동지시 - Ecs.ini [MENU] SC_MANUAL_BTN=1/0 (설비 상태창 [수동지시] 와 같은 키, 기본 1)
-	if (::GetPrivateProfileInt(_T("MENU"), _T("SC_MANUAL_BTN"), 1, ECS_INI_FILE) != 0)
-	{
-		CMFCRibbonButton* pBtnManualSc = new CMFCRibbonButton(ID_MANUAL_SC, _T("SC"), HICONFromPATH(GetConcatPath(strAppPath, _T("sc"), strExtension)), TRUE);
-		TipReg(pBtnManualSc, GetConcatPath(strAppPath, _T("sc"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-		pBtnManualSc->SetAlwaysLargeImage();
-		pPanelManual->Add(pBtnManualSc);
-	}
+	// [LGLS 2026-09-28] ★크레인 · RGV 수동지시 폐기★ (사용자 지시).
+	//   리본 [SC] · [RTV] 버튼과 설비 상태창 [수동지시] 를 함께 없앴다.
+	//   Ecs.ini 의 SC_MANUAL_BTN / RTV_MANUAL_BTN 키도 지웠다.
 
 	//[LGLS 공PLT→RTV 대체] EMPTY 버튼 제거
 	//CMFCRibbonButton* pBtnManualEmpty = new CMFCRibbonButton(IDD_MANUAL_EMPTY, _T("EMPTY"), HICONFromPATH(GetConcatPath(strAppPath, _T("empty"), strExtension)), TRUE);
 	//pBtnManualEmpty->SetAlwaysLargeImage();
 	//pPanelManual->Add(pBtnManualEmpty);
 
-	// [LGLS 2026-09-18] RGV 수동지시 - Ecs.ini [MENU] RTV_MANUAL_BTN=1/0 (기본 1)
-	if (::GetPrivateProfileInt(_T("MENU"), _T("RTV_MANUAL_BTN"), 1, ECS_INI_FILE) != 0)
-	{
-		CMFCRibbonButton* pBtnManualRtv = new CMFCRibbonButton(ID_MANUAL_RTV, _T("RTV"), HICONFromPATH(GetConcatPath(strAppPath, _T("rtv"), strExtension)), TRUE);
-		TipReg(pBtnManualRtv, GetConcatPath(strAppPath, _T("rtv"), strExtension));	// [LGLS 2026-09-12] 실제 경로 툴팁
-		pBtnManualRtv->SetAlwaysLargeImage();
-		pPanelManual->Add(pBtnManualRtv);
-	}
 
 	// [LGLS 2026-08-13] 반자동 TEST 그룹 - Ecs.ini [MENU] SEMITEST_MENU=1/0 으로 표시 선택(기본 1=표시)
 	if (::GetPrivateProfileInt(_T("MENU"), _T("SEMITEST_MENU"), 1, ECS_INI_FILE) != 0)

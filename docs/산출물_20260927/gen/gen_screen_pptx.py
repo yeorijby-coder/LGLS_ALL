@@ -13,7 +13,7 @@ from gen_screens import SCREENS
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = os.path.join(BASE, 'shots')
-DATE = '2026-09-27'
+DATE = '2026-09-28'
 NAVY = RGBColor(0x1E, 0x27, 0x61); GRAY = RGBColor(0x59, 0x59, 0x59); LIGHT = RGBColor(0xEE, 0xF1, 0xF7); WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 prs = Presentation(); prs.slide_width = Inches(13.333); prs.slide_height = Inches(7.5)
 blank = prs.slide_layouts[6]; FONT = '맑은 고딕'
@@ -32,7 +32,7 @@ def tb(slide, x, y, w, h, text, size=14, bold=False, color=GRAY, align=PP_ALIGN.
 page = [0]
 def footer(slide):
     page[0] += 1
-    tb(slide, 0.5, 7.05, 5, 0.35, 'LG 화학 1동 ECS  |  화면설계서  |  Ver 1.3', 10, False, GRAY)
+    tb(slide, 0.5, 7.05, 5, 0.35, 'LG 화학 1동 ECS  |  화면설계서  |  Ver 1.4', 10, False, GRAY)
     tb(slide, 12.2, 7.05, 0.8, 0.35, str(page[0]), 10, False, GRAY, PP_ALIGN.RIGHT)
 
 def title(slide, text):
@@ -72,7 +72,7 @@ s = prs.slides.add_slide(blank); page[0] += 1
 bg = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height); bg.fill.solid(); bg.fill.fore_color.rgb = NAVY; bg.line.fill.background()
 tb(s, 1.0, 2.4, 11, 0.8, 'LG 화학 1동 자동창고', 22, False, RGBColor(0xCA, 0xDC, 0xFC))
 tb(s, 1.0, 3.2, 11, 1.2, 'ECS 화면설계서', 48, True, WHITE)
-tb(s, 1.0, 4.6, 11, 0.6, 'ECS Renewal   ·   Ver 1.3   ·   %s' % DATE, 16, False, RGBColor(0xCA, 0xDC, 0xFC))
+tb(s, 1.0, 4.6, 11, 0.6, 'ECS Renewal   ·   Ver 1.4   ·   %s' % DATE, 16, False, RGBColor(0xCA, 0xDC, 0xFC))
 tb(s, 1.0, 5.3, 11, 0.6, '기준 : EXE_NEWUI\\WCS_CLIENT\\Ecs.exe (Build 2026.09.17 08:18:34) + Ecs.ini', 12, False, RGBColor(0xCA, 0xDC, 0xFC))
 
 # ── Document history ──
@@ -81,7 +81,7 @@ add_table(s, 0.7, 1.4, 11.9, [
     ['Vers.', 'Date', 'Author', 'Approver', 'Notes'],
     ['V1.0', '2026-09-03', 'LGLS ECS Renewal', '', '최초 작성'],
     ['V1.1', '2026-09-09', 'LGLS ECS Renewal', '', '명칭 ECS 확정, 범례 화면 내장, 판넬 보기 신설, 캡처 갱신'],
-    ['V1.3', DATE, 'LGLS ECS Renewal', '', '통신 상태를 리본 [통신] 그룹의 삼색 신호등(WMS1·WMS2·EQP·SCH)으로 옮김(왼쪽 통신 칸 폐기),\nEQP_MST 를 접속 단위 네 행으로 정리, 작업정보 출발지·도착지에 이름표,\nC/V 상태창 항목 정리, 대화상자 최대화 동작 복구 및 네 창 최대화 금지'],
+    ['V1.4', DATE, 'LGLS ECS Renewal', '', '크레인·RTV 수동지시 폐기, 알람은 설비 에러만(체류 알람 폐기),\n서버 프로그램(TASK) 장은 관리자 매뉴얼로 옮김, EQP_TASK 아이콘 선택(APP_ICON),\n통신 신호등·EQP_MST 네 행 정리·작업정보 이름표·최대화 동작 복구(09-27 분 포함)'],
 ], [1.2, 1.8, 2.6, 1.8, 4.5], rowh=0.5)
 footer(s)
 
@@ -144,7 +144,7 @@ add_table(s, 0.5, 4.0, 12.4, [
     ['탭', '그룹', '버튼', '비고'],
     ['ECS', '환경설정', '통신 연결 정의 · 로그 삭제 설정 · 범례', 'INI 열기(INI_MENU=0) · 사용자(USER_MENU=0) 숨김'],
     ['ECS', '뷰 / 창고 모니터링', '작업정보 · 찾기 / 작업번호 · 트랙번호 · 제품정보', '판넬 보기 · 처리 그룹 숨김(PANEVIEW_MENU / PROCESS_MENU)'],
-    ['MANUAL', '수동조작', '작업 · 크레인 · RTV', '반자동 TEST 그룹 숨김(SEMITEST_MENU=0)'],
+    ['MANUAL', '수동조작', '작업', '크레인 · RTV 수동지시 폐기(2026-09-28), 반자동 TEST 그룹 숨김(SEMITEST_MENU=0)'],
     ['LOG', '로그 / 알람', '작업로그 · HOST로그 · 설비에러이력 · 유저사용로그 · ECS프로그램로그 / 알람', ''],
     ['공통', '통신', 'WMS1 · WMS2 · EQP · SCH', '삼색 신호등. 끊김=빨강, 정상=노랑↔초록 1초 교대. 누르면 핑(4회)·포트를 실제로 점검한다'],
 ], [1.2, 2.2, 4.8, 4.2], size=10.5, rowh=0.44)
@@ -242,7 +242,7 @@ add_table(s, 0.5, 1.15, 12.4, [
 footer(s)
 
 # ── 부록 : 변경 이력 ──
-s = prs.slides.add_slide(blank); title(s, '부록 - 설계 결정 · 변경 이력 (V1.3)')
+s = prs.slides.add_slide(blank); title(s, '부록 - 설계 결정 · 변경 이력 (V1.4)')
 add_table(s, 0.5, 1.2, 12.4, [
     ['#', '항목', '결정 / 조치'],
     ['1', '메인 화면 배치', 'MAIN_UI=2 : 왼쪽에 통신 상태 · 범례 · 설비 반송 · 작업정보를 고정. 종전 레이아웃 안 범례 표와 [판넬 보기] 는 쓰지 않는다'],
@@ -261,8 +261,12 @@ add_table(s, 0.5, 1.2, 12.4, [
     ['14', 'C/V 상태창', '[입고모드]·[SC 인터락]·[RGV 인터락] 을 리소스에서 제거. 표시만 없애고 값 경로는 그대로 (2026-09-27)'],
     ['15', '대화상자 최대화', '최대화 동작이 막혀 있던 것을 되살리고, 커진 창에서 한 줄 입력칸은 높이를 그대로 둔다.'
            ' 이력삭제·범례·찾기·수동작업 네 창은 최대화·크기조절 금지 (2026-09-27)'],
+    ['16', '크레인 · RTV 수동지시', '폐기. 리본 [SC]·[RTV] 버튼과 설비 상태창 [수동지시] 를 함께 없앴다 (2026-09-28)'],
+    ['17', '알람', '오래 멈춘 화물(체류) 알람 폐기. 알람은 설비 에러가 뜰 때만 올라온다 (2026-09-28)'],
+    ['18', '서버 프로그램(TASK) 장', '이 문서에서 뺐다. 관리자 매뉴얼에서 다룬다 (2026-09-28)'],
+    ['19', 'EQP_TASK 아이콘', 'WCS_DB.INI [CNF] APP_ICON = CV / EQP 로 고른다 (2026-09-28)'],
 ], [0.6, 3.0, 8.8], size=10.5, rowh=0.42)
-tb(s, 0.5, 6.6, 12.4, 0.5, '캡처 : 메인 · 리본 · C/V 상태 · 작업정보 · EQP 정보 · 찾기 · 이력삭제 · 범례 · 수동지시 = 2026-09-27 전체화면(1920×1080). S/C · RTV 상태와 로그 창 = 2026-09-21 판(구성 변경 없음).', 10, False, GRAY)
+tb(s, 0.5, 6.6, 12.4, 0.5, '캡처 : 메인 · 리본 · 설비 상태창 · 작업정보 · EQP 정보 · 찾기 · 이력삭제 · 범례 · 수동지시 = 2026-09-28 전체화면(1920×1080). 로그 창 = 2026-09-21 판(구성 변경 없음).', 10, False, GRAY)
 footer(s)
 
 # [2026-09-27] 이 폴더는 이번 판으로 새로 만든 것이라 정식 이름으로 저장한다.

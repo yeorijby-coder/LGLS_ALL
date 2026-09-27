@@ -132,6 +132,19 @@ namespace WCS_TASK_CV
             
             //this.Text = Process.GetCurrentProcess().ProcessName;
 
+            // [LGLS 2026-09-28] 창 아이콘을 ini 로 고른다 (사용자 지시).
+            //   WCS_DB.INI [CNF] APP_ICON = CV(기본) / EQP. 실행 폴더의 <이름>.ico 를 읽는다.
+            //   파일이 없거나 읽지 못하면 빌드에 박힌 기본 아이콘을 그대로 둔다.
+            try
+            {
+                string strIcon = cDefApi.GsReadInitProfileAppIcon();
+                string strPath = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(Application.ExecutablePath), strIcon + ".ico");
+                if (System.IO.File.Exists(strPath))
+                    this.Icon = new System.Drawing.Icon(strPath);
+            }
+            catch { }
+
             this.IsAscii = checkBox1.Checked;
             this.IsHex = checkBox2.Checked;
 

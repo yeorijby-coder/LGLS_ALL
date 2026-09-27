@@ -238,7 +238,12 @@
     <Content Include="bin\Release\TSK_COMM_CV.vshost.exe" />
     <Content Include="bin\Release\TSK_COMM_WC.pdb" />
     <Content Include="7_Socket\CVlog4net.xml" />
-    <Content Include="cv.ico" />
+    <Content Include="cv.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="EQP.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
