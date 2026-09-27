@@ -171,13 +171,21 @@ void CSearchDlg::OnLButtonDown(UINT nFlags, CPoint point)
 LRESULT CSearchDlg::OnNcHitTest(CPoint point)
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
-	   UINT hit = CDialogResize::OnNcHitTest(point);
-	if ( hit == HTCLIENT ) 
-    {
-        return HTCAPTION;
-    }
-    else
-        return hit;
+	UINT hit = (UINT)CDialogResize::OnNcHitTest(point);
+
+	// [LGLS 2026-09-27] 테두리를 끌어도 크기가 바뀌지 않게 한다 (사용자 지시).
+	//   CDialogResize 가 WS_THICKFRAME 을 도로 붙이므로 스타일 대신 여기서 막는다.
+	switch( hit )
+	{
+	case HTLEFT:      case HTRIGHT:       case HTTOP:         case HTBOTTOM:
+	case HTTOPLEFT:   case HTTOPRIGHT:    case HTBOTTOMLEFT:  case HTBOTTOMRIGHT:
+	case HTSIZE:
+		return HTBORDER;
+	}
+
+	if ( hit == HTCLIENT )
+		return HTCAPTION;		// 빈 곳을 끌면 창이 따라 움직인다(종전 그대로)
+	return hit;
 //	return CDialogResize::OnNcHitTest(point);
 }
 

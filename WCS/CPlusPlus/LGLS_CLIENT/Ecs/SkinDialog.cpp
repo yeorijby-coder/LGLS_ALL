@@ -496,20 +496,13 @@ void CSkinDialog::DrawFrame()
 		x = rc.Width()-MARGIN_BOX-m_sizeBox.cx;
 		BufferDC.BitBlt(x, y, m_sizeBox.cx, m_sizeBox.cx, &tmpDC, 0, 0, SRCCOPY);
 
+		// [LGLS 2026-09-27] ÃÖ´ëÈ­ »óÅÂ¿¡¼­´Â ¡Úº¹¿ø ¹öÆ°¡Ú À» ±×¸°´Ù (»ç¿ëÀÚ ÁöÀû - µÇµ¹¸± ±æÀÌ ¾ø¾ú´Ù).
+		//   Á¾Àü¿¡´Â else °¡ m_bDisableMaximize ÂÊ¿¡ ºÙ¾î ÀÖ¾î, ÃÖ´ëÈ­ÇÏ¸é ¹öÆ°ÀÌ »ç¶óÁ³´Ù.
 		if( !m_bDisableMaximize )
 		{
-		if( !bZoomed )
-		{
-			// Maximize Box ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ DCï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
-			tmpDC.SelectObject(m_hBmpMaximize);
-			x = x-m_sizeBox.cx;			
+			tmpDC.SelectObject( bZoomed ? m_hBmpRestore : m_hBmpMaximize );
+			x = x-m_sizeBox.cx;
 			BufferDC.BitBlt(x, y, m_sizeBox.cx, m_sizeBox.cx, &tmpDC, 0, 0, SRCCOPY);
-		}
-		}
-		else
-		{
-			// Restore Box ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ DCï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
-			// [LGLS 2026-09-16] disable-max : draw nothing (close only)
 		}
 
 		// Minimize Box ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ DCï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
@@ -797,7 +790,10 @@ BOOL CSkinDialog::PreTranslateMessage(MSG* pMsg)
 			BOOL bIconic = IsIconic();				// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ì°¡ ï¿½Ö¼ï¿½È­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½..
 			BOOL bLButton = KEYDOWN(VK_LBUTTON);	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ì½º ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½..
 
-			y = rc.top+MARGIN_MAXIMIZED;
+			// [LGLS 2026-09-27] ¹öÆ°À» ±×¸®´Â ÀÚ¸®¿Í ´©¸£´Â ÀÚ¸®¸¦ ¸ÂÃá´Ù (»ç¿ëÀÚ ÁöÀû).
+			//   ±×¸®±â´Â ÃÖ´ëÈ­°¡ ¾Æ´Ï¸é ¸Ç À§(0)ÀÎµ¥ ¿©±â¸¸ ´Ã 4px ¾Æ·¡¸¦ º¸°í ÀÖ¾î
+			//   ¹öÆ° À­ºÎºÐÀ» ´­·¯µµ ¸ÔÁö ¾Ê¾Ò´Ù.
+			y = rc.top + (bZoomed ? MARGIN_MAXIMIZED : 0);
 
 			rcExit.left = rc.right-MARGIN_BOX-sizeBox.cx;
 			rcExit.top = y;
@@ -928,10 +924,12 @@ BOOL CSkinDialog::PreTranslateMessage(MSG* pMsg)
 				{
 					if( m_nClickedBox == CLICKED_BOX_MAXIMIZE )
 					{
+						// [LGLS 2026-09-27] ¡ÚÃÖ´ëÈ­°¡ ÁÖ¼® Ã³¸®µÇ¾î ÀÖ¾î ¹öÆ°ÀÌ ¸ÔÁö ¾Ê¾Ò´Ù¡Ú (»ç¿ëÀÚ ÁöÀû).
+						//   º¹¿ø¸¸ µÇ°í ÃÖ´ëÈ­´Â ¾Æ¹« ÀÏµµ ¾ø¾ú´Ù. µÇ»ì¸°´Ù.
 						if( IsZoomed() )
 							ShowWindow(SW_RESTORE);
-						//else
-						//	ShowWindow(SW_MAXIMIZE);
+						else
+							ShowWindow(SW_MAXIMIZE);
 					}
 				}
 				else if( rcMinimize.PtInRect(pMsg->pt) )
