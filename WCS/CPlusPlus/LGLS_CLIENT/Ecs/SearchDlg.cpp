@@ -51,6 +51,11 @@ BOOL CSearchDlg::OnInitDialog()
 {
 	CDialogResize::OnInitDialog();
 
+	// [LGLS 2026-09-27] 최대화/최소화 버튼을 빼고 크기도 못 바꾸게 한다 (사용자 지시).
+	//   찾을 말을 넣는 작은 창이라 넓힐 내용이 없다.
+	ModifyStyle(WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME, 0);
+	SetWindowPos(NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
 	SetWindowText(_T("Search..."));
 
 	

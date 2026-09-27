@@ -199,6 +199,27 @@ LRESULT CSkinDialog::OnLglsSaveLayout(WPARAM, LPARAM)
 	return 0;
 }
 
+// [LGLS 2026-09-27] 창을 키울 때 ★높이를 그대로 둘 컨트롤★ 인가 (사용자 지시).
+//   한 줄 입력칸 · 콤보 · 버튼 · 글자 : 글꼴이 안 커지므로 높이도 그대로 둔다.
+//   여러 줄 입력칸 · 목록 · 그룹상자 · 그 밖(ActiveX 목록 등) : 종전처럼 세로도 늘린다.
+static BOOL LglsKeepHeight(CWnd* pWnd)
+{
+	if( pWnd == NULL || pWnd->GetSafeHwnd() == NULL ) return FALSE;
+	TCHAR szCls[64] = {0};
+	::GetClassName(pWnd->GetSafeHwnd(), szCls, 64);
+	DWORD dwStyle = (DWORD)::GetWindowLong(pWnd->GetSafeHwnd(), GWL_STYLE);
+
+	if( _tcsicmp(szCls, _T("Edit")) == 0 )
+		return ((dwStyle & ES_MULTILINE) == 0);		// 여러 줄이면 늘린다
+	if( _tcsicmp(szCls, _T("ComboBox")) == 0 )
+		return TRUE;		// 높이에 펼침 목록이 들어 있어 줄이면 목록이 안 보인다 - 그대로
+	if( _tcsicmp(szCls, _T("Static")) == 0 )
+		return TRUE;
+	if( _tcsicmp(szCls, _T("Button")) == 0 )
+		return ((dwStyle & BS_GROUPBOX) != BS_GROUPBOX);	// 그룹상자는 담는 틀이라 늘린다
+	return FALSE;
+}
+
 void CSkinDialog::OnSize(UINT nType, int cx, int cy) 
 {
 	CDialog::OnSize(nType, cx, cy);
@@ -289,8 +310,15 @@ void CSkinDialog::OnSize(UINT nType, int cx, int cy)
 				if( pC == NULL ) continue;
 				CRect r = m_vResizeRect[_i];
 				CRect nr( (int)(r.left*sx), (int)(r.top*sy), (int)(r.right*sx), (int)(r.bottom*sy) );
+				// [LGLS 2026-09-27] ★한 줄짜리 입력칸·버튼·글자는 세로로 늘리지 않는다★ (사용자 지시).
+				//   글꼴은 그대로인데 칸만 커지면 글자가 위에 붙어 보여 어색했다.
+				//   자리는 비율대로 옮기되 높이는 처음 그대로 둔다. 목록·그룹상자 같은
+				//   ★담는 컨트롤★ 은 종전처럼 세로도 함께 늘린다.
+				if( LglsKeepHeight(pC) )
+					nr.bottom = nr.top + r.Height();
 				pC->MoveWindow(&nr);
 			}
+			OnLglsResized(sx, sy);		// [LGLS 2026-09-27] 창별 뒷정리(목록 열 너비 등)
 			Invalidate();
 		}
 	}

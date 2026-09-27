@@ -19,6 +19,7 @@ CViewJobListDlg::CViewJobListDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
+	m_dColScale = 1.0;	// [LGLS 2026-09-27] 목록 열 너비 배율
 }
 
 CViewJobListDlg::CViewJobListDlg(CEcsDoc* pDoc, CWnd* pParent)
@@ -26,6 +27,7 @@ CViewJobListDlg::CViewJobListDlg(CEcsDoc* pDoc, CWnd* pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
+	m_dColScale = 1.0;	// [LGLS 2026-09-27] 목록 열 너비 배율
 	m_pDoc = pDoc;
 	m_nLang = m_pDoc->m_enLang;
 }
@@ -1550,8 +1552,45 @@ int CViewJobListDlg::SetSpeadData(BOOL bSearch = FALSE)
 			//SetColWidth(nIdxCol, nSize);
 			m_SpreadSheet.SetColWidth(nIdxCol + 1, nSize);
 		}
+		OnLglsResized(1.0, 1.0);	// [LGLS 2026-09-27] 조회 뒤에도 남는 자리를 열이 나눠 갖게
 	}
 	return nRowCnt;
+}
+
+// [LGLS 2026-09-27] 창 크기가 바뀌면 목록 열도 같은 비율로 넓힌다 (사용자 지시).
+//   컨트롤만 커지고 열은 그대로라 오른쪽이 휑하게 비던 것을 고친다.
+void CViewJobListDlg::OnLglsResized(double sx, double sy)
+{
+	UNREFERENCED_PARAMETER(sx);
+	UNREFERENCED_PARAMETER(sy);
+	if( m_SpreadSheet.m_Spread.GetSafeHwnd() == NULL ) return;
+
+	// 열 폭 합(픽셀)과 목록에 보이는 폭을 견줘, ★남는 자리를 열이 나눠 갖게★ 한다.
+	//   (종전에는 창만 커지고 열은 그대로라 오른쪽이 휑하게 비었다)
+	long nMaxCol = m_SpreadSheet.m_Spread.GetMaxCols();
+	if( nMaxCol <= 0 ) return;
+
+	int nSumPx = 0;
+	for( long nCol = 1; nCol <= nMaxCol; nCol++ )
+	{
+		int nPx = 0;
+		if( m_SpreadSheet.m_Spread.GetColWidthInPixels(nCol, &nPx) && nPx > 0 ) nSumPx += nPx;
+	}
+	if( nSumPx <= 0 ) return;
+
+	CRect rcSp; m_SpreadSheet.m_Spread.GetClientRect(&rcSp);
+	int nAvail = rcSp.Width() - 28;		// 행 번호 칸과 세로 스크롤 자리를 뺀다
+	if( nAvail <= 0 ) return;
+
+	double dFactor = (double)nAvail / (double)nSumPx;
+	if( dFactor <= 1.0 || dFactor > 8.0 ) return;	// 줄이지는 않는다
+
+	for( long nCol = 1; nCol <= nMaxCol; nCol++ )
+	{
+		double dW = 0.0;
+		if( m_SpreadSheet.m_Spread.GetColWidth(nCol, &dW) && dW > 0.0 )
+			m_SpreadSheet.SetColWidth(nCol, dW * dFactor);
+	}
 }
 
 void CViewJobListDlg::SetMaxCols(int pMaxCol)

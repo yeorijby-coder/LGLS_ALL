@@ -56,6 +56,10 @@ public:
 public:
 //	CFpspread1 m_pSpreadMain;
 	CSpreadSheet m_SpreadSheet;
+	// [LGLS 2026-09-27] 창을 키우면 목록 열도 함께 넓힌다 (사용자 지시).
+	//   지금까지 반영한 가로 배율 - 조회로 열 너비를 다시 칠할 때도 이 배율을 곱한다.
+	double m_dColScale;
+	virtual void OnLglsResized(double sx, double sy);
 
 public:
 	CTrackInfo* m_pTrackInfo;	

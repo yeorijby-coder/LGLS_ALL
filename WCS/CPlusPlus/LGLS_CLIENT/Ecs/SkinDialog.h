@@ -28,6 +28,9 @@ public:
 	BOOL		m_bDisableMaximize;	// [LGLS] 최대화 박스 숨김(상태창 크기고정)
 	BOOL		m_bResizeReady;		// [LGLS] 리사이즈 초기 rect 저장 완료
 	CSize		m_szClientInit;		// [LGLS] 초기 클라이언트 크기
+	// [LGLS 2026-09-27] 창 크기가 바뀐 뒤 창마다 할 뒷정리 (목록 열 너비 등).
+	//   sx/sy = 처음 크기 대비 지금 크기의 배율.
+	virtual void OnLglsResized(double sx, double sy) { UNREFERENCED_PARAMETER(sx); UNREFERENCED_PARAMETER(sy); }
 	std::vector<HWND>  m_vResizeHwnd;	// [LGLS] 자식 핸들
 	std::vector<CRect> m_vResizeRect;	// [LGLS] 자식 초기 rect
 	virtual BOOL OnInitDialog();		// [LGLS] 리사이즈 활성
