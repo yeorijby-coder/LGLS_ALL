@@ -56,6 +56,7 @@ END_MESSAGE_MAP()
 
 BOOL CViewSearchDlg::OnInitDialog()
 {
+	m_bDisableMaximize = TRUE;	// [LGLS 2026-09-27] 최소화/최대화 버튼 제거 + 크기조절 금지 (사용자 지시)
 	CSkinDialog::OnInitDialog();
 
 	EN_LANG pEn = (m_pDoc == NULL) ? EN_ENG : m_pDoc->m_enLang;
