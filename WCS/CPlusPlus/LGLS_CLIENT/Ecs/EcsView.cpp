@@ -71,7 +71,7 @@ public:
 	int      m_nKind;			// 0 = 통신 상태, 1 = 범례
 	CLglsInfoBar() { m_pDoc = NULL; m_nKind = 0; m_bBlink = FALSE; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
 	// [LGLS 2026-09-23] TIMER_BLINK = 정상 램프의 파랑↔노랑 1초 교대 (사용자 지시)
-	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 15 };	// [LGLS 2026-09-29] 28 -> 15 (랙투랙·호기간·HS·통신두절·작업번호·레일 제거, 사용자 지시)
+	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 16 };	// [LGLS 2026-09-29] 28 -> 15 (랙투랙·호기간·HS·통신두절·작업번호·레일 제거, 사용자 지시)
 	// 이름이 잘리지 않을 만큼만 열을 둔다(폭이 좁으면 줄 수가 는다).
 	static int ChipCols(int nWidth) { if (nWidth < 420) return 3; if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
 	// 그룹 4개(10/10/3/5개)를 다 담는 데 필요한 높이 - 범례 칸의 기본값으로 쓴다
@@ -268,7 +268,9 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 	//   -1 이면 숨길 수 없는 줄. 크레인 쪽 "수동"·"에러" 는 C/V 와 같은 색이라 같은 칸을 쓴다.
 	//   [LGLS 2026-09-29] 랙투랙 / 호기간 이동 / 반자동 랙투랙 / 반자동 호기간 이동 /
 	//     입고 HS / 출고 HS / 통신두절 / 작업번호 있음 / 레일 관련 전부를 뺐다 (사용자 지시).
-	struct LGIT { int grp; int rail; int hide; COLORREF clr; LPCTSTR name; };
+	//   shape : 0 = 색칩(네모) / 2 = 화물 감지(트랙 네 모서리의 검은 점 4개)
+	//   [LGLS 2026-09-29] 레일(1)은 항목을 다 뺐지만 그리기 갈래는 남겨 둔다.
+	struct LGIT { int grp; int shape; int hide; COLORREF clr; LPCTSTR name; };
 	LGIT IT[CHIP_CNT] = {
 		{ 0, 0,  0, pCfg->m_clrUSER_COLOR_STO,        _T("입고") },
 		{ 0, 0,  1, pCfg->m_clrUSER_COLOR_RET,        _T("출고") },
@@ -282,6 +284,8 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 		{ 1, 0,  6, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") },
 		{ 1, 0,  7, pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
 		{ 1, 0,  8, pCfg->m_clrUSER_COLOR_CV_SEARCH,  _T("검색") },
+		// [LGLS 2026-09-29] 화물만 있는 트랙은 색으로 칠하지 않는다 - 이 표시로만 보인다 (사용자 지시)
+		{ 1, 2, -1, LIGHT_GRAY,                       _T("화물 감지") },
 		{ 2, 0, -1, LEGEND_IDLE_GRAY,                 _T("정상") },
 		{ 2, 0,  7, pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
 		{ 2, 0,  6, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") } };
@@ -322,12 +326,24 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 		int yy = y + (nSlot / nCol) * nRowH;
 		if (yy + 14 > rc.bottom) break;			// 칸에 들어가는 만큼만
 		CBrush brFrm(RGB(90, 90, 90));
-		if (IT[i].rail != 0)
+		if (IT[i].shape == 1)
 		{
 			// 레일은 선으로 - 트랙 사이 레일 색이라 네모보다 알아보기 쉽다
 			dc.FillSolidRect(CRect(x, yy + 7, x + 16, yy + 10), IT[i].clr);
 			dc.FillSolidRect(CRect(x, yy + 5, x + 3, yy + 12), IT[i].clr);
 			dc.FillSolidRect(CRect(x + 13, yy + 5, x + 16, yy + 12), IT[i].clr);
+		}
+		else if (IT[i].shape == 2)
+		{
+			// [LGLS 2026-09-29] 화물 감지 - 트랙이 그리는 것과 같은 모양으로 (사용자 지시).
+			//   DciTrackCtrl 의 m_bExist 블록 : 빈 트랙과 같은 바탕에 네 모서리 검은 점.
+			CRect rcBox(x, yy + 3, x + 13, yy + 15);
+			dc.FillSolidRect(rcBox, IT[i].clr);
+			dc.FrameRect(rcBox, &brFrm);
+			dc.FillSolidRect(rcBox.left + 1,  rcBox.top + 1,    2, 2, RGB(0, 0, 0));
+			dc.FillSolidRect(rcBox.right - 3, rcBox.top + 1,    2, 2, RGB(0, 0, 0));
+			dc.FillSolidRect(rcBox.left + 1,  rcBox.bottom - 3, 2, 2, RGB(0, 0, 0));
+			dc.FillSolidRect(rcBox.right - 3, rcBox.bottom - 3, 2, 2, RGB(0, 0, 0));
 		}
 		else
 		{
