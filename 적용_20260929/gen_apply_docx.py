@@ -49,10 +49,12 @@ def note(d, text):
 G.DATE = '2026-09-29'
 G.VER = '1.0'
 G.BASE_HISTORY = []
-G.FINAL_NOTE = '최초 작성 - 2026-09-29 적용분 (출고 완료 지연, 신호등 PLC, EQP_MST 옵션, 범례 정리, 4K 대응)'
+G.FINAL_NOTE = ('최초 작성 - 2026-09-29 적용분 (출고 완료 지연, 신호등 PLC, EQP_MST 옵션, 범례 정리, 4K 대응)'
+                ' / 2026-09-30 Client 배포(Upload·Download)와 설치 꾸러미 추가')
 
 d = G.new_doc('2026-09-29 적용 안내서',
-              '출고 완료 지연 · 신호등 PLC · EQP_MST 옵션 · 범례 정리 · 4K 대응')
+              '출고 완료 지연 · 신호등 PLC · EQP_MST 옵션 · 범례 정리 · 4K 대응\n'
+              'Client 배포(Upload · Download) · 설치 꾸러미')
 
 # ════════════════════════════════════════════════════════════════
 d.add_heading('1. 이 폴더는 무엇인가', 1)
@@ -550,6 +552,8 @@ G.numbered(d, [
     'Client 는 Ecs.exe 와 DciLib/EcsLib/XmlLib.dll 을 함께 교체하고, 레이아웃 3종도 함께 넣는다.',
     'SQL 은 필요한 것만 돌린다. 행을 줄일 때 02 → 03, 되돌릴 때 01.',
     '출고 완료를 3초 안에 보장하려면 SQL 04(래치 컬럼)를 돌리고 EQP_TASK 도 함께 교체한다.',
+    'Client 를 DB 로 배포하려면 SQL UPDOWN_01 을 돌리고 TASK/Upload 를 담당자 PC 에 둔다. (8 장)',
+    '새 PC 에 Client 를 깔 때는 Client_설치 폴더를 통째로 가져가 Setup.bat 을 관리자로 실행한다. (9 장)',
 ])
 
 d.add_heading('7.1 확인하면 좋은 것', 2)
@@ -562,7 +566,145 @@ G.table(d, ['항목', '무엇을 보나'], [
     ['4K TV', '신호등 4칸이 한 줄로 나오는가, 글자 크기가 맞는가'],
     ['범례', '뺀 항목이 안 보이는가, 「화물 감지」 가 보이는가, [숨김] 체크가 반영되는가'],
     ['도면', '도면 위의 옛 「범 례」 표가 사라졌는가, 작업대 명칭이 보이는가'],
+    ['배포', 'WmsUp.exe 조회에 올린 내역이 보이는가, 운전 PC 에서 바뀐 파일만 받아 오는가'],
 ], widths=[3.5, 12.5])
+
+d.add_page_break()
+
+d.add_heading('8. Client 를 DB 로 배포한다 - Upload / Download', 1)
+G.para(d, '고친 Client 를 PC 마다 돌아다니며 복사하지 않아도 되게 한다. '
+          '고친 사람이 WmsUp.exe 로 한 번 올려 두면, 각 PC 는 Client 를 띄울 때 '
+          'EcsClient.exe 가 DB 와 견주어 바뀐 파일만 내려받고 이어서 Ecs.exe 를 띄운다.')
+note(d, '앞 현장(HUONS)에서 쓰던 프로그램을 이 현장에 맞춘 것이다. 참조/Updownload 와 참조/WCS_HUONS 가 원본이다.')
+
+d.add_heading('8.1 어디에 무엇이 있나', 2)
+G.table(d, ['것', '위치', '무엇'], [
+    ['올리는 쪽', 'TASK/Upload/  (WmsUp.exe)', '고친 파일을 골라 DB 에 올린다. 개발/보수 담당자 PC 에만 둔다.'],
+    ['내려받는 쪽', 'TASK/Download/  (EcsClient.exe)', 'Client 를 띄우기 전에 바뀐 것만 받아 온다. 모든 운전 PC 에 둔다.'],
+    ['테이블', 'SQL/260929_UPDOWN_01_테이블생성.sql', 'DN_MST / UP_DOWN / DN_SEQ 를 만든다.'],
+    ['설치 꾸러미', 'Client_설치/', '새 PC 에 Client 를 까는 꾸러미. 9 장.'],
+], widths=[2.6, 5.4, 8.0])
+
+d.add_heading('8.2 테이블 세 개', 2)
+G.table(d, ['테이블', '무엇'], [
+    ['DN_MST', '한 번의 올리기가 한 행. 언제 누가 무엇을 고쳐 올렸는지.'],
+    ['UP_DOWN', '파일 하나가 한 행. 파일 내용이 UP_DAT(varbinary)에 통째로 들어간다.'],
+    ['DN_SEQ', '올리기 번호를 매기는 1행짜리 표.'],
+], widths=[3.0, 13.0])
+note(d, '앞 현장은 SEQUENCE 를 썼는데 SEQUENCE 는 SQL Server 2012 부터다. '
+        '현장 DB 가 2008 이라 쓸 수 없어 1행짜리 표로 바꿨다. 2012 이상에서도 그대로 돈다.')
+G.para(d, 'SQL 은 몇 번을 돌려도 같은 결과가 되게 썼다(이미 있으면 건너뛴다). 자료가 든 테이블은 지우지 않는다.')
+
+d.add_heading('8.3 이 현장에 맞추며 고친 것', 2)
+G.table(d, ['무엇', '왜'], [
+    ['접속 정보를 ini 에서 직접 읽는다',
+     '앞 현장은 WmsInfo.dll 이 키(INFO=P1)로 주소를 풀어 주었다. '
+     '그 dll 안에는 그 현장 서버만 들어 있어 여기서는 쓸 수 없다. '
+     'WmsDown.ini / WmsUp.ini 의 [DB Server] 를 읽게 바꿨다.'],
+    ['USERID 를 비우면 Windows 인증',
+     '종전 접속 문자열은 Trusted_Connection=False 로 박혀 있어, 계정을 비우면 '
+     '"사용자 \'\'이(가) 로그인하지 못했습니다" 가 났다. 이제 둘 다 된다.'],
+    ['상세 테이블 이름을 UP_DOWN 으로',
+     '올리는 쪽의 MS-SQL 분기만 옛 이름(DN_DTL)이었다. 내려받는 쪽이 읽는 것은 UP_DOWN 이라 '
+     '서로 맞지 않았다. 함께 빠져 있던 세 칸(DN_PGM / UP_DT / DN_DIR)도 채웠다.'],
+    ['파일 내용을 varbinary 로',
+     '올리는 쪽 생성문이 UP_DAT 을 varchar(max) 로 만들고 있었다. '
+     '파일 내용을 문자로 담으면 깨진다.'],
+    ['날짜 조건을 표준 변환으로',
+     '조회에 wms_sf_Get_DateTime_KMS 라는 앞 현장의 함수를 쓰고 있었다. 여기엔 없다.'],
+    ['DataReader 를 닫는다',
+     '내려받기가 ★아예 되지 않던 원인★. 첫 조회 결과를 쓰는 코드가 통째로 주석이 되면서 '
+     '닫는 줄까지 같이 묻혔다. "이 Command와 연결된 DataReader가 이미 열려 있습니다" 가 뜨고 끝났다.'],
+    ['목록을 표준 표로',
+     '화면의 목록이 FarPoint Spread(유료)였다. 라이선스가 없어 빌드할 때 '
+     '"Spread.NET License Notification" 창이 떠서 빌드가 멈추고, 넘겨도 띄울 때 또 뜬다. '
+     '목록을 보여 주는 데 유료 부품이 필요하지 않아 .NET 기본 표로 바꿨다.'],
+], widths=[4.2, 11.8])
+
+d.add_heading('8.4 설정', 2)
+G.para(d, '올리는 쪽 - TASK/Upload/WmsUp.ini')
+code(d, [
+    '[DB Server]',
+    'SERVERNAME=localhost\\SQLEXPRESS',
+    'DATABASE=LGLS_MCS_IO',
+    'USERID=              ; 비우면 Windows 인증',
+    'PASSWORD=',
+    '',
+    '[DOWNLOAD PROGRAM]',
+    'CNT=1',
+    '1=WCS                ; 올릴 때 고르는 프로그램 구분',
+])
+G.para(d, '내려받는 쪽 - Client 폴더의 WmsDown.ini')
+code(d, [
+    '[DB Server]',
+    'SERVERNAME=localhost\\SQLEXPRESS',
+    'DATABASE=LGLS_MCS_IO',
+    'USERID=',
+    'PASSWORD=',
+    '',
+    '[RUN_FILE]',
+    'FILE1=.\\Ecs.exe      ; 내려받기가 끝나면 이것을 띄운다',
+    '',
+    '[APPLICATION]',
+    'DOWN_LOAD_PROGRAM=WCS',
+    'DOWN_LOAD_COMP=1     ; 올린 때와 견주어 바뀐 것만 받는다',
+    'DOWN_LOAD_START=1    ; 띄우면 곧바로 시작',
+    '',
+    '[DOWN_FILE]          ; 받은 판 번호를 프로그램이 스스로 적는다 - 손대지 않는다',
+])
+note(d, '올리는 쪽 Config.ini 의 [DOWN_FILE] PATH 는 받은 파일을 놓을 하위 폴더다. '
+        '점(.) 하나면 Client 폴더 바로 아래에 놓는다. ★비워 두면 안 된다★ - 드라이브 맨 위로 간다.')
+
+d.add_heading('8.5 쓰는 순서', 2)
+G.numbered(d, [
+    'SQL/260929_UPDOWN_01_테이블생성.sql 을 한 번 돌린다.',
+    'WmsUp.exe 를 띄우고 [업로드] 를 누른다.',
+    '왼쪽 트리에서 Client 폴더로 가서 바뀐 파일을 고르고 [추가] 를 누른다.',
+    '아래 「업데이트정보」 에 무엇을 고쳤는지 적는다. (나중에 이것만 보고도 알 수 있게)',
+    '[UPLOAD] 를 누른다.',
+    '각 운전 PC 는 바탕화면의 [LGLS CLIENT] 를 누르기만 하면 된다. '
+    '바뀐 파일만 받고 이어서 Ecs.exe 가 뜬다.',
+])
+
+d.add_heading('8.6 검증한 것 (2026-09-30)', 2)
+G.table(d, ['본 것', '결과'], [
+    ['테이블 만들기', 'DN_MST / UP_DOWN / DN_SEQ 생성 확인'],
+    ['올린 파일 내려받기', '5 개 파일이 그대로 내려왔다. 내용 대조(MD5) 전부 같음'],
+    ['같은 판이면 건너뛰기', '일부러 망가뜨린 파일을 다시 받지 않았다 - 맞는 동작'],
+    ['새 판이면 다시 받기', '판을 올리자 곧바로 다시 받아 제 내용으로 돌아왔다'],
+    ['판 번호 기록', 'WmsDown.ini 의 [DOWN_FILE] 에 COMMON->파일명=판번호 가 적힌다'],
+    ['올리는 쪽 화면', '조회 / 상세 / 수정내역 / 업로드 창까지 정상'],
+], widths=[4.5, 11.5])
+note(d, '올리기 화면에서 파일을 골라 [UPLOAD] 를 누르는 것까지는 사람이 눌러야 하는 자리라 '
+        '화면이 뜨는 것까지만 확인했다. 넣는 SQL 은 내려받기로 왕복 검증했다.')
+
+d.add_page_break()
+
+d.add_heading('9. Client 설치 꾸러미 - 새 PC 에 깔 때', 1)
+G.para(d, '적용 폴더의 Client_설치 를 통째로 새 PC 에 복사하고, '
+          'Setup.bat 을 오른쪽 단추로 눌러 [관리자 권한으로 실행] 하면 된다.')
+
+d.add_heading('9.1 들어 있는 것', 2)
+G.table(d, ['것', '무엇'], [
+    ['Client/', 'Ecs.exe 와 함께 쓰는 라이브러리, 화면 정의(xml), 다국어 문구(rc_resource), '
+                '그리고 내려받기 프로그램(EcsClient.exe)과 설정'],
+    ['Prerequisites/vc_redist.x86.exe', 'Visual C++ 재배포 패키지. Ecs.exe 가 mfc140u.dll 을 쓴다.'],
+    ['Prerequisites/ndp48-web.exe', '.NET Framework 4.8. Windows 10 이상은 이미 있어 거의 건너뛴다.'],
+    ['Setup.bat', '위 순서대로 깔고 바탕화면 바로가기를 만든다.'],
+    ['읽어보세요.txt', '같은 내용의 짧은 안내.'],
+], widths=[4.8, 11.2])
+
+d.add_heading('9.2 MS-SQL 접속에 따로 깔 것은 없다', 2)
+G.para(d, 'Client(Ecs.exe) 는 Windows 에 늘 들어 있는 ODBC 드라이버 "SQL Server" 로 붙고'
+          '(Ecs.ini 의 [DB_2] DRIVER=SQL Server), '
+          'EcsClient.exe 는 .NET 에 들어 있는 SqlClient 로 붙는다. '
+          '둘 다 Windows 와 .NET 에 이미 들어 있는 것이라 따로 깔 것이 없다.')
+
+d.add_heading('9.3 설정은 덮어쓰지 않는다', 2)
+G.para(d, '이미 쓰던 Ecs.ini / WmsDown.ini 가 있으면 그대로 둔다. '
+          '새 것은 Ecs.ini.new / WmsDown.ini.new 로 남기니 견주어 보고 필요한 줄만 옮기면 된다.')
+note(d, '설치 뒤 두 곳의 DB 주소를 꼭 확인한다. '
+        'Ecs.ini 의 [DB_2] SERVER, WmsDown.ini 의 [DB Server] SERVERNAME.')
 
 out = os.path.join(HERE, '2026-09-29_적용안내서.docx')
 d.save(out)
