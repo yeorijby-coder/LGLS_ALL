@@ -116,6 +116,8 @@ static CString GetExeFolder()
 
 CEcsDoc::CEcsDoc()
 {
+	// [LGLS 2026-09-29] 출발지/도착지 이름표 캐시 - 미초기화로 엉뚱한 값이 되지 않게 (사용자 지시)
+	m_dwPosDefTick = 0;
 	m_bViewFirstLoad = FALSE;
 	m_nTrackTextMode = 1;	// [LGLS 2026-08-22] 기본=작업번호(ApplyTrackTextMode 규약: 1=작업번호 0=트랙번호 2=제품정보)
 	m_dwAliveJobTick = 0;
@@ -2350,6 +2352,100 @@ void CEcsDoc::OnUpdateTrackTextMode(CCmdUI* pCmdUI)
 //   그래서 작업정보에서 직접 가져온다. 진행 중(20/21/25)인 작업의 호기를 보고 맞춘다.
 //   입고는 도착지(DEST_POS), 출고는 출발지(START_POS)가 그 호기다.
 //   IsJobInJobMst 와 같은 2초 캐시를 쓴다.
+// [LGLS 2026-09-29] 출발지/도착지 이름표 캐시 (DEST_POS_DEF.REMARKS). 10초.
+void CEcsDoc::RefreshPosDefCache()
+{
+	DWORD dwNow = ::GetTickCount();
+	if (m_dwPosDefTick != 0 && dwNow - m_dwPosDefTick < 10000) return;
+	m_dwPosDefTick = dwNow;
+
+	CString strSql;
+	strSql.Format(_T(" SELECT MC_NO, ") + NVL + _T("(REMARKS,'') AS REMARKS ")
+				  _T("   FROM DEST_POS_DEF WHERE WH_TYP = '%s' "), (LPCTSTR)m_WH_TYP);
+	int nRowCnt = 0; CString strMsg;
+	_RecordsetPtr pRs = GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMsg);
+	if (nRowCnt <= 0) return;
+
+	m_mapPosDef.RemoveAll();
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRs);
+	pRsw->MoveFirst();
+	for (int i = 0; i < nRowCnt; i++)
+	{
+		CString strMc = pRsw->GetItem(_T("MC_NO"));   strMc.Trim();
+		CString strRm = pRsw->GetItem(_T("REMARKS")); strRm.Trim();
+		if (!strMc.IsEmpty()) m_mapPosDef.SetAt(strMc, strRm);
+		pRsw->MoveNext();
+	}
+	delete pRsw;
+}
+
+// [LGLS 2026-09-29] 출발지/도착지 한 칸 표기 (사용자 지시).
+//   REMARKS 가 "IMS101 C/V#11 입출고대 TR#22" 면 → 입출고대[101] TR#22
+//   REMARKS 가 "S/C#1"                        면 → S/C #1호기[901]
+//     bWithLoc(작업 판넬)이면 크레인은 S/C #1[00-000-00] 로 셀 위치를 넣는다.
+//   이름표가 없으면 코드를 그대로 돌려준다 - 없는 정보를 지어내지 않는다.
+CString CEcsDoc::PosLabel(LPCTSTR lpszCode, LPCTSTR lpszLoc, BOOL bWithLoc)
+{
+	CString strCode(lpszCode == NULL ? _T("") : lpszCode); strCode.Trim();
+	CString strLoc (lpszLoc  == NULL ? _T("") : lpszLoc ); strLoc.Trim();
+	if (strCode.IsEmpty()) return _T("");
+
+	RefreshPosDefCache();
+	CString strRm;
+	if (!m_mapPosDef.Lookup(strCode, strRm) || strRm.IsEmpty())
+		return strCode;				// 이름표가 없다 - 코드 그대로
+
+	// ── 크레인 : "S/C#1" ─────────────────────────────────────────
+	if (strRm.Find(_T("S/C")) == 0)
+	{
+		CString strNo;
+		int nSharp = strRm.Find(_T('#'));
+		if (nSharp >= 0) strNo = strRm.Mid(nSharp + 1);
+		strNo.Trim();
+
+		CString strOut;
+		if (bWithLoc)
+			strOut.Format(_T("S/C #%s[%s]"), (LPCTSTR)strNo,
+						  strLoc.IsEmpty() ? (LPCTSTR)strCode : (LPCTSTR)strLoc);
+		else
+			strOut.Format(_T("S/C #%s호기[%s]"), (LPCTSTR)strNo, (LPCTSTR)strCode);
+		return strOut;
+	}
+
+	// ── 작업대 : "IMS101 C/V#11 입출고대 TR#22" ──────────────────
+	//   토큰으로 잘라 IMS·C/V·TR 을 걷어내면 남는 것이 작업대명이다.
+	CString strIms, strTr, strName;
+	{
+		CString strWork = strRm;
+		int nPos = 0;
+		while (TRUE)
+		{
+			CString strTok = strWork.Tokenize(_T(" \t"), nPos);
+			if (strTok.IsEmpty()) break;
+
+			if (strTok.Find(_T("IMS")) == 0)      strIms = strTok.Mid(3);
+			else if (strTok.Find(_T("TR#")) == 0) strTr  = strTok.Mid(3);
+			else if (strTok.Find(_T("C/V")) == 0) { /* 설비 이름은 쓰지 않는다 */ }
+			else
+			{
+				if (!strName.IsEmpty()) strName += _T(" ");
+				strName += strTok;
+			}
+		}
+	}
+	strIms.Trim(); strTr.Trim(); strName.Trim();
+
+	// 트랙번호는 2자리로 (Ecs.ini [MENU] TRACK_NO_DIGITS 와 같은 규칙)
+	if (strTr.GetLength() > 2) strTr = strTr.Right(2);
+
+	if (strName.IsEmpty()) return strCode;	// 풀 수 없으면 코드 그대로
+
+	CString strOut = strName;
+	if (!strIms.IsEmpty()) { CString t; t.Format(_T("[%s]"), (LPCTSTR)strIms); strOut += t; }
+	if (!strTr.IsEmpty())  { CString t; t.Format(_T(" TR#%s"), (LPCTSTR)strTr); strOut += t; }
+	return strOut;
+}
+
 CString CEcsDoc::GetVehicleJobNo(LPCTSTR lpszVehNo)
 {
 	CSingleLock _lockJob(&m_csJobCache, TRUE);

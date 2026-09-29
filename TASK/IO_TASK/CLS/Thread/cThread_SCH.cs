@@ -1534,6 +1534,13 @@ namespace TSK_COMM_IOSCH
                     //   신호가 3초 뒤 꺼져도 이 값은 남아 있다. 완료한 뒤 우리가 지운다.
                     string cvLatch     = GetVal(dt.Rows[i], "RET_LATCH");
                     string cvLatchLugg = GetVal(dt.Rows[i], "RET_LATCH_LUGG").Trim();
+                    // [LGLS 2026-09-29] 컬럼이 없으면 파일에서 읽어 채운다 (사용자 지시)
+                    if (!HasLatchColumn())
+                    {
+                        string[] lt = ReadLatchIni(mcNo);
+                        cvLatch     = lt[0];
+                        cvLatchLugg = lt[1];
+                    }
                     string rtn = "";
 
                     // [LGLS 2026-07-19] 출고대 일시정지(TR_PAUSE, 내부값) 시 도착완료 처리 보류 (해제되면 다음 폴링에 완료)
@@ -2523,7 +2530,8 @@ namespace TSK_COMM_IOSCH
         ///   그 출고대를 기다리는 진행 중 출고 작업이 없거나, 래치가 오래되면 지운다.
         private void SweepOrphanLatch()
         {
-            if (!HasLatchColumn()) return;
+            // [LGLS 2026-09-29] 컬럼이 없으면 파일 래치를 정리한다 (사용자 지시)
+            if (!HasLatchColumn()) { SweepOrphanLatchIni(); return; }
             try
             {
                 int nTtl = cDefApi.GsReadInitProfileCnf("LATCH_TTL_SEC", 30);
@@ -2555,10 +2563,144 @@ namespace TSK_COMM_IOSCH
             catch (Exception ex) { MakeMsg_Error("[SCH][출고대래치] 고아 정리 오류: " + ex.Message); }
         }
 
+        // [LGLS 2026-09-29] 래치 컬럼이 없는 DB 에서는 ★파일★ 의 래치를 본다 (사용자 지시).
+        //   WCS_TASK_CV 가 같은 파일에 남긴다. 현장 구조(EXE\TASK\<이름>\)의 공통 상위인
+        //   EXE\TASK 에 두도록 기본값은 <실행폴더>\..\OutLatch.ini 다.
+        //   구조가 다르면 [CNF] OUT_LATCH_FILE 로 양쪽에 같은 경로를 적는다.
+        private static string m_strLatchFile = null;
+        private bool m_bLatchIniCleared = false;
+
+        private static string LatchFilePath()
+        {
+            if (m_strLatchFile != null) return m_strLatchFile;
+            string sCfg = cDefApi.GsReadInitProfileCnfStr("OUT_LATCH_FILE", "");
+            if (!string.IsNullOrEmpty((sCfg ?? "").Trim()))
+                m_strLatchFile = sCfg.Trim();
+            else
+            {
+                string sDir = System.IO.Path.GetDirectoryName(
+                                  System.Reflection.Assembly.GetExecutingAssembly().Location);
+                m_strLatchFile = System.IO.Path.GetFullPath(
+                                     System.IO.Path.Combine(sDir, "..", "OutLatch.ini"));
+            }
+            return m_strLatchFile;
+        }
+
+        /// <summary>컬럼이 생겼으면 파일에 남은 래치를 지운다(1회) - 두 곳에 나뉘어 있지 않게.</summary>
+        private void ClearLatchIniOnce()
+        {
+            if (m_bLatchIniCleared) return;
+            m_bLatchIniCleared = true;
+            try
+            {
+                string sFile = LatchFilePath();
+                if (!System.IO.File.Exists(sFile)) return;
+                cDefApi.GsWriteIni("LATCH", null, null, sFile);   // 섹션 통째 삭제
+                MakeMsg_Imp("[SCH][출고대래치] 래치 컬럼이 생겨 파일 래치를 정리했습니다 - " + sFile);
+            }
+            catch { }
+        }
+
+        /// <summary>파일에서 그 트랙의 래치를 읽는다. 없으면 상태 "0".</summary>
+        ///   돌려주는 값 : [0] 상태("1"/"0") , [1] 래치 시점 작업번호 , [2] 시각(yyyyMMddHHmmss)
+        private string[] ReadLatchIni(string mcNo)
+        {
+            string[] r = new string[] { "0", "", "" };
+            try
+            {
+                string sVal = cDefApi.GsReadIni("LATCH", (mcNo ?? "").Trim(), "", LatchFilePath());
+                if (string.IsNullOrEmpty(sVal)) return r;
+                string[] a = sVal.Split('|');
+                if (a.Length > 0) r[0] = a[0].Trim();
+                if (a.Length > 1) r[1] = a[1].Trim();
+                if (a.Length > 2) r[2] = a[2].Trim();
+            }
+            catch { }
+            return r;
+        }
+
+        /// <summary>파일의 래치를 지운다(소비).</summary>
+        private void ClearOutLatchIni(string mcNo)
+        {
+            try { cDefApi.GsWriteIni("LATCH", (mcNo ?? "").Trim(), null, LatchFilePath()); }
+            catch (Exception ex) { MakeMsg_Error("[SCH][출고대래치] 파일 소비 오류: " + ex.Message); }
+        }
+
+        /// <summary>파일 래치 중 쓸모없는 것을 지운다 (컬럼판 SweepOrphanLatch 와 같은 뜻).</summary>
+        private void SweepOrphanLatchIni()
+        {
+            try
+            {
+                int nTtl = cDefApi.GsReadInitProfileCnf("LATCH_TTL_SEC", 30);
+                if (nTtl < 5) nTtl = 5;
+                string sFile = LatchFilePath();
+                if (!System.IO.File.Exists(sFile)) return;
+
+                // 출고대는 몇 개뿐이라 그 트랙들만 본다 (CV_DATA 에서 출고대 목록을 얻는다)
+                string q = "";
+                q += CRLF + " SELECT CD.MC_NO                                          ";
+                q += CRLF + "   FROM CV_DATA CD                                        ";
+                q += CRLF + "  WHERE CD.WH_TYP = :WH_TYP                               ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                if (DbQry(q) <= 0) return;
+                DataTable dtm = _pBdb.mDtMain.Copy();
+
+                for (int i = 0; i < dtm.Rows.Count; i++)
+                {
+                    string mc = GetVal(dtm.Rows[i], "MC_NO");
+                    string[] lt = ReadLatchIni(mc);
+                    if (lt[0] != "1") continue;
+
+                    bool bOld = false;
+                    DateTime dtLat;
+                    if (DateTime.TryParseExact(lt[2], "yyyyMMddHHmmss", null,
+                                               System.Globalization.DateTimeStyles.None, out dtLat))
+                        bOld = (DateTime.Now - dtLat).TotalSeconds > nTtl;
+                    else
+                        bOld = true;            // 시각을 못 읽으면 믿을 수 없다
+
+                    if (bOld || !IsOutStationWaiting(mc))
+                    {
+                        ClearOutLatchIni(mc);
+                        DbgLog("LATCHSWEEPINI", "[출고대래치] 파일 래치 " + mc + " 를 지웠습니다(작업이 없거나 오래됨)");
+                    }
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][출고대래치] 파일 고아 정리 오류: " + ex.Message); }
+        }
+
+        /// <summary>그 출고대를 목적지로 하는 진행 중(15) 출고 작업이 있는가.</summary>
+        private bool IsOutStationWaiting(string mcNo)
+        {
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT                                   ";
+                q += CRLF + "   FROM JOB_MST JM                                        ";
+                q += CRLF + "  WHERE JM.WH_TYP     = :WH_TYP                           ";
+                q += CRLF + "    AND JM.JOB_STATUS = :ST_RUN                           ";
+                q += CRLF + "    AND JM.JOB_TYP   IN ('2','12')                       ";
+                q += CRLF + "    AND " + CV_POS_EXPR + " = :MC_NO                      ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_CV_RUN;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = (mcNo ?? "").Trim();
+                if (DbQry(q) <= 0) return true;              // 조회 실패면 지우지 않는다
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            }
+            catch { return true; }
+        }
+
         /// <summary>완료 처리를 마쳤으니 그 트랙의 래치를 지운다(소비).</summary>
         private void ClearOutLatch(string mcNo)
         {
-            if (!HasLatchColumn()) return;
+            // [LGLS 2026-09-29] 컬럼이 없으면 파일에서 지운다 (사용자 지시)
+            if (!HasLatchColumn()) { ClearOutLatchIni(mcNo); return; }
+            ClearLatchIniOnce();
             try
             {
                 string q = "";

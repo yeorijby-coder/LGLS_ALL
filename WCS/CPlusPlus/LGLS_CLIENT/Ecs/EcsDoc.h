@@ -417,6 +417,14 @@ public:
 	void RefreshJobCache();	// [LGLS 2026-08-23] 작업정보 2초 캐시 갱신
 	BOOL IsJobInJobMst(LPCTSTR lpszLugg);
 	CString GetVehicleJobNo(LPCTSTR lpszVehNo);
+	// [LGLS 2026-09-29] 출발지/도착지 이름표 (사용자 지시).
+	//   DEST_POS_DEF.REMARKS 를 풀어 쓴다 - 현장에서 REMARKS 를 고치면 표기도 따라간다.
+	//     작업대 : 작업대명[IMS 번호] TR#트랙번호   크레인 : S/C #n호기[901]
+	//   bWithLoc 이면 크레인 쪽 대괄호에 코드 대신 셀 위치를 넣는다(작업 판넬용).
+	CString PosLabel(LPCTSTR lpszCode, LPCTSTR lpszLoc = NULL, BOOL bWithLoc = FALSE);
+	void    RefreshPosDefCache();
+	CMapStringToString	m_mapPosDef;		// 코드 → REMARKS
+	DWORD				m_dwPosDefTick;
 	CString GetVehicleJobTyp(LPCTSTR lpszVehNo);
 	CString GetVehicleJobSta(LPCTSTR lpszVehNo);	// [LGLS 2026-09-14] 그 호기에 물린 작업의 상태
 	CString GetTracksWithLugg(const CString& strLugg);	// [LGLS 2026-09-14] 그 화물번호가 올라가 있는 트랙 목록 ("104,103,")

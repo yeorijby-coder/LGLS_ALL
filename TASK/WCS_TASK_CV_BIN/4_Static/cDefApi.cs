@@ -240,6 +240,20 @@ namespace WCS_TASK_CV
         /// </summary>
         private static readonly Dictionary<string, string> s_cnfStrCache = new Dictionary<string, string>();
         private static DateTime s_cnfStrLoaded = DateTime.MinValue;
+        // [LGLS 2026-09-29] @@@.임의 파일/섹션의 문자열을 읽는다 (출고대 래치 파일용).
+        //   래치 컬럼이 없는 DB 에서 래치를 파일에 남길 때 쓴다 - 캐시하지 않는다(즉시 반영).
+        public static string GsIniStr(string pSec, string pKey, string pDefault, string pFile)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(pFile) || !System.IO.File.Exists(pFile)) return pDefault;
+                StringBuilder sb = new StringBuilder(512);
+                GetPrivateProfileString(pSec, pKey, pDefault, sb, sb.Capacity, pFile);
+                return sb.ToString();
+            }
+            catch { return pDefault; }
+        }
+
         public static string GsCnfStr(string pKey, string pDefault)
         {
             lock (s_cnfLock)

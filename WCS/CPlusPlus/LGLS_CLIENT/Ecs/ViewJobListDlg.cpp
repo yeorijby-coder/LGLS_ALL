@@ -1272,15 +1272,11 @@ CString CViewJobListDlg::GetQrySelect_Main(BOOL bSearch)
 	
 	strSql.Format(_T(" SELECT ") + m_pDoc->NVL + _T("(CCD_WH_TYP.CCD_NM_KOR, JM.WH_TYP) AS WH_TYP 								\n")	
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.LUGG_NO, ' ') AS LUGG_NO											\n")	
-			  // [LGLS 2026-09-23] 출발지는 [IMS Station No]Track No 로 보인다 (사용자 지시).
-			  //   예) 124 -> [104]124.  IMS 번호가 없는 자리(S/C 등)는 코드 그대로 둔다.
-			  _T("		     ,CASE WHEN SP.REMARKS LIKE 'IMS%%'                                          \n")
-			  _T("		            THEN '[' + SUBSTRING(SP.REMARKS, 4, CHARINDEX(' ', SP.REMARKS + ' ') - 4) + ']' + JM.START_POS \n")
-			  _T("		            ELSE JM.START_POS END AS START_POS                                   \n")
+			  // [LGLS 2026-09-29] 표기는 C++ (CEcsDoc::PosLabel) 이 만든다 - 코드만 가져온다 (사용자 지시).
+			  //   작업대 : 작업대명[IMS 번호] TR#트랙번호 / 크레인 : S/C #n호기[901]
+			  _T("		     ,JM.START_POS AS START_POS                                                 \n")
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.START_LOCATION, ' ') AS START_LOCATION										\n")	
-			  // [LGLS 2026-09-23] 도착지는 콤보에 보이는 그대로 (사용자 지시). 예) 901 -> 901 (S/C#1)
-			  _T("		     ,CASE WHEN DP.REMARKS IS NULL THEN JM.DEST_POS                              \n")
-			  _T("		            ELSE JM.DEST_POS + ' (' + DP.REMARKS + ')' END AS DEST_POS          \n")
+			  _T("		     ,JM.DEST_POS AS DEST_POS                                                   \n")
 			  _T("		     ,") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, ' ') AS DEST_LOCATION											\n")	
 			  _T("		     ,") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR, JM.JOB_TYP) AS JOB_TYP											\n")	
 			  _T("		     ,") + _T("'[' + JM.JOB_STATUS + '] ' + ") + m_pDoc->NVL + _T("(CC.CCD_NM_KOR, JM.JOB_STATUS) AS JOB_STATUS										\n")	
@@ -1508,6 +1504,11 @@ int CViewJobListDlg::SetSpeadData(BOOL bSearch = FALSE)
 			for (int nIdxCol = nIdxStart; nIdxCol < nColSize; nIdxCol++)		
 			{
 				CString strColValue = pRsw->GetItem(arrColName[nIdxCol]);
+
+				// [LGLS 2026-09-29] 출발지/도착지는 이름표 형식으로 보인다 (사용자 지시).
+				//   작업대 : 작업대명[IMS 번호] TR#트랙번호   /   크레인 : S/C #n호기[901]
+				if (arrColName[nIdxCol] == _T("START_POS") || arrColName[nIdxCol] == _T("DEST_POS"))
+					strColValue = m_pDoc->PosLabel(strColValue);
 
 				// [LGLS 2026-09-03] 표시값에 공백 4칸을 붙이던 것 제거 - 가운데 정렬이 왼쪽으로 밀려 보였다(폭 계산에만 반영)
 				int nPadLen = CLib::DispLen(strColValue) + 4;

@@ -227,6 +227,27 @@ namespace TSK_COMM_IOSCH
             pRtnMsg = "[GsGetInitPorFileDB]Error::" + pRtnMsg;
         }
 
+        // [LGLS 2026-09-29] @@@.임의 파일/섹션 읽기·쓰기 (출고대 래치 파일용).
+        //   래치 컬럼이 없는 DB 에서 래치를 파일에 남길 때 쓴다 - 캐시하지 않는다(즉시 반영).
+        //   GsWriteIni 는 키를 null 로 주면 그 섹션을 통째로 지운다.
+        public static string GsReadIni(string pSec, string pKey, string pDefault, string pFile)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(pFile) || !System.IO.File.Exists(pFile)) return pDefault;
+                StringBuilder sb = new StringBuilder(512);
+                GetPrivateProfileString(pSec, pKey, pDefault, sb, sb.Capacity, pFile);
+                return sb.ToString();
+            }
+            catch { return pDefault; }
+        }
+
+        public static bool GsWriteIni(string pSec, string pKey, string pVal, string pFile)
+        {
+            try { return WritePrivateProfileString(pSec, pKey, pVal, pFile); }
+            catch { return false; }
+        }
+
         // @@@.GsReadInitProfileCom
         public static bool GsReadInitProfileCom(string pAppNm,
                                             ref string pCvNo,

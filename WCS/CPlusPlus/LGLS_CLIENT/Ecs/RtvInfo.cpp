@@ -116,7 +116,9 @@ COLORREF CRtvInfo::GetForkColor1(CRTV_DATA* pRTV_DATA)
 	// [LGLS 2026-09-11] ★차상 비트로 한 번 더 거른다★ (구 ECS 와 같은 판정)
 	//   RTV_DATA_LGLS.SENSOR_RTV_RD 를 Rtv.cpp 가 SENSOR_FK_RD 로 별칭해 온다.
 	//   구 ECS RGVWidget 도 IsPalletExist 하나로 적재 표시를 켜고 껐다.
-	if (!CLib::IsVehicleLoaded(pRTV_DATA->V_SENSOR_FK_RD))
+	// [LGLS 2026-09-29] 지시 시점부터 보일 때는 차상 비트를 기다리지 않는다 (사용자 지시).
+	//   번호(CalcRtvText)와 같은 조건이라야 "색 없이 번호만" 이 생기지 않는다.
+	if (!CLib::IniVehShowOnOrder() && !CLib::IsVehicleLoaded(pRTV_DATA->V_SENSOR_FK_RD))
 		return LEGEND_IDLE_GRAY;
 	if (IsVehicleDisplayOff(pRTV_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		return LEGEND_IDLE_GRAY;
@@ -335,7 +337,10 @@ void CRtvInfo::CalcRtvText(CRTV_DATA* pData, CString& strOut, COLORREF& clrOut)
 	}
 
 	// [LGLS 2026-09-11] 번호도 차상 비트로 거른다 - 번호와 색은 늘 함께 간다.
-	if (!CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD))
+	// [LGLS 2026-09-29] ★작업이 지시된 시점부터 번호를 보인다★ (사용자 지시).
+	//   RTV 가 화물을 뜨러 가는 동안에도 번호가 보인다. 캐시는 35(반송중) 부터 값을 준다.
+	//   하역 뒤 잔상은 아래 IsVehicleDisplayOff(VEH_CLEAR_MODE) 가 종전대로 맡는다.
+	if (!CLib::IniVehShowOnOrder() && !CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD))
 		bHasJob = FALSE;
 	if (IsVehicleDisplayOff(pData))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		bHasJob = FALSE;

@@ -3204,12 +3204,78 @@ namespace WCS_TASK_CV
             return m_nLatchCol == 1;
         }
 
+        // [LGLS 2026-09-29] 래치 컬럼이 없는 DB 에서는 ★파일★ 에 래치를 남긴다 (사용자 지시).
+        //   SQL 04 를 돌리지 않아도 출고 완료 보장이 동작하게 하기 위함이다.
+        //   EQP·SCH 두 TASK 가 같은 파일을 봐야 한다 - 현장 구조(EXE\TASK\<이름>\)에서
+        //   공통 상위인 EXE\TASK 에 두도록 기본값을 <실행폴더>\..\OutLatch.ini 로 잡았다.
+        //   구조가 다르면 [CNF] OUT_LATCH_FILE 로 양쪽에 같은 경로를 적는다.
+        private static string m_strLatchFile = null;
+        private bool m_bLatchIniCleared = false;
+
+        private static string LatchFilePath()
+        {
+            if (m_strLatchFile != null) return m_strLatchFile;
+            string sCfg = cDefApi.GsCnfStr("OUT_LATCH_FILE", "");
+            if (!string.IsNullOrEmpty(sCfg.Trim()))
+                m_strLatchFile = sCfg.Trim();
+            else
+            {
+                string sDir = System.IO.Path.GetDirectoryName(
+                                  System.Reflection.Assembly.GetExecutingAssembly().Location);
+                m_strLatchFile = System.IO.Path.GetFullPath(
+                                     System.IO.Path.Combine(sDir, "..", "OutLatch.ini"));
+            }
+            return m_strLatchFile;
+        }
+
+        /// <summary>컬럼이 생겼으면 파일에 남은 래치를 지운다(1회) - 두 곳에 나뉘어 있지 않게.</summary>
+        private void ClearLatchIniOnce()
+        {
+            if (m_bLatchIniCleared) return;
+            m_bLatchIniCleared = true;
+            try
+            {
+                string sFile = LatchFilePath();
+                if (!System.IO.File.Exists(sFile)) return;
+                // 섹션 전체 삭제 : 키를 null 로 주면 그 섹션이 통째로 지워진다
+                cDefApi.WritePrivateProfileString("LATCH", null, null, sFile);
+                MakeMsg_Imp("[출고대래치] 래치 컬럼이 생겨 파일 래치를 정리했습니다 - " + sFile, m_nthNo);
+            }
+            catch { }
+        }
+
+        /// <summary>파일에 래치를 남긴다(컬럼이 없을 때). 이미 서 있으면 건드리지 않는다.</summary>
+        private void LatchOutStationIni(int nTrack)
+        {
+            try
+            {
+                string sFile = LatchFilePath();
+                string sKey  = nTrack.ToString("000");
+                var sb = new StringBuilder(256);
+                string sCur = cDefApi.GsIniStr("LATCH", sKey, "", sFile);
+                if (sCur.StartsWith("1|")) return;                 // 이미 서 있다
+
+                // 래치 시점의 트래킹을 함께 남긴다 - 3초 뒤엔 그 값도 사라진다
+                string sLugg = "";
+                CVData cvd;
+                if (CvDic.TryGetValue(nTrack, out cvd) && cvd != null)
+                    sLugg = (cvd.V11_JOBNO ?? "").Trim();
+
+                string sVal = "1|" + sLugg + "|" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                cDefApi.WritePrivateProfileString("LATCH", sKey, sVal, sFile);
+                MakeMsg_Imp("[출고대래치] 트랙 " + nTrack + " 출고대 신호 ON 을 파일에 붙잡았습니다", m_nthNo);
+            }
+            catch (Exception ex) { MakeMsg_Error("[출고대래치] 파일 기록 오류: " + ex.Message, m_nthNo); }
+        }
+
         /// <summary>출고대 신호를 봤다고 래치한다. 이미 서 있으면 건드리지 않는다.</summary>
         ///   래치 시점의 트래킹은 DB 의 현재 LUGG_NO_RD 를 그대로 붙잡는다 -
         ///   3초 뒤에는 그 값도 사라지므로 나중에 어느 작업이었는지 알 수 없다.
         private void LatchOutStation(int nTrack)
         {
-            if (!HasLatchColumn()) return;
+            // [LGLS 2026-09-29] 컬럼이 없으면 파일에 남긴다 / 있으면 파일에 남은 것을 한 번 정리한다
+            if (!HasLatchColumn()) { LatchOutStationIni(nTrack); return; }
+            ClearLatchIniOnce();
             try
             {
                 string q = "";
@@ -3237,7 +3303,7 @@ namespace WCS_TASK_CV
         {
             int nGap = cDefApi.GsCnfInt("OUT_SCAN_MS", 300);
             if (nGap <= 0) return;
-            if (!HasLatchColumn()) return;
+            // [LGLS 2026-09-29] 컬럼이 없어도 돈다 - 그때는 파일에 래치한다 (사용자 지시)
 
             uint dwNow = (uint)Environment.TickCount;
             if (m_dwLastOutScan != 0 && (dwNow - m_dwLastOutScan) < (uint)nGap) return;

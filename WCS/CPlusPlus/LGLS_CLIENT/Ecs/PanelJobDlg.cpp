@@ -46,9 +46,12 @@ BOOL CPanelJobDlg::OnInitDialog()
 	m_list.SetExtendedStyle(m_list.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	struct { LPCTSTR strHead; int nWidth; } COLS[] = {
+		// [LGLS 2026-09-29] 출발/도착 한 칸에 위치까지 넣는다 (사용자 지시).
+		//   랙 : S/C #1[00-000-00]   /   작업대 : 입출고대[101] TR#22
+		//   그래서 「출발위치」「도착위치」 칸을 없앴다.
 		{ _T("작업번호"),  70 }, { _T("구분"),     90 }, { _T("상태"),    140 },
-		{ _T("출발"),      55 }, { _T("출발위치"), 75 }, { _T("도착"),     55 },
-		{ _T("도착위치"),  75 }, { _T("LOT"),      80 }, { _T("제품"),     80 },
+		{ _T("출발"),     145 }, { _T("도착"),    145 },
+		{ _T("LOT"),       80 }, { _T("제품"),     80 },
 		{ _T("우선"),      45 }, { _T("수정시각"), 125 },
 	};
 	for (int i = 0; i < (int)(sizeof(COLS)/sizeof(COLS[0])); i++)
@@ -116,8 +119,10 @@ void CPanelJobDlg::Refresh()
 	if (nSel >= 0) strSelLugg = m_list.GetItemText(nSel, 0);
 	int nTop = m_list.GetTopIndex();
 
+	// [LGLS 2026-09-29] 출발/도착은 코드와 위치를 합쳐 한 칸에 넣는다 (사용자 지시).
+	//   FIELDS 에서 위치 두 칸을 뺐다 - 아래에서 PosLabel 이 합쳐 준다.
 	static LPCTSTR FIELDS[] = { _T("LUGG_NO"), _T("JOB_TYP"), _T("JOB_STATUS"),
-		_T("START_POS"), _T("START_LOCATION"), _T("DEST_POS"), _T("DEST_LOCATION"),
+		_T("START_POS"), _T("DEST_POS"),
 		_T("LOT_NO"), _T("PRODUCT_ID"), _T("JOB_PRIORITY"), _T("UPD_DT") };
 
 	m_list.SetRedraw(FALSE);
@@ -129,7 +134,17 @@ void CPanelJobDlg::Refresh()
 		{
 			m_list.InsertItem(nRow, pRsw->GetItem(FIELDS[0]));
 			for (int nCol = 1; nCol < (int)(sizeof(FIELDS)/sizeof(FIELDS[0])); nCol++)
-				m_list.SetItemText(nRow, nCol, pRsw->GetItem(FIELDS[nCol]));
+			{
+				CString strVal = pRsw->GetItem(FIELDS[nCol]);
+
+				// [LGLS 2026-09-29] 출발/도착은 이름표 + 위치로 합쳐 보인다 (사용자 지시)
+				if (CString(FIELDS[nCol]) == _T("START_POS"))
+					strVal = m_pDoc->PosLabel(strVal, pRsw->GetItem(_T("START_LOCATION")), TRUE);
+				else if (CString(FIELDS[nCol]) == _T("DEST_POS"))
+					strVal = m_pDoc->PosLabel(strVal, pRsw->GetItem(_T("DEST_LOCATION")), TRUE);
+
+				m_list.SetItemText(nRow, nCol, strVal);
+			}
 			pRsw->MoveNext();
 		}
 	}
