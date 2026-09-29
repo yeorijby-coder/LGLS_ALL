@@ -963,12 +963,19 @@ IMPLEMENT_DYNCREATE(CLglsRibbonLamp, CMFCRibbonButton)
 
 BOOL CLglsRibbonLamp::m_bBlink = FALSE;
 
-static const int LAMP_CW = 62, LAMP_CH = 56;	// 한 칸(신호등 62x42 + 이름)
+// [LGLS 2026-09-29] 한 칸의 100% 기준 치수(신호등 62x42 + 이름). 실제 크기는 배율을 먹인다.
+//   4K 에서는 이 칸이 상대적으로 작아져 MFC 리본이 4칸을 3+1 두 행으로 접었다 (사용자 지적).
+static const int LAMP_CW100 = 62, LAMP_CH100 = 56;
+
+static int LampCW() { return CLib::UiPx(LAMP_CW100); }
+static int LampCH() { return CLib::UiPx(LAMP_CH100); }
 
 // 신호등 한 개를 그린다 (사진 모양 : 검은 몸체 + 좌우 챙 3쌍 + 등 3개).
 //   nOn : 0 = 빨강(끊김) · 1 = 노랑 · 2 = 초록
+//   [LGLS 2026-09-29] 좌표를 화면 배율로 늘린다 - 아래 S(n) 가 그 변환이다 (4K 대응).
 static void DrawTrafficLamp(CDC& dc, int cx, int cy, int nOn)
 {
+	#define S(n)	CLib::UiPx(n)
 	CBrush brBody(RGB(28, 28, 28));
 	CPen   penNone(PS_NULL, 0, RGB(0, 0, 0));
 	CPen*   pOldPen = dc.SelectObject(&penNone);
@@ -977,24 +984,25 @@ static void DrawTrafficLamp(CDC& dc, int cx, int cy, int nOn)
 	// 좌우 챙 - 등마다 한 쌍, 바깥으로 갈수록 올라가는 쐐기
 	for (int k = 0; k < 3; k++)
 	{
-		int yc = cy + 11 + k * 12;
-		CPoint ptL[3] = { CPoint(cx + 23, yc - 5), CPoint(cx + 23, yc + 6), CPoint(cx + 13, yc - 7) };
-		CPoint ptR[3] = { CPoint(cx + 39, yc - 5), CPoint(cx + 39, yc + 6), CPoint(cx + 49, yc - 7) };
+		int yc = cy + S(11) + k * S(12);
+		CPoint ptL[3] = { CPoint(cx + S(23), yc - S(5)), CPoint(cx + S(23), yc + S(6)), CPoint(cx + S(13), yc - S(7)) };
+		CPoint ptR[3] = { CPoint(cx + S(39), yc - S(5)), CPoint(cx + S(39), yc + S(6)), CPoint(cx + S(49), yc - S(7)) };
 		dc.Polygon(ptL, 3);
 		dc.Polygon(ptR, 3);
 	}
-	dc.RoundRect(CRect(cx + 22, cy + 2, cx + 40, cy + 42), CPoint(6, 6));	// 몸체
+	dc.RoundRect(CRect(cx + S(22), cy + S(2), cx + S(40), cy + S(42)), CPoint(S(6), S(6)));	// 몸체
 
 	// 등 세 개 - 켜진 것만 밝게, 나머지는 어둡게(꺼진 전구도 보이게)
 	CBrush brRed (nOn == 0 ? RGB(255,  32,  24) : RGB(104,  26,  22));
 	CBrush brYel (nOn == 1 ? RGB(238, 200,   0) : RGB(106,  94,  14));
 	CBrush brGrn (nOn == 2 ? RGB( 26, 200,  52) : RGB( 18,  92,  32));
-	dc.SelectObject(&brRed); dc.Ellipse(CRect(cx + 25, cy +  5, cx + 37, cy + 17));
-	dc.SelectObject(&brYel); dc.Ellipse(CRect(cx + 25, cy + 17, cx + 37, cy + 29));
-	dc.SelectObject(&brGrn); dc.Ellipse(CRect(cx + 25, cy + 29, cx + 37, cy + 41));
+	dc.SelectObject(&brRed); dc.Ellipse(CRect(cx + S(25), cy + S( 5), cx + S(37), cy + S(17)));
+	dc.SelectObject(&brYel); dc.Ellipse(CRect(cx + S(25), cy + S(17), cx + S(37), cy + S(29)));
+	dc.SelectObject(&brGrn); dc.Ellipse(CRect(cx + S(25), cy + S(29), cx + S(37), cy + S(41)));
 
 	dc.SelectObject(pOldBr);
 	dc.SelectObject(pOldPen);
+	#undef S
 }
 
 // [LGLS 2026-09-23] 눌렀을 때 - 주 프레임에 명령을 보내 핑/포트 확인을 돌린다 (사용자 지시).
@@ -1010,7 +1018,7 @@ void CLglsRibbonLamp::OnLButtonUp(CPoint point)
 CSize CLglsRibbonLamp::GetRegularSize(CDC* pDC)
 {
 	UNREFERENCED_PARAMETER(pDC);
-	return CSize(LAMP_CW, LAMP_CH);
+	return CSize(LampCW(), LampCH());
 }
 
 void CLglsRibbonLamp::OnDraw(CDC* pDC)
@@ -1019,8 +1027,8 @@ void CLglsRibbonLamp::OnDraw(CDC* pDC)
 	CRect rc = m_rect;
 	if (rc.IsRectEmpty()) return;
 
-	int cx = rc.left + max(0, (rc.Width()  - LAMP_CW) / 2);
-	int cy = rc.top  + max(0, (rc.Height() - LAMP_CH) / 2);
+	int cx = rc.left + max(0, (rc.Width()  - LampCW()) / 2);
+	int cy = rc.top  + max(0, (rc.Height() - LampCH()) / 2);
 
 	// 끊김 -> 빨강,  정상 -> 노랑 <-> 초록 1초 교대(살아 있음을 눈으로)
 	int nOn = !m_bOk ? 0 : (m_bBlink ? 1 : 2);
@@ -1028,8 +1036,24 @@ void CLglsRibbonLamp::OnDraw(CDC* pDC)
 
 	int      nBk   = pDC->SetBkMode(TRANSPARENT);
 	COLORREF clrTx = pDC->SetTextColor(m_bOk ? RGB(30, 60, 150) : RGB(190, 40, 34));
-	CFont*   pOldF = pDC->SelectObject(&afxGlobalData.fontRegular);
-	pDC->DrawText(m_strText, CRect(cx, cy + 42, cx + LAMP_CW, cy + LAMP_CH),
+	// [LGLS 2026-09-29] 이름 글자도 배율에 맞춘다 - 4K 에서 글자만 작게 남지 않게 (사용자 지적).
+	//   배율이 바뀌면(ini 수정) 다시 만든다.
+	static CFont s_fntName;
+	static int   s_nFntScale = 0;
+	int nScale = CLib::UiScale();
+	if (s_nFntScale != nScale)
+	{
+		if (s_fntName.GetSafeHandle() != NULL) s_fntName.DeleteObject();
+		LOGFONT lf = {0};
+		afxGlobalData.fontRegular.GetLogFont(&lf);
+		int nH = abs(lf.lfHeight); if (nH <= 0) nH = 12;
+		lf.lfHeight = -CLib::UiPx(nH);
+		s_fntName.CreateFontIndirect(&lf);
+		s_nFntScale = nScale;
+	}
+	CFont* pOldF = pDC->SelectObject(s_fntName.GetSafeHandle() != NULL
+	                                 ? &s_fntName : &afxGlobalData.fontRegular);
+	pDC->DrawText(m_strText, CRect(cx, cy + CLib::UiPx(42), cx + LampCW(), cy + LampCH()),
 	              DT_CENTER | DT_TOP | DT_SINGLELINE);
 	pDC->SelectObject(pOldF);
 	pDC->SetTextColor(clrTx);
@@ -1331,8 +1355,8 @@ void CMainFrame::OnCommLampClicked(UINT nID)
 	if (pDoc == NULL) return;
 
 	// [LGLS 2026-09-23] EQP 는 'EQP'(마스터 PLC 대표 행) 와 'CV' 를 함께 본다 - 같은 소켓이다.
-	static LPCTSTR pszIn[4]   = { _T("'HOST'"), _T("'HOST2'"), _T("'EQP','CV'"), _T("'SCH'") };
-	static LPCTSTR pszName[4] = { _T("WMS1"),   _T("WMS2"),    _T("EQP"),        _T("SCH")   };
+	static LPCTSTR pszIn[4]   = { _T("'HOST'"), _T("'HOST2'"), _T("'EQP','PLC','CV'"), _T("'SCH'") };
+	static LPCTSTR pszName[4] = { _T("WMS1"),   _T("WMS2"),    _T("PLC"),        _T("SCH")   };
 
 	// [LGLS 2026-09-23] ★접속 한 개당 한 번★ 만 찌른다 (사용자 지적).
 	//   설비는 마스터 PLC 한 소켓이다 - EQP_MST 의 C/V 15행은 논리 설비일 뿐
@@ -1439,7 +1463,7 @@ void CMainFrame::AddLampPanel(CMFCRibbonCategory* pCategory)
 	struct D4 { LPCTSTR s; LPCTSTR d; };
 	D4 defs[] = { { _T("WMS1"), _T("상위 통신 1 (HOST)") },
 	              { _T("WMS2"), _T("상위 통신 2 (HOST2)") },
-	              { _T("EQP"),  _T("설비 통신 (WCS_TASK_CV)") },
+	              { _T("PLC"),  _T("설비 통신 (WCS_TASK_CV)") },
 	              { _T("SCH"),  _T("스케줄러 (IO_TASK)") } };
 	for (int i = 0; i < 4; i++)
 	{
@@ -1476,7 +1500,7 @@ void CMainFrame::UpdateCommLamps()
 	CString strSql;
 	strSql  = _T(" SELECT CASE WHEN EQP_TYP = 'HOST'  THEN 0                          \n");
 	strSql += _T("             WHEN EQP_TYP = 'HOST2' THEN 1                          \n");
-	strSql += _T("             WHEN EQP_TYP IN ('EQP','CV') THEN 2                      \n");
+	strSql += _T("             WHEN EQP_TYP IN ('EQP','PLC','CV') THEN 2                      \n");
 	strSql += _T("             WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 9 END AS GRP        \n");
 	strSql += _T("      , MAX(CASE WHEN ISNULL(CONNECTED_YN,'N') <> 'Y' THEN 0        \n");
 	strSql += _T("                 WHEN DATEDIFF(second, UPD_DT, GETDATE()) >          \n");
@@ -1488,7 +1512,7 @@ void CMainFrame::UpdateCommLamps()
 	strSql += _T("  WHERE ISNULL(USE_YN,'Y') = 'Y'                                     \n");
 	strSql += _T("  GROUP BY CASE WHEN EQP_TYP = 'HOST'  THEN 0                        \n");
 	strSql += _T("                WHEN EQP_TYP = 'HOST2' THEN 1                        \n");
-	strSql += _T("                WHEN EQP_TYP IN ('EQP','CV') THEN 2                    \n");
+	strSql += _T("                WHEN EQP_TYP IN ('EQP','PLC','CV') THEN 2                    \n");
 	strSql += _T("                WHEN EQP_TYP = 'SCH'   THEN 3 ELSE 9 END              ");
 
 	int nRowCnt = 0;

@@ -3509,6 +3509,18 @@
 #define ID_STATUS_HOST                  59167
 #define ID_STATUS_SCH                   59168
 
+#define IDC_CHK_HIDE_STO                  2370
+#define IDC_CHK_HIDE_RET                  2371
+#define IDC_CHK_HIDE_MOVE                 2372
+#define IDC_CHK_HIDE_STN_STO              2373
+#define IDC_CHK_HIDE_STN_RET              2374
+#define IDC_CHK_HIDE_SUSPEND              2375
+#define IDC_CHK_HIDE_ERR                  2376
+#define IDC_CHK_HIDE_MANUAL               2377
+#define IDC_CHK_HIDE_SEARCH               2378
+#define IDC_CHK_HIDE_SEMI_STO             2379
+#define IDC_CHK_HIDE_SEMI_RET             2380
+#define IDC_CHK_HIDE_SEMI_MOVE            2381
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
@@ -3516,7 +3528,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        554
 #define _APS_NEXT_COMMAND_VALUE         33037
-#define _APS_NEXT_CONTROL_VALUE         2370
+#define _APS_NEXT_CONTROL_VALUE         2382
 #define _APS_NEXT_SYMED_VALUE           114
 #endif
 #endif

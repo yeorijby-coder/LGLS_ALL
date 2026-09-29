@@ -217,6 +217,24 @@ int i;
 		//   1초 타이머에 얹어 5초마다 지금 상태를 그대로 적는다 - 표시용이라 통신 규약과 무관하다.
 		//     HOST  = 수신(서버) 소켓 - 상위가 우리에게 붙어 있는가
 		//     HOST2 = 송신(클라이언트) 소켓 - 우리가 상위에 붙어 있는가
+		// [LGLS 2026-09-29] EQP_MST 에 내 행이 없으면 스스로 만들지 (사용자 지시).
+		//   현장에서 EQP_MST 를 접속 단위 4행으로 줄이는 작업을 한다. 줄인 뒤에도, 줄이지 않은 채로도
+		//   HOST_TASK 가 똑같이 돌아야 한다. UPDATE 만 하면 행이 없을 때 통신 상태가 남지 않아
+		//   운전 화면 신호등이 영영 미접속으로 보인다 - 그래서 없으면 INSERT 한다.
+		//   EcsComA.ini [Host] EQP_MST_AUTO_ROW : 1(기본) 없으면 만든다 / 0 UPDATE 만 한다.
+		private static bool EqpMstAutoRow
+		{
+			get
+			{
+				try
+				{
+					string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+					return modDefAPI.GetPrivateProfileInt("Host", "EQP_MST_AUTO_ROW", 1, strIni) != 0;
+				}
+				catch { return true; }
+			}
+		}
+
 		private CUserDb m_DbCommHb    = new CUserDb("Multi", false);
 		private int     m_nCommHbTick = 0;
 
@@ -240,14 +258,35 @@ int i;
 
 				for (int i = 0; i < 2; i++)
 				{
+					string strTyp = (i == 0) ? "HOST" : "HOST2";
+					bool   blOk   = (i == 0) ? blSrv : blCli;
+
 					m_DbCommHb.ParamsClear();
 					string strSql = "";
 					strSql += modDefApp.CRLF + " UPDATE EQP_MST                                        ";
-					strSql += modDefApp.CRLF + "    SET CONNECTED_YN = " + m_DbCommHb.ParamsAdd("CONN", ((i == 0) ? blSrv : blCli) ? "Y" : "N");
+					strSql += modDefApp.CRLF + "    SET CONNECTED_YN = " + m_DbCommHb.ParamsAdd("CONN", blOk ? "Y" : "N");
 					strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
 					strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_DbCommHb.ParamsAdd("WHTY", modDefApp.WH_TYP);
-					strSql += modDefApp.CRLF + "    AND EQP_TYP      = " + m_DbCommHb.ParamsAdd("EQTY", (i == 0) ? "HOST" : "HOST2");
-					m_DbCommHb.ExcuteNonQry_Par(ref strSql, false);
+					strSql += modDefApp.CRLF + "    AND EQP_TYP      = " + m_DbCommHb.ParamsAdd("EQTY", strTyp);
+					int nUpd = m_DbCommHb.ExcuteNonQry_Par(ref strSql, false);
+
+					// [LGLS 2026-09-29] 고친 행이 없다 = EQP_MST 에 내 행이 없다. 만들어 둔다 (사용자 지시).
+					if (nUpd == 0 && EqpMstAutoRow)
+					{
+						m_DbCommHb.ParamsClear();
+						string strIns = "";
+						strIns += modDefApp.CRLF + " INSERT INTO EQP_MST (WH_TYP, EQP_TYP, PLC_NO, CONNECTED_YN, UPD_DT, USE_YN, REMARKS) ";
+						strIns += modDefApp.CRLF + " SELECT " + m_DbCommHb.ParamsAdd("WHTY", modDefApp.WH_TYP);
+						strIns += modDefApp.CRLF + "      , " + m_DbCommHb.ParamsAdd("EQTY", strTyp);
+						strIns += modDefApp.CRLF + "      , '01'                                      ";
+						strIns += modDefApp.CRLF + "      , " + m_DbCommHb.ParamsAdd("CONN", blOk ? "Y" : "N");
+						strIns += modDefApp.CRLF + "      , " + modDateTime.SYSDATE + ", 'Y'           ";
+						strIns += modDefApp.CRLF + "      , " + m_DbCommHb.ParamsAdd("RMK", (i == 0) ? "상위 통신 1 (수신)" : "상위 통신 2 (송신)");
+						strIns += modDefApp.CRLF + "  WHERE NOT EXISTS (SELECT 1 FROM EQP_MST                ";
+						strIns += modDefApp.CRLF + "                     WHERE WH_TYP  = " + m_DbCommHb.ParamsAdd("WHT2", modDefApp.WH_TYP);
+						strIns += modDefApp.CRLF + "                       AND EQP_TYP = " + m_DbCommHb.ParamsAdd("EQT2", strTyp) + ") ";
+						m_DbCommHb.ExcuteNonQry_Par(ref strIns, false);
+					}
 				}
 			}
 			catch { }   // 표시용 기록이다 - 실패해도 통신을 방해하지 않는다

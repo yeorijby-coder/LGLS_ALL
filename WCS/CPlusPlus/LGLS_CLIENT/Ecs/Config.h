@@ -48,6 +48,10 @@ public:
 	COLORREF m_clrUSER_COLOR_SEMI_RTR;
 	COLORREF m_clrUSER_COLOR_SEMI_ATA;
 	COLORREF m_clrUSER_COLOR_SEMI_PR;
+	// [LGLS 2026-09-29] 범례 판넬에서 이 항목을 뺄지 (범례 창의 [숨김] 체크, 사용자 지시).
+	//   Ecs.ini [USER] LEGEND_HIDE_<키> = 1 이면 메인 화면 왼쪽 범례에 그리지 않는다.
+	//   색 자체는 그대로 쓰인다 - 범례에서만 안 보인다.
+	BOOL m_bLEGEND_HIDE[12];
 	// [LGLS 2026-07-19] [ETC] ViewRetCnt=1 : SC별 출고 잔여 작업 수를 출고 라인 트랙에 표시
 	int m_nETC_ViewRetCnt;
 	COLORREF m_clrUSER_COLOR_ATA;

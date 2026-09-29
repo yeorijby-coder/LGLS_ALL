@@ -319,9 +319,13 @@ COLORREF CTrackInfo::GetCvColor()
 	if (m_pCV_DATA->V_AUTO_MODE_RD == _T("0"))
  		return DARK_GRAY;
 	
-	//화물D
- 	if (m_pCV_DATA->V_JOB_TYP_RD == _T("0") && m_pCV_DATA->V_SENSOR0_DATA_RD == _T("1"))
- 		return WHEAT;
+	// [LGLS 2026-09-29] ★화물만 있는 트랙은 칠하지 않는다★ (사용자 지시).
+	//   종전에는 작업구분이 0(작업 없음)이고 화물감지만 켜져 있으면 살색(WHEAT)으로 칠했다.
+	//   그래서 "그냥 화물이 놓여 있을 뿐인 트랙" 이 범례에 없는 색으로 보였다.
+	//   화물이 있다는 것은 CDciTrackCtrl 의 m_bExist(모서리 점 4개)가 이미 보여 주므로,
+	//   색은 빈 트랙과 같은 회색으로 두고 화물감지 표시만 남긴다.
+	//   (m_bExist 는 이 아래 SetControl 에서 센서값 그대로 넣는다)
+
  
  	if (m_pCV_DATA->V_DEST_POS_RD != _T("000"))
  		return MINT;

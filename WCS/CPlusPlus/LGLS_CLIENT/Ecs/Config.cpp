@@ -98,6 +98,24 @@ void CConfig::LoadConfigDATABASE()
 #endif
 }
 
+
+// [LGLS 2026-09-29] ¹ü·Ê ¼û±è ÇÃ·¡±×ÀÇ ini Å° (¹ü·Ê Ã¢ÀÇ [¼û±è] Ã¼Å© ¼ø¼­¿Í °°´Ù).
+const TCHAR* const g_szLegendHideKey[12] =
+{
+	_T("LEGEND_HIDE_STO"),
+	_T("LEGEND_HIDE_RET"),
+	_T("LEGEND_HIDE_MOVE"),
+	_T("LEGEND_HIDE_STN_STO"),
+	_T("LEGEND_HIDE_STN_RET"),
+	_T("LEGEND_HIDE_SUSPEND"),
+	_T("LEGEND_HIDE_ERR"),
+	_T("LEGEND_HIDE_MANUAL"),
+	_T("LEGEND_HIDE_SEARCH"),
+	_T("LEGEND_HIDE_SEMI_STO"),
+	_T("LEGEND_HIDE_SEMI_RET"),
+	_T("LEGEND_HIDE_SEMI_MOVE"),
+};
+
 void CConfig::LoadConfigUSER()
 {
 	// [LGLS 2026-07-19] [ETC] ViewRetCnt : SCº° Ãâ°í ÀÜ¿© ¼ö Ç¥½Ã(1=Ç¥½Ã, 0=¼û±è)
@@ -142,6 +160,10 @@ void CConfig::LoadConfigUSER()
 	m_clrUSER_COLOR_SEMI_ATA = CConvert::ToColor(CString(szTemp));
 	::GetPrivateProfileString(_T("USER"), _T("USER_COLOR_SEMI_PR"),	CConvert::ToString(m_clrUSER_COLOR_SEMI_PR),	szTemp, _MAX_PATH, ECS_INI_FILE);
 	m_clrUSER_COLOR_SEMI_PR = CConvert::ToColor(CString(szTemp));
+
+	// [LGLS 2026-09-29] ¹ü·Ê ÆÇ³Ú ¼û±è ÇÃ·¡±× (»ç¿ëÀÚ Áö½Ã)
+	for (int nLh = 0; nLh < 12; nLh++)
+		m_bLEGEND_HIDE[nLh] = (::GetPrivateProfileInt(_T("USER"), g_szLegendHideKey[nLh], 0, ECS_INI_FILE) != 0);
 
 	::GetPrivateProfileString(_T("USER"), _T("USER_COLOR_STN_STO"),	CConvert::ToString(m_clrUSER_COLOR_STN_STO),	szTemp, _MAX_PATH, ECS_INI_FILE);
 	m_clrUSER_COLOR_STN_STO = CConvert::ToColor(CString(szTemp));
@@ -231,6 +253,9 @@ void CConfig::InitializeConfigUSER()
 	m_clrUSER_COLOR_SEMI_ATA  = RGB(139,0,98);
 	m_clrUSER_COLOR_SEMI_PR   = RGB(25,25,112);
 
+	// [LGLS 2026-09-29] ±âº»Àº ¸ðµÎ º¸ÀÌ°Ô (»ç¿ëÀÚ Áö½Ã)
+	for (int nLh = 0; nLh < 12; nLh++) m_bLEGEND_HIDE[nLh] = FALSE;
+
 	m_clrUSER_COLOR_STN_STO = GREEN;
 	m_clrUSER_COLOR_STN_RET = BLUE;
 	// [LGLS 2026-08-22] ÇÚµå¼ÎÀÌÅ© »ö ±ÔÄ¢ : ½Æ´Â °÷(Pick)=¿À·»Áö / ³»·Á³õ´Â °÷(Drop)=ÁøÇÑ ÃÊ·Ï
@@ -314,6 +339,11 @@ void CConfig::SaveConfigUSER()
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_SEMI_ATA"),    CConvert::ToString(m_clrUSER_COLOR_SEMI_ATA), ECS_INI_FILE);
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_SEMI_PR"),    CConvert::ToString(m_clrUSER_COLOR_SEMI_PR), ECS_INI_FILE);
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_SUSPEND"),    CConvert::ToString(m_clrUSER_COLOR_SUSPEND), ECS_INI_FILE);
+
+	// [LGLS 2026-09-29] ¹ü·Ê ÆÇ³Ú ¼û±è ÇÃ·¡±× (»ç¿ëÀÚ Áö½Ã)
+	for (int nLh = 0; nLh < 12; nLh++)
+		::WritePrivateProfileString(_T("USER"), g_szLegendHideKey[nLh],
+									m_bLEGEND_HIDE[nLh] ? _T("1") : _T("0"), ECS_INI_FILE);
 
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_STO_SUSPEND"),    CConvert::ToString(m_clrUSER_COLOR_STO_SUSPEND), ECS_INI_FILE);
 	::WritePrivateProfileString(_T("USER"), _T("USER_COLOR_RET_SUSPEND"),    CConvert::ToString(m_clrUSER_COLOR_RET_SUSPEND), ECS_INI_FILE);

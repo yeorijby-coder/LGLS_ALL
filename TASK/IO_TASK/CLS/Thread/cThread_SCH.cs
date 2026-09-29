@@ -163,7 +163,20 @@ namespace TSK_COMM_IOSCH
         private readonly Dictionary<string, DateTime> m_dicOutDoneDt = new Dictionary<string, DateTime>();
         // [LGLS 2026-08-24] 출고대 신호/실도착을 둘 다 놓쳤을 때의 최후 유예.
         //   짧게 두면 RGV 하역 직후에 완료되어 버린다(작업 2034). 넉넉히 둔다.
-        private const int OUT_SIGNAL_MISS_MS = 60000;
+        //   [LGLS 2026-09-29] 초 단위로 ENV_IOSCH.INI [CNF] OUT_SIGNAL_MISS_SEC 에서 읽는다(기본 60 = 1분).
+        private static int OUT_SIGNAL_MISS_MS
+        {
+            get { int v = cDefApi.GsReadInitProfileCnf("OUT_SIGNAL_MISS_SEC", 60); return (v < 5 ? 5 : v) * 1000; }
+        }
+
+        // [LGLS 2026-09-29] 출고대 신호(RET_READY_RD)를 출고 완료의 최우선 근거로 삼을지 (사용자 지시).
+        //   1(기본) : 신호가 ON 이면 - 트랙에 남은 번호가 이미 끝난 작업(유령)이어도, 
+        //             반출 시퀀스가 아직 안 끝났어도 - 곧바로 완료한다.
+        //   0       : 종전대로. 트래킹이 내 번호이거나 비어 있고 반출 시퀀스도 끝나야 완료한다.
+        private static bool OUT_DONE_BY_SIGNAL
+        {
+            get { return cDefApi.GsReadInitProfileCnf("OUT_DONE_BY_SIGNAL", 1) != 0; }
+        }
         private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
         private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
         #endregion
@@ -1528,9 +1541,6 @@ namespace TSK_COMM_IOSCH
                     }
                     else
                     {
-                        // [LGLS 2026-07-21] 반출(RTV) 시퀀스가 끝나기 전의 "도착"은 인정하지 않는다.
-                        if (OutSeqPending(luggNo)) continue;
-
                         // [LGLS 2026-08-23] 출고 완료의 키는 **출고대 신호**(CV_DATA.RET_READY_RD) 다.
                         //   구 ECS 의 WAIT_IN 과 같은 비트로(PlcAddressMap: WorkInstruction offset 5),
                         //   설비가 "출고대에 작업번호를 가진 화물이 실제로 놓였다"를 이 신호로 알린다.
@@ -1539,7 +1549,24 @@ namespace TSK_COMM_IOSCH
                         //   작업이 조기 삭제됐다(작업 2034 사례).
                         bool bMine = (cvLugg == "" || cvLugg == "0" || cvLugg == "0000" || cvLugg == luggNo);
 
-                        if (cvRetRdy == "1" && bMine)
+                        // [LGLS 2026-09-29] ★신호는 ON 인데 완료하지 못하던 자리★ (현장 관측 - 15 에서 1~2분).
+                        //   출고대에 남의 번호가 남아 있어도, 그 작업이 이미 끝났으면 죽은 트래킹이다.
+                        //   살아 있는 다른 작업이면 앞 화물이 아직 안 나간 것이므로 종전대로 기다린다.
+                        if (cvRetRdy == "1" && !bMine && OUT_DONE_BY_SIGNAL && !IsJobAlive(cvLugg))
+                        {
+                            MakeMsg_Imp(string.Format(
+                                "[SCH][CV] 작업 {0} 출고대 {1} 트래킹에 끝난 작업 {2} 가 남아 있습니다(유령) - 신호로 완료",
+                                luggNo, mcNo, cvLugg));
+                            bMine = true;
+                        }
+                        bool bSigDone = (cvRetRdy == "1" && bMine);
+
+                        // [LGLS 2026-07-21] 반출(RTV) 시퀀스가 끝나기 전의 "도착"은 인정하지 않는다.
+                        //   [LGLS 2026-09-29] 다만 출고대 신호가 ON 이면 설비가 "출고대에 놓였다"를 직접 알린 것이라
+                        //   시퀀스 잔여 상태보다 신호를 믿는다(사용자 지시 - 신호 ON 즉시 완료).
+                        if (!(bSigDone && OUT_DONE_BY_SIGNAL) && OutSeqPending(luggNo)) continue;
+
+                        if (bSigDone)
                         {
                             MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 출고대 신호 ON - 출고 완료", luggNo, mcNo));
                         }
@@ -2424,6 +2451,30 @@ namespace TSK_COMM_IOSCH
         /// <summary>[LGLS 2026-07-30] 해당 작업번호의 화물 트래킹이 전 트랙(CV_DATA) 어디엔가 존재하는지.
         ///   CompleteCV 출고 '도착 관측 누락' 보강의 안전장치 — 설비 이송 중이면 어느 트랙엔가 트래킹이 남으므로
         ///   운반 중 작업의 조기 완료를 막는다. (RV 적재 시퀀스로 CV 데이터가 잠시 비는 구간은 GRACE 가 흡수)</summary>
+        // [LGLS 2026-09-29] 그 작업번호가 JOB_MST 에 아직 살아 있는가 (출고 완료 판정용).
+        //   조회에 실패하면 보수적으로 "살아 있다"로 본다 - 완료를 서두르지 않는다.
+        private bool IsJobAlive(string lugg)
+        {
+            string no = (lugg ?? "").Trim();
+            if (no.Length == 0 || no == "0" || no == "0000") return false;
+            try
+            {
+                string q = "";
+                q += CRLF + " SELECT COUNT(*) AS CNT      ";
+                q += CRLF + "   FROM JOB_MST              ";
+                q += CRLF + "  WHERE WH_TYP  = :WH_TYP    ";
+                q += CRLF + "    AND LUGG_NO = :LUGG      ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("LUGG",   DbLang.VARCHAR).Value = Cap(no, 4);
+                if (DbQry(q) <= 0) return true;
+                int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                return n > 0;
+            }
+            catch { return true; }
+        }
+
         private bool LuggOnAnyTrack(string lugg)
         {
             try {

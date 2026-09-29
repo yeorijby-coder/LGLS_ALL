@@ -28,8 +28,10 @@ public:
 	CLegendPane();
 	virtual ~CLegendPane();
 
-	// 패널 폭(고정). 높이는 항목 수로 계산한다.
+	// 패널 폭(100% 기준). 높이는 항목 수로 계산한다.
+	//   [LGLS 2026-09-29] 4K 에서는 PaneWidth() 가 배율을 먹인 값을 준다 (사용자 지시).
 	enum { PANE_WIDTH = 116 };
+	static int PaneWidth();
 
 	BOOL CreatePane(CWnd* pParent, UINT nID);
 	void SetDoc(CEcsDoc* pDoc) { m_pDoc = pDoc; }

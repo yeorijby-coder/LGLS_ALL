@@ -71,7 +71,7 @@ public:
 	int      m_nKind;			// 0 = 통신 상태, 1 = 범례
 	CLglsInfoBar() { m_pDoc = NULL; m_nKind = 0; m_bBlink = FALSE; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
 	// [LGLS 2026-09-23] TIMER_BLINK = 정상 램프의 파랑↔노랑 1초 교대 (사용자 지시)
-	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 28 };
+	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 15 };	// [LGLS 2026-09-29] 28 -> 15 (랙투랙·호기간·HS·통신두절·작업번호·레일 제거, 사용자 지시)
 	// 이름이 잘리지 않을 만큼만 열을 둔다(폭이 좁으면 줄 수가 는다).
 	static int ChipCols(int nWidth) { if (nWidth < 420) return 3; if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
 	// 그룹 4개(10/10/3/5개)를 다 담는 데 필요한 높이 - 범례 칸의 기본값으로 쓴다
@@ -264,37 +264,28 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 {
 	CConfig* pCfg = (m_pDoc != NULL) ? m_pDoc->m_pConfig : NULL;
 	if (pCfg == NULL) return;
-	struct LGIT { int grp; int rail; COLORREF clr; LPCTSTR name; };
+	// [LGLS 2026-09-29] hide = Config::m_bLEGEND_HIDE 의 칸 번호 (범례 창의 [숨김] 체크).
+	//   -1 이면 숨길 수 없는 줄. 크레인 쪽 "수동"·"에러" 는 C/V 와 같은 색이라 같은 칸을 쓴다.
+	//   [LGLS 2026-09-29] 랙투랙 / 호기간 이동 / 반자동 랙투랙 / 반자동 호기간 이동 /
+	//     입고 HS / 출고 HS / 통신두절 / 작업번호 있음 / 레일 관련 전부를 뺐다 (사용자 지시).
+	struct LGIT { int grp; int rail; int hide; COLORREF clr; LPCTSTR name; };
 	LGIT IT[CHIP_CNT] = {
-		{ 0, 0, pCfg->m_clrUSER_COLOR_STO,        _T("입고") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_RET,        _T("출고") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_MOVE,       _T("이동") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_RTR,        _T("랙투랙") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_ATA,        _T("호기간이동") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_SEMI_STO,   _T("반자동 입고") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_SEMI_RET,   _T("반자동 출고") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_SEMI_MOVE,  _T("반자동 이동") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_SEMI_RTR,   _T("반자동 랙투랙") },
-		{ 0, 0, pCfg->m_clrUSER_COLOR_SEMI_ATA,   _T("반자동 호기간") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_STN_STO,    _T("입고대") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_STN_RET,    _T("출고대") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_HS_STO,     _T("입고 HS") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_HS_RET,     _T("출고 HS") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_SUSPEND,    _T("일시정지") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_DISCONNECT, _T("통신두절") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_CV_SEARCH,  _T("검색") },
-		{ 1, 0, pCfg->m_clrUSER_COLOR_TRACKING,   _T("작업번호 있음") },
-		{ 2, 0, LEGEND_IDLE_GRAY,                 _T("정상") },
-		{ 2, 0, pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
-		{ 2, 0, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") },
-		{ 3, 1, pCfg->m_clrUSER_COLOR_STO_SUSPEND,  _T("입고 금지") },
-		{ 3, 1, pCfg->m_clrUSER_COLOR_RET_SUSPEND,  _T("출고 금지") },
-		{ 3, 1, pCfg->m_clrUSER_COLOR_ALL_SUSPEND,  _T("입출고 정지") },
-		{ 3, 1, pCfg->m_clrUSER_COLOR_RAIL_ERROR,   _T("레일 에러") },
-		{ 3, 1, pCfg->m_clrUSER_COLOR_SC_INVK,      _T("작업중") } };
-	LPCTSTR GRP[4] = { _T("작업 색상"), _T("C/V 상태"), _T("S/C · RGV 상태"), _T("S/C · RGV 레일") };
+		{ 0, 0,  0, pCfg->m_clrUSER_COLOR_STO,        _T("입고") },
+		{ 0, 0,  1, pCfg->m_clrUSER_COLOR_RET,        _T("출고") },
+		{ 0, 0,  2, pCfg->m_clrUSER_COLOR_MOVE,       _T("이동") },
+		{ 0, 0,  9, pCfg->m_clrUSER_COLOR_SEMI_STO,   _T("반자동 입고") },
+		{ 0, 0, 10, pCfg->m_clrUSER_COLOR_SEMI_RET,   _T("반자동 출고") },
+		{ 0, 0, 11, pCfg->m_clrUSER_COLOR_SEMI_MOVE,  _T("반자동 이동") },
+		{ 1, 0,  3, pCfg->m_clrUSER_COLOR_STN_STO,    _T("입고대") },
+		{ 1, 0,  4, pCfg->m_clrUSER_COLOR_STN_RET,    _T("출고대") },
+		{ 1, 0,  5, pCfg->m_clrUSER_COLOR_SUSPEND,    _T("일시정지") },
+		{ 1, 0,  6, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") },
+		{ 1, 0,  7, pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
+		{ 1, 0,  8, pCfg->m_clrUSER_COLOR_CV_SEARCH,  _T("검색") },
+		{ 2, 0, -1, LEGEND_IDLE_GRAY,                 _T("정상") },
+		{ 2, 0,  7, pCfg->m_clrUSER_COLOR_MANUAL,     _T("수동") },
+		{ 2, 0,  6, pCfg->m_clrUSER_COLOR_ERROR,      _T("에러") } };
+	LPCTSTR GRP[3] = { _T("작업 색상"), _T("C/V 상태"), _T("S/C · RGV 상태") };
 
 	int nCol = ChipCols(rc.Width());
 	int nW   = (rc.Width() - 8) / nCol;
@@ -307,6 +298,10 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 	int nSlot = 0;
 	for (int i = 0; i < CHIP_CNT; i++)
 	{
+		// [LGLS 2026-09-29] 범례 창에서 [숨김] 을 체크한 항목은 그리지 않는다 (사용자 지시).
+		//   그룹이 통째로 비면 제목도 안 나오게, 제목은 남은 항목을 만났을 때만 찍는다.
+		if (IT[i].hide >= 0 && IT[i].hide < 12 && pCfg->m_bLEGEND_HIDE[IT[i].hide]) continue;
+
 		if (bGroup && IT[i].grp != nPrevGrp)
 		{
 			if (nPrevGrp >= 0) y += ((nSlot + nCol - 1) / nCol) * nRowH + 3;	// 앞 그룹이 쓴 줄

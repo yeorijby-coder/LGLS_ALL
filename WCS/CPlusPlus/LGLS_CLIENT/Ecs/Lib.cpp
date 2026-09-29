@@ -2089,6 +2089,42 @@ int CLib::TrackNoDigits()
 	return s_nDigits;
 }
 
+// [LGLS 2026-09-29] 화면 배율(%) - 4K 모니터링 TV 대응 (사용자 지시).
+//   Ecs.ini [DISPLAY] UI_SCALE 이 0(기본) 이면 화면 높이로 정한다.
+//     2160 이상 = 200 / 1800 이상 = 175 / 1600 이상 = 150 / 1300 이상 = 125 / 그 미만 = 100
+//   0 이 아니면 그 값을 그대로 쓴다(100~300 으로 막는다).
+//   3초마다 다시 읽으므로 ini 를 고치면 곧 반영된다(다시 그리는 시점에).
+int CLib::UiScale()
+{
+	static int   s_nScale = -1;
+	static DWORD s_dwTick = 0;
+	DWORD dwNow = ::GetTickCount();
+	if (s_nScale < 0 || dwNow - s_dwTick >= 3000)
+	{
+		s_dwTick = dwNow;
+		int nIni = ::GetPrivateProfileInt(_T("DISPLAY"), _T("UI_SCALE"), 0, ECS_INI_FILE);
+		if (nIni > 0)
+		{
+			s_nScale = (nIni < 100) ? 100 : ((nIni > 300) ? 300 : nIni);
+		}
+		else
+		{
+			int cy = ::GetSystemMetrics(SM_CYSCREEN);
+			if      (cy >= 2160) s_nScale = 200;
+			else if (cy >= 1800) s_nScale = 175;
+			else if (cy >= 1600) s_nScale = 150;
+			else if (cy >= 1300) s_nScale = 125;
+			else                 s_nScale = 100;
+		}
+	}
+	return s_nScale;
+}
+
+int CLib::UiPx(int nPx100)
+{
+	return (nPx100 * UiScale() + 50) / 100;
+}
+
 CString CLib::TrimTrackNo(const CString& strNo)
 {
 	CString strOut = strNo;

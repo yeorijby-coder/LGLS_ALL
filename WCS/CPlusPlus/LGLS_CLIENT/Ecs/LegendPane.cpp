@@ -30,67 +30,60 @@ struct ST_LEGEND_ROW
 {
 	int			nKind;
 	int			nColor;
+	int			nHide;		// [LGLS 2026-09-29] 숨김 플래그 칸 (-1 = 숨길 수 없음)
 	LPCTSTR		szKey;
 	LPCTSTR		szKor;
 };
 
+//   [LGLS 2026-09-29] nHide = Config::m_bLEGEND_HIDE 의 칸 번호 (범례 창의 [숨김] 체크).
+//     -1 이면 숨길 수 없는 줄(그룹 제목·설명·고정색).
+//     같은 그룹의 항목이 모두 숨겨지면 그룹 제목도 그리지 않는다.
+//   [LGLS 2026-09-29] 랙투랙 / 호기간 이동 / 반자동 랙투랙 / 반자동 호기간 이동 /
+//     입고 HS / 출고 HS / 통신두절 / 작업번호 있음 / 레일 관련 전부를 뺐다 (사용자 지시).
 static const ST_LEGEND_ROW g_arrLegend[] =
 {
-	{ 0,  0, _T("grp_cv_job"),	_T("C/V 작업")		},
-	{ 1,  1, _T("sto"),			_T("입고")			},
-	{ 1,  2, _T("ret"),			_T("출고")			},
-	{ 1,  3, _T("move"),		_T("이동")			},
-	{ 1,  4, _T("rtr"),			_T("되돌림")		},
-	{ 1,  5, _T("ata"),			_T("호기간 이동")	},
+	{ 0,  0, -1, _T("grp_cv_job"),	_T("C/V 작업")		},
+	{ 1,  1,  0, _T("sto"),			_T("입고")			},
+	{ 1,  2,  1, _T("ret"),			_T("출고")			},
+	{ 1,  3,  2, _T("move"),		_T("이동")			},
 
-	{ 0,  0, _T("grp_cv_stat"),	_T("C/V 상태")		},
-	{ 1,  6, _T("sto_ready"),	_T("입고대기")		},
-	{ 1,  7, _T("ret_ready"),	_T("출고대기")		},
-	{ 1,  8, _T("sto_hs"),		_T("입고 HS")		},
-	{ 1,  9, _T("ret_hs"),		_T("출고 HS")		},
-	{ 1, 10, _T("suspend"),		_T("일시정지")		},
+	{ 0,  0, -1, _T("grp_cv_stat"),	_T("C/V 상태")		},
+	{ 1,  6,  3, _T("sto_ready"),	_T("입고대기")		},
+	{ 1,  7,  4, _T("ret_ready"),	_T("출고대기")		},
+	{ 1, 10,  5, _T("suspend"),		_T("일시정지")		},
 
-	{ 0,  0, _T("grp_etc"),		_T("상태")			},
-	{ 1, 11, _T("error"),		_T("에러")			},
-	{ 1, 12, _T("manual"),		_T("수동/R/Stop")	},
-	{ 1, 13, _T("disconnect"),	_T("링크단절")		},
-	{ 1, 14, _T("search"),		_T("검색")			},
+	{ 0,  0, -1, _T("grp_etc"),		_T("상태")			},
+	{ 1, 11,  6, _T("error"),		_T("에러")			},
+	{ 1, 12,  7, _T("manual"),		_T("수동/R/Stop")	},
+	{ 1, 14,  8, _T("search"),		_T("검색")			},
 
-	{ 0,  0, _T("grp_semi"),	_T("반자동 작업")	},
-	{ 1, 15, _T("semi_sto"),	_T("반자동입고")	},
-	{ 1, 16, _T("semi_ret"),	_T("반자동출고")	},
-	{ 1, 17, _T("semi_move"),	_T("반자동이동")	},
-	{ 1, 18, _T("semi_rtr"),	_T("반자동되돌림")	},
-	{ 1, 19, _T("semi_ata"),	_T("반자동호기간")	},
+	{ 0,  0, -1, _T("grp_semi"),	_T("반자동 작업")	},
+	{ 1, 15,  9, _T("semi_sto"),	_T("반자동입고")	},
+	{ 1, 16, 10, _T("semi_ret"),	_T("반자동출고")	},
+	{ 1, 17, 11, _T("semi_move"),	_T("반자동이동")	},
 
 	// 크레인(S/C) / RTV : 포크(본체) 색
-	{ 0,  0, _T("grp_veh"),		_T("크레인 / RTV")	},
-	{ 3, 90, _T("veh_idle"),	_T("작업 없음")		},
-	{ 3, 91, _T("veh_off"),		_T("미가동/수동")	},
-	{ 3, 11, _T("veh_err"),		_T("에러")			},
-	{ 4,  0, _T("veh_note"),	_T("작업 중엔 포크가 작업색") },
-
-	// 크레인(S/C) / RTV : 레일 색
-	{ 0,  0, _T("grp_rail"),	_T("S/C·RTV 레일")	},
-	{ 2, 20, _T("rail_sto"),	_T("입고정지")		},
-	{ 2, 21, _T("rail_ret"),	_T("출고정지")		},
-	{ 2, 22, _T("rail_all"),	_T("입출고정지")	},
-	{ 2, 23, _T("rail_err"),	_T("에러")			},
-	{ 2, 24, _T("rail_invk"),	_T("작업 중")		},
+	{ 0,  0, -1, _T("grp_veh"),		_T("크레인 / RTV")	},
+	{ 3, 90, -1, _T("veh_idle"),	_T("작업 없음")		},
+	{ 3, 91, -1, _T("veh_off"),		_T("미가동/수동")	},
+	{ 3, 11, -1, _T("veh_err"),		_T("에러")			},
+	{ 4,  0, -1, _T("veh_note"),	_T("작업 중엔 포크가 작업색") },
 };
 
 static const int LEGEND_ROW_CNT = sizeof(g_arrLegend) / sizeof(g_arrLegend[0]);
 
-#define LEGEND_PAD			4
-#define LEGEND_TITLE_H		20
-#define LEGEND_GROUP_H		17
-#define LEGEND_ITEM_H		15
-#define LEGEND_RV_H			17		// rv 아이콘 줄은 조금 높게
-#define LEGEND_NOTE_H		30
-#define LEGEND_SWATCH_W		18
-#define LEGEND_SWATCH_H		10
-#define LEGEND_RV_W			28		// rv 아이콘 폭
-#define LEGEND_RV_ICON_H	13
+// [LGLS 2026-09-29] 치수는 100% 기준이고, 실제 값은 화면 배율을 먹인다 (4K 대응, 사용자 지시).
+//   Ecs.ini [DISPLAY] UI_SCALE - CLib::UiScale() 참조.
+#define LEGEND_PAD			CLib::UiPx(4)
+#define LEGEND_TITLE_H		CLib::UiPx(20)
+#define LEGEND_GROUP_H		CLib::UiPx(17)
+#define LEGEND_ITEM_H		CLib::UiPx(15)
+#define LEGEND_RV_H			CLib::UiPx(17)		// rv 아이콘 줄은 조금 높게
+#define LEGEND_NOTE_H		CLib::UiPx(30)
+#define LEGEND_SWATCH_W		CLib::UiPx(18)
+#define LEGEND_SWATCH_H		CLib::UiPx(10)
+#define LEGEND_RV_W			CLib::UiPx(28)		// rv 아이콘 폭
+#define LEGEND_RV_ICON_H	CLib::UiPx(13)
 
 IMPLEMENT_DYNAMIC(CLegendPane, CWnd)
 
@@ -108,6 +101,12 @@ CLegendPane::CLegendPane()
 
 CLegendPane::~CLegendPane()
 {
+}
+
+// [LGLS 2026-09-29] 화면 배율을 먹인 패널 폭 (4K 대응, 사용자 지시)
+int CLegendPane::PaneWidth()
+{
+	return CLib::UiPx(PANE_WIDTH);
 }
 
 CString CLegendPane::GetIniPath()
@@ -128,15 +127,36 @@ BOOL CLegendPane::CreatePane(CWnd* pParent, UINT nID)
 										  (HBRUSH)::GetStockObject(WHITE_BRUSH), NULL);
 
 	if (!CWnd::CreateEx(0, szClass, _T(""), WS_CHILD | WS_CLIPSIBLINGS,
-						CRect(0, 0, PANE_WIDTH, 100), pParent, nID))
+						CRect(0, 0, PaneWidth(), 100), pParent, nID))
 		return FALSE;
 
-	m_fntItem.CreateFont(11, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+	m_fntItem.CreateFont(CLib::UiPx(11), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
 						 HANGEUL_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 						 CLEARTYPE_QUALITY, DEFAULT_PITCH, _T("맑은 고딕"));
-	m_fntTitle.CreateFont(12, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+	m_fntTitle.CreateFont(CLib::UiPx(12), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
 						  HANGEUL_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 						  CLEARTYPE_QUALITY, DEFAULT_PITCH, _T("맑은 고딕"));
+	return TRUE;
+}
+
+// [LGLS 2026-09-29] 이 줄을 범례에서 뺄까 (범례 창의 [숨김] 체크, 사용자 지시).
+//   그룹 제목(nKind 0)은 그 그룹의 항목이 하나도 안 남을 때만 뺀다.
+static BOOL IsRowHidden(const CConfig* pConfig, int nRow)
+{
+	if (pConfig == NULL) return FALSE;
+
+	const ST_LEGEND_ROW& r = g_arrLegend[nRow];
+	if (r.nKind != 0)
+		return (r.nHide >= 0 && r.nHide < 12 && pConfig->m_bLEGEND_HIDE[r.nHide]);
+
+	// 그룹 제목 : 다음 그룹 제목이 나오기 전까지 살아남는 항목이 있는지 본다
+	for (int i = nRow + 1; i < LEGEND_ROW_CNT; i++)
+	{
+		if (g_arrLegend[i].nKind == 0) break;
+		const ST_LEGEND_ROW& c = g_arrLegend[i];
+		if (!(c.nHide >= 0 && c.nHide < 12 && pConfig->m_bLEGEND_HIDE[c.nHide]))
+			return FALSE;
+	}
 	return TRUE;
 }
 
@@ -155,8 +175,12 @@ static int RowHeight(int nKind)
 int CLegendPane::GetWantHeight() const
 {
 	int nH = LEGEND_PAD * 2 + LEGEND_TITLE_H;
+	CConfig* pCfg = (m_pDoc != NULL) ? m_pDoc->m_pConfig : NULL;
 	for (int i = 0; i < LEGEND_ROW_CNT; i++)
+	{
+		if (IsRowHidden(pCfg, i)) continue;	// [LGLS 2026-09-29] 숨긴 줄은 자리도 차지하지 않는다
 		nH += RowHeight(g_arrLegend[i].nKind);
+	}
 	return nH;
 }
 
@@ -312,9 +336,13 @@ void CLegendPane::OnPaint()
 	memDC.LineTo(rcClient.right - LEGEND_PAD, rcTitle.bottom - 2);
 	nY = rcTitle.bottom;
 
+	CConfig* pCfgRow = (m_pDoc != NULL) ? m_pDoc->m_pConfig : NULL;
 	for (int i = 0; i < LEGEND_ROW_CNT; i++)
 	{
 		if (nY > rcClient.bottom) break;		// 창이 작으면 잘라 그린다
+
+		// [LGLS 2026-09-29] 범례 창에서 [숨김] 을 체크한 항목은 그리지 않는다 (사용자 지시)
+		if (IsRowHidden(pCfgRow, i)) continue;
 
 		CString strText = GetItemText(i);
 		int nH = RowHeight(g_arrLegend[i].nKind);
