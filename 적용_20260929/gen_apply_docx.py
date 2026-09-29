@@ -553,7 +553,8 @@ G.numbered(d, [
     'SQL 은 필요한 것만 돌린다. 행을 줄일 때 02 → 03, 되돌릴 때 01.',
     '출고 완료를 3초 안에 보장하려면 SQL 04(래치 컬럼)를 돌리고 EQP_TASK 도 함께 교체한다.',
     'Client 를 DB 로 배포하려면 SQL UPDOWN_01 을 돌리고 TASK/Upload 를 담당자 PC 에 둔다. (8 장)',
-    '새 PC 에 Client 를 깔 때는 Client_설치 폴더를 통째로 가져가 Setup.bat 을 관리자로 실행한다. (9 장)',
+    '새 PC 에 Client 를 깔 때는 Client_설치 폴더를 통째로 가져가 Setup.bat 을 관리자로 실행한다. '
+    '설치 위치와 DB 서버 IP·포트를 물어보므로 답만 하면 된다. (9 장)',
 ])
 
 d.add_heading('7.1 확인하면 좋은 것', 2)
@@ -690,21 +691,52 @@ G.table(d, ['것', '무엇'], [
                 '그리고 내려받기 프로그램(EcsClient.exe)과 설정'],
     ['Prerequisites/vc_redist.x86.exe', 'Visual C++ 재배포 패키지. Ecs.exe 가 mfc140u.dll 을 쓴다.'],
     ['Prerequisites/ndp48-web.exe', '.NET Framework 4.8. Windows 10 이상은 이미 있어 거의 건너뛴다.'],
-    ['Setup.bat', '위 순서대로 깔고 바탕화면 바로가기를 만든다.'],
+    ['Setup.bat', '설치 위치와 DB 서버를 물어보고, 깔고, 바탕화면 바로가기를 만든다.'],
+    ['Set-DbServer.ps1', 'Setup.bat 이 부르는 도우미. 받은 주소를 설정 파일에 적는다.'],
     ['읽어보세요.txt', '같은 내용의 짧은 안내.'],
 ], widths=[4.8, 11.2])
 
-d.add_heading('9.2 MS-SQL 접속에 따로 깔 것은 없다', 2)
+d.add_heading('9.2 설치할 때 DB 서버를 물어본다', 2)
+G.para(d, 'DB 주소는 PC 마다 다르다. 깔고 나서 설정 파일 두 개를 찾아 고치는 것은 '
+          '빠뜨리기 쉬우므로, 설치가 먼저 물어보고 스스로 적는다.')
+code(d, [
+    ' [ DB 서버 ]',
+    '   Client 와 내려받기 프로그램이 붙을 SQL Server 입니다.',
+    '   PC 마다 다르므로 여기서 받아 설정에 적어 둡니다.',
+    '',
+    '   서버 IP [127.0.0.1] : 192.100.1.191',
+    '   포트 [1433] :',
+    '   데이터베이스 [LGLS_MCS_IO] :',
+])
+G.para(d, '받은 값은 두 곳에 들어간다. 섹션까지 맞춰 찾으므로 다른 섹션의 같은 이름은 건드리지 않고, '
+          '주석(; 으로 시작하는 줄)도 그대로 둔다.')
+G.table(d, ['파일', '섹션', '항목'], [
+    ['Ecs.ini', '[DB_2]', 'SERVER=   DATABASE='],
+    ['WmsDown.ini', '[DB Server]', 'SERVERNAME=   DATABASE='],
+], widths=[4.0, 4.0, 8.0])
+
+d.add_heading('9.2.1 주소를 적는 방법 세 가지', 3)
+G.table(d, ['경우', '서버 IP 칸에', '포트 칸에'], [
+    ['보통', '192.100.1.191', '1433 (기본)'],
+    ['포트를 바꾼 현장', '127.0.0.1', '1435'],
+    ['이름있는 인스턴스', 'PC이름\\SQLEXPRESS', '쓰지 않는다'],
+], widths=[3.5, 6.5, 6.0])
+note(d, '인스턴스 이름(역슬래시)이 들어 있으면 포트를 붙이지 않는다 - 둘을 같이 쓰면 붙지 않는다. '
+        '포트가 1433 이면 주소만 적는다.')
+G.para(d, '나중에 서버가 바뀌면 Setup.bat 을 다시 돌리면 된다. '
+          '쓰던 설정은 그대로 두고 주소만 바꿔 준다.')
+
+d.add_heading('9.3 MS-SQL 접속에 따로 깔 것은 없다', 2)
 G.para(d, 'Client(Ecs.exe) 는 Windows 에 늘 들어 있는 ODBC 드라이버 "SQL Server" 로 붙고'
           '(Ecs.ini 의 [DB_2] DRIVER=SQL Server), '
           'EcsClient.exe 는 .NET 에 들어 있는 SqlClient 로 붙는다. '
           '둘 다 Windows 와 .NET 에 이미 들어 있는 것이라 따로 깔 것이 없다.')
 
-d.add_heading('9.3 설정은 덮어쓰지 않는다', 2)
+d.add_heading('9.4 설정은 덮어쓰지 않는다', 2)
 G.para(d, '이미 쓰던 Ecs.ini / WmsDown.ini 가 있으면 그대로 둔다. '
           '새 것은 Ecs.ini.new / WmsDown.ini.new 로 남기니 견주어 보고 필요한 줄만 옮기면 된다.')
-note(d, '설치 뒤 두 곳의 DB 주소를 꼭 확인한다. '
-        'Ecs.ini 의 [DB_2] SERVER, WmsDown.ini 의 [DB Server] SERVERNAME.')
+note(d, 'DB 주소는 설치가 물어보고 적어 준다(9.2). 쓰던 ini 를 그대로 둔 경우에도 주소는 새로 적는다. '
+        '계정을 쓰려면 WmsDown.ini 의 [DB Server] USERID / PASSWORD 에 적는다 - 비우면 Windows 인증이다.')
 
 out = os.path.join(HERE, '2026-09-29_적용안내서.docx')
 d.save(out)
