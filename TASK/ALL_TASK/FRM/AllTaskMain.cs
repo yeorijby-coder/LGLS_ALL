@@ -26,19 +26,7 @@ namespace ALL_TASK
         private static extern int GetPrivateProfileString(string sec, string key, string def,
                                                           System.Text.StringBuilder ret, int size, string file);
 
-        // [LGLS 2026-09-29] 실행 파일을 HECS.exe 로 바꾸면서 설정도 HECS.INI 로 쓴다 (사용자 지시).
-        //   현장에 종전 ALL_TASK.INI 만 있는 경우를 위해, 없으면 그 파일을 읽는다.
-        private static readonly string INI = PickIni();
-
-        private static string PickIni()
-        {
-            string strDir = System.IO.Path.GetDirectoryName(Application.ExecutablePath);
-            string strNew = System.IO.Path.Combine(strDir, "HECS.INI");
-            if (System.IO.File.Exists(strNew)) return strNew;
-            string strOld = System.IO.Path.Combine(strDir, "ALL_TASK.INI");
-            if (System.IO.File.Exists(strOld)) return strOld;
-            return strNew;	// 둘 다 없으면 새 이름 기준(기본값으로 돈다)
-        }
+        private const string INI = "./ALL_TASK.INI";
 
         private readonly List<TaskHost> m_lstTask = new List<TaskHost>();
         private readonly Dictionary<TaskKind, Button> m_dicBtnStart = new Dictionary<TaskKind, Button>();
@@ -88,7 +76,7 @@ namespace ALL_TASK
         {
             base.OnLoad(e);
 
-            this.Text = WcsCommon.cWcsVer.Title + "  -  HECS (EQP / IO / HOST 통합)";
+            this.Text = WcsCommon.cWcsVer.Title + "  -  ALL_TASK (EQP / IO / HOST 통합)";
             CheckForIllegalCrossThreadCalls = false;   // 세 태스크가 모두 이 전제로 만들어져 있다
 
             BuildControlPanel();
@@ -101,7 +89,7 @@ namespace ALL_TASK
             tmrState.Tick += tmrState_Tick;
             tmrState.Enabled = true;
 
-            WcsCommon.cTaskLog.Write("ALL", "HECS", "IMP", "HECS 기동");
+            WcsCommon.cTaskLog.Write("ALL", "ALL_TASK", "IMP", "ALL_TASK 기동");
 
             // 자동 기동 (ALL_TASK.INI [AUTOSTART]) - 기동 순서는 EQP → IO → HOST
             foreach (TaskHost th in m_lstTask)
@@ -255,12 +243,12 @@ namespace ALL_TASK
             Cursor = Cursors.WaitCursor;
             try
             {
-                WcsCommon.cTaskLog.Write("ALL", "HECS", "IMP", "[" + pTh.Name + "] 기동 요청");
+                WcsCommon.cTaskLog.Write("ALL", "ALL_TASK", "IMP", "[" + pTh.Name + "] 기동 요청");
                 if (!pTh.Start())
                     MessageBox.Show(this, "[" + pTh.Name + "] 기동 실패\r\n" + pTh.LastError,
-                                    "HECS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    "ALL_TASK", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 else
-                    WcsCommon.cTaskLog.Write("ALL", "HECS", "IMP", "[" + pTh.Name + "] 기동 완료");
+                    WcsCommon.cTaskLog.Write("ALL", "ALL_TASK", "IMP", "[" + pTh.Name + "] 기동 완료");
             }
             finally { Cursor = Cursors.Default; }
         }
@@ -272,9 +260,9 @@ namespace ALL_TASK
             Cursor = Cursors.WaitCursor;
             try
             {
-                WcsCommon.cTaskLog.Write("ALL", "HECS", "IMP", "[" + pTh.Name + "] 정지 요청");
+                WcsCommon.cTaskLog.Write("ALL", "ALL_TASK", "IMP", "[" + pTh.Name + "] 정지 요청");
                 pTh.Stop();
-                WcsCommon.cTaskLog.Write("ALL", "HECS", "IMP", "[" + pTh.Name + "] 정지 완료");
+                WcsCommon.cTaskLog.Write("ALL", "ALL_TASK", "IMP", "[" + pTh.Name + "] 정지 완료");
             }
             finally { Cursor = Cursors.Default; }
         }
@@ -310,7 +298,7 @@ namespace ALL_TASK
             try
             {
                 lsvThread.Items.Clear();
-                AddThreadRow("ALL", "HECS", true);
+                AddThreadRow("ALL", "ALL_TASK", true);
                 foreach (TaskHost th in m_lstTask)
                 {
                     string[] arr = th.ThreadStates();
@@ -361,7 +349,7 @@ namespace ALL_TASK
                 foreach (TaskHost th in m_lstTask) if (th.IsRunning) nRun++;
                 if (nRun > 0 &&
                     MessageBox.Show(this, "동작 중인 태스크 " + nRun + "개를 정지하고 종료합니다.\r\n계속하시겠습니까?",
-                                    "HECS", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                                    "ALL_TASK", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 {
                     e.Cancel = true;
                     return;
@@ -374,7 +362,7 @@ namespace ALL_TASK
                 try { th.Stop(); } catch { }
             }
 
-            WcsCommon.cTaskLog.Write("ALL", "HECS", "IMP", "HECS 종료");
+            WcsCommon.cTaskLog.Write("ALL", "ALL_TASK", "IMP", "ALL_TASK 종료");
             try { WcsCommon.cTaskLog.Shutdown(); } catch { }
 
             base.OnFormClosing(e);

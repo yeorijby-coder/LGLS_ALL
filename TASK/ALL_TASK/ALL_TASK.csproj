@@ -7,7 +7,7 @@
     <ProjectGuid>{7F2A6C41-9D3B-4E58-A1C6-5B0E9A47D310}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>ALL_TASK</RootNamespace>
-    <AssemblyName>HECS</AssemblyName>
+    <AssemblyName>ALL_TASK</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <StartupObject>ALL_TASK.Program</StartupObject>
