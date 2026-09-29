@@ -56,7 +56,12 @@ namespace EcsClient
 			// 프로그램이 기동중인지 확인
 			//--------------------------------------------------
 			{
-                if (System.Diagnostics.Process.GetCurrentProcess().ProcessName.ToUpper() != "ECSCLIENT" & System.Diagnostics.Process.GetCurrentProcess().ProcessName.ToUpper() != "ECSCLIENT.VSHOST")
+                // [LGLS 2026-09-30] 실행 파일 이름을 Ecs.exe 로 바꾸면서 함께 고친다.
+                //   이름을 바꿔 복제해 돌리는 것을 막으려고 넣어 둔 검사인데,
+                //   기대하는 이름이 EcsClient 로 박혀 있어 그대로 두면 아무것도 실행되지 않는다.
+                //     "프로세스명이 변경되어 프로그램을 실행 할 수 없습니다."
+                string strProc = System.Diagnostics.Process.GetCurrentProcess().ProcessName.ToUpper();
+                if (strProc != "ECS" & strProc != "ECS.VSHOST")
 				{
 					MessageBox.Show("프로세스명이 변경되어 프로그램을 실행 할 수 없습니다.", "Running...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 					Application.Exit();
@@ -155,6 +160,37 @@ namespace EcsClient
 				}
 			}
 			return true;
+		}
+
+		// [LGLS 2026-09-30] 받지 않을 파일인가.
+		//   설정 파일은 PC 마다 다르다. 덮어쓰면 그 PC 의 설정이 사라진다.
+		//   기본값 : Ecs.ini, WmsDown.ini
+		//   바꾸려면 WmsDown.ini 에 이렇게 적는다.
+		//     [APPLICATION]
+		//     SKIP_FILES=Ecs.ini,WmsDown.ini,Config.ini
+		private string[] m_arrSkip = null;
+
+		private bool IsSkipFile(string strName)
+		{
+			if (m_arrSkip == null)
+			{
+				StringBuilder sbSkip = new StringBuilder(512);
+				GetPrivateProfileString("APPLICATION", "SKIP_FILES", "Ecs.ini,WmsDown.ini",
+										sbSkip, sbSkip.Capacity, modCom.DOWN_INI);
+				string strList = sbSkip.ToString().Trim();
+				if (strList.Length == 0) strList = "Ecs.ini,WmsDown.ini";
+
+				string[] arrTmp = strList.Split(',');
+				for (int i = 0; i < arrTmp.Length; i++)
+					arrTmp[i] = arrTmp[i].Trim().ToUpper();
+				m_arrSkip = arrTmp;
+			}
+
+			string strUp = (strName == null) ? "" : strName.Trim().ToUpper();
+			for (int i = 0; i < m_arrSkip.Length; i++)
+				if (m_arrSkip[i].Length > 0 && m_arrSkip[i] == strUp) return true;
+
+			return false;
 		}
 
 		private bool OlDbBlob2File(string pComp, ref string pMsg)
@@ -385,6 +421,17 @@ namespace EcsClient
 								return false;
 							}
 
+							// [LGLS 2026-09-30] ★PC 마다 다른 설정 파일은 받지 않는다★
+							//   설치할 때 적어 둔 DB 주소가 내려받기로 덮여 날아갔다.
+							//   그러면 Client 가 DB 에 붙지 못하고 조용히 끝난다 - 원인을 찾기 어렵다.
+							//   설정은 올리지 않는 것이 원칙이지만, 실수로 올라와도 각 PC 를 지킨다.
+							//   목록은 WmsDown.ini 의 [APPLICATION] SKIP_FILES 로 바꿀 수 있다.
+							if (IsSkipFile(strDown_Name))
+							{
+								Application.DoEvents();
+								continue;
+							}
+
 							string strKey = strWK_DN_PGM + "->" + strDown_Name;
 							GetPrivateProfileString("DOWN_FILE", strKey, "0", sb, sb.Capacity, modCom.DOWN_INI);
 							dblCK_DN_VER = Convert.ToDouble(sb.ToString());
@@ -602,18 +649,33 @@ namespace EcsClient
 					}
                 }
 
+				// [LGLS 2026-09-30] 읽기를 먼저 닫는다.
+				//   아래 DELETE 는 지금까지 읽던 dr_s 가 열린 채로 돌고 있었다.
+				//   연결 하나에 읽기 하나만 열 수 있으므로 SQL Server 에서는
+				//     "이 Command와 연결된 DataReader가 이미 열려 있습니다"
+				//   가 나고, 파일은 다 받아 놓고도 화면이 뜨지 않았다.
+				dr_s.Close();
+
 				//오래된 자료를 삭제한다.
 				{
 					cmd.CommandText = "";
 					//m_strSql += modCom.CRLF + "  SELECT *";
-					cmd.CommandText += modCom.CRLF + "DELETE												";
-					cmd.CommandText += modCom.CRLF + "  FROM UP_DOWN										";
-					cmd.CommandText += modCom.CRLF + " WHERE (DN_NM, CAST(DN_VER as INTEGER)) NOT IN (		";
-					cmd.CommandText += modCom.CRLF + "		  SELECT DN_NM, MAX(CAST(DN_VER as INTEGER))	";
-					cmd.CommandText += modCom.CRLF + "		  FROM UP_DOWN									";
-					cmd.CommandText += modCom.CRLF + "		  WHERE DN_PGM = 'COMMON'						";
-					cmd.CommandText += modCom.CRLF + "		  GROUP BY DN_NM								";
-					cmd.CommandText += modCom.CRLF + ")													";
+					// [LGLS 2026-09-30] ★내려받기를 다 해 놓고 마지막에 실패하던 자리★
+					//   종전 : WHERE (DN_NM, CAST(DN_VER as INTEGER)) NOT IN ( SELECT 두 칸 ... )
+					//   두 칸을 한꺼번에 견주는 이 문법은 PostgreSQL 것이고 SQL Server 에는 없다.
+					//     "조건이 필요한 컨텍스트(위치 ;)에 부울이 아닌 유형의 식이 지정되었습니다"
+					//   파일은 이미 다 받은 뒤라, 사람 눈에는 "받아 놓고 화면이 안 뜬다" 로 보였다.
+					//   뜻은 그대로 두고 어느 DB 에서나 도는 NOT EXISTS 로 바꾼다.
+					cmd.CommandText += modCom.CRLF + "DELETE FROM UP_DOWN                                 ";
+					cmd.CommandText += modCom.CRLF + " WHERE NOT EXISTS (                                 ";
+					cmd.CommandText += modCom.CRLF + "       SELECT 1 FROM (                               ";
+					cmd.CommandText += modCom.CRLF + "              SELECT DN_NM, MAX(CAST(DN_VER as INTEGER)) AS MAX_VER ";
+					cmd.CommandText += modCom.CRLF + "                FROM UP_DOWN                         ";
+					cmd.CommandText += modCom.CRLF + "               WHERE DN_PGM = 'COMMON'               ";
+					cmd.CommandText += modCom.CRLF + "               GROUP BY DN_NM ) M                    ";
+					cmd.CommandText += modCom.CRLF + "        WHERE M.DN_NM = UP_DOWN.DN_NM                ";
+					cmd.CommandText += modCom.CRLF + "          AND M.MAX_VER = CAST(UP_DOWN.DN_VER as INTEGER) ";
+					cmd.CommandText += modCom.CRLF + ")                                                   ";
 					iCnt = cmd.ExecuteNonQuery();
 
 					if (iCnt < 0)
@@ -627,13 +689,13 @@ namespace EcsClient
 				strLAST_UP_DT = Strings.Format(DateTime.Now, "yyyy-MM-dd HH:mm:ss");
 				modCom.WriteInitProfile("DOWN_FILE", strEX_PGM + "->최종DOWNLOAD일시", strLAST_UP_DT);
 
-				dr_s.Close();
-
 				modCom.gconDb.Close();
 
 				return true; 
 			} catch (Exception ex) {
-				pMsg = ex.Message;
+				// [LGLS 2026-09-30] 어디서 났는지까지 알려 준다.
+				//   종전에는 메시지만 나와, 현장에서 어느 자리인지 알 길이 없었다.
+				pMsg = ex.Message + Environment.NewLine + Environment.NewLine + ex.StackTrace;
 				return false;
 			}
 		}
@@ -864,19 +926,38 @@ namespace EcsClient
 
                     try
 					{
-						if (i == 1)
-                        {
+						// [LGLS 2026-09-30] ★다 받아 놓고도 Client 가 뜨지 않던 자리★
+						//   ① 실행 경로가 "C:\\CLIENT\\WCS\\" 로 박혀 있었다. 앞 현장의 경로다.
+						//      깐 곳이 어디든 돌게, 자기가 있는 폴더를 기준으로 삼는다.
+						//   ② FILE1 은 zip 을 받았을 때만 실행하게 되어 있었다.
+						//      앞 현장은 FILE1 이 압축을 푸는 배치였기 때문이다.
+						//      번호가 아니라 ★배치 파일이냐★ 로 가른다 - 두 현장 다 그대로 돈다.
+						string strFile = pExec_File.Trim();
+						int nSep = Strings.InStr(strFile, "\\");
+						if (nSep > 0) strFile = strFile.Substring(nSep);
+						string strFull = System.IO.Path.Combine(Application.StartupPath, strFile);
+
+						string strExt = System.IO.Path.GetExtension(strFull).ToUpper();
+						bool bBatch = (strExt == ".BAT" || strExt == ".CMD");
+
+						if (bBatch)
+						{
+							// 압축을 푸는 배치는 zip 을 새로 받았을 때만 돌린다
 							if (blBatchRun == true)
-                            {
+							{
 								MessageBox.Show("리소스 파일을 업데이트 합니다. 시간이 10초이상 소요됩니다");
-								Process.Start("C:\\CLIENT\\WCS\\" + pExec_File.Substring(Strings.InStr(pExec_File, "\\")));
+								Process.Start(strFull);
 								Thread.Sleep(10000);
 							}
-                        }
+						}
 						else
-                        {
-							Process.Start("C:\\CLIENT\\WCS\\" + pExec_File.Substring(Strings.InStr(pExec_File, "\\")));
-							//Process.Start(Application.StartupPath + "\\" + pExec_File.Substring(Strings.InStr(pExec_File, "\\")));
+						{
+							if (!System.IO.File.Exists(strFull))
+								throw new Exception("실행할 파일이 없습니다 : " + strFull);
+
+							ProcessStartInfo psi = new ProcessStartInfo(strFull);
+							psi.WorkingDirectory = Application.StartupPath;
+							Process.Start(psi);
 						}
 					}
                     catch (Exception ex)

@@ -6,20 +6,21 @@ u"""Client 설치 꾸러미를 만든다. 2026-09-30.
 
    새 PC 에 이것 하나만 가져가면 Client 가 돌게 한다.
      · Client 실행에 필요한 파일 전부
-     · 내려받기 프로그램(EcsClient.exe)과 그 설정
+     · 내려받기 프로그램(Ecs.exe)과 그 설정
      · Visual C++ 재배포 패키지(mfc140u.dll 등 - 없으면 Client 가 아예 뜨지 않는다)
      · .NET Framework 4.8 (Windows 10 이상은 이미 들어 있다 - 없을 때만 깐다)
 
    MS-SQL 접속에 따로 깔 것은 없다.
      Client 는 Windows 에 늘 들어 있는 ODBC 드라이버 "SQL Server" 로 붙고
      (Ecs.ini 의 [DB_2] DRIVER=SQL Server),
-     EcsClient 는 .NET 에 들어 있는 System.Data.SqlClient 로 붙는다.
+     Ecs.exe(내려받기)는 .NET 에 들어 있는 System.Data.SqlClient 로 붙는다.
 """
 import os, shutil, stat
 
 ROOT = r'D:\project\LGLS\Renewal'
 SRC_CLIENT = os.path.join(ROOT, 'EXE_NEWUI', 'WCS_CLIENT')
-SRC_DOWN = os.path.join(ROOT, 'TASK', 'Download', 'bin', 'Debug')
+SRC_DOWN = os.path.join(ROOT, 'TASK', 'Download', 'bin', 'Release')   # 배포는 Release 판
+SRC_BIN = os.path.join(ROOT, 'WCS', 'CPlusPlus', 'LGLS_CLIENT', 'Bin', 'Release')
 SRC_PRE = os.path.join(ROOT, 'EXE', 'Prerequisites')
 DST = os.path.join(ROOT, '적용_20260929', 'Client_설치')
 
@@ -37,9 +38,9 @@ os.makedirs(os.path.join(DST, 'Prerequisites'))
 
 # ── Client 실행에 필요한 것 ───────────────────────────────────────
 FILES = [
-    # 프로그램
-    'Ecs.exe',
-    # 함께 쓰는 라이브러리 (Ecs.exe 가 곧바로 부른다)
+    # [LGLS 2026-09-30] 본체 exe 는 SRC_BIN(방금 빌드한 Release)에서 따로 가져온다.
+    #   사람이 누르는 Ecs.exe 는 내려받기 프로그램이고, 본체는 EcsMain.exe 다.
+    # 함께 쓰는 라이브러리 (본체가 곧바로 부른다)
     'DciLib.dll', 'EcsLib.dll', 'XmlLib.dll', 'BuilderLib.dll',
     'SPR32DU70.DLL', 'spr32d70.dll', 'QUvc_dll.dll',
     # 설정과 화면 정의
@@ -62,6 +63,13 @@ for f in FILES:
     else:
         miss.append(f)
 
+# ── Client 본체 - 이름을 EcsMain.exe 로 (사람이 누르는 Ecs.exe 와 겹치지 않게) ──
+src_main = os.path.join(SRC_BIN, 'EcsMain.exe')
+if os.path.isfile(src_main):
+    shutil.copy2(src_main, os.path.join(DST, 'Client', 'EcsMain.exe'))
+else:
+    miss.append('EcsMain.exe')
+
 # 다국어 문구
 shutil.copytree(os.path.join(SRC_CLIENT, 'rc_resource'),
                 os.path.join(DST, 'Client', 'rc_resource'))
@@ -69,7 +77,8 @@ shutil.copytree(os.path.join(SRC_CLIENT, 'rc_resource'),
 os.makedirs(os.path.join(DST, 'Client', 'LOG'))
 
 # ── 내려받기 프로그램 ─────────────────────────────────────────────
-for f in ('EcsClient.exe', 'WmsDown.ini'):
+# ── 내려받기 프로그램 - 이것이 사람이 누르는 Ecs.exe 다 ──────────
+for f in ('Ecs.exe', 'WmsDown.ini'):
     shutil.copy2(os.path.join(SRC_DOWN, f), os.path.join(DST, 'Client', f))
 
 ico = os.path.join(ROOT, '참조', 'WCS_HUONS', 'WCS.ico')
@@ -179,7 +188,7 @@ wr(os.path.join(DST, 'Setup.bat'), [
  'echo.',
  '',
  'rem ── 1. Visual C++ 재배포 패키지 ───────────────────────────────',
- 'rem    Ecs.exe 가 mfc140u.dll / MSVCP140.dll 을 쓴다. 없으면 아예 뜨지 않는다.',
+ 'rem    Client 본체(EcsMain.exe)가 mfc140u.dll / MSVCP140.dll 을 쓴다. 없으면 아예 뜨지 않는다.',
  'echo  [1/5] Visual C++ 재배포 패키지를 확인합니다...',
  'if exist "%WINDIR%\\SysWOW64\\mfc140u.dll" (',
  '    echo        이미 들어 있습니다. 건너뜁니다.',
@@ -195,7 +204,7 @@ wr(os.path.join(DST, 'Setup.bat'), [
  'echo.',
  '',
  'rem ── 2. .NET Framework 4.8 ─────────────────────────────────────',
- 'rem    내려받기 프로그램(EcsClient.exe)이 .NET 으로 만들어져 있다.',
+ 'rem    내려받기 프로그램(Ecs.exe)이 .NET 으로 만들어져 있다.',
  'rem    Windows 10 이상은 이미 들어 있으므로 대개 건너뛴다.',
  'echo  [2/5] .NET Framework 를 확인합니다...',
  'reg query "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" /v Release >nul 2>&1',
@@ -216,6 +225,9 @@ wr(os.path.join(DST, 'Setup.bat'), [
  'if exist "%INSTDIR%\\WmsDown.ini" copy /y "%INSTDIR%\\WmsDown.ini" "%INSTDIR%\\WmsDown.ini.before_setup" >nul',
  '',
  'xcopy "%SRC%Client\\*" "%INSTDIR%\\" /E /I /Y /Q',
+ 'rem    주소를 나중에 바꿀 수 있게 도우미와 안내문도 함께 둔다',
+ 'copy /y "%SRC%Set-DbServer.ps1" "%INSTDIR%\\" >nul',
+ 'copy /y "%SRC%확인하는_법.txt" "%INSTDIR%\\" >nul',
  'if errorlevel 1 (',
  '    echo        [!] 복사에 실패했습니다.',
  '    pause',
@@ -252,7 +264,7 @@ wr(os.path.join(DST, 'Setup.bat'), [
  '> "%VBS%" echo Set oWS = WScript.CreateObject^("WScript.Shell"^)',
  '>>"%VBS%" echo sLink = oWS.SpecialFolders^("AllUsersDesktop"^) ^& "\\LGLS CLIENT.lnk"',
  '>>"%VBS%" echo Set oLink = oWS.CreateShortcut^(sLink^)',
- '>>"%VBS%" echo oLink.TargetPath = "%INSTDIR%\\EcsClient.exe"',
+ '>>"%VBS%" echo oLink.TargetPath = "%INSTDIR%\\Ecs.exe"',
  '>>"%VBS%" echo oLink.WorkingDirectory = "%INSTDIR%"',
  '>>"%VBS%" echo oLink.IconLocation = "%INSTDIR%\\WCS.ico"',
  '>>"%VBS%" echo oLink.Description = "LGLS 자동창고 운전 화면"',
@@ -327,16 +339,16 @@ wr(os.path.join(DST, '읽어보세요.txt'), [
  '[ 설치가 하는 일 ]',
  '',
  '  1) Visual C++ 재배포 패키지',
- '       Ecs.exe 가 mfc140u.dll 을 씁니다. 없으면 프로그램이 아예 뜨지 않고',
+ '       Client 본체(EcsMain.exe)가 mfc140u.dll 을 씁니다. 없으면 아예 뜨지 않고',
  '       "mfc140u.dll 을 찾을 수 없습니다" 가 납니다.',
  '       이미 들어 있으면 건너뜁니다.',
  '',
  '  2) .NET Framework 4.8',
- '       내려받기 프로그램(EcsClient.exe)이 .NET 으로 되어 있습니다.',
+ '       내려받기 프로그램(Ecs.exe)이 .NET 으로 되어 있습니다.',
  '       Windows 10 이상은 이미 들어 있으므로 거의 건너뜁니다.',
  '',
  '  3) 프로그램 복사',
- '       Ecs.exe 와 함께 쓰는 파일, 화면 정의(xml), 다국어 문구(rc_resource)를',
+ '       프로그램과 함께 쓰는 파일, 화면 정의(xml), 다국어 문구(rc_resource)를',
  '       설치 위치에 복사합니다.',
  '       ★ 이미 쓰던 Ecs.ini / WmsDown.ini 는 덮어쓰지 않습니다.',
  '          새 것은 .new 로 남겨 두니 견주어 보고 필요한 줄만 옮기세요.',
@@ -351,9 +363,9 @@ wr(os.path.join(DST, '읽어보세요.txt'), [
  '[ MS-SQL 접속에 따로 깔 것 ]',
  '',
  '  없습니다.',
- '    · Client(Ecs.exe) 는 Windows 에 늘 들어 있는 ODBC 드라이버',
+ '    · Client 본체(EcsMain.exe)는 Windows 에 늘 들어 있는 ODBC 드라이버',
  '      "SQL Server" 로 붙습니다 (Ecs.ini 의 [DB_2] DRIVER=SQL Server).',
- '    · EcsClient.exe 는 .NET 에 들어 있는 SqlClient 로 붙습니다.',
+ '    · Ecs.exe(내려받기)는 .NET 에 들어 있는 SqlClient 로 붙습니다.',
  '  둘 다 Windows 와 .NET 에 이미 들어 있는 것이라 따로 깔 것이 없습니다.',
  '',
  '',
@@ -366,10 +378,10 @@ wr(os.path.join(DST, '읽어보세요.txt'), [
  '',
  '[ 바탕화면의 [LGLS CLIENT] 를 누르면 ]',
  '',
- '  EcsClient.exe 가 먼저 뜹니다. 이것이',
+ '  Ecs.exe 가 먼저 뜹니다. 이것이',
  '    · DB 에 올라와 있는 프로그램 판과 지금 PC 의 것을 견주어',
  '    · 바뀐 파일만 내려받고',
- '    · 이어서 Ecs.exe 를 띄웁니다.',
+ '    · 이어서 Client 본체(EcsMain.exe)를 띄웁니다.',
  '',
  '  그래서 앞으로 프로그램을 고치면, 각 PC 를 돌아다닐 필요 없이',
  '  WmsUp.exe 로 한 번 올리기만 하면 됩니다.',
@@ -471,3 +483,123 @@ wr(os.path.join(DST, 'Set-DbServer.ps1'), [
  '    Set-IniValue -Path $down -Section "DB Server" -Key "DATABASE" -Value $Database',
  '}',
 ], enc='utf-8')
+
+
+# ══════════ 손으로 확인하는 법 ══════════
+DST = r'D:\project\LGLS\Renewal\적용_20260929\Client_설치'
+N = '\r\n'
+
+
+def wr(path, lines):
+    data = (N.join(lines) + N).encode('cp949')
+    with open(path, 'wb') as f:
+        f.write(data)
+    print(path)
+
+
+wr(os.path.join(DST, '확인하는_법.txt'), [
+ '============================================================',
+ ' 설치가 제대로 됐는지 손으로 확인하는 법',
+ ' 2026-09-30',
+ '============================================================',
+ '',
+ ' 아래 명령을 그대로 복사해 명령 프롬프트에 붙여넣으면 됩니다.',
+ ' 경로는 설치한 곳에 맞게 바꿔 주세요.',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 1. DB 서버 주소를 다시 적기',
+ '------------------------------------------------------------',
+ '',
+ '   설치할 때 물어본 주소를 나중에 바꾸고 싶을 때 씁니다.',
+ '   Setup.bat 을 다시 돌려도 되고, 이 명령만 써도 됩니다.',
+ '',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\LGLS\\CLIENT\\Set-DbServer.ps1" -InstDir "C:\\LGLS\\CLIENT" -Server "192.100.1.191" -Database "LGLS_MCS_IO"',
+ '',
+ '   이렇게 나오면 제대로 된 것입니다.',
+ '',
+ '        Ecs.ini  [DB_2] SERVER=192.100.1.191',
+ '        Ecs.ini  [DB_2] DATABASE=LGLS_MCS_IO',
+ '        WmsDown.ini  [DB Server] SERVERNAME=192.100.1.191',
+ '        WmsDown.ini  [DB Server] DATABASE=LGLS_MCS_IO',
+ '',
+ '   네 줄이 다 나와야 합니다. "찾지 못했습니다" 가 나오면',
+ '   그 파일의 섹션 이름이나 항목 이름이 다른 것이니 알려 주세요.',
+ '',
+ '   포트가 1433 이 아니면 주소 뒤에 쉼표로 붙입니다.',
+ '       -Server "192.100.1.191,1435"',
+ '   이름있는 인스턴스면 포트를 붙이지 않습니다.',
+ '       -Server "PC이름\\SQLEXPRESS"',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 2. 지금 설정이 어떻게 되어 있는지 보기',
+ '------------------------------------------------------------',
+ '',
+ 'powershell -NoProfile -Command "Get-Content C:\\LGLS\\CLIENT\\Ecs.ini -Encoding Default | Select-String \'^SERVER=|^DATABASE=\'"',
+ '',
+ 'powershell -NoProfile -Command "Get-Content C:\\LGLS\\CLIENT\\WmsDown.ini -Encoding Default | Select-String \'^SERVERNAME=|^DATABASE=\'"',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 3. 어느 판을 받아 두었는지 보기',
+ '------------------------------------------------------------',
+ '',
+ '   내려받기가 WmsDown.ini 아래쪽에 스스로 적습니다.',
+ '',
+ 'powershell -NoProfile -Command "Get-Content C:\\LGLS\\CLIENT\\WmsDown.ini -Encoding Default | Select-String \'COMMON->\'"',
+ '',
+ '   예)',
+ '        COMMON->DciLib.dll=1',
+ '        COMMON->EcsDefine.xml=1',
+ '        COMMON->EcsLayout1.xml=1',
+ '        COMMON->KeyWord.xml=1',
+ '',
+ '   여기 적힌 판과 DB 에 올라온 판이 같으면 내려받지 않고 지나갑니다.',
+ '   일부러 다시 받게 하려면 이 줄들을 지우고 다시 실행하면 됩니다.',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 4. 설치된 파일이 무엇인지',
+ '------------------------------------------------------------',
+ '',
+ '   Ecs.exe       사람이 누르는 것. 바뀐 파일을 받아 오고 본체를 띄웁니다.',
+ '   EcsMain.exe   운전 화면 본체. 내려받기가 이어서 띄웁니다.',
+ '',
+ '   두 파일은 아이콘이 같습니다. 누르는 것은 Ecs.exe 하나뿐입니다.',
+ '',
+ 'powershell -NoProfile -Command "Get-ChildItem C:\\LGLS\\CLIENT\\*.exe | Select-Object Name,Length,LastWriteTime"',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 5. ★올리면 안 되는 파일★',
+ '------------------------------------------------------------',
+ '',
+ '   설정 파일은 PC 마다 다릅니다. 올려 두면 각 PC 가 그것을 받아',
+ '   자기 설정을 잃고, DB 에 붙지 못해 화면이 뜨지 않습니다.',
+ '',
+ '       Ecs.ini',
+ '       WmsDown.ini',
+ '',
+ '   실수로 올라오더라도 내려받기가 이 둘은 받지 않게 해 두었습니다.',
+ '   목록을 바꾸려면 WmsDown.ini 에 이렇게 적습니다.',
+ '',
+ '       [APPLICATION]',
+ '       SKIP_FILES=Ecs.ini,WmsDown.ini',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 6. 잘 안 될 때',
+ '------------------------------------------------------------',
+ '',
+ '   · "mfc140u.dll 을 찾을 수 없습니다"',
+ '       Visual C++ 재배포 패키지가 없습니다.',
+ '       Prerequisites\\vc_redist.x86.exe 를 직접 실행해 주세요.',
+ '',
+ '   · 내려받기 창이 뜬 뒤 아무 일도 없다',
+ '       DB 주소가 틀렸을 수 있습니다. 위 2번으로 확인해 주세요.',
+ '',
+ '   · 에러 창이 뜬다',
+ '       창에 어디서 났는지까지 나옵니다. 그 내용을 그대로 알려 주세요.',
+ '',
+])

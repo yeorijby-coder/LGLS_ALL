@@ -48,11 +48,13 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>.\../Bin/Debug\</OutDir>
     <IntDir>.\../Bin/Debug/Ecs\</IntDir>
+    <TargetName>EcsMain</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>.\../Bin/Release\</OutDir>
     <IntDir>.\../Bin/Release/Ecs\</IntDir>
+    <TargetName>EcsMain</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -77,7 +79,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OutputFile>.\../Bin/Debug\Ecs.exe</OutputFile>
+      <OutputFile>.\../Bin/Debug\EcsMain.exe</OutputFile>
       <AdditionalDependencies>.\../Bin/Debug/XmlLib.lib;.\../Bin/Debug/DciLib.lib;.\../Bin/Debug/EcsLib.lib;.\../Bin/Debug/Quvc_dll.lib;.\../Bin/Debug/Spr32du70.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Version>
       </Version>
@@ -135,7 +137,7 @@ copy "$(OutDir)*.pdb" "$(OutDir)Ecs\mapfile\%DirName%"</Command>
       </EnableCOMDATFolding>
       <OptimizeReferences>
       </OptimizeReferences>
-      <OutputFile>.\../Bin/Release\Ecs.exe</OutputFile>
+      <OutputFile>.\../Bin/Release\EcsMain.exe</OutputFile>
       <AdditionalDependencies>.\../Bin/Release/XmlLib.lib;.\../Bin/Release/DciLib.lib;.\../Bin/Release/EcsLib.lib;.\../Bin/Debug/Spr32du70.lib;.\../Bin/Release/Quvc_dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <GenerateMapFile>true</GenerateMapFile>

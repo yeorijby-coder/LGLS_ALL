@@ -9,7 +9,7 @@
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EcsClient</RootNamespace>
-    <AssemblyName>EcsClient</AssemblyName>
+    <AssemblyName>Ecs</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -52,7 +52,7 @@
     <StartupObject>EcsClient.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>WCS.ico</ApplicationIcon>
+    <ApplicationIcon>ECS.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
@@ -144,6 +144,7 @@
   <ItemGroup>
     <None Include="Res\WMS로고.png" />
     <None Include="Doosan_Logo_3C_RGB.jpg" />
+    <Content Include="ECS.ico" />
     <Content Include="WCS.ico" />
     <Content Include="WMS.ico" />
   </ItemGroup>

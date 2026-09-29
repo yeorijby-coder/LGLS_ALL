@@ -14,7 +14,7 @@
 # =====================================================================
 [CmdletBinding()]
 param(
-    [string]$ExePath      = "D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\Ecs.exe",
+    [string]$ExePath      = "D:\project\LGLS\Renewal\WCS\CPlusPlus\LGLS_CLIENT\Bin\Debug\EcsMain.exe",
     [switch]$ClientRight,
     [switch]$ArrangeOnly,
     [int]$WaitSec         = 40
