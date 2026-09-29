@@ -305,9 +305,10 @@ G.table(d, ['프로그램', '하는 일', '행이 0개일 때'], [
     ['WCS_TASK_CV', '하트비트 UPDATE', '고친 행 0 - 예외 없음'],
     ['IO_TASK', 'UPDATE 후 없으면 INSERT', '스스로 행을 만든다'],
 ], widths=[4.5, 4.5, 7.0])
-G.para(d, '행이 없어서 나는 증상은 운전 화면 신호등이 미접속으로 보이는 것이지 프로세스 종료가 아니다. '
-          'CLR20r3 는 작업 스레드의 미처리 예외로 보이며, 그에 대한 안전망은 이미 넣었다(커밋 ff7d119). '
-          '스레드 하나가 죽어도 프로세스는 살아남는다. ALL_TASK 를 쓰지 않기로 하셨으니 위험 자체도 크게 줄었다.')
+G.para(d, '행이 없어서 나는 증상은 운전 화면 신호등이 미접속으로 보이는 것이지 프로세스 종료가 아니다.')
+G.para(d, '★시험으로 확인했다★ - EQP_MST 를 현장과 같은 구조(CV 15 · SC 5 · RTV 1 + HOST/HOST2/SCH)로 '
+          '되돌리고 HOST_TASK 를 돌렸다. 크래시 없음, 통신 4채널 정상, 작업 흐름 정상이었다. '
+          'CLR20r3 의 실제 원인은 따로 있다 - 6-5 장을 보라.', bold=True)
 
 d.add_heading('4.2 그래도 요청대로 옵션을 넣었다', 2)
 G.table(d, ['키', '기본', '설명'], [
@@ -470,9 +471,78 @@ note(d, '두 창이 같은 함수(CEcsDoc::PosLabel)를 쓰므로 규칙이 어�
 
 d.add_page_break()
 
+d.add_heading('6-5. HOST_TASK 가 기동 직후 죽던 원인 (CLR20r3)', 1)
+G.para(d, '대상 : TASK/HOST_TASK', bold=True)
+G.para(d, '"ALL_TASK 적용했는데 CLR20r3" 로 보고하신 건이다. '
+          'EQP_MST 행을 줄인 것이 원인이라고 보셨지만 ★아니었다.★ '
+          '현장과 같은 구조(CV 15 · SC 5 · RTV 1)로 되돌려 돌려 봐도 HOST_TASK 는 멀쩡했다.')
+
+d.add_heading('6-5.1 원인 ① ini 키 누락 — 메시지 없이 죽는다', 2)
+G.para(d, '이것이 증상과 가장 잘 맞는다.', bold=True)
+code(d, ['GetPrivateProfileString("Network", "LocalPort", "", sb, ...);   // 기본값이 ""',
+         'modDefApp.g_iListenPort = int.Parse(sb.ToString());             // int.Parse("") -> 예외'])
+G.para(d, '게다가 DBLogIn 에서 ReadInitProfile() 이 ★try 블록 밖★ 이라 아무도 잡지 않는다. '
+          '그래서 기동 직후 메시지 한 줄 없이 프로세스가 사라진다.')
+G.table(d, ['증상', '설명'], [
+    ['HOST 만 죽는다', 'IO·EQP 는 각자 다른 ini 와 코드를 쓴다'],
+    ['기동하자마자 죽는다', 'DB 로그인은 기동 직후다'],
+    ['다른 프로세스가 없어도 죽는다', '포트와 무관 - 값을 읽는 단계에서 터진다'],
+    ['ini 를 고쳐도 죽는다', '그 키가 빠져 있으면 계속 같다'],
+    ['ODBC 오류는 메시지가 떴다', '그건 try 안이라 잡혔다'],
+    ['이건 메시지가 없었다', '이건 try 밖이라 못 잡았다'],
+    ['9/17 판은 정상', '그때 쓰던 ini 에는 두 키가 다 있었다'],
+], widths=[5.0, 11.0])
+
+G.para(d, '없으면 죽는 키는 두 개다.', bold=True, size=10.5)
+code(d, ['[Network]', 'LocalPort=8001', 'RemotePort=8002'])
+note(d, '[DB] 쪽 키(IP·DATABASE·USER·USER_PW)는 없어도 죽지 않는다 - 문자열이라 '
+        '접속 실패 메시지만 뜬다. 그래서 ODBC 오류는 보이고 포트 키 누락은 조용히 죽었다.')
+
+G.para(d, '고친 방법 — 값을 지어내지 않는다. 엉뚱한 포트로 열리면 더 나쁘다. '
+          '대신 무엇이 빠졌는지 말하고 멈춘다.')
+code(d, ['설정 파일을 읽지 못했습니다.',
+         '  파일 : ...\\EcsComA.ini',
+         '  항목 : [Network] LocalPort',
+         '  읽은 값 : (없음)',
+         '',
+         '이 항목이 없거나 숫자가 아니면 프로그램을 시작할 수 없습니다.',
+         '설정 파일에 다음처럼 넣어 주세요.',
+         '    [Network]',
+         '    LocalPort=8001'])
+G.para(d, 'LocalPort 줄을 일부러 지우고 기동해 확인했다 - 죽지 않고 위 메시지가 떴다.')
+
+d.add_heading('6-5.2 원인 ② 소켓 예외 — 이벤트 로그에 남아 있었다', 2)
+G.para(d, 'Windows 이벤트 로그(.NET Runtime)에 실제 스택이 두 건 남아 있었다.')
+code(d, ['2026-09-28 16:03  TASK_LFC10_G1_ECSCOM.exe',
+         '  SocketException  Socket.Shutdown() <- CloseSocket <- CliWorkThread',
+         '',
+         '2026-09-22 19:16  ALL_TASK.exe',
+         '  SocketException  Socket.Bind() -> TcpListener.Start() <- ListenThread'])
+G.bullets(d, [
+    'Shutdown : Connected 는 "마지막 I/O 시점의 상태" 라, 확인과 Shutdown 사이에 '
+    '상대가 끊으면 예외가 난다. 상대가 먼저 끊는 것은 통신에서 늘 있는 일이지 고장이 아니다.',
+    '그 자리의 Monitor.Enter/Exit 가 try/finally 로 감싸여 있지 않아, 예외가 나면 '
+    '락이 영영 풀리지 않았다 - 죽지 않더라도 이후 소켓 종료가 모두 멈춘다.',
+    'Bind : 수신 포트를 이미 다른 인스턴스가 쓰면 난다. 중복 실행 방지가 ★프로세스 이름★ '
+    '기준이라 ALL_TASK 와 단독 HOST_TASK 는 서로를 막지 못한다.',
+])
+G.para(d, '셋 다 고쳤다. Shutdown/Close 를 각각 감싸고, 락을 try/finally 로 바꾸고, '
+          'Bind 실패는 사유를 남긴 뒤 10초마다 다시 시도한다.')
+
+d.add_heading('6-5.3 그리고 안전망', 2)
+G.para(d, '작업 스레드의 미처리 예외는 .NET 에서 프로세스를 통째로 끝낸다. '
+          'SafeRun 으로 네 스레드(SRV·LSN·CLI·LOG)를 감싸, 예외가 나도 그 스레드만 끝나고 '
+          '프로그램은 살아남는다. 실제로 포트 충돌을 일부러 만들어 확인했다 - '
+          '종전에는 프로세스가 죽었고, 지금은 HOST_LSN 만 멈추고 나머지는 계속 돌았다.')
+note(d, 'SafeRun 은 보험이고, 위 두 수정이 근본 처리다. 둘 다 둔다.')
+
+d.add_page_break()
+
 d.add_heading('7. 적용 순서', 1)
 G.numbered(d, [
     '현장 프로그램과 ini 를 백업한다.',
+    '★EcsComA.ini 의 [Network] 에 LocalPort 와 RemotePort 가 있는지 먼저 확인한다.★ '
+    '(없으면 HOST_TASK 가 기동 직후 죽는다 - 6-5 장)',
     'TASK 를 정지한다.',
     'IO_TASK / HOST_TASK 의 exe 를 교체한다.',
     '각 폴더의 「추가할_설정_*.txt」 에 있는 줄을 현장 ini 의 해당 섹션에 붙여넣는다. (건너뛰어도 된다)',
