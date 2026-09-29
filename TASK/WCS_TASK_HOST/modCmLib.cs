@@ -14,6 +14,34 @@ namespace TSK_HostCom
     // DB 관련 프로젝트는 모두 사용하므로 여기에 두기로 한다.
 	class modCmLib
 	{
+		// [LGLS 2026-09-29] ★ini 키가 없으면 아무 말 없이 죽던 자리★ (사용자 질문으로 찾음).
+		//   종전 : GetPrivateProfileString(..., "") 로 읽고 int.Parse("") → FormatException.
+		//          DBLogIn 에서 ReadInitProfile() 이 try 밖이라 아무도 잡지 않는다.
+		//          → 기동 직후 메시지 한 줄 없이 프로세스가 사라진다(CLR20r3).
+		//   지금 : 무엇이 빠졌는지 정확히 말해 주고 멈춘다. 값을 지어내면 엉뚱한 포트로
+		//          열려 더 나쁘므로, 기본값으로 얼버무리지 않는다.
+		private static int ReadPortOrThrow(string strSection, string strKey)
+		{
+			StringBuilder sbP = new StringBuilder(64);
+			modDefAPI.GetPrivateProfileString(strSection, strKey, "", sbP, sbP.Capacity, modDefApp.MAIN_INI);
+			string strVal = sbP.ToString().Trim();
+
+			int nPort;
+			if (!int.TryParse(strVal, out nPort) || nPort <= 0 || nPort > 65535)
+			{
+				throw new Exception(
+					"설정 파일을 읽지 못했습니다." + Environment.NewLine + Environment.NewLine
+					+ "  파일 : " + modDefApp.MAIN_INI + Environment.NewLine
+					+ "  항목 : [" + strSection + "] " + strKey + Environment.NewLine
+					+ "  읽은 값 : " + (strVal.Length == 0 ? "(없음)" : strVal) + Environment.NewLine + Environment.NewLine
+					+ "이 항목이 없거나 숫자가 아니면 프로그램을 시작할 수 없습니다." + Environment.NewLine
+					+ "설정 파일에 다음처럼 넣어 주세요." + Environment.NewLine
+					+ "    [" + strSection + "]" + Environment.NewLine
+					+ "    " + strKey + "=8001");
+			}
+			return nPort;
+		}
+
 #if ORACLE
 		public static bool DBLogIn(ref OleDbConnection p_ConObj)
 		{
@@ -119,14 +147,12 @@ namespace TSK_HostCom
 			modDefAPI.GetPrivateProfileString("DB", "PASSWORD", "", sb, sb.Capacity, modDefApp.MAIN_INI);
 			modDefApp.g_User.g_strUserPassword = sb.ToString();
 
-			modDefAPI.GetPrivateProfileString("Network", "LocalPort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-			modDefApp.g_iListenPort = int.Parse(sb.ToString());
+			modDefApp.g_iListenPort = ReadPortOrThrow("Network", "LocalPort");
 
 			modDefAPI.GetPrivateProfileString("Network", "RemoteIP", "", sb, sb.Capacity, modDefApp.MAIN_INI);
 			modDefApp.g_strRemoteIP = sb.ToString();
 
-			modDefAPI.GetPrivateProfileString("Network", "RemotePort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-			modDefApp.g_iRemotePort = int.Parse(sb.ToString());
+			modDefApp.g_iRemotePort = ReadPortOrThrow("Network", "RemotePort");
 
 
 			//이길문[20161122]이중입고재지정횟수추가
@@ -150,12 +176,15 @@ namespace TSK_HostCom
 #if SQL
     public static bool DBLogIn(ref SqlConnection p_ConObj)
         {
-			ReadInitProfile();
-
+			// [LGLS 2026-09-29] ReadInitProfile 을 try 안으로 (사용자 질문으로 찾음).
+			//   설정이 잘못되면 여기서 예외가 나는데 종전에는 try 밖이라 아무도 잡지 못했다.
+			//   그래서 메시지 없이 프로세스가 사라졌다 - 원인을 볼 방법이 없었다.
 			p_ConObj = new SqlConnection();
 
                 try
                 {
+					ReadInitProfile();
+
 					p_ConObj.ConnectionString = "Server = " +
                                                modDefApp.g_User.g_strDbAlias  + "; Trusted_Connection = False; Database = " +
                                                modDefApp.g_User.g_strDatabase   + "; User Id = " +
@@ -177,7 +206,9 @@ namespace TSK_HostCom
 		// 로그인 실패시 백그라운드에서는 ErrMsg 리턴
 	public static bool DBLogIn(ref SqlConnection p_ConObj, ref string p_strErrMsg)
 		{
-			ReadInitProfile();
+			// [LGLS 2026-09-29] 설정 오류를 메시지로 돌려준다 - 조용히 죽지 않게 (사용자 질문)
+			try { ReadInitProfile(); }
+			catch (Exception exIni) { p_strErrMsg = exIni.Message; return false; }
 
 			bool blDbCon = false;
 
@@ -215,14 +246,12 @@ namespace TSK_HostCom
             modDefAPI.GetPrivateProfileString("WMS", "INFO", "", sb, sb.Capacity, modDefApp.MAIN_INI);
             strKeyData1 = sb.ToString();
 
-            modDefAPI.GetPrivateProfileString("Network", "LocalPort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-			modDefApp.g_iListenPort = int.Parse(sb.ToString());
+            modDefApp.g_iListenPort = ReadPortOrThrow("Network", "LocalPort");
 
 			modDefAPI.GetPrivateProfileString("Network", "RemoteIP", "", sb, sb.Capacity, modDefApp.MAIN_INI);
 			modDefApp.g_strRemoteIP = sb.ToString();
 
-			modDefAPI.GetPrivateProfileString("Network", "RemotePort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-			modDefApp.g_iRemotePort = int.Parse(sb.ToString());
+			modDefApp.g_iRemotePort = ReadPortOrThrow("Network", "RemotePort");
 
             // [LGLS] MS-SQL 접속정보를 EcsComA.ini [DB] 에서 직접 읽는다
             //        (IP=서버 인스턴스, DATABASE/USER/USER_PW). 미설정 시 기존 WmsInfo.dll 매핑 사용.
@@ -370,25 +399,23 @@ namespace TSK_HostCom
             modDefApp.g_User.g_strDbPort = sb.ToString();
 
             modDefAPI.GetPrivateProfileString("Network", "LocalPort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-            modDefApp.g_iListenPort = int.Parse(sb.ToString());
+            modDefApp.g_iListenPort = ReadPortOrThrow("Network", "LocalPort");
 
             modDefAPI.GetPrivateProfileString("Network", "RemoteIP", "", sb, sb.Capacity, modDefApp.MAIN_INI);
             modDefApp.g_strRemoteIP = sb.ToString();
 
             modDefAPI.GetPrivateProfileString("Network", "RemotePort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-            modDefApp.g_iRemotePort = int.Parse(sb.ToString());
+            modDefApp.g_iRemotePort = ReadPortOrThrow("Network", "RemotePort");
 
             modDefAPI.GetPrivateProfileString("WMS", "INFO", "", sb, sb.Capacity, modDefApp.MAIN_INI);
             strKeyData1 = sb.ToString();
 
-            modDefAPI.GetPrivateProfileString("Network", "LocalPort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-			modDefApp.g_iListenPort = int.Parse(sb.ToString());
+            modDefApp.g_iListenPort = ReadPortOrThrow("Network", "LocalPort");
 
 			modDefAPI.GetPrivateProfileString("Network", "RemoteIP", "", sb, sb.Capacity, modDefApp.MAIN_INI);
 			modDefApp.g_strRemoteIP = sb.ToString();
 
-			modDefAPI.GetPrivateProfileString("Network", "RemotePort", "", sb, sb.Capacity, modDefApp.MAIN_INI);
-			modDefApp.g_iRemotePort = int.Parse(sb.ToString());
+			modDefApp.g_iRemotePort = ReadPortOrThrow("Network", "RemotePort");
 
       //      WmsInfo.CWmsInfo.WmsDBInfo(ref modDefApp.g_User.g_strDbAlias, ref modDefApp.g_User.g_strDatabase, ref modDefApp.g_User.g_strUserID, ref modDefApp.g_User.g_strUserPassword, strKeyData1);
 
