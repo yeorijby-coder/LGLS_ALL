@@ -1488,6 +1488,9 @@ namespace TSK_COMM_IOSCH
         {
             try
             {
+                // [LGLS 2026-09-29] 판정 전에 쓸모없는 래치를 먼저 지운다 (조기 완료 방지)
+                SweepOrphanLatch();
+
                 // 구동중(15) 작업 중, 명령을 발행한 CV(MC_NO=CV처리 설비위치)에서
                 // 명령이 소비되고(OD_RQ_YN='N') 팔레트가 소스에서 이탈(LUGG_NO_RD='0000')하면 완료.
                 string strSql = "";
@@ -2511,6 +2514,45 @@ namespace TSK_COMM_IOSCH
                         + (m_nLatchCol == 1 ? "있음 - 신호 래치로 완료합니다"
                                             : "없음 - 종전 판정으로 돕니다(SQL 04 를 돌리면 켜집니다)"));
             return m_nLatchCol == 1;
+        }
+
+        /// <summary>[LGLS 2026-09-29] ★고아 래치★ 를 지운다.</summary>
+        ///   완료를 신호 레벨로 먼저 끝낸 직후, 고속 샘플링이 아직 켜져 있는 신호를 보고
+        ///   래치를 세우는 일이 있다(실측 : 작업 0029, 완료 0.33초 뒤 래치). 그대로 두면
+        ///   다음 출고 작업이 15 가 되는 순간 ★도착 전에 완료★ 될 수 있다.
+        ///   그 출고대를 기다리는 진행 중 출고 작업이 없거나, 래치가 오래되면 지운다.
+        private void SweepOrphanLatch()
+        {
+            if (!HasLatchColumn()) return;
+            try
+            {
+                int nTtl = cDefApi.GsReadInitProfileCnf("LATCH_TTL_SEC", 30);
+                if (nTtl < 5) nTtl = 5;
+
+                string q = "";
+                q += CRLF + " UPDATE CV_DATA                                              ";
+                q += CRLF + "    SET RET_READY_LATCH      = '0'                          ";
+                q += CRLF + "      , RET_READY_LATCH_LUGG = NULL                          ";
+                q += CRLF + "      , RET_READY_LATCH_DT   = NULL                          ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP                                     ";
+                q += CRLF + "    AND ISNULL(RET_READY_LATCH,'0') = '1'                  ";
+                q += CRLF + "    AND ( DATEDIFF(second, RET_READY_LATCH_DT, " + DbLang.SYSDATE + ") > :TTL ";
+                q += CRLF + "       OR NOT EXISTS ( SELECT 1                              ";
+                q += CRLF + "                         FROM JOB_MST JM                     ";
+                q += CRLF + "                        WHERE JM.WH_TYP     = CV_DATA.WH_TYP ";
+                q += CRLF + "                          AND JM.JOB_STATUS = :ST_RUN        ";
+                q += CRLF + "                          AND JM.JOB_TYP   IN ('2','12')   ";
+                q += CRLF + "                          AND " + CV_POS_EXPR + " = CV_DATA.MC_NO ) ) ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("TTL",    DbLang.VARCHAR).Value = nTtl.ToString();
+                _pBdb.mComMain.Parameters.Add("ST_RUN", DbLang.VARCHAR).Value = ST_CV_RUN;
+                int n = DbNonQry(q);
+                if (n > 0)
+                    DbgLog("LATCHSWEEP", "[출고대래치] 쓸모없는 래치 " + n + " 건을 지웠습니다(작업이 없거나 오래됨)");
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][출고대래치] 고아 정리 오류: " + ex.Message); }
         }
 
         /// <summary>완료 처리를 마쳤으니 그 트랙의 래치를 지운다(소비).</summary>
