@@ -71,7 +71,7 @@ public:
 	int      m_nKind;			// 0 = 통신 상태, 1 = 범례
 	CLglsInfoBar() { m_pDoc = NULL; m_nKind = 0; m_bBlink = FALSE; for (int i = 0; i < 3; i++) m_nAge[i] = -1; }
 	// [LGLS 2026-09-23] TIMER_BLINK = 정상 램프의 파랑↔노랑 1초 교대 (사용자 지시)
-	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 16 };	// [LGLS 2026-09-29] 28 -> 15 (랙투랙·호기간·HS·통신두절·작업번호·레일 제거, 사용자 지시)
+	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 16 };	// [LGLS 2026-09-29] 28 -> 16 (랙투랙·호기간·HS·통신두절·작업번호·레일 제거 + 화물 감지 추가, 사용자 지시)
 	// 이름이 잘리지 않을 만큼만 열을 둔다(폭이 좁으면 줄 수가 는다).
 	static int ChipCols(int nWidth) { if (nWidth < 420) return 3; if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
 	// 그룹 4개(10/10/3/5개)를 다 담는 데 필요한 높이 - 범례 칸의 기본값으로 쓴다

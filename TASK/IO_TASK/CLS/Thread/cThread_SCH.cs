@@ -1493,6 +1493,12 @@ namespace TSK_COMM_IOSCH
                 string strSql = "";
                 strSql += CRLF + " SELECT JM.LUGG_NO, JM.JOB_TYP, CD.MC_NO,                    ";
                 strSql += CRLF + "        CD.SENSOR0_DATA_RD, CD.LUGG_NO_RD, CD.RET_READY_RD       ";
+                // [LGLS 2026-09-29] 출고대 신호 래치 (사용자 지시). 컬럼이 없는 DB 에서는
+                //   상수 '0' 을 넣어 늘 꺼진 것처럼 보이게 한다 - 조회가 깨지지 않는다.
+                strSql += CRLF + (HasLatchColumn()
+                       ? "      , ISNULL(CD.RET_READY_LATCH,'0') AS RET_LATCH                 "
+                       + CRLF + "      , ISNULL(CD.RET_READY_LATCH_LUGG,'') AS RET_LATCH_LUGG  "
+                       : "      , '0' AS RET_LATCH, '' AS RET_LATCH_LUGG                      ");
                 strSql += CRLF + "   FROM JOB_MST JM                                           ";
                 strSql += CRLF + "  INNER JOIN CV_DATA CD                                      ";
                 strSql += CRLF + "     ON CD.WH_TYP = JM.WH_TYP AND CD.MC_NO = " + CV_POS_EXPR + " ";   // [LGLS]
@@ -1521,6 +1527,10 @@ namespace TSK_COMM_IOSCH
                     string cvSen  = GetVal(dt.Rows[i], "SENSOR0_DATA_RD");
                     string cvLugg = GetVal(dt.Rows[i], "LUGG_NO_RD");
                     string cvRetRdy = GetVal(dt.Rows[i], "RET_READY_RD");   // [LGLS 2026-08-23] 출고대 신호(구 ECS WAIT_IN)
+                    // [LGLS 2026-09-29] 래치 - WCS_TASK_CV 가 신호 ON 을 본 순간 남긴 값 (사용자 지시).
+                    //   신호가 3초 뒤 꺼져도 이 값은 남아 있다. 완료한 뒤 우리가 지운다.
+                    string cvLatch     = GetVal(dt.Rows[i], "RET_LATCH");
+                    string cvLatchLugg = GetVal(dt.Rows[i], "RET_LATCH_LUGG").Trim();
                     string rtn = "";
 
                     // [LGLS 2026-07-19] 출고대 일시정지(TR_PAUSE, 내부값) 시 도착완료 처리 보류 (해제되면 다음 폴링에 완료)
@@ -1560,6 +1570,23 @@ namespace TSK_COMM_IOSCH
                             bMine = true;
                         }
                         bool bSigDone = (cvRetRdy == "1" && bMine);
+
+                        // [LGLS 2026-09-29] ★래치로도 완료한다★ (사용자 지시 - 3초 안에 100% 완료).
+                        //   지금 신호가 꺼져 있어도, WCS_TASK_CV 가 ON 을 본 적이 있으면 그것으로 끝낸다.
+                        //   래치에 적힌 번호가 내 번호이거나, 비었거나, 이미 끝난 작업(유령)이면 내 화물이다.
+                        if (!bSigDone && OUT_DONE_BY_SIGNAL && cvLatch == "1")
+                        {
+                            bool bLatchMine = (cvLatchLugg.Length == 0 || cvLatchLugg == "0" 
+                                            || cvLatchLugg == "0000" || cvLatchLugg == luggNo
+                                            || !IsJobAlive(cvLatchLugg));
+                            if (bLatchMine)
+                            {
+                                MakeMsg_Imp(string.Format(
+                                    "[SCH][CV] 작업 {0} 출고대 {1} 신호 래치(관측 {2}) - 출고 완료",
+                                    luggNo, mcNo, cvLatchLugg.Length == 0 ? "-" : cvLatchLugg));
+                                bSigDone = true;
+                            }
+                        }
 
                         // [LGLS 2026-07-21] 반출(RTV) 시퀀스가 끝나기 전의 "도착"은 인정하지 않는다.
                         //   [LGLS 2026-09-29] 다만 출고대 신호가 ON 이면 설비가 "출고대에 놓였다"를 직접 알린 것이라
@@ -1615,6 +1642,7 @@ namespace TSK_COMM_IOSCH
                         }
                         m_setOutArrived.Remove(luggNo);
                         m_dicOutDoneDt.Remove(luggNo);
+                        ClearOutLatch(mcNo);   // [LGLS 2026-09-29] 래치 소비 (사용자 지시)
                     }
 
                     // [LGLS 2026-08-31] 입고는 15 를 유지한다 - RGV 가 15 에서 화물을 가져간다.
@@ -2451,6 +2479,62 @@ namespace TSK_COMM_IOSCH
         /// <summary>[LGLS 2026-07-30] 해당 작업번호의 화물 트래킹이 전 트랙(CV_DATA) 어디엔가 존재하는지.
         ///   CompleteCV 출고 '도착 관측 누락' 보강의 안전장치 — 설비 이송 중이면 어느 트랙엔가 트래킹이 남으므로
         ///   운반 중 작업의 조기 완료를 막는다. (RV 적재 시퀀스로 CV 데이터가 잠시 비는 구간은 GRACE 가 흡수)</summary>
+        // ── [LGLS 2026-09-29] 출고대 신호 래치 (사용자 지시) ─────────────────────
+        //   현장 출고대는 화물 도착 후 약 3초만 신호를 올리고 PLC 가 데이터를 지운다.
+        //   그 3초를 놓치면 완료할 근거가 사라져 최후 안전망(60초)까지 기다렸다
+        //   (시뮬 실측 : 펄스 1.1초에서 신호를 한 번도 못 보고 77초 뒤 완료).
+        //   이제 WCS_TASK_CV 가 "봤다" 를 CV_DATA.RET_READY_LATCH 에 남기고,
+        //   여기서 그것을 보고 완료한 뒤 지운다(소비).
+
+        private int m_nLatchCol = -1;       // -1 미확인 / 0 컬럼 없음 / 1 있음
+
+        /// <summary>CV_DATA 에 래치 컬럼이 있는가 (한 번만 확인해 기억한다)</summary>
+        private bool HasLatchColumn()
+        {
+            if (m_nLatchCol >= 0) return m_nLatchCol == 1;
+            try
+            {
+                string q = " SELECT COUNT(*) AS CNT FROM sys.columns "
+                         + "  WHERE object_id = OBJECT_ID('CV_DATA') AND name = 'RET_READY_LATCH' ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                if (DbQry(q) > 0)
+                {
+                    int n; int.TryParse(GetVal(_pBdb.mDtMain.Rows[0], "CNT"), out n);
+                    m_nLatchCol = (n > 0) ? 1 : 0;
+                }
+                else m_nLatchCol = 0;
+            }
+            catch { m_nLatchCol = 0; }
+
+            MakeMsg_Imp("[SCH][출고대래치] CV_DATA.RET_READY_LATCH "
+                        + (m_nLatchCol == 1 ? "있음 - 신호 래치로 완료합니다"
+                                            : "없음 - 종전 판정으로 돕니다(SQL 04 를 돌리면 켜집니다)"));
+            return m_nLatchCol == 1;
+        }
+
+        /// <summary>완료 처리를 마쳤으니 그 트랙의 래치를 지운다(소비).</summary>
+        private void ClearOutLatch(string mcNo)
+        {
+            if (!HasLatchColumn()) return;
+            try
+            {
+                string q = "";
+                q += CRLF + " UPDATE CV_DATA                              ";
+                q += CRLF + "    SET RET_READY_LATCH      = '0'         ";
+                q += CRLF + "      , RET_READY_LATCH_LUGG = NULL         ";
+                q += CRLF + "      , RET_READY_LATCH_DT   = NULL         ";
+                q += CRLF + "  WHERE WH_TYP = :WH_TYP                    ";
+                q += CRLF + "    AND MC_NO  = :MC_NO                     ";
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR).Value = mcNo ?? "";
+                DbNonQry(q);
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][출고대래치] 소비 오류: " + ex.Message); }
+        }
+
         // [LGLS 2026-09-29] 그 작업번호가 JOB_MST 에 아직 살아 있는가 (출고 완료 판정용).
         //   조회에 실패하면 보수적으로 "살아 있다"로 본다 - 완료를 서두르지 않는다.
         private bool IsJobAlive(string lugg)

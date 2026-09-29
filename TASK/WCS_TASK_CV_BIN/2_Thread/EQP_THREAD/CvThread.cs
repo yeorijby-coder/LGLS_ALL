@@ -600,6 +600,11 @@ namespace WCS_TASK_CV
                             //   ALL_TASK 의 [정지] 가 그만큼 늦게 먹힌다.
                             if (m_bStop) goto EXIT_LBL;
 
+                            // [LGLS 2026-09-29] ★출고대 신호는 3초만 서 있다★ (사용자 확인).
+                            //   사이클 머리에서 한 번 읽는 것만으로는 그 창을 놓칠 수 있어,
+                            //   설비 사이사이에서 출고대 M 워드만 다시 읽어 래치한다([CNF] OUT_SCAN_MS).
+                            ScanOutStations();
+
                             var slot = lstOrder[si];
                             m_strPlc_No   = slot.Plc;
                             m_strEqmt_typ = slot.Typ;
@@ -708,6 +713,8 @@ namespace WCS_TASK_CV
                             InsertWcsLogPgr("", strCyc);
                         }
 
+                        // [LGLS 2026-09-29] 슬립 직전에 한 번 더 - 사이클 사이 공백이 가장 길다 (사용자 지시)
+                        ScanOutStations();
                         Thread.Sleep(Math.Max(0, Math.Min(2000, cDefApi.GsCnfInt("CV_CYCLE_SLEEP_MS", 200))));   // [CNF] CV_CYCLE_SLEEP_MS
                     }
                 }
@@ -3160,6 +3167,112 @@ namespace WCS_TASK_CV
         /// 사이클 시작에 1회. 전 설비의 M/D/R 상태 구간을 한 번씩 읽어 캐시에 담는다.
         /// 구간은 주소맵(XML)의 origin·stride 로 계산한다 — 설비별 개별 READ 와 같은 주소를 덮는다.
         /// </summary>
+        // ── [LGLS 2026-09-29] 출고대 신호 래치 (사용자 지시) ─────────────────────
+        //   현장 출고대는 화물 도착 후 약 3초만 신호를 올리고 PLC 가 데이터를 지운다.
+        //   사이클당 1회 샘플링으로는 그 창을 통째로 놓칠 수 있다(시뮬 실측 : 펄스 1.1초에서
+        //   한 번도 못 보고 77초 뒤 안전망 완료). 그래서 두 가지를 한다.
+        //     · 본 순간 "봤다" 를 래치로 남긴다 - 신호가 꺼져도 내리지 않는다(IO_TASK 가 소비).
+        //     · 출고대 설비의 M 워드만 사이클 도중에도 짧은 주기로 다시 읽는다.
+        //   래치 컬럼이 없는 DB 에서도 그대로 돈다(한 번 확인하고 없으면 쓰지 않는다).
+
+        private int  m_nLatchCol = -1;      // -1 미확인 / 0 컬럼 없음 / 1 있음
+        private uint m_dwLastOutScan = 0;   // 마지막 출고대 고속 샘플 시각
+
+        /// <summary>CV_DATA 에 래치 컬럼이 있는가 (한 번만 확인해 기억한다)</summary>
+        private bool HasLatchColumn()
+        {
+            if (m_nLatchCol >= 0) return m_nLatchCol == 1;
+            try
+            {
+                string q = "SELECT COUNT(*) AS CNT FROM sys.columns "
+                         + " WHERE object_id = OBJECT_ID('CV_DATA') AND name = 'RET_READY_LATCH' ";
+                m_msQPlc._pBdb.mComMain.CommandType = System.Data.CommandType.Text;
+                m_msQPlc._pBdb.mComMain.Parameters.Clear();
+                if (m_msQPlc._pBdb.ExcuteQry(q) > 0)
+                {
+                    int n = 0;
+                    int.TryParse(m_msQPlc._pBdb.mDtMain.Rows[0]["CNT"].ToString(), out n);
+                    m_nLatchCol = (n > 0) ? 1 : 0;
+                }
+                else m_nLatchCol = 0;
+            }
+            catch { m_nLatchCol = 0; }
+
+            MakeMsg_Imp("[출고대래치] CV_DATA.RET_READY_LATCH "
+                        + (m_nLatchCol == 1 ? "있음 - 신호 래치를 씁니다"
+                                            : "없음 - 종전 판정으로 돕니다(SQL 04 를 돌리면 켜집니다)"), m_nthNo);
+            return m_nLatchCol == 1;
+        }
+
+        /// <summary>출고대 신호를 봤다고 래치한다. 이미 서 있으면 건드리지 않는다.</summary>
+        ///   래치 시점의 트래킹은 DB 의 현재 LUGG_NO_RD 를 그대로 붙잡는다 -
+        ///   3초 뒤에는 그 값도 사라지므로 나중에 어느 작업이었는지 알 수 없다.
+        private void LatchOutStation(int nTrack)
+        {
+            if (!HasLatchColumn()) return;
+            try
+            {
+                string q = "";
+                q += cDefApp.CRLF + " UPDATE CV_DATA                                           ";
+                q += cDefApp.CRLF + "    SET RET_READY_LATCH      = '1'                       ";
+                q += cDefApp.CRLF + "      , RET_READY_LATCH_LUGG = LUGG_NO_RD                 ";
+                q += cDefApp.CRLF + "      , RET_READY_LATCH_DT   = " + DbLang.SYSDATE + "     ";
+                q += cDefApp.CRLF + "  WHERE WH_TYP = :WH_TYP                                  ";
+                q += cDefApp.CRLF + "    AND MC_NO  = :MC_NO                                   ";
+                q += cDefApp.CRLF + "    AND ISNULL(RET_READY_LATCH,'0') <> '1'              ";
+                m_msQPlc._pBdb.mComMain.CommandType = System.Data.CommandType.Text;
+                m_msQPlc._pBdb.mComMain.Parameters.Clear();
+                m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR, 255).Value = m_strWh_typ;
+                m_msQPlc._pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR, 255).Value = nTrack.ToString("000");
+                if (m_msQPlc._pBdb.ExcuteNonQry(q) > 0)
+                    MakeMsg_Imp("[출고대래치] 트랙 " + nTrack + " 출고대 신호 ON 을 붙잡았습니다", m_nthNo);
+            }
+            catch (Exception ex) { MakeMsg_Error("[출고대래치] 기록 오류: " + ex.Message, m_nthNo); }
+        }
+
+        /// <summary>출고대가 있는 설비의 M 워드만 다시 읽어 ON 이면 래치한다 (왕복 1회).</summary>
+        ///   [CNF] OUT_SCAN_MS : 이 간격(ms)마다 한 번. 0 이면 끈다. 기본 300.
+        ///   사이클 도중 설비 사이사이에서 불린다 - 같은 스레드/같은 소켓이라 충돌이 없다.
+        private void ScanOutStations()
+        {
+            int nGap = cDefApi.GsCnfInt("OUT_SCAN_MS", 300);
+            if (nGap <= 0) return;
+            if (!HasLatchColumn()) return;
+
+            uint dwNow = (uint)Environment.TickCount;
+            if (m_dwLastOutScan != 0 && (dwNow - m_dwLastOutScan) < (uint)nGap) return;
+            m_dwLastOutScan = dwNow;
+
+            try
+            {
+                if (m_slots == null) return;
+                foreach (EqpSlot sl in m_slots)
+                {
+                    int no = 0;
+                    int.TryParse(System.Text.RegularExpressions.Regex.Match(sl.Plc, @"\d+").Value, out no);
+                    if (no < 1) continue;
+
+                    int nOut = cPlcAddrMap.OutStation("CV", no);
+                    if (nOut <= 0) continue;              // 출고대가 없는 설비는 건너뛴다
+
+                    int mBase = cPlcAddrMap.BlockBase("CV", no, "Event");
+                    if (mBase < 0) mBase = 256 + (no - 1) * 32;
+                    int mWordAddr  = mBase / 16;
+                    int mBitOffset = mBase % 16;
+
+                    byte[] byM = new byte[100];
+                    if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
+                                       (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M,
+                                       mWordAddr, 2, ref byM))
+                        continue;                          // 한 번 실패는 넘어간다(다음 주기에 다시)
+
+                    if (GetMBitFromBuf(byM, mBitOffset + SigOfs("Event", "WorkInstruction", 5)))
+                        LatchOutStation(nOut);
+                }
+            }
+            catch (Exception ex) { MakeMsg_Error("[출고대래치] 고속 스캔 오류: " + ex.Message, m_nthNo); }
+        }
+
         private void PreloadStatusBlocks()
         {
             m_bBulkOk = false;
@@ -4077,6 +4190,10 @@ namespace WCS_TASK_CV
                         strSet += cDefApp.CRLF + "      ,STO_READY_RD = '" + STO_READY + "'       ";
                     if (nCvNo == nOutStation && (cv.RET_READY_RD ?? "") != RET_READY)
                         strSet += cDefApp.CRLF + "      ,RET_READY_RD = '" + RET_READY + "'       ";
+
+                    // [LGLS 2026-09-29] ON 을 본 순간 래치한다 - 신호가 꺼져도 남는다 (사용자 지시)
+                    if (nCvNo == nOutStation && RET_READY == "1")
+                        LatchOutStation(nCvNo);
 
                     // [LGLS 2026-08-22] 크레인/RGV 핸드셰이크 4종 — 트랙의 역할과 (작업번호·화물) 유무로 직접 판정한다.
                     //   집어가는 자리(ScPick/RgvPick) : 작업번호와 화물이 있으면 ON  → 가져갈 것이 있다

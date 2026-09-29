@@ -91,7 +91,9 @@ COLORREF CScInfo::GetForkColor1()
 	//   내려놓는 즉시 떨어지므로 "끝난 걸 바로" 안다. 우리는 작업 캐시만 봐서
 	//   작업이 다음 상태로 넘어가야 꺼졌다(2026-09-11 09:41~09:50 : 절전으로 작업이
 	//   25/35 에 10분 머물자 색도 10분 남았다).
-	if (!CLib::IsVehicleLoaded(m_pSC_DATA->V_SENSOR_FK_RD))
+	// [LGLS 2026-09-29] 지시 시점부터 보이게 할 때는 차상 비트를 기다리지 않는다 (사용자 지시).
+	//   번호(CalcScText)와 같은 조건이라야 "색 없이 번호만" 이 생기지 않는다.
+	if (!CLib::IniVehShowOnOrder() && !CLib::IsVehicleLoaded(m_pSC_DATA->V_SENSOR_FK_RD))
 		return LEGEND_IDLE_GRAY;
 
 	// [LGLS 2026-08-31] ★작업정보를 설비값보다 우선한다★ (사용자 지적 : 색 0.5초 튐)
@@ -178,7 +180,8 @@ COLORREF CScInfo::GetForkColor1(CSC_DATA* pSC_DATA)
 		return LEGEND_IDLE_GRAY;		// 이 호기가 문 작업이 없다 - 설비 잔류값은 보지 않는다
 
 	// [LGLS 2026-09-11] 차상 비트로 한 번 더 거른다(구 ECS IsPalletExist 와 같은 판정).
-	if (!CLib::IsVehicleLoaded(pSC_DATA->V_SENSOR_FK_RD))
+	// [LGLS 2026-09-29] 지시 시점부터 보이게 할 때는 차상 비트를 기다리지 않는다 (사용자 지시)
+	if (!CLib::IniVehShowOnOrder() && !CLib::IsVehicleLoaded(pSC_DATA->V_SENSOR_FK_RD))
 		return LEGEND_IDLE_GRAY;
 	if (IsVehicleDisplayOff(pSC_DATA))	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 		return LEGEND_IDLE_GRAY;
@@ -459,7 +462,11 @@ void CScInfo::CalcScText(CSC_DATA* pData, CString& strOut, COLORREF& clrOut)
 	if (!bHasJob) return;						// 작업 없음 -> 호기 표시
 
 	// [LGLS 2026-09-11] 번호도 차상 비트로 거른다 - 번호와 색은 늘 함께 간다.
-	if (!CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD)) return;
+	// [LGLS 2026-09-29] ★작업이 지시된 시점부터 번호를 보인다★ (사용자 지시).
+	//   종전에는 크레인이 작업을 받아 화물을 뜨러 가는 동안 번호가 없어, 화면만 보면
+	//   그 크레인이 노는 것처럼 보였다. 캐시는 25(크레인 지시) 부터 값을 준다.
+	//   하역 뒤 잔상은 아래 IsVehicleDisplayOff(VEH_CLEAR_MODE) 가 종전대로 맡는다.
+	if (!CLib::IniVehShowOnOrder() && !CLib::IsVehicleLoaded(pData->V_SENSOR_FK_RD)) return;
 	if (IsVehicleDisplayOff(pData)) return;	// [LGLS 2026-09-14] VEH_CLEAR_MODE
 
 	// [LGLS 2026-08-31] ★크레인에 색 없이 번호만 남으면 안 된다★ (사용자 지시)

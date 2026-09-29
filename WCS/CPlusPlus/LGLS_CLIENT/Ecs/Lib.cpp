@@ -2228,6 +2228,24 @@ int  CLib::IniVehDownColor()
 // [LGLS 2026-09-19] VEH_CLEAR_MODE 는 3 으로 확정 (사용자 지시) - 키와 IniVehClearMode() 삭제.
 //   판정은 CScInfo / CRtvInfo::IsVehicleDisplayOff 에 모드 3 동작만 남겼다.
 
+// [LGLS 2026-09-29] 크레인 작업번호·색을 ★지시 시점★ 부터 보일지 (사용자 지시).
+//   종전에는 차상(적재) 비트가 서야 번호가 보여서, 작업을 받아 화물을 뜨러 가는
+//   동안에는 크레인이 빈 것처럼 보였다. 작업정보 캐시는 25(크레인 지시) 부터
+//   그 호기에 작업을 매달므로 그것만으로 그릴 수 있다.
+//   1(기본) 지시부터 표시 / 0 종전(화물을 실어야 표시). 3초 캐시.
+BOOL CLib::IniVehShowOnOrder()
+{
+	static int   s_nOn   = -1;
+	static DWORD s_dwTick = 0;
+	DWORD dwNow = ::GetTickCount();
+	if (s_nOn < 0 || dwNow - s_dwTick >= 3000)
+	{
+		s_dwTick = dwNow;
+		s_nOn = ::GetPrivateProfileInt(_T("MENU"), _T("VEH_SHOW_ON_ORDER"), 1, ECS_INI_FILE);
+	}
+	return (s_nOn != 0);
+}
+
 BOOL CLib::IsVehicleLoaded(CString strSensor)
 {
 	// [LGLS 2026-09-11] ini 로 끌 수 있게 둔다. 현장 PLC 가 이 비트를 안 채우면

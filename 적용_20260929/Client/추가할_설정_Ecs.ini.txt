@@ -29,3 +29,11 @@ UI_SCALE = 0
 ; LEGEND_HIDE_SEMI_STO=0
 ; LEGEND_HIDE_SEMI_RET=0
 ; LEGEND_HIDE_SEMI_MOVE=0
+
+
+; ── [MENU] 섹션에 붙인다 ─────────────────────────────────────────
+; VEH_SHOW_ON_ORDER : 크레인(S/C) 작업번호와 색을 언제부터 보일지.
+;   1(기본) 작업이 지시된 시점(작업상태 25)부터 - 화물을 뜨러 가는 동안에도 번호가 보인다
+;   0       종전. 크레인이 화물을 실어 차상 비트가 서야 보인다
+;   하역 뒤 잔상 처리는 VEH_CLEAR_MODE 가 그대로 맡는다.
+VEH_SHOW_ON_ORDER = 1

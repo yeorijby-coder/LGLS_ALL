@@ -85,6 +85,9 @@ public:
 	//   값이 비어 있으면 TRUE 를 돌려준다 - 현장 PLC 가 이 비트를 안 채울 때
 	//   표시가 통째로 사라지는 쪽이 더 나쁘다(판정하지 않고 종전 동작을 둔다).
 	static BOOL IsVehicleLoaded(CString strSensor);
+	// [LGLS 2026-09-29] 크레인 작업번호·색을 지시 시점부터 보일지 (사용자 지시).
+	//   Ecs.ini [MENU] VEH_SHOW_ON_ORDER : 1(기본) 지시(25)부터 / 0 종전(화물을 실어야)
+	static BOOL IniVehShowOnOrder();
 
 	// [LGLS 2026-09-11] 대화상자 위치를 모니터 작업 영역 안으로 밀어 넣는다.
 	//   종전 위치 식은 메인 창이 (0,0) 에 있다고 보고 폭·높이만 썼다. 배율이 걸린
