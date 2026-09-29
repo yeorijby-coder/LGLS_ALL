@@ -196,17 +196,38 @@ namespace TSK_HostCom
 		public static void CloseSocket(ref System.Net.Sockets.Socket p_sktSocket)
 		{
 			// 소켓을 ManualClose 시키면 쓰레드가 종료하면서 다시 closesocket을 호출하면서 동기화가 이루어지지 않는다.
+			// [LGLS 2026-09-29] ★여기가 현장 CLR20r3 의 실제 자리다★ (이벤트 로그 확인).
+			//   2026-09-28 16:03 TASK_LFC10_G1_ECSCOM.exe
+			//     System.Net.Sockets.SocketException
+			//       Socket.Shutdown() ← modCmWork.CloseSocket ← modWorkThread.CliWorkThread
+			//   Connected 는 "마지막 I/O 시점의 상태" 라, 확인과 Shutdown 사이에 상대가 끊으면
+			//   그대로 예외가 난다. 상대가 먼저 끊는 것은 통신에서 늘 있는 일이지 고장이 아니다.
+			//   또 Monitor.Enter/Exit 가 try/finally 로 감싸여 있지 않아, 예외가 나면
+			//   ★락이 영영 풀리지 않는다★ - 죽지 않더라도 이후 소켓 종료가 모두 멈춘다.
 			System.Threading.Monitor.Enter(modDefApp.g_objSockSync);
-			if ((p_sktSocket != null))
+			try
 			{
-				if (p_sktSocket.Connected)
+				if ((p_sktSocket != null))
 				{
-					p_sktSocket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+					// 이미 끊긴 소켓의 Shutdown 실패는 정상적인 상황이다 - 닫기만 하면 된다
+					try
+					{
+						if (p_sktSocket.Connected)
+							p_sktSocket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+					}
+					catch (System.Net.Sockets.SocketException) { }
+					catch (ObjectDisposedException) { }
+
+					try { p_sktSocket.Close(); }
+					catch (Exception) { }
+
+					p_sktSocket = null;// 프로그램내에서 강제종료시 소켓 객체 사용여부 판단
 				}
-				p_sktSocket.Close();
-				p_sktSocket = null;// 프로그램내에서 강제종료시 소켓 객체 사용여부 판단
 			}
-			System.Threading.Monitor.Exit(modDefApp.g_objSockSync);
+			finally
+			{
+				System.Threading.Monitor.Exit(modDefApp.g_objSockSync);
+			}
 		}
 
 		public static void CloseSocket(ref System.Net.Sockets.TcpClient p_tcpcli, ref System.Net.Sockets.NetworkStream p_ntstrm)

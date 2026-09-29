@@ -49,8 +49,32 @@ namespace TSK_HostCom
 		{
 			string strLog = null;
 
-			modDefApp.g_tcplsn = new TcpListener(System.Net.IPAddress.Any, modDefApp.g_iListenPort);
-			modDefApp.g_tcplsn.Start();
+			// [LGLS 2026-09-29] ★Bind 실패로 프로세스가 죽던 자리★ (이벤트 로그 확인).
+			//   2026-09-22 19:16 ALL_TASK.exe
+			//     System.Net.Sockets.SocketException
+			//       Socket.Bind() → TcpListener.Start() ← modWorkThread.ListenThread
+			//   수신 포트를 이미 다른 인스턴스가 쓰고 있으면 난다(HOST_TASK 를 두 번 띄운 경우 등).
+			//   그건 프로그램을 끝낼 일이 아니라 사람이 알아야 할 상황이므로,
+			//   사유를 남기고 기다렸다 다시 시도한다.
+			while (modDefApp.g_blListenThread)
+			{
+				try
+				{
+					modDefApp.g_tcplsn = new TcpListener(System.Net.IPAddress.Any, modDefApp.g_iListenPort);
+					modDefApp.g_tcplsn.Start();
+					break;				// 열렸다
+				}
+				catch (SocketException se)
+				{
+					modCmWork.ShowMsgServer(
+						"수신 포트 " + modDefApp.g_iListenPort + " 를 열지 못했습니다 - "
+						+ se.Message + "(" + se.ErrorCode + "). "
+						+ "이미 떠 있는 HOST_TASK 가 없는지 확인하세요. 10초 뒤 다시 시도합니다.",
+						modDefApp.MSG_ERR);
+					modDefAPI.SleepA(10000);
+				}
+			}
+			if (!modDefApp.g_blListenThread) return;
 
 			while (modDefApp.g_blListenThread)
 			{
