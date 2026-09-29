@@ -20,6 +20,31 @@ namespace TSK_HostCom
 		//최초작성자	: BASE(이길문)
 		//작성일		: 20160829
 		//설명		: Listen Socket Thread
+		// [LGLS 2026-09-29] ★작업 스레드 안전망★ (사용자 지시 - 현장 CLR20r3).
+		//   .NET 2.0 부터 작업 스레드의 미처리 예외는 프로세스를 통째로 끝낸다.
+		//   AppDomain.UnhandledException 으로는 막지 못하고 로그만 남길 수 있다.
+		//   단독 EXE 때는 HOST 만 죽었지만 ALL_TASK 는 한 프로세스라 EQP·IO 까지 함께 내려간다.
+		//   그래서 스레드 바깥을 감싸 ★그 스레드만★ 끝내고 프로세스는 살려 둔다.
+		//   스레드 본체(아래 함수들)는 한 줄도 바꾸지 않았다.
+		public static void SafeRun(string pName, ThreadStart pBody)
+		{
+			try
+			{
+				pBody();
+			}
+			catch (ThreadAbortException)
+			{
+				throw;		// 정지 절차(Abort)는 종전 그대로 흘려보낸다
+			}
+			catch (Exception ex)
+			{
+				try { WcsCommon.cTaskLog.Write("HOST", pName, modDefApp.MSG_ERR,
+						"[스레드 예외] 이 스레드만 끝냅니다 - " + ex.ToString()); } catch { }
+				try { modCmWork.ShowMsgServer("[" + pName + "] 스레드 예외 : " + ex.Message,
+						modDefApp.MSG_ERR); } catch { }
+			}
+		}
+
 		public static void ListenThread()
 		{
 			string strLog = null;
@@ -58,7 +83,7 @@ namespace TSK_HostCom
 					modCmWork.ShowMsgServer(strLog, modDefApp.MSG_IMP);
 
 					// 서버 쓰레드 시작
-					modDefApp.g_SrvWork.m_thrThreadObj = new Thread(SrvWorkThread);
+					modDefApp.g_SrvWork.m_thrThreadObj = new Thread(delegate() { SafeRun("HOST_SRV", SrvWorkThread); });
 					modDefApp.g_SrvWork.m_thrThreadObj.Name = "Server Thread";
 					modDefApp.g_SrvWork.m_thrThreadObj.Start();
 				}

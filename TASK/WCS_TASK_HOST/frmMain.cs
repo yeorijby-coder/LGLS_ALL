@@ -151,7 +151,8 @@ int i;
 				modDefApp.g_arrlstLogList[i] = new ArrayList();
 
 				modDefApp.g_areLogExitEvent[i] = new AutoResetEvent(false);
-				g_thrLogThreadObj[i] = new Thread(modWorkThread.LogThread);
+				// [LGLS 2026-09-29] 스레드 예외로 프로세스가 통째로 죽지 않게 감싼다 (사용자 지시)
+				g_thrLogThreadObj[i] = new Thread(delegate() { modWorkThread.SafeRun("HOST_LOG", modWorkThread.LogThread); });
 				g_thrLogThreadObj[i].Name = i.ToString().PadRight(3) + "Log Thread";
 				g_thrLogThreadObj[i].Start();
 			}
@@ -189,13 +190,15 @@ int i;
 
             // 리슨 쓰레드 시작
             // Server 시작 
-            g_thrListenThreadObj = new Thread(modWorkThread.ListenThread);
+            // [LGLS 2026-09-29] 스레드 예외로 프로세스가 통째로 죽지 않게 감싼다 (사용자 지시)
+            g_thrListenThreadObj = new Thread(delegate() { modWorkThread.SafeRun("HOST_LSN", modWorkThread.ListenThread); });
             g_thrListenThreadObj.Name = "Socket Listen";
             g_thrListenThreadObj.Start();
 
             Thread.Sleep(5000);
             // Client 쓰레드 시작
-            modDefApp.g_CliWork.m_thrThreadObj = new Thread(modWorkThread.CliWorkThread);
+            // [LGLS 2026-09-29] 스레드 예외로 프로세스가 통째로 죽지 않게 감싼다 (사용자 지시)
+            modDefApp.g_CliWork.m_thrThreadObj = new Thread(delegate() { modWorkThread.SafeRun("HOST_CLI", modWorkThread.CliWorkThread); });
 			modDefApp.g_CliWork.m_thrThreadObj.Name = "Client Thread";
 			modDefApp.g_CliWork.m_thrThreadObj.Start();
 
