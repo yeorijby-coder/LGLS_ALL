@@ -235,6 +235,29 @@ int i;
 			}
 		}
 
+		// [LGLS 2026-09-30] 살아 있는 수신 접속을 전부 닫고 스레드를 기다린다 (pJoinMs < 0 이면 끝까지)
+		private static void CloseAllSrvWork(int pJoinMs)
+		{
+			CSrvWork[] arr;
+			lock (modDefApp.g_lstSrvWork) { arr = modDefApp.g_lstSrvWork.ToArray(); }
+			if (arr.Length == 0 && modDefApp.g_SrvWork != null) arr = new CSrvWork[] { modDefApp.g_SrvWork };
+			foreach (CSrvWork w in arr)
+			{
+				try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
+			}
+			foreach (CSrvWork w in arr)
+			{
+				try
+				{
+					if (w.m_thrThreadObj != null && w.m_thrThreadObj.IsAlive)
+					{
+						if (pJoinMs < 0) w.m_thrThreadObj.Join(); else w.m_thrThreadObj.Join(pJoinMs);
+					}
+				}
+				catch { }
+			}
+		}
+
 		private CUserDb m_DbCommHb    = new CUserDb("Multi", false);
 		private int     m_nCommHbTick = 0;
 
@@ -253,8 +276,13 @@ int i;
 				}
 
 				bool blCli = (modDefApp.g_CliWork != null) && modDefApp.g_CliWork.m_blSockConnected;
-				bool blSrv = (modDefApp.g_SrvWork != null) && (modDefApp.g_SrvWork.m_sktSock != null)
-				          && modDefApp.g_SrvWork.m_sktSock.Connected;
+				// [LGLS 2026-09-30] 수신 접속이 하나라도 붙어 있으면 Y
+				bool blSrv = false;
+				lock (modDefApp.g_lstSrvWork)
+				{
+					foreach (CSrvWork x in modDefApp.g_lstSrvWork)
+						if (x.m_sktSock != null && x.m_sktSock.Connected) { blSrv = true; break; }
+				}
 
 				for (int i = 0; i < 2; i++)
 				{
@@ -333,11 +361,8 @@ int i;
 				else
 				{
 					modDefApp.g_blSrvThread = false;
-					if (modDefApp.g_SrvWork.m_thrThreadObj != null)
-					{
-						modCmWork.CloseSocket(ref modDefApp.g_SrvWork.m_sktSock);
-						modDefApp.g_SrvWork.m_thrThreadObj.Join(5000);
-					}
+					// [LGLS 2026-09-30] 수신 접속이 여러 개일 수 있다 - 전부 닫는다
+					CloseAllSrvWork(5000);
 					modDefApp.g_blListenThread = false;
 				}
 			}
@@ -416,11 +441,8 @@ int i;
 				modDefApp.g_blSrvThread = false;
 
 				//서버 쓰레드 종료
-				if ((modDefApp.g_SrvWork.m_thrThreadObj != null))
-				{
-					modCmWork.CloseSocket(ref modDefApp.g_SrvWork.m_sktSock);
-					modDefApp.g_SrvWork.m_thrThreadObj.Join();
-				}
+				// [LGLS 2026-09-30] 수신 접속이 여러 개일 수 있다 - 전부 닫는다
+				CloseAllSrvWork(-1);
 			}
 
 			//클라이언트 쓰레드 종료

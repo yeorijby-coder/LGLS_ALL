@@ -103,6 +103,9 @@ public static frmMain g_frmForm;
 
 		// 서버소켓용 작업 Object
 		public static CSrvWork g_SrvWork = new CSrvWork();
+		// [LGLS 2026-09-30] 살아 있는 수신 접속 전부 (접속마다 CSrvWork 하나). g_SrvWork 는 그중 가장 최근 것.
+		//   구 ECP(TcpServer.Clients) 처럼 상위가 접속을 여러 개 열어도 서로 끊지 않는다.
+		public static List<CSrvWork> g_lstSrvWork = new List<CSrvWork>();
 		// 클라이언트소켓용 작업 Object
 
 		public static CCliWork g_CliWork = new CCliWork();
