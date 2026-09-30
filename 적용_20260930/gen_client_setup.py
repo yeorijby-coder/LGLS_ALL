@@ -316,7 +316,7 @@ wr(os.path.join(DST, 'Setup.bat'), [
  '>>"%VBS%" echo Set oLink = oWS.CreateShortcut^(sLink^)',
  '>>"%VBS%" echo oLink.TargetPath = "%INSTDIR%\\Ecs.exe"',
  '>>"%VBS%" echo oLink.WorkingDirectory = "%INSTDIR%"',
- '>>"%VBS%" echo oLink.IconLocation = "%INSTDIR%\\WCS.ico"',
+ '>>"%VBS%" echo oLink.IconLocation = "%INSTDIR%\\Ecs.exe,0"',
  '>>"%VBS%" echo oLink.Description = "LGLS 자동창고 운전 화면"',
  '>>"%VBS%" echo oLink.Save',
  'cscript //nologo "%VBS%"',
