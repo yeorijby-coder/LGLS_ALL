@@ -2435,6 +2435,18 @@ CString CEcsDoc::PosLabel(LPCTSTR lpszCode, LPCTSTR lpszLoc, BOOL bWithLoc)
 	}
 	strIms.Trim(); strTr.Trim(); strName.Trim();
 
+	// [LGLS 2026-09-30] 작업대 명칭은 EcsDefine.xml 것을 쓴다 (사용자 지시).
+	//   현장에서 이름을 바꾸고 싶으면 그 파일만 고치면 된다.
+	//   찾는 키는 ★트랙번호★ 다 - 여기 strCode 가 DEST_POS_DEF.MC_NO 이고
+	//   그 값이 곧 트랙번호라 EcsDefine.xml 의 Track number 와 바로 맞는다.
+	//   IMS 번호와 트랙번호 표시는 종전대로 REMARKS 에서 온다 - 이름만 바꾼다.
+	//   그 파일에 없는 트랙이면 종전대로 REMARKS 의 이름을 쓴다.
+	{
+		CString strXmlName;
+		if (m_mapStationName.Lookup(strCode, strXmlName) && !strXmlName.IsEmpty())
+			strName = strXmlName;
+	}
+
 	// 트랙번호는 2자리로 (Ecs.ini [MENU] TRACK_NO_DIGITS 와 같은 규칙)
 	if (strTr.GetLength() > 2) strTr = strTr.Right(2);
 

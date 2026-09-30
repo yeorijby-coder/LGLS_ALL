@@ -241,6 +241,29 @@ BOOL CEcsDefine::ParseTracks(CCv* pCv)
 						else if (strValue == _T("LgvArriveHS")) {wStatus = CTrackInfo::enStatusLgvArriveHSReady;}
 						else DEBUGER_ASSERT_VALID_LOG(FALSE, strValue);
 
+						// [LGLS 2026-09-30] 작업대 명칭을 함께 모아 둔다 (사용자 지시).
+						//   <StoStation name="외부 전용 입출고대" id="101"/>
+						//   종전 파서는 요소 이름만 보고 속성은 버렸다.
+						//   ★키는 id 가 아니라 트랙번호다★
+						//   이 파일의 id 와 DEST_POS_DEF.REMARKS 의 IMS 번호가 124/126 에서
+						//   서로 뒤집혀 있어, id 로 이으면 입고대에 불출대 이름이 붙는다.
+						//   트랙번호는 양쪽이 같으므로 그것으로 잇는다.
+						if (wStatus == CTrackInfo::enStatusStoSTReady ||
+							wStatus == CTrackInfo::enStatusRetSTReady ||
+							wStatus == CTrackInfo::enStatusArvSTReady)
+						{
+							if (MoveXPath(_T("./") + strValue, FALSE))
+							{
+								CString strStnName;
+								GetAttrValue(_T("name"), strStnName);
+								strStnName.Trim();
+								CString strTrkKey = strTRACK_NO; strTrkKey.Trim();
+								if (!strTrkKey.IsEmpty() && !strStnName.IsEmpty())
+									m_pDoc->m_mapStationName.SetAt(strTrkKey, strStnName);
+								MoveParent();
+							}
+						}
+
 						pTrackInfo->m_mapStatusInfos.SetAt(wStatus, NULL);
 						pTrackInfo->m_arrayStatus.Add(wStatus);
 						if(wStatus == 0)

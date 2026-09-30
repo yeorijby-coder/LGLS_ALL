@@ -473,6 +473,31 @@ note(d, '두 창이 같은 함수(CEcsDoc::PosLabel)를 쓰므로 규칙이 어�
 
 d.add_page_break()
 
+d.add_heading('6-4.3 작업대 명칭은 EcsDefine.xml 에서 가져온다', 2)
+G.para(d, '작업대 이름을 바꾸고 싶을 때 프로그램을 다시 만들지 않아도 되게 했다. '
+          'EcsDefine.xml 의 이름을 고치면 작업 정보 창과 작업 판넬에 그대로 나온다.')
+code(d, [
+    '<Track number="122">',
+    '    <Status>',
+    '        <StoStation name="외부 전용 입출고대" id="101"/>',
+    '        <RetStation name="외부 전용 입출고대" id="101"/>',
+    '    </Status>',
+    '</Track>',
+])
+G.para(d, '이름만 이 파일에서 온다. IMS 번호와 트랙번호는 종전대로 DEST_POS_DEF.REMARKS 에서 온다.')
+G.table(d, ['보이는 것', '어디서 오나'], [
+    ['외부 전용 입출고대', 'EcsDefine.xml 의 name'],
+    ['[101]', 'DEST_POS_DEF.REMARKS 의 IMS 번호'],
+    ['TR#22', 'DEST_POS_DEF.REMARKS 의 트랙번호'],
+], widths=[5.0, 11.0])
+note(d, '이어 주는 열쇠는 ★트랙번호★ 다. EcsDefine.xml 의 id 와 REMARKS 의 IMS 번호가 '
+        '124/126 에서 서로 뒤집혀 있어(XML 124=103, DB 124=IMS104), id 로 이으면 '
+        '입고대에 불출대 이름이 붙는다. 트랙번호는 양쪽이 같으므로 그것으로 잇는다. '
+        '어느 IMS 번호가 맞는지는 확인이 필요하다 - 화면에 보이는 번호는 DB 값이다.')
+G.para(d, 'EcsDefine.xml 에 없는 트랙이면 종전대로 REMARKS 의 이름을 쓴다. 빈 이름이 되지 않는다.')
+G.para(d, '이름이 길어져 작업 판넬에서 잘리므로, 출발/도착 칸을 넓히고 작업번호 바로 뒤로 당겼다. '
+          '나머지 칸은 가로로 밀어 보면 된다.')
+
 d.add_heading('6-5. HOST_TASK 가 기동 직후 죽던 원인 (CLR20r3)', 1)
 G.para(d, '대상 : TASK/HOST_TASK', bold=True)
 G.para(d, '"ALL_TASK 적용했는데 CLR20r3" 로 보고하신 건이다. '
@@ -563,6 +588,7 @@ G.table(d, ['항목', '무엇을 보나'], [
     ['래치 동작', 'EQP/IO 두 TASK 로그에 「CV_DATA.RET_READY_LATCH 있음」 이 찍히는가 (없으면 SQL 04 미적용)'],
     ['크레인 번호', 'S/C·RTV 가 화물을 뜨러 가는 동안에도 작업번호와 색이 보이는가'],
     ['출발/도착', '작업 정보 창과 작업 판넬에 이름표 형식으로 보이는가'],
+    ['작업대 이름', 'EcsDefine.xml 에 적은 이름이 그대로 보이는가 (6-4.3)'],
     ['신호등', '리본 [통신] 셋째 칸이 PLC 로 보이는가'],
     ['4K TV', '신호등 4칸이 한 줄로 나오는가, 글자 크기가 맞는가'],
     ['범례', '뺀 항목이 안 보이는가, 「화물 감지」 가 보이는가, [숨김] 체크가 반영되는가'],

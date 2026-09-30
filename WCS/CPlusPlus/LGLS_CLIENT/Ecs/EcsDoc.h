@@ -424,6 +424,11 @@ public:
 	CString PosLabel(LPCTSTR lpszCode, LPCTSTR lpszLoc = NULL, BOOL bWithLoc = FALSE);
 	void    RefreshPosDefCache();
 	CMapStringToString	m_mapPosDef;		// 코드 → REMARKS
+	// [LGLS 2026-09-30] 작업대 명칭은 EcsDefine.xml 에서 가져온다 (사용자 지시).
+	//   <Track number="122"> <StoStation name="외부 전용 입출고대"/>  →  "122" : "외부 전용 입출고대"
+	//   키는 트랙번호다. 이 파일의 id 와 DEST_POS_DEF 의 IMS 번호가 어긋난 자리가 있어
+	//   트랙번호로 잇는다. IMS 번호와 트랙번호 표시는 종전대로 REMARKS 에서 온다.
+	CMapStringToString	m_mapStationName;	// 트랙번호 → 작업대 명칭
 	DWORD				m_dwPosDefTick;
 	CString GetVehicleJobTyp(LPCTSTR lpszVehNo);
 	CString GetVehicleJobSta(LPCTSTR lpszVehNo);	// [LGLS 2026-09-14] 그 호기에 물린 작업의 상태
