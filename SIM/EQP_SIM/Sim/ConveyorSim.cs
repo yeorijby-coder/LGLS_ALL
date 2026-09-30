@@ -242,7 +242,7 @@ namespace EQP_SIM.Sim
             }
 
             // ── 출고대 ──
-            if (Def.No >= 11 && Def.OutgoPath != null && HasObs("WAIT_IN"))
+            if (Def.No >= 11 && Def.OutgoPath != null && HasObs("WAIT_IN") && !engine.WaitInOff)   // [LGLS 2026-09-30] 시험용 끄기
             {
                 bool on = false;
                 if (!bBi || dir == "1")

@@ -82,6 +82,7 @@ namespace EQP_SIM.Sim
             HsRecordLagMs = config.GetInt("TIMING", "HS_RECORD_LAG_MS", HsRecordLagMs);   // [LGLS 2026-09-16]
             HsAfterRecordHoldMs = config.GetInt("TIMING", "HS_AFTER_RECORD_HOLD_MS", HsAfterRecordHoldMs);   // [LGLS 2026-09-17]
             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
+            WaitInOff = config.GetBool("FAULT", "WAIT_IN_OFF", false);   // [LGLS 2026-09-30] 시험용 - 출고대 신호(WAIT_IN)를 올리지 않는다
             SrcCargoTimeoutMs = config.GetInt("TIMING", "SRC_CARGO_TIMEOUT_MS", SrcCargoTimeoutMs);
             OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);
             InSensorDelayMs = config.GetInt("TIMING", "IN_SENSOR_DELAY_MS", InSensorDelayMs);
@@ -90,6 +91,7 @@ namespace EQP_SIM.Sim
                 + " SRC_CARGO_TIMEOUT=" + SrcCargoTimeoutMs + " IN_SENSOR_DELAY=" + InSensorDelayMs + " (ms)");
         }
         public int SrcCargoTimeoutMs = 60000;   // [LGLS 2026-09-04] 차량이 출발지에서 화물을 기다리는 최대 시간(넘으면 지시 포기)
+        public bool WaitInOff = false;      // [LGLS 2026-09-30] [FAULT] WAIT_IN_OFF=1 이면 출고대 신호를 안 올린다(IO_TASK 실도착 경로 시험용)
         public int OutRemoveMs = 3000;       // [LGLS 2026-08-22] 출고대 신호 ON 후 지게차가 화물을 가져가기까지
         public int OutTrackClearMs = 3000;   // [LGLS 2026-08-22] 화물 반출 후 남은 데이터(트래킹) 제거까지
         // [LGLS 2026-07-31] 차량(RGV/S/C) 상차 후 "출발지 화물·트래킹 소멸"을 확인하고 그 상태를 유지하는 시간.
