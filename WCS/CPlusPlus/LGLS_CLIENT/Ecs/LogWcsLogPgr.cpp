@@ -535,10 +535,19 @@ CString CLogWcsLogPgr::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 
 	// [LGLS 2026-08-23] 작업구분은 WCS_LOG_PGR 에 컬럼이 없다.
 	//   진행 중(JOB_MST) + 종료(JOB_MST_HIS) 작업정보에서 같은 작업번호의 JOB_TYP 을 찾아 거른다.
-	//   (반자동 11/12 도 기본형 1/2 로 함께 본다)
+	// [LGLS 2026-09-30] 고르는 목록이 작업 정보 창과 같아지며 1~6 으로 늘었다.
+	//   반자동은 기본형에 10 을 더한 값이다 (1 입고 → 11 반자동입고, 3 피킹출고 → 13 ...).
+	//   종전에는 입고/출고만 보고 11 아니면 12 로 갈라, 3 을 고르면 12 를 찾고 있었다.
+	//   숫자가 아닌 코드(B1 같은 것)는 짝이 없으므로 그것만 본다.
 	if(strJobDefine != _T("") && strJobDefine != _T("ALL"))
 	{
-		CString strTyp2 = (strJobDefine == _T("1")) ? _T("11") : _T("12");
+		CString strTyp2 = strJobDefine;
+		{
+			int nTyp = _ttoi(strJobDefine);
+			CString strChk; strChk.Format(_T("%d"), nTyp);
+			if (strChk == strJobDefine && nTyp >= 1 && nTyp <= 9)
+				strTyp2.Format(_T("%d"), nTyp + 10);		// 반자동 짝
+		}
 		strSql += CRLF + _T("   AND EXISTS ( SELECT 1 FROM JOB_MST J                                    ");
 		strSql += CRLF + _T("                 WHERE J.WH_TYP = WLP.WH_TYP AND J.LUGG_NO = WLP.LUGG_NO    ");
 		strSql += CRLF + _T("                   AND J.JOB_TYP IN (") + CLib::Quot(strJobDefine) + _T(",") + CLib::Quot(strTyp2) + _T(")");
