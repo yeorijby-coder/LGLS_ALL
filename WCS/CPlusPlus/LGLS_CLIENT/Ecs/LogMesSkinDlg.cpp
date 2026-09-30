@@ -203,14 +203,12 @@ BOOL CLogMesSkinDlg::OnInitDialog()
 	CLib::BindCombo(m_cbxMesLogDirection, _T("DIRECTION"),m_pDoc, (int)pEn, TRUE);
 	CLib::BindCombo(m_cbxMesLogHostCmd, _T("HOST_CMD"),m_pDoc, (int)pEn, TRUE);
 	// [LGLS 2026-08-23] 작업구분 : 명세서 Job Define (1 입고 / 2 출고)
-	{
-		int nIdx;
-		m_cbxJobDefine.ResetContent();
-		nIdx = m_cbxJobDefine.AddString(_T("ALL"));   m_cbxJobDefine.SetItemDataEx(nIdx, _T("ALL"));
-		nIdx = m_cbxJobDefine.AddString(_T("1:입고")); m_cbxJobDefine.SetItemDataEx(nIdx, _T("1"));
-		nIdx = m_cbxJobDefine.AddString(_T("2:출고")); m_cbxJobDefine.SetItemDataEx(nIdx, _T("2"));
-		m_cbxJobDefine.SetCurSel(0);
-	}
+	// [LGLS 2026-09-30] 작업 구분을 작업 정보 창과 같은 목록으로 (사용자 지시).
+	//   종전에는 입고/출고 둘만 박혀 있어 피킹 출고나 반자동을 고를 수 없었다.
+	//   작업 정보 창이 쓰는 COMMON_CODE 의 JOB_TYP 을 그대로 쓴다.
+	//   현장에서 구분을 늘리면 그 표만 고치면 여기도 따라온다.
+	CLib::BindCombo(m_cbxJobDefine, _T("JOB_TYP"), m_pDoc, (int)pEn, TRUE);
+	m_cbxJobDefine.SetCurSel(0);
 	CLib::BindCombo(m_cbxRowCnt, _T("ROW_CNT"), m_pDoc ,(int)pEn, FALSE);
 	
 	InitializeResource(pEn);

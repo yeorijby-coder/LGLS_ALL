@@ -103,14 +103,12 @@ BOOL CLogWcsLogPgr::OnInitDialog()
 	CLib::BindCombo(m_cbxWcsLogWhTyp, _T("WH_TYP"),m_pDoc, (int)pEn, FALSE);
 	CLib::BindCombo(m_cbxWcsLogPgrNm, _T("PGR_NM"),m_pDoc, (int)pEn, TRUE);
 	// [LGLS 2026-08-23] 작업구분 (명세서 Job Define : 1 입고 / 2 출고)
-	{
-		int nIdx;
-		m_cbxWcsLogJobDefine.ResetContent();
-		nIdx = m_cbxWcsLogJobDefine.AddString(_T("ALL"));   m_cbxWcsLogJobDefine.SetItemDataEx(nIdx, _T("ALL"));
-		nIdx = m_cbxWcsLogJobDefine.AddString(_T("1:입고")); m_cbxWcsLogJobDefine.SetItemDataEx(nIdx, _T("1"));
-		nIdx = m_cbxWcsLogJobDefine.AddString(_T("2:출고")); m_cbxWcsLogJobDefine.SetItemDataEx(nIdx, _T("2"));
-		m_cbxWcsLogJobDefine.SetCurSel(0);
-	}
+	// [LGLS 2026-09-30] 작업 구분을 작업 정보 창과 같은 목록으로 (사용자 지시).
+	//   종전에는 입고/출고 둘만 박혀 있어 피킹 출고나 반자동을 고를 수 없었다.
+	//   작업 정보 창이 쓰는 COMMON_CODE 의 JOB_TYP 을 그대로 쓴다.
+	//   현장에서 구분을 늘리면 그 표만 고치면 여기도 따라온다.
+	CLib::BindCombo(m_cbxWcsLogJobDefine, _T("JOB_TYP"), m_pDoc, (int)pEn, TRUE);
+	m_cbxWcsLogJobDefine.SetCurSel(0);
 	CLib::BindCombo(m_cbxRowCnt, _T("ROW_CNT"), m_pDoc ,(int)pEn, FALSE);
 	
 	InitializeResource(pEn);
@@ -481,9 +479,37 @@ CString CLogWcsLogPgr::GetQrySelect_Main(int nRowCheck, BOOL bSearch)
 	//	strSql += CRLF + _T("    AND WLP.TRACK_FROM =  ") + CLib::Quot(strWcsLogStartPos);
 	//}
 
+	// [LGLS 2026-09-30] 프로그램을 TASK 단위로 고른다 (사용자 지시).
+	//   로그에 실제로 남는 이름은 스레드 단위라 여럿이다.
+	//     EQP  : WCS_TASK_CV_COMM0, VEH_SC, VEH_RTV ...
+	//     IO   : SCH_DBG ...
+	//   고르는 것은 HOST / EQP / IO_TASK 셋이므로, 이름 생김새로 묶어 건다.
+	//   현장에서 이름이 늘어도 같은 규칙을 따르면 그대로 걸린다.
+	//   ★쌓여 있는 옛 로그도 그대로 조회된다 - 기록하는 쪽은 건드리지 않았다.★
 	if(strPgrNm != _T("") && strPgrNm != _T("ALL"))
 	{
-		strSql += CRLF + _T("    AND WLP.PGR_NM =  ") + CLib::Quot(strPgrNm);
+		if (strPgrNm == _T("EQP"))
+		{
+			strSql += CRLF + _T("    AND ( WLP.PGR_NM LIKE 'WCS_TASK%'  ");
+			strSql += CRLF + _T("       OR WLP.PGR_NM LIKE 'VEH_%'      ");
+			strSql += CRLF + _T("       OR WLP.PGR_NM LIKE 'EQP%' )     ");
+		}
+		else if (strPgrNm == _T("IO_TASK"))
+		{
+			strSql += CRLF + _T("    AND ( WLP.PGR_NM LIKE 'SCH%'       ");
+			strSql += CRLF + _T("       OR WLP.PGR_NM LIKE 'IO_%' )     ");
+		}
+		else if (strPgrNm == _T("HOST"))
+		{
+			strSql += CRLF + _T("    AND ( WLP.PGR_NM LIKE 'HOST%'      ");
+			strSql += CRLF + _T("       OR WLP.PGR_NM LIKE 'MES%'       ");
+			strSql += CRLF + _T("       OR WLP.PGR_NM LIKE '%ECSCOM%' ) ");
+		}
+		else
+		{
+			// 옛 코드를 고른 경우 - 종전대로 그 이름만 본다
+			strSql += CRLF + _T("    AND WLP.PGR_NM =  ") + CLib::Quot(strPgrNm);
+		}
 	}
 
 	//if(strWcsLogDestPos != _T("") && strWcsLogDestPos != _T("ALL"))
