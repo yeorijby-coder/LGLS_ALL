@@ -437,7 +437,10 @@ HICON CGlobal::GetIcon(EN_ICON_IDX penIconIdx)
 BOOL CGlobal::RegistryFont(CString pstrFullPath, BOOL bMessage)
 {
 	int nSuccess = -1;
-	nSuccess = AddFontResource(pstrFullPath);
+	// [LGLS 2026-09-30] FR_PRIVATE - 이 프로세스에만 등록한다 (사용자 확인: 설치가 액세스 거부로 끊김).
+	//   AddFontResource 는 시스템 전체에 등록되고 풀지 않으면 Client 를 닫아도 로그오프할 때까지
+	//   폰트 파일이 잠긴다. 그래서 다시 설치/제거할 때 폰트 파일에서 막혔다.
+	nSuccess = AddFontResourceEx(pstrFullPath, FR_PRIVATE, 0);
 	if(nSuccess <= 0)
 	{ 
 		AfxMessageBox(_T("폰트 설정 실패") + pstrFullPath);

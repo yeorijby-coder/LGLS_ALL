@@ -253,7 +253,13 @@ wr(os.path.join(DST, 'Setup.bat'), [
  '    exit /b 1',
  ')',
  '',
- 'xcopy "%SRC%Client\\*" "%INSTDIR%\\" /E /I /Y /Q',
+ 'rem    Client 가 등록한 폰트는 Client 를 닫아도 잠겨 있다(AddFontResource). 먼저 푼다.',
+ 'rem    풀지 않으면 폰트 파일에서 "액세스가 거부되었습니다" 가 나고 복사가 거기서 끊긴다.',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Release-Fonts.ps1" -Dir "%INSTDIR%" -SrcDir "%SRC%Client" >nul 2>&1',
+ '',
+ 'rem    /C 하나가 실패해도 나머지는 계속  /R 읽기전용도 덮어쓴다',
+ 'xcopy "%SRC%Client\\*" "%INSTDIR%\\" /E /I /Y /Q /C /R',
+ 'copy /y "%SRC%Release-Fonts.ps1" "%INSTDIR%\\" >nul',
  'rem    주소를 나중에 바꿀 수 있게 도우미와 안내문도 함께 둔다',
  'copy /y "%SRC%Set-DbServer.ps1" "%INSTDIR%\\" >nul',
  'copy /y "%SRC%확인하는_법.txt" "%INSTDIR%\\" >nul',
@@ -264,20 +270,19 @@ wr(os.path.join(DST, 'Setup.bat'), [
  '    exit /b 1',
  ')',
  '',
- 'rem    정말 다 들어갔는지 센다. 중간에 끊기면 폰트나 화면 정의가 빠져',
- 'rem    프로그램이 이상하게 뜬다(메뉴가 뭉개지고 폰트 오류 창이 뜬다).',
- 'set "NSRC=0"',
- '''for /f %%n in ('dir /a-d /s /b "%SRC%Client" 2^>nul ^| find /c /v ""') do set "NSRC=%%n"''',
- 'set "NDST=0"',
- '''for /f %%n in ('dir /a-d /s /b "%INSTDIR%" 2^>nul ^| find /c /v ""') do set "NDST=%%n"''',
- '        echo        원본 !NSRC! 개 / 복사된 것 !NDST! 개'.replace('        echo', 'echo', 1),
- 'if !NDST! LSS !NSRC! (',
- '    echo        [주의] 덜 복사되었습니다. 이대로 두면 프로그램이 이상하게 뜹니다.',
- '    echo               Client 를 닫고 다시 실행해 주세요.',
+ 'rem    정말 다 들어갔는지 ★이름으로★ 대조한다. 빠진 것이 있으면 어느 파일인지 보여 준다.',
+ 'rem    (개수만 세면 대상 폴더의 다른 파일 때문에 맞는 것처럼 보일 수 있다)',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Release-Fonts.ps1" -Dir "%INSTDIR%" -SrcDir "%SRC%Client" -Check',
+ 'if errorlevel 1 (',
+ '    echo.',
+ '    echo        [주의] 위 파일이 들어가지 않았습니다. 이대로 두면 프로그램이 이상하게 뜹니다.',
+ '    echo               - Client^(Ecs.exe / EcsMain.exe^) 와 설치 폴더를 연 창을 모두 닫고 다시 실행해 주세요.',
+ '    echo               - 폰트^(.ttf^) 가 남아 있으면 Windows 를 로그오프했다가 다시 실행하면 풀립니다.',
  '    echo.',
  '    pause',
  '    exit /b 1',
  ')',
+ 'echo        모두 들어갔습니다.',
  '',
  'rem    설정을 되돌려 준다 - 새 설정은 .new 로 남긴다',
  'if exist "%INSTDIR%\\Ecs.ini.before_setup" (',
@@ -335,6 +340,70 @@ wr(os.path.join(DST, 'Setup.bat'), [
  'pause',
  'endlocal',
 ])
+
+def wr_ps(path, text):
+    data = text.replace('\r\n', '\n').replace('\n', '\r\n').encode('ascii')   # 먼저 검증 - ASCII 만
+    with open(path, 'wb') as f:
+        f.write(data)
+    print(path)
+
+# ── 폰트 잠금 풀기 / 복사 대조 ── 2026-09-30
+wr_ps(os.path.join(DST, 'Release-Fonts.ps1'), r"""# Release fonts that the Client registered with AddFontResource (they stay locked
+# until logoff even after the Client exits), and optionally verify the copy.
+#   -Dir     install folder
+#   -SrcDir  package folder (Client) - font names are taken from here too
+#   -Check   list files that exist in SrcDir but not in Dir; exit 1 if any
+param([Parameter(Mandatory=$true)][string]$Dir, [string]$SrcDir = "", [switch]$Check)
+
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public class FontRel {
+  [DllImport("gdi32.dll", CharSet=CharSet.Unicode)] public static extern bool RemoveFontResourceW(string f);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessageTimeout(IntPtr h, uint m, IntPtr w, IntPtr l, uint f, uint t, out IntPtr r);
+}
+"@
+
+function Get-Rel([string]$root) {
+  if (-not $root -or -not (Test-Path -LiteralPath $root)) { return @() }
+  $r = (Resolve-Path -LiteralPath $root).Path.TrimEnd('\')
+  @(Get-ChildItem -LiteralPath $r -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName.Substring($r.Length + 1) })
+}
+
+if ($Check) {
+  $dstRoot = $Dir.TrimEnd('\')
+  $miss = @()
+  foreach ($rel in (Get-Rel $SrcDir)) {
+    $ok = $false
+    try { $ok = [System.IO.File]::Exists((Join-Path $dstRoot $rel)) } catch { $ok = $false }
+    if ($ok) { try { $fs = [System.IO.File]::Open((Join-Path $dstRoot $rel), 'Open', 'Read', 'ReadWrite'); $fs.Close() } catch { $ok = $false } }
+    if (-not $ok) { $miss += $rel }
+  }
+  if ($miss.Count -gt 0) {
+    Write-Host ("        missing " + $miss.Count + " :")
+    $miss | Select-Object -First 10 | ForEach-Object { Write-Host ("          " + $_) }
+    exit 1
+  }
+  exit 0
+}
+
+# font files : those present in Dir + the names the package has (a locked file may not be listable)
+$exts = '.ttf', '.ttc', '.otf', '.fon'
+$rels = @()
+$rels += Get-Rel $Dir    | Where-Object { $exts -contains [System.IO.Path]::GetExtension($_).ToLower() }
+$rels += Get-Rel $SrcDir | Where-Object { $exts -contains [System.IO.Path]::GetExtension($_).ToLower() }
+$rels = $rels | Sort-Object -Unique
+$n = 0
+foreach ($rel in $rels) {
+  $full = Join-Path $Dir.TrimEnd('\') $rel
+  for ($i = 0; $i -lt 100; $i++) { if (-not [FontRel]::RemoveFontResourceW($full)) { break }; $n++ }
+}
+if ($n -gt 0) {
+  $r = [IntPtr]::Zero
+  [void][FontRel]::SendMessageTimeout([IntPtr]0xFFFF, 0x001D, [IntPtr]::Zero, [IntPtr]::Zero, 2, 1000, [ref]$r)
+}
+Write-Host ("released " + $n)
+exit 0
+""")
 
 wr(os.path.join(DST, '읽어보세요.txt'), [
  '============================================================',
@@ -895,6 +964,9 @@ wr(os.path.join(DST, 'Uninstall.bat'), [
  'rem --- 3. 폴더 지우기 ---',
  'echo  프로그램을 지웁니다...',
  'attrib -r -h -s "!INSTDIR!\\*" /s /d >nul 2>&1',
+ 'rem    Client 가 등록한 폰트를 먼저 푼다 - 안 풀면 폰트 파일이 잠긴 채 남아 다음 설치를 막는다',
+ 'if exist "%~dp0Release-Fonts.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Release-Fonts.ps1" -Dir "!INSTDIR!" >nul 2>&1',
+ 'cd /d "%SystemRoot%" >nul 2>&1',
  'rmdir /s /q "!INSTDIR!" 2>nul',
  'if exist "!INSTDIR!" goto LEFTOVER',
  'echo        지웠습니다.',
