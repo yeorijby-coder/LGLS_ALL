@@ -107,3 +107,7 @@ TASK/Download/bin/
 OutLatch.ini
 
 lglsadmin1!.txt
+
+# [LGLS 2026-09-30] 설치 꾸러미는 다른 폴더의 파일을 모아 만든 것이라 넣지 않는다.
+#   만들려면 : python 적용_20260930/gen_client_setup.py
+적용_20260930/Client_설치/
