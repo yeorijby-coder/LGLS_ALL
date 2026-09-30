@@ -161,7 +161,7 @@ void CDciTrackCtrl::UpdateControl(CDC* pDC)
 		hDC = pDC->GetSafeHdc();
 		memset(&m_logfont, 0, sizeof(LOGFONT));
 		m_logfont.lfQuality = PROOF_QUALITY;
-		m_logfont.lfHeight = m_nFontSize;
+		m_logfont.lfHeight = CDciMaster::FixedFontPx(m_nFontSize);
 //		m_logfont.lfHeight = nSize;//long((-MulDiv(m_nFontSize, GetDeviceCaps(hDC, LOGPIXELSY), 72 )) / m_pDCI->GetScale());
 		m_logfont.lfWeight = FW_BOLD;
 		lstrcpy(m_logfont.lfFaceName, _T("Arial"));

@@ -294,7 +294,9 @@ void CDciMaster::DrawTextFit(CDC* pDC, const CRect& rcRectS, const CString& strT
 	//   0    : 칸 크기에 맞춘다(칸이 커지면 글자도 커진다)
 	//   그 밖 : 그 값을 그대로 쓴다(종전 동작). 손으로 맞춘 자리를 건드리지 않는다.
 	// [LGLS 2026-09-14] 맞춘 결과와 글꼴을 캐시한다. 계산 방법은 종전과 같다.
-	int nFont = nBaseFontSize;
+	int nFont = FixedFontPx(nBaseFontSize);		// [LGLS 2026-10-01] 고정 크기에도 지도 배율을 먹인다
+	if (nBaseFontSize > 0 && s_nFixedFontPct > 100 && nFont > nH && nH >= nBaseFontSize)
+		nFont = nH;								//   키우더라도 칸 높이는 넘지 않게
 	if (nBaseFontSize <= 0)
 	{
 		CString strKey;
@@ -364,7 +366,9 @@ void CDciMaster::DrawTextFit2(CDC* pDC, const CRect& rcRectS, const CString& str
 	int nH = abs(rcRectS.Height());
 	if (nW < 2 || nH < 2)
 		return;
-	int nFont = nBaseFontSize;
+	int nFont = FixedFontPx(nBaseFontSize);		// [LGLS 2026-10-01] 고정 크기에도 지도 배율을 먹인다
+	if (nBaseFontSize > 0 && s_nFixedFontPct > 100 && nFont > nH && nH >= nBaseFontSize)
+		nFont = nH;								//   키우더라도 칸 높이는 넘지 않게
 	if (nBaseFontSize <= 0)
 	{
 		CString strKey;
@@ -410,6 +414,8 @@ void CDciMaster::DrawTextFit2(CDC* pDC, const CRect& rcRectS, const CString& str
 }
 
 // [LGLS 2026-09-14] 높이별 글꼴을 한 번만 만든다 (굵게, Arial - 종전 DrawTextFit 과 같은 속성)
+int CDciMaster::s_nFixedFontPct = 100;		// [LGLS 2026-10-01]
+
 CFont* CDciMaster::GetFitFont(int nHeight)
 {
 	CFont* pFont = NULL;

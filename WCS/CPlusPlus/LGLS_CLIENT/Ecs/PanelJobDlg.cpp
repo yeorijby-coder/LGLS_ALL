@@ -60,7 +60,7 @@ BOOL CPanelJobDlg::OnInitDialog()
 		{ _T("우선"),      45 }, { _T("수정시각"), 125 },
 	};
 	for (int i = 0; i < (int)(sizeof(COLS)/sizeof(COLS[0])); i++)
-		m_list.InsertColumn(i, COLS[i].strHead, LVCFMT_LEFT, COLS[i].nWidth);
+		m_list.InsertColumn(i, COLS[i].strHead, LVCFMT_LEFT, CLib::DpiPx(COLS[i].nWidth));	// [LGLS 2026-10-01] 글자는 Windows 배율로 커지는데 열 폭이 픽셀 고정이었다
 
 	// [LGLS 2026-09-10] 자동 갱신 체크박스. 작업이 쌓이고 설비가 많이 움직이면
 	//   목록이 계속 새로 그려져 눈이 아프므로, 필요할 때만 켜서 본다.
@@ -175,13 +175,17 @@ void CPanelJobDlg::Refresh()
 void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialog::OnSize(nType, cx, cy);
-	const int nChkW = 92;	// [LGLS 2026-09-10] 오른쪽 위 [자동 갱신] 자리
+	const int nChkW = CLib::DpiPx(92);	// [LGLS 2026-10-01] Windows 배율
+	const int nTabH = CLib::DpiPx(24), nListY = CLib::DpiPx(26);
+	const int nChkY = CLib::DpiPx(4),  nChkH  = CLib::DpiPx(18);
+	const int nGap  = CLib::DpiPx(4);
+	UNREFERENCED_PARAMETER(nType);	// [LGLS 2026-09-10] 오른쪽 위 [자동 갱신] 자리
 	if (::IsWindow(m_tabTyp.m_hWnd))
-		m_tabTyp.MoveWindow(0, 0, (cx > nChkW + 20) ? (cx - nChkW - 4) : cx, 24);
+		m_tabTyp.MoveWindow(0, 0, (cx > nChkW + 20) ? (cx - nChkW - nGap) : cx, nTabH);
 	if (::IsWindow(m_chkAuto.m_hWnd) && cx > nChkW + 20)
-		m_chkAuto.MoveWindow(cx - nChkW, 4, nChkW - 4, 18);
+		m_chkAuto.MoveWindow(cx - nChkW, nChkY, nChkW - nGap, nChkH);
 	if (::IsWindow(m_list.m_hWnd))
-		m_list.MoveWindow(0, 26, cx, cy - 26);
+		m_list.MoveWindow(0, nListY, cx, cy - nListY);
 }
 
 void CPanelJobDlg::OnTimer(UINT_PTR nIDEvent)

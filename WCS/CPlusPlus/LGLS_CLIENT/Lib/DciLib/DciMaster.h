@@ -88,6 +88,12 @@ protected:
 	CMap<int, int, CFont*, CFont*>		m_mapFitFont;
 	CCriticalSection					m_csFit;
 	CFont*	GetFitFont(int nHeight);
+public:
+	// [LGLS 2026-10-01] 레이아웃의 고정 fontsize(0 이 아닌 값)에 먹이는 배율(%) (사용자 지시 - 4K 대응).
+	//   100 = 종전 그대로. 주 프로그램(CEcsLayout)이 지도 크기에 맞춰 넣어 준다.
+	static int	s_nFixedFontPct;
+	static void	SetFixedFontPct(int nPct) { s_nFixedFontPct = (nPct < 50) ? 50 : ((nPct > 500) ? 500 : nPct); }
+	static int	FixedFontPx(int nPx) { return (nPx > 0) ? (nPx * s_nFixedFontPct + 50) / 100 : nPx; }
 
 public:
 

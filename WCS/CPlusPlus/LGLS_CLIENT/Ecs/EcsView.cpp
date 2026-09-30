@@ -73,12 +73,12 @@ public:
 	// [LGLS 2026-09-23] TIMER_BLINK = 정상 램프의 파랑↔노랑 1초 교대 (사용자 지시)
 	enum { TIMER_HB = 7501, TIMER_BLINK = 7502, CHIP_CNT = 16 };	// [LGLS 2026-09-29] 28 -> 16 (랙투랙·호기간·HS·통신두절·작업번호·레일 제거 + 화물 감지 추가, 사용자 지시)
 	// 이름이 잘리지 않을 만큼만 열을 둔다(폭이 좁으면 줄 수가 는다).
-	static int ChipCols(int nWidth) { if (nWidth < 420) return 3; if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
+	static int ChipCols(int nWidth) { nWidth = nWidth * 100 / max(100, CLib::UiScale()); /* [LGLS 2026-10-01] 배율을 걷어낸 폭으로 센다 */ if (nWidth < 420) return 3; if (nWidth < 560) return 4; if (nWidth < 760) return 6; return 8; }
 	// 그룹 4개(10/10/3/5개)를 다 담는 데 필요한 높이 - 범례 칸의 기본값으로 쓴다
 	static int LegendBestH(int nWidth)
 	{
-		int c = ChipCols(nWidth - 4), n[4] = { 10, 10, 3, 5 }, h = 14;		// -4 = 테두리
-		for (int g = 0; g < 4; g++) h += 17 + ((n[g] + c - 1) / c) * 18 + 3;
+		int c = ChipCols(nWidth - 4), n[4] = { 10, 10, 3, 5 }, h = CLib::UiPx(14);		// -4 = 테두리
+		for (int g = 0; g < 4; g++) h += CLib::UiPx(17) + ((n[g] + c - 1) / c) * CLib::UiPx(18) + CLib::UiPx(3);	// [LGLS 2026-10-01] 배율
 		return h;
 	}
 protected:
@@ -292,12 +292,14 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 	LPCTSTR GRP[3] = { _T("작업 색상"), _T("C/V 상태"), _T("S/C · RGV 상태") };
 
 	int nCol = ChipCols(rc.Width());
-	int nW   = (rc.Width() - 8) / nCol;
-	int nRowH = 18, nHdrH = 17;
-	BOOL bGroup = (rc.Height() >= 90);			// 칸이 아주 낮으면 제목 없이 색칩만
+	// [LGLS 2026-10-01] 치수를 화면 배율로 (사용자 지적 - 4K@300% 에서 글자·칩이 작았다)
+	#define U(n)	CLib::UiPx(n)
+	int nW   = (rc.Width() - U(8)) / nCol;
+	int nRowH = U(18), nHdrH = U(17);
+	BOOL bGroup = (rc.Height() >= U(90));			// 칸이 아주 낮으면 제목 없이 색칩만
 
 	dc.SetTextColor(RGB(35, 48, 56));
-	int y = 3;
+	int y = U(3);
 	int nPrevGrp = -1;
 	int nSlot = 0;
 	for (int i = 0; i < CHIP_CNT; i++)
@@ -308,23 +310,23 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 
 		if (bGroup && IT[i].grp != nPrevGrp)
 		{
-			if (nPrevGrp >= 0) y += ((nSlot + nCol - 1) / nCol) * nRowH + 3;	// 앞 그룹이 쓴 줄
+			if (nPrevGrp >= 0) y += ((nSlot + nCol - 1) / nCol) * nRowH + U(3);	// 앞 그룹이 쓴 줄
 			if (y + nHdrH > rc.bottom) break;
 			dc.SelectObject(&fntB);
 			dc.SetTextColor(RGB(15, 110, 103));
-			CRect rcH(4, y, rc.right - 4, y + nHdrH);
+			CRect rcH(U(4), y, rc.right - U(4), y + nHdrH);
 			dc.DrawText(GRP[IT[i].grp], rcH, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 			CSize sz = dc.GetTextExtent(GRP[IT[i].grp]);
-			dc.FillSolidRect(CRect(8 + sz.cx, y + nHdrH / 2, rc.right - 6, y + nHdrH / 2 + 1), RGB(222, 232, 232));
+			dc.FillSolidRect(CRect(U(8) + sz.cx, y + nHdrH / 2, rc.right - U(6), y + nHdrH / 2 + max(1, U(1))), RGB(222, 232, 232));
 			dc.SelectObject(&fnt);
 			dc.SetTextColor(RGB(35, 48, 56));
 			y += nHdrH;
 			nPrevGrp = IT[i].grp;
 			nSlot = 0;
 		}
-		int x  = 4 + (nSlot % nCol) * nW;
+		int x  = U(4) + (nSlot % nCol) * nW;
 		int yy = y + (nSlot / nCol) * nRowH;
-		if (yy + 14 > rc.bottom) break;			// 칸에 들어가는 만큼만
+		if (yy + U(14) > rc.bottom) break;			// 칸에 들어가는 만큼만
 		CBrush brFrm(RGB(90, 90, 90));
 		if (IT[i].shape == 1)
 		{
@@ -337,26 +339,29 @@ void CLglsInfoBar::PaintLegend(CDC& dc, CRect rc, CFont& fnt, CFont& fntB)
 		{
 			// [LGLS 2026-09-29] 화물 감지 - 트랙이 그리는 것과 같은 모양으로 (사용자 지시).
 			//   DciTrackCtrl 의 m_bExist 블록 : 빈 트랙과 같은 바탕에 네 모서리 검은 점.
-			CRect rcBox(x, yy + 3, x + 13, yy + 15);
+			CRect rcBox(x, yy + U(3), x + U(13), yy + U(15));
 			dc.FillSolidRect(rcBox, IT[i].clr);
 			dc.FrameRect(rcBox, &brFrm);
-			dc.FillSolidRect(rcBox.left + 1,  rcBox.top + 1,    2, 2, RGB(0, 0, 0));
-			dc.FillSolidRect(rcBox.right - 3, rcBox.top + 1,    2, 2, RGB(0, 0, 0));
-			dc.FillSolidRect(rcBox.left + 1,  rcBox.bottom - 3, 2, 2, RGB(0, 0, 0));
-			dc.FillSolidRect(rcBox.right - 3, rcBox.bottom - 3, 2, 2, RGB(0, 0, 0));
+			int d = U(2);
+			dc.FillSolidRect(rcBox.left + 1,      rcBox.top + 1,        d, d, RGB(0, 0, 0));
+			dc.FillSolidRect(rcBox.right - 1 - d, rcBox.top + 1,        d, d, RGB(0, 0, 0));
+			dc.FillSolidRect(rcBox.left + 1,      rcBox.bottom - 1 - d, d, d, RGB(0, 0, 0));
+			dc.FillSolidRect(rcBox.right - 1 - d, rcBox.bottom - 1 - d, d, d, RGB(0, 0, 0));
 		}
 		else
 		{
-			CRect rcBox(x, yy + 3, x + 13, yy + 15);
+			CRect rcBox(x, yy + U(3), x + U(13), yy + U(15));
 			dc.FillSolidRect(rcBox, IT[i].clr);
 			dc.FrameRect(rcBox, &brFrm);
 		}
-		CRect rcTx(x + 19, yy, x + nW - 2, yy + nRowH);
+		CRect rcTx(x + U(19), yy, x + nW - 2, yy + nRowH);
 		dc.DrawText(IT[i].name, rcTx, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 		nSlot++;
 		if (!bGroup) { nPrevGrp = IT[i].grp; }
 	}
 }
+
+#undef U
 
 void CLglsInfoBar::OnPaint()
 {
@@ -374,8 +379,8 @@ void CLglsInfoBar::OnPaint()
 	mem.SetBkMode(TRANSPARENT);
 
 	CFont fnt, fntB;
-	fnt.CreateFont(-12, 0, 0, 0, FW_NORMAL, 0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
-	fntB.CreateFont(-12, 0, 0, 0, FW_BOLD,   0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
+	fnt.CreateFont(-CLib::UiPx(12), 0, 0, 0, FW_NORMAL, 0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
+	fntB.CreateFont(-CLib::UiPx(12), 0, 0, 0, FW_BOLD,   0, 0, 0, HANGEUL_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, _T("돋움"));
 	CFont* pOldFont = mem.SelectObject(&fnt);
 
 	if (m_nKind == 0) PaintComm(mem, rc, fnt, fntB);
@@ -467,6 +472,39 @@ void CLglsSplitBar::OnLButtonUp(UINT nFlags, CPoint point)
 	if (m_pView != NULL) m_pView->SaveUiSizes();
 }
 
+// [LGLS 2026-10-01] 왼쪽 칸의 크기는 ★100% 기준★ 으로 적어 둔다 (키 이름 끝에 100).
+//   픽셀 그대로 적으면 배율이 다른 화면(1920x1080 <-> 4K@300%)으로 옮겼을 때 좁거나 넘친다.
+//   종전 키(MAIN_UI_LEFT_W 등)는 픽셀 값이라 읽지 않는다 - 처음 한 번은 기본 크기로 뜬다.
+static int UiLoad100(LPCTSTR pszKey)
+{
+	CString strKey; strKey.Format(_T("%s100"), pszKey);
+	int n = ::GetPrivateProfileInt(_T("MENU"), strKey, 0, ECS_INI_FILE);
+	if (n <= 0)
+	{
+		// 종전 키(픽셀)가 있으면 ★그때의 배율★ 로 나눠 100% 기준으로 옮긴다 - 끌어 놓은 크기를 잃지 않게.
+		//   종전 배율 = UI_SCALE 을 적었으면 그 값, 아니면 화면 높이 규칙(2160 이상 200 ...).
+		int nOld = ::GetPrivateProfileInt(_T("MENU"), pszKey, 0, ECS_INI_FILE);
+		if (nOld > 0)
+		{
+			int nOldScale = ::GetPrivateProfileInt(_T("DISPLAY"), _T("UI_SCALE"), 0, ECS_INI_FILE);
+			if (nOldScale <= 0)
+			{
+				int cy = ::GetSystemMetrics(SM_CYSCREEN);
+				nOldScale = (cy >= 2160) ? 200 : ((cy >= 1800) ? 175 : ((cy >= 1600) ? 150 : ((cy >= 1300) ? 125 : 100)));
+			}
+			if (nOldScale < 100) nOldScale = 100;
+			n = nOld * 100 / nOldScale;
+		}
+	}
+	return (n > 0) ? CLib::UiPx(n) : 0;
+}
+static void UiSave100(LPCTSTR pszKey, int nPx)
+{
+	CString strKey; strKey.Format(_T("%s100"), pszKey);
+	CString s; s.Format(_T("%d"), (nPx > 0) ? (nPx * 100 / max(100, CLib::UiScale())) : 0);
+	::WritePrivateProfileString(_T("MENU"), strKey, s, ECS_INI_FILE);
+}
+
 // 왼쪽 고정 칸(통신 / 범례 / 설비반송 / 작업정보)과 손잡이 4개를 만든다. (OnInitialUpdate 에서 1회)
 void CEcsView::CreateMainUi2()
 {
@@ -475,10 +513,10 @@ void CEcsView::CreateMainUi2()
 	if (pDoc == NULL) return;
 
 	// 지난번에 끌어 놓은 크기 (0 = 기본값)
-	m_nUiLeftW = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI_LEFT_W"), 0, ECS_INI_FILE);
-	m_nUiCommH = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI_COMM_H"), 0, ECS_INI_FILE);
-	m_nUiLegH  = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI_LEG_H"),  0, ECS_INI_FILE);
-	m_nUiVehH  = ::GetPrivateProfileInt(_T("MENU"), _T("MAIN_UI_VEH_H"),  0, ECS_INI_FILE);
+	m_nUiLeftW = UiLoad100(_T("MAIN_UI_LEFT_W"));
+	m_nUiCommH = UiLoad100(_T("MAIN_UI_COMM_H"));
+	m_nUiLegH = UiLoad100(_T("MAIN_UI_LEG_H"));
+	m_nUiVehH = UiLoad100(_T("MAIN_UI_VEH_H"));
 
 	LPCTSTR pszCls = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW,
 		::LoadCursor(NULL, IDC_ARROW), (HBRUSH)::GetStockObject(WHITE_BRUSH), NULL);
@@ -547,18 +585,18 @@ void CEcsView::OnUiDrag(int nWhich, int nDelta)
 	{
 		if (m_nUiLeftW <= 0) m_nUiLeftW = rc.Width() * 19 / 42;
 		m_nUiLeftW += nDelta;
-		if (m_nUiLeftW < 320) m_nUiLeftW = 320;
-		if (m_nUiLeftW > rc.Width() - 360) m_nUiLeftW = rc.Width() - 360;
+		if (m_nUiLeftW < CLib::UiPx(320)) m_nUiLeftW = CLib::UiPx(320);
+		if (m_nUiLeftW > rc.Width() - CLib::UiPx(360)) m_nUiLeftW = rc.Width() - CLib::UiPx(360);
 	}
 	else
 	{
 		int* pnH = (nWhich == 1) ? &m_nUiCommH : ((nWhich == 2) ? &m_nUiLegH : &m_nUiVehH);
-		int  nDef = (nWhich == 1) ? 96 : ((nWhich == 2) ? 240 : 130);
+		int  nDef = (nWhich == 1) ? CLib::UiPx(96) : ((nWhich == 2) ? CLib::UiPx(240) : CLib::DpiPx(130));	// [LGLS 2026-10-01] 배율
 		if (*pnH <= 0) *pnH = nDef;
 		*pnH += nDelta;
 		if (*pnH < 24) *pnH = 24;
-		int nOther = (m_nUiCommH > 0 ? m_nUiCommH : 96) + (m_nUiLegH > 0 ? m_nUiLegH : 240) + (m_nUiVehH > 0 ? m_nUiVehH : 130) - *pnH;
-		int nMax = rc.Height() - nOther - 140;			// 작업정보가 최소 140 은 되게
+		int nOther = (m_nUiCommH > 0 ? m_nUiCommH : CLib::UiPx(96)) + (m_nUiLegH > 0 ? m_nUiLegH : CLib::UiPx(240)) + (m_nUiVehH > 0 ? m_nUiVehH : CLib::DpiPx(130)) - *pnH;
+		int nMax = rc.Height() - nOther - CLib::DpiPx(140);			// 작업정보가 최소 140 은 되게
 		if (nMax < 40) nMax = 40;
 		if (*pnH > nMax) *pnH = nMax;
 	}
@@ -569,10 +607,10 @@ void CEcsView::SaveUiSizes()
 {
 	if (!m_bUi2Ready) return;	// 왼쪽 칸을 만들기 전(OnInitialUpdate 전)
 	CString s;
-	s.Format(_T("%d"), m_nUiLeftW); ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_LEFT_W"), s, ECS_INI_FILE);
-	s.Format(_T("%d"), m_nUiCommH); ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_COMM_H"), s, ECS_INI_FILE);
-	s.Format(_T("%d"), m_nUiLegH);  ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_LEG_H"),  s, ECS_INI_FILE);
-	s.Format(_T("%d"), m_nUiVehH);  ::WritePrivateProfileString(_T("MENU"), _T("MAIN_UI_VEH_H"),  s, ECS_INI_FILE);
+	UiSave100(_T("MAIN_UI_LEFT_W"), m_nUiLeftW);
+	UiSave100(_T("MAIN_UI_COMM_H"), m_nUiCommH);
+	UiSave100(_T("MAIN_UI_LEG_H"), m_nUiLegH);
+	UiSave100(_T("MAIN_UI_VEH_H"), m_nUiVehH);
 	CLib::UiLog(_T("[UI2] size saved left=%d comm=%d legend=%d veh=%d"), m_nUiLeftW, m_nUiCommH, m_nUiLegH, m_nUiVehH);
 }
 
@@ -600,18 +638,19 @@ void CEcsView::LayoutMainUi2()
 	if (rc.Width() < 300 || rc.Height() < 300) return;
 
 	int nLeft = (m_nUiLeftW > 0) ? m_nUiLeftW : rc.Width() * 19 / 42;
-	if (nLeft < 320) nLeft = 320;
-	if (nLeft > rc.Width() - 360) nLeft = rc.Width() - 360;
+	// [LGLS 2026-10-01] 최소/기본 치수도 배율을 먹인다. 표(설비·작업)는 대화상자라 Windows 배율(DpiPx)을 따른다.
+	if (nLeft < CLib::UiPx(320)) nLeft = CLib::UiPx(320);
+	if (nLeft > rc.Width() - CLib::UiPx(360)) nLeft = rc.Width() - CLib::UiPx(360);
 	int nCommH = 0;		// [LGLS 2026-09-23] 통신 칸 폐기 - 리본 신호등으로 옮겼다 (사용자 지시)
 	int nLegH  = m_nUiLegH;
 	if (nLegH <= 0)			// 기본값 = 그룹 4개가 다 들어가는 높이(폭에 따라 다르다)
 	{
 		nLegH = CLglsInfoBar::LegendBestH(nLeft - 12);
-		if (nLegH < 120) nLegH = 120;
-		if (nLegH > 340) nLegH = 340;
+		if (nLegH < CLib::UiPx(120)) nLegH = CLib::UiPx(120);
+		if (nLegH > CLib::UiPx(340)) nLegH = CLib::UiPx(340);
 	}
-	int nVehH  = (m_nUiVehH  > 0) ? m_nUiVehH  : 130;
-	int nRoom  = rc.Height() - 140;					// 작업정보 몫을 남긴다
+	int nVehH  = (m_nUiVehH  > 0) ? m_nUiVehH  : CLib::DpiPx(130);
+	int nRoom  = rc.Height() - CLib::DpiPx(140);					// 작업정보 몫을 남긴다
 	while (nCommH + nLegH + nVehH > nRoom)
 	{
 		if (nLegH >= nVehH && nLegH > 40) nLegH -= 10;

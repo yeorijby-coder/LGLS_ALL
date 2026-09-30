@@ -1,0 +1,38 @@
+적용_20260930  최종 정리 (2026-10-01)
+============================================================
+이 폴더 하나만 들고 가면 된다. 29일 폴더의 TASK / Client 는 여기 것으로 대체된다.
+자세한 내용은 2026-09-30_적용안내서_추가분.docx (5~9절).
+
+[SQL]
+  260929_UPDOWN_01_테이블생성.sql            내려받기 프로그램용 (쓸 때만)
+  260929_EQP_MST_01~03                       현장은 02, 03 적용됨 (01 은 되돌릴 때만)
+  260929_CV_DATA_04_출고대신호_래치컬럼.sql  현장 적용됨
+  260930_DEST_POS_DEF_01_IMS번호_정정.sql    현장 적용됨
+  260930_COMMON_CODE_02_로그화면_코드정비.sql 아직이면 한 번
+
+[TASK]  셋 다 교체. 설정은 모두 기본값이라 넣지 않아도 돈다.
+  EQP_TASK\WCS_TASK_CV.exe            출고대 래치 진단 (실행 폴더에 OutLatch.log)
+  IO_TASK\IO_TASK_SEMI_FINISH.exe     출고대 도착 즉시 완료 (OUT_DONE_ON_ARRIVAL=1)
+  HOST_TASK\TASK_LFC10_G1_ECSCOM.exe  수신 접속이 붙자마자 끊기던 것 수정 (SRV_MULTI_CONN=1)
+
+[Client]  이미 깔린 곳은 이 파일만 덮어쓴다.
+  EcsMain.exe  DciLib.dll  EcsLib.dll  XmlLib.dll  Ecs.exe  EcsDefine.xml
+  화면배율_방식.bat        4K 에서 Windows 에게 확대를 맡기는 대안 (기본은 쓰지 않는다)
+  추가할_설정_Ecs.ini.txt  [DISPLAY] UI_SCALE / LAYOUT_FONT_SCALE
+  레이아웃\               EcsLayout1~3.xml (바뀐 것 없음 - 참고용)
+  ※ DciLib.dll 을 꼭 EcsMain.exe 와 같이 바꾼다.
+
+[Client_설치]  새로 까는 PC 용. Setup.bat 을 관리자 권한으로.
+  옛 Client 를 돌린 적이 있는 PC 는 Windows 로그오프 후 설치한다 (폰트 잠금).
+
+[4K 화면 @ Windows 300%]  처음 띄운 뒤 Ecs.ini [DISPLAY] 로 맞춘다.
+  범례가 너무 크면          UI_SCALE = 200
+  크레인/RTV/트랙 글자가 작으면  LAYOUT_FONT_SCALE = 200 (넘치면 150)
+  ※ 실제 300% 화면에서는 돌려 보지 못했다. 1920x1080 에서는 종전과 같음을 확인했다.
+
+[적용 순서]
+  1. TASK 3종과 Client 종료, 백업
+  2. 안 돌린 SQL 실행
+  3. TASK 교체 -> Client 교체
+  4. EQP_TASK -> IO_TASK -> HOST_TASK -> Client 순으로 기동
+  5. 출고 1건 / HOST 수신 접속 유지 / 화면 배율 확인

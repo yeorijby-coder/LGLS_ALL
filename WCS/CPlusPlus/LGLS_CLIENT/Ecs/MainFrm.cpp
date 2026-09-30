@@ -965,7 +965,8 @@ BOOL CLglsRibbonLamp::m_bBlink = FALSE;
 
 // [LGLS 2026-09-29] 한 칸의 100% 기준 치수(신호등 62x42 + 이름). 실제 크기는 배율을 먹인다.
 //   4K 에서는 이 칸이 상대적으로 작아져 MFC 리본이 4칸을 3+1 두 행으로 접었다 (사용자 지적).
-static const int LAMP_CW100 = 62, LAMP_CH100 = 56;
+// [LGLS 2026-10-01] 이름 줄을 14 -> 20 으로 넉넉히 (글자 높이 12 + 위아래 여유). 56 -> 62
+static const int LAMP_CW100 = 62, LAMP_CH100 = 62;
 
 static int LampCW() { return CLib::UiPx(LAMP_CW100); }
 static int LampCH() { return CLib::UiPx(LAMP_CH100); }
@@ -973,9 +974,9 @@ static int LampCH() { return CLib::UiPx(LAMP_CH100); }
 // 신호등 한 개를 그린다 (사진 모양 : 검은 몸체 + 좌우 챙 3쌍 + 등 3개).
 //   nOn : 0 = 빨강(끊김) · 1 = 노랑 · 2 = 초록
 //   [LGLS 2026-09-29] 좌표를 화면 배율로 늘린다 - 아래 S(n) 가 그 변환이다 (4K 대응).
-static void DrawTrafficLamp(CDC& dc, int cx, int cy, int nOn)
+static void DrawTrafficLamp(CDC& dc, int cx, int cy, int nOn, int nScale)
 {
-	#define S(n)	CLib::UiPx(n)
+	#define S(n)	(((n) * nScale + 50) / 100)
 	CBrush brBody(RGB(28, 28, 28));
 	CPen   penNone(PS_NULL, 0, RGB(0, 0, 0));
 	CPen*   pOldPen = dc.SelectObject(&penNone);
@@ -1027,34 +1028,48 @@ void CLglsRibbonLamp::OnDraw(CDC* pDC)
 	CRect rc = m_rect;
 	if (rc.IsRectEmpty()) return;
 
-	int cx = rc.left + max(0, (rc.Width()  - LampCW()) / 2);
-	int cy = rc.top  + max(0, (rc.Height() - LampCH()) / 2);
+	// [LGLS 2026-10-01] ★현장 4K@300% 에서 아래(글자)가 잘리던 자리★ (사용자 지적).
+	//   종전 글꼴 = 리본 글꼴(Windows 가 이미 배율만큼 키운 것) x UI_SCALE -> 이중으로 커져
+	//   이름 줄(14px x 배율)을 넘쳤다. UI_SCALE 을 바꿔도 같이 커지니 늘 잘렸다.
+	//   이제 ① 글꼴은 100% 기준 높이 x 배율 한 번만  ② 주어진 칸보다 크면 칸에 맞춰 줄여 그린다.
+	int nScale = CLib::UiScale();
+	int nFitH  = rc.Height() * 100 / LAMP_CH100;
+	int nFitW  = rc.Width()  * 100 / LAMP_CW100;
+	if (nFitH < nScale) nScale = nFitH;
+	if (nFitW < nScale) nScale = nFitW;
+	if (nScale < 40)    nScale = 40;
+	int nCW = (LAMP_CW100 * nScale + 50) / 100;
+	int nCH = (LAMP_CH100 * nScale + 50) / 100;
+
+	int cx = rc.left + max(0, (rc.Width()  - nCW) / 2);
+	int cy = rc.top  + max(0, (rc.Height() - nCH) / 2);
 
 	// 끊김 -> 빨강,  정상 -> 노랑 <-> 초록 1초 교대(살아 있음을 눈으로)
 	int nOn = !m_bOk ? 0 : (m_bBlink ? 1 : 2);
-	DrawTrafficLamp(*pDC, cx, cy, nOn);
+	DrawTrafficLamp(*pDC, cx, cy, nOn, nScale);
 
 	int      nBk   = pDC->SetBkMode(TRANSPARENT);
 	COLORREF clrTx = pDC->SetTextColor(m_bOk ? RGB(30, 60, 150) : RGB(190, 40, 34));
-	// [LGLS 2026-09-29] 이름 글자도 배율에 맞춘다 - 4K 에서 글자만 작게 남지 않게 (사용자 지적).
-	//   배율이 바뀌면(ini 수정) 다시 만든다.
+	// 이름 글꼴 : 리본 글꼴의 ★100% 기준 높이★ 에 그리는 배율을 한 번만 먹인다.
 	static CFont s_fntName;
 	static int   s_nFntScale = 0;
-	int nScale = CLib::UiScale();
 	if (s_nFntScale != nScale)
 	{
 		if (s_fntName.GetSafeHandle() != NULL) s_fntName.DeleteObject();
 		LOGFONT lf = {0};
 		afxGlobalData.fontRegular.GetLogFont(&lf);
 		int nH = abs(lf.lfHeight); if (nH <= 0) nH = 12;
-		lf.lfHeight = -CLib::UiPx(nH);
+		int nH100 = ::MulDiv(nH, 100, CLib::DpiPct());		// Windows 배율을 걷어낸 높이
+		if (nH100 < 9)  nH100 = 9;
+		if (nH100 > 14) nH100 = 14;
+		lf.lfHeight = -((nH100 * nScale + 50) / 100);
 		s_fntName.CreateFontIndirect(&lf);
 		s_nFntScale = nScale;
 	}
 	CFont* pOldF = pDC->SelectObject(s_fntName.GetSafeHandle() != NULL
 	                                 ? &s_fntName : &afxGlobalData.fontRegular);
-	pDC->DrawText(m_strText, CRect(cx, cy + CLib::UiPx(42), cx + LampCW(), cy + LampCH()),
-	              DT_CENTER | DT_TOP | DT_SINGLELINE);
+	pDC->DrawText(m_strText, CRect(cx, cy + (43 * nScale + 50) / 100, cx + nCW, cy + nCH),
+	              DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
 	pDC->SelectObject(pOldF);
 	pDC->SetTextColor(clrTx);
 	pDC->SetBkMode(nBk);

@@ -2105,16 +2105,27 @@ int CLib::UiScale()
 		int nIni = ::GetPrivateProfileInt(_T("DISPLAY"), _T("UI_SCALE"), 0, ECS_INI_FILE);
 		if (nIni > 0)
 		{
-			s_nScale = (nIni < 100) ? 100 : ((nIni > 300) ? 300 : nIni);
+			s_nScale = (nIni < 100) ? 100 : ((nIni > 400) ? 400 : nIni);
 		}
 		else
 		{
-			int cy = ::GetSystemMetrics(SM_CYSCREEN);
-			if      (cy >= 2160) s_nScale = 200;
-			else if (cy >= 1800) s_nScale = 175;
-			else if (cy >= 1600) s_nScale = 150;
-			else if (cy >= 1300) s_nScale = 125;
-			else                 s_nScale = 100;
+			// [LGLS 2026-10-01] Windows 배율이 켜져 있으면(100% 초과) 그 값을 따른다 (사용자 지시).
+			//   리본과 대화상자는 Windows 가 그 배율로 키우므로, 우리가 그리는 것도 같아야 어긋나지 않는다.
+			//   종전에는 화면 높이만 봐서 4K@300% 에서 200 이 되었고, 나머지(300)와 크기가 어긋났다.
+			int nDpi = DpiPct();
+			if (nDpi > 100)
+			{
+				s_nScale = nDpi;
+			}
+			else
+			{
+				int cy = ::GetSystemMetrics(SM_CYSCREEN);
+				if      (cy >= 2160) s_nScale = 200;
+				else if (cy >= 1800) s_nScale = 175;
+				else if (cy >= 1600) s_nScale = 150;
+				else if (cy >= 1300) s_nScale = 125;
+				else                 s_nScale = 100;
+			}
 		}
 	}
 	return s_nScale;
@@ -2123,6 +2134,26 @@ int CLib::UiScale()
 int CLib::UiPx(int nPx100)
 {
 	return (nPx100 * UiScale() + 50) / 100;
+}
+
+// [LGLS 2026-10-01] Windows 화면 배율(%). 프로세스가 도는 동안 바뀌지 않으므로 한 번만 읽는다.
+int CLib::DpiPct()
+{
+	static int s_nPct = 0;
+	if (s_nPct <= 0)
+	{
+		HDC hdc = ::GetDC(NULL);
+		int nDpi = (hdc != NULL) ? ::GetDeviceCaps(hdc, LOGPIXELSY) : 96;
+		if (hdc != NULL) ::ReleaseDC(NULL, hdc);
+		s_nPct = ::MulDiv(nDpi, 100, 96);
+		if (s_nPct < 100) s_nPct = 100;
+	}
+	return s_nPct;
+}
+
+int CLib::DpiPx(int nPx100)
+{
+	return (nPx100 * DpiPct() + 50) / 100;
 }
 
 CString CLib::TrimTrackNo(const CString& strNo)

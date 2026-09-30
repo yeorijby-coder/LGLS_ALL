@@ -41,7 +41,7 @@ BOOL CPanelVehDlg::OnInitDialog()
 		{ _T("팔렛"),     80 }, { _T("출발"),    95 }, { _T("도착"),   95 },
 	};
 	for (int i = 0; i < (int)(sizeof(COLS)/sizeof(COLS[0])); i++)
-		m_list.InsertColumn(i, COLS[i].strHead, LVCFMT_LEFT, COLS[i].nWidth);
+		m_list.InsertColumn(i, COLS[i].strHead, LVCFMT_LEFT, CLib::DpiPx(COLS[i].nWidth));	// [LGLS 2026-10-01] 글자는 Windows 배율로 커지는데 열 폭이 픽셀 고정이었다
 
 	for (int i = 0; i < 6; i++)
 		m_list.InsertItem(i, VEH_NAMES[i]);

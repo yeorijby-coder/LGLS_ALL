@@ -165,6 +165,10 @@ public:
 	static int     UiScale();
 	// 배율을 먹인 픽셀 값 (100% 기준 치수를 넣는다)
 	static int     UiPx(int nPx100);
+	// [LGLS 2026-10-01] Windows 화면 배율(%) - 96dpi = 100, 300% = 300 (사용자 지시 : 4K@300% 대응).
+	//   대화상자·리본은 Windows 가 이 배율로 키운다. 그 안의 픽셀 치수(열 폭 등)는 DpiPx 로 맞춘다.
+	static int     DpiPct();
+	static int     DpiPx(int nPx100);
 	static CString TrimTrackNo(const CString& strNo);
 	static int GetStationNumByTrackNum(int nTrackNum);
 	static int GetTrackNumByFloor(int nTrackNum);

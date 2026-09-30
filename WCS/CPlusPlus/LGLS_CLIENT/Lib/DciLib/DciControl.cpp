@@ -159,7 +159,7 @@ void CDciControl::UpdateControl(CDC* pDC)
 
 		memset(&m_logfont, 0, sizeof(LOGFONT));
 		m_logfont.lfQuality = PROOF_QUALITY;
-		m_logfont.lfHeight = m_nFontSize;
+		m_logfont.lfHeight = CDciMaster::FixedFontPx(m_nFontSize);
 		m_logfont.lfWeight = FW_BOLD;
 		lstrcpy(m_logfont.lfFaceName, _T("Arial"));
 

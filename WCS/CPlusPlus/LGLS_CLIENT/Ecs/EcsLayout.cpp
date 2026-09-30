@@ -7,6 +7,8 @@
 #include "XmlDom.h"
 #include "DciStaticCtrl.h"
 
+static void ApplyLayoutFontScale(int cyView);	// [LGLS 2026-10-01] 아래에 정의
+
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
@@ -55,6 +57,7 @@ void CEcsLayout::OnInitialUpdate(CWnd* pWnd)
 
 		CRect rcClient;
 		pWnd->GetClientRect(rcClient);
+		ApplyLayoutFontScale(rcClient.Height());	// [LGLS 2026-10-01] 고정 글꼴 배율
 		rcClient.left += m_nLeftInsetS;		// [LGLS 2026-09-09] 왼쪽 범례 자리 확보
 		m_pDCI->SetLayoutS(rcClient);
 		m_pDCI->RecalcLayout();
@@ -67,6 +70,29 @@ void CEcsLayout::OnInitialUpdate(CWnd* pWnd)
 		e->ReportError();
 	}
 	END_CATCH
+}
+
+// [LGLS 2026-10-01] 레이아웃 XML 의 ★고정 fontsize(0 이 아닌 값)★ 에 먹일 배율(%) (사용자 지시).
+//   fontsize=10/12/14 는 픽셀 그대로라, 4K 에서 지도는 커지는데 글자는 그대로여서
+//   크레인·RTV 의 번호가 점처럼 보였다. 지도가 커진 만큼 글자도 키운다.
+//   Ecs.ini [DISPLAY] LAYOUT_FONT_SCALE : 0(기본) = 자동(지도 칸의 높이 / 880)  ·  50~500 = 그 값
+static void ApplyLayoutFontScale(int cyView)
+{
+	int nIni = ::GetPrivateProfileInt(_T("DISPLAY"), _T("LAYOUT_FONT_SCALE"), 0, ECS_INI_FILE);
+	int nPct = 100;
+	if (nIni > 0)
+	{
+		nPct = (nIni < 50) ? 50 : ((nIni > 500) ? 500 : nIni);
+	}
+	else
+	{
+		// 1920x1080 에서 지도 칸의 높이가 약 880 이다 - 그때가 100%.
+		nPct = (cyView > 0) ? (cyView * 100 / 880) : 100;
+		nPct = (nPct / 5) * 5;
+		if (nPct < 100) nPct = 100;
+		if (nPct > 400) nPct = 400;
+	}
+	CDciMaster::SetFixedFontPct(nPct);
 }
 
 int CEcsLayout::m_nLeftInsetS = 0;		// [LGLS 2026-09-09] 범례는 레이아웃 안으로 들어가 항상 0
@@ -118,6 +144,7 @@ void CEcsLayout::OnSize(CWnd* pWnd, UINT nType, int cx, int cy)
 	if ((m_pDCI == NULL) || (m_pDciCtrls == NULL))
 		return;
 
+	ApplyLayoutFontScale(cy);						// [LGLS 2026-10-01] 고정 글꼴 배율
 	m_pDCI->SetLayoutS(m_nLeftInsetS, 0, cx, cy);	// [LGLS 2026-09-09] 왼쪽 범례 자리 확보
 	m_pDCI->RecalcLayout();
 	pWnd->Invalidate();

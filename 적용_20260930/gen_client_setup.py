@@ -45,6 +45,7 @@ FILES = [
     'SPR32DU70.DLL', 'spr32d70.dll', 'QUvc_dll.dll',
     # 설정과 화면 정의
     'Ecs.ini', 'EcsDefine.xml', 'KeyWord.xml', 'SC.XML', 'observables.tsv',
+    '화면배율_방식.bat',      # [2026-10-01] 4K 에서 Windows 에게 확대를 맡기는 대안
     'EcsLayout1.xml', 'EcsLayout2.xml', 'EcsLayout3.xml',
     # 설비 주소 정의
     'DeviceMap01.xml', 'DeviceMap02.xml', 'DeviceMap03.xml', 'DeviceMap04.xml',
