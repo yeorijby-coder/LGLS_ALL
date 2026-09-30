@@ -3176,12 +3176,51 @@ namespace WCS_TASK_CV
         //   래치 컬럼이 없는 DB 에서도 그대로 돈다(한 번 확인하고 없으면 쓰지 않는다).
 
         private int  m_nLatchCol = -1;      // -1 미확인 / 0 컬럼 없음 / 1 있음
+        private DateTime m_dtLatchColChk = DateTime.MinValue;   // [LGLS 2026-09-30] "없음" 은 60초마다 다시 본다
+        private bool m_bOutScanLogged = false;                  // [LGLS 2026-09-30] 고속 스캔 대상을 한 번 알렸나
+        private static readonly object m_lockLatchLog = new object();
+
+        /// <summary>[LGLS 2026-09-30] 출고대 래치 관련 줄은 화면과 함께 작은 파일(실행폴더의 OutLatch.log)에도 남긴다.
+        ///   현장 화면 로그가 너무 많아 찾기 어렵다는 지적. 단독 실행은 파일 로그가 없어 이 파일이 유일한 흔적이다.</summary>
+        private void LatchLog(string msg, int nTh)
+        {
+            MakeMsg_Imp(msg, nTh);
+            LatchFileWrite("I", msg);
+        }
+        private void LatchLogErr(string msg, int nTh)
+        {
+            MakeMsg_Error(msg, nTh);
+            LatchFileWrite("E", msg);
+        }
+        private static void LatchFileWrite(string lv, string msg)
+        {
+            try
+            {
+                string sDir  = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                string sFile = System.IO.Path.Combine(sDir, "OutLatch.log");
+                lock (m_lockLatchLog)
+                {
+                    // 2MB 를 넘으면 한 번 비운다 - 오래 켜 둬도 커지지 않게
+                    var fi = new System.IO.FileInfo(sFile);
+                    if (fi.Exists && fi.Length > 2 * 1024 * 1024) fi.Delete();
+                    System.IO.File.AppendAllText(sFile,
+                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + lv + " " + msg + "\r\n",
+                        System.Text.Encoding.GetEncoding(949));
+                }
+            }
+            catch { }
+        }
         private uint m_dwLastOutScan = 0;   // 마지막 출고대 고속 샘플 시각
 
         /// <summary>CV_DATA 에 래치 컬럼이 있는가 (한 번만 확인해 기억한다)</summary>
         private bool HasLatchColumn()
         {
-            if (m_nLatchCol >= 0) return m_nLatchCol == 1;
+            if (m_nLatchCol == 1) return true;
+            // [LGLS 2026-09-30] 기동 때 "없음" 이었어도 SQL 04 를 나중에 돌리면 따라온다 (재기동 불필요)
+            if (m_nLatchCol == 0 && (DateTime.Now - m_dtLatchColChk).TotalSeconds < 60) return false;
+            m_dtLatchColChk = DateTime.Now;
+            int nPrev = m_nLatchCol;
+            string sErr = "";
             try
             {
                 string q = "SELECT COUNT(*) AS CNT FROM sys.columns "
@@ -3196,11 +3235,13 @@ namespace WCS_TASK_CV
                 }
                 else m_nLatchCol = 0;
             }
-            catch { m_nLatchCol = 0; }
+            catch (Exception ex) { m_nLatchCol = 0; sErr = ex.Message; }
 
-            MakeMsg_Imp("[출고대래치] CV_DATA.RET_READY_LATCH "
+            if (nPrev != m_nLatchCol)     // 바뀔 때만 알린다
+                LatchLog("[출고대래치] CV_DATA.RET_READY_LATCH "
                         + (m_nLatchCol == 1 ? "있음 - 신호 래치를 씁니다"
-                                            : "없음 - 종전 판정으로 돕니다(SQL 04 를 돌리면 켜집니다)"), m_nthNo);
+                                            : "없음 - 종전 판정으로 돕니다(SQL 04 를 돌리면 켜집니다)")
+                        + (sErr.Length > 0 ? " [확인 오류: " + sErr + "]" : ""), m_nthNo);
             return m_nLatchCol == 1;
         }
 
@@ -3239,7 +3280,7 @@ namespace WCS_TASK_CV
                 if (!System.IO.File.Exists(sFile)) return;
                 // 섹션 전체 삭제 : 키를 null 로 주면 그 섹션이 통째로 지워진다
                 cDefApi.WritePrivateProfileString("LATCH", null, null, sFile);
-                MakeMsg_Imp("[출고대래치] 래치 컬럼이 생겨 파일 래치를 정리했습니다 - " + sFile, m_nthNo);
+                LatchLog("[출고대래치] 래치 컬럼이 생겨 파일 래치를 정리했습니다 - " + sFile, m_nthNo);
             }
             catch { }
         }
@@ -3263,9 +3304,9 @@ namespace WCS_TASK_CV
 
                 string sVal = "1|" + sLugg + "|" + DateTime.Now.ToString("yyyyMMddHHmmss");
                 cDefApi.WritePrivateProfileString("LATCH", sKey, sVal, sFile);
-                MakeMsg_Imp("[출고대래치] 트랙 " + nTrack + " 출고대 신호 ON 을 파일에 붙잡았습니다", m_nthNo);
+                LatchLog("[출고대래치] 트랙 " + nTrack + " 출고대 신호 ON 을 파일에 붙잡았습니다", m_nthNo);
             }
-            catch (Exception ex) { MakeMsg_Error("[출고대래치] 파일 기록 오류: " + ex.Message, m_nthNo); }
+            catch (Exception ex) { LatchLogErr("[출고대래치] 파일 기록 오류: " + ex.Message, m_nthNo); }
         }
 
         /// <summary>출고대 신호를 봤다고 래치한다. 이미 서 있으면 건드리지 않는다.</summary>
@@ -3291,9 +3332,9 @@ namespace WCS_TASK_CV
                 m_msQPlc._pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR, 255).Value = m_strWh_typ;
                 m_msQPlc._pBdb.mComMain.Parameters.Add("MC_NO",  DbLang.VARCHAR, 255).Value = nTrack.ToString("000");
                 if (m_msQPlc._pBdb.ExcuteNonQry(q) > 0)
-                    MakeMsg_Imp("[출고대래치] 트랙 " + nTrack + " 출고대 신호 ON 을 붙잡았습니다", m_nthNo);
+                    LatchLog("[출고대래치] 트랙 " + nTrack + " 출고대 신호 ON 을 붙잡았습니다", m_nthNo);
             }
-            catch (Exception ex) { MakeMsg_Error("[출고대래치] 기록 오류: " + ex.Message, m_nthNo); }
+            catch (Exception ex) { LatchLogErr("[출고대래치] 기록 오류: " + ex.Message, m_nthNo); }
         }
 
         /// <summary>출고대가 있는 설비의 M 워드만 다시 읽어 ON 이면 래치한다 (왕복 1회).</summary>
@@ -3312,6 +3353,21 @@ namespace WCS_TASK_CV
             try
             {
                 if (m_slots == null) return;
+                if (!m_bOutScanLogged)
+                {
+                    // [LGLS 2026-09-30] 무엇을 스캔하는지 한 번 남긴다 - 비어 있으면 XML(outStation) 배포 누락이다
+                    m_bOutScanLogged = true;
+                    var sb = new System.Text.StringBuilder();
+                    foreach (EqpSlot sl0 in m_slots)
+                    {
+                        int no0 = 0;
+                        int.TryParse(System.Text.RegularExpressions.Regex.Match(sl0.Plc, @"\d+").Value, out no0);
+                        int nOut0 = (no0 >= 1) ? cPlcAddrMap.OutStation("CV", no0) : 0;
+                        if (nOut0 > 0) sb.Append((sb.Length > 0 ? ", " : "") + "CV" + no0 + "→" + nOut0);
+                    }
+                    if (sb.Length > 0) LatchLog("[출고대래치] 고속 스캔 대상(" + nGap + "ms): " + sb, m_nthNo);
+                    else LatchLogErr("[출고대래치] 고속 스캔 대상이 없습니다 - 7_DeviceMap 의 PlcAddressMap.xml outStation 을 확인하세요", m_nthNo);
+                }
                 foreach (EqpSlot sl in m_slots)
                 {
                     int no = 0;
@@ -3336,7 +3392,7 @@ namespace WCS_TASK_CV
                         LatchOutStation(nOut);
                 }
             }
-            catch (Exception ex) { MakeMsg_Error("[출고대래치] 고속 스캔 오류: " + ex.Message, m_nthNo); }
+            catch (Exception ex) { LatchLogErr("[출고대래치] 고속 스캔 오류: " + ex.Message, m_nthNo); }
         }
 
         private void PreloadStatusBlocks()
@@ -4256,6 +4312,9 @@ namespace WCS_TASK_CV
                         strSet += cDefApp.CRLF + "      ,STO_READY_RD = '" + STO_READY + "'       ";
                     if (nCvNo == nOutStation && (cv.RET_READY_RD ?? "") != RET_READY)
                         strSet += cDefApp.CRLF + "      ,RET_READY_RD = '" + RET_READY + "'       ";
+                    // [LGLS 2026-09-30] 본 폴링이 ON 을 본 순간도 파일에 남긴다(에지에서 1회) - 현장 진단용
+                    if (nCvNo == nOutStation && RET_READY == "1" && (cv.RET_READY_RD ?? "") != "1")
+                        LatchFileWrite("I", "[출고대래치] 본 폴링 트랙 " + nCvNo + " 신호 ON 관측 (LUGG=" + strJobNo + ")");
 
                     // [LGLS 2026-09-29] ON 을 본 순간 래치한다 - 신호가 꺼져도 남는다 (사용자 지시)
                     if (nCvNo == nOutStation && RET_READY == "1")

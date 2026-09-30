@@ -177,6 +177,15 @@ namespace TSK_COMM_IOSCH
         {
             get { return cDefApi.GsReadInitProfileCnf("OUT_DONE_BY_SIGNAL", 1) != 0; }
         }
+        // [LGLS 2026-09-30] ★출고대 실도착(센서 ON + 작업번호 일치)이면 곧바로 완료★ (사용자 지시).
+        //   현장 시나리오의 출고 흐름은 "반출 위치 Pallet Exist ON(도착) → OFF(작업자 회수)" 뿐이고
+        //   출고대 신호(WAIT_IN) 단계가 없다. 신호를 못 잡는 날에도 도착은 센서로 확실히 보이므로
+        //   그 순간 완료한다. 종전(0)은 도착을 보고도 작업자가 화물을 뺄 때까지 기다렸다.
+        //   1(기본) : 실도착 관측 즉시 완료   0 : 종전대로 배출(감지 OFF)까지 기다린다
+        private static bool OUT_DONE_ON_ARRIVAL
+        {
+            get { return cDefApi.GsReadInitProfileCnf("OUT_DONE_ON_ARRIVAL", 1) != 0; }
+        }
         private readonly Dictionary<string, int> m_dicCraneTgt = new Dictionary<string, int>();       // [LGLS] 크레인 목표 POS_H
         private readonly Dictionary<string, int> m_dicCraneCur = new Dictionary<string, int>();       // [LGLS] 크레인 현재 POS_H
         #endregion
@@ -1613,7 +1622,13 @@ namespace TSK_COMM_IOSCH
                             //   폴링 주기(약 3초) 사이에 통째로 지나갈 수 있다(작업 2064 로 실제 유실).
                             //   그 경우엔 '출고대에서 내 화물을 실제로 봤다(센서+작업번호) → 배출됐다' 로 인정한다.
                             //   이 경로는 출고대 도착을 직접 관측하므로 조기 완료가 되지 않는다.
-                            if (cvSen == "1" && cvLugg == luggNo)
+                            bool bArrive = (cvSen == "1" && cvLugg == luggNo);
+                            if (bArrive && OUT_DONE_ON_ARRIVAL)
+                            {
+                                // [LGLS 2026-09-30] 도착 즉시 완료 (사용자 지시) - 배출을 기다리지 않는다
+                                MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 실도착 관측(센서+작업번호) - 출고 완료(도착 즉시)", luggNo, mcNo));
+                            }
+                            else if (bArrive)
                             {
                                 if (!m_setOutArrived.Contains(luggNo))
                                 {
@@ -1622,7 +1637,7 @@ namespace TSK_COMM_IOSCH
                                 }
                                 continue;
                             }
-                            if (m_setOutArrived.Contains(luggNo))
+                            else if (m_setOutArrived.Contains(luggNo))
                             {
                                 if (!bEmpty) continue;                       // 아직 배출 전
                                 MakeMsg_Imp(string.Format("[SCH][CV] 작업 {0} 출고대 {1} 배출 확인 - 출고 완료", luggNo, mcNo));
@@ -2497,11 +2512,17 @@ namespace TSK_COMM_IOSCH
         //   여기서 그것을 보고 완료한 뒤 지운다(소비).
 
         private int m_nLatchCol = -1;       // -1 미확인 / 0 컬럼 없음 / 1 있음
+        private DateTime m_dtLatchColChk = DateTime.MinValue;   // [LGLS 2026-09-30] "없음" 은 60초마다 다시 본다
 
         /// <summary>CV_DATA 에 래치 컬럼이 있는가 (한 번만 확인해 기억한다)</summary>
         private bool HasLatchColumn()
         {
-            if (m_nLatchCol >= 0) return m_nLatchCol == 1;
+            if (m_nLatchCol == 1) return true;
+            // [LGLS 2026-09-30] 기동 때 "없음" 이었어도 SQL 04 를 나중에 돌리면 따라온다 (재기동 불필요)
+            if (m_nLatchCol == 0 && (DateTime.Now - m_dtLatchColChk).TotalSeconds < 60) return false;
+            m_dtLatchColChk = DateTime.Now;
+            int nPrev = m_nLatchCol;
+            string sErr = "";
             try
             {
                 string q = " SELECT COUNT(*) AS CNT FROM sys.columns "
@@ -2515,11 +2536,13 @@ namespace TSK_COMM_IOSCH
                 }
                 else m_nLatchCol = 0;
             }
-            catch { m_nLatchCol = 0; }
+            catch (Exception ex) { m_nLatchCol = 0; sErr = ex.Message; }
 
-            MakeMsg_Imp("[SCH][출고대래치] CV_DATA.RET_READY_LATCH "
+            if (nPrev != m_nLatchCol)     // 바뀔 때만 알린다(60초마다 같은 말을 되풀이하지 않게)
+                MakeMsg_Imp("[SCH][출고대래치] CV_DATA.RET_READY_LATCH "
                         + (m_nLatchCol == 1 ? "있음 - 신호 래치로 완료합니다"
-                                            : "없음 - 종전 판정으로 돕니다(SQL 04 를 돌리면 켜집니다)"));
+                                            : "없음 - 종전 판정으로 돕니다(SQL 04 를 돌리면 켜집니다)")
+                        + (sErr.Length > 0 ? " [확인 오류: " + sErr + "]" : ""));
             return m_nLatchCol == 1;
         }
 
