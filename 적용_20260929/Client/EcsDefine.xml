@@ -124,8 +124,8 @@
 			</Track>
 			<Track	number="122">
 				<Status>
-					<StoStation name="외부 전용 입출고대" id="101"/>
-					<RetStation name="외부 전용 입출고대" id="101"/>
+					<StoStation name="외부 입고 전용 입출고대" id="101"/>
+					<RetStation name="외부 입고 전용 입출고대" id="101"/>
 				</Status>
 			</Track>
 		</Tracks>
@@ -162,14 +162,14 @@
 			<Track	number="128"/>
 			<Track	number="129">
 				<Status>
-					<RetStation name="피킹 작업대" id="102"/>
+					<RetStation name="Picking 작업대" id="102"/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="15" cid="17110100" FirstTrack="130">
 			<Track	number="130">
 				<Status>
-					<StoStation name="피킹 작업대" id="102"/>
+					<StoStation name="Picking 작업대" id="102"/>
 				</Status>
 			</Track>
 			<Track	number="131">
