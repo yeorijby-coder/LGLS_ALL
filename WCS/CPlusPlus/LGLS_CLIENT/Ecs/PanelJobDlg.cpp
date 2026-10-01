@@ -27,7 +27,7 @@ CPanelJobDlg::CPanelJobDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPanelJobDlg::IDD, pParent)
 {
 	m_pDoc = NULL;
-	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0; m_nSplitMode = 0; m_nSeqPhase = -1;
+	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0; m_nSplitMode = 0; m_nSeqPhase = -1; m_nSeqHs = 0;
 }
 
 void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
@@ -440,6 +440,7 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 			if (bIn) { nHs = lo; nHs2 = hi; } else { nHs = hi; nHs2 = lo; }
 		}
 	}
+	m_nSeqHs = nHs;			// 완료처리 때 HS_TRACK_NO 가 비어 있으면 이 값으로 채운다 (IO_TASK 는 HS 없는 29/39 를 못 넘긴다)
 	CString strHs  = (nHs > 0) ? PortText(nHs) : _T("통로");
 	CString strHs2 = (nHs2 > 0) ? PortText(nHs2) : strHs;
 
@@ -637,9 +638,12 @@ void CPanelJobDlg::OnComplete()
 		(LPCTSTR)r.lugg, (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
 	if (AfxMessageBox(strMsg, MB_YESNO) != IDYES) return;
 	CString strSql;
-	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
-		(LPCTSTR)strSta, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg);
-	CString strLog; strLog.Format(_T("JOB_MST UPDATE : 완료처리(스텝 %s %s) JOB_STATUS %s -> %s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
+	// 통로(HS_TRACK_NO)가 아직 없으면 단계표가 예측한 통로 트랙을 같이 넣는다 - IO_TASK 가 다음 구간(RGV/크레인)을 낼 때 필요
+	CString strHsSet;
+	if (r.hs.IsEmpty() && m_nSeqHs > 0) strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), m_nSeqHs);
+	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s'%s, UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
+		(LPCTSTR)strSta, (LPCTSTR)strHsSet, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg);
+	CString strLog; strLog.Format(_T("JOB_MST UPDATE : 완료처리(스텝 %s %s) JOB_STATUS %s -> %s%s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta, (LPCTSTR)strHsSet);
 	if (ExecUpdate(strSql, strLog, r.lugg))
 		Refresh();
 }
