@@ -64,6 +64,7 @@ BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
 	ON_WM_SETCURSOR()
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 BOOL CPanelJobDlg::OnInitDialog()
@@ -306,15 +307,69 @@ void CPanelJobDlg::FillDetail(int nRow)
 //                  20,21,25 = 1단계 / 29,30,31,35 = 2단계 / 39,10,11,15,16 = 3단계 / 19,09 = 완료
 //   랙투랙(4)    : S/C 한 단계.   호기간(5) : S/C → RGV → S/C.   이동(0,6) : C/V 한 단계.
 //   반자동(1x)은 같은 흐름이다.
+// [LGLS 2026-10-01] 구 ECS 와 같은 단계표 (사용자 지시) : 디바이스/시작/도착을 전부 ★트랙 번호★ 기준으로
+//   CONVEYOR:11  PORT:122 → PORT:121   (입고대 → RGV 픽업 트랙)
+//   RGV          PORT:121 → PORT:103   (→ 통로)
+//   CONVEYOR:2   PORT:103 → PORT:104   (통로 두 칸)
+//   S/C 1        PORT:104 → LOC:04-001-01
+//   트랙→C/V 번호는 CV_DATA(PLC_NO, TRACK_NO 1xxx)에서 읽어 둔다. RGV 픽업 트랙 = 같은 C/V 의 옆 트랙(아래쪽 우선, 없으면 위쪽).
+int CPanelJobDlg::CvOfTrack(int nTrk)
+{
+	int cv = 0;
+	if (m_mapTrackCv.Lookup(nTrk, cv)) return cv;
+	return 0;
+}
+CString CPanelJobDlg::PortText(int nTrk)
+{
+	CString t; if (nTrk > 0) t.Format(_T("PORT:%d"), nTrk); return t;
+}
+CString CPanelJobDlg::CvDevText(int nTrk)
+{
+	CString t; int cv = CvOfTrack(nTrk);
+	if (cv > 0) t.Format(_T("CONVEYOR:%d"), cv); else t = _T("CONVEYOR");
+	return t;
+}
+int CPanelJobDlg::NeighborTrack(int nTrk)
+{
+	int cv = CvOfTrack(nTrk); if (cv <= 0) return 0;
+	if (CvOfTrack(nTrk - 1) == cv) return nTrk - 1;
+	if (CvOfTrack(nTrk + 1) == cv) return nTrk + 1;
+	return 0;
+}
+void CPanelJobDlg::LoadTrackCvMap()
+{
+	if (m_pDoc == NULL || m_mapTrackCv.GetCount() > 0) return;
+	CString strSql; strSql.Format(_T(" SELECT PLC_NO, TRACK_NO FROM CV_DATA WHERE WH_TYP = '%s' "), (LPCTSTR)m_pDoc->m_WH_TYP);
+	int nRowCnt = -1; CString strMessage;
+	_RecordsetPtr pRsp = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	if (nRowCnt <= 0) return;
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsp);
+	pRsw->MoveFirst();
+	for (int i = 0; i < nRowCnt; i++)
+	{
+		int cv = _ttoi(pRsw->GetItem(_T("PLC_NO")));
+		int trk = _ttoi(pRsw->GetItem(_T("TRACK_NO")));			// 1022 → 122 (JOB_MST 의 3자리 트랙)
+		if (trk >= 1000) trk = trk % 1000 + 100;
+		if (trk > 0 && cv > 0) m_mapTrackCv.SetAt(trk, cv);
+		pRsw->MoveNext();
+	}
+	delete pRsw;
+}
+
 void CPanelJobDlg::BuildSeqRows(const ROW& r)
 {
 	m_listSeq.DeleteAllItems();
+	LoadTrackCvMap();
 	int typ = _ttoi(r.typCd); if (typ >= 10) typ -= 10;
 	int s = _ttoi(r.staCd);
 
-	CString strStart = m_pDoc->PosLabel(r.startPos, r.startLoc, TRUE);
-	CString strDest  = m_pDoc->PosLabel(r.destPos,  r.destLoc,  TRUE);
-	CString strHs    = r.hs.IsEmpty() ? _T("통로") : (_T("통로 TR#") + r.hs);
+	int nStart = _ttoi(r.startPos), nDest = _ttoi(r.destPos), nHs = _ttoi(r.hs);
+	// 랙 쪽은 LOC:bb-bbb-ll
+	CString strStartLoc = (nStart >= 900 || nStart < 100) ? (_T("LOC:") + r.startLoc) : PortText(nStart);
+	CString strDestLoc  = (nDest  >= 900 || nDest  < 100) ? (_T("LOC:") + r.destLoc)  : PortText(nDest);
+	int nHs2 = (nHs > 0) ? NeighborTrack(nHs) : 0;				// 통로의 다음 칸 (103 → 104)
+	CString strHs  = (nHs > 0) ? PortText(nHs) : _T("통로");
+	CString strHs2 = (nHs2 > 0) ? PortText(nHs2) : strHs;
 	CString strSc;
 	{
 		int nSc = 0;
@@ -325,7 +380,7 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 			int nBank = _ttoi(loc.Left(2));
 			if (nBank > 0) nSc = (nBank + 1) / 2;
 		}
-		if (nSc > 0) strSc.Format(_T("S/C #%d"), nSc); else strSc = _T("S/C");
+		if (nSc > 0) strSc.Format(_T("S/C %d"), nSc); else strSc = _T("S/C");
 	}
 
 	struct STEP { CString dev, from, to; };
@@ -334,39 +389,51 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	STEP st;
 	switch (typ)
 	{
-	case 1:		// 입고
-		st.dev = _T("C/V");  st.from = strStart; st.to = _T("RGV 픽업");  steps.Add(st);
-		st.dev = _T("RGV");  st.from = _T("RGV 픽업"); st.to = strHs;    steps.Add(st);
-		st.dev = strSc;      st.from = strHs;    st.to = strDest;        steps.Add(st);
+	case 1:		// 입고 : C/V(입고대→픽업) → RGV(픽업→통로) → C/V(통로 두 칸) → S/C(통로→랙)
+	{
+		int nPick = NeighborTrack(nStart);
+		st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); steps.Add(st);
+		st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      steps.Add(st);
+		if (nHs2 > 0) { st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
+		st.dev = strSc;             st.from = strHs2;           st.to = strDestLoc; steps.Add(st);
+		int nCvHs = (nHs2 > 0) ? 1 : 0;
 		if      (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 0;
 		else if (s == 30 || s == 31 || s == 35 || s == 39)            nPhase = 1;
-		else if (s == 20 || s == 21 || s == 25)                       nPhase = 2;
-		else                                                          nPhase = 3;
+		else if (s == 20 || s == 21)                                  nPhase = 1 + nCvHs;
+		else if (s == 25)                                             nPhase = 2 + nCvHs;
+		else                                                          nPhase = (int)steps.GetCount();
 		break;
-	case 2: case 3:		// 출고 / 피킹출고
-		st.dev = strSc;      st.from = strStart; st.to = strHs;          steps.Add(st);
-		st.dev = _T("RGV");  st.from = strHs;    st.to = _T("출고 픽업"); steps.Add(st);
-		st.dev = _T("C/V");  st.from = _T("출고 픽업"); st.to = strDest; steps.Add(st);
+	}
+	case 2: case 3:		// 출고 / 피킹출고 : S/C(랙→통로) → C/V(통로 두 칸) → RGV(통로→출고 픽업) → C/V(픽업→출고대)
+	{
+		int nPick = NeighborTrack(nDest);
+		st.dev = strSc;             st.from = strStartLoc;      st.to = strHs;      steps.Add(st);
+		if (nHs2 > 0) { st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
+		st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); steps.Add(st);
+		st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); steps.Add(st);
+		int nCvHs = (nHs2 > 0) ? 1 : 0;
 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
-		else if (s == 29 || s == 30 || s == 31 || s == 35)            nPhase = 1;
-		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2;
-		else                                                          nPhase = 3;
+		else if (s == 29)                                             nPhase = 1;
+		else if (s == 30 || s == 31 || s == 35)                       nPhase = 1 + nCvHs;
+		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2 + nCvHs;
+		else                                                          nPhase = (int)steps.GetCount();
 		break;
+	}
 	case 4:		// 랙투랙
-		st.dev = strSc;      st.from = strStart; st.to = strDest;        steps.Add(st);
+		st.dev = strSc;      st.from = strStartLoc; st.to = strDestLoc;  steps.Add(st);
 		nPhase = (s == 99 || s == 20 || s == 21 || s == 25) ? 0 : 1;
 		break;
 	case 5:		// 호기간 이동
-		st.dev = strSc;      st.from = strStart; st.to = strHs;          steps.Add(st);
-		st.dev = _T("RGV");  st.from = strHs;    st.to = _T("통로");     steps.Add(st);
-		st.dev = _T("S/C");  st.from = _T("통로"); st.to = strDest;      steps.Add(st);
+		st.dev = strSc;      st.from = strStartLoc; st.to = strHs;       steps.Add(st);
+		st.dev = _T("RGV");  st.from = strHs;       st.to = _T("통로");  steps.Add(st);
+		st.dev = _T("S/C");  st.from = _T("통로");  st.to = strDestLoc;  steps.Add(st);
 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
 		else if (s == 29 || s == 30 || s == 31 || s == 35)            nPhase = 1;
 		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2;
 		else                                                          nPhase = 3;
 		break;
 	default:	// 이동 등
-		st.dev = _T("C/V");  st.from = strStart; st.to = strDest;        steps.Add(st);
+		st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nDest); steps.Add(st);
 		nPhase = (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) ? 0 : 1;
 		break;
 	}
@@ -383,6 +450,15 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	}
 	if (nPhase < steps.GetCount())
 		m_listSeq.SetItemState(nPhase, LVIS_SELECTED, LVIS_SELECTED);
+}
+
+// [LGLS 2026-10-01] 작업번호 값은 구 ECS 처럼 붉게
+HBRUSH CPanelJobDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+	if (pWnd != NULL && pWnd->GetDlgCtrlID() == IDC_PANEL_JOB_ECS_VAL)
+		pDC->SetTextColor(RGB(192, 0, 0));
+	return hbr;
 }
 
 void CPanelJobDlg::OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult)
@@ -552,8 +628,8 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	if (::IsWindow(m_listSeq.m_hWnd))
 	{
 		m_listSeq.MoveWindow(xR, yList, R, max(CLib::DpiPx(40), cy - yList - 2));
-		static const int W_WIDE[]   = { 50, 45, 80, 150, 150 };
-		static const int W_NARROW[] = { 40, 36, 64,  96,  96 };
+		static const int W_WIDE[]   = { 52, 45, 110, 130, 130 };
+		static const int W_NARROW[] = { 48, 40, 100, 110, 110 };
 		for (int i = 0; i < 5; i++)
 			m_listSeq.SetColumnWidth(i, CLib::DpiPx(bNarrow ? W_NARROW[i] : W_WIDE[i]));
 	}

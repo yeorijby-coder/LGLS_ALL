@@ -54,6 +54,13 @@ protected:
 	void BuildOldEcsControls();
 	void FillDetail(int nRow);
 	void BuildSeqRows(const ROW& r);
+	CMap<int, int, int, int> m_mapTrackCv;	// 트랙(3자리) → C/V 번호
+	void LoadTrackCvMap();
+	int  CvOfTrack(int nTrk);
+	int  NeighborTrack(int nTrk);
+	CString PortText(int nTrk);
+	CString CvDevText(int nTrk);
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	BOOL ExecUpdate(CString strSql, CString strLogMsg, CString strLuggNo);
 	int  FindRow(const CString& strLugg);
 	virtual void DoDataExchange(CDataExchange* pDX);
