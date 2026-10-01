@@ -279,7 +279,7 @@ HBRUSH CCvSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		pDC->SetBkMode(TRANSPARENT);
 		return (HBRUSH)::GetStockObject(NULL_BRUSH);
 	}
-	else if (nId == IDC_CVV_TITLE1)
+	else if (nId == IDC_CVV_TITLE1 || nId == IDC_CVV_TITLE2)
 	{
 		pDC->SetTextColor(RGB(0,0,200));
 		pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));
@@ -2131,26 +2131,6 @@ void CCvSkinDlg::BuildCvStatusPanel()
 		strSfx = (CConvert::ToInt(m_pTrackInfo->m_pCV_DATA->K_TRACK_NO) % 2 == 1) ? _T("_01") : _T("_02");
 	}
 
-	// ── panel2 : 상태 / 설비명 / 설명 ──────────────────────────────
-	mk.Value(IDC_CVV_STATUS, X + 4, 4, 57, 34, SS_CENTER);
-	mk.Value(IDC_CVV_TITLE1, X + 61, 4, 159, 16);
-	mk.Value(IDC_CVV_TITLE2, X + 61, 20, 159, 18);
-
-	// ── panel4 : 포트(트랙) 줄 ───────────────────────────────────────
-	const int P4 = 44;
-	mk.Label(_T("포트"),   X + 5,  P4 + 5, 65, 20, SS_CENTER);
-	mk.Label(_T("Pallet"), X + 70, P4 + 5, 150, 20, SS_CENTER);
-	for (int i = 0; i < 3; i++)
-	{
-		int yy = P4 + 34 + i * 38;
-		mk.Value(IDC_CVV_PORT_LUGG_BASE + i, X + 8,  yy,      55, 15, SS_CENTER);		// 화물번호 (색 = 감지/트래킹)
-		mk.Value(IDC_CVV_PORT_NO_BASE + i,   X + 8,  yy + 15, 55, 15, SS_CENTER);		// 트랙번호
-		mk.Edit(IDC_CVV_PORT_EDT_BASE + i,   X + 73, yy,      53, 29);
-		mk.Button(IDC_CVV_PORT_BTN_BASE + i, _T("PalletID설정"), X + 138, yy, 77, 28);
-	}
-
-	// ── 신호 LED (신 ECS 항목 - 구 ECS 에는 없던 것, 포트 줄 아래) ───────
-	int y = P4 + 34 + 3 * 38 + 6;
 	// [LGLS 2026-09-12] 완료 Ack [쓰기] 버튼 글자 (rc_resource\dlg_cv\dlg_cv.ini  ackwrite=)
 	CString strAckW = _T("쓰기");
 	{
@@ -2160,48 +2140,81 @@ void CCvSkinDlg::BuildCvStatusPanel()
 		CString _sA = CLib::GetIniStringFromPath(_fpA, _T("ackwrite"), (int)((m_pDoc == NULL) ? EN_KOR : m_pDoc->m_enLang));
 		if (!_sA.IsEmpty()) strAckW = _sA;
 	}
-	struct LEDDEF { LPCTSTR name; int id; CString obs; };
-	LEDDEF leds[] = {
-		{ _T("적재완료"),  IDC_CVV_LED_LOAD_CMP,       _T("LOAD_COMPLETE") + strSfx },
-		{ _T("적재ACK"),   IDC_CVV_LED_LOAD_CMP_ACK,   _T("LOAD_COMPLETE_ACK") + strSfx },
-		{ _T("하역완료"),  IDC_CVV_LED_UNLOAD_CMP,     _T("UNLOAD_COMPLETE") + strSfx },
-		{ _T("하역ACK"),   IDC_CVV_LED_UNLOAD_CMP_ACK, _T("UNLOAD_COMPLETE_ACK") + strSfx },
-		{ _T("배출요청"),  IDC_CVV_LED_OUT_REQ,        _T("UNLOAD_REQUEST_02") },
-		{ _T("배출ACK"),   IDC_CVV_LED_OUT_REQ_ACK,    _T("UNLOAD_REQUEST_ACK_02") },
-		{ _T("입고준비"),  IDC_CVV_LED_IN_READY,       _T("IN_READY_02") },
-		{ _T("대기 IN"),   IDC_CVV_LED_WAIT_IN,        _T("WAIT_IN") },
-		{ _T("대기 OUT"),  IDC_CVV_LED_WAIT_OUT,       _T("WAIT_OUT") },
-		{ _T("자동모드"),  IDC_CVV_LED_AUTO,           _T("OPERATION_MODE") },
-		{ _T("화물감지"),  IDC_CVV_LED_PALLET,         _T("PALLET_EXIST_FLAG") + strSfx },
-	};
-	for (int i = 0; i < sizeof(leds)/sizeof(leds[0]); i++)
+	// ── [LGLS 2026-10-01] ★구 ECS 실행 화면(사진) 배치★ : [Conveyor 정보] 폼 (226x485) 그대로 (사용자 지시)
+	//   위   : [IDLE] 상태칸 + CONVEYOR:11 (굵은 파랑, 가운데) + [KR00] 외부 전용 입/출고 (파랑, 가운데)
+	//   줄   : "포트" / "Pallet" 머리글, 포트마다 [번호칸] [팔렛 값] [PalletID설정]
+	//   가운데 빈 자리 : 신 ECS 항목(신호 LED·완료 Ack 쓰기·트래킹화물·방향모드) - 사진엔 없지만 기능은 남긴다
+	//   아래 : [사용금지]  [확인]
 	{
-		int col = i / 6, row = i % 6;
-		int x = X + 5 + col * 110;
-		int yy = y + row * 17;
-		mk.Led(leds[i].id, x, yy);
-		mk.LabelA(leds[i].name, CLib::GetObsAddr(strOwner, leds[i].obs), x + 16, yy - 1, 50, 40);
-	}
-	y += 6 * 17 + 4;
-	// [LGLS 2026-10-01] 완료 Ack [쓰기] 버튼 - 패널 폭(240)에 주소와 나란히 둘 자리가 없어 LED 표 아래 한 줄로 뺀다
-	mk.Button(IDC_CVV_BTN_LCA_W, _T("적재ACK ") + strAckW, X + 5,   y, 110, 18);
-	mk.Button(IDC_CVV_BTN_UCA_W, _T("하역ACK ") + strAckW, X + 120, y, 110, 18);
-	y += 22;
-	{
-		CString aTrk = CLib::GetObsAddr(strOwner, _T("PALLET_EXIST") + strSfx);
-		if (aTrk.IsEmpty()) aTrk = CLib::GetObsAddr(strOwner, _T("PALLET_EXIST") + strSfx.Mid(1));
-		CString aDir = CLib::GetObsAddr(strOwner, _T("DIRECTION_MODE"));
-		mk.LabelA(_T("트래킹화물"), aTrk, X + 5, y + 2, 58, 56);
-		mk.Value(IDC_CVV_LUGG, X + 150, y, 70, 18);
-		y += 20;
-		mk.LabelA(_T("방향모드"), aDir, X + 5, y + 2, 58, 56);
-		mk.Value(IDC_CVV_DIR, X + 150, y, 70, 18);
-		y += 22;
-	}
+		struct TX { CWnd* dlg; CFont* f; CPtrArray* a;
+			void T(int id, LPCTSTR s, int x, int y, int w, int h, DWORD st) {
+				CStatic* p = new CStatic(); p->Create(s, WS_CHILD | WS_VISIBLE | st, CRect(x, y, x + w, y + h), dlg, id);
+				if (f) p->SetFont(f); a->Add(p); } } tx = { this, pFont, &m_arVehCtrl };
 
-	// ── panel5 : 사용금지(트랙 일시정지) / 확인 ───────────────────────
-	mk.Check(IDC_CVV_CHK_DISABLE, _T("사용금지"), X + 7, y + 23, 76, 16);
-	mk.Button(IDC_CVV_OK, _T("확인"), X + 108, y + 3, 86, 40);
+		mk.Value(IDC_CVV_STATUS, X + 6, 6, 50, 30, SS_CENTER);
+		tx.T(IDC_CVV_TITLE1, _T(""), X + 60, 4,  176, 20, SS_CENTER);
+		{
+			static CFont s_fntTitle;
+			if (s_fntTitle.GetSafeHandle() == NULL) { LOGFONT lf = {0}; if (pFont) pFont->GetLogFont(&lf); lf.lfHeight = -15; lf.lfWeight = FW_BOLD; s_fntTitle.CreateFontIndirect(&lf); }
+			CWnd* pT = GetDlgItem(IDC_CVV_TITLE1); if (pT && s_fntTitle.GetSafeHandle()) pT->SetFont(&s_fntTitle);
+		}
+		tx.T(IDC_CVV_TITLE2, _T(""), X + 60, 24, 176, 15, SS_CENTER);
+
+		// 포트 줄 (사진 : 포트 번호칸 15~71, 팔렛 값 77~127, [PalletID설정] 136~212)
+		mk.Label(_T("포트"),   X + 15, 52, 56, 16, SS_CENTER);
+		mk.Label(_T("Pallet"), X + 110, 52, 76, 16, SS_CENTER);
+		for (int i = 0; i < 3; i++)
+		{
+			int yy = 72 + i * 36;
+			mk.Value(IDC_CVV_PORT_NO_BASE + i,   X + 15,  yy,      56, 30, SS_CENTER);		// 트랙번호 (사진의 큰 칸)
+			mk.Value(IDC_CVV_PORT_LUGG_BASE + i, X + 77,  yy,      50, 14, SS_CENTER);		// 화물번호 (색 = 감지/트래킹)
+			mk.Edit(IDC_CVV_PORT_EDT_BASE + i,   X + 77,  yy + 15, 50, 15);					// 입력
+			mk.Button(IDC_CVV_PORT_BTN_BASE + i, _T("PalletID설정"), X + 136, yy + 2, 76, 26);
+		}
+
+		// 가운데 빈 자리 : 신 ECS 항목
+		int y = 72 + 3 * 36 + 10;
+		struct LEDDEF { LPCTSTR name; int id; CString obs; };
+		LEDDEF leds[] = {
+			{ _T("적재완료"),  IDC_CVV_LED_LOAD_CMP,       _T("LOAD_COMPLETE") + strSfx },
+			{ _T("적재ACK"),   IDC_CVV_LED_LOAD_CMP_ACK,   _T("LOAD_COMPLETE_ACK") + strSfx },
+			{ _T("하역완료"),  IDC_CVV_LED_UNLOAD_CMP,     _T("UNLOAD_COMPLETE") + strSfx },
+			{ _T("하역ACK"),   IDC_CVV_LED_UNLOAD_CMP_ACK, _T("UNLOAD_COMPLETE_ACK") + strSfx },
+			{ _T("배출요청"),  IDC_CVV_LED_OUT_REQ,        _T("UNLOAD_REQUEST_02") },
+			{ _T("배출ACK"),   IDC_CVV_LED_OUT_REQ_ACK,    _T("UNLOAD_REQUEST_ACK_02") },
+			{ _T("입고준비"),  IDC_CVV_LED_IN_READY,       _T("IN_READY_02") },
+			{ _T("대기 IN"),   IDC_CVV_LED_WAIT_IN,        _T("WAIT_IN") },
+			{ _T("대기 OUT"),  IDC_CVV_LED_WAIT_OUT,       _T("WAIT_OUT") },
+			{ _T("자동모드"),  IDC_CVV_LED_AUTO,           _T("OPERATION_MODE") },
+			{ _T("화물감지"),  IDC_CVV_LED_PALLET,         _T("PALLET_EXIST_FLAG") + strSfx },
+		};
+		for (int i = 0; i < (int)(sizeof(leds)/sizeof(leds[0])); i++)
+		{
+			int col = i / 6, row = i % 6;
+			int x = X + 8 + col * 112;
+			int yy = y + row * 17;
+			mk.Led(leds[i].id, x, yy);
+			mk.LabelA(leds[i].name, CLib::GetObsAddr(strOwner, leds[i].obs), x + 16, yy - 1, 50, 40);
+		}
+		y += 6 * 17 + 6;
+		mk.Button(IDC_CVV_BTN_LCA_W, _T("적재ACK ") + strAckW, X + 8,   y, 106, 20);
+		mk.Button(IDC_CVV_BTN_UCA_W, _T("하역ACK ") + strAckW, X + 120, y, 106, 20);
+		y += 26;
+		{
+			CString aTrk = CLib::GetObsAddr(strOwner, _T("PALLET_EXIST") + strSfx);
+			if (aTrk.IsEmpty()) aTrk = CLib::GetObsAddr(strOwner, _T("PALLET_EXIST") + strSfx.Mid(1));
+			CString aDir = CLib::GetObsAddr(strOwner, _T("DIRECTION_MODE"));
+			mk.LabelA(_T("트래킹화물"), aTrk, X + 8, y + 2, 58, 56);
+			mk.Value(IDC_CVV_LUGG, X + 150, y, 76, 18);
+			y += 21;
+			mk.LabelA(_T("방향모드"), aDir, X + 8, y + 2, 58, 56);
+			mk.Value(IDC_CVV_DIR, X + 150, y, 76, 18);
+		}
+
+		// 아래 : 사용금지 / 확인 (사진 : 사용금지 (15,419), 확인 (109,398) 95x45)
+		mk.Check(IDC_CVV_CHK_DISABLE, _T("사용금지"), X + 15, 419, 76, 16);
+		mk.Button(IDC_CVV_OK, _T("확인"), X + 109, 398, 95, 45);
+	}
 
 	SetVehPanelExpanded(FALSE);
 }

@@ -150,10 +150,11 @@ G.para(d, '구 ECS 의 StackerForm / RGVForm / ConveyorForm 항목이 전부 신
           '항목별 대조는 같은 폴더의 "2026-10-01_설비대화상자_비교_구ECS_vs_신ECS.docx" 에 있다.')
 G.image(d, os.path.join(SHOT, 'dlg_sc_1.png'), 16.0, 'SC 상태창 [확대] - 오른쪽이 구 ECS [Stacker Crane 정보] 사진 배치')
 G.image(d, os.path.join(SHOT, 'dlg_rtv_1.png'), 16.0, 'RTV 상태창 [확대] - 구 ECS RGV 사진 배치')
+G.image(d, os.path.join(SHOT, 'dlg_cv_1.png'), 14.0, 'CV 상태창 [확대] - 구 ECS [Conveyor 정보] 사진 배치')
 G.table(d, ['설비', '구 ECS 에 있던 것 → [확대] 패널', '신 ECS 에서 더한 것'], [
     ['S/C', '[DOWN/IDLE/RUN] 상태칸·설비명·설명 / LED 4x3 (Load Complete … Alarm Reset ACK, Pallet ID) / 현재위치·출발지·도착지·완료위치·알람코드 한 줄 / 요청번호 ― 순번·배치번호·자재코드·팔렛(에러 tag)·출발위치·도착위치 / [명령 재전송][이상종료] / 사용금지 / [확인]  - 사진(Stacker Crane 정보) 과 같은 자리·순서', 'PLC 주소 한 줄(맨 아래), [Load ACK 쓰기][Unload ACK 쓰기]'],
     ['RGV', 'S/C 와 같은 틀 (완료처리 = 39)', '〃'],
-    ['C/V', '상태 칸·이름·설명 / 포트 줄 [색칸|입력|PalletID설정] x 포트 수 (4색 규칙) / 사용금지 / [확인]', 'LED 11 + 주소, [적재ACK 쓰기][하역ACK 쓰기], 트래킹화물·방향모드'],
+    ['C/V', '[IDLE] 상태칸·이름(굵은 파랑)·설명 / "포트"·"Pallet" 머리글 + 포트마다 [번호칸][팔렛 값·입력][PalletID설정] (4색 규칙) / 사용금지 / [확인] - 사진([Conveyor 정보]) 과 같은 자리', '사진의 가운데 빈 자리에 LED 11 + 주소, [적재ACK 쓰기][하역ACK 쓰기], 트래킹화물·방향모드'],
 ], widths=[1.5, 10.0, 4.5], font=8.5)
 G.table(d, ['버튼', '하는 일', '권한/기록'], [
     ['이상종료', '설비 데이터의 작업(OD) 을 지운다 (PanelInfoDlg 의 이상종료와 같음)', '〃'],

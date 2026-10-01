@@ -93,13 +93,13 @@ d.add_heading('3. 컨베이어 (ConveyorForm → CV 상태창 [확대])', 1)
 G.image(d, os.path.join(SHOT, 'hecs_dlg_0.png'), 5.5, '구 ECS - ConveyorForm (HECS.exe 실행 화면, CONVEYOR:2)')
 G.image(d, os.path.join(SHOT, 'dlg_cv_1.png'), 18.0, '신 ECS - CV 상태창 [확대] (오른쪽 패널 폭 240)')
 G.table(d, ['구 ECS 항목 (ConveyorForm 226x485)', '신 ECS [확대] 패널', '값의 출처 (신)', '비고'], [
-    ['상태 칸 (IDLE 등) / 이름(CONVEYOR:2) / 설명([KR01] Hi-Rack#1호기 입/출고)', '같은 자리 - 자동/수동 색 칸 + C/V#2 + 설명', 'CV_DATA.AUTO_MODE / EQP_MST / EcsDefine', '설명은 EcsDefine 의 작업대 이름'],
-    ['포트 줄 : [PalletId/ConveyorId 색칸] [입력] [PalletID설정] x 포트 수', '같은 3열, 최대 3줄 (C/V#2 는 103/104 두 줄)', 'CV_DATA(PLC_NO 같은 트랙) LUGG_NO / PALLET_EXIST', '[PalletID설정] = LUGG_NO_OD + TRACKING_WRITE_YN=Y'],
+    ['상태 칸 (IDLE 등) / 이름(CONVEYOR:11, 굵은 파랑) / 설명([KR00] 외부 전용 입/출고, 파랑)', '같은 자리 - 자동/수동 색 칸 + C/V#2(굵은 파랑) + 설명(파랑) 가운데 정렬', 'CV_DATA.AUTO_MODE / EQP_MST / EcsDefine', '사진([Conveyor 정보]) 배치'],
+    ['"포트" / "Pallet" 머리글, 포트마다 [번호칸(큰 칸)] [팔렛 값·입력] [PalletID설정]', '같은 자리·크기 (사진 15~71 / 77~127 / 136~212), 최대 3줄 (C/V#2 는 103/104 두 줄)', 'CV_DATA(PLC_NO 같은 트랙) LUGG_NO / PALLET_EXIST', '[PalletID설정] = LUGG_NO_OD + TRACKING_WRITE_YN=Y'],
     ['색 규칙 : 감지+ID 하늘 / 감지만 진초록 / ID만 진홍 / 없음 흰', '같은 4색', 'PALLET_EXIST, LUGG_NO', ''],
-    ['(없음)', 'LED 11개 (적재/하역 완료·ACK, 배출요청·ACK, 입고준비, 대기 IN/OUT, 자동모드, 화물감지) + 주소', 'PlcAddressMap', '신 ECS 가 더 보여 주는 것 (종전 확대 패널 내용 유지)'],
+    ['(없음 - 사진의 가운데 빈 자리)', 'LED 11개 (적재/하역 완료·ACK, 배출요청·ACK, 입고준비, 대기 IN/OUT, 자동모드, 화물감지) + 주소', 'PlcAddressMap', '신 ECS 항목을 사진의 빈 자리에 둠 (기능 유지)'],
     ['(없음)', '[적재ACK 쓰기] [하역ACK 쓰기] - LED 표 아래 한 줄', 'CV_DATA 명령', '폭 240 이라 주소 옆에 못 두고 아래로'],
     ['(없음)', '트래킹화물 R0010 / 방향모드 D0301', 'CV_DATA', ''],
-    ['사용금지 체크 / [확인]', '같은 자리 (사용금지 = 기존 [일시정지])', 'CV_DATA.TR_PAUSE', ''],
+    ['사용금지 체크 / [확인]', '같은 자리 (사진 (15,419) / (109,398) 95x45), 사용금지 = 기존 [일시정지]', 'CV_DATA.TR_PAUSE', ''],
 ], widths=[8.0, 7.0, 5.5, 4.5], font=8)
 note(d, '구 ECS 의 크레인·RGV 폼은 HECS.exe 에서 자동으로 열리지 않아(더블클릭이 컨베이어 폼만 열림) 실행 캡처 대신 디자이너 좌표로 대조했다. '
         '사용자가 보내 준 사진과 Backup/ECS 의 StackerForm.Designer.cs 가 근거다.')
