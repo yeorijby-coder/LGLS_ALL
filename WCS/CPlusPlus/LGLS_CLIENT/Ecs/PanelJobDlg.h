@@ -37,6 +37,12 @@ public:
 	};
 	CArray<ROW, ROW&> m_arRow;
 	CString m_strSelLugg;
+	// [LGLS 2026-10-01] 목록|상세 사이 분할선 (끌어서 상세 칸 폭 조절)
+	int   m_nSplitR;
+	int   m_nRcLeftW;			// 리소스의 왼쪽 칸 폭
+	CRect m_rcRcRight[6];		// 리소스의 오른쪽 머리줄 상대 위치 (ECS라벨/값/작업라벨/값/완료처리/SEQ표)
+	BOOL  m_bDragSplit;
+	CRect m_rcSplit;
 
 	void Refresh();
 protected:
@@ -58,5 +64,9 @@ protected:
 	afx_msg void OnPriDown();
 	afx_msg void OnTransferCtl();
 	afx_msg void OnComplete();
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 	DECLARE_MESSAGE_MAP()
 };

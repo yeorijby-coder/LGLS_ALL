@@ -168,6 +168,14 @@ BOOL CEcsApp::InitInstance()
 	// [LGLS 2026-09-09] 버전 표기 단일화 (EcsDef.h WCS_VERSION_STR)
 	m_pMainWnd->SetWindowText(WCS_PRODUCT_NAME _T(" ") WCS_VERSION_STR
 							   _T("  -  Equipment Control System"));
+	// [LGLS 2026-10-01] 모니터가 여럿일 때 창이 마지막 위치(다른 모니터)에 뜨는 것을 막는다 (사용자 지시 : 2번 = 주 모니터에 전체로).
+	//   Ecs.ini [DISPLAY] START_MONITOR = 0 주 모니터(기본) / 1 Windows 가 정하는 마지막 위치
+	if (::GetPrivateProfileInt(_T("DISPLAY"), _T("START_MONITOR"), 0, ECS_INI_FILE) == 0)
+	{
+		CRect rcWork(0, 0, 0, 0);
+		::SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0);		// 주 모니터 작업 영역
+		m_pMainWnd->SetWindowPos(NULL, rcWork.left, rcWork.top, rcWork.Width(), rcWork.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
+	}
 	m_pMainWnd->ShowWindow(SW_SHOWMAXIMIZED);
 	m_pMainWnd->UpdateWindow();
 	// 접미사가 있을 경우에만 DragAcceptFiles를 호출합니다.

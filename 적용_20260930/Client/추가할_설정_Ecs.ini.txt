@@ -54,3 +54,7 @@ LAMP_STYLE = 0
 ;   0       종전. 크레인이 화물을 실어 차상 비트가 서야 보인다
 ;   하역 뒤 잔상 처리는 VEH_CLEAR_MODE 가 그대로 맡는다.
 VEH_SHOW_ON_ORDER = 1
+
+; [LGLS 2026-10-01] 모니터가 여럿일 때 기동 위치 : 0 = 주 모니터(기본, 전체화면) / 1 = Windows 가 정하는 마지막 위치
+; [DISPLAY] 아래에 둔다
+START_MONITOR=0

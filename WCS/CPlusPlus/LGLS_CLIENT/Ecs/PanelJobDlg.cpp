@@ -27,6 +27,7 @@ CPanelJobDlg::CPanelJobDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPanelJobDlg::IDD, pParent)
 {
 	m_pDoc = NULL;
+	m_nSplitR = 0; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0;
 }
 
 void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
@@ -34,6 +35,18 @@ void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_PANEL_JOB_TAB, m_tabTyp);
 	DDX_Control(pDX, IDC_PANEL_JOB_LIST, m_list);
+	// [LGLS 2026-10-01] 리소스(IDD_PANEL_JOB)의 컨트롤
+	DDX_Control(pDX, IDC_PANEL_JOB_PRI_LBL,  m_lblPriTitle);
+	DDX_Control(pDX, IDC_PANEL_JOB_PRI_VAL,  m_lblPriVal);
+	DDX_Control(pDX, IDC_PANEL_JOB_PRI_UP,   m_btnPriUp);
+	DDX_Control(pDX, IDC_PANEL_JOB_PRI_DN,   m_btnPriDn);
+	DDX_Control(pDX, IDC_PANEL_JOB_TRANSFER, m_btnTransfer);
+	DDX_Control(pDX, IDC_PANEL_JOB_ECS_LBL,  m_lblEcs);
+	DDX_Control(pDX, IDC_PANEL_JOB_ECS_VAL,  m_lblEcsVal);
+	DDX_Control(pDX, IDC_PANEL_JOB_JOB_LBL,  m_lblJob);
+	DDX_Control(pDX, IDC_PANEL_JOB_JOB_VAL,  m_lblJobVal);
+	DDX_Control(pDX, IDC_PANEL_JOB_SEQ,      m_listSeq);
+	DDX_Control(pDX, IDC_PANEL_JOB_COMPLETE, m_btnComplete);
 }
 
 BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
@@ -45,6 +58,10 @@ BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
 	ON_BN_CLICKED(IDC_PANEL_JOB_PRI_DN,   OnPriDown)
 	ON_BN_CLICKED(IDC_PANEL_JOB_TRANSFER, OnTransferCtl)
 	ON_BN_CLICKED(IDC_PANEL_JOB_COMPLETE, OnComplete)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONUP()
+	ON_WM_SETCURSOR()
 END_MESSAGE_MAP()
 
 BOOL CPanelJobDlg::OnInitDialog()
@@ -75,6 +92,9 @@ BOOL CPanelJobDlg::OnInitDialog()
 		CRect(0, 0, 10, 10), this, IDC_PANEL_JOB_AUTO);
 	m_chkAuto.SetFont(GetFont());
 	m_chkAuto.SetCheck(BST_CHECKED);
+	// [LGLS 2026-10-01] 탭 줄(전체/입고/출고...)과 [자동 갱신] 은 화면에서 뺀다 (사용자 지시). 자동 갱신은 켜진 채 숨김.
+	m_chkAuto.ShowWindow(SW_HIDE);
+	if (::IsWindow(m_tabTyp.m_hWnd)) m_tabTyp.ShowWindow(SW_HIDE);
 
 	BuildOldEcsControls();
 
@@ -86,33 +106,38 @@ BOOL CPanelJobDlg::OnInitDialog()
 // [LGLS 2026-10-01] 구 ECS 판넬의 왼쪽(우선순위)과 오른쪽(상세) 칸을 만든다
 void CPanelJobDlg::BuildOldEcsControls()
 {
+	// [LGLS 2026-10-01] ★리소스 방식★ 컨트롤은 Ecs.rc 의 IDD_PANEL_JOB 에 있다 (사용자 지시 - 리소스에서 편집).
+	//   여기서는 만들지 않고 받아만 온다(DoDataExchange 의 DDX_Control). 글꼴·열만 맞춘다.
+	//   왼쪽 칸(우선순위/▲▼/반송조정)은 리소스 좌표를 그대로 두고(OnSize 가 옮기지 않는다),
+	//   오른쪽 머리줄(ECS번호/작업번호/완료처리)은 리소스의 상대 위치를 유지한 채 칸의 왼쪽 끝만 옮긴다.
 	CFont* pFont = GetFont();
-	CRect rc0(0, 0, 10, 10);
-
-	m_lblPriTitle.Create(_T("우선순위"), WS_CHILD | WS_VISIBLE | SS_CENTER, rc0, this, IDC_PANEL_JOB_PRI_LBL);
-	m_lblPriVal.Create(_T(""), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_BORDER, rc0, this, IDC_PANEL_JOB_PRI_VAL);
-	m_btnPriUp.Create(_T("▲"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, rc0, this, IDC_PANEL_JOB_PRI_UP);
-	m_btnPriDn.Create(_T("▼"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, rc0, this, IDC_PANEL_JOB_PRI_DN);
-	m_btnTransfer.Create(_T("반송조정"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_MULTILINE, rc0, this, IDC_PANEL_JOB_TRANSFER);
-
-	m_lblEcs.Create(_T("ECS번호"), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_ECS_LBL);
-	m_lblEcsVal.Create(_T(""), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_ECS_VAL);
-	m_lblJob.Create(_T("작업번호"), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_JOB_LBL);
-	m_lblJobVal.Create(_T(""), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_JOB_VAL);
-	m_listSeq.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS, rc0, this, IDC_PANEL_JOB_SEQ);
 	m_listSeq.SetExtendedStyle(m_listSeq.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-	m_btnComplete.Create(_T("완료처리"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, rc0, this, IDC_PANEL_JOB_COMPLETE);
-
 	struct { LPCTSTR strHead; int nWidth; } SEQCOLS[] = {
 		{ _T(""), 50 }, { _T("SEQ"), 45 }, { _T("디바이스"), 80 }, { _T("시작"), 150 }, { _T("도착"), 150 },
 	};
-	for (int i = 0; i < (int)(sizeof(SEQCOLS)/sizeof(SEQCOLS[0])); i++)
-		m_listSeq.InsertColumn(i, SEQCOLS[i].strHead, LVCFMT_LEFT, CLib::DpiPx(SEQCOLS[i].nWidth));
+	if (m_listSeq.GetHeaderCtrl() == NULL || m_listSeq.GetHeaderCtrl()->GetItemCount() == 0)
+		for (int i = 0; i < (int)(sizeof(SEQCOLS)/sizeof(SEQCOLS[0])); i++)
+			m_listSeq.InsertColumn(i, SEQCOLS[i].strHead, LVCFMT_LEFT, CLib::DpiPx(SEQCOLS[i].nWidth));
 
 	CWnd* pAll[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer,
 	                 &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal, &m_listSeq, &m_btnComplete };
 	for (int i = 0; i < (int)(sizeof(pAll)/sizeof(pAll[0])); i++)
-		if (pFont != NULL) pAll[i]->SetFont(pFont);
+		if (pFont != NULL && ::IsWindow(pAll[i]->m_hWnd)) pAll[i]->SetFont(pFont);
+
+	// 리소스 좌표 기억 : 왼쪽 칸 폭 = 왼쪽 컨트롤들의 오른쪽 끝, 오른쪽 머리줄은 ECS번호 라벨 기준 상대 위치
+	CRect rc;
+	m_nRcLeftW = 0;
+	CWnd* pL[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer };
+	for (int i = 0; i < 5; i++)
+		if (::IsWindow(pL[i]->m_hWnd)) { pL[i]->GetWindowRect(&rc); ScreenToClient(&rc); if (rc.right > m_nRcLeftW) m_nRcLeftW = rc.right; }
+	CWnd* pR[] = { &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal, &m_btnComplete, &m_listSeq };
+	int x0 = 0;
+	if (::IsWindow(m_lblEcs.m_hWnd)) { m_lblEcs.GetWindowRect(&rc); ScreenToClient(&rc); x0 = rc.left - 4; }
+	for (int i = 0; i < 6; i++)
+	{
+		m_rcRcRight[i].SetRectEmpty();
+		if (::IsWindow(pR[i]->m_hWnd)) { pR[i]->GetWindowRect(&rc); ScreenToClient(&rc); rc.OffsetRect(-x0, 0); m_rcRcRight[i] = rc; }
+	}
 
 	// 우선순위 숫자는 구 ECS 처럼 크게
 	static CFont s_fntBig;
@@ -123,7 +148,7 @@ void CPanelJobDlg::BuildOldEcsControls()
 		lf.lfHeight = -CLib::DpiPx(20); lf.lfWeight = FW_BOLD;
 		s_fntBig.CreateFontIndirect(&lf);
 	}
-	if (s_fntBig.GetSafeHandle() != NULL) m_lblPriVal.SetFont(&s_fntBig);
+	if (s_fntBig.GetSafeHandle() != NULL && ::IsWindow(m_lblPriVal.m_hWnd)) m_lblPriVal.SetFont(&s_fntBig);
 }
 
 CString CPanelJobDlg::TypFilter()
@@ -454,63 +479,117 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	UNREFERENCED_PARAMETER(nType);
 	if (!::IsWindow(m_list.m_hWnd)) return;
 
-	// [LGLS 2026-10-01] 구 ECS 판넬과 같은 세 칸 : [우선순위 95] [목록] [상세 ~40%]
+	// [LGLS 2026-10-01] 구 ECS 판넬과 같은 세 칸 : [우선순위 95] [목록] [상세]
 	//   판넬이 좁으면(왼쪽 도킹 기본 폭 ~310) 세 칸이 안 들어가므로 상세 칸을 아래로 내린다
-	//   : 위 = [우선순위][목록], 아래 = 상세(ECS번호/작업번호 + 단계 표 + 완료처리)
-	const int nChkW = CLib::DpiPx(92);
-	const int nTabH = CLib::DpiPx(24), nListY = CLib::DpiPx(26);
+	//   탭 줄과 [자동 갱신] 은 없앴고(숨김), 목록|상세 사이는 끌어서 폭을 바꿀 수 있다(m_nSplitR).
+	//   [완료처리] 는 상세 칸 맨 위 줄 오른쪽(사용자 지시).
+	const int nListY = 2;
 	const int nChkY = CLib::DpiPx(4),  nChkH  = CLib::DpiPx(18);
-	const int nGap  = CLib::DpiPx(4);
-	const int L  = CLib::DpiPx(96);				// 왼쪽 칸 폭
+	const int nGap  = CLib::DpiPx(6);				// 분할선 폭
+	const int L  = (m_nRcLeftW > 0) ? m_nRcLeftW + 2 : CLib::DpiPx(96);	// 왼쪽 칸 폭 = 리소스의 왼쪽 컨트롤 오른쪽 끝
 	const BOOL bNarrow = (cx < CLib::DpiPx(620));
-	int R = cx * 38 / 100;						// 오른쪽 칸 폭
-	if (R < CLib::DpiPx(260)) R = CLib::DpiPx(260);
-	if (R > cx - L - CLib::DpiPx(200)) R = max(0, cx - L - CLib::DpiPx(200));
+	int R = (m_nSplitR > 0) ? m_nSplitR : cx * 38 / 100;		// 오른쪽 칸 폭
+	if (R < CLib::DpiPx(200)) R = CLib::DpiPx(200);
+	if (R > cx - L - CLib::DpiPx(160)) R = max(0, cx - L - CLib::DpiPx(160));
 	if (bNarrow) R = 0;
 	int xM = L + nGap, wM = cx - L - R - 2 * nGap; if (wM < 100) wM = 100;
 	int xR = cx - R;
-	// 세로 쌓기일 때 위 영역 높이(상세 칸이 아래 hD 만큼 차지)
 	const int hD = CLib::DpiPx(178);
 	int cyTop = bNarrow ? max(CLib::DpiPx(80), cy - hD - nGap) : cy;
 
-	// 왼쪽
-	if (::IsWindow(m_lblPriTitle.m_hWnd)) m_lblPriTitle.MoveWindow(2, nChkY, L - 4, CLib::DpiPx(18));
-	if (::IsWindow(m_lblPriVal.m_hWnd))   m_lblPriVal.MoveWindow(4, CLib::DpiPx(24), L - 8, CLib::DpiPx(30));
-	if (::IsWindow(m_btnPriUp.m_hWnd))    m_btnPriUp.MoveWindow(6, CLib::DpiPx(58), (L - 14) / 2, CLib::DpiPx(28));
-	if (::IsWindow(m_btnPriDn.m_hWnd))    m_btnPriDn.MoveWindow(6 + (L - 14) / 2 + 2, CLib::DpiPx(58), (L - 14) / 2, CLib::DpiPx(28));
-	if (::IsWindow(m_btnTransfer.m_hWnd)) m_btnTransfer.MoveWindow(4, CLib::DpiPx(92), L - 8, CLib::DpiPx(40));
+	// 왼쪽 : 리소스(IDD_PANEL_JOB) 좌표 그대로 (옮기지 않는다)
 
-	// 가운데 (종전 배치)
-	if (::IsWindow(m_tabTyp.m_hWnd))
-		m_tabTyp.MoveWindow(xM, 0, (wM > nChkW + 20) ? (wM - nChkW - nGap) : wM, nTabH);
-	if (::IsWindow(m_chkAuto.m_hWnd) && wM > nChkW + 20)
-		m_chkAuto.MoveWindow(xM + wM - nChkW, nChkY, nChkW - nGap, nChkH);
+	// 가운데 (탭 없이 목록만)
 	m_list.MoveWindow(xM, nListY, wM, cyTop - nListY);
 
+	// 분할선 (넓을 때만)
+	m_rcSplit = bNarrow ? CRect(0, 0, 0, 0) : CRect(xM + wM, 0, xR, cy);
+
 	// 오른쪽(넓을 때) / 아래(좁을 때)
-	int yR = bNarrow ? cyTop + nGap : 0;			// 상세 칸의 시작 y
+	int yR = bNarrow ? cyTop + nGap : 0;
 	if (bNarrow) { xR = 0; R = cx; }
-	int yB = cy - CLib::DpiPx(26);
-	int yHead = yR + nChkY;
-	// 좁을 때는 ECS번호/작업번호를 두 줄로
-	int wVal = bNarrow ? (R - CLib::DpiPx(60)) : CLib::DpiPx(90);
-	int yJob = bNarrow ? (yHead + nChkH + 2) : yHead;
-	int xJob = bNarrow ? (xR + 4) : (xR + 4 + CLib::DpiPx(150));
-	int yList = (bNarrow ? yJob + nChkH + 2 : yR + nListY);
-	if (::IsWindow(m_lblEcs.m_hWnd))    m_lblEcs.MoveWindow(xR + 4, yHead, CLib::DpiPx(52), nChkH);
-	if (::IsWindow(m_lblEcsVal.m_hWnd)) m_lblEcsVal.MoveWindow(xR + 4 + CLib::DpiPx(54), yHead, wVal, nChkH);
-	if (::IsWindow(m_lblJob.m_hWnd))    m_lblJob.MoveWindow(xJob, yJob, CLib::DpiPx(52), nChkH);
-	if (::IsWindow(m_lblJobVal.m_hWnd)) m_lblJobVal.MoveWindow(xJob + CLib::DpiPx(54), yJob, bNarrow ? wVal : (R - CLib::DpiPx(212)), nChkH);
+	// 머리 줄 : 리소스의 상대 위치(ECS번호 라벨 왼쪽-4 를 원점) 를 유지하고 칸의 왼쪽 끝(xR)만 옮긴다.
+	//   좁을 때(세로 쌓기)는 ECS번호/작업번호를 두 줄로.
+	const int wBtn = m_rcRcRight[4].IsRectEmpty() ? CLib::DpiPx(88) : m_rcRcRight[4].Width();
+	const int hBtn = m_rcRcRight[4].IsRectEmpty() ? CLib::DpiPx(22) : m_rcRcRight[4].Height();
+	int yHead = yR + (m_rcRcRight[0].IsRectEmpty() ? nChkY : m_rcRcRight[0].top);
+	int yList = yR + (m_rcRcRight[5].IsRectEmpty() ? CLib::DpiPx(28) : m_rcRcRight[5].top);
+	CWnd* pR[] = { &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal };
+	if (bNarrow)
+	{
+		int wVal = R - CLib::DpiPx(60) - wBtn - 4;
+		int yJob = yHead + nChkH + 2;
+		if (::IsWindow(m_lblEcs.m_hWnd))    m_lblEcs.MoveWindow(xR + 4, yHead, CLib::DpiPx(52), nChkH);
+		if (::IsWindow(m_lblEcsVal.m_hWnd)) m_lblEcsVal.MoveWindow(xR + 4 + CLib::DpiPx(54), yHead, wVal, nChkH);
+		if (::IsWindow(m_lblJob.m_hWnd))    m_lblJob.MoveWindow(xR + 4, yJob, CLib::DpiPx(52), nChkH);
+		if (::IsWindow(m_lblJobVal.m_hWnd)) m_lblJobVal.MoveWindow(xR + 4 + CLib::DpiPx(54), yJob, wVal, nChkH);
+		yList = yJob + nChkH + 2;
+	}
+	else
+	{
+		for (int i = 0; i < 4; i++)
+			if (::IsWindow(pR[i]->m_hWnd) && !m_rcRcRight[i].IsRectEmpty())
+				pR[i]->MoveWindow(xR + m_rcRcRight[i].left, yR + m_rcRcRight[i].top, m_rcRcRight[i].Width(), m_rcRcRight[i].Height());
+	}
+	if (::IsWindow(m_btnComplete.m_hWnd)) m_btnComplete.MoveWindow(xR + R - wBtn - 2, yR + 2, wBtn, hBtn);
 	if (::IsWindow(m_listSeq.m_hWnd))
 	{
-		m_listSeq.MoveWindow(xR, yList, R, max(CLib::DpiPx(40), yB - yList - 2));
-		// 좁을 때는 열 폭도 줄여 가로 스크롤을 줄인다
+		m_listSeq.MoveWindow(xR, yList, R, max(CLib::DpiPx(40), cy - yList - 2));
 		static const int W_WIDE[]   = { 50, 45, 80, 150, 150 };
 		static const int W_NARROW[] = { 40, 36, 64,  96,  96 };
 		for (int i = 0; i < 5; i++)
 			m_listSeq.SetColumnWidth(i, CLib::DpiPx(bNarrow ? W_NARROW[i] : W_WIDE[i]));
 	}
-	if (::IsWindow(m_btnComplete.m_hWnd)) m_btnComplete.MoveWindow(xR + R - CLib::DpiPx(90), yB, CLib::DpiPx(88), CLib::DpiPx(24));
+}
+
+// [LGLS 2026-10-01] 목록|상세 분할선 끌기
+void CPanelJobDlg::OnLButtonDown(UINT nFlags, CPoint pt)
+{
+	if (!m_rcSplit.IsRectEmpty() && m_rcSplit.PtInRect(pt))
+	{
+		m_bDragSplit = TRUE; SetCapture(); return;
+	}
+	CDialog::OnLButtonDown(nFlags, pt);
+}
+
+void CPanelJobDlg::OnMouseMove(UINT nFlags, CPoint pt)
+{
+	if (m_bDragSplit)
+	{
+		CRect rc; GetClientRect(&rc);
+		int R = rc.Width() - pt.x - CLib::DpiPx(3);
+		if (R < CLib::DpiPx(200)) R = CLib::DpiPx(200);
+		int nMax = rc.Width() - CLib::DpiPx(96) - CLib::DpiPx(160);
+		if (R > nMax) R = max(CLib::DpiPx(200), nMax);
+		if (R != m_nSplitR)
+		{
+			m_nSplitR = R;
+			OnSize(SIZE_RESTORED, rc.Width(), rc.Height());
+			RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+		}
+		return;
+	}
+	CDialog::OnMouseMove(nFlags, pt);
+}
+
+void CPanelJobDlg::OnLButtonUp(UINT nFlags, CPoint pt)
+{
+	if (m_bDragSplit) { m_bDragSplit = FALSE; ReleaseCapture(); return; }
+	CDialog::OnLButtonUp(nFlags, pt);
+}
+
+BOOL CPanelJobDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	if (pWnd == this && !m_rcSplit.IsRectEmpty())
+	{
+		CPoint pt; GetCursorPos(&pt); ScreenToClient(&pt);
+		if (m_bDragSplit || m_rcSplit.PtInRect(pt))
+		{
+			::SetCursor(::LoadCursor(NULL, IDC_SIZEWE));
+			return TRUE;
+		}
+	}
+	return CDialog::OnSetCursor(pWnd, nHitTest, message);
 }
 
 void CPanelJobDlg::OnTimer(UINT_PTR nIDEvent)
