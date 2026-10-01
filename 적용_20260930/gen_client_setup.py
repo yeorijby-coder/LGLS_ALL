@@ -231,6 +231,27 @@ wr(os.path.join(DST, 'Setup.bat'), [
  '',
  'rem ── 3. 프로그램 복사 ─────────────────────────────────────────',
  'echo  [3/5] 프로그램을 복사합니다...',
+ '',
+ 'rem    [2026-10-01] 옛 Client 가 등록한 폰트는 로그오프 전까지 잠긴다. 지우다 만 폰트가 남은 폴더에는',
+ 'rem    복사가 막히므로, 그런 폴더면 ★옆 이름(_2, _3 ...)★ 에 깐다 - 로그오프 없이 설치할 수 있다.',
+ 'rem    (옛 폴더는 나중에 로그오프한 뒤 지우면 된다)',
+ 'set "BASEDIR=%INSTDIR%"',
+ 'set "SUFFIX=0"',
+ ':PROBE',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Release-Fonts.ps1" -Dir "%INSTDIR%" -SrcDir "%SRC%Client" -Probe >nul 2>&1',
+ 'if errorlevel 2 (',
+ '    set /a SUFFIX+=1',
+ '    if !SUFFIX! GEQ 6 goto PROBEDONE',
+ '    set "INSTDIR=!BASEDIR!_!SUFFIX!"',
+ '    goto PROBE',
+ ')',
+ ':PROBEDONE',
+ 'if not "%INSTDIR%"=="%BASEDIR%" (',
+ '    echo        [안내] %BASEDIR% 에는 지우다 만 폰트 파일이 잠겨 있습니다 ^(로그오프 전까지 풀리지 않음^).',
+ '    echo               로그오프 없이 깔 수 있게 옆 폴더에 깝니다 : %INSTDIR%',
+ '    echo               옛 폴더는 나중에 로그오프한 뒤 지우면 됩니다.',
+ '    echo.',
+ ')',
  'if not exist "%INSTDIR%" mkdir "%INSTDIR%"',
  '',
  'rem    설정 파일은 이미 있으면 덮어쓰지 않는다 - 현장 값이 들어 있다.',
@@ -354,7 +375,7 @@ wr_ps(os.path.join(DST, 'Release-Fonts.ps1'), r"""# Release fonts that the Clien
 #   -Dir     install folder
 #   -SrcDir  package folder (Client) - font names are taken from here too
 #   -Check   list files that exist in SrcDir but not in Dir; exit 1 if any
-param([Parameter(Mandatory=$true)][string]$Dir, [string]$SrcDir = "", [switch]$Check)
+param([Parameter(Mandatory=$true)][string]$Dir, [string]$SrcDir = "", [switch]$Check, [switch]$Probe)
 
 Add-Type @"
 using System; using System.Runtime.InteropServices;
@@ -368,6 +389,27 @@ function Get-Rel([string]$root) {
   if (-not $root -or -not (Test-Path -LiteralPath $root)) { return @() }
   $r = (Resolve-Path -LiteralPath $root).Path.TrimEnd('\')
   @(Get-ChildItem -LiteralPath $r -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName.Substring($r.Length + 1) })
+}
+
+if ($Probe) {
+  # delete-pending font in Dir?  exit 2 = yes (folder unusable until logoff), 0 = fine
+  if (-not $Dir -or -not (Test-Path -LiteralPath $Dir)) { exit 0 }
+  $exts = '.ttf', '.ttc', '.otf', '.fon'
+  $dstRoot = $Dir.TrimEnd('\')
+  foreach ($rel in (Get-Rel $SrcDir)) {
+    if ($exts -notcontains [System.IO.Path]::GetExtension($rel).ToLower()) { continue }
+    $full = Join-Path $dstRoot $rel
+    $dir  = Split-Path $full -Parent
+    $name = Split-Path $full -Leaf
+    if (-not (Test-Path -LiteralPath $dir)) { continue }
+    $listed = $false
+    try { $listed = ([System.IO.Directory]::GetFiles($dir, $name).Count -gt 0) } catch { $listed = $false }
+    if (-not $listed) { continue }
+    $ok = $false
+    try { $fs = [System.IO.File]::Open($full, 'Open', 'Read', 'ReadWrite'); $fs.Close(); $ok = $true } catch { $ok = $false }
+    if (-not $ok) { Write-Host ("        locked " + $rel); exit 2 }
+  }
+  exit 0
 }
 
 if ($Check) {

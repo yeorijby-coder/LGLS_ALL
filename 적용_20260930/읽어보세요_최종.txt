@@ -24,7 +24,8 @@
   ※ DciLib.dll 을 꼭 EcsMain.exe 와 같이 바꾼다.
 
 [Client_설치]  새로 까는 PC 용. Setup.bat 을 관리자 권한으로.
-  옛 Client 를 돌린 적이 있는 PC 는 Windows 로그오프 후 설치한다 (폰트 잠금).
+  옛 Client 가 깔린 폴더에 그대로 덮어쓴다 (제거 프로그램을 먼저 돌리지 말 것).
+  지우다 만 폰트가 잠긴 폴더면 Setup.bat 이 옆 이름(CLIENT_1 ...)에 깔아 준다 - 로그오프 불필요.
 
 [4K 화면 @ Windows 300%]  처음 띄운 뒤 Ecs.ini [DISPLAY] 로 맞춘다.
   범례가 너무 크면          UI_SCALE = 200
