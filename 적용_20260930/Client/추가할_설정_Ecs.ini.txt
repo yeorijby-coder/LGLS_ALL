@@ -58,3 +58,11 @@ VEH_SHOW_ON_ORDER = 1
 ; [LGLS 2026-10-01] 모니터가 여럿일 때 기동 위치 : 0 = 주 모니터(기본) / N = Windows "디스플레이 설정"의 번호(식별 단추 번호, 1~) / -1 = 마지막 위치
 ; [DISPLAY] 아래에 둔다
 START_MONITOR=0
+
+; [LGLS 2026-10-01] 작업정보 판넬 분할 ([DISPLAY] 아래)
+;   JOB_PANEL_SPLIT    = 0 자동(판넬 폭 620px 미만이면 세로) / 1 가로(상세 칸을 오른쪽) / 2 세로(상세 칸을 아래)
+;   JOB_PANEL_DETAIL_W = 가로일 때 상세 칸 폭(px, 0=38%)      JOB_PANEL_DETAIL_H = 세로일 때 상세 칸 높이(px, 0=178)
+;   분할선을 마우스로 끌면 그 크기가 우선, 다시 띄우면 ini 값
+JOB_PANEL_SPLIT=0
+JOB_PANEL_DETAIL_W=0
+JOB_PANEL_DETAIL_H=0

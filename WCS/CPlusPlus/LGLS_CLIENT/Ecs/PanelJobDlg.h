@@ -39,6 +39,8 @@ public:
 	CString m_strSelLugg;
 	// [LGLS 2026-10-01] 목록|상세 사이 분할선 (끌어서 상세 칸 폭 조절)
 	int   m_nSplitR;
+	int   m_nSplitB;			// 세로 쌓기일 때 아래 칸 높이(끌어서 정한 값)
+	BOOL  m_bSplitVert;		// 지금 분할선이 가로줄(세로 쌓기)인가
 	int   m_nRcLeftW;			// 리소스의 왼쪽 칸 폭
 	CRect m_rcRcRight[6];		// 리소스의 오른쪽 머리줄 상대 위치 (ECS라벨/값/작업라벨/값/완료처리/SEQ표)
 	BOOL  m_bDragSplit;

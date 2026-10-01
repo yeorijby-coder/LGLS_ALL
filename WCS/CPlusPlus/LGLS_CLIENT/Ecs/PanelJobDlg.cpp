@@ -27,7 +27,7 @@ CPanelJobDlg::CPanelJobDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPanelJobDlg::IDD, pParent)
 {
 	m_pDoc = NULL;
-	m_nSplitR = 0; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0;
+	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0;
 }
 
 void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
@@ -487,14 +487,21 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	const int nChkY = CLib::DpiPx(4),  nChkH  = CLib::DpiPx(18);
 	const int nGap  = CLib::DpiPx(6);				// 분할선 폭
 	const int L  = (m_nRcLeftW > 0) ? m_nRcLeftW + 2 : CLib::DpiPx(96);	// 왼쪽 칸 폭 = 리소스의 왼쪽 컨트롤 오른쪽 끝
-	const BOOL bNarrow = (cx < CLib::DpiPx(620));
-	int R = (m_nSplitR > 0) ? m_nSplitR : cx * 38 / 100;		// 오른쪽 칸 폭
+	// [LGLS 2026-10-01] 분할 방향을 Ecs.ini 로 정한다 (사용자 지시)
+	//   [DISPLAY] JOB_PANEL_SPLIT    = 0 자동(폭 620px 미만이면 세로) / 1 가로(상세를 오른쪽) / 2 세로(상세를 아래)
+	//   [DISPLAY] JOB_PANEL_DETAIL_W = 가로일 때 상세 칸 폭(px, 0=38%%)   JOB_PANEL_DETAIL_H = 세로일 때 상세 칸 높이(px, 0=178)
+	//   분할선을 끌면 그 값이 우선하고(m_nSplitR / m_nSplitB), 다시 띄우면 ini 값으로 돌아온다.
+	const int nSplitMode = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_SPLIT"), 0, ECS_INI_FILE);
+	const int nIniW = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_W"), 0, ECS_INI_FILE);
+	const int nIniH = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_H"), 0, ECS_INI_FILE);
+	const BOOL bNarrow = (nSplitMode == 2) ? TRUE : (nSplitMode == 1) ? FALSE : (cx < CLib::DpiPx(620));
+	int R = (m_nSplitR > 0) ? m_nSplitR : (nIniW > 0) ? CLib::DpiPx(nIniW) : cx * 38 / 100;		// 오른쪽 칸 폭
 	if (R < CLib::DpiPx(200)) R = CLib::DpiPx(200);
 	if (R > cx - L - CLib::DpiPx(160)) R = max(0, cx - L - CLib::DpiPx(160));
 	if (bNarrow) R = 0;
 	int xM = L + nGap, wM = cx - L - R - 2 * nGap; if (wM < 100) wM = 100;
 	int xR = cx - R;
-	const int hD = CLib::DpiPx(178);
+	const int hD = (m_nSplitB > 0) ? m_nSplitB : CLib::DpiPx((nIniH > 0) ? nIniH : 178);		// 아래 칸 높이
 	int cyTop = bNarrow ? max(CLib::DpiPx(80), cy - hD - nGap) : cy;
 
 	// 왼쪽 : 리소스(IDD_PANEL_JOB) 좌표 그대로 (옮기지 않는다)
@@ -503,7 +510,8 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	m_list.MoveWindow(xM, nListY, wM, cyTop - nListY);
 
 	// 분할선 (넓을 때만)
-	m_rcSplit = bNarrow ? CRect(0, 0, 0, 0) : CRect(xM + wM, 0, xR, cy);
+	m_bSplitVert = bNarrow;
+	m_rcSplit = bNarrow ? CRect(xM, cyTop, cx, cyTop + nGap) : CRect(xM + wM, 0, xR, cy);
 
 	// 오른쪽(넓을 때) / 아래(좁을 때)
 	int yR = bNarrow ? cyTop + nGap : 0;
@@ -515,7 +523,7 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	int yHead = yR + (m_rcRcRight[0].IsRectEmpty() ? nChkY : m_rcRcRight[0].top);
 	int yList = yR + (m_rcRcRight[5].IsRectEmpty() ? CLib::DpiPx(28) : m_rcRcRight[5].top);
 	CWnd* pR[] = { &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal };
-	if (bNarrow)
+	if (bNarrow || R < CLib::DpiPx(420))		// 상세 칸이 좁으면(가로 분할이라도) 머리줄을 두 줄로
 	{
 		int wVal = R - CLib::DpiPx(60) - wBtn - 4;
 		int yJob = yHead + nChkH + 2;
@@ -557,6 +565,20 @@ void CPanelJobDlg::OnMouseMove(UINT nFlags, CPoint pt)
 	if (m_bDragSplit)
 	{
 		CRect rc; GetClientRect(&rc);
+		if (m_bSplitVert)
+		{
+			// 세로 쌓기 : 아래 칸 높이
+			int B = rc.Height() - pt.y - CLib::DpiPx(3);
+			if (B < CLib::DpiPx(80)) B = CLib::DpiPx(80);
+			if (B > rc.Height() - CLib::DpiPx(80)) B = max(CLib::DpiPx(80), rc.Height() - CLib::DpiPx(80));
+			if (B != m_nSplitB)
+			{
+				m_nSplitB = B;
+				OnSize(SIZE_RESTORED, rc.Width(), rc.Height());
+				RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+			}
+			return;
+		}
 		int R = rc.Width() - pt.x - CLib::DpiPx(3);
 		if (R < CLib::DpiPx(200)) R = CLib::DpiPx(200);
 		int nMax = rc.Width() - CLib::DpiPx(96) - CLib::DpiPx(160);
@@ -585,7 +607,7 @@ BOOL CPanelJobDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 		CPoint pt; GetCursorPos(&pt); ScreenToClient(&pt);
 		if (m_bDragSplit || m_rcSplit.PtInRect(pt))
 		{
-			::SetCursor(::LoadCursor(NULL, IDC_SIZEWE));
+			::SetCursor(::LoadCursor(NULL, m_bSplitVert ? IDC_SIZENS : IDC_SIZEWE));
 			return TRUE;
 		}
 	}
