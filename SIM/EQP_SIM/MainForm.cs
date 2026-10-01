@@ -306,7 +306,10 @@ namespace EQP_SIM
         {
             if (engine == null) return;
             foreach (var cv in engine.AllConveyors)
-                if (cv.Def.IngoPath != null && cv.Def.No >= (engine.WcsSupport ? 12 : 11))   // [LGLS] WCS 모드에서 C/V#11 입고대는 IO_TASK(FeedInGate) 소유 → AutoFeed 체크박스 제어 제외(항상 off)
+                // [LGLS 2026-10-01] 종전엔 WCS 모드에서 C/V#11 을 "IO_TASK(FeedInGate) 소유" 라며 체크박스에서 뺐다.
+                //   그 구 경로(FeedInGate)는 2026-09-01 IO_TASK 에서 폐기됐으므로 C/V#11 도 기동 시(ScenarioEngine)와 같이
+                //   INI [FEED] CV11 설정 + 체크박스를 따른다. (사용자 보고 : 자동 투입을 켜도 C/V#11 에 화물이 안 올라옴)
+                if (cv.Def.IngoPath != null && cv.Def.No >= 11)
                     cv.AutoFeed = chkAutoFeed.Checked && cv.AutoFeedConfigured;               // INI [FEED] CVnn=0 은 체크박스로도 켜지지 않음
         }
 
