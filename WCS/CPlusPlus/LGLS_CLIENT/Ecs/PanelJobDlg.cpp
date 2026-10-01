@@ -343,7 +343,8 @@ int CPanelJobDlg::CvOfTrack(int nTrk)
 }
 CString CPanelJobDlg::PortText(int nTrk)
 {
-	CString t; if (nTrk > 0) t.Format(_T("PORT:%d"), nTrk); return t;
+	// [LGLS 2026-10-01] 구 ECS 처럼 2자리 트랙 번호로 (122 → 22) (사용자 지시)
+	CString t; if (nTrk > 0) t.Format(_T("PORT:%d"), (nTrk >= 100 && nTrk < 1000) ? nTrk - 100 : nTrk); return t;
 }
 CString CPanelJobDlg::CvDevText(int nTrk)
 {
