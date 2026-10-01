@@ -58,10 +58,10 @@ d.add_heading('1. 스태커 크레인 (StackerForm → SC 상태창 [확대])', 
 G.image(d, os.path.join(SHOT, 'dlg_sc_1.png'), 22.0, '신 ECS - SC 상태창 [확대] (오른쪽 패널이 구 StackerForm 배치)')
 G.para(d, '구 StackerForm 의 다섯 패널(panel2~5) 을 같은 y 좌표에 둔다. 왼쪽 상태창의 같은 항목(작업번호·출발/도착/현재/완료 위치 등)은 그대로 두었다.')
 G.table(d, ['구 ECS 항목 (StackerForm)', '구 위치(x,y)', '신 ECS [확대] 패널', '값의 출처 (신)', '비고'], [
-    ['상태 칸 (IDLE/RUN/ERR 색)', 'panel2 (0,0)', '상태 칸 - 글자색 : 2=빨강 1=파랑 0=검정', 'SC_DATA_LGLS.UCSTATUS', '구 ECS 와 같은 색 규칙'],
-    ['설비명 / 설명', 'panel2', '스태커 크레인 901 / S/C#1 (Bank 01,02)', 'EQP_MST.EQP_NAME / DEST_POS_DEF', ''],
-    ['LED 12개 : 적재완료·적재ACK·하역완료·하역ACK·반송요청·반송ACK·화물감지·차상화물·알람SET·알람RST·알람SET/RST ACK', 'panel3 x 5/131/257/383, y 6/22/38', '같은 4열x3행, 같은 좌표', 'PlcAddressMap 신호 (M0310 …)', 'PLC 주소를 LED 옆에 병기'],
-    ['완료 Ack 쓰기', '-', '적재ACK·하역ACK 옆 [쓰기] (28px)', 'SC_DATA_LGLS.CMD_RQ_ID=ACKW…', '신 ECS 추가 (수동 Ack)'],
+    ['상태 칸 (DOWN 빨강 / IDLE 노랑 / RUN 초록)', '왼쪽 위 (14,26) 52x36', '같은 자리, 같은 색 (DOWN 은 흰 글자)', 'SC_DATA_LGLS.UCSTATUS', ''],
+    ['설비명(굵은 파랑) / 설명(파랑)', '가운데 2줄', '스태커 크레인 901 / S/C#1 (Bank 01,02) - 가운데 정렬, 파랑', 'EQP_MST.EQP_NAME / DEST_POS_DEF', ''],
+    ['LED 11개 + Pallet ID : Load Complete / Load Complete ACK / Unload Complete / Unload Complete ACK, Transfer Request / Transfer Request ACK / Pallet Exist / Pallet ID, Alarm Set / Alarm Set ACK / Alarm Reset / Alarm Reset ACK', '4열 x 3행 (x 12/148/268/392, y 80/96/112)', '같은 4열x3행, 같은 영문 이름·순서', 'PlcAddressMap 신호 (M0310 …)', 'PLC 주소는 자리가 없어 맨 아래 한 줄'],
+    ['완료 Ack 쓰기', '-', '아래 오른쪽 [Load ACK 쓰기] [Unload ACK 쓰기]', 'SC_DATA_LGLS.CMD_RQ_ID=ACKW…', '신 ECS 추가 (수동 Ack)'],
     ['현재위 / 출발지 / 도착지 / 완료위 (3칸씩)', 'panel3 라벨 x 7/112/210/311, 값 48/143/242/351', '같은 좌표, 3칸(열-단-번)', 'SC_DATA_LGLS 위치 워드', '주소 요약 한 줄 추가 (D0166 …)'],
     ['알람코드', 'panel3 (422,462)', '같은 자리', 'SC_DATA_LGLS.ERR_CODE', ''],
     ['요청번호 - 순번', 'panel4 (10,y)', '요청번호 = LUGG_NO, 순번 = JOB_STATUS', 'JOB_MST', '구 ECS 의 순번(SEQ) 은 신 ECS 에 없어 작업상태 코드로 대신'],
@@ -70,7 +70,7 @@ G.table(d, ['구 ECS 항목 (StackerForm)', '구 위치(x,y)', '신 ECS [확대]
     ['팔렛 + 입고/출고 tag', 'panel4 (283,70)', '팔렛 칸 + [입고]/[출고] 버튼 모양 tag', 'SC_DATA_LGLS.LUGG / JOB_TYP', ''],
     ['출발위치 / 도착위치', 'panel4', '같은 자리', 'JOB_MST.START_POS / DEST_POS', ''],
     ['조언(안내문)', 'panel4 (10,141)', '빨간 안내문 (예: "입/출고 요청번호가 DB에 없습니다. [이상종료]처리하세요!!")', '패널 로직', '구 ECS 문구를 그대로 썼다'],
-    ['[명령 재전송] [완료처리] [이상종료]', 'panel4 (372, 5/50/95) 120x40', '같은 자리, 같은 크기', 'CMD 재전송 / JOB_STATUS=29 / OD 클리어', '권한 CScSkinDlg UPD_YN'],
+    ['[명령 재전송] [이상종료]', '오른쪽 (385,150) 120x72 / (385,236) 120x50', '같은 자리, 같은 크기', 'CMD 재전송 / OD 클리어', '권한 CScSkinDlg UPD_YN. 사진에 [완료처리] 는 없어 넣지 않았다'],
     ['사용금지 체크', 'panel5 (25,24)', '같은 자리 - 체크하면 기존 [작업금지] 와 같은 동작', 'SC_DATA_LGLS.SUSPEND', ''],
     ['[확인]', 'panel5 (209,4) 86x40', '같은 자리 - 창 닫기', '-', ''],
 ], widths=[6.0, 4.2, 5.8, 4.5, 4.5], font=8)
@@ -84,7 +84,7 @@ G.table(d, ['구 ECS 항목 (RGVForm)', '신 ECS [확대] 패널', '값의 출�
     ['LED 12개 (적재/하역 완료·ACK, 반송요청·ACK, 화물감지, 차상화물, 알람 SET/RST·ACK)', '같은 4열x3행', 'PlcAddressMap (M03B0 …)', '완료 Ack [쓰기] 추가'],
     ['현재위 / 출발지 / 도착지 / 완료위', '같음', 'RTV_DATA_LGLS', '주소 요약 D0216/D0370/D0373/D0213/D0211'],
     ['요청번호-순번 / 배치번호 / 자재코드 / 팔렛(+tag) / 출발·도착위치 / 조언', '같음', 'JOB_MST / RTV_DATA_LGLS', '순번 = JOB_STATUS'],
-    ['[명령 재전송] [완료처리] [이상종료]', '같음 (완료처리 = JOB_STATUS 39)', 'RTV 는 출고 완료 코드가 39', ''],
+    ['[명령 재전송] [이상종료]', '같음', '', '사진에 [완료처리] 없음'],
     ['사용금지 / [확인]', '같음 (사용금지 = 기존 [RTV 금지])', 'RTV_DATA_LGLS.SUSPEND', ''],
 ], widths=[8.0, 6.0, 6.0, 5.0], font=8)
 

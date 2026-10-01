@@ -148,14 +148,14 @@ note(d, '판넬이 좁으면(620px 미만, 왼쪽 도킹 기본 폭이 약 310) 
 d.add_heading('5. 설비 상태창 [확대] 패널을 구 ECS 폼 배치로', 1)
 G.para(d, '구 ECS 의 StackerForm / RGVForm / ConveyorForm 항목이 전부 신 ECS 상태창의 [확대] 패널에, 구 폼과 같은 좌표로 들어갔다. '
           '항목별 대조는 같은 폴더의 "2026-10-01_설비대화상자_비교_구ECS_vs_신ECS.docx" 에 있다.')
-G.image(d, os.path.join(SHOT, 'dlg_sc_1.png'), 16.0, 'SC 상태창 [확대] - 오른쪽이 구 StackerForm 배치')
+G.image(d, os.path.join(SHOT, 'dlg_sc_1.png'), 16.0, 'SC 상태창 [확대] - 오른쪽이 구 ECS [Stacker Crane 정보] 사진 배치')
+G.image(d, os.path.join(SHOT, 'dlg_rtv_1.png'), 16.0, 'RTV 상태창 [확대] - 구 ECS RGV 사진 배치')
 G.table(d, ['설비', '구 ECS 에 있던 것 → [확대] 패널', '신 ECS 에서 더한 것'], [
-    ['S/C', '상태 칸·설비명·설명 / LED 12 (4x3) / 현재·출발·도착·완료 위치 / 알람코드 / 요청번호·배치번호·자재·팔렛(입고/출고 tag)·출발·도착 / 조언 / [명령 재전송][완료처리][이상종료] / 사용금지 / [확인]', 'LED 옆 PLC 주소, 위치 주소 요약, 완료 Ack [쓰기]'],
+    ['S/C', '[DOWN/IDLE/RUN] 상태칸·설비명·설명 / LED 4x3 (Load Complete … Alarm Reset ACK, Pallet ID) / 현재위치·출발지·도착지·완료위치·알람코드 한 줄 / 요청번호 ― 순번·배치번호·자재코드·팔렛(에러 tag)·출발위치·도착위치 / [명령 재전송][이상종료] / 사용금지 / [확인]  - 사진(Stacker Crane 정보) 과 같은 자리·순서', 'PLC 주소 한 줄(맨 아래), [Load ACK 쓰기][Unload ACK 쓰기]'],
     ['RGV', 'S/C 와 같은 틀 (완료처리 = 39)', '〃'],
     ['C/V', '상태 칸·이름·설명 / 포트 줄 [색칸|입력|PalletID설정] x 포트 수 (4색 규칙) / 사용금지 / [확인]', 'LED 11 + 주소, [적재ACK 쓰기][하역ACK 쓰기], 트래킹화물·방향모드'],
 ], widths=[1.5, 10.0, 4.5], font=8.5)
 G.table(d, ['버튼', '하는 일', '권한/기록'], [
-    ['완료처리', '그 설비가 든 작업의 JOB_STATUS 를 강제 완료 (S/C 29, RGV 39)', 'CScSkinDlg / CRtvSkinDlg UPD_YN, CLIENT_LOG'],
     ['이상종료', '설비 데이터의 작업(OD) 을 지운다 (PanelInfoDlg 의 이상종료와 같음)', '〃'],
     ['사용금지', '기존 [작업금지]/[RTV 금지]/[일시정지] 와 같은 동작을 체크박스로', '〃'],
     ['PalletID설정', 'CV_DATA.LUGG_NO_OD 에 입력값 + TRACKING_WRITE_YN=Y', 'CCvSkinDlg'],
