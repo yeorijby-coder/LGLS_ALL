@@ -177,6 +177,7 @@ G.table(d, ['Ecs.ini [DISPLAY]', '값', '뜻'], [
     ['JOB_PANEL_SPLIT', '0 / 1 / 2', '0 자동(판넬 폭 620px 미만이면 세로) / 1 가로(상세 칸 오른쪽) / 2 세로(상세 칸 아래)'],
     ['JOB_PANEL_DETAIL_W', 'px', '가로일 때 상세 칸 폭 (0 = 38%)'],
     ['JOB_PANEL_DETAIL_H', 'px', '세로일 때 상세 칸 높이 (0 = 178)'],
+    ['JOB_PANEL_COLS', '토큰 나열', '목록 열 순서. LUGG 작업번호 / TYP 구분 / STA 상태 / LOT / PROD 제품 / START 출발 / DEST 도착 / PRI 우선 / UPD 수정시각. 폭은 LUGG:70 처럼. 기본 LUGG,TYP,STA,LOT,PROD,START,DEST (구 ECS 반송 목록 순서 참조)'],
 ], widths=[4.5, 2.5, 9.0])
 G.para(d, '분할선(가로면 세로줄, 세로면 가로줄)을 마우스로 끌면 그 크기가 우선하고, 다시 띄우면 ini 값으로 돌아온다. ini 를 저장하면 다음 크기 변경 때 반영된다.')
 G.para(d, '왼쪽 칸 [반송조정] 아래의 [가로보기]/[세로보기] 단추로도 바꿀 수 있다(단추 글자는 바꿀 방향). 누르면 JOB_PANEL_SPLIT 에 그 값을 써 두므로 다음에 띄워도 유지된다.')

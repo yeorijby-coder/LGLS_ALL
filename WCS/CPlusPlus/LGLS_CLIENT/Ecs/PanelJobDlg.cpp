@@ -76,29 +76,13 @@ BOOL CPanelJobDlg::OnInitDialog()
 
 	m_list.SetExtendedStyle(m_list.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
-	struct { LPCTSTR strHead; int nWidth; } COLS[] = {
-		// [LGLS 2026-09-29] 출발/도착 한 칸에 위치까지 넣는다 (사용자 지시).
-		//   랙 : S/C #1[00-000-00]   /   작업대 : 입출고대[101] TR#22
-		// [LGLS 2026-09-30] 작업대 명칭이 EcsDefine.xml 것으로 바뀌며 길어졌다.
-		{ _T("작업번호"),  70 },
-		{ _T("출발"),     210 }, { _T("도착"),    210 },
-		{ _T("구분"),      90 }, { _T("상태"),    140 },
-		{ _T("LOT"),       80 }, { _T("제품"),     80 },
-		{ _T("우선"),      45 }, { _T("수정시각"), 125 },
-	};
-	for (int i = 0; i < (int)(sizeof(COLS)/sizeof(COLS[0])); i++)
-		m_list.InsertColumn(i, COLS[i].strHead, LVCFMT_LEFT, CLib::DpiPx(COLS[i].nWidth));	// [LGLS 2026-10-01] 글자는 Windows 배율로 커지는데 열 폭이 픽셀 고정이었다
-
-	// [LGLS 2026-09-10] 자동 갱신 체크박스. 작업이 쌓이고 설비가 많이 움직이면
-	//   목록이 계속 새로 그려져 눈이 아프므로, 필요할 때만 켜서 본다.
-	m_chkAuto.Create(_T("자동 갱신"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
-		CRect(0, 0, 10, 10), this, IDC_PANEL_JOB_AUTO);
-	m_chkAuto.SetFont(GetFont());
-	m_chkAuto.SetCheck(BST_CHECKED);
-	// [LGLS 2026-10-01] 탭 줄(전체/입고/출고...)과 [자동 갱신] 은 화면에서 뺀다 (사용자 지시). 자동 갱신은 켜진 채 숨김.
-	m_chkAuto.ShowWindow(SW_HIDE);
-	if (::IsWindow(m_tabTyp.m_hWnd)) m_tabTyp.ShowWindow(SW_HIDE);
-
+	// [LGLS 2026-10-01] 목록 열은 Ecs.ini [DISPLAY] JOB_PANEL_COLS 로 순서를 정한다 (사용자 지시)
+	//   예) JOB_PANEL_COLS=LUGG,TYP,STA,LOT,PROD,START,DEST        (기본 - 구 ECS 반송 목록 순서를 참조)
+	//       폭을 같이 주려면 LUGG:70,TYP:90,...   없는 토큰은 무시, 빈 값이면 기본 순서
+	//   토큰 : LUGG 작업번호 / TYP 구분 / STA 상태 / LOT / PROD 제품 / START 출발 / DEST 도착 / PRI 우선 / UPD 수정시각
+	BuildColumnOrder();
+	for (int i = 0; i < (int)m_arCols.GetCount(); i++)
+		m_list.InsertColumn(i, COL_DEF[m_arCols[i]].strHead, LVCFMT_LEFT, CLib::DpiPx(m_arColW[i]));
 	BuildOldEcsControls();
 
 	SetTimer(TIMER_PANEL_JOB, TIMER_PANEL_JOB_MS, NULL);
@@ -152,6 +136,46 @@ void CPanelJobDlg::BuildOldEcsControls()
 		s_fntBig.CreateFontIndirect(&lf);
 	}
 	if (s_fntBig.GetSafeHandle() != NULL && ::IsWindow(m_lblPriVal.m_hWnd)) m_lblPriVal.SetFont(&s_fntBig);
+}
+
+// [LGLS 2026-10-01] 목록 열 카탈로그 (토큰, 머리글, 기본 폭, 조회 필드)
+const CPanelJobDlg::COLDEF CPanelJobDlg::COL_DEF[] = {
+	{ _T("LUGG"),  _T("작업번호"),  70, _T("LUGG_NO") },
+	{ _T("TYP"),   _T("구분"),      90, _T("JOB_TYP") },
+	{ _T("STA"),   _T("상태"),     140, _T("JOB_STATUS") },
+	{ _T("LOT"),   _T("LOT"),       80, _T("LOT_NO") },
+	{ _T("PROD"),  _T("제품"),      80, _T("PRODUCT_ID") },
+	{ _T("START"), _T("출발"),     210, _T("START_POS") },
+	{ _T("DEST"),  _T("도착"),     210, _T("DEST_POS") },
+	{ _T("PRI"),   _T("우선"),      45, _T("JOB_PRIORITY") },
+	{ _T("UPD"),   _T("수정시각"), 125, _T("UPD_DT") },
+};
+const int CPanelJobDlg::COL_DEF_N = sizeof(CPanelJobDlg::COL_DEF) / sizeof(CPanelJobDlg::COL_DEF[0]);
+
+void CPanelJobDlg::BuildColumnOrder()
+{
+	m_arCols.RemoveAll(); m_arColW.RemoveAll();
+	TCHAR buf[512] = { 0 };
+	::GetPrivateProfileString(_T("DISPLAY"), _T("JOB_PANEL_COLS"), _T(""), buf, 511, ECS_INI_FILE);
+	CString strCols = buf; strCols.Trim();
+	if (strCols.IsEmpty()) strCols = _T("LUGG,TYP,STA,LOT,PROD,START,DEST");
+	int nPos = 0;
+	CString tok = strCols.Tokenize(_T(",; "), nPos);
+	while (!tok.IsEmpty())
+	{
+		CString name = tok, w; int c = tok.Find(_T(':'));
+		if (c >= 0) { name = tok.Left(c); w = tok.Mid(c + 1); }
+		name.Trim(); name.MakeUpper();
+		for (int i = 0; i < COL_DEF_N; i++)
+			if (name == COL_DEF[i].strKey)
+			{
+				m_arCols.Add(i);
+				int nW = _ttoi(w); m_arColW.Add(nW > 0 ? nW : COL_DEF[i].nWidth);
+				break;
+			}
+		tok = strCols.Tokenize(_T(",; "), nPos);
+	}
+	if (m_arCols.GetCount() == 0) { m_arCols.Add(0); m_arColW.Add(COL_DEF[0].nWidth); }
 }
 
 CString CPanelJobDlg::TypFilter()
@@ -211,15 +235,12 @@ void CPanelJobDlg::Refresh()
 	// 갱신 전 선택/스크롤 위치 기억
 	CString strSelLugg;
 	int nSel = m_list.GetNextItem(-1, LVNI_SELECTED);
-	if (nSel >= 0) strSelLugg = m_list.GetItemText(nSel, 0);
+	if (nSel >= 0 && nSel < m_arRow.GetCount()) strSelLugg = m_arRow[nSel].lugg;	// [LGLS 2026-10-01] 작업번호 열이 0 번이 아닐 수 있다
 	int nTop = m_list.GetTopIndex();
 
 	// [LGLS 2026-09-29] 출발/도착은 코드와 위치를 합쳐 한 칸에 넣는다 (사용자 지시).
 	//   [LGLS 2026-09-30] 칸 차례는 위 COLS 와 ★똑같아야 한다★.
-	static LPCTSTR FIELDS[] = { _T("LUGG_NO"),
-		_T("START_POS"), _T("DEST_POS"),
-		_T("JOB_TYP"), _T("JOB_STATUS"),
-		_T("LOT_NO"), _T("PRODUCT_ID"), _T("JOB_PRIORITY"), _T("UPD_DT") };
+	// [LGLS 2026-10-01] 열은 m_arCols(ini 순서) 대로 채운다
 
 	m_list.SetRedraw(FALSE);
 	m_list.DeleteAllItems();
@@ -229,15 +250,16 @@ void CPanelJobDlg::Refresh()
 		pRsw->MoveFirst();
 		for (int nRow = 0; nRow < nRowCnt; nRow++)
 		{
-			m_list.InsertItem(nRow, pRsw->GetItem(FIELDS[0]));
-			for (int nCol = 1; nCol < (int)(sizeof(FIELDS)/sizeof(FIELDS[0])); nCol++)
+			m_list.InsertItem(nRow, _T(""));
+			for (int nCol = 0; nCol < (int)m_arCols.GetCount(); nCol++)
 			{
-				CString strVal = pRsw->GetItem(FIELDS[nCol]);
+				LPCTSTR pszField = COL_DEF[m_arCols[nCol]].strField;
+				CString strVal = pRsw->GetItem(pszField);
 
 				// [LGLS 2026-09-29] 출발/도착은 이름표 + 위치로 합쳐 보인다 (사용자 지시)
-				if (CString(FIELDS[nCol]) == _T("START_POS"))
+				if (CString(pszField) == _T("START_POS"))
 					strVal = m_pDoc->PosLabel(strVal, pRsw->GetItem(_T("START_LOCATION")), TRUE);
-				else if (CString(FIELDS[nCol]) == _T("DEST_POS"))
+				else if (CString(pszField) == _T("DEST_POS"))
 					strVal = m_pDoc->PosLabel(strVal, pRsw->GetItem(_T("DEST_LOCATION")), TRUE);
 
 				m_list.SetItemText(nRow, nCol, strVal);

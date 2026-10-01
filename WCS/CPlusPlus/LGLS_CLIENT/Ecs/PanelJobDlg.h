@@ -38,6 +38,13 @@ public:
 		CString lugg, typCd, staCd, startPos, startLoc, destPos, destLoc, hs, sc, pri, lot;
 	};
 	CArray<ROW, ROW&> m_arRow;
+	// [LGLS 2026-10-01] 목록 열 순서 (Ecs.ini [DISPLAY] JOB_PANEL_COLS)
+	struct COLDEF { LPCTSTR strKey; LPCTSTR strHead; int nWidth; LPCTSTR strField; };
+	static const COLDEF COL_DEF[];
+	static const int COL_DEF_N;
+	CArray<int, int> m_arCols;		// COL_DEF 인덱스, 표시 순서
+	CArray<int, int> m_arColW;		// 각 열 폭(px, 96dpi)
+	void BuildColumnOrder();
 	CString m_strSelLugg;
 	// [LGLS 2026-10-01] 목록|상세 사이 분할선 (끌어서 상세 칸 폭 조절)
 	int   m_nSplitR;
