@@ -2360,7 +2360,8 @@ void CCvSkinDlg::InvalidateCvvData()
 				m_strCvvPortMc[nRow]   = mc;
 				m_nCvvPortState[nRow]  = (sen == _T("1") && bLg) ? 1 : (sen == _T("1")) ? 2 : bLg ? 3 : 0;
 				SetDlgItemText(IDC_CVV_PORT_LUGG_BASE + nRow, bLg ? lg : _T(""));
-				SetDlgItemText(IDC_CVV_PORT_NO_BASE + nRow, mc);
+				// [LGLS 2026-10-01] 포트 번호는 구 ECS 처럼 2자리로 보인다 (107 → 7). 쓰기(PalletID설정)는 m_strCvvPortMc 의 원래 값을 쓴다.
+				{ int nMc = _ttoi(mc); CString mc2 = mc; if (nMc >= 100 && nMc < 1000) mc2.Format(_T("%d"), nMc - 100); SetDlgItemText(IDC_CVV_PORT_NO_BASE + nRow, mc2); }
 				CWnd* pL = GetDlgItem(IDC_CVV_PORT_LUGG_BASE + nRow); if (pL) pL->Invalidate();
 				pRswP->MoveNext();
 			}
