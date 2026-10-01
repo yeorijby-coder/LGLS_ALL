@@ -528,15 +528,19 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	int yHead = yR + (m_rcRcRight[0].IsRectEmpty() ? nChkY : m_rcRcRight[0].top);
 	int yList = yR + (m_rcRcRight[5].IsRectEmpty() ? CLib::DpiPx(28) : m_rcRcRight[5].top);
 	CWnd* pR[] = { &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal };
-	if (bNarrow || R < CLib::DpiPx(420))		// 상세 칸이 좁으면(가로 분할이라도) 머리줄을 두 줄로
+	// [LGLS 2026-10-01] 머리줄은 늘 한 줄 : 작업번호 [값]  팔렛 [값]            [완료처리]   (사용자 지시)
+	//   넓으면 리소스의 상대 위치 그대로, 좁으면 값 칸을 줄여 한 줄에 맞춘다.
+	if (bNarrow || R < CLib::DpiPx(420))
 	{
-		int wVal = R - CLib::DpiPx(60) - wBtn - 4;
-		int yJob = yHead + nChkH + 2;
-		if (::IsWindow(m_lblEcs.m_hWnd))    m_lblEcs.MoveWindow(xR + 4, yHead, CLib::DpiPx(52), nChkH);
-		if (::IsWindow(m_lblEcsVal.m_hWnd)) m_lblEcsVal.MoveWindow(xR + 4 + CLib::DpiPx(54), yHead, wVal, nChkH);
-		if (::IsWindow(m_lblJob.m_hWnd))    m_lblJob.MoveWindow(xR + 4, yJob, CLib::DpiPx(52), nChkH);
-		if (::IsWindow(m_lblJobVal.m_hWnd)) m_lblJobVal.MoveWindow(xR + 4 + CLib::DpiPx(54), yJob, wVal, nChkH);
-		yList = yJob + nChkH + 2;
+		int wLbl = CLib::DpiPx(48);
+		int wVal = (R - wBtn - 8 - 2 * (wLbl + 4) - 8) / 2;
+		if (wVal < CLib::DpiPx(40)) wVal = CLib::DpiPx(40);
+		int x = xR + 4;
+		if (::IsWindow(m_lblEcs.m_hWnd))    m_lblEcs.MoveWindow(x, yHead, wLbl, nChkH);            x += wLbl + 4;
+		if (::IsWindow(m_lblEcsVal.m_hWnd)) m_lblEcsVal.MoveWindow(x, yHead, wVal, nChkH);         x += wVal + 8;
+		if (::IsWindow(m_lblJob.m_hWnd))    m_lblJob.MoveWindow(x, yHead, wLbl, nChkH);            x += wLbl + 4;
+		if (::IsWindow(m_lblJobVal.m_hWnd)) m_lblJobVal.MoveWindow(x, yHead, wVal, nChkH);
+		yList = yHead + nChkH + 4;
 	}
 	else
 	{
