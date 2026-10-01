@@ -1040,7 +1040,33 @@ namespace WCS_TASK_CV
             DataTable dt = DbQuery(strSql);
             if (dt.Rows.Count == 0) return;
             string cmd = ("" + dt.Rows[0]["CMD_RQ_ID"]).Trim().ToUpper();
-            if (cmd.Length == 0 || cmd == "FCMP") return;
+            // [LGLS 2026-10-01] 운전 화면 [지시 재전송] = CMD_RQ_ID 'RESEND'. 종전 Client 는 ID 없이 CMD_RQ_YN='Y' 만 세웠고
+            //   여기서 무시돼 'Y' 가 영영 남았다(그 뒤 [Ack 쓰기]까지 막힘). 빈 ID 도 재전송으로 본다.
+            if (cmd.Length == 0) cmd = "RESEND";
+            if (cmd == "FCMP") return;
+
+            if (cmd == "RESEND")
+            {
+                // 설비에 낸 지시(_OD)를 다시 내보낸다 : TRANSFER_REQUEST_OD='Y' 로 되돌리면 ConsumeCommands 가
+                //   같은 폴링에서 PALLET_ID/FROM/TO 를 다시 쓰고 스트로브를 올린다(설비가 직전 스트로브를 아직
+                //   내리지 않았으면 그때까지 보류 - 핸드셰이크 가드 그대로). 지시가 비어 있으면 할 일이 없다.
+                string strSqlR = "";
+                strSqlR += CRLF + " SELECT PALLET_ID_OD FROM " + m_strTable + "                 ";
+                strSqlR += CRLF + "  WHERE WH_TYP = '" + Esc(m_strWhTyp) + "' AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
+                DataTable dtR = DbQuery(strSqlR);
+                string pidR = (dtR.Rows.Count > 0) ? ("" + dtR.Rows[0]["PALLET_ID_OD"]).Trim() : "";
+                bool bHas = (pidR.Length > 0 && pidR != "0000" && pidR != "0");
+                string strUpdR = "";
+                strUpdR += CRLF + " UPDATE " + m_strTable + " SET CMD_RQ_YN = 'N', WRITE_UPD_DT = GETDATE()";
+                if (bHas) strUpdR += ", TRANSFER_REQUEST_OD = 'Y', OD_RQ_YN = 'Y'";
+                strUpdR += CRLF + "  WHERE WH_TYP = '" + Esc(m_strWhTyp) + "' AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
+                strUpdR += CRLF + "    AND CMD_RQ_YN = 'Y' ";
+                DbExec(strUpdR);
+                LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 RESEND → "
+                      + (bHas ? ("지시 재전송 예약 (JOB " + pidR + ") - 다음 폴링에 FROM/TO 재기록 + 스트로브") : "재전송할 지시 없음(PALLET_ID_OD 비어 있음) - 플래그만 내림"));
+                if (bHas) ConsumeCommands(v);
+                return;
+            }
 
             // [LGLS 2026-09-12] 운전 화면 [Ack 쓰기] : CMD_RQ_ID = "ACKW-LC=1" / "ACKW-UC=0"
             //   ※구분자는 '-' 다. ':' 를 쓰면 DB 계층이 파라미터 표시 '@' 로 바꿔 처리 완료 UPDATE 가 안 맞는다(실측 72회 반복).

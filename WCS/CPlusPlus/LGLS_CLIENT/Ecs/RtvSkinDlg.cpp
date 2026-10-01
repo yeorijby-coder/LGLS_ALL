@@ -1492,7 +1492,8 @@ void CRtvSkinDlg::OnBnClickedRtvvResend()
 	if(AfxMessageBox(m_pDoc->GetMsgLangDef(_T("명령을 재전송 하시겠습니까?")), MB_YESNO) != IDYES)
 		return;
 	CString strSql;
-	strSql.Format(_T(" UPDATE RTV_DATA_LGLS SET CMD_RQ_YN='Y' WHERE WH_TYP='%s' AND PLC_NO='%02s' AND RTV_NO='%s' "),
+	// [LGLS 2026-10-01] 지시 재전송 = CMD_RQ_ID RESEND (WCS_TASK_CV VehThread.ConsumeOperatorCommands 가 _OD 지시를 다시 내보내고 N 으로 소비)
+	strSql.Format(_T(" UPDATE RTV_DATA_LGLS SET CMD_RQ_ID='RESEND', CMD_RQ_YN='Y' WHERE WH_TYP='%s' AND PLC_NO='%02s' AND RTV_NO='%s' "),
 		m_pDoc->m_WH_TYP, m_pRTV_DATA->K_PLC_NO, m_pRTV_DATA->K_RTV_NO);
 	m_pDoc->BeginTrans_DLG();
 	if(m_pDoc->ExcuteQueryString_DLG(strSql))
