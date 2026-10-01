@@ -1016,8 +1016,16 @@ void CLglsRibbonLamp::OnLButtonUp(CPoint point)
 		pMain->PostMessage(WM_COMMAND, MAKEWPARAM(GetID(), 0), 0);
 }
 
+// [LGLS 2026-10-01] 아이콘 방식이면 상태에 맞는 아이콘을 끼운다 - 크기·글자는 MFC 기본 단추 그대로
+void CLglsRibbonLamp::ApplyIcon()
+{
+	HICON h = !m_bOk ? m_hRed : (m_bBlink ? m_hYel : m_hGrn);
+	if (h != NULL && h != m_hIcon) { m_hIcon = h; m_hIconSmall = h; }
+}
+
 CSize CLglsRibbonLamp::GetRegularSize(CDC* pDC)
 {
+	if (m_bIconStyle) { ApplyIcon(); return CMFCRibbonButton::GetRegularSize(pDC); }
 	UNREFERENCED_PARAMETER(pDC);
 	return CSize(LampCW(), LampCH());
 }
@@ -1025,6 +1033,7 @@ CSize CLglsRibbonLamp::GetRegularSize(CDC* pDC)
 void CLglsRibbonLamp::OnDraw(CDC* pDC)
 {
 	if (pDC == NULL) return;
+	if (m_bIconStyle) { ApplyIcon(); CMFCRibbonButton::OnDraw(pDC); return; }	// [LGLS 2026-10-01] 아이콘 방식
 	CRect rc = m_rect;
 	if (rc.IsRectEmpty()) return;
 
@@ -1480,9 +1489,25 @@ void CMainFrame::AddLampPanel(CMFCRibbonCategory* pCategory)
 	              { _T("WMS2"), _T("상위 통신 2 (HOST2)") },
 	              { _T("PLC"),  _T("설비 통신 (WCS_TASK_CV)") },
 	              { _T("SCH"),  _T("스케줄러 (IO_TASK)") } };
+	// [LGLS 2026-10-01] LAMP_STYLE=1 이면 아이콘 방식 - 다른 리본 단추와 같은 길로 그려 Windows 배율을 그대로 탄다.
+	//   (현장 4K@300% 에서 직접 그리는 방식이 어긋나 보인 것의 대안. 사용자 질문 "리본처럼 바꾸면 안 되나")
+	BOOL  bIconStyle = (::GetPrivateProfileInt(_T("DISPLAY"), _T("LAMP_STYLE"), 0, ECS_INI_FILE) == 1);
+	HICON hR = NULL, hY = NULL, hG = NULL;
+	if (bIconStyle)
+	{
+		TCHAR szExe[MAX_PATH] = {0};
+		::GetModuleFileName(NULL, szExe, MAX_PATH);
+		CString strDir = szExe;
+		strDir = strDir.Left(strDir.ReverseFind('\\')) + _T("\\rc_resource\\mainframe_config\\");
+		hR = CLib::HICONFromPATH(strDir + _T("lamp_red.png"));
+		hY = CLib::HICONFromPATH(strDir + _T("lamp_yellow.png"));
+		hG = CLib::HICONFromPATH(strDir + _T("lamp_green.png"));
+		if (hR == NULL || hY == NULL || hG == NULL) bIconStyle = FALSE;		// 그림이 없으면 종전 방식
+	}
 	for (int i = 0; i < 4; i++)
 	{
-		CLglsRibbonLamp* p = new CLglsRibbonLamp(ID_LGLS_LAMP_BASE + i, defs[i].s);
+		CLglsRibbonLamp* p = bIconStyle ? new CLglsRibbonLamp(ID_LGLS_LAMP_BASE + i, defs[i].s, hR, hY, hG)
+		                                : new CLglsRibbonLamp(ID_LGLS_LAMP_BASE + i, defs[i].s);
 		p->SetToolTipText(defs[i].d);
 		p->SetDescription(defs[i].d);
 		pPanel->Add(p);

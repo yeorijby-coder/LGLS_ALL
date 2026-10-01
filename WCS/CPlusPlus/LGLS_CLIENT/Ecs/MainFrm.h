@@ -66,8 +66,16 @@ class CLglsRibbonLamp : public CMFCRibbonButton
 {
 	DECLARE_DYNCREATE(CLglsRibbonLamp)
 public:
-	CLglsRibbonLamp() { m_bOk = FALSE; }
-	CLglsRibbonLamp(UINT nID, LPCTSTR lpszText) : CMFCRibbonButton(nID, lpszText) { m_bOk = FALSE; }
+	CLglsRibbonLamp() { m_bOk = FALSE; m_bIconStyle = FALSE; m_hRed = m_hYel = m_hGrn = NULL; }
+	CLglsRibbonLamp(UINT nID, LPCTSTR lpszText) : CMFCRibbonButton(nID, lpszText) { m_bOk = FALSE; m_bIconStyle = FALSE; m_hRed = m_hYel = m_hGrn = NULL; }
+	// [LGLS 2026-10-01] 아이콘 방식 - 다른 리본 단추와 똑같이 MFC 가 그리고 Windows 배율로 키운다 (사용자 질문).
+	//   Ecs.ini [DISPLAY] LAMP_STYLE=1. 상태에 따라 아이콘(빨강/노랑/초록)만 갈아 끼운다.
+	CLglsRibbonLamp(UINT nID, LPCTSTR lpszText, HICON hRed, HICON hYel, HICON hGrn)
+		: CMFCRibbonButton(nID, lpszText, hRed, FALSE, hRed)
+	{ m_bOk = FALSE; m_bIconStyle = TRUE; m_hRed = hRed; m_hYel = hYel; m_hGrn = hGrn; SetAlwaysLargeImage(); }
+	BOOL  m_bIconStyle;
+	HICON m_hRed, m_hYel, m_hGrn;
+	void  ApplyIcon();
 	BOOL        m_bOk;		// 이 칸의 통신 상태
 	static BOOL m_bBlink;	// 정상일 때 노랑/초록 교대 (네 칸이 같이 움직인다)
 	virtual CSize GetRegularSize(CDC* pDC);
