@@ -228,6 +228,12 @@ public:
 	afx_msg void OnBnClickedVehZoom();
 	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
 	afx_msg void OnBnClickedCvvOk();	// [LGLS 2026-08-13] 확대 패널 [닫기]
+	// [LGLS 2026-10-01] 구 ECS ConveyorForm 의 포트 줄 / [PalletID설정] / [사용금지]
+	int     m_nCvvPortState[3];	// 0 없음 / 1 감지+화물 / 2 감지만 / 3 화물번호만
+	CString m_strCvvPortMc[3];	// 줄마다 트랙(MC_NO)
+	static CString CvWorkshopName(int nCv);
+	afx_msg void OnCvvPortSet(UINT nID);
+	afx_msg void OnCvvDisable();
 
 
 public:

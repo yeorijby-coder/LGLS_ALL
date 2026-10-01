@@ -1,4 +1,10 @@
 // PanelJobDlg.cpp : [LGLS 2026-09-01] 전체 작업(JOB_MST) 도킹 판넬 (작업구분 탭 필터)
+//   [LGLS 2026-10-01] 구 ECS 하단 반송 판넬(MonitorMainTransferListPanel)과 같게 셋으로 나눈다 (사용자 지시)
+//     왼쪽  : 우선순위 값 / ▲ ▼ (JOB_PRIORITY ±1) / [반송조정](작업정보 창)
+//     가운데: 작업 목록 (종전 그대로)
+//     오른쪽: 선택 작업의 상세 - ECS번호(작업번호) / 작업번호(적재용기) + 단계표(SEQ/디바이스/시작/도착/상태) + [완료처리]
+//   구 ECS 는 명령 단계표(TB_TRANSFERDETAIL)를 따로 두었지만 신 ECS 는 JOB_STATUS 하나로 흐르므로,
+//   작업구분과 상태 코드에서 단계를 만들어 보인다 (BuildSeqRows).
 #include "stdafx.h"
 #include "Ecs.h"
 #include "EcsDoc.h"
@@ -34,6 +40,11 @@ BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
 	ON_WM_SIZE()
 	ON_WM_TIMER()
 	ON_NOTIFY(TCN_SELCHANGE, IDC_PANEL_JOB_TAB, OnTabChanged)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_PANEL_JOB_LIST, OnListItemChanged)
+	ON_BN_CLICKED(IDC_PANEL_JOB_PRI_UP,   OnPriUp)
+	ON_BN_CLICKED(IDC_PANEL_JOB_PRI_DN,   OnPriDown)
+	ON_BN_CLICKED(IDC_PANEL_JOB_TRANSFER, OnTransferCtl)
+	ON_BN_CLICKED(IDC_PANEL_JOB_COMPLETE, OnComplete)
 END_MESSAGE_MAP()
 
 BOOL CPanelJobDlg::OnInitDialog()
@@ -48,11 +59,7 @@ BOOL CPanelJobDlg::OnInitDialog()
 	struct { LPCTSTR strHead; int nWidth; } COLS[] = {
 		// [LGLS 2026-09-29] 출발/도착 한 칸에 위치까지 넣는다 (사용자 지시).
 		//   랙 : S/C #1[00-000-00]   /   작업대 : 입출고대[101] TR#22
-		//   그래서 「출발위치」「도착위치」 칸을 없앴다.
 		// [LGLS 2026-09-30] 작업대 명칭이 EcsDefine.xml 것으로 바뀌며 길어졌다.
-		//   "외부 전용 입출고대[101] TR#22" 가 들어가게 넓히고,
-		//   판넬이 좁아 뒤 칸이 화면 밖으로 밀리므로 ★출발/도착을 앞으로★ 당겼다.
-		//   나머지는 가로로 밀어 보면 된다.
 		{ _T("작업번호"),  70 },
 		{ _T("출발"),     210 }, { _T("도착"),    210 },
 		{ _T("구분"),      90 }, { _T("상태"),    140 },
@@ -69,9 +76,54 @@ BOOL CPanelJobDlg::OnInitDialog()
 	m_chkAuto.SetFont(GetFont());
 	m_chkAuto.SetCheck(BST_CHECKED);
 
+	BuildOldEcsControls();
+
 	SetTimer(TIMER_PANEL_JOB, TIMER_PANEL_JOB_MS, NULL);
 	Refresh();
 	return TRUE;
+}
+
+// [LGLS 2026-10-01] 구 ECS 판넬의 왼쪽(우선순위)과 오른쪽(상세) 칸을 만든다
+void CPanelJobDlg::BuildOldEcsControls()
+{
+	CFont* pFont = GetFont();
+	CRect rc0(0, 0, 10, 10);
+
+	m_lblPriTitle.Create(_T("우선순위"), WS_CHILD | WS_VISIBLE | SS_CENTER, rc0, this, IDC_PANEL_JOB_PRI_LBL);
+	m_lblPriVal.Create(_T(""), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_BORDER, rc0, this, IDC_PANEL_JOB_PRI_VAL);
+	m_btnPriUp.Create(_T("▲"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, rc0, this, IDC_PANEL_JOB_PRI_UP);
+	m_btnPriDn.Create(_T("▼"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, rc0, this, IDC_PANEL_JOB_PRI_DN);
+	m_btnTransfer.Create(_T("반송조정"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_MULTILINE, rc0, this, IDC_PANEL_JOB_TRANSFER);
+
+	m_lblEcs.Create(_T("ECS번호"), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_ECS_LBL);
+	m_lblEcsVal.Create(_T(""), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_ECS_VAL);
+	m_lblJob.Create(_T("작업번호"), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_JOB_LBL);
+	m_lblJobVal.Create(_T(""), WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, rc0, this, IDC_PANEL_JOB_JOB_VAL);
+	m_listSeq.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS, rc0, this, IDC_PANEL_JOB_SEQ);
+	m_listSeq.SetExtendedStyle(m_listSeq.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+	m_btnComplete.Create(_T("완료처리"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, rc0, this, IDC_PANEL_JOB_COMPLETE);
+
+	struct { LPCTSTR strHead; int nWidth; } SEQCOLS[] = {
+		{ _T(""), 50 }, { _T("SEQ"), 45 }, { _T("디바이스"), 80 }, { _T("시작"), 150 }, { _T("도착"), 150 },
+	};
+	for (int i = 0; i < (int)(sizeof(SEQCOLS)/sizeof(SEQCOLS[0])); i++)
+		m_listSeq.InsertColumn(i, SEQCOLS[i].strHead, LVCFMT_LEFT, CLib::DpiPx(SEQCOLS[i].nWidth));
+
+	CWnd* pAll[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer,
+	                 &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal, &m_listSeq, &m_btnComplete };
+	for (int i = 0; i < (int)(sizeof(pAll)/sizeof(pAll[0])); i++)
+		if (pFont != NULL) pAll[i]->SetFont(pFont);
+
+	// 우선순위 숫자는 구 ECS 처럼 크게
+	static CFont s_fntBig;
+	if (s_fntBig.GetSafeHandle() == NULL)
+	{
+		LOGFONT lf = {0};
+		if (pFont != NULL) pFont->GetLogFont(&lf);
+		lf.lfHeight = -CLib::DpiPx(20); lf.lfWeight = FW_BOLD;
+		s_fntBig.CreateFontIndirect(&lf);
+	}
+	if (s_fntBig.GetSafeHandle() != NULL) m_lblPriVal.SetFont(&s_fntBig);
 }
 
 CString CPanelJobDlg::TypFilter()
@@ -84,17 +136,27 @@ CString CPanelJobDlg::TypFilter()
 	return strCond;
 }
 
+int CPanelJobDlg::FindRow(const CString& strLugg)
+{
+	for (int i = 0; i < m_arRow.GetCount(); i++)
+		if (m_arRow[i].lugg == strLugg) return i;
+	return -1;
+}
+
 void CPanelJobDlg::Refresh()
 {
 	if (m_pDoc == NULL || !::IsWindow(m_list.m_hWnd))
 		return;
 
 	// [LGLS] ViewJobListDlg 의 조회와 같은 골격(코드명 조인) + 탭의 작업구분 필터
+	//   [LGLS 2026-10-01] 원시 코드(JOB_TYP_CD/JOB_STATUS_CD)와 통로/크레인(HS_TRACK_NO/SC_NO)도 함께 읽는다 - 오른쪽 단계표용
 	CString strSql;
 	strSql.Format(
 		_T(" SELECT ") + m_pDoc->NVL + _T("(JM.LUGG_NO, ' ') AS LUGG_NO ")
 		_T("       ,") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR, JM.JOB_TYP) AS JOB_TYP ")
 		_T("       ,'[' + JM.JOB_STATUS + '] ' + ") + m_pDoc->NVL + _T("(CC.CCD_NM_KOR, JM.JOB_STATUS) AS JOB_STATUS ")
+		_T("       ,JM.JOB_TYP AS JOB_TYP_CD, JM.JOB_STATUS AS JOB_STATUS_CD ")
+		_T("       ,") + m_pDoc->NVL + _T("(JM.HS_TRACK_NO, ' ') AS HS_TRACK_NO, ") + m_pDoc->NVL + _T("(JM.SC_NO, ' ') AS SC_NO ")
 		_T("       ,JM.START_POS, ") + m_pDoc->NVL + _T("(JM.START_LOCATION, ' ') AS START_LOCATION ")
 		_T("       ,JM.DEST_POS,  ") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, ' ') AS DEST_LOCATION ")
 		_T("       ,") + m_pDoc->NVL + _T("(JM.LOT_NO, ' ') AS LOT_NO ")
@@ -125,7 +187,6 @@ void CPanelJobDlg::Refresh()
 	int nTop = m_list.GetTopIndex();
 
 	// [LGLS 2026-09-29] 출발/도착은 코드와 위치를 합쳐 한 칸에 넣는다 (사용자 지시).
-	//   FIELDS 에서 위치 두 칸을 뺐다 - 아래에서 PosLabel 이 합쳐 준다.
 	//   [LGLS 2026-09-30] 칸 차례는 위 COLS 와 ★똑같아야 한다★.
 	static LPCTSTR FIELDS[] = { _T("LUGG_NO"),
 		_T("START_POS"), _T("DEST_POS"),
@@ -134,6 +195,7 @@ void CPanelJobDlg::Refresh()
 
 	m_list.SetRedraw(FALSE);
 	m_list.DeleteAllItems();
+	m_arRow.RemoveAll();
 	if (nRowCnt > 0)
 	{
 		pRsw->MoveFirst();
@@ -152,17 +214,31 @@ void CPanelJobDlg::Refresh()
 
 				m_list.SetItemText(nRow, nCol, strVal);
 			}
+			ROW r;
+			r.lugg     = pRsw->GetItem(_T("LUGG_NO"));       r.lugg.Trim();
+			r.typCd    = pRsw->GetItem(_T("JOB_TYP_CD"));    r.typCd.Trim();
+			r.staCd    = pRsw->GetItem(_T("JOB_STATUS_CD")); r.staCd.Trim();
+			r.startPos = pRsw->GetItem(_T("START_POS"));     r.startPos.Trim();
+			r.startLoc = pRsw->GetItem(_T("START_LOCATION")); r.startLoc.Trim();
+			r.destPos  = pRsw->GetItem(_T("DEST_POS"));      r.destPos.Trim();
+			r.destLoc  = pRsw->GetItem(_T("DEST_LOCATION")); r.destLoc.Trim();
+			r.hs       = pRsw->GetItem(_T("HS_TRACK_NO"));   r.hs.Trim();
+			r.sc       = pRsw->GetItem(_T("SC_NO"));         r.sc.Trim();
+			r.pri      = pRsw->GetItem(_T("JOB_PRIORITY"));  r.pri.Trim();
+			r.lot      = pRsw->GetItem(_T("LOT_NO"));        r.lot.Trim();
+			m_arRow.Add(r);
 			pRsw->MoveNext();
 		}
 	}
 	delete pRsw;
 
+	int nFound = -1;
 	if (!strSelLugg.IsEmpty())
 	{
 		LVFINDINFO fi; memset(&fi, 0, sizeof(fi));
 		fi.flags = LVFI_STRING;
 		fi.psz = (LPCTSTR)strSelLugg;
-		int nFound = m_list.FindItem(&fi);
+		nFound = m_list.FindItem(&fi);
 		if (nFound >= 0)
 			m_list.SetItemState(nFound, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
 	}
@@ -170,36 +246,289 @@ void CPanelJobDlg::Refresh()
 		m_list.EnsureVisible(min(nTop + m_list.GetCountPerPage() - 1, m_list.GetItemCount() - 1), FALSE);
 	m_list.SetRedraw(TRUE);
 	m_list.Invalidate(FALSE);
+
+	// [LGLS 2026-10-01] 오른쪽 상세는 선택이 살아 있으면 새 값으로, 아니면 비운다
+	FillDetail(nFound);
+}
+
+// [LGLS 2026-10-01] 선택한 작업의 상세(오른쪽) + 우선순위(왼쪽)
+void CPanelJobDlg::FillDetail(int nRow)
+{
+	if (!::IsWindow(m_listSeq.m_hWnd)) return;
+	if (nRow < 0 || nRow >= m_arRow.GetCount())
+	{
+		m_strSelLugg.Empty();
+		m_lblEcsVal.SetWindowText(_T(""));
+		m_lblJobVal.SetWindowText(_T(""));
+		m_lblPriVal.SetWindowText(_T(""));
+		m_listSeq.DeleteAllItems();
+		return;
+	}
+	const ROW& r = m_arRow[nRow];
+	m_strSelLugg = r.lugg;
+	m_lblEcsVal.SetWindowText(r.lugg);
+	m_lblJobVal.SetWindowText(r.lot);
+	m_lblPriVal.SetWindowText(r.pri.IsEmpty() ? _T("-") : r.pri);
+	BuildSeqRows(r);
+}
+
+// [LGLS 2026-10-01] 작업구분 + 상태 코드로 구 ECS 의 명령 단계표(SEQ/디바이스/시작/도착)를 만든다.
+//   입고(1)      : C/V(출발 작업대 → RGV 픽업) → RGV(→ 통로) → S/C(통로 → 랙)
+//                  10,11,15,16 = 1단계 / 30,31,35,39 = 2단계 / 20,21,25 = 3단계 / 29,09,05~08 = 완료
+//   출고(2,3)    : S/C(랙 → 통로) → RGV(통로 → 출고 픽업) → C/V(→ 도착 작업대)
+//                  20,21,25 = 1단계 / 29,30,31,35 = 2단계 / 39,10,11,15,16 = 3단계 / 19,09 = 완료
+//   랙투랙(4)    : S/C 한 단계.   호기간(5) : S/C → RGV → S/C.   이동(0,6) : C/V 한 단계.
+//   반자동(1x)은 같은 흐름이다.
+void CPanelJobDlg::BuildSeqRows(const ROW& r)
+{
+	m_listSeq.DeleteAllItems();
+	int typ = _ttoi(r.typCd); if (typ >= 10) typ -= 10;
+	int s = _ttoi(r.staCd);
+
+	CString strStart = m_pDoc->PosLabel(r.startPos, r.startLoc, TRUE);
+	CString strDest  = m_pDoc->PosLabel(r.destPos,  r.destLoc,  TRUE);
+	CString strHs    = r.hs.IsEmpty() ? _T("통로") : (_T("통로 TR#") + r.hs);
+	CString strSc;
+	{
+		int nSc = 0;
+		if (!r.sc.IsEmpty()) nSc = _ttoi(r.sc) % 100;			// 901 → 1
+		if (nSc <= 0)
+		{
+			CString loc = (typ == 1) ? r.destLoc : r.startLoc;	// 랙 쪽 위치 bb-bbb-ll
+			int nBank = _ttoi(loc.Left(2));
+			if (nBank > 0) nSc = (nBank + 1) / 2;
+		}
+		if (nSc > 0) strSc.Format(_T("S/C #%d"), nSc); else strSc = _T("S/C");
+	}
+
+	struct STEP { CString dev, from, to; };
+	CArray<STEP, STEP&> steps;
+	int nPhase = 0;			// 진행 중인 단계 (steps.GetCount() 이면 모두 완료)
+	STEP st;
+	switch (typ)
+	{
+	case 1:		// 입고
+		st.dev = _T("C/V");  st.from = strStart; st.to = _T("RGV 픽업");  steps.Add(st);
+		st.dev = _T("RGV");  st.from = _T("RGV 픽업"); st.to = strHs;    steps.Add(st);
+		st.dev = strSc;      st.from = strHs;    st.to = strDest;        steps.Add(st);
+		if      (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 0;
+		else if (s == 30 || s == 31 || s == 35 || s == 39)            nPhase = 1;
+		else if (s == 20 || s == 21 || s == 25)                       nPhase = 2;
+		else                                                          nPhase = 3;
+		break;
+	case 2: case 3:		// 출고 / 피킹출고
+		st.dev = strSc;      st.from = strStart; st.to = strHs;          steps.Add(st);
+		st.dev = _T("RGV");  st.from = strHs;    st.to = _T("출고 픽업"); steps.Add(st);
+		st.dev = _T("C/V");  st.from = _T("출고 픽업"); st.to = strDest; steps.Add(st);
+		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
+		else if (s == 29 || s == 30 || s == 31 || s == 35)            nPhase = 1;
+		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2;
+		else                                                          nPhase = 3;
+		break;
+	case 4:		// 랙투랙
+		st.dev = strSc;      st.from = strStart; st.to = strDest;        steps.Add(st);
+		nPhase = (s == 99 || s == 20 || s == 21 || s == 25) ? 0 : 1;
+		break;
+	case 5:		// 호기간 이동
+		st.dev = strSc;      st.from = strStart; st.to = strHs;          steps.Add(st);
+		st.dev = _T("RGV");  st.from = strHs;    st.to = _T("통로");     steps.Add(st);
+		st.dev = _T("S/C");  st.from = _T("통로"); st.to = strDest;      steps.Add(st);
+		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
+		else if (s == 29 || s == 30 || s == 31 || s == 35)            nPhase = 1;
+		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2;
+		else                                                          nPhase = 3;
+		break;
+	default:	// 이동 등
+		st.dev = _T("C/V");  st.from = strStart; st.to = strDest;        steps.Add(st);
+		nPhase = (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) ? 0 : 1;
+		break;
+	}
+
+	for (int i = 0; i < steps.GetCount(); i++)
+	{
+		LPCTSTR pszSta = (i < nPhase) ? _T("완료") : (i == nPhase) ? _T("진행중") : _T("대기");
+		m_listSeq.InsertItem(i, pszSta);
+		CString strSeq; strSeq.Format(_T("%04d"), i + 1);
+		m_listSeq.SetItemText(i, 1, strSeq);
+		m_listSeq.SetItemText(i, 2, steps[i].dev);
+		m_listSeq.SetItemText(i, 3, steps[i].from);
+		m_listSeq.SetItemText(i, 4, steps[i].to);
+	}
+	if (nPhase < steps.GetCount())
+		m_listSeq.SetItemState(nPhase, LVIS_SELECTED, LVIS_SELECTED);
+}
+
+void CPanelJobDlg::OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMLISTVIEW* p = (NMLISTVIEW*)pNMHDR;
+	*pResult = 0;
+	if (p == NULL) return;
+	if ((p->uChanged & LVIF_STATE) && (p->uNewState & LVIS_SELECTED))
+		FillDetail(p->iItem);
+}
+
+BOOL CPanelJobDlg::ExecUpdate(CString strSql, CString strLogMsg, CString strLuggNo)
+{
+	if (m_pDoc == NULL) return FALSE;
+	if (!m_pDoc->Permission(_T("CViewJobListDlg"), UPD_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return FALSE;
+	}
+	if (m_pDoc->BeginTrans_DLG() < 1) return FALSE;
+	if (strLuggNo.IsEmpty()) strLuggNo = _T("0");
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CViewJobListDlg"), strLuggNo, _T(""), _T(""), strLogMsg))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		return FALSE;
+	}
+	if (!m_pDoc->ExcuteQueryString_DLG(strSql))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return FALSE;
+	}
+	m_pDoc->CommitTrans_DLG();
+	return TRUE;
+}
+
+// [LGLS 2026-10-01] ▲ / ▼ : 선택 작업의 JOB_PRIORITY 를 1 씩 (001~999, 판넬의 우선순위 변경과 같은 갱신)
+static void LglsPriStep(CPanelJobDlg* pDlg, CEcsDoc* pDoc, const CString& strLugg, const CString& strPri, int nDelta, BOOL (CPanelJobDlg::*pfnExec)(CString, CString, CString))
+{
+	if (pDoc == NULL || strLugg.IsEmpty()) { AfxMessageBox(_T("작업을 먼저 고르세요.")); return; }
+	int n = _ttoi(strPri) + nDelta;
+	if (n < 1) n = 1; if (n > 999) n = 999;
+	CString strNew; strNew.Format(_T("%03d"), n);
+	if (strNew == strPri) return;
+	if (AfxMessageBox(pDoc->GetMsgLangDef(_T("우선순위를 변경 하시겠습니까?")) + _T(" [") + strLugg + _T(" : ") + strPri + _T(" -> ") + strNew + _T("]"), MB_YESNO) != IDYES)
+		return;
+	CString strSql;
+	strSql.Format(_T("UPDATE JOB_MST SET JOB_PRIORITY = '%s', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
+		(LPCTSTR)strNew, (LPCTSTR)pDoc->m_WH_TYP, (LPCTSTR)strLugg);
+	if ((pDlg->*pfnExec)(strSql, _T("JOB_MST UPDATE : JOB_PRIORITY -> ") + strNew, strLugg))
+		pDlg->Refresh();
+}
+
+void CPanelJobDlg::OnPriUp()
+{
+	int i = FindRow(m_strSelLugg);
+	LglsPriStep(this, m_pDoc, m_strSelLugg, (i >= 0) ? m_arRow[i].pri : _T("1"), +1, &CPanelJobDlg::ExecUpdate);
+}
+
+void CPanelJobDlg::OnPriDown()
+{
+	int i = FindRow(m_strSelLugg);
+	LglsPriStep(this, m_pDoc, m_strSelLugg, (i >= 0) ? m_arRow[i].pri : _T("1"), -1, &CPanelJobDlg::ExecUpdate);
+}
+
+// [LGLS 2026-10-01] [반송조정] : 구 ECS 의 반송명령조정 창 = 신 ECS 의 작업정보 창(상태/우선순위 변경, 삭제)
+void CPanelJobDlg::OnTransferCtl()
+{
+	CWnd* pMain = AfxGetMainWnd();
+	if (pMain != NULL && ::IsWindow(pMain->GetSafeHwnd()))
+		pMain->PostMessage(WM_COMMAND, MAKEWPARAM(ID_VIEW_JOBLIST, 0), 0);
+}
+
+// [LGLS 2026-10-01] [완료처리] : 구 ECS 는 선택한 명령 단계(TB_TRANSFERDETAIL)를 완료로 돌렸다.
+//   신 ECS 는 단계가 JOB_STATUS 하나이므로 작업을 설비 완료 상태로 올린다 - 출고류는 19(C/V 반송완료), 그 밖은 29(S/C 반송완료).
+//   판넬의 강제완료와 같은 갱신이며 이후는 IO_TASK/HOST_TASK 가 평소대로 처리한다.
+void CPanelJobDlg::OnComplete()
+{
+	int i = FindRow(m_strSelLugg);
+	if (m_pDoc == NULL || i < 0) { AfxMessageBox(_T("작업을 먼저 고르세요.")); return; }
+	const ROW& r = m_arRow[i];
+	int typ = _ttoi(r.typCd); if (typ >= 10) typ -= 10;
+	CString strSta = (typ == 2 || typ == 3) ? _T("19") : _T("29");
+	if (AfxMessageBox(_T("작업번호(") + r.lugg + _T(") 를 완료처리 하시겠습니까?  [") + r.staCd + _T(" -> ") + strSta + _T("]"), MB_YESNO) != IDYES)
+		return;
+	CString strSql;
+	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
+		(LPCTSTR)strSta, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg);
+	if (ExecUpdate(strSql, _T("JOB_MST UPDATE : 완료처리(구ECS 판넬) JOB_STATUS -> ") + strSta, r.lugg))
+		Refresh();
 }
 
 void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialog::OnSize(nType, cx, cy);
-	const int nChkW = CLib::DpiPx(92);	// [LGLS 2026-10-01] Windows 배율
+	UNREFERENCED_PARAMETER(nType);
+	if (!::IsWindow(m_list.m_hWnd)) return;
+
+	// [LGLS 2026-10-01] 구 ECS 판넬과 같은 세 칸 : [우선순위 95] [목록] [상세 ~40%]
+	//   판넬이 좁으면(왼쪽 도킹 기본 폭 ~310) 세 칸이 안 들어가므로 상세 칸을 아래로 내린다
+	//   : 위 = [우선순위][목록], 아래 = 상세(ECS번호/작업번호 + 단계 표 + 완료처리)
+	const int nChkW = CLib::DpiPx(92);
 	const int nTabH = CLib::DpiPx(24), nListY = CLib::DpiPx(26);
 	const int nChkY = CLib::DpiPx(4),  nChkH  = CLib::DpiPx(18);
 	const int nGap  = CLib::DpiPx(4);
-	UNREFERENCED_PARAMETER(nType);	// [LGLS 2026-09-10] 오른쪽 위 [자동 갱신] 자리
+	const int L  = CLib::DpiPx(96);				// 왼쪽 칸 폭
+	const BOOL bNarrow = (cx < CLib::DpiPx(620));
+	int R = cx * 38 / 100;						// 오른쪽 칸 폭
+	if (R < CLib::DpiPx(260)) R = CLib::DpiPx(260);
+	if (R > cx - L - CLib::DpiPx(200)) R = max(0, cx - L - CLib::DpiPx(200));
+	if (bNarrow) R = 0;
+	int xM = L + nGap, wM = cx - L - R - 2 * nGap; if (wM < 100) wM = 100;
+	int xR = cx - R;
+	// 세로 쌓기일 때 위 영역 높이(상세 칸이 아래 hD 만큼 차지)
+	const int hD = CLib::DpiPx(178);
+	int cyTop = bNarrow ? max(CLib::DpiPx(80), cy - hD - nGap) : cy;
+
+	// 왼쪽
+	if (::IsWindow(m_lblPriTitle.m_hWnd)) m_lblPriTitle.MoveWindow(2, nChkY, L - 4, CLib::DpiPx(18));
+	if (::IsWindow(m_lblPriVal.m_hWnd))   m_lblPriVal.MoveWindow(4, CLib::DpiPx(24), L - 8, CLib::DpiPx(30));
+	if (::IsWindow(m_btnPriUp.m_hWnd))    m_btnPriUp.MoveWindow(6, CLib::DpiPx(58), (L - 14) / 2, CLib::DpiPx(28));
+	if (::IsWindow(m_btnPriDn.m_hWnd))    m_btnPriDn.MoveWindow(6 + (L - 14) / 2 + 2, CLib::DpiPx(58), (L - 14) / 2, CLib::DpiPx(28));
+	if (::IsWindow(m_btnTransfer.m_hWnd)) m_btnTransfer.MoveWindow(4, CLib::DpiPx(92), L - 8, CLib::DpiPx(40));
+
+	// 가운데 (종전 배치)
 	if (::IsWindow(m_tabTyp.m_hWnd))
-		m_tabTyp.MoveWindow(0, 0, (cx > nChkW + 20) ? (cx - nChkW - nGap) : cx, nTabH);
-	if (::IsWindow(m_chkAuto.m_hWnd) && cx > nChkW + 20)
-		m_chkAuto.MoveWindow(cx - nChkW, nChkY, nChkW - nGap, nChkH);
-	if (::IsWindow(m_list.m_hWnd))
-		m_list.MoveWindow(0, nListY, cx, cy - nListY);
+		m_tabTyp.MoveWindow(xM, 0, (wM > nChkW + 20) ? (wM - nChkW - nGap) : wM, nTabH);
+	if (::IsWindow(m_chkAuto.m_hWnd) && wM > nChkW + 20)
+		m_chkAuto.MoveWindow(xM + wM - nChkW, nChkY, nChkW - nGap, nChkH);
+	m_list.MoveWindow(xM, nListY, wM, cyTop - nListY);
+
+	// 오른쪽(넓을 때) / 아래(좁을 때)
+	int yR = bNarrow ? cyTop + nGap : 0;			// 상세 칸의 시작 y
+	if (bNarrow) { xR = 0; R = cx; }
+	int yB = cy - CLib::DpiPx(26);
+	int yHead = yR + nChkY;
+	// 좁을 때는 ECS번호/작업번호를 두 줄로
+	int wVal = bNarrow ? (R - CLib::DpiPx(60)) : CLib::DpiPx(90);
+	int yJob = bNarrow ? (yHead + nChkH + 2) : yHead;
+	int xJob = bNarrow ? (xR + 4) : (xR + 4 + CLib::DpiPx(150));
+	int yList = (bNarrow ? yJob + nChkH + 2 : yR + nListY);
+	if (::IsWindow(m_lblEcs.m_hWnd))    m_lblEcs.MoveWindow(xR + 4, yHead, CLib::DpiPx(52), nChkH);
+	if (::IsWindow(m_lblEcsVal.m_hWnd)) m_lblEcsVal.MoveWindow(xR + 4 + CLib::DpiPx(54), yHead, wVal, nChkH);
+	if (::IsWindow(m_lblJob.m_hWnd))    m_lblJob.MoveWindow(xJob, yJob, CLib::DpiPx(52), nChkH);
+	if (::IsWindow(m_lblJobVal.m_hWnd)) m_lblJobVal.MoveWindow(xJob + CLib::DpiPx(54), yJob, bNarrow ? wVal : (R - CLib::DpiPx(212)), nChkH);
+	if (::IsWindow(m_listSeq.m_hWnd))
+	{
+		m_listSeq.MoveWindow(xR, yList, R, max(CLib::DpiPx(40), yB - yList - 2));
+		// 좁을 때는 열 폭도 줄여 가로 스크롤을 줄인다
+		static const int W_WIDE[]   = { 50, 45, 80, 150, 150 };
+		static const int W_NARROW[] = { 40, 36, 64,  96,  96 };
+		for (int i = 0; i < 5; i++)
+			m_listSeq.SetColumnWidth(i, CLib::DpiPx(bNarrow ? W_NARROW[i] : W_WIDE[i]));
+	}
+	if (::IsWindow(m_btnComplete.m_hWnd)) m_btnComplete.MoveWindow(xR + R - CLib::DpiPx(90), yB, CLib::DpiPx(88), CLib::DpiPx(24));
 }
 
 void CPanelJobDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	// [LGLS 2026-09-10] 체크를 끄면 목록을 그대로 세워 둔다(사용자 지시).
-	if (nIDEvent == TIMER_PANEL_JOB && IsWindowVisible()
-		&& ::IsWindow(m_chkAuto.m_hWnd) && m_chkAuto.GetCheck() == BST_CHECKED)
+	if (nIDEvent == TIMER_PANEL_JOB)
+	{
+		// [LGLS 2026-09-10] 자동 갱신이 꺼져 있으면 건너뛴다
+		if (::IsWindow(m_chkAuto.m_hWnd) && m_chkAuto.GetCheck() != BST_CHECKED)
+			return;
 		Refresh();
+		return;
+	}
 	CDialog::OnTimer(nIDEvent);
 }
 
 void CPanelJobDlg::OnTabChanged(NMHDR* pNMHDR, LRESULT* pResult)
 {
+	UNREFERENCED_PARAMETER(pNMHDR);
 	*pResult = 0;
 	Refresh();
 }
-

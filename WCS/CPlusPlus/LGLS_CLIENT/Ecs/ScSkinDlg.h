@@ -35,6 +35,13 @@ public:
 	void ApplyZoomBtnIni();		// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN 재적용(창 생성 시·ini 저장 감지 시)
 	afx_msg void OnBnClickedVehZoom();
 	afx_msg void OnAckWrite(UINT nID);	// [LGLS 2026-09-12] 확대 패널 [쓰기] - 완료 Ack 수동 기록(ACKW)
+	// [LGLS 2026-10-01] 구 ECS 팝업의 [완료처리] [이상종료] [사용금지] + 안내문 판단용 상태
+	afx_msg void OnScvForce();
+	afx_msg void OnScvAbort();
+	afx_msg void OnScvDisable();
+	CString m_strScvState;	// SUBSYSTEM_STATUS (0 DOWN / 1 IDLE / 2 RUN)
+	CString m_strScvJob;	// 차상 화물(없으면 지시 화물)
+	BOOL    m_bScvJobInDb;	// 그 작업이 JOB_MST 에 있는가
 	CScSkinDlg(CWnd* pParent = NULL);   // 표준 생성자입니다.
 	CScSkinDlg(CEcsDoc* pDoc, CWnd* pParent = NULL);   // 표준 생성자입니다.
 	virtual ~CScSkinDlg();

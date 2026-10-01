@@ -3315,6 +3315,31 @@
 #define IDC_CVV_BTN_LCA_W               8269
 #define IDC_CVV_BTN_UCA_W               8270
 #define IDC_LGLS_ADDR_LBL               8299
+// [LGLS 2026-10-01] old-ECS popup items in the expanded panels
+#define IDC_SCV_ADVICE                  8140
+#define IDC_SCV_BTN_FORCE               8141
+#define IDC_SCV_BTN_ABORT               8142
+#define IDC_SCV_CHK_DISABLE             8143
+#define IDC_RTVV_ADVICE                 8040
+#define IDC_RTVV_BTN_FORCE              8041
+#define IDC_RTVV_BTN_ABORT              8042
+#define IDC_RTVV_CHK_DISABLE            8043
+#define IDC_CVV_PORT_LUGG_BASE          8271
+#define IDC_CVV_PORT_NO_BASE            8274
+#define IDC_CVV_PORT_EDT_BASE           8277
+#define IDC_CVV_PORT_BTN_BASE           8280
+#define IDC_CVV_CHK_DISABLE             8284
+#define IDC_PANEL_JOB_PRI_LBL           2383
+#define IDC_PANEL_JOB_PRI_VAL           2384
+#define IDC_PANEL_JOB_PRI_UP            2385
+#define IDC_PANEL_JOB_PRI_DN            2386
+#define IDC_PANEL_JOB_TRANSFER          2387
+#define IDC_PANEL_JOB_ECS_LBL           2388
+#define IDC_PANEL_JOB_ECS_VAL           2389
+#define IDC_PANEL_JOB_JOB_LBL           2390
+#define IDC_PANEL_JOB_JOB_VAL           2391
+#define IDC_PANEL_JOB_SEQ               2392
+#define IDC_PANEL_JOB_COMPLETE          2393
 #define IDC_LGLS_ST_FR1                 8401
 #define IDC_LGLS_ST_FR2                 8402
 #define IDC_LGLS_ST_FR3                 8403
@@ -3528,7 +3553,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        554
 #define _APS_NEXT_COMMAND_VALUE         33037
-#define _APS_NEXT_CONTROL_VALUE         2382
+#define _APS_NEXT_CONTROL_VALUE         2396
 #define _APS_NEXT_SYMED_VALUE           114
 #endif
 #endif

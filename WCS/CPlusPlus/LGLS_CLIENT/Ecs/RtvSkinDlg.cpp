@@ -17,7 +17,8 @@ IMPLEMENT_DYNAMIC(CRtvSkinDlg, CSkinDialog)
 CRtvSkinDlg::CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CRtvSkinDlg::IDD, pParent)
 {
-	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;	// [LGLS 2026-09-12]
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;
+	m_bRtvvJobInDb = FALSE;	// [LGLS 2026-10-01]	// [LGLS 2026-09-12]
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pDoc = pDoc;
@@ -28,7 +29,8 @@ CRtvSkinDlg::CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
 CRtvSkinDlg::CRtvSkinDlg(CWnd* pParent /*=NULL*/)
 	: CSkinDialog(CRtvSkinDlg::IDD, pParent)
 {
-	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;	// [LGLS 2026-09-12]
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;
+	m_bRtvvJobInDb = FALSE;	// [LGLS 2026-10-01]	// [LGLS 2026-09-12]
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bInitialized = FALSE;
 	m_pRTV_DATA = NULL;
@@ -91,6 +93,9 @@ BEGIN_MESSAGE_MAP(CRtvSkinDlg, CSkinDialog)
 		ON_BN_CLICKED(IDC_CHK_RTV_FORK12, &CRtvSkinDlg::OnBnClickedChkRtvFork12)
 		ON_WM_CTLCOLOR()
 		ON_BN_CLICKED(IDC_RTVV_RESEND, &CRtvSkinDlg::OnBnClickedRtvvResend)
+		ON_BN_CLICKED(IDC_RTVV_BTN_FORCE,   &CRtvSkinDlg::OnRtvvForce)		// [LGLS 2026-10-01] 구 ECS [완료처리]
+		ON_BN_CLICKED(IDC_RTVV_BTN_ABORT,   &CRtvSkinDlg::OnRtvvAbort)		// [LGLS 2026-10-01] 구 ECS [이상종료]
+		ON_BN_CLICKED(IDC_RTVV_CHK_DISABLE, &CRtvSkinDlg::OnRtvvDisable)	// [LGLS 2026-10-01] 구 ECS [사용금지]
 	ON_BN_CLICKED(IDC_LGLS_RTV_RESEND, &CRtvSkinDlg::OnBnClickedRtvvResend)	// [LGLS 2026-08-12] 원 대화상자 버튼(동일 기능)
 		ON_BN_CLICKED(IDC_RTVV_OK, &CRtvSkinDlg::OnBnClickedRtvvOk)
 	ON_BN_CLICKED(IDC_LGLS_RTV_ZOOM, &CRtvSkinDlg::OnBnClickedVehZoom)
@@ -227,7 +232,12 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		CString jt = pRsw->GetItem(_T("JT"));
 		CString io = (jt == _T("1")) ? _T("입고") : ((jt == _T("2")) ? _T("출고") : _T(""));
 		SetDlgItemText(IDC_RTVV_IO_TAG, io);
+		// [LGLS 2026-10-01] 구 ECS 안내문/완료처리/이상종료 판단용
+		m_strRtvvState = st;
+		m_strRtvvJob = pRsw->GetItem(_T("PID"));
+		if (m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000")) m_strRtvvJob = pRsw->GetItem(_T("POD"));
 		CString sus = pRsw->GetItem(_T("SUS"));
+		CheckDlgButton(IDC_RTVV_CHK_DISABLE, (sus == _T("1")) ? BST_CHECKED : BST_UNCHECKED);
 		CheckDlgButton(IDC_BTN_RTV_SUSPEND, (sus == _T("1")) ? BST_CHECKED : BST_UNCHECKED);
 
 		// [LGLS 2026-08-05] 제목 두 칸 - SC 와 같은 규칙(호기명 + 설비명). 채우는 코드가 없어 비어 있었다.
@@ -310,10 +320,14 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		SetDlgItemText(IDC_RTVV_START_POS, pRsw2->GetItem(_T("START_POS")));
 		SetDlgItemText(IDC_RTVV_DEST_POS,  pRsw2->GetItem(_T("DEST_POS")));
 		SetDlgItemText(IDC_RTVV_PROD_ID,   pRsw2->GetItem(_T("PRODUCT_ID")));
+		SetDlgItemText(IDC_RTVV_BATCH_NO,  pRsw2->GetItem(_T("LOT_NO")));		// [LGLS 2026-10-01] 구 ECS 배치번호
+		SetDlgItemText(IDC_RTVV_REQ_NO2,   pRsw2->GetItem(_T("JOB_STATUS")));	// [LGLS 2026-10-01] 구 ECS 명령순번 = 작업상태
+		m_bRtvvJobInDb = TRUE;
 		delete pRsw2;
 	}
 	else
 	{	// [LGLS 2026-08-01] 조회 실패/무작업 시 이전 값이 남지 않도록 비운다
+		m_bRtvvJobInDb = FALSE;
 		SetDlgItemText(IDC_EDIT_RTV_JOB_JOB_NO,    _T("-"));
 		SetDlgItemText(IDC_CBX_RTV_JOB_JOB_TYP,    _T(""));
 		SetDlgItemText(IDC_CBX_RTV_JOB_JOB_STATUS, _T(""));
@@ -328,6 +342,17 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		SetDlgItemText(IDC_RTVV_DEST_POS,  _T(""));
 		SetDlgItemText(IDC_RTVV_PROD_ID,   _T(""));
 	}
+	// [LGLS 2026-10-01] 구 ECS 팝업의 안내문(labelAdvice)
+	{
+		BOOL bJob = !(m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000"));
+		CString adv;
+		if (!bJob)
+			SetDlgItemText(IDC_RTVV_IO_TAG, (m_strRtvvState == _T("0")) ? _T("에러") : (m_strRtvvState == _T("2")) ? _T("작업중") : _T("대기"));
+		else if (!m_bRtvvJobInDb)      adv = _T("입/출고 요청번호가 DB에 없습니다.  [이상종료]처리하세요!!");
+		else if (m_strRtvvState == _T("1")) adv = _T("입/출고 명령이 완료되지 않았습니다. [완료처리]하세요!!");
+		else if (m_strRtvvState == _T("0")) adv = _T("RGV 의 상태를 확인하고, [명령재전송] 또는 매뉴얼처리하세요!!");
+		SetDlgItemText(IDC_RTVV_ADVICE, adv);
+	}
 }
 
 void CRtvSkinDlg::OnSize(UINT nType, int cx, int cy)
@@ -1143,8 +1168,18 @@ HBRUSH CRtvSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	}
 	else if(nId == IDC_RTVV_STATUS)
 	{
-		pDC->SetBkColor(RGB(255,255,150));
-		if(m_brStatus) return m_brStatus;
+		// [LGLS 2026-10-01] 구 ECS 처럼 상태색 : DOWN 빨강 / IDLE 노랑 / RUN 초록
+		static CBrush s_brRun(RGB(0,255,0)), s_brIdle(RGB(255,255,0)), s_brDown(RGB(255,0,0));
+		CString t; pWnd->GetWindowText(t);
+		CString h = t.Left(1);
+		COLORREF c = (h == _T("2")) ? RGB(0,255,0) : (h == _T("1")) ? RGB(255,255,0) : RGB(255,0,0);
+		pDC->SetBkColor(c); pDC->SetTextColor(RGB(0,0,0));
+		return (h == _T("2")) ? (HBRUSH)s_brRun : (h == _T("1")) ? (HBRUSH)s_brIdle : (HBRUSH)s_brDown;
+	}
+	else if(nId == IDC_RTVV_ADVICE)
+	{
+		pDC->SetTextColor(RGB(200,0,0)); pDC->SetBkMode(TRANSPARENT);
+		return (HBRUSH)::GetStockObject(NULL_BRUSH);
 	}
 	else if (nId == IDC_LGLS_ADDR_LBL)
 	{
@@ -1238,78 +1273,87 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 	CRect rcCli; GetClientRect(&rcCli);
 	CRect rcWin; GetWindowRect(&rcWin);
 
-	// [LGLS 2026-09-12] S/C(09-08)와 같이 ★오른쪽★으로 편다 - 세로는 그대로, 폭만 PW 만큼.
-	//   종전(아래로 296px)은 현장 1024x768 에서 하단이 잘리고 덧붙은 영역에 틀이 없었다.
-	const int PW    = 470;   // 오른쪽에 붙는 패널 폭(px)
-	const int STRIP = 30;						// [확대]/[축소] 버튼 띠 높이(px)
-	int nLeft = rcCli.Width();					// 기존 컨트롤 오른쪽(빈 영역)에서 시작
-	if (m_nVehBaseH <= 0) m_nVehBaseH = rcWin.Height();	// 축소 상태 창 높이(원래 DLG 그대로) - 1회만
-	if (m_nVehBaseW <= 0) m_nVehBaseW = rcWin.Width();	// 축소 상태 창 폭
+	// [LGLS 2026-10-01] ★구 ECS 설비 팝업(StackerForm / RGVForm)과 같은 배치★ (사용자 지시 - 내용 전부, 위치도 맞춘다)
+	//   구 ECS 팝업 panel1(505x349) :
+	//     panel2 (y 0~46)   : 상태(DOWN/IDLE/RUN 색) · 설비명 · 설명
+	//     panel3 (y 46~126) : 신호 LED 4열 x 3행 + Pallet ID,  현재위치/출발지/도착지/완료위치(각 3칸) + 알람코드
+	//     panel4 (y 124~285): 요청번호 ― 명령순번, 배치번호, 자재코드, 팔렛(+입고/출고), 출발위치, 도착위치, 안내문
+	//                         오른쪽 [명령 재전송] [완료처리] [이상종료]
+	//     panel5 (y 288~349): [사용금지] 체크, [확인]
+	//   좌표는 구 ECS Designer 값을 그대로 쓰고, 패널 왼쪽 끝(nLeft)만 더한다.
+	//   PLC 실주소(파랑)는 종전처럼 이름 옆에 작게 병기한다(사용자 요청 2026-08-05).
+	const int PW    = 512;
+	const int STRIP = 30;
+	int nLeft = rcCli.Width();
+	if (m_nVehBaseH <= 0) m_nVehBaseH = rcWin.Height();
+	if (m_nVehBaseW <= 0) m_nVehBaseW = rcWin.Width();
 	m_nVehPanelW = PW;
-	m_nVehPanelH = 0;							// 세로는 더 이상 늘리지 않는다
+	m_nVehPanelH = 0;
+	UNREFERENCED_PARAMETER(STRIP);
 
 	CFont* pFont = GetFont();
-	struct L { static void F(CWnd* p, CFont* f) { if (f) p->SetFont(f); } };
-
-	// 라벨 생성기
 	struct MK {
-		CRtvSkinDlg* dlg; CFont* font;
-		void Label(LPCTSTR s, int x, int y, int w, int h) {
+		CWnd* dlg; CFont* font; CPtrArray* arr;
+		void Add(CWnd* p) { if (font) p->SetFont(font); arr->Add(p); }
+		void Label(LPCTSTR s, int x, int y, int w, int h, DWORD extra = 0) {
 			CStatic* p = new CStatic();
-			p->Create(s, WS_CHILD | WS_VISIBLE | SS_LEFT, CRect(x, y, x + w, y + h), dlg);
-			if (font) p->SetFont(font);
-			dlg->m_arVehCtrl.Add(p);
+			p->Create(s, WS_CHILD | WS_VISIBLE | SS_LEFT | extra, CRect(x, y, x + w, y + h), dlg);
+			Add(p);
 		}
 		void LabelA(LPCTSTR nm, const CString& addr, int x, int y, int wN, int wA) {
-			// [LGLS 2026-08-06] 이름(검정) + 실주소(파랑, IDC_LGLS_ADDR_LBL) 분리 라벨
 			Label(nm, x, y, wN, 16);
-			if (addr.IsEmpty()) return;
+			if (addr.IsEmpty() || wA <= 0) return;
 			CStatic* p = new CStatic();
 			p->Create(addr, WS_CHILD | WS_VISIBLE | SS_LEFT, CRect(x + wN + 2, y, x + wN + 2 + wA, y + 16), dlg, IDC_LGLS_ADDR_LBL);
-			if (font) p->SetFont(font);
-			dlg->m_arVehCtrl.Add(p);
+			Add(p);
 		}
 		void Value(int id, int x, int y, int w, int h, DWORD extra = 0) {
 			CStatic* p = new CStatic();
-			p->Create(_T(""), WS_CHILD | WS_VISIBLE | SS_CENTERIMAGE | SS_LEFT | WS_BORDER | extra,
-			          CRect(x, y, x + w, y + h), dlg, id);
-			if (font) p->SetFont(font);
-			dlg->m_arVehCtrl.Add(p);
+			p->Create(_T(""), WS_CHILD | WS_VISIBLE | SS_CENTERIMAGE | WS_BORDER | extra, CRect(x, y, x + w, y + h), dlg, id);
+			Add(p);
 		}
 		void Led(int id, int x, int y) {
 			CStatic* p = new CStatic();
-			p->Create(_T("0"), WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
-			          CRect(x, y, x + 14, y + 14), dlg, id);
-			if (font) p->SetFont(font);
-			dlg->m_arVehCtrl.Add(p);
+			p->Create(_T("0"), WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER, CRect(x, y, x + 14, y + 13), dlg, id);
+			Add(p);
 		}
 		void Button(int id, LPCTSTR s, int x, int y, int w, int h) {
 			CButton* p = new CButton();
-			p->Create(s, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-			          CRect(x, y, x + w, y + h), dlg, id);
-			if (font) p->SetFont(font);
-			dlg->m_arVehCtrl.Add(p);
+			p->Create(s, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_MULTILINE, CRect(x, y, x + w, y + h), dlg, id);
+			Add(p);
 		}
-	} mk = { this, pFont };
+		void Check(int id, LPCTSTR s, int x, int y, int w, int h) {
+			CButton* p = new CButton();
+			p->Create(s, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, CRect(x, y, x + w, y + h), dlg, id);
+			Add(p);
+		}
+	} mk = { this, pFont, &m_arVehCtrl };
 
-	int y = 4;
-	// [LGLS 2026-08-06] 창 폭이 대화상자마다 달라(SC 좁음) 고정 좌표는 잘린다 - 동적 계산
-	int nCol0 = nLeft + 6;						// 좌표는 모두 패널 왼쪽 끝(nLeft) 기준
-	int nColW = (PW - 12) / 2;
-	int nCol1 = nCol0 + nColW;
-	int nBtnX = nLeft + PW - 118;
-
-	// [LGLS 2026-08-05] 관측표(observables.tsv)의 실주소를 라벨에 병기한다.
+	int X = nLeft + 4;				// 구 ECS panel1 의 원점
 	CString strOwner = _T("VEHICLE:1");	// RTV(RGV) 는 관측표에서 VEHICLE:1
-	// ── 제목 / 상태 / 버튼(우측 2줄) ─────────────────────────────
-	mk.Value(IDC_RTVV_TITLE1, nCol0, y, 110, 18);
-	mk.Value(IDC_RTVV_TITLE2, nCol0 + 114, y, 130, 18);
-	mk.LabelA(_T("상태"), CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_STATUS")), nCol0 + 250, y + 2, 30, 52);
-	mk.Value(IDC_RTVV_STATUS, nCol0 + 338, y, 90, 18);	// [LGLS 2026-09-01] "1 = IDLE" 폭
-	y += 20;
 
-	// ── 핸드셰이크 LED : 2열 x 6행 (라벨에 실주소) ────────────────
-	// [LGLS 2026-09-12] 완료 Ack [쓰기] 버튼 글자 (rc_resource\dlg_rtv\dlg_rtv.ini  ackwrite=)
+	// ── panel2 : 상태 / 설비명 / 설명 ──────────────────────────────
+	mk.Value(IDC_RTVV_STATUS, X + 4, 4, 57, 36, SS_CENTER);
+	mk.Value(IDC_RTVV_TITLE1, X + 61, 4, 438, 19);
+	mk.Value(IDC_RTVV_TITLE2, X + 61, 23, 438, 17);
+
+	// ── panel3 : 신호 LED (구 ECS 와 같은 자리 : 4열 x 3행) ───────────
+	const int P3 = 46;
+	struct LEDDEF { LPCTSTR name; int id; LPCTSTR obs; int col; int row; int wr; };
+	LEDDEF leds[] = {
+		{ _T("적재완료"),    IDC_RTVV_LED_LOAD_CMP,        _T("LOAD_COMPLETE"),          0, 0, 0 },
+		{ _T("반송요청"),    IDC_RTVV_LED_TR_REQ,          _T("TRANSFER_REQUEST"),       0, 1, 0 },
+		{ _T("알람SET"),     IDC_RTVV_LED_ALARM_SET,       _T("ALARM_SET_REPORT"),       0, 2, 0 },
+		{ _T("적재ACK"),     IDC_RTVV_LED_LOAD_CMP_ACK,    _T("LOAD_COMPLETE_ACK"),      1, 0, 1 },
+		{ _T("반송ACK"),     IDC_RTVV_LED_TR_REQ_ACK,      _T("TRANSFER_ACK"),           1, 1, 0 },
+		{ _T("알람SET ACK"), IDC_RTVV_LED_ALARM_SET_ACK,   _T("ALARM_SET_REPORT_ACK"),   1, 2, 0 },
+		{ _T("하역완료"),    IDC_RTVV_LED_UNLOAD_CMP,      _T("UNLOAD_COMPLETE"),        2, 0, 0 },
+		{ _T("화물감지"),    IDC_RTVV_LED_PALLET_EXIST,    _T("PALLET_EXIST_FLAG"),      2, 1, 0 },
+		{ _T("알람RST"),     IDC_RTVV_LED_ALARM_RESET,     _T("ALARM_RESET_REPORT"),     2, 2, 0 },
+		{ _T("하역ACK"),     IDC_RTVV_LED_UNLOAD_CMP_ACK,  _T("UNLOAD_COMPLETE_ACK"),    3, 0, 2 },
+		{ _T("알람RST ACK"), IDC_RTVV_LED_ALARM_RESET_ACK, _T("ALARM_RESET_REPORT_ACK"), 3, 2, 0 },
+	};
+	// [LGLS 2026-09-12] 완료 Ack [쓰기] 버튼 글자 (rc_resource\dlg_xx\dlg_xx.ini  ackwrite=)
 	CString strAckW = _T("쓰기");
 	{
 		TCHAR _cfA[MAX_PATH] = {0}; GetModuleFileName(NULL, _cfA, MAX_PATH);
@@ -1318,102 +1362,75 @@ void CRtvSkinDlg::BuildVehStatusPanel()
 		CString _sA = CLib::GetIniStringFromPath(_fpA, _T("ackwrite"), (int)((m_pDoc == NULL) ? EN_KOR : m_pDoc->m_enLang));
 		if (!_sA.IsEmpty()) strAckW = _sA;
 	}
-	struct LEDDEF { LPCTSTR name; int id; LPCTSTR obs; };
-	LEDDEF leds[] = {
-		{ _T("적재완료"),    IDC_RTVV_LED_LOAD_CMP,        _T("LOAD_COMPLETE") },
-		{ _T("적재ACK"),     IDC_RTVV_LED_LOAD_CMP_ACK,    _T("LOAD_COMPLETE_ACK") },
-		{ _T("하역완료"),    IDC_RTVV_LED_UNLOAD_CMP,      _T("UNLOAD_COMPLETE") },
-		{ _T("하역ACK"),     IDC_RTVV_LED_UNLOAD_CMP_ACK,  _T("UNLOAD_COMPLETE_ACK") },
-		{ _T("반송요청"),    IDC_RTVV_LED_TR_REQ,          _T("TRANSFER_REQUEST") },
-		{ _T("반송ACK"),     IDC_RTVV_LED_TR_REQ_ACK,      _T("TRANSFER_ACK") },
-		{ _T("화물감지"),    IDC_RTVV_LED_PALLET_EXIST,    _T("PALLET_EXIST_FLAG") },
-		{ _T("알람SET"),     IDC_RTVV_LED_ALARM_SET,       _T("ALARM_SET_REPORT") },
-		{ _T("알람SET ACK"), IDC_RTVV_LED_ALARM_SET_ACK,   _T("ALARM_SET_REPORT_ACK") },
-		{ _T("알람RST"),     IDC_RTVV_LED_ALARM_RESET,     _T("ALARM_RESET_REPORT") },
-		{ _T("알람RST ACK"), IDC_RTVV_LED_ALARM_RESET_ACK, _T("ALARM_RESET_REPORT_ACK") },
-	};
+	static const int LED_X[4] = { 5, 131, 257, 383 };
+	static const int LED_Y[3] = { 6, 22, 38 };
 	for (int i = 0; i < sizeof(leds)/sizeof(leds[0]); i++)
 	{
-		int col = i / 6, row = i % 6;
-		int x = (col == 0) ? nCol0 : nCol1;
-		int yy = y + row * 18;
-		mk.LabelA(leds[i].name, CLib::GetObsAddr(strOwner, leds[i].obs), x, yy + 1, 88, 86);
-		mk.Led(leds[i].id, x + 180, yy);
-		// [LGLS 2026-09-12] 완료 Ack 두 줄에 [쓰기] - 설비가 완료 보고를 들고 Ack 를 기다리는데 지워진 경우(상황 A) 되살린다
-		if (leds[i].id == IDC_RTVV_LED_LOAD_CMP_ACK)   mk.Button(IDC_RTVV_BTN_LCA_W, strAckW, x + 197, yy - 2, 30, 18);
-		if (leds[i].id == IDC_RTVV_LED_UNLOAD_CMP_ACK) mk.Button(IDC_RTVV_BTN_UCA_W, strAckW, x + 197, yy - 2, 30, 18);
+		int x = X + LED_X[leds[i].col], yy = P3 + LED_Y[leds[i].row];
+		mk.Led(leds[i].id, x, yy);
+		BOOL bW = (leds[i].wr != 0);
+		mk.LabelA(leds[i].name, CLib::GetObsAddr(strOwner, leds[i].obs), x + 16, yy - 1, bW ? 50 : 54, bW ? 34 : 54);
+		if (leds[i].wr == 1) mk.Button(IDC_RTVV_BTN_LCA_W, strAckW, x + 100, yy - 2, 28, 17);
+		if (leds[i].wr == 2) mk.Button(IDC_RTVV_BTN_UCA_W, strAckW, x + 100, yy - 2, 28, 17);
 	}
-	y += 6 * 18 + 2;
+	// 구 ECS 의 Pallet ID (4열 2행) = 차상화물
+	mk.LabelA(_T("차상화물"), CLib::GetObsAddr(strOwner, _T("PALLET_ON_VEHICLE")), X + 383, P3 + 21, 46, 0);
+	mk.Value(IDC_RTVV_PALLET_ID, X + 429, P3 + 20, 72, 16);
 
-	// ── 위치 / 지시 값 (라벨에 시작 주소) ─────────────────────────
-	struct TRIO { LPCTSTR name; int a, b, c; LPCTSTR obs; };
-	TRIO trios[] = {
-		{ _T("현재위치"), IDC_RTVV_CUR1, IDC_RTVV_CUR2, IDC_RTVV_CUR3, _T("SUBSYSTEM_LOCATION_01") },
-		{ _T("출발지시"), IDC_RTVV_FROM1, IDC_RTVV_FROM2, IDC_RTVV_FROM3, _T("FROM_01") },
-		{ _T("도착지시"), IDC_RTVV_TO1, IDC_RTVV_TO2, IDC_RTVV_TO3, _T("TO_01") },
-		{ _T("완료위치"), IDC_RTVV_CMP1, IDC_RTVV_CMP2, IDC_RTVV_CMP3, _T("TRANSFER_COMPLETE_LOCATION_01") },
-	};
-	for (int i = 0; i < sizeof(trios)/sizeof(trios[0]); i++)
+	// 위치 4조 + 알람코드 (구 ECS 와 같은 한 줄)
 	{
-		int col = i % 2, row = i / 2;
-		int x = (col == 0) ? nCol0 : nCol1;
-		int yy = y + row * 18;
-		mk.LabelA(trios[i].name, CLib::GetObsAddr(strOwner, trios[i].obs), x, yy + 2, 58, 56);
-		mk.Value(trios[i].a, x + 120, yy, 30, 18);
-		mk.Value(trios[i].b, x + 156, yy, 30, 18);
-		mk.Value(trios[i].c, x + 192, yy, 30, 18);
-	}
-	y += 2 * 18 + 2;
-
-	// ── 파렛트 / 알람코드 ──────────────────────────────────────────
-	// ── 파렛트 / 알람코드 ──────────────────────────────────────────
-	// [LGLS 2026-09-07] 값은 PALLET_ON_VEHICLE_RD(차상 화물)인데 주소 라벨만 PALLET_ID
-	//   (지시 화물)로 적혀 있었다. 값에 맞춰 이름과 주소를 정정한다.
-	mk.LabelA(_T("차상화물"), CLib::GetObsAddr(strOwner, _T("PALLET_ON_VEHICLE")), nCol0, y + 2, 58, 56);
-	mk.Value(IDC_RTVV_PALLET_ID, nCol0 + 120, y, 110, 18);
-	mk.LabelA(_T("알람코드"), CLib::GetObsAddr(strOwner, _T("ALARM_SET_CODE")), nCol1, y + 2, 58, 56);
-	mk.Value(IDC_RTVV_ALARM_CODE, nCol1 + 120, y, 110, 18);
-	y += 20;
-
-	// ── 작업정보 (구 ECS 팝업의 요청번호/자재코드/팔렛/출발·도착위치/입출고) ──
-	// [LGLS 2026-09-07] 종전에는 ID 와 값 설정 코드만 있고 컨트롤을 만들지 않아
-	//   화면에 나오지 않았다. 구 ECS 팝업에 있던 항목이므로 되살린다.
-	//   영역 표기 : PLC 신호는 실주소(파랑), DB 값은 테이블.컬럼.
-	{
-		struct JOBDEF { LPCTSTR name; int id; CString area; };
-		// 출처가 길어 라벨이 잘리므로 표 위에 한 줄로 묶고, 항목에는 컬럼명만 적는다.
-		mk.Label(_T("작업정보 (JOB_MST · RTV_DATA_LGLS)"), nCol0, y + 1, 240, 16);
-		y += 17;
-		JOBDEF jobs[] = {
-			{ _T("지시화물"), IDC_RTVV_PALLET,    CLib::GetObsAddr(strOwner, _T("PALLET_ID")) },
-			{ _T("입출고"),   IDC_RTVV_IO_TAG,    CString(_T("JOB_TYP_OD")) },
-			{ _T("요청번호"), IDC_RTVV_REQ_NO,    CString(_T("LUGG_NO")) },
-			{ _T("제품정보"), IDC_RTVV_PROD_ID,   CString(_T("PRODUCT_ID")) },
-			{ _T("출발위치"), IDC_RTVV_START_POS, CString(_T("START_POS")) },
-			{ _T("도착위치"), IDC_RTVV_DEST_POS,  CString(_T("DEST_POS")) },
+		const int PY = P3 + 57;
+		struct TRIO { LPCTSTR name; int a, b, c; LPCTSTR obs; int lx, vx; };
+		TRIO trios[] = {
+			{ _T("현재위치"), IDC_RTVV_CUR1,  IDC_RTVV_CUR2,  IDC_RTVV_CUR3,  _T("SUBSYSTEM_LOCATION_01"),          7,  48 },
+			{ _T("출발지"),   IDC_RTVV_FROM1, IDC_RTVV_FROM2, IDC_RTVV_FROM3, _T("FROM_01"),                        112, 143 },
+			{ _T("도착지"),   IDC_RTVV_TO1,   IDC_RTVV_TO2,   IDC_RTVV_TO3,   _T("TO_01"),                          210, 242 },
+			{ _T("완료위치"), IDC_RTVV_CMP1,  IDC_RTVV_CMP2,  IDC_RTVV_CMP3,  _T("TRANSFER_COMPLETE_LOCATION_01"),  311, 351 },
 		};
-		for (int i = 0; i < sizeof(jobs)/sizeof(jobs[0]); i++)
+		for (int i = 0; i < sizeof(trios)/sizeof(trios[0]); i++)
 		{
-			int col = i % 2, row = i / 2;
-			int x = (col == 0) ? nCol0 : nCol1;
-			int yy = y + row * 18;
-			mk.LabelA(jobs[i].name, jobs[i].area, x, yy + 2, 56, 78);
-			mk.Value(jobs[i].id, x + 138, yy, 92, 18);
+			mk.LabelA(trios[i].name, CLib::GetObsAddr(strOwner, trios[i].obs), X + trios[i].lx, PY - 1, 40, 0);
+			mk.Value(trios[i].a, X + trios[i].vx,      PY, 17, 14, SS_CENTER);
+			mk.Value(trios[i].b, X + trios[i].vx + 18, PY, 17, 14, SS_CENTER);
+			mk.Value(trios[i].c, X + trios[i].vx + 36, PY, 17, 14, SS_CENTER);
 		}
-		y += 3 * 18 + 2;
+		mk.LabelA(_T("알람코드"), CLib::GetObsAddr(strOwner, _T("ALARM_SET_CODE")), X + 412, PY - 1, 46, 0);
+		mk.Value(IDC_RTVV_ALARM_CODE, X + 460, PY, 42, 14, SS_CENTER);
+		// 실주소는 자리가 없어 한 줄로 모아 적는다 (관측표 이름 : 실주소)
+		CString strAddrLine;
+		strAddrLine.Format(_T("위치 %s / 출발 %s / 도착 %s / 완료 %s / 알람 %s"),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_LOCATION_01")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("FROM_01")),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("TO_01")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("TRANSFER_COMPLETE_LOCATION_01")),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("ALARM_SET_CODE")));
+		CStatic* pA = new CStatic();
+		pA->Create(strAddrLine, WS_CHILD | WS_VISIBLE | SS_LEFT, CRect(X + 7, PY + 15, X + 502, PY + 29), this, IDC_LGLS_ADDR_LBL);
+		mk.Add(pA);
 	}
 
-	// ── 버튼(맨 아래) ──────────────────────────────────────────────
-	mk.Button(IDC_RTVV_RESEND, _T("지시 재전송"), nCol0, y, 112, 22);
-	mk.Button(IDC_RTVV_OK,  _T("닫기"), nCol0 + 118, y, 80, 22);
-	y += 26;
+	// ── panel4 : 명령 상세 (구 ECS panel4 의 좌표 그대로) ─────────────
+	const int P4 = 124;
+	mk.Label(_T("요청번호"), X + 8,  P4 + 9,   67, 18);  mk.Value(IDC_RTVV_REQ_NO,    X + 78, P4 + 9,   119, 18);
+	mk.Label(_T("―"),        X + 198, P4 + 8,  20, 18);  mk.Value(IDC_RTVV_REQ_NO2,   X + 217, P4 + 9,  138, 18);
+	mk.Label(_T("배치번호"), X + 8,  P4 + 30,  67, 18);  mk.Value(IDC_RTVV_BATCH_NO,  X + 78, P4 + 30,  277, 18);
+	mk.Label(_T("자재코드"), X + 8,  P4 + 51,  67, 18);  mk.Value(IDC_RTVV_PROD_ID,   X + 78, P4 + 51,  277, 18);
+	mk.Label(_T("팔렛"),     X + 8,  P4 + 72,  67, 18);  mk.Value(IDC_RTVV_PALLET,    X + 78, P4 + 72,  199, 18);
+	mk.Value(IDC_RTVV_IO_TAG, X + 283, P4 + 70, 72, 20, SS_CENTER);
+	mk.Label(_T("출발위치"), X + 8,  P4 + 93,  67, 18);  mk.Value(IDC_RTVV_START_POS, X + 78, P4 + 93,  277, 18);
+	mk.Label(_T("도착위치"), X + 8,  P4 + 114, 67, 18);  mk.Value(IDC_RTVV_DEST_POS,  X + 78, P4 + 114, 277, 18);
+	{
+		CStatic* pAdv = new CStatic();
+		pAdv->Create(_T(""), WS_CHILD | WS_VISIBLE | SS_LEFT, CRect(X + 10, P4 + 141, X + 486, P4 + 157), this, IDC_RTVV_ADVICE);
+		mk.Add(pAdv);
+	}
+	mk.Button(IDC_RTVV_RESEND,    _T("명령 재전송"), X + 372, P4 + 5,  120, 40);
+	mk.Button(IDC_RTVV_BTN_FORCE, _T("완료처리"),    X + 372, P4 + 50, 120, 40);
+	mk.Button(IDC_RTVV_BTN_ABORT, _T("이상종료"),    X + 372, P4 + 95, 120, 40);
 
-	// [LGLS 2026-08-05] [확대] 버튼은 rc(IDC_LGLS_RTV_ZOOM)로 옮겼다.
-	//   런타임 생성 버튼은 CSkinButton 이 붙어도 다른 명령 버튼과 모양/글자가 달라서,
-	//   rc 에 두고 DDX 로 묶는 편이 확실하다.
+	// ── panel5 : 사용금지 / 확인 ──────────────────────────────────────
+	const int P5 = 288;
+	mk.Check(IDC_RTVV_CHK_DISABLE, _T("사용금지"), X + 25, P5 + 24, 76, 16);
+	mk.Button(IDC_RTVV_OK, _T("확인"), X + 209, P5 + 4, 86, 40);
 
-	RenameRuntimeLabels();	// [LGLS 2026-08-05]
-	MakeGroupBoxesTransparent();	// [LGLS 2026-08-05]
 	SetVehPanelExpanded(FALSE);		// 기본은 축소(원래 DLG 만)
 }
 
@@ -1627,4 +1644,57 @@ void CRtvSkinDlg::ApplyZoomBtnIni()
 	BOOL bManual = FALSE;	// [LGLS 2026-09-28] 수동지시 폐기 - 늘 숨긴다 (사용자 지시)
 	CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL);
 	if (pM) pM->ShowWindow(bManual ? SW_SHOW : SW_HIDE);
+}
+
+// ===================================================================
+// [LGLS 2026-10-01] 구 ECS RGVForm 의 [완료처리] / [이상종료] / [사용금지] (사용자 지시)
+// ===================================================================
+static BOOL LglsRtvExecUpdate(CEcsDoc* pDoc, const CString& strSql, const CString& strLog, CString strLugg, LPCTSTR strWid)
+{
+	if (pDoc == NULL) return FALSE;
+	if (!pDoc->Permission(strWid, UPD_YN)) { AfxMessageBox(pDoc->GetMsgLangDef(_T("권한이 없습니다"))); return FALSE; }
+	if (pDoc->BeginTrans_DLG() < 1) return FALSE;
+	if (strLugg.IsEmpty()) strLugg = _T("0");
+	if (!pDoc->GetQueryInsertClientLog(strWid, strLugg, _T(""), _T(""), strLog)) { pDoc->RollbackTrans_DLG(); return FALSE; }
+	if (!pDoc->ExcuteQueryString_DLG(strSql)) { pDoc->RollbackTrans_DLG(); AfxMessageBox(pDoc->GetMsgLangDef(_T("실패"))); return FALSE; }
+	pDoc->CommitTrans_DLG();
+	return TRUE;
+}
+
+void CRtvSkinDlg::OnRtvvForce()
+{
+	if (m_pDoc == NULL || m_pRTV_DATA == NULL) return;
+	if (m_strRtvvState == _T("2")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(작업중) 상태입니다. 작업이 완료될때 까지 기다리십시오."))); return; }
+	if (m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("[완료처리]할 명령이 없습니다."))); return; }
+	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("강제완료 하시겠습니까?")) + _T(" [") + m_strRtvvJob + _T(" -> 39]"), MB_YESNO) != IDYES) return;
+	CString strSql;
+	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '39', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
+		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_strRtvvJob);
+	if (LglsRtvExecUpdate(m_pDoc, strSql, _T("JOB_MST UPDATE : 완료처리(구ECS) JOB_STATUS -> 39"), m_strRtvvJob, _T("CRtvSkinDlg")))
+		AfxMessageBox(_T("[ ") + m_strRtvvJob + _T(" ] 명령을 완료하였습니다."));
+}
+
+void CRtvSkinDlg::OnRtvvAbort()
+{
+	if (m_pDoc == NULL || m_pRTV_DATA == NULL) return;
+	if (m_strRtvvState == _T("2")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(작업중) 상태입니다. 작업완료후 [이상종료]처리를 하십시오."))); return; }
+	if (m_strRtvvState == _T("0")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("DOWN(작업중단) 상태에서는 [이상종료]처리를 할 수 없습니다."))); return; }
+	if (m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("[이상종료]처리할 명령이 없습니다."))); return; }
+	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("이상종료 하시겠습니까? (지시 연결 해제, 작업정보는 유지)")) + _T(" [RTV ") + m_pRTV_DATA->K_RTV_NO + _T("]"), MB_YESNO) != IDYES) return;
+	CString strSql;
+	strSql.Format(_T("UPDATE RTV_DATA_LGLS SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0'")
+		_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00'")
+		_T(", TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
+		_T(", RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N', DEPART_TRACK = '', ARRIVE_TRACK = ''")
+		_T(" WHERE WH_TYP = '%s' AND RTV_NO = '%s'"),
+		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+	if (LglsRtvExecUpdate(m_pDoc, strSql, CString(_T("이상종료(구ECS) : 지시(OD) 해제 (RTV ")) + m_pRTV_DATA->K_RTV_NO + _T(")"), _T("0"), _T("CRtvSkinDlg")))
+		AfxMessageBox(_T("[이상종료]처리를 완료하였습니다."));
+}
+
+void CRtvSkinDlg::OnRtvvDisable()
+{
+	CWnd* pBtn = GetDlgItem(IDC_BTN_RTV_SUSPEND);
+	if (pBtn == NULL) return;
+	SendMessage(WM_COMMAND, MAKEWPARAM(IDC_BTN_RTV_SUSPEND, BN_CLICKED), (LPARAM)pBtn->GetSafeHwnd());
 }
