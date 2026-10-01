@@ -669,7 +669,7 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	if (bNarrow || R < CLib::DpiPx(420))
 	{
 		int wLbl = CLib::DpiPx(48);
-		int wVal = (R - wBtn - 8 - 2 * (wLbl + 4) - 8) / 2;
+		int wVal = (R - (bNarrow ? wBtn + 8 : 0) - 2 * (wLbl + 4) - 8) / 2;	// 가로+좁음이면 버튼이 아래로 가니 그 자리까지 값 칸으로
 		if (wVal < CLib::DpiPx(40)) wVal = CLib::DpiPx(40);
 		int x = xR + 4;
 		if (::IsWindow(m_lblEcs.m_hWnd))    m_lblEcs.MoveWindow(x, yHead, wLbl, nChkH);            x += wLbl + 4;
@@ -684,10 +684,18 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 			if (::IsWindow(pR[i]->m_hWnd) && !m_rcRcRight[i].IsRectEmpty())
 				pR[i]->MoveWindow(xR + m_rcRcRight[i].left, yR + m_rcRcRight[i].top, m_rcRcRight[i].Width(), m_rcRcRight[i].Height());
 	}
-	if (::IsWindow(m_btnComplete.m_hWnd)) m_btnComplete.MoveWindow(xR + R - wBtn - 2, yR + 2, wBtn, hBtn);
+	// [LGLS 2026-10-01] 가로 분할인데 상세 칸이 좁으면(머리줄에 자리가 없으면) [완료처리] 를 상세 칸 아래로 내린다 (사용자 지시)
+	BOOL bBtnBottom = (!bNarrow && R < CLib::DpiPx(420));
+	int cyList = cy - yList - 2;
+	if (bBtnBottom)
+	{
+		if (::IsWindow(m_btnComplete.m_hWnd)) m_btnComplete.MoveWindow(xR + R - wBtn - 2, cy - hBtn - 2, wBtn, hBtn);
+		cyList -= (hBtn + 4);
+	}
+	else if (::IsWindow(m_btnComplete.m_hWnd)) m_btnComplete.MoveWindow(xR + R - wBtn - 2, yR + 2, wBtn, hBtn);
 	if (::IsWindow(m_listSeq.m_hWnd))
 	{
-		m_listSeq.MoveWindow(xR, yList, R, max(CLib::DpiPx(40), cy - yList - 2));
+		m_listSeq.MoveWindow(xR, yList, R, max(CLib::DpiPx(40), cyList));
 		static const int W_WIDE[]   = { 52, 45, 110, 130, 130 };
 		static const int W_NARROW[] = { 48, 40, 100, 110, 110 };
 		for (int i = 0; i < 5; i++)
