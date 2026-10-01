@@ -2056,103 +2056,43 @@ void CScSkinDlg::BuildVehStatusPanel()
 		CString _sA = CLib::GetIniStringFromPath(_fpA, _T("ackwrite"), (int)((m_pDoc == NULL) ? EN_KOR : m_pDoc->m_enLang));
 		if (!_sA.IsEmpty()) strAckW = _sA;
 	}
-	// ── [LGLS 2026-10-01] ★구 ECS 실행 화면(사진) 배치★ : [Stacker Crane 정보] 폼 그대로 (사용자 지시 - 컨트롤 위치와 순서)
-	//   위   : [DOWN] 상태칸(빨강/노랑/초록) + 설비명(파랑, 가운데) + 설명(파랑, 가운데)
-	//   LED  : 4열 x 3행 (영문 이름) - Load Complete / Load Complete ACK / Unload Complete / Unload Complete ACK
-	//                                  Transfer Request / Transfer Request ACK / Pallet Exist / Pallet ID [값]
-	//                                  Alarm Set / Alarm Set ACK / Alarm Reset / Alarm Reset ACK
-	//   위치 : 현재위치 □□□ 출발지 □□□ 도착지 □□□ 완료위치 □□□ 알람코드 □
-	//   틀   : 요청번호 □ ― □ / 배치번호 / 자재코드 / 팔렛 □ [에러] / 출발위치 / 도착위치    오른쪽 [명령 재전송] [이상종료]
-	//   아래 : [사용금지]  [확인]  (+ 완료 Ack [쓰기] 두 개는 오른쪽 빈 자리)
+	// ── [LGLS 2026-10-01] ★리소스 방식★ : 패널은 Ecs.rc 의 IDD_SCV_PANEL (자식 대화상자 템플릿) 에 그려 둔다 (사용자 지시)
+	//   템플릿으로 자식 창을 하나 만든 뒤, 그 안의 컨트롤을 전부 이 창(본체)으로 옮겨 붙이고 껍데기는 없앤다.
+	//   그래서 종전 코드(SetDlgItemText / GetDlgItem / ON_BN_CLICKED / OnCtlColor)가 ID 그대로 동작한다.
+	//   배치는 VS 리소스 편집기에서 사진을 보며 고치면 된다. 런타임에 정해지는 글자(설비명·PLC 주소·[쓰기] 문구)만 아래서 채운다.
 	{
-		// 글자 없는 CStatic (테두리 없음)
-		struct TX { CWnd* dlg; CFont* f; CPtrArray* a;
-			void T(int id, LPCTSTR s, int x, int y, int w, int h, DWORD st) {
-				CStatic* p = new CStatic(); p->Create(s, WS_CHILD | WS_VISIBLE | st, CRect(x, y, x + w, y + h), dlg, id);
-				if (f) p->SetFont(f); a->Add(p); } } tx = { this, pFont, &m_arVehCtrl };
-		// 틀(그룹 상자) - 먼저 만들어 뒤에 깔린다
-		{ CStatic* g = new CStatic(); g->Create(_T(""), WS_CHILD | WS_VISIBLE | SS_ETCHEDFRAME, CRect(X + 8, 138, X + 512, 300), this, 0); mk.Add(g); }
-
-		// 상태 / 설비명 / 설명
-		mk.Value(IDC_SCV_STATUS, X + 10, 4, 52, 36, SS_CENTER);
-		tx.T(IDC_SCV_TITLE1, _T(""), X + 80, 4,  430, 22, SS_CENTER);
+		CDialog dlgTpl;
+		if (dlgTpl.Create(IDD_SCV_PANEL, this))
+		{
+			CWnd* pK = dlgTpl.GetWindow(GW_CHILD);
+			while (pK != NULL)
+			{
+				HWND h = pK->GetSafeHwnd();
+				HWND hNext = ::GetWindow(h, GW_HWNDNEXT);
+				CRect rc; ::GetWindowRect(h, &rc); dlgTpl.ScreenToClient(&rc);
+				::SetParent(h, m_hWnd);
+				::SetWindowPos(h, NULL, rc.left + X, rc.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+				CWnd* pW = new CWnd(); pW->Attach(h);
+				if (pFont) pW->SetFont(pFont);
+				m_arVehCtrl.Add(pW);
+				pK = (hNext != NULL) ? CWnd::FromHandle(hNext) : NULL;
+			}
+			dlgTpl.DestroyWindow();
+		}
+		else
+		{
+			AfxMessageBox(_T("IDD_SCV_PANEL 리소스를 만들지 못했습니다."));
+		}
+		// 설비명은 굵게
 		{
 			static CFont s_fntTitle;
 			if (s_fntTitle.GetSafeHandle() == NULL) { LOGFONT lf = {0}; if (pFont) pFont->GetLogFont(&lf); lf.lfHeight = -16; lf.lfWeight = FW_BOLD; s_fntTitle.CreateFontIndirect(&lf); }
 			CWnd* pT = GetDlgItem(IDC_SCV_TITLE1); if (pT && s_fntTitle.GetSafeHandle()) pT->SetFont(&s_fntTitle);
 		}
-		tx.T(IDC_SCV_TITLE2, _T(""), X + 80, 26, 430, 17, SS_CENTER);
-
-		// LED 4열 x 3행
-		static const int LX[4] = { 8, 140, 266, 392 };
-		static const int LY[3] = { 52, 68, 84 };
-		struct LEDDEF2 { LPCTSTR name; int id; int col; int row; };
-		LEDDEF2 leds[] = {
-			{ _T("Load Complete"),        IDC_SCV_LED_LOAD_CMP,        0, 0 },
-			{ _T("Load Complete ACK"),    IDC_SCV_LED_LOAD_CMP_ACK,    1, 0 },
-			{ _T("Unload Complete"),      IDC_SCV_LED_UNLOAD_CMP,      2, 0 },
-			{ _T("Unload Complete ACK"),  IDC_SCV_LED_UNLOAD_CMP_ACK,  3, 0 },
-			{ _T("Transfer Request"),     IDC_SCV_LED_TR_REQ,          0, 1 },
-			{ _T("Transfer Request ACK"), IDC_SCV_LED_TR_REQ_ACK,      1, 1 },
-			{ _T("Pallet Exist"),         IDC_SCV_LED_PALLET_EXIST,    2, 1 },
-			{ _T("Alarm Set"),            IDC_SCV_LED_ALARM_SET,       0, 2 },
-			{ _T("Alarm Set ACK"),        IDC_SCV_LED_ALARM_SET_ACK,   1, 2 },
-			{ _T("Alarm Reset"),          IDC_SCV_LED_ALARM_RESET,     2, 2 },
-			{ _T("Alarm Reset ACK"),      IDC_SCV_LED_ALARM_RESET_ACK, 3, 2 },
-		};
-		for (int i = 0; i < (int)(sizeof(leds)/sizeof(leds[0])); i++)
-		{
-			int x = X + LX[leds[i].col], yy = LY[leds[i].row];
-			mk.Led(leds[i].id, x, yy);
-			mk.Label(leds[i].name, x + 17, yy - 1, 114, 15);
-		}
-		mk.Label(_T("Pallet ID"), X + 392, LY[1] - 1, 44, 15);
-		mk.Value(IDC_SCV_PALLET_ID, X + 438, LY[1] - 2, 80, 16);
-
-		// 위치 한 줄
-		{
-			const int PY = 104;
-			struct TRIO { LPCTSTR name; int a, b, c; int lx, vx; };
-			TRIO trios[] = {
-				{ _T("현재위치"), IDC_SCV_CUR1,  IDC_SCV_CUR2,  IDC_SCV_CUR3,  8,   52 },
-				{ _T("출발지"),   IDC_SCV_FROM1, IDC_SCV_FROM2, IDC_SCV_FROM3, 114, 148 },
-				{ _T("도착지"),   IDC_SCV_TO1,   IDC_SCV_TO2,   IDC_SCV_TO3,   214, 250 },
-				{ _T("완료위치"), IDC_SCV_CMP1,  IDC_SCV_CMP2,  IDC_SCV_CMP3,  316, 358 },
-			};
-			for (int i = 0; i < (int)(sizeof(trios)/sizeof(trios[0])); i++)
-			{
-				mk.Label(trios[i].name, X + trios[i].lx, PY - 1, 42, 15);
-				mk.Value(trios[i].a, X + trios[i].vx,      PY, 16, 14, SS_CENTER);
-				mk.Value(trios[i].b, X + trios[i].vx + 17, PY, 16, 14, SS_CENTER);
-				mk.Value(trios[i].c, X + trios[i].vx + 34, PY, 16, 14, SS_CENTER);
-			}
-			mk.Label(_T("알람코드"), X + 414, PY - 1, 46, 15);
-			mk.Value(IDC_SCV_ALARM_CODE, X + 462, PY, 38, 14, SS_CENTER);
-		}
-
-		// 틀 안 : 요청번호 ~ 도착위치
-		const int R0 = 152, RH = 21;
-		LPCTSTR nms[6] = { _T("요청번호"), _T("배치번호"), _T("자재코드"), _T("팔렛"), _T("출발위치"), _T("도착위치") };
-		for (int i = 0; i < 6; i++) mk.Label(nms[i], X + 30, R0 + i * RH + 2, 52, 16, SS_RIGHT);
-		mk.Value(IDC_SCV_REQ_NO,    X + 88, R0,          110, 18);
-		mk.Label(_T("―"),       X + 204, R0 + 1,     18, 16, SS_CENTER);
-		mk.Value(IDC_SCV_REQ_NO2,   X + 226, R0,         142, 18);
-		mk.Value(IDC_SCV_BATCH_NO,  X + 88, R0 + RH,     280, 18);
-		mk.Value(IDC_SCV_PROD_ID,   X + 88, R0 + 2 * RH, 280, 18);
-		mk.Value(IDC_SCV_PALLET,    X + 88, R0 + 3 * RH, 204, 18);
-		mk.Value(IDC_SCV_IO_TAG,    X + 296, R0 + 3 * RH, 72, 18, SS_CENTER);
-		mk.Value(IDC_SCV_START_POS, X + 88, R0 + 4 * RH, 280, 18);
-		mk.Value(IDC_SCV_DEST_POS,  X + 88, R0 + 5 * RH, 280, 18);
-		tx.T(IDC_SCV_ADVICE, _T(""), X + 14, R0 + 6 * RH + 3, 356, 16, SS_LEFT);
-		mk.Button(IDC_SCV_RESEND,    _T("명령 재전송"), X + 386, 150, 120, 72);
-		mk.Button(IDC_SCV_BTN_ABORT, _T("이상종료"),    X + 386, 236, 120, 50);
-
-		// 아래 : 사용금지 / 확인 / 완료 Ack [쓰기]
-		mk.Check(IDC_SCV_CHK_DISABLE, _T("사용금지"), X + 30, 332, 76, 16);
-		mk.Button(IDC_SCV_OK, _T("확인"), X + 214, 314, 86, 48);
-		mk.Button(IDC_SCV_BTN_LCA_W, _T("Load ACK ") + strAckW,   X + 330, 318, 86, 22);
-		mk.Button(IDC_SCV_BTN_UCA_W, _T("Unload ACK ") + strAckW, X + 420, 318, 96, 22);
-		// PLC 실주소는 자리가 없어 맨 아래 한 줄 (파랑)
+		// 완료 Ack [쓰기] 문구 (다국어 ini)
+		SetDlgItemText(IDC_SCV_BTN_LCA_W, _T("Load ACK ") + strAckW);
+		SetDlgItemText(IDC_SCV_BTN_UCA_W, _T("Unload ACK ") + strAckW);
+		// PLC 실주소 한 줄 (파랑)
 		CString strAddrLine;
 		strAddrLine.Format(_T("LoadCmp %s / UnloadCmp %s / TrReq %s / Pallet %s / Alarm %s / 위치 %s / 출발 %s / 도착 %s / 완료 %s / 알람코드 %s"),
 			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("LOAD_COMPLETE")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("UNLOAD_COMPLETE")),
@@ -2161,9 +2101,7 @@ void CScSkinDlg::BuildVehStatusPanel()
 			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_LOCATION_01")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("FROM_01")),
 			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("TO_01")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("TRANSFER_COMPLETE_LOCATION_01")),
 			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("ALARM_SET_CODE")));
-		CStatic* pA = new CStatic();
-		pA->Create(strAddrLine, WS_CHILD | WS_VISIBLE | SS_LEFT | SS_ENDELLIPSIS, CRect(X + 8, 346, X + 518, 360), this, IDC_LGLS_ADDR_LBL);
-		mk.Add(pA);
+		SetDlgItemText(IDC_LGLS_ADDR_LBL, strAddrLine);
 	}
 
 	RenameRuntimeLabels();	// [LGLS 2026-08-05]
