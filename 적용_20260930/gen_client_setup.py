@@ -88,6 +88,10 @@ if os.path.isfile(ico):
 else:
     miss.append('WCS.ico')
 
+# ── [2026-10-01] 폰트 잠금 강제 풀기 도구 (setup_extra 에 둔 원본을 그대로 넣는다) ──
+for f in os.listdir(os.path.join(ROOT, '적용_20260930', 'setup_extra')):
+    shutil.copy2(os.path.join(ROOT, '적용_20260930', 'setup_extra', f), os.path.join(DST, f))
+
 # ── 먼저 깔아야 하는 것 ───────────────────────────────────────────
 for f in ('vc_redist.x86.exe', 'ndp48-web.exe'):
     shutil.copy2(os.path.join(SRC_PRE, f), os.path.join(DST, 'Prerequisites', f))
@@ -237,9 +241,17 @@ wr(os.path.join(DST, 'Setup.bat'), [
  'rem    (옛 폴더는 나중에 로그오프한 뒤 지우면 된다)',
  'set "BASEDIR=%INSTDIR%"',
  'set "SUFFIX=0"',
+ 'set "TRIEDFORCE="',
  ':PROBE',
  'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Release-Fonts.ps1" -Dir "%INSTDIR%" -SrcDir "%SRC%Client" -Probe >nul 2>&1',
  'if errorlevel 2 (',
+ '    if not defined TRIEDFORCE (',
+ '        set "TRIEDFORCE=1"',
+ '        echo        이 폴더에 옛 Client 가 잠가 놓은 폰트 파일이 있습니다. 먼저 풀어 봅니다...',
+ '        powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Force-ReleaseFonts.ps1" -Dir "%INSTDIR%"',
+ '        echo.',
+ '        goto PROBE',
+ '    )',
  '    set /a SUFFIX+=1',
  '    if !SUFFIX! GEQ 6 goto PROBEDONE',
  '    set "INSTDIR=!BASEDIR!_!SUFFIX!"',
@@ -282,6 +294,8 @@ wr(os.path.join(DST, 'Setup.bat'), [
  'rem    /C 하나가 실패해도 나머지는 계속  /R 읽기전용도 덮어쓴다',
  'xcopy "%SRC%Client\\*" "%INSTDIR%\\" /E /I /Y /Q /C /R',
  'copy /y "%SRC%Release-Fonts.ps1" "%INSTDIR%\\" >nul',
+ 'copy /y "%SRC%Force-ReleaseFonts.ps1" "%INSTDIR%\\" >nul',
+ 'copy /y "%SRC%폰트잠금_풀기.bat" "%INSTDIR%\\" >nul',
  'rem    주소를 나중에 바꿀 수 있게 도우미와 안내문도 함께 둔다',
  'copy /y "%SRC%Set-DbServer.ps1" "%INSTDIR%\\" >nul',
  'copy /y "%SRC%확인하는_법.txt" "%INSTDIR%\\" >nul',
