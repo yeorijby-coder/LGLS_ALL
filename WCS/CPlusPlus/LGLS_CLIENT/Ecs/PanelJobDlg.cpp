@@ -27,7 +27,7 @@ CPanelJobDlg::CPanelJobDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPanelJobDlg::IDD, pParent)
 {
 	m_pDoc = NULL;
-	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0; m_nSplitMode = 0;
+	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0; m_nSplitMode = 0; m_nSeqPhase = -1;
 }
 
 void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
@@ -443,8 +443,9 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	CString strHs  = (nHs > 0) ? PortText(nHs) : _T("통로");
 	CString strHs2 = (nHs2 > 0) ? PortText(nHs2) : strHs;
 
-	struct STEP { CString dev, from, to; };
+	struct STEP { CString dev, from, to; int kind; };		// kind : 0 작업대 C/V / 1 RGV / 2 통로 C/V / 3 S/C
 	CArray<STEP, STEP&> steps;
+	m_arSeqKind.RemoveAll();
 	int nPhase = 0;			// 진행 중인 단계 (steps.GetCount() 이면 모두 완료)
 	STEP st;
 	switch (typ)
@@ -452,10 +453,10 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	case 1:		// 입고 : C/V(입고대→픽업) → RGV(픽업→통로) → C/V(통로 두 칸) → S/C(통로→랙)
 	{
 		int nPick = NeighborTrack(nStart);
-		st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); steps.Add(st);
-		st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      steps.Add(st);
-		if (nHs2 > 0) { st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
-		st.dev = strSc;             st.from = strHs2;           st.to = strDestLoc; steps.Add(st);
+		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); steps.Add(st);
+		st.kind = 1; st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      steps.Add(st);
+		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
+		st.kind = 3; st.dev = strSc;             st.from = strHs2;           st.to = strDestLoc; steps.Add(st);
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
 		if      (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 0;
 		else if (s == 30 || s == 31 || s == 35 || s == 39)            nPhase = 1;
@@ -467,10 +468,10 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	case 2: case 3:		// 출고 / 피킹출고 : S/C(랙→통로) → C/V(통로 두 칸) → RGV(통로→출고 픽업) → C/V(픽업→출고대)
 	{
 		int nPick = NeighborTrack(nDest);
-		st.dev = strSc;             st.from = strStartLoc;      st.to = strHs;      steps.Add(st);
-		if (nHs2 > 0) { st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
-		st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); steps.Add(st);
-		st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); steps.Add(st);
+		st.kind = 3; st.dev = strSc;             st.from = strStartLoc;      st.to = strHs;      steps.Add(st);
+		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
+		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); steps.Add(st);
+		st.kind = 0; st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); steps.Add(st);
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
 		else if (s == 29)                                             nPhase = 1;
@@ -480,20 +481,20 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 		break;
 	}
 	case 4:		// 랙투랙
-		st.dev = strSc;      st.from = strStartLoc; st.to = strDestLoc;  steps.Add(st);
+		st.kind = 3; st.dev = strSc;      st.from = strStartLoc; st.to = strDestLoc;  steps.Add(st);
 		nPhase = (s == 99 || s == 20 || s == 21 || s == 25) ? 0 : 1;
 		break;
 	case 5:		// 호기간 이동
-		st.dev = strSc;      st.from = strStartLoc; st.to = strHs;       steps.Add(st);
-		st.dev = _T("RGV");  st.from = strHs;       st.to = _T("통로");  steps.Add(st);
-		st.dev = _T("S/C");  st.from = _T("통로");  st.to = strDestLoc;  steps.Add(st);
+		st.kind = 3; st.dev = strSc;      st.from = strStartLoc; st.to = strHs;       steps.Add(st);
+		st.kind = 1; st.dev = _T("RGV");  st.from = strHs;       st.to = _T("통로");  steps.Add(st);
+		st.kind = 3; st.dev = _T("S/C");  st.from = _T("통로");  st.to = strDestLoc;  steps.Add(st);
 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
 		else if (s == 29 || s == 30 || s == 31 || s == 35)            nPhase = 1;
 		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2;
 		else                                                          nPhase = 3;
 		break;
 	default:	// 이동 등
-		st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nDest); steps.Add(st);
+		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nDest); steps.Add(st);
 		nPhase = (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) ? 0 : 1;
 		break;
 	}
@@ -507,7 +508,9 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 		m_listSeq.SetItemText(i, 2, steps[i].dev);
 		m_listSeq.SetItemText(i, 3, steps[i].from);
 		m_listSeq.SetItemText(i, 4, steps[i].to);
+		m_arSeqKind.Add(steps[i].kind);
 	}
+	m_nSeqPhase = nPhase;
 	if (nPhase < steps.GetCount())
 		m_listSeq.SetItemState(nPhase, LVIS_SELECTED, LVIS_SELECTED);
 }
@@ -595,19 +598,49 @@ void CPanelJobDlg::OnTransferCtl()
 // [LGLS 2026-10-01] [완료처리] : 구 ECS 는 선택한 명령 단계(TB_TRANSFERDETAIL)를 완료로 돌렸다.
 //   신 ECS 는 단계가 JOB_STATUS 하나이므로 작업을 설비 완료 상태로 올린다 - 출고류는 19(C/V 반송완료), 그 밖은 29(S/C 반송완료).
 //   판넬의 강제완료와 같은 갱신이며 이후는 IO_TASK/HOST_TASK 가 평소대로 처리한다.
+// [LGLS 2026-10-01] 완료처리 = ★스텝(SEQ) 단위★ (구 ECS MonitorMainTransferListPanel.buttonComplete_Click / chageTransferDetailComplete 와 같게,
+//   담당자 확인). 고른 SEQ 줄의 설비 구간을 "끝난 것"으로 보고 JOB_STATUS 를 그 구간 완료 코드로 옮긴다 → IO_TASK 가 다음 구간을 낸다.
+//   신 ECS 는 스텝 테이블이 없고 JOB_MST.JOB_STATUS 하나로 단계를 나타내므로 IO_TASK(cThread_SCH) 의 선택 조건에 맞춘 코드를 쓴다 :
+//     입고 : 작업대 C/V 15 (DriveRGV 는 15/16 을 가져감) / RGV 39 (CompleteRGV) / 통로 C/V 16 (DriveSC 는 15/16) / S/C 29 (최종)
+//     출고 : S/C 29 (CompleteSC) / 통로 C/V 15 (DriveRGV) / RGV 39 / 작업대 C/V 19 (최종)
+//   줄을 안 골랐으면 진행중 줄.
+CString CPanelJobDlg::StepDoneStatus(int typ, int kind)
+{
+	BOOL bOut = (typ == 2 || typ == 3);
+	switch (kind)
+	{
+	case 0: return bOut ? _T("19") : _T("15");
+	case 1: return _T("39");
+	case 2: return bOut ? _T("15") : _T("16");
+	case 3: return _T("29");
+	}
+	return _T("");
+}
+
 void CPanelJobDlg::OnComplete()
 {
 	int i = FindRow(m_strSelLugg);
 	if (m_pDoc == NULL || i < 0) { AfxMessageBox(_T("작업을 먼저 고르세요.")); return; }
 	const ROW& r = m_arRow[i];
 	int typ = _ttoi(r.typCd); if (typ >= 10) typ -= 10;
-	CString strSta = (typ == 2 || typ == 3) ? _T("19") : _T("29");
-	if (AfxMessageBox(_T("작업번호(") + r.lugg + _T(") 를 완료처리 하시겠습니까?  [") + r.staCd + _T(" -> ") + strSta + _T("]"), MB_YESNO) != IDYES)
-		return;
+
+	int nSeq = m_listSeq.GetNextItem(-1, LVNI_SELECTED);
+	if (nSeq < 0) nSeq = m_nSeqPhase;
+	if (nSeq < 0 || nSeq >= m_arSeqKind.GetCount()) { AfxMessageBox(_T("완료 처리할 단계(SEQ)를 고르세요.")); return; }
+	CString strSta = StepDoneStatus(typ, m_arSeqKind[nSeq]);
+	if (strSta.IsEmpty()) { AfxMessageBox(_T("이 단계는 완료 처리할 수 없습니다.")); return; }
+	CString strSeq = m_listSeq.GetItemText(nSeq, 1), strDev = m_listSeq.GetItemText(nSeq, 2);
+	if (strSta == r.staCd) { AfxMessageBox(_T("이미 그 단계가 끝난 상태입니다. [") + r.staCd + _T("]")); return; }
+
+	CString strMsg;
+	strMsg.Format(_T("작업번호(%s), 순번(%s) %s 구간을 완료 처리하시겠습니까?  [%s -> %s]"),
+		(LPCTSTR)r.lugg, (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
+	if (AfxMessageBox(strMsg, MB_YESNO) != IDYES) return;
 	CString strSql;
 	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
 		(LPCTSTR)strSta, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg);
-	if (ExecUpdate(strSql, _T("JOB_MST UPDATE : 완료처리(구ECS 판넬) JOB_STATUS -> ") + strSta, r.lugg))
+	CString strLog; strLog.Format(_T("JOB_MST UPDATE : 완료처리(스텝 %s %s) JOB_STATUS %s -> %s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
+	if (ExecUpdate(strSql, strLog, r.lugg))
 		Refresh();
 }
 
