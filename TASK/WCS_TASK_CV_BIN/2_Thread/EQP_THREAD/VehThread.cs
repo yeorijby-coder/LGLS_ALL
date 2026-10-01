@@ -1041,8 +1041,18 @@ namespace WCS_TASK_CV
             if (dt.Rows.Count == 0) return;
             string cmd = ("" + dt.Rows[0]["CMD_RQ_ID"]).Trim().ToUpper();
             // [LGLS 2026-10-01] 운전 화면 [지시 재전송] = CMD_RQ_ID 'RESEND'. 종전 Client 는 ID 없이 CMD_RQ_YN='Y' 만 세웠고
-            //   여기서 무시돼 'Y' 가 영영 남았다(그 뒤 [Ack 쓰기]까지 막힘). 빈 ID 도 재전송으로 본다.
-            if (cmd.Length == 0) cmd = "RESEND";
+            //   여기서 무시돼 'Y' 가 영영 남았다(그 뒤 [Ack 쓰기]까지 막힘). 빈 ID 는 재전송하지 않고 플래그만 내린다 -
+            //   옛 흔적(예: 9/30 지시가 남은 RTV)을 멋대로 다시 보내면 스케줄러(IO_TASK)의 작업 상태와 어긋난다.
+            if (cmd.Length == 0)
+            {
+                string strUpd0 = "";
+                strUpd0 += CRLF + " UPDATE " + m_strTable + " SET CMD_RQ_YN = 'N', WRITE_UPD_DT = GETDATE()";
+                strUpd0 += CRLF + "  WHERE WH_TYP = '" + Esc(m_strWhTyp) + "' AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
+                strUpd0 += CRLF + "    AND CMD_RQ_YN = 'Y' AND (CMD_RQ_ID IS NULL OR CMD_RQ_ID = '') ";
+                DbExec(strUpd0);
+                LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 (ID 없음) → 옛 Client 의 재전송 흔적 - 플래그만 내림 (재전송은 RESEND)");
+                return;
+            }
             if (cmd == "FCMP") return;
 
             if (cmd == "RESEND")
