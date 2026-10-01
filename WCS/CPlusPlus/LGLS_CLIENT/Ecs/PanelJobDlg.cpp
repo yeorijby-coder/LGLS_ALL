@@ -359,6 +359,28 @@ int CPanelJobDlg::NeighborTrack(int nTrk)
 	if (CvOfTrack(nTrk + 1) == cv) return nTrk + 1;
 	return 0;
 }
+// C/V 번호의 트랙 범위 (가장 작은/큰 트랙). 통로 C/V 는 트랙이 둘(103/104)이다.
+BOOL CPanelJobDlg::CvTracks(int nCv, int& nLo, int& nHi)
+{
+	nLo = 0; nHi = 0;
+	POSITION pos = m_mapTrackCv.GetStartPosition();
+	while (pos != NULL)
+	{
+		int trk, cv; m_mapTrackCv.GetNextAssoc(pos, trk, cv);
+		if (cv != nCv) continue;
+		if (nLo == 0 || trk < nLo) nLo = trk;
+		if (trk > nHi) nHi = trk;
+	}
+	return nLo > 0;
+}
+// 크레인 n 의 통로 C/V : S/C#1 은 C/V#2 (양방향, 방향전환), 그 밖은 입고 C/V#(2n) / 출고 C/V#(2n+1)
+int CPanelJobDlg::HsCvOfCrane(int nSc, BOOL bInbound)
+{
+	if (nSc <= 0) return 0;
+	if (nSc == 1) return 2;
+	return bInbound ? 2 * nSc : 2 * nSc + 1;
+}
+
 void CPanelJobDlg::LoadTrackCvMap()
 {
 	if (m_pDoc == NULL || m_mapTrackCv.GetCount() > 0) return;
@@ -390,12 +412,9 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	// 랙 쪽은 LOC:bb-bbb-ll
 	CString strStartLoc = (nStart >= 900 || nStart < 100) ? (_T("LOC:") + r.startLoc) : PortText(nStart);
 	CString strDestLoc  = (nDest  >= 900 || nDest  < 100) ? (_T("LOC:") + r.destLoc)  : PortText(nDest);
-	int nHs2 = (nHs > 0) ? NeighborTrack(nHs) : 0;				// 통로의 다음 칸 (103 → 104)
-	CString strHs  = (nHs > 0) ? PortText(nHs) : _T("통로");
-	CString strHs2 = (nHs2 > 0) ? PortText(nHs2) : strHs;
 	CString strSc;
+	int nSc = 0;
 	{
-		int nSc = 0;
 		if (!r.sc.IsEmpty()) nSc = _ttoi(r.sc) % 100;			// 901 → 1
 		if (nSc <= 0)
 		{
@@ -403,8 +422,26 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 			int nBank = _ttoi(loc.Left(2));
 			if (nBank > 0) nSc = (nBank + 1) / 2;
 		}
+		if (nSc <= 0 && nDest >= 900) nSc = nDest % 100;		// 도착 902 → S/C 2
+		if (nSc <= 0 && nStart >= 900) nSc = nStart % 100;
 		if (nSc > 0) strSc.Format(_T("S/C %d"), nSc); else strSc = _T("S/C");
 	}
+	// [LGLS 2026-10-01] 통로(HS_TRACK_NO)가 아직 배정되지 않은 작업도 4줄을 다 보인다 (사용자 지시 - 앞으로 생기는 모든 작업).
+	//   크레인 번호로 통로 C/V 를 정하고 그 두 트랙을 쓴다. 입고 = 바깥 칸(작은 번호) → 안쪽 칸, 출고 = 안쪽 칸 → 바깥 칸.
+	//   실제 배정(HS_TRACK_NO)이 생기면 그 값이 우선한다.
+	int nHs2 = 0;
+	if (nHs > 0) nHs2 = NeighborTrack(nHs);
+	else
+	{
+		int lo = 0, hi = 0;
+		BOOL bIn = (typ == 1 || typ == 5);
+		if (CvTracks(HsCvOfCrane(nSc, bIn), lo, hi))
+		{
+			if (bIn) { nHs = lo; nHs2 = hi; } else { nHs = hi; nHs2 = lo; }
+		}
+	}
+	CString strHs  = (nHs > 0) ? PortText(nHs) : _T("통로");
+	CString strHs2 = (nHs2 > 0) ? PortText(nHs2) : strHs;
 
 	struct STEP { CString dev, from, to; };
 	CArray<STEP, STEP&> steps;

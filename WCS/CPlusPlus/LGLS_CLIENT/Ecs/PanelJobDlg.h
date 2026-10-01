@@ -65,6 +65,8 @@ protected:
 	void LoadTrackCvMap();
 	int  CvOfTrack(int nTrk);
 	int  NeighborTrack(int nTrk);
+	BOOL CvTracks(int nCv, int& nLo, int& nHi);
+	int  HsCvOfCrane(int nSc, BOOL bInbound);
 	CString PortText(int nTrk);
 	CString CvDevText(int nTrk);
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
