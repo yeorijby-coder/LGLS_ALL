@@ -219,6 +219,8 @@
 #define IDD_SKIN_SC_DLG                 483
 #define IDD_SKIN_SC_CTRL                483
 #define IDD_SCV_PANEL                   554
+#define IDD_RTVV_PANEL                  555
+#define IDD_CVV_PANEL                   556
 #define IDD_VIEW_USAGE_RACK             484
 #define IDD_MANAUL_RTV                  489
 #define IDD_MANAUL_JOB                  490
@@ -3330,6 +3332,7 @@
 #define IDC_CVV_PORT_EDT_BASE           8277
 #define IDC_CVV_PORT_BTN_BASE           8280
 #define IDC_CVV_CHK_DISABLE             8284
+#define IDC_CVV_ADDR_BASE               8285
 #define IDC_PANEL_JOB_PRI_LBL           2383
 #define IDC_PANEL_JOB_PRI_VAL           2384
 #define IDC_PANEL_JOB_PRI_UP            2385
@@ -3552,7 +3555,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        555
+#define _APS_NEXT_RESOURCE_VALUE        557
 #define _APS_NEXT_COMMAND_VALUE         33037
 #define _APS_NEXT_CONTROL_VALUE         2396
 #define _APS_NEXT_SYMED_VALUE           114

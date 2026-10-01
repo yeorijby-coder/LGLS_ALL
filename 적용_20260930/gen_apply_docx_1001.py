@@ -162,9 +162,9 @@ G.table(d, ['버튼', '하는 일', '권한/기록'], [
     ['PalletID설정', 'CV_DATA.LUGG_NO_OD 에 입력값 + TRACKING_WRITE_YN=Y', 'CCvSkinDlg'],
 ], widths=[2.5, 9.0, 4.5], font=8.5)
 note(d, '[확대] 는 Ecs.ini [MENU] ZOOM_BTN=1 일 때만 보인다. 0 으로 둔 PC 는 1 로 바꿔야 패널을 볼 수 있다.')
-G.para(d, 'SC 패널은 코드가 아니라 Ecs.rc 의 대화상자 템플릿 IDD_SCV_PANEL 로 그린다(2026-10-01 오후, 사용자 지시). '
+G.para(d, 'SC/RTV/CV 패널은 코드가 아니라 Ecs.rc 의 대화상자 템플릿 IDD_SCV_PANEL / IDD_RTVV_PANEL / IDD_CVV_PANEL 로 그린다(2026-10-01 저녁, 사용자 지시). '
           '[확대] 때 그 템플릿으로 자식 창을 만들고 안의 컨트롤을 본체 창으로 옮겨 붙이므로 값 갱신·버튼·색 코드는 ID 그대로 동작한다. '
-          '배치를 바꾸려면 VS 리소스 편집기에서 IDD_SCV_PANEL 을 열어 끌어 놓으면 된다. 설비명·PLC 주소·[쓰기] 문구만 런타임에 채운다. RTV/CV 는 아직 코드 방식.')
+          '배치를 바꾸려면 VS 리소스 편집기에서 그 템플릿을 열어 끌어 놓으면 된다. 설비명·PLC 주소·[쓰기] 문구만 런타임에 채운다 (CV 의 LED 옆 주소 칸은 IDC_CVV_ADDR_BASE+0~12).')
 
 d.add_heading('6. 바뀐 파일 (4·5절)', 1)
 G.table(d, ['폴더', '파일', '비고'], [
