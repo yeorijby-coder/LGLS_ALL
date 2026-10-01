@@ -168,13 +168,37 @@ BOOL CEcsApp::InitInstance()
 	// [LGLS 2026-09-09] 버전 표기 단일화 (EcsDef.h WCS_VERSION_STR)
 	m_pMainWnd->SetWindowText(WCS_PRODUCT_NAME _T(" ") WCS_VERSION_STR
 							   _T("  -  Equipment Control System"));
-	// [LGLS 2026-10-01] 모니터가 여럿일 때 창이 마지막 위치(다른 모니터)에 뜨는 것을 막는다 (사용자 지시 : 2번 = 주 모니터에 전체로).
-	//   Ecs.ini [DISPLAY] START_MONITOR = 0 주 모니터(기본) / 1 Windows 가 정하는 마지막 위치
-	if (::GetPrivateProfileInt(_T("DISPLAY"), _T("START_MONITOR"), 0, ECS_INI_FILE) == 0)
+	// [LGLS 2026-10-01] 모니터가 여럿일 때 창이 마지막 위치(다른 모니터)에 뜨는 것을 막는다 (사용자 지시).
+	//   Ecs.ini [DISPLAY] START_MONITOR = 0 주 모니터 / N(1~) Windows "디스플레이 설정" 의 번호 (식별 단추로 보이는 번호)
+	//                                     / -1 Windows 가 정하는 마지막 위치
+	//   Windows 의 번호는 바탕화면에 붙은 디스플레이 장치(\.\DISPLAYx)의 순서와 같다. 그 장치의 현재 모드로 위치를 얻는다.
 	{
-		CRect rcWork(0, 0, 0, 0);
-		::SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0);		// 주 모니터 작업 영역
-		m_pMainWnd->SetWindowPos(NULL, rcWork.left, rcWork.top, rcWork.Width(), rcWork.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
+		int nMon = ::GetPrivateProfileInt(_T("DISPLAY"), _T("START_MONITOR"), 0, ECS_INI_FILE);
+		if (nMon >= 0)
+		{
+			CRect rcWork(0, 0, 0, 0);
+			::SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0);		// 주 모니터 작업 영역(기본)
+			if (nMon >= 1)
+			{
+				int nSeq = 0;
+				for (DWORD i = 0; ; i++)
+				{
+					DISPLAY_DEVICE dd; ::ZeroMemory(&dd, sizeof(dd)); dd.cb = sizeof(dd);
+					if (!::EnumDisplayDevices(NULL, i, &dd, 0)) break;
+					if (!(dd.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)) continue;
+					if (++nSeq != nMon) continue;
+					DEVMODE dm; ::ZeroMemory(&dm, sizeof(dm)); dm.dmSize = sizeof(dm);
+					if (::EnumDisplaySettings(dd.DeviceName, ENUM_CURRENT_SETTINGS, &dm))
+					{
+						POINT pt = { dm.dmPosition.x + 10, dm.dmPosition.y + 10 };
+						MONITORINFO mi; ::ZeroMemory(&mi, sizeof(mi)); mi.cbSize = sizeof(mi);
+						if (::GetMonitorInfo(::MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY), &mi)) rcWork = mi.rcWork;
+					}
+					break;
+				}
+			}
+			m_pMainWnd->SetWindowPos(NULL, rcWork.left, rcWork.top, rcWork.Width(), rcWork.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
+		}
 	}
 	m_pMainWnd->ShowWindow(SW_SHOWMAXIMIZED);
 	m_pMainWnd->UpdateWindow();
