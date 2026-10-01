@@ -3344,6 +3344,7 @@
 #define IDC_PANEL_JOB_JOB_VAL           2391
 #define IDC_PANEL_JOB_SEQ               2392
 #define IDC_PANEL_JOB_COMPLETE          2393
+#define IDC_PANEL_JOB_SPLIT_BTN         2394
 #define IDC_LGLS_ST_FR1                 8401
 #define IDC_LGLS_ST_FR2                 8402
 #define IDC_LGLS_ST_FR3                 8403

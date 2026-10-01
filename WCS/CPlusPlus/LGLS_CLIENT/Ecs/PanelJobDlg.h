@@ -24,6 +24,8 @@ public:
 	CButton   m_btnPriUp;
 	CButton   m_btnPriDn;
 	CButton   m_btnTransfer;
+	CButton   m_btnSplit;		// [LGLS 2026-10-01] 가로보기/세로보기 전환
+	int       m_nSplitMode;		// 1 가로 / 2 세로 (ini JOB_PANEL_SPLIT 에서 읽고, 단추로 바꾸면 ini 에도 쓴다)
 	CStatic   m_lblEcs;
 	CStatic   m_lblEcsVal;
 	CStatic   m_lblJob;
@@ -66,6 +68,7 @@ protected:
 	afx_msg void OnPriDown();
 	afx_msg void OnTransferCtl();
 	afx_msg void OnComplete();
+	afx_msg void OnSplitToggle();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);

@@ -27,7 +27,7 @@ CPanelJobDlg::CPanelJobDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPanelJobDlg::IDD, pParent)
 {
 	m_pDoc = NULL;
-	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0;
+	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0; m_nSplitMode = 0;
 }
 
 void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
@@ -41,6 +41,7 @@ void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PANEL_JOB_PRI_UP,   m_btnPriUp);
 	DDX_Control(pDX, IDC_PANEL_JOB_PRI_DN,   m_btnPriDn);
 	DDX_Control(pDX, IDC_PANEL_JOB_TRANSFER, m_btnTransfer);
+	DDX_Control(pDX, IDC_PANEL_JOB_SPLIT_BTN, m_btnSplit);
 	DDX_Control(pDX, IDC_PANEL_JOB_ECS_LBL,  m_lblEcs);
 	DDX_Control(pDX, IDC_PANEL_JOB_ECS_VAL,  m_lblEcsVal);
 	DDX_Control(pDX, IDC_PANEL_JOB_JOB_LBL,  m_lblJob);
@@ -58,6 +59,7 @@ BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
 	ON_BN_CLICKED(IDC_PANEL_JOB_PRI_DN,   OnPriDown)
 	ON_BN_CLICKED(IDC_PANEL_JOB_TRANSFER, OnTransferCtl)
 	ON_BN_CLICKED(IDC_PANEL_JOB_COMPLETE, OnComplete)
+	ON_BN_CLICKED(IDC_PANEL_JOB_SPLIT_BTN, OnSplitToggle)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
@@ -119,7 +121,7 @@ void CPanelJobDlg::BuildOldEcsControls()
 		for (int i = 0; i < (int)(sizeof(SEQCOLS)/sizeof(SEQCOLS[0])); i++)
 			m_listSeq.InsertColumn(i, SEQCOLS[i].strHead, LVCFMT_LEFT, CLib::DpiPx(SEQCOLS[i].nWidth));
 
-	CWnd* pAll[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer,
+	CWnd* pAll[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer, &m_btnSplit,
 	                 &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal, &m_listSeq, &m_btnComplete };
 	for (int i = 0; i < (int)(sizeof(pAll)/sizeof(pAll[0])); i++)
 		if (pFont != NULL && ::IsWindow(pAll[i]->m_hWnd)) pAll[i]->SetFont(pFont);
@@ -127,8 +129,8 @@ void CPanelJobDlg::BuildOldEcsControls()
 	// 리소스 좌표 기억 : 왼쪽 칸 폭 = 왼쪽 컨트롤들의 오른쪽 끝, 오른쪽 머리줄은 ECS번호 라벨 기준 상대 위치
 	CRect rc;
 	m_nRcLeftW = 0;
-	CWnd* pL[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer };
-	for (int i = 0; i < 5; i++)
+	CWnd* pL[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer, &m_btnSplit };
+	for (int i = 0; i < 6; i++)
 		if (::IsWindow(pL[i]->m_hWnd)) { pL[i]->GetWindowRect(&rc); ScreenToClient(&rc); if (rc.right > m_nRcLeftW) m_nRcLeftW = rc.right; }
 	CWnd* pR[] = { &m_lblEcs, &m_lblEcsVal, &m_lblJob, &m_lblJobVal, &m_btnComplete, &m_listSeq };
 	int x0 = 0;
@@ -491,7 +493,9 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	//   [DISPLAY] JOB_PANEL_SPLIT    = 0 자동(폭 620px 미만이면 세로) / 1 가로(상세를 오른쪽) / 2 세로(상세를 아래)
 	//   [DISPLAY] JOB_PANEL_DETAIL_W = 가로일 때 상세 칸 폭(px, 0=38%%)   JOB_PANEL_DETAIL_H = 세로일 때 상세 칸 높이(px, 0=178)
 	//   분할선을 끌면 그 값이 우선하고(m_nSplitR / m_nSplitB), 다시 띄우면 ini 값으로 돌아온다.
-	const int nSplitMode = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_SPLIT"), 0, ECS_INI_FILE);
+	//   [LGLS 2026-10-01] 왼쪽 칸 [가로보기]/[세로보기] 단추로도 바꾼다(사용자 지시). 바꾸면 ini 에도 써서 다음에도 유지.
+	if (m_nSplitMode == 0) m_nSplitMode = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_SPLIT"), 0, ECS_INI_FILE);
+	const int nSplitMode = m_nSplitMode;
 	const int nIniW = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_W"), 0, ECS_INI_FILE);
 	const int nIniH = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_H"), 0, ECS_INI_FILE);
 	const BOOL bNarrow = (nSplitMode == 2) ? TRUE : (nSplitMode == 1) ? FALSE : (cx < CLib::DpiPx(620));
@@ -510,7 +514,8 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	m_list.MoveWindow(xM, nListY, wM, cyTop - nListY);
 
 	// 분할선 (넓을 때만)
-	m_bSplitVert = bNarrow;
+	m_bSplitVert = bNarrow;
+	if (::IsWindow(m_btnSplit.m_hWnd)) m_btnSplit.SetWindowText(bNarrow ? _T("가로보기") : _T("세로보기"));
 	m_rcSplit = bNarrow ? CRect(xM, cyTop, cx, cyTop + nGap) : CRect(xM + wM, 0, xR, cy);
 
 	// 오른쪽(넓을 때) / 아래(좁을 때)
@@ -612,6 +617,18 @@ BOOL CPanelJobDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 		}
 	}
 	return CDialog::OnSetCursor(pWnd, nHitTest, message);
+}
+
+// [LGLS 2026-10-01] 가로보기/세로보기 전환 (왼쪽 칸 단추). ini [DISPLAY] JOB_PANEL_SPLIT 에도 써 둔다.
+void CPanelJobDlg::OnSplitToggle()
+{
+	m_nSplitMode = m_bSplitVert ? 1 : 2;
+	m_nSplitR = 0; m_nSplitB = 0;
+	CString v; v.Format(_T("%d"), m_nSplitMode);
+	::WritePrivateProfileString(_T("DISPLAY"), _T("JOB_PANEL_SPLIT"), v, ECS_INI_FILE);
+	CRect rc; GetClientRect(&rc);
+	OnSize(SIZE_RESTORED, rc.Width(), rc.Height());
+	RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
 }
 
 void CPanelJobDlg::OnTimer(UINT_PTR nIDEvent)
