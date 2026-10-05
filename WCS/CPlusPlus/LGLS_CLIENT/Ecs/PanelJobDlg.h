@@ -61,6 +61,7 @@ protected:
 	void BuildOldEcsControls();
 	void FillDetail(int nRow);
 	void BuildSeqRows(const ROW& r);
+	CArray<int, int> m_arSeqToTrk;	// SEQ 표 각 줄의 도착 트랙 (RGV 줄만 채운다 - 완료처리 때 HS_TRACK_NO 로 쓴다)
 	CArray<int, int> m_arSeqKind;	// SEQ 표 각 줄의 설비 종류 (0 작업대 C/V / 1 RGV / 2 통로 C/V / 3 S/C)
 	int m_nSeqPhase;				// 진행중 줄
 	int m_nSeqHs;					// 단계표가 쓴 통로 트랙(예측 포함)

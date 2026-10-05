@@ -1623,6 +1623,14 @@ void CRtvSkinDlg::ApplyZoomBtnIni()
 	BOOL bManual = FALSE;	// [LGLS 2026-09-28] 수동지시 폐기 - 늘 숨긴다 (사용자 지시)
 	CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL);
 	if (pM) pM->ShowWindow(bManual ? SW_SHOW : SW_HIDE);
+
+	// [LGLS 2026-10-05] [강제완료] 표시 여부 - Ecs.ini [MENU] FORCE_BTN=1/0 (기본 1) (사용자 지시 - 판넬 [완료처리] 로 일원화할 때 0)
+	//   본체의 [강제완료] 와 [확대] 패널의 [완료처리] 는 같은 기능이라 함께 숨긴다. 자리는 빈칸으로 남는다.
+	BOOL bForce = (::GetPrivateProfileInt(_T("MENU"), _T("FORCE_BTN"), 1, ECS_INI_FILE) != 0);
+	CWnd* pF = GetDlgItem(IDC_BTN_RTV_COMPLETE);
+	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
+	pF = GetDlgItem(IDC_RTVV_BTN_FORCE);
+	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
 }
 
 // ===================================================================

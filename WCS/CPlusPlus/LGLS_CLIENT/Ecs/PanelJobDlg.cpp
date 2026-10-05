@@ -444,18 +444,20 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	CString strHs  = (nHs > 0) ? PortText(nHs) : _T("통로");
 	CString strHs2 = (nHs2 > 0) ? PortText(nHs2) : strHs;
 
-	struct STEP { CString dev, from, to; int kind; };		// kind : 0 작업대 C/V / 1 RGV / 2 통로 C/V / 3 S/C
+	struct STEP { CString dev, from, to; int kind; int toTrk; };		// kind : 0 작업대 C/V / 1 RGV / 2 통로 C/V / 3 S/C
 	CArray<STEP, STEP&> steps;
 	m_arSeqKind.RemoveAll();
+	m_arSeqToTrk.RemoveAll();
 	int nPhase = 0;			// 진행 중인 단계 (steps.GetCount() 이면 모두 완료)
 	STEP st;
+	st.toTrk = 0;
 	switch (typ)
 	{
 	case 1:		// 입고 : C/V(입고대→픽업) → RGV(픽업→통로) → C/V(통로 두 칸) → S/C(통로→랙)
 	{
 		int nPick = NeighborTrack(nStart);
 		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); steps.Add(st);
-		st.kind = 1; st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      steps.Add(st);
+		st.kind = 1; st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      st.toTrk = nHs; steps.Add(st); st.toTrk = 0;
 		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
 		st.kind = 3; st.dev = strSc;             st.from = strHs2;           st.to = strDestLoc; steps.Add(st);
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
@@ -471,7 +473,7 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 		int nPick = NeighborTrack(nDest);
 		st.kind = 3; st.dev = strSc;             st.from = strStartLoc;      st.to = strHs;      steps.Add(st);
 		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
-		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); steps.Add(st);
+		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); st.toTrk = (nPick > 0 ? nPick : nDest); steps.Add(st); st.toTrk = 0;
 		st.kind = 0; st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); steps.Add(st);
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
@@ -510,6 +512,7 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 		m_listSeq.SetItemText(i, 3, steps[i].from);
 		m_listSeq.SetItemText(i, 4, steps[i].to);
 		m_arSeqKind.Add(steps[i].kind);
+		m_arSeqToTrk.Add(steps[i].toTrk);
 	}
 	m_nSeqPhase = nPhase;
 	if (nPhase < steps.GetCount())
@@ -637,13 +640,75 @@ void CPanelJobDlg::OnComplete()
 	strMsg.Format(_T("작업번호(%s), 순번(%s) %s 구간을 완료 처리하시겠습니까?  [%s -> %s]"),
 		(LPCTSTR)r.lugg, (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
 	if (AfxMessageBox(strMsg, MB_YESNO) != IDYES) return;
+	int nKind = m_arSeqKind[nSeq];
+	BOOL bOut = (typ == 2 || typ == 3);
+
+	// [LGLS 2026-10-05] S/C·RGV 구간은 구 ECS 설비 창 [완료처리](buttonForceComplete_Click) 가 하던 일까지 함께 한다 (사용자 지시 -
+	//   설비 창 [강제완료] 를 쓰지 않고 판넬 [완료처리] 하나로 처리).
+	//   ① 그 작업을 물고 있는 설비의 지시(_OD)·잔류 관측값·완료신호를 비운다 → 설비가 다음 명령을 받는다.
+	//      비우지 않으면 IO_TASK 의 "아직 차상에 있다" 판정에 걸려 H/S 번호 찍기도 되지 않는다.
+	//   ② 번호 찍기는 IO_TASK 가 한다 : 출고 S/C 29 → LandScDrop 이 H/S 의 화물에 작업번호를 찍고 16,
+	//      RGV 39 → LandRgvDrop 이 HS_TRACK_NO(도착 트랙)의 화물에 작업번호를 찍고 15/16.
+	//      그래서 RGV 구간은 HS_TRACK_NO 를 RGV 도착 트랙으로 맞춰 준다(ForceCompleteRtv 와 같다).
+	CString strVehWhere, strVehTbl;
+	if (nKind == 3)
+	{
+		strVehTbl = _T("SC_DATA_LGLS");
+		strVehWhere.Format(_T(" WHERE WH_TYP = '%s' AND (LUGG_NO_FK1_OD = '%s' OR ITN_LUGG_FK1 = '%s' OR PALLET_ON_VEHICLE_RD = '%s' OR PALLET_ID_OD = '%s')"),
+			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg);
+	}
+	else if (nKind == 1)
+	{
+		strVehTbl = _T("RTV_DATA_LGLS");
+		strVehWhere.Format(_T(" WHERE WH_TYP = '%s' AND (LUGG_OD = '%s' OR PALLET_ON_VEHICLE_RD = '%s' OR PALLET_ID_OD = '%s')"),
+			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg);
+	}
+	if (!strVehTbl.IsEmpty())
+	{
+		// 그 설비가 아직 RUN(작업중) 이면 한 번 더 묻는다 (구 ECS 설비 창은 RUN 에서 거부했다. 판넬은 Ack 대기로 RUN 에 머문 설비도
+		// 넘겨야 하므로 막지는 않는다)
+		CString strChk = _T("SELECT COUNT(*) AS CNT FROM ") + strVehTbl + strVehWhere + _T(" AND SUBSYSTEM_STATUS_RD = '2'");
+		CString strChkMsg; int nChk = -1;
+		_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
+		if (nChk > 0)
+		{
+			CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
+			pChk->MoveFirst();
+			int nRun = _ttoi(pChk->GetItem(_T("CNT")));
+			delete pChk;
+			if (nRun > 0 && AfxMessageBox(_T("이 작업을 맡은 설비가 RUN(작업중) 상태입니다.\n화물을 이미 내려놓은 것이 확실합니까?\n(설비에 남은 지시 정보를 비웁니다)"),
+				MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES) return;
+		}
+	}
+
 	CString strSql;
-	// 통로(HS_TRACK_NO)가 아직 없으면 단계표가 예측한 통로 트랙을 같이 넣는다 - IO_TASK 가 다음 구간(RGV/크레인)을 낼 때 필요
+	// HS_TRACK_NO : RGV 구간은 RGV 도착 트랙으로 맞춘다. 그 밖에는 비어 있을 때만 단계표가 예측한 통로 트랙을 넣는다
+	//   - IO_TASK 가 다음 구간(RGV/크레인)을 내거나 착지 화물에 번호를 찍을 때 이 값으로 트랙을 찾는다
 	CString strHsSet;
-	if (r.hs.IsEmpty() && m_nSeqHs > 0) strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), m_nSeqHs);
+	if (nKind == 1 && nSeq < m_arSeqToTrk.GetCount() && m_arSeqToTrk[nSeq] > 0)
+		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), m_arSeqToTrk[nSeq]);
+	else if (r.hs.IsEmpty() && m_nSeqHs > 0)
+		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), m_nSeqHs);
 	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s'%s, UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
 		(LPCTSTR)strSta, (LPCTSTR)strHsSet, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg);
-	CString strLog; strLog.Format(_T("JOB_MST UPDATE : 완료처리(스텝 %s %s) JOB_STATUS %s -> %s%s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta, (LPCTSTR)strHsSet);
+	CString strVehLog;
+	if (nKind == 3)
+	{
+		strSql += _T("; UPDATE SC_DATA_LGLS SET LUGG_NO_FK1_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0', JOB_TYP_RD = '0'")
+			_T(", ITN_LUGG_FK1 = '0', PALLET_ON_VEHICLE_RD = '', COMPLETE_RD = '0'")
+			_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00', TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
+			_T(", OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N'") + strVehWhere;
+		strVehLog = _T(" + S/C 지시 정리");
+	}
+	else if (nKind == 1)
+	{
+		strSql += _T("; UPDATE RTV_DATA_LGLS SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0', COMPLETE_RD = '0'")
+			_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00', TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
+			_T(", RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N', DEPART_TRACK = '', ARRIVE_TRACK = ''") + strVehWhere;
+		strVehLog = _T(" + RTV 지시 정리");
+	}
+	UNREFERENCED_PARAMETER(bOut);
+	CString strLog; strLog.Format(_T("JOB_MST UPDATE : 완료처리(스텝 %s %s) JOB_STATUS %s -> %s%s%s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta, (LPCTSTR)strHsSet, (LPCTSTR)strVehLog);
 	if (ExecUpdate(strSql, strLog, r.lugg))
 		Refresh();
 }

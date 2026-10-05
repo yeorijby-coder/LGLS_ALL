@@ -70,3 +70,9 @@ JOB_PANEL_DETAIL_H=0
 ; [LGLS 2026-10-01] 작업정보 판넬 목록의 열 순서 ([DISPLAY] 아래). 토큰을 쉼표로 나열, 폭은 토큰:px (생략 시 기본)
 ;   LUGG 작업번호 / TYP 구분 / STA 상태 / LOT / PROD 제품 / START 출발 / DEST 도착 / PRI 우선 / UPD 수정시각
 JOB_PANEL_COLS=LUGG,TYP,STA,LOT,PROD,START,DEST
+
+; [LGLS 2026-10-05] 크레인·RGV 상태창의 [강제완료] 단추 표시 ([MENU] 아래)
+;   1 = 보임(기본) / 0 = 숨김 - 본체 [강제완료] 와 [확대] 패널의 [완료처리] 를 함께 숨긴다
+;   숨겨도 작업정보 판넬의 [완료처리] 는 그대로이며, S/C·RGV 구간을 완료하면 설비에 남은 지시도 함께 비운다
+;   저장하면 떠 있는 창에도 바로 반영된다
+FORCE_BTN=1

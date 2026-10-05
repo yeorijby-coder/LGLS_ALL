@@ -1950,6 +1950,10 @@ void CEcsView::ReloadIniHot()
 		}
 	}
 
+	// [LGLS 2026-10-05] [MENU] FORCE_BTN : 크레인·RGV 창의 [강제완료] 표시/숨김 - 떠 있는 창에 바로 반영한다(값은 창이 스스로 읽는다)
+	if (pDoc->m_pScSkinDlg  != NULL && ::IsWindow(pDoc->m_pScSkinDlg->m_hWnd))  ((CScSkinDlg*)pDoc->m_pScSkinDlg)->ApplyZoomBtnIni();
+	if (pDoc->m_pRtvSkinDlg != NULL && ::IsWindow(pDoc->m_pRtvSkinDlg->m_hWnd)) ((CRtvSkinDlg*)pDoc->m_pRtvSkinDlg)->ApplyZoomBtnIni();
+
 	// [LGLS 2026-09-22] 체류 알람 폐기 - 경고창의 JOB_STALL_WARN_SEC 핫 리로드도 제거
 
 	// [Title] BuildDate/DbInfo/Path · [RibbonMenu] ToolTip → 메인 프레임(제목줄·리본 툴팁)
