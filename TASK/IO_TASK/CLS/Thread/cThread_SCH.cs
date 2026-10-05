@@ -5030,6 +5030,9 @@ namespace TSK_COMM_IOSCH
                             continue;   // 요청을 남겨 다음 주기에 재시도
                         }
                     }
+                    // [LGLS 2026-10-05] 구 ECS StackerForm [완료처리] 처럼 설비가 물고 있던 명령을 통째로 비운다 (사용자 지시).
+                    //   구 ECS 는 완료 뒤 vehicle.Commandid / CommandSeq 를 "" 로 지워 그 설비가 다음 명령을 받게 했다.
+                    ClearVehOrderAll(true, scNo);
                     ClearVehCmdFlag("SC_DATA_LGLS", "SC_NO", scNo);
                 }
             }
@@ -5104,6 +5107,7 @@ namespace TSK_COMM_IOSCH
                             continue;
                         }
                     }
+                    ClearVehOrderAll(false, rtvNo);     // [LGLS 2026-10-05] 구 ECS RGVForm [완료처리] 와 같이 물린 명령을 비운다
                     ClearVehCmdFlag("RTV_DATA_LGLS", "RTV_NO", rtvNo);
                 }
             }
@@ -5230,6 +5234,49 @@ namespace TSK_COMM_IOSCH
                 DbNonQry(q);
             }
             catch { }
+        }
+
+        /// <summary>
+        /// [LGLS 2026-10-05] [강제완료] 뒤 그 설비에 남은 지시(_OD)와 잔류 관측값을 통째로 비운다 (사용자 지시).
+        ///   구 ECS StackerForm / RGVForm.buttonForceComplete_Click 이 완료 뒤 vehicle.Commandid / CommandSeq 를
+        ///   비우는 것과 같다 - 비우지 않으면 "작업은 끝났는데 설비는 아직 그 명령을 물고 있는" 상태로 남아
+        ///   다음 지시를 못 받거나 화면에 옛 작업번호가 붙어 보인다. DB 만 고친다(PLC 에 쓰지 않는다).
+        /// </summary>
+        private void ClearVehOrderAll(bool bSc, string strNo)
+        {
+            try
+            {
+                string q = "";
+                if (bSc)
+                {
+                    q += CRLF + " UPDATE SC_DATA_LGLS                                         ";
+                    q += CRLF + "    SET LUGG_NO_FK1_OD = '0000', PALLET_ID_OD = '0000'       ";
+                    q += CRLF + "      , JOB_TYP_OD = '0', JOB_TYP_RD = '0'                   ";
+                    q += CRLF + "      , ITN_LUGG_FK1 = '0', PALLET_ON_VEHICLE_RD = ''        ";
+                    q += CRLF + "      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' ";
+                    q += CRLF + "      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' ";
+                    q += CRLF + "      , OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N'            ";
+                    q += CRLF + "  WHERE WH_TYP = :WH_TYP AND SC_NO = :NO                     ";
+                }
+                else
+                {
+                    q += CRLF + " UPDATE RTV_DATA_LGLS                                        ";
+                    q += CRLF + "    SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0' ";
+                    q += CRLF + "      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' ";
+                    q += CRLF + "      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' ";
+                    q += CRLF + "      , RTV_DEST_OD = '', RTV_PASSCV_OD = ''                 ";
+                    q += CRLF + "      , OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N'            ";
+                    q += CRLF + "      , DEPART_TRACK = '', ARRIVE_TRACK = ''                 ";
+                    q += CRLF + "  WHERE WH_TYP = :WH_TYP AND RTV_NO = :NO                    ";
+                }
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
+                _pBdb.mComMain.Parameters.Add("NO",     DbLang.VARCHAR).Value = strNo;
+                DbNonQry(q);
+                MakeMsg_Imp(string.Format("[SCH][강제완료] {0} #{1} 에 남은 지시 정보를 비웠습니다.", bSc ? "S/C" : "RTV", strNo));
+            }
+            catch (Exception ex) { MakeMsg_Error("[SCH][강제완료] 지시 정리 오류: " + ex.Message); }
         }
 
         /// <summary>운전 화면 명령 플래그 소비(CMD_RQ_YN='N').</summary>

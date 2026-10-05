@@ -710,6 +710,28 @@ void CRtvSkinDlg::OnBnClickedBtnRtvComplete()
 		return;
 	}
 
+	// [LGLS 2026-10-05] 구 ECS RGVForm.buttonForceComplete_Click 과 같게 (사용자 지시) :
+	//   설비가 RUN(작업중) 이면 거부한다. 완료 뒤 설비에 물린 명령을 비우는 것은 IO_TASK(ForceComplete → ClearVehOrderAll) 가 한다.
+	//   상태는 화면에 남은 값이 아니라 지금 DB 값을 본다([확대] 패널을 열지 않았으면 기억값이 비어 있다).
+	{
+		CString strChk, strChkMsg; int nChk = -1;
+		strChk.Format(_T("SELECT ") + m_pDoc->NVL + _T("(SUBSYSTEM_STATUS_RD,'0') AS ST FROM RTV_DATA_LGLS WHERE WH_TYP = '%s' AND PLC_NO = '%02s' AND RTV_NO = '%s'"),
+			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_PLC_NO, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+		_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
+		if (nChk > 0)
+		{
+			CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
+			pChk->MoveFirst();
+			CString strSt = pChk->GetItem(_T("ST"));
+			delete pChk;
+			if (strSt == _T("2"))
+			{
+				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(작업중) 상태입니다. 작업이 완료될때 까지 기다리십시오.")));
+				return;
+			}
+		}
+	}
+
 	UpdateRtvData(EN_BtnRtvConfirm);
 }
 
@@ -1620,15 +1642,9 @@ static BOOL LglsRtvExecUpdate(CEcsDoc* pDoc, const CString& strSql, const CStrin
 
 void CRtvSkinDlg::OnRtvvForce()
 {
-	if (m_pDoc == NULL || m_pRTV_DATA == NULL) return;
-	if (m_strRtvvState == _T("2")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(작업중) 상태입니다. 작업이 완료될때 까지 기다리십시오."))); return; }
-	if (m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("[완료처리]할 명령이 없습니다."))); return; }
-	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("강제완료 하시겠습니까?")) + _T(" [") + m_strRtvvJob + _T(" -> 39]"), MB_YESNO) != IDYES) return;
-	CString strSql;
-	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '39', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
-		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_strRtvvJob);
-	if (LglsRtvExecUpdate(m_pDoc, strSql, _T("JOB_MST UPDATE : 완료처리(구ECS) JOB_STATUS -> 39"), m_strRtvvJob, _T("CRtvSkinDlg")))
-		AfxMessageBox(_T("[ ") + m_strRtvvJob + _T(" ] 명령을 완료하였습니다."));
+	// [LGLS 2026-10-05] 본체 [강제완료] 와 같은 경로로 보낸다 - RUN 거부 → IO_TASK 가 작업을 다음 단계로 넘기고
+	//   (출고면 H/S 에 작업번호도 찍고) 설비에 물린 명령을 비운다. 종전처럼 여기서 JOB_STATUS 만 바꾸면 설비 쪽 명령이 남았다.
+	OnBnClickedBtnRtvComplete();
 }
 
 void CRtvSkinDlg::OnRtvvAbort()
