@@ -70,6 +70,7 @@ protected:
 	void LoadTrackCvMap();
 	int  CvOfTrack(int nTrk);
 	int  NeighborTrack(int nTrk);
+	int RgvSideTrack(int nPos);		// 작업대의 RGV 쪽 칸 (IO_TASK RgvPickupTrack 과 같은 규약)
 	BOOL CvTracks(int nCv, int& nLo, int& nHi);
 	int  HsCvOfCrane(int nSc, BOOL bInbound);
 	CString PortText(int nTrk);

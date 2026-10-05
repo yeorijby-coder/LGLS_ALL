@@ -352,6 +352,16 @@ CString CPanelJobDlg::CvDevText(int nTrk)
 	if (cv > 0) t.Format(_T("CONVEYOR:%d"), cv); else t = _T("CONVEYOR");
 	return t;
 }
+// [LGLS 2026-10-05] 작업대의 RGV 쪽 칸(입고 = RGV 픽업 칸, 출고 = RGV 하역 칸). IO_TASK cThread_SCH.RgvPickupTrack 과 같은 규약 :
+//   짝수면 -1 한 홀수 트랙, 홀수면 그대로. 예외 130 → 131 (C/V#15), 129 → 127 (C/V#14 는 127 → 128 → 129 세 칸).
+//   종전에는 "같은 C/V 의 이웃 칸" 으로 구해 129 가 128 로 나왔다(시뮬 0012 로 확인 - IO_TASK 는 127 에 내린다).
+int CPanelJobDlg::RgvSideTrack(int nPos)
+{
+	if (nPos == 130) return 131;
+	if (nPos == 129) return 127;
+	if (nPos < 100 || nPos >= 900) return 0;
+	return (nPos % 2 == 0) ? (nPos - 1) : nPos;
+}
 int CPanelJobDlg::NeighborTrack(int nTrk)
 {
 	int cv = CvOfTrack(nTrk); if (cv <= 0) return 0;
@@ -455,7 +465,7 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	{
 	case 1:		// 입고 : C/V(입고대→픽업) → RGV(픽업→통로) → C/V(통로 두 칸) → S/C(통로→랙)
 	{
-		int nPick = NeighborTrack(nStart);
+		int nPick = RgvSideTrack(nStart);
 		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); steps.Add(st);
 		st.kind = 1; st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      st.toTrk = nHs; steps.Add(st); st.toTrk = 0;
 		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
@@ -470,7 +480,7 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	}
 	case 2: case 3:		// 출고 / 피킹출고 : S/C(랙→통로) → C/V(통로 두 칸) → RGV(통로→출고 픽업) → C/V(픽업→출고대)
 	{
-		int nPick = NeighborTrack(nDest);
+		int nPick = RgvSideTrack(nDest);
 		st.kind = 3; st.dev = strSc;             st.from = strStartLoc;      st.to = strHs;      steps.Add(st);
 		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
 		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); st.toTrk = (nPick > 0 ? nPick : nDest); steps.Add(st); st.toTrk = 0;
@@ -563,7 +573,8 @@ BOOL CPanelJobDlg::ExecUpdate(CString strSql, CString strLogMsg, CString strLugg
 }
 
 // [LGLS 2026-10-01] ▲ / ▼ : 선택 작업의 JOB_PRIORITY 를 1 씩 (001~999, 판넬의 우선순위 변경과 같은 갱신)
-static void LglsPriStep(CPanelJobDlg* pDlg, CEcsDoc* pDoc, const CString& strLugg, const CString& strPri, int nDelta, BOOL (CPanelJobDlg::*pfnExec)(CString, CString, CString))
+// [LGLS 2026-10-05] 작업번호·우선순위는 값으로 받는다 - 확인창이 떠 있는 동안 선택이 바뀌어도 처음 고른 작업에만 적용되게
+static void LglsPriStep(CPanelJobDlg* pDlg, CEcsDoc* pDoc, CString strLugg, CString strPri, int nDelta, BOOL (CPanelJobDlg::*pfnExec)(CString, CString, CString))
 {
 	if (pDoc == NULL || strLugg.IsEmpty()) { AfxMessageBox(_T("작업을 먼저 고르세요.")); return; }
 	int n = _ttoi(strPri) + nDelta;
@@ -625,7 +636,9 @@ void CPanelJobDlg::OnComplete()
 {
 	int i = FindRow(m_strSelLugg);
 	if (m_pDoc == NULL || i < 0) { AfxMessageBox(_T("작업을 먼저 고르세요.")); return; }
-	const ROW& r = m_arRow[i];
+	// [LGLS 2026-10-05] 참조가 아니라 복사본을 쓴다 - 확인창이 떠 있는 동안 자동 갱신이 m_arRow 를 다시 만들면
+	//   참조가 죽은 메모리를 가리켜 Client 가 내려갔다(시뮬 0012, 목록이 바뀌는 중에 [예] 를 누른 경우). 단계표 값도 창을 띄우기 전에 잡아 둔다.
+	const ROW r = m_arRow[i];
 	int typ = _ttoi(r.typCd); if (typ >= 10) typ -= 10;
 
 	int nSeq = m_listSeq.GetNextItem(-1, LVNI_SELECTED);
@@ -636,11 +649,13 @@ void CPanelJobDlg::OnComplete()
 	CString strSeq = m_listSeq.GetItemText(nSeq, 1), strDev = m_listSeq.GetItemText(nSeq, 2);
 	if (strSta == r.staCd) { AfxMessageBox(_T("이미 그 단계가 끝난 상태입니다. [") + r.staCd + _T("]")); return; }
 
+	const int nKind = m_arSeqKind[nSeq];
+	const int nToTrk = (nSeq < m_arSeqToTrk.GetCount()) ? m_arSeqToTrk[nSeq] : 0;
+	const int nSeqHs = m_nSeqHs;
 	CString strMsg;
 	strMsg.Format(_T("작업번호(%s), 순번(%s) %s 구간을 완료 처리하시겠습니까?  [%s -> %s]"),
 		(LPCTSTR)r.lugg, (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
 	if (AfxMessageBox(strMsg, MB_YESNO) != IDYES) return;
-	int nKind = m_arSeqKind[nSeq];
 	BOOL bOut = (typ == 2 || typ == 3);
 
 	// [LGLS 2026-10-05] S/C·RGV 구간은 구 ECS 설비 창 [완료처리](buttonForceComplete_Click) 가 하던 일까지 함께 한다 (사용자 지시 -
@@ -685,10 +700,10 @@ void CPanelJobDlg::OnComplete()
 	// HS_TRACK_NO : RGV 구간은 RGV 도착 트랙으로 맞춘다. 그 밖에는 비어 있을 때만 단계표가 예측한 통로 트랙을 넣는다
 	//   - IO_TASK 가 다음 구간(RGV/크레인)을 내거나 착지 화물에 번호를 찍을 때 이 값으로 트랙을 찾는다
 	CString strHsSet;
-	if (nKind == 1 && nSeq < m_arSeqToTrk.GetCount() && m_arSeqToTrk[nSeq] > 0)
-		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), m_arSeqToTrk[nSeq]);
-	else if (r.hs.IsEmpty() && m_nSeqHs > 0)
-		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), m_nSeqHs);
+	if (nKind == 1 && nToTrk > 0)
+		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), nToTrk);
+	else if (r.hs.IsEmpty() && nSeqHs > 0)
+		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), nSeqHs);
 	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s'%s, UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
 		(LPCTSTR)strSta, (LPCTSTR)strHsSet, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg);
 	CString strVehLog;
