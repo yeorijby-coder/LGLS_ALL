@@ -76,3 +76,6 @@ JOB_PANEL_COLS=LUGG,TYP,STA,LOT,PROD,START,DEST
 ;   숨겨도 작업정보 판넬의 [완료처리] 는 그대로이며, S/C·RGV 구간을 완료하면 설비에 남은 지시도 함께 비운다
 ;   저장하면 떠 있는 창에도 바로 반영된다
 FORCE_BTN=1
+
+; [LGLS 2026-10-07] 작업정보 판넬은 늘 위아래(목록 위 / 단계표 아래) 배치 - JOB_PANEL_SPLIT / JOB_PANEL_DETAIL_W 는 더 쓰지 않는다 (DETAIL_H 만 유효)
+;   우선순위/반송조정/가로보기 칸은 없앴다. 단계표의 진행중 줄은 파란 배경.

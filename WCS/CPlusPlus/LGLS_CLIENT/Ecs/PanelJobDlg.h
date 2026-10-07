@@ -91,6 +91,7 @@ protected:
 	afx_msg void OnTransferCtl();
 	afx_msg void OnComplete();
 	afx_msg void OnSplitToggle();
+	afx_msg void OnSeqCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);	// [LGLS 2026-10-07] 진행중 줄 파란 배경
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);

@@ -60,6 +60,7 @@ BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
 	ON_BN_CLICKED(IDC_PANEL_JOB_TRANSFER, OnTransferCtl)
 	ON_BN_CLICKED(IDC_PANEL_JOB_COMPLETE, OnComplete)
 	ON_BN_CLICKED(IDC_PANEL_JOB_SPLIT_BTN, OnSplitToggle)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_PANEL_JOB_SEQ, OnSeqCustomDraw)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
@@ -84,6 +85,12 @@ BOOL CPanelJobDlg::OnInitDialog()
 	for (int i = 0; i < (int)m_arCols.GetCount(); i++)
 		m_list.InsertColumn(i, COL_DEF[m_arCols[i]].strHead, LVCFMT_LEFT, CLib::DpiPx(m_arColW[i]));
 	BuildOldEcsControls();
+	// [LGLS 2026-10-07] 왼쪽 칸(우선순위/▲▼/반송조정/가로보기) 은 쓰지 않는다 (사용자 지시 - 사진의 붉은 부분 제거).
+	//   리소스와 처리 코드는 두고 숨기기만 한다. 목록은 왼쪽 끝부터 쓴다(OnSize 의 L = 0).
+	{
+		CWnd* pHide[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer, &m_btnSplit };
+		for (int i = 0; i < 6; i++) if (::IsWindow(pHide[i]->m_hWnd)) pHide[i]->ShowWindow(SW_HIDE);
+	}
 
 	SetTimer(TIMER_PANEL_JOB, TIMER_PANEL_JOB_MS, NULL);
 	Refresh();
@@ -525,8 +532,8 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 		m_arSeqToTrk.Add(steps[i].toTrk);
 	}
 	m_nSeqPhase = nPhase;
-	if (nPhase < steps.GetCount())
-		m_listSeq.SetItemState(nPhase, LVIS_SELECTED, LVIS_SELECTED);
+	// [LGLS 2026-10-07] 진행중 줄은 선택 표시 대신 파란 배경(OnSeqCustomDraw) - 선택 색이 배경을 가리지 않게 선택하지 않는다
+	m_listSeq.Invalidate(FALSE);
 }
 
 // [LGLS 2026-10-01] 작업번호 값은 구 ECS 처럼 붉게
@@ -741,7 +748,7 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	const int nListY = 2;
 	const int nChkY = CLib::DpiPx(4),  nChkH  = CLib::DpiPx(18);
 	const int nGap  = CLib::DpiPx(6);				// 분할선 폭
-	const int L  = (m_nRcLeftW > 0) ? m_nRcLeftW + 2 : CLib::DpiPx(96);	// 왼쪽 칸 폭 = 리소스의 왼쪽 컨트롤 오른쪽 끝
+	const int L  = 0;	// [LGLS 2026-10-07] 왼쪽 칸을 없앴다(숨김) - 목록이 왼쪽 끝부터 (사용자 지시)
 	// [LGLS 2026-10-01] 분할 방향을 Ecs.ini 로 정한다 (사용자 지시)
 	//   [DISPLAY] JOB_PANEL_SPLIT    = 0 자동(폭 620px 미만이면 세로) / 1 가로(상세를 오른쪽) / 2 세로(상세를 아래)
 	//   [DISPLAY] JOB_PANEL_DETAIL_W = 가로일 때 상세 칸 폭(px, 0=38%%)   JOB_PANEL_DETAIL_H = 세로일 때 상세 칸 높이(px, 0=178)
@@ -751,12 +758,13 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	const int nSplitMode = m_nSplitMode;
 	const int nIniW = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_W"), 0, ECS_INI_FILE);
 	const int nIniH = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_H"), 0, ECS_INI_FILE);
-	const BOOL bNarrow = (nSplitMode == 2) ? TRUE : (nSplitMode == 1) ? FALSE : (cx < CLib::DpiPx(620));
+	// [LGLS 2026-10-07] 배치는 늘 위아래(목록 위 / 상세 아래) - 사용자 지시(사진). ini JOB_PANEL_SPLIT 은 더 보지 않는다.
+	const BOOL bNarrow = TRUE; UNREFERENCED_PARAMETER(nSplitMode);
 	int R = (m_nSplitR > 0) ? m_nSplitR : (nIniW > 0) ? CLib::DpiPx(nIniW) : cx * 38 / 100;		// 오른쪽 칸 폭
 	if (R < CLib::DpiPx(200)) R = CLib::DpiPx(200);
 	if (R > cx - L - CLib::DpiPx(160)) R = max(0, cx - L - CLib::DpiPx(160));
 	if (bNarrow) R = 0;
-	int xM = L + nGap, wM = cx - L - R - 2 * nGap; if (wM < 100) wM = 100;
+	int xM = L, wM = cx - L - R - (bNarrow ? 0 : 2 * nGap); if (wM < 100) wM = 100;
 	int xR = cx - R;
 	const int hD = (m_nSplitB > 0) ? m_nSplitB : CLib::DpiPx((nIniH > 0) ? nIniH : 178);		// 아래 칸 높이
 	int cyTop = bNarrow ? max(CLib::DpiPx(80), cy - hD - nGap) : cy;
@@ -817,6 +825,23 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 		static const int W_NARROW[] = { 48, 40, 100, 110, 110 };
 		for (int i = 0; i < 5; i++)
 			m_listSeq.SetColumnWidth(i, CLib::DpiPx(bNarrow ? W_NARROW[i] : W_WIDE[i]));
+	}
+}
+
+// [LGLS 2026-10-07] 단계표에서 "진행중" 줄은 파란 배경으로 (사용자 지시)
+void CPanelJobDlg::OnSeqCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMLVCUSTOMDRAW* pCD = (NMLVCUSTOMDRAW*)pNMHDR;
+	*pResult = CDRF_DODEFAULT;
+	if (pCD->nmcd.dwDrawStage == CDDS_PREPAINT) { *pResult = CDRF_NOTIFYITEMDRAW; return; }
+	if (pCD->nmcd.dwDrawStage == CDDS_ITEMPREPAINT)
+	{
+		if ((int)pCD->nmcd.dwItemSpec == m_nSeqPhase && m_nSeqPhase >= 0)
+		{
+			pCD->clrTextBk = RGB(120, 170, 255);
+			pCD->clrText   = RGB(0, 0, 0);
+		}
+		*pResult = CDRF_DODEFAULT;
 	}
 }
 
