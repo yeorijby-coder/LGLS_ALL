@@ -74,7 +74,17 @@ namespace EcsClient
 			// 프로그램이 기동중인지 확인
 			//--------------------------------------------------
 			{
-				if ((Information.UBound(System.Diagnostics.Process.GetProcessesByName(System.Diagnostics.Process.GetCurrentProcess().ProcessName)) > 0) == true)
+				// [LGLS 2026-10-07] 같은 이름(Ecs)의 다른 프로그램이 떠 있어도 막지 않는다 - 같은 실행 파일(경로)이 둘일 때만 중복이다 (사용자 환경에서 다른 현장 Ecs.exe 와 겹쳤다)
+				int nSame = 0;
+				string strMe = "";
+				try { strMe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName; } catch { }
+				foreach (System.Diagnostics.Process pr in System.Diagnostics.Process.GetProcessesByName(System.Diagnostics.Process.GetCurrentProcess().ProcessName))
+				{
+					string strPath = "";
+					try { strPath = pr.MainModule.FileName; } catch { strPath = strMe; }   // 경로를 못 읽는(권한 다른) 프로세스는 같은 것으로 본다
+					if (string.Equals(strPath, strMe, StringComparison.OrdinalIgnoreCase)) nSame++;
+				}
+				if (nSame > 1)
 				{
 					MessageBox.Show("기존 프로그램이 이미 사용중 입니다.", "Running...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 					Application.Exit();
