@@ -473,9 +473,9 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	case 1:		// 입고 : C/V(입고대→픽업) → RGV(픽업→통로) → C/V(통로 두 칸) → S/C(통로→랙)
 	{
 		int nPick = RgvSideTrack(nStart);
-		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); steps.Add(st);
+		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); st.toTrk = (nPick > 0 ? nPick : nStart); steps.Add(st); st.toTrk = 0;
 		st.kind = 1; st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      st.toTrk = nHs; steps.Add(st); st.toTrk = 0;
-		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
+		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; st.toTrk = nHs2; steps.Add(st); st.toTrk = 0; }
 		st.kind = 3; st.dev = strSc;             st.from = strHs2;           st.to = strDestLoc; steps.Add(st);
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
 		if      (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 0;
@@ -489,9 +489,9 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	{
 		int nPick = RgvSideTrack(nDest);
 		st.kind = 3; st.dev = strSc;             st.from = strStartLoc;      st.to = strHs;      steps.Add(st);
-		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
+		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; st.toTrk = nHs2; steps.Add(st); st.toTrk = 0; }
 		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); st.toTrk = (nPick > 0 ? nPick : nDest); steps.Add(st); st.toTrk = 0;
-		st.kind = 0; st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); steps.Add(st);
+		st.kind = 0; st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); st.toTrk = nDest; steps.Add(st); st.toTrk = 0;
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
 		else if (s == 29)                                             nPhase = 1;
@@ -654,7 +654,14 @@ void CPanelJobDlg::OnComplete()
 	CString strSta = StepDoneStatus(typ, m_arSeqKind[nSeq]);
 	if (strSta.IsEmpty()) { AfxMessageBox(_T("이 단계는 완료 처리할 수 없습니다.")); return; }
 	CString strSeq = m_listSeq.GetItemText(nSeq, 1), strDev = m_listSeq.GetItemText(nSeq, 2);
-	if (strSta == r.staCd) { AfxMessageBox(_T("이미 그 단계가 끝난 상태입니다. [") + r.staCd + _T("]")); return; }
+	if (strSta == r.staCd)
+	{
+		// [LGLS 2026-10-07] 작업 상태로는 이미 그 구간의 완료 코드다(예 : 입고 15 = 작업대 C/V 구동중이자 RGV 가 가져갈 수 있는 상태).
+		//   이때 다음 구간이 안 나가는 이유는 상태가 아니라 "도착 칸에 화물·작업번호가 없어서" 다(IO_TASK 는 픽업 칸의 번호를 본다).
+		//   그래서 C/V 구간이면 도착 칸에 작업번호를 기록하는 길을 준다(C/V 상태창 [쓰기] 와 같은 기록, 화물이 감지될 때만). (사용자 지적)
+		TrackWriteOffer(r, nSeq);
+		return;
+	}
 
 	const int nKind = m_arSeqKind[nSeq];
 	const int nToTrk = (nSeq < m_arSeqToTrk.GetCount()) ? m_arSeqToTrk[nSeq] : 0;
@@ -826,6 +833,61 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 		for (int i = 0; i < 5; i++)
 			m_listSeq.SetColumnWidth(i, CLib::DpiPx(bNarrow ? W_NARROW[i] : W_WIDE[i]));
 	}
+}
+
+// [LGLS 2026-10-07] 이미 완료 코드인 구간을 [완료처리] 했을 때 : C/V 구간이면 도착 칸에 작업번호 기록을 제안한다
+void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq)
+{
+	int nKind = (nSeq >= 0 && nSeq < m_arSeqKind.GetCount()) ? m_arSeqKind[nSeq] : -1;
+	int nTrk  = (nSeq >= 0 && nSeq < m_arSeqToTrk.GetCount()) ? m_arSeqToTrk[nSeq] : 0;
+	CString strTo = (nSeq >= 0) ? m_listSeq.GetItemText(nSeq, 4) : _T("");
+	if ((nKind != 0 && nKind != 2) || nTrk <= 0)
+	{
+		CString strMsg;
+		strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n다음 구간은 화물이 %s 에 감지되고 작업번호가 붙어 있어야 나갑니다."),
+			(LPCTSTR)r.staCd, strTo.IsEmpty() ? _T("도착 칸") : (LPCTSTR)strTo);
+		AfxMessageBox(strMsg);
+		return;
+	}
+	// 도착 칸의 지금 상태
+	CString strChk, strChkMsg; int nChk = -1;
+	strChk.Format(_T("SELECT ") + m_pDoc->NVL + _T("(SENSOR0_DATA_RD,'0') AS SEN, ") + m_pDoc->NVL + _T("(LUGG_NO_RD,'') AS LUGG FROM CV_DATA WHERE WH_TYP = '%s' AND MC_NO = '%d'"),
+		(LPCTSTR)m_pDoc->m_WH_TYP, nTrk);
+	_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
+	CString strSen = _T("0"), strLugg;
+	if (nChk > 0)
+	{
+		CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
+		pChk->MoveFirst();
+		strSen = pChk->GetItem(_T("SEN")); strLugg = pChk->GetItem(_T("LUGG")); strLugg.Trim();
+		delete pChk;
+	}
+	if (strLugg == r.lugg)
+	{
+		CString strMsg;
+		strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드이고 [%s], %s 에 작업번호 %s 도 붙어 있습니다.\n다음 구간은 IO_TASK 가 설비 조건이 맞으면 냅니다 (RGV 에러/작업정지, 도착지 비어 있음 등을 확인하세요)."),
+			(LPCTSTR)r.staCd, (LPCTSTR)strTo, (LPCTSTR)r.lugg);
+		AfxMessageBox(strMsg);
+		return;
+	}
+	if (strSen != _T("1"))
+	{
+		CString strMsg;
+		strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n그런데 %s 에 화물이 감지되지 않아 작업번호를 기록할 수 없습니다.\n화물이 그 칸에 오면 다시 누르세요."),
+			(LPCTSTR)r.staCd, (LPCTSTR)strTo);
+		AfxMessageBox(strMsg);
+		return;
+	}
+	CString strMsg;
+	strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n%s 에 화물은 있는데 작업번호가 %s 입니다.\n이 칸에 작업번호 %s 를 기록할까요? (C/V 상태창 [쓰기] 와 같습니다)"),
+		(LPCTSTR)r.staCd, (LPCTSTR)strTo, strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000") ? _T("없습니다") : (LPCTSTR)(_T("'") + strLugg + _T("'")), (LPCTSTR)r.lugg);
+	if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return;
+	CString strSql;
+	strSql.Format(_T("UPDATE CV_DATA SET LUGG_NO_OD = '%s', TRACKING_WRITE_YN = 'Y', WRITE_UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND MC_NO = '%d'"),
+		(LPCTSTR)r.lugg, (LPCTSTR)m_pDoc->m_WH_TYP, nTrk);
+	CString strLog; strLog.Format(_T("CV_DATA UPDATE : 완료처리(스텝 %s) 도착 칸 %d 에 작업번호 기록 요청 (종전 '%s')"), (LPCTSTR)m_listSeq.GetItemText(nSeq, 1), nTrk, (LPCTSTR)strLugg);
+	if (ExecUpdate(strSql, strLog, r.lugg))
+		Refresh();
 }
 
 // [LGLS 2026-10-07] 단계표에서 "진행중" 줄은 파란 배경으로 (사용자 지시)

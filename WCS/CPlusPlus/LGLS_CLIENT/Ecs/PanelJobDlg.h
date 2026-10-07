@@ -66,6 +66,7 @@ protected:
 	int m_nSeqPhase;				// 진행중 줄
 	int m_nSeqHs;					// 단계표가 쓴 통로 트랙(예측 포함)
 	CString StepDoneStatus(int typ, int kind);
+	void TrackWriteOffer(const ROW& r, int nSeq);	// [LGLS 2026-10-07] 이미 완료 코드인 C/V 구간 : 도착 칸에 번호 기록 제안
 	CMap<int, int, int, int> m_mapTrackCv;	// 트랙(3자리) → C/V 번호
 	void LoadTrackCvMap();
 	int  CvOfTrack(int nTrk);
