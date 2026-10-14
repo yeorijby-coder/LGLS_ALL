@@ -671,7 +671,11 @@ namespace EQP_SIM.Sim
                             : Def.IsRgv ? FlowDir.Ingo : FlowDir.Outgo;
                 carrying.Dir = dir;
                 bool deferRec = (!Def.IsRgv && engine.HsRecordLagMs > 0);   // [LGLS 2026-09-16] 크레인 H/S 기록 지연 재현
-                engine.Conveyor(cv.Id).PlacePallet(port, carrying.Id, dir, deferRec);
+                // [LGLS 2026-10-14] RGV_DROP_STAMP=0 : RGV 하역 칸에는 재석만 서고 번호는 비운다 → ECS 가 트래킹에 번호를 쓰면
+                //   ConveyorSim 이 "JOB 부여됨" 으로 받아 그때부터 벨트가 옮긴다(번호 없는 화물은 이동 금지). 크레인은 종전대로.
+                string stampId = (Def.IsRgv && !engine.RgvDropStamp) ? "" : carrying.Id;
+                engine.Conveyor(cv.Id).PlacePallet(port, stampId, dir, deferRec);
+                if (Def.IsRgv && !engine.RgvDropStamp) engine.Log(Def.Id + " P" + port + " 하차 - 번호는 얹지 않음(RGV_DROP_STAMP=0, ECS 기록 대기) JOB " + carrying.Id);
                 if (deferRec) { m_lastDropCvId = cv.Id; m_lastDropPort = port; }
                 engine.Log(Def.Id + " P" + port + " 하차 (JOB " + carrying.Id + ")");
             }

@@ -66,6 +66,8 @@ namespace EQP_SIM.Sim
         public int WaitOutHoldMs = 9000;
         /// <summary>[LGLS 2026-09-16] 크레인 하차 후 H/S 워드(재석/트래킹) 기록 지연(ms). 0=즉시(종전). 현장 재현 시 ~1200.</summary>
         public int HsRecordLagMs = 0;
+        /// <summary>[LGLS 2026-10-14] RGV 하역 때 시뮬(PLC)이 트래킹에 번호를 얹는가. true=종전. false=재석만 세우고 번호는 ECS(IO_TASK)가 써야 하며 그 전엔 벨트가 옮기지 않는다(현장 PLC 담당자 : 하역 후 번호는 ECS 가 쓴다).</summary>
+        public bool RgvDropStamp = true;
         /// <summary>[LGLS 2026-09-17] H/S 워드 기록이 드러난 뒤 벨트가 다음 칸으로 옮기기까지 최소 체류(ms). Client 가 짝수 칸 기록을 볼 수 있게. 0=즉시.</summary>
         public int HsAfterRecordHoldMs = 3000;
 
@@ -80,6 +82,7 @@ namespace EQP_SIM.Sim
             ForkStepMs = config.GetInt("TIMING", "FORK_STEP_MS", ForkStepMs);
             WaitOutHoldMs = config.GetInt("TIMING", "WAITOUT_HOLD_MS", WaitOutHoldMs);
             HsRecordLagMs = config.GetInt("TIMING", "HS_RECORD_LAG_MS", HsRecordLagMs);   // [LGLS 2026-09-16]
+            RgvDropStamp = config.GetInt("TIMING", "RGV_DROP_STAMP", RgvDropStamp ? 1 : 0) != 0;   // [LGLS 2026-10-14]
             HsAfterRecordHoldMs = config.GetInt("TIMING", "HS_AFTER_RECORD_HOLD_MS", HsAfterRecordHoldMs);   // [LGLS 2026-09-17]
             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
             WaitInOff = config.GetBool("FAULT", "WAIT_IN_OFF", false);   // [LGLS 2026-09-30] 시험용 - 출고대 신호(WAIT_IN)를 올리지 않는다
