@@ -199,9 +199,11 @@ UINT CCollectDB::DoWork(LPVOID pParm)
 					double dQ = LglsQpcMs(liQ0, liQ1);
 					s_nLglsSqlCnt++; s_dLglsSqlSum += dQ; if (dQ > s_dLglsSqlMax) s_dLglsSqlMax = dQ;
 				}
-				::Sleep(50); //추가
+				// [LGLS 2026-10-14] 설비마다 50ms 고정 대기를 없앤다 - 설비 3대+접속 2건이면 바퀴당 250ms 를 그냥 버렸다(실측 한 바퀴 620ms).
+				//   필요하면 Ecs.ini [ETC] COLLECT_STEP_MS 로 되살린다(기본 0).
+				{ int nStep = ::GetPrivateProfileInt(_T("ETC"), _T("COLLECT_STEP_MS"), 0, ECS_INI_FILE); if (nStep > 0) ::Sleep(nStep); }
 			}
-		}	
+		}
 
 		// [LGLS 2026-09-10] DB 가 끊기면 IsDB_POSSIBLE 이 접속 객체를 지우고 NULL 로 만든다.
 		//   종전에는 그 상태로 아래 ConnectStatus 에 들어가 NULL 을 역참조했다
@@ -219,17 +221,15 @@ UINT CCollectDB::DoWork(LPVOID pParm)
 			{
 				CString strHostNum = _T("HOST2");  //_T("HOST") + CConvert::ToString(nIdxHost+1); 
 				pThis->ConnectStatus(pDoc->m_pConnectStatus, strHostNum);
-				::Sleep(50);
 				// [LGLS] SCH = IO_TASK heartbeat (EQP_MST EQP_TYP='SCH') -> V_EQP_TIME3 / V_EQP_CONN3
 				pThis->ConnectStatus(pDoc->m_pConnectStatus, _T("SCH"));
-				::Sleep(50); //추가
 			}
 		}
 		// [LGLS 2026-09-08] 설비 수집 주기. 종전 고정 1000ms 라 화면이 실 데이터보다 1초쯤 늦었다.
 		//   설비 통신(VehThread)은 0.3초 주기로 DB 를 갱신하는데 화면이 그것을 1초마다 읽어
 		//   전체가 한 박자 느리게 보였다. Ecs.ini [ETC] COLLECT_INTERVAL_MS 로 조정한다.
 		{
-			int nItv = ::GetPrivateProfileInt(_T("ETC"), _T("COLLECT_INTERVAL_MS"), 300, ECS_INI_FILE);
+			int nItv = ::GetPrivateProfileInt(_T("ETC"), _T("COLLECT_INTERVAL_MS"), 200, ECS_INI_FILE);	// [LGLS 2026-10-14] 기본 300 → 200
 			if (nItv < 100)  nItv = 100;      // 너무 낮추면 DB 부하만 는다
 			if (nItv > 5000) nItv = 5000;
 			::Sleep(nItv);

@@ -92,7 +92,8 @@ BOOL CPanelJobDlg::OnInitDialog()
 		for (int i = 0; i < 6; i++) if (::IsWindow(pHide[i]->m_hWnd)) pHide[i]->ShowWindow(SW_HIDE);
 	}
 
-	SetTimer(TIMER_PANEL_JOB, TIMER_PANEL_JOB_MS, NULL);
+	// [LGLS 2026-10-14] 갱신 주기 Ecs.ini [DISPLAY] JOB_PANEL_REFRESH_MS (기본 1000, 종전 2000 고정) - 화면이 느리다는 지적
+	{ int nMs = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_REFRESH_MS"), 1000, ECS_INI_FILE); if (nMs < 300) nMs = 300; if (nMs > 10000) nMs = 10000; SetTimer(TIMER_PANEL_JOB, nMs, NULL); }
 	Refresh();
 	return TRUE;
 }
@@ -204,6 +205,8 @@ int CPanelJobDlg::FindRow(const CString& strLugg)
 
 void CPanelJobDlg::Refresh()
 {
+	DWORD dwT0 = ::GetTickCount();	// [LGLS 2026-10-14] 갱신 시간 계측(UI_TRACE)
+
 	if (m_pDoc == NULL || !::IsWindow(m_list.m_hWnd))
 		return;
 
@@ -306,6 +309,7 @@ void CPanelJobDlg::Refresh()
 
 	// [LGLS 2026-10-01] 오른쪽 상세는 선택이 살아 있으면 새 값으로, 아니면 비운다
 	FillDetail(nFound);
+	{ static DWORD s_dwLast = 0; DWORD dwEl = ::GetTickCount() - dwT0; if (dwEl >= 150 || ::GetTickCount() - s_dwLast >= 30000) { CLib::UiLog(_T("[PANEL] refresh %u ms rows=%d"), (unsigned)dwEl, (int)m_arRow.GetCount()); s_dwLast = ::GetTickCount(); } }
 }
 
 // [LGLS 2026-10-01] 선택한 작업의 상세(오른쪽) + 우선순위(왼쪽)

@@ -998,6 +998,24 @@ namespace EQP_SIM.Sim
                 SetExist(curIdx, false);
                 SetTracking(curIdx, "");
                 SetExist(nextIdx, true);
+                // [LGLS 2026-10-14] 시험정지 ② : 통로 C/V(2~10)의 출고 화물이 홀수(RGV 픽업) 칸으로 옮겨질 때 번호를 비운다.
+                //   현장의 "번호 없이 굴러온 화물" 재현. ECS 가 번호를 써 주면(JOB 부여됨) 다시 정상.
+                if (engine.StopAisleNoTrack && Def.No >= 2 && Def.No <= 10 && p.Dir == FlowDir.Outgo)
+                {
+                    engine.Log(Def.Id + " P" + path[i + 1] + " ★[시험정지 2] 번호 없이 옮김 (JOB " + p.Id + " 소실)");
+                    p.Id = "";
+                    engine.StopConsumed(2);
+                }
+                // [LGLS 2026-10-14] 시험정지 ④ : 출고 화물이 출고대(출고 경로 마지막 칸)에 들어설 때 번호를 비운다.
+                //   IO_TASK 는 "출고대에 그 작업번호의 화물" 로 도착을 판정하므로 15 에 머물고, 번호가 없어 출고대 신호도 서지 않는다.
+                //   (신호만 끊는 방식은 IO_TASK 의 실도착 판정(OUT_DONE_ON_ARRIVAL)에 걸려 멈추지 않았다 - 0539 실측)
+                if (engine.StopOutNoSignal && Def.No >= 11 && p.Dir == FlowDir.Outgo && Def.OutgoPath != null
+                    && nextIdx == Def.OrderOf(Def.OutgoPath[Def.OutgoPath.Length - 1]))
+                {
+                    engine.Log(Def.Id + " P" + path[i + 1] + " ★[시험정지 4] 출고대 도착 - 번호 소실 (JOB " + p.Id + ")");
+                    p.Id = "";
+                    engine.StopConsumed(4);
+                }
                 SetTracking(nextIdx, p.Id);
                 p.ArrivedAt = now;
                 // [LGLS 2026-08-22] 위치가 바뀌면 화물감지·출고대 신호는 새 위치에서 새로 서는 것이다.

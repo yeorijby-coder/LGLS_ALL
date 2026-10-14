@@ -84,6 +84,7 @@ namespace EQP_SIM.Sim
             HsRecordLagMs = config.GetInt("TIMING", "HS_RECORD_LAG_MS", HsRecordLagMs);   // [LGLS 2026-09-16]
             RgvDropStamp = config.GetInt("TIMING", "RGV_DROP_STAMP", RgvDropStamp ? 1 : 0) != 0;   // [LGLS 2026-10-14]
             HsAfterRecordHoldMs = config.GetInt("TIMING", "HS_AFTER_RECORD_HOLD_MS", HsAfterRecordHoldMs);   // [LGLS 2026-09-17]
+            { int nStop = config.GetInt("FAULT", "STOP", 0); if (nStop >= 1 && nStop <= 4) Log("[시험정지] ini 예약 : " + SetStop(nStop, true)); }   // [LGLS 2026-10-14]
             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
             WaitInOff = config.GetBool("FAULT", "WAIT_IN_OFF", false);   // [LGLS 2026-09-30] 시험용 - 출고대 신호(WAIT_IN)를 올리지 않는다
             SrcCargoTimeoutMs = config.GetInt("TIMING", "SRC_CARGO_TIMEOUT_MS", SrcCargoTimeoutMs);
@@ -130,6 +131,37 @@ namespace EQP_SIM.Sim
         public volatile bool FaultAckTimeout = false;
         public volatile int  FaultAckLossCount = 1;      // 상황 A 에서 지울 횟수 (0 = 계속)
         public volatile int  FaultTargetScNo = 1;
+
+        // [LGLS 2026-10-14] 작업정보 판넬 [완료처리] 시험용 설비 강제 정지 (사용자 지시 - 4구간을 손으로 재현)
+        //   ① 크레인 하역 Ack 유실      = 상황 A(횟수 0)        → 출고 25 정체, 크레인 RUN, H/S 화물 감지만
+        //   ② 통로 C/V 번호 소실         = 통로 짝수→홀수 칸으로 옮길 때 트래킹을 비운다 → 출고 16 정체, 픽업 칸 화물만
+        //   ③ RGV 하역 완료 보고 유실    = RGV 가 내려놓고 완료 보고를 올리지 않는다 → 35 정체, 도착 칸 화물만(번호는 ECS 몫)
+        //   ④ 출고대 도착 신호 유실      = 출고대 WAIT_IN 을 올리지 않고 지게차가 빼 간다 → 15 정체
+        //   ②③④ 는 "다음 1건" 에만 걸리고 스스로 꺼진다(StopConsumed). ① 은 상황 A 그대로(해제는 [고장 해제]).
+        public volatile bool StopAisleNoTrack = false;
+        public volatile bool StopRgvNoComplete = false;
+        public volatile bool StopOutNoSignal = false;
+        public event Action<int> StopConsumedEvent;
+        public void StopConsumed(int n)
+        {
+            if (n == 2) StopAisleNoTrack = false;
+            else if (n == 3) StopRgvNoComplete = false;
+            else if (n == 4) StopOutNoSignal = false;
+            Log("[시험정지 " + n + "] 적용됨 - 자동 해제");
+            var h = StopConsumedEvent; if (h != null) { try { h(n); } catch { } }
+        }
+        /// <summary>STOP 1~4 켬 / 0 = 전부 끔. 1 은 상황 A(횟수 0) 와 같다.</summary>
+        public string SetStop(int n, bool on)
+        {
+            if (n == 0) { CancelFaultA(); FaultAckLoss = false; StopAisleNoTrack = StopRgvNoComplete = StopOutNoSignal = false; return "시험정지 전부 끔"; }
+            if (n == 1) { if (on) { FaultAckLossCount = 0; FaultAckLoss = true; } else { CancelFaultA(); FaultAckLoss = false; } }
+            else if (n == 2) StopAisleNoTrack = on;
+            else if (n == 3) StopRgvNoComplete = on;
+            else if (n == 4) StopOutNoSignal = on;
+            else return "알 수 없는 번호";
+            string[] nm = { "", "크레인 하역 Ack 유실", "통로 C/V 번호 소실", "RGV 완료 보고 유실", "출고대 도착 번호 소실" };
+            return "시험정지 " + n + " " + nm[n] + (on ? " 켬 (다음 1건)" : " 끔");
+        }
 
         public event Action<string> LogAdded;
         public event Action StateChanged;
@@ -406,6 +438,11 @@ namespace EQP_SIM.Sim
                         if (t[1].ToUpperInvariant() == "OFF") { CancelFaultA(); FaultAckLoss = false; msg = "상황 A 끔"; }
                         else { int n; int.TryParse(t[1], out n); FaultAckLossCount = n; FaultAckLoss = true; msg = "상황 A 켬 (지울 횟수 " + n + ", 0=계속)"; }
                         ok = true;
+                    }
+                    else if (cmd == "STOP" && t.Length >= 2)
+                    {
+                        if (t[1].ToUpperInvariant() == "OFF") { msg = SetStop(0, false); ok = true; }
+                        else { int n; if (int.TryParse(t[1], out n)) { bool on = !(t.Length >= 3 && t[2].ToUpperInvariant() == "OFF"); msg = SetStop(n, on); ok = true; } else msg = "번호 오류"; }
                     }
                     else if (cmd == "RELEASE")
                     {

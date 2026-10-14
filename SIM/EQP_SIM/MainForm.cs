@@ -65,6 +65,7 @@ namespace EQP_SIM
                 io = new PlcIo(memory, obsMap);
                 engine = new ScenarioEngine(io, config);
                 autoRunner = new ScenarioAutoRunner(engine);
+                engine.StopConsumedEvent += OnStopConsumed;   // [LGLS 2026-10-14]
                 engine.LogAdded += OnEngineLog;
 
                 string dataDir = Path.Combine(baseDir, "Data");
@@ -351,6 +352,39 @@ namespace EQP_SIM
                 engine.CancelFaultA();
                 lblStatus.Text = "상황 A 해제 — 진행 중이던 건은 다음 Ack 부터 정상 완료";
             }
+        }
+
+        // [LGLS 2026-10-14] 완료처리 시험용 설비 강제 정지 4종. ②③④ 는 다음 1건에 걸리고 엔진이 스스로 끈다(StopConsumedEvent → 체크 해제).
+        private bool m_bStopSync = false;
+        private void chkStop_CheckedChanged(object sender, EventArgs e)
+        {
+            if (engine == null || m_bStopSync) return;
+            CheckBox c = (CheckBox)sender;
+            int n = (c == chkStop1) ? 1 : (c == chkStop2) ? 2 : (c == chkStop3) ? 3 : 4;
+            string msg = engine.SetStop(n, c.Checked);
+            engine.Log("[시험정지] " + msg);
+            lblStatus.Text = msg;
+            if (n == 1)
+            {
+                m_bStopSync = true;
+                try { nudFaultA.Value = 0; chkFaultA.Checked = c.Checked; } catch { }
+                m_bStopSync = false;
+            }
+        }
+        private void OnStopConsumed(int n)
+        {
+            SafeUI(() =>
+            {
+                m_bStopSync = true;
+                try
+                {
+                    if (n == 2) chkStop2.Checked = false;
+                    else if (n == 3) chkStop3.Checked = false;
+                    else if (n == 4) chkStop4.Checked = false;
+                    lblStatus.Text = "시험정지 " + n + " 적용됨 - 작업정보 판넬에서 [완료처리] 하세요";
+                }
+                finally { m_bStopSync = false; }
+            });
         }
 
         private void nudFaultA_ValueChanged(object sender, EventArgs e)

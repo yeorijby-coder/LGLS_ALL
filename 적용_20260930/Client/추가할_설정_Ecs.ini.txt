@@ -79,3 +79,12 @@ FORCE_BTN=1
 
 ; [LGLS 2026-10-07] 작업정보 판넬은 늘 위아래(목록 위 / 단계표 아래) 배치 - JOB_PANEL_SPLIT / JOB_PANEL_DETAIL_W 는 더 쓰지 않는다 (DETAIL_H 만 유효)
 ;   우선순위/반송조정/가로보기 칸은 없앴다. 단계표의 진행중 줄은 파란 배경.
+
+; [LGLS 2026-10-14] 화면 반응 속도 ([ETC] 아래). 수집 한 바퀴 620ms → 320ms 실측
+;   COLLECT_INTERVAL_MS = 설비 데이터를 DB 에서 읽는 주기(ms). 기본 200 (종전 300)
+;   COLLECT_STEP_MS     = 설비 조회 사이 대기(ms). 기본 0 (종전 50 고정) - DB 부하가 걱정되면 20~50
+COLLECT_INTERVAL_MS=200
+COLLECT_STEP_MS=0
+
+; [LGLS 2026-10-14] 작업정보 판넬 갱신 주기(ms) ([DISPLAY] 아래). 기본 1000 (종전 2초 고정), 300~10000
+JOB_PANEL_REFRESH_MS=1000

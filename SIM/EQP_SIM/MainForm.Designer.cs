@@ -18,6 +18,11 @@
             this.chkInjectDouble = new System.Windows.Forms.CheckBox();
             this.chkInjectEmpty = new System.Windows.Forms.CheckBox();
             this.chkFaultA = new System.Windows.Forms.CheckBox();
+            this.chkStop1 = new System.Windows.Forms.CheckBox();
+            this.chkStop2 = new System.Windows.Forms.CheckBox();
+            this.chkStop3 = new System.Windows.Forms.CheckBox();
+            this.chkStop4 = new System.Windows.Forms.CheckBox();
+            this.lblStop = new System.Windows.Forms.Label();
             this.nudFaultA = new System.Windows.Forms.NumericUpDown();
             this.lblFaultA = new System.Windows.Forms.Label();
             this.chkFaultB = new System.Windows.Forms.CheckBox();
@@ -56,6 +61,11 @@
             this.pnlTop.Controls.Add(this.chkInjectDouble);
             this.pnlTop.Controls.Add(this.chkInjectEmpty);
             this.pnlTop.Controls.Add(this.chkFaultA);
+            this.pnlTop.Controls.Add(this.chkStop1);
+            this.pnlTop.Controls.Add(this.chkStop2);
+            this.pnlTop.Controls.Add(this.chkStop3);
+            this.pnlTop.Controls.Add(this.chkStop4);
+            this.pnlTop.Controls.Add(this.lblStop);
             this.pnlTop.Controls.Add(this.nudFaultA);
             this.pnlTop.Controls.Add(this.lblFaultA);
             this.pnlTop.Controls.Add(this.chkFaultB);
@@ -87,7 +97,7 @@
             this.pnlTop.Controls.Add(this.btnOpAuto);
             this.pnlTop.Controls.Add(this.lblErrHint);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTop.Height = 176;   // [LGLS 2026-09-06] 화물 생성 행 추가 / [LGLS 2026-09-12] 고장 주입 행 추가 / [LGLS 2026-09-21] 설비 에러 주입 행 추가
+            this.pnlTop.Height = 202;   // [LGLS 2026-10-14] 시험정지 행 추가 /   // [LGLS 2026-09-06] 화물 생성 행 추가 / [LGLS 2026-09-12] 고장 주입 행 추가 / [LGLS 2026-09-21] 설비 에러 주입 행 추가
             //
             // lblServer
             //
@@ -166,6 +176,29 @@
             this.lblErrHint.Text = "코드=PLC 알람 리스트 번호. 수동은 WCS_DB.INI [CNF] OP_MODE_USE=1 일 때만 WCS 에 전달";
             this.lblErrHint.ForeColor = System.Drawing.Color.DimGray;
             //
+            // [LGLS 2026-10-14] 작업정보 판넬 [완료처리] 시험용 설비 강제 정지 4종 (다음 1건에만, 스스로 꺼짐. ①은 상황 A 횟수 0 과 같다)
+            this.lblStop.Location = new System.Drawing.Point(12, 178);
+            this.lblStop.Size = new System.Drawing.Size(92, 20);
+            this.lblStop.Text = "완료처리 시험:";
+            this.lblStop.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.lblStop.ForeColor = System.Drawing.Color.Purple;
+            this.chkStop1.Location = new System.Drawing.Point(104, 176);
+            this.chkStop1.Size = new System.Drawing.Size(230, 22);
+            this.chkStop1.Text = "① 크레인 하역 Ack 유실 (1호기 출고)";
+            this.chkStop1.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            this.chkStop2.Location = new System.Drawing.Point(338, 176);
+            this.chkStop2.Size = new System.Drawing.Size(190, 22);
+            this.chkStop2.Text = "② 통로 C/V 번호 소실";
+            this.chkStop2.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            this.chkStop3.Location = new System.Drawing.Point(532, 176);
+            this.chkStop3.Size = new System.Drawing.Size(200, 22);
+            this.chkStop3.Text = "③ RGV 하역 완료 보고 유실";
+            this.chkStop3.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            this.chkStop4.Location = new System.Drawing.Point(736, 176);
+            this.chkStop4.Size = new System.Drawing.Size(220, 22);
+            this.chkStop4.Text = "④ 출고대 도착 번호 소실 (신호 없음)";
+            this.chkStop4.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            foreach (System.Windows.Forms.CheckBox c in new System.Windows.Forms.CheckBox[] { this.chkStop1, this.chkStop2, this.chkStop3, this.chkStop4 }) c.ForeColor = System.Drawing.Color.Purple;
             // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (상황 A / 상황 B)
             //
             this.chkFaultA.Location = new System.Drawing.Point(12, 116);
@@ -364,6 +397,11 @@
         private System.Windows.Forms.CheckBox chkInjectDouble;
         private System.Windows.Forms.CheckBox chkInjectEmpty;
         private System.Windows.Forms.CheckBox chkFaultA;
+        private System.Windows.Forms.CheckBox chkStop1;
+        private System.Windows.Forms.CheckBox chkStop2;
+        private System.Windows.Forms.CheckBox chkStop3;
+        private System.Windows.Forms.CheckBox chkStop4;
+        private System.Windows.Forms.Label lblStop;
         private System.Windows.Forms.NumericUpDown nudFaultA;
         private System.Windows.Forms.Label lblFaultA;
         private System.Windows.Forms.CheckBox chkFaultB;

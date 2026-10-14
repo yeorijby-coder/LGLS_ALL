@@ -522,6 +522,23 @@ namespace EQP_SIM.Sim
                         break;
                     }
                     UnloadAtDest();
+                    // [LGLS 2026-10-14] 시험정지 ③ : RGV 가 내려놓고도 완료 보고(UNLOAD_COMPLETE/TRANSFER_ACK)를 올리지 않는다.
+                    //   차상 데이터만 비우고 IDLE 로. WCS 는 35 에 머문다(판넬 RGV 줄 [완료처리] 로 넘긴다).
+                    if (Def.IsRgv && engine.StopRgvNoComplete)
+                    {
+                        io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", to01);
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", to02);
+                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", to03);
+                        io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 1);
+                        io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");
+                        engine.Log(Def.Id + " ★[시험정지 3] 하차 뒤 완료 보고를 올리지 않음 (JOB " + palletId + ")");
+                        carrying = null;
+                        state = VState.Idle;
+                        StatusText = "IDLE (완료 보고 유실)";
+                        engine.StopConsumed(3);
+                        break;
+                    }
                     // [LGLS 2026-08-22] 하차는 화물감지만 내린다. 데이터(작업번호)는 반송 완료까지 유지 —
                     //   하역 규약(RvSeq 4단계)의 "차 화물 사라짐 → 라인에 화물 → 차 데이터 사라짐" 순서와 같다.
                     io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);

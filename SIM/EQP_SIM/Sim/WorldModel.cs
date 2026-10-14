@@ -23,6 +23,7 @@ namespace EQP_SIM.Sim
         /// <summary>[LGLS 2026-09-12] 차량 하역 핸드셰이크(Unload Complete ↔ Ack)가 끝날 때까지 PLC 가 벨트 인수를
         /// 보류하는 상태. 고장 주입(상황 A/B)에서만 세워진다 - 정상 운전에서는 항상 false.</summary>
         public bool HandoverBlocked = false;
+        public bool OutSignalLost = false;      // [LGLS 2026-10-14] 시험정지 ④ : 출고대 신호를 올리지 않은 화물
         /// <summary>[LGLS 2026-09-16] H/S 기록 지연 재현: 크레인 하차 후 PLC 워드(재석/트래킹) 기록을 미뤄 두는 시각.
         /// RecordDone=false 이면 아직 WCS 에 안 보이는 상태. (현장: 크레인 완료 후 ~1초 뒤 H/S 데이터 기록)</summary>
         public DateTime RecordVisibleAt = DateTime.MinValue;
