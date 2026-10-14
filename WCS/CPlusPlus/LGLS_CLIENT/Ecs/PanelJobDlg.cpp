@@ -426,6 +426,8 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 	int s = _ttoi(r.staCd);
 
 	int nStart = _ttoi(r.startPos), nDest = _ttoi(r.destPos), nHs = _ttoi(r.hs);
+	// [LGLS 2026-10-14] HS_TRACK_NO 는 RGV 지시 뒤에는 RGV 도착 칸(작업대 트랙 1xx)이 된다 - 통로(103~120)일 때만 통로로 쓰고, 그 밖은 크레인 번호로 예측한다(시뮬 캡처에서 발견)
+	if (!(nHs >= 103 && nHs <= 120)) nHs = 0;
 	// 랙 쪽은 LOC:bb-bbb-ll
 	CString strStartLoc = (nStart >= 900 || nStart < 100) ? (_T("LOC:") + r.startLoc) : PortText(nStart);
 	CString strDestLoc  = (nDest  >= 900 || nDest  < 100) ? (_T("LOC:") + r.destLoc)  : PortText(nDest);
@@ -493,8 +495,13 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); st.toTrk = (nPick > 0 ? nPick : nDest); steps.Add(st); st.toTrk = 0;
 		st.kind = 0; st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); st.toTrk = nDest; steps.Add(st); st.toTrk = 0;
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
+		// [LGLS 2026-10-14] 출고 15/16 은 두 번 나온다 : 크레인 하역 뒤(통로 C/V 구간, HS_TRACK_NO = 통로 트랙 103~120) 와
+		//   RGV 하역 뒤(작업대 C/V 구간, HS_TRACK_NO = 작업대 트랙). 종전엔 둘 다 작업대 줄로 보여 시뮬 캡처에서 틀렸다.
+		int nHsJob = _ttoi(r.hs);
+		BOOL bHsAisle = (nHsJob >= 103 && nHsJob <= 120);
 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
 		else if (s == 29)                                             nPhase = 1;
+		else if ((s == 15 || s == 16) && bHsAisle)                    nPhase = (nCvHs > 0) ? 1 : 1 + nCvHs;	// 통로 C/V 줄(없으면 RGV 줄)
 		else if (s == 30 || s == 31 || s == 35)                       nPhase = 1 + nCvHs;
 		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2 + nCvHs;
 		else                                                          nPhase = (int)steps.GetCount();
@@ -659,7 +666,7 @@ void CPanelJobDlg::OnComplete()
 		// [LGLS 2026-10-07] 작업 상태로는 이미 그 구간의 완료 코드다(예 : 입고 15 = 작업대 C/V 구동중이자 RGV 가 가져갈 수 있는 상태).
 		//   이때 다음 구간이 안 나가는 이유는 상태가 아니라 "도착 칸에 화물·작업번호가 없어서" 다(IO_TASK 는 픽업 칸의 번호를 본다).
 		//   그래서 C/V 구간이면 도착 칸에 작업번호를 기록하는 길을 준다(C/V 상태창 [쓰기] 와 같은 기록, 화물이 감지될 때만). (사용자 지적)
-		TrackWriteOffer(r, nSeq);
+		TrackWriteOffer(r, nSeq, TRUE);
 		return;
 	}
 
@@ -739,7 +746,11 @@ void CPanelJobDlg::OnComplete()
 	UNREFERENCED_PARAMETER(bOut);
 	CString strLog; strLog.Format(_T("JOB_MST UPDATE : 완료처리(스텝 %s %s) JOB_STATUS %s -> %s%s%s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta, (LPCTSTR)strHsSet, (LPCTSTR)strVehLog);
 	if (ExecUpdate(strSql, strLog, r.lugg))
+	{
 		Refresh();
+		// [LGLS 2026-10-14] C/V 구간이면 도착 칸에 화물만 있고 번호가 없을 때 바로 기록을 제안한다 (두 번 누르지 않게 - 시뮬 시험에서 확인)
+		if (nKind == 0 || nKind == 2) { ROW r2 = r; r2.staCd = strSta; TrackWriteOffer(r2, nSeq, FALSE); }
+	}
 }
 
 void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
@@ -836,13 +847,14 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 }
 
 // [LGLS 2026-10-07] 이미 완료 코드인 구간을 [완료처리] 했을 때 : C/V 구간이면 도착 칸에 작업번호 기록을 제안한다
-void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq)
+void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone)
 {
 	int nKind = (nSeq >= 0 && nSeq < m_arSeqKind.GetCount()) ? m_arSeqKind[nSeq] : -1;
 	int nTrk  = (nSeq >= 0 && nSeq < m_arSeqToTrk.GetCount()) ? m_arSeqToTrk[nSeq] : 0;
 	CString strTo = (nSeq >= 0) ? m_listSeq.GetItemText(nSeq, 4) : _T("");
 	if ((nKind != 0 && nKind != 2) || nTrk <= 0)
 	{
+		if (!bAlreadyDone) return;
 		CString strMsg;
 		strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n다음 구간은 화물이 %s 에 감지되고 작업번호가 붙어 있어야 나갑니다."),
 			(LPCTSTR)r.staCd, strTo.IsEmpty() ? _T("도착 칸") : (LPCTSTR)strTo);
@@ -864,6 +876,7 @@ void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq)
 	}
 	if (strLugg == r.lugg)
 	{
+		if (!bAlreadyDone) return;
 		CString strMsg;
 		strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드이고 [%s], %s 에 작업번호 %s 도 붙어 있습니다.\n다음 구간은 IO_TASK 가 설비 조건이 맞으면 냅니다 (RGV 에러/작업정지, 도착지 비어 있음 등을 확인하세요)."),
 			(LPCTSTR)r.staCd, (LPCTSTR)strTo, (LPCTSTR)r.lugg);
@@ -872,6 +885,7 @@ void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq)
 	}
 	if (strSen != _T("1"))
 	{
+		if (!bAlreadyDone) return;
 		CString strMsg;
 		strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n그런데 %s 에 화물이 감지되지 않아 작업번호를 기록할 수 없습니다.\n화물이 그 칸에 오면 다시 누르세요."),
 			(LPCTSTR)r.staCd, (LPCTSTR)strTo);
@@ -879,7 +893,8 @@ void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq)
 		return;
 	}
 	CString strMsg;
-	strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n%s 에 화물은 있는데 작업번호가 %s 입니다.\n이 칸에 작업번호 %s 를 기록할까요? (C/V 상태창 [쓰기] 와 같습니다)"),
+	strMsg.Format(bAlreadyDone ? _T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n%s 에 화물은 있는데 작업번호가 %s 입니다.\n이 칸에 작업번호 %s 를 기록할까요? (C/V 상태창 [쓰기] 와 같습니다)")
+	                           : _T("상태는 넘겼습니다. [%s]\n그런데 %s 에 화물은 있는데 작업번호가 %s 입니다. 다음 구간은 번호가 있어야 나갑니다.\n이 칸에 작업번호 %s 를 기록할까요? (C/V 상태창 [쓰기] 와 같습니다)"),
 		(LPCTSTR)r.staCd, (LPCTSTR)strTo, strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000") ? _T("없습니다") : (LPCTSTR)(_T("'") + strLugg + _T("'")), (LPCTSTR)r.lugg);
 	if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return;
 	CString strSql;

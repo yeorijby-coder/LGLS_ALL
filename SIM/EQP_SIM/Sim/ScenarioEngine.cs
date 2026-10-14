@@ -355,6 +355,7 @@ namespace EQP_SIM.Sim
                             SaveState();
                             nextSaveAt = now.AddSeconds(2);
                         }
+                        PollSimCmd(now);        // [LGLS 2026-10-14] Data/sim_cmd.txt 파일 명령(시험 자동화 - 화면 입력칸은 자동화가 안 된다)
                         //PollInjectCtrl(now);   // [LGLS 2026-09-15] Data/inject_ctrl.txt 로 이중입고/공출고 N건 예약(자동 테스트)  [LGLS 2026-09-16] 이 현장 미사용 - 주석
                         var h = StateChanged;
                         if (h != null) h();
@@ -366,6 +367,58 @@ namespace EQP_SIM.Sim
                 }
                 Thread.Sleep(100);
             }
+        }
+
+        // [LGLS 2026-10-14] 시험 자동화 : Data/sim_cmd.txt 를 1초마다 읽어 한 줄씩 실행하고 지운다. 결과는 Data/sim_cmd.log 에 덧붙인다.
+        //   SPAWN <트랙|cv:port> [작업번호] [OUT]   번호 없는 화물 = 작업번호 생략.  예) SPAWN 104 / SPAWN 103 0012 OUT
+        //   REMOVE <트랙|cv:port>                   화물 제거(확인 없이)
+        //   FAULTA <횟수|OFF>                        상황 A(1호기 출고 하역 Ack 유실) 켬(횟수 0=계속) / 끔
+        //   RELEASE                                  [고장 해제·수동 인수] 와 같다
+        private DateTime nextSimCmdAt = DateTime.MinValue;
+        private void PollSimCmd(DateTime now)
+        {
+            try
+            {
+                if (now < nextSimCmdAt) return;
+                nextSimCmdAt = now.AddMilliseconds(1000);
+                if (string.IsNullOrEmpty(dataDir)) return;
+                string p = Path.Combine(dataDir, "sim_cmd.txt");
+                if (!File.Exists(p)) return;
+                string[] lines = File.ReadAllLines(p);
+                File.Delete(p);
+                string logp = Path.Combine(dataDir, "sim_cmd.log");
+                foreach (string raw in lines)
+                {
+                    string line = (raw ?? "").Trim();
+                    if (line.Length == 0) continue;
+                    string[] t = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    string cmd = t[0].ToUpperInvariant(), msg = "";
+                    bool ok = false;
+                    if (cmd == "SPAWN" && t.Length >= 2)
+                    {
+                        string job = (t.Length >= 3 && t[2].ToUpperInvariant() != "OUT") ? t[2] : "";
+                        bool outg = line.ToUpperInvariant().EndsWith(" OUT");
+                        ok = SpawnPallet(t[1], job, outg, out msg);
+                    }
+                    else if (cmd == "REMOVE" && t.Length >= 2) ok = RemovePallet(t[1], out msg);
+                    else if (cmd == "FAULTA" && t.Length >= 2)
+                    {
+                        if (t[1].ToUpperInvariant() == "OFF") { CancelFaultA(); FaultAckLoss = false; msg = "상황 A 끔"; }
+                        else { int n; int.TryParse(t[1], out n); FaultAckLossCount = n; FaultAckLoss = true; msg = "상황 A 켬 (지울 횟수 " + n + ", 0=계속)"; }
+                        ok = true;
+                    }
+                    else if (cmd == "RELEASE")
+                    {
+                        CancelFaultA(); FaultAckLoss = false; FaultAckTimeout = false;
+                        int n = ReleaseBlockedHandovers();
+                        msg = "고장 해제 - 보류 화물 " + n + "건 수동 인수"; ok = true;
+                    }
+                    else msg = "알 수 없는 명령";
+                    Log("[sim_cmd] " + line + " -> " + (ok ? "OK " : "FAIL ") + msg);
+                    try { File.AppendAllText(logp, DateTime.Now.ToString("HH:mm:ss.fff") + " " + line + " -> " + (ok ? "OK " : "FAIL ") + msg + "\r\n"); } catch { }
+                }
+            }
+            catch (Exception ex) { Log("[sim_cmd] 오류: " + ex.Message); }
         }
 
         // [LGLS 2026-09-15] 자동 테스트 : Data/inject_ctrl.txt 를 폴링해 이중입고/공출고를 N건 예약한다.

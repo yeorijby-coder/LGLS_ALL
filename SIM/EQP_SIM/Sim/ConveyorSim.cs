@@ -501,6 +501,9 @@ namespace EQP_SIM.Sim
             if (p.HandoverBlocked == blocked) return true;
             p.HandoverBlocked = blocked;
             if (!blocked) p.MoveReadyAt = DateTime.Now.AddMilliseconds(engine.MoveMs);
+            // [LGLS 2026-10-14] 현장과 같게 : 핸드셰이크가 막혀도 H/S 에는 화물 감지가 선다(데이터만 없다). 종전엔 반송 완료 뒤에야
+            //   재석·트래킹을 함께 드러내서 "화물 감지도 없음" 이 됐다(사용자 지적 - 현장은 "출고 H/S 에 화물만 감지").
+            if (blocked && !p.RecordDone) { SetExist(idx, true); engine.Log(Def.Id + " P" + port + " 화물 감지 ON (데이터 없음 - 핸드셰이크 대기)"); }
             engine.Log(Def.Id + " P" + port + (blocked ? " 벨트 인수 보류(핸드셰이크 대기)" : " 벨트 인수 재개") + " (JOB " + p.Id + ")");
             return true;
         }
