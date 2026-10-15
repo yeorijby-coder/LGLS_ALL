@@ -45,3 +45,11 @@
          바로가기 "시작 위치" 가 다른 경우 작업 디렉터리가 EXE 폴더가 아니어서 on.ico/off.ico 를 못 읽음.
   조치 : EcsMain 이 시작하자마자 작업 디렉터리를 EXE 폴더로 고정 (Ecs.cpp InitInstance). Client\EcsMain.exe 교체.
   확인 : 작업 디렉터리를 C:\ 로 두고 띄워도 신호 LED 정상 표시.
+
+== 10-15 오후 추가 ==
+  [Upload] TASK\Upload\WmsUp.exe 교체 : [조회] 끝 시각이 "화면 연 시각" 이라 연 뒤에 올린 건이 목록에서 빠지던 문제 수정(끝 = 그날 23:59:59).
+           WmsUp.ini / Config.ini 는 현장 값 그대로 쓰므로 exe 만 교체. 사용법 = 문서\2026-10-15_Upload_사용매뉴얼.docx
+  [런처]   Client\Ecs.exe 교체 : 다운로드 중 받을 파일이 실행 중인 자기 자신(Ecs.exe)이면 .old 로 비켜 놓고 교체. 이미 깔린 구판은 한 번 수동 복사 필요.
+  [지상반 삭제 영역] WCS_TASK_CV 의 WCS_DB.INI 에 [HMI_DELETE] 섹션 추가(SC1~SC5, RTV1 = _AREA D/R/M + _ADDR 주소). 지금은 비워 둠(미사용),
+           PLC 담당자가 영역을 주면 채운다. 기동 로그에 [HMI_DEL] 한 줄로 풀어 보인다. 읽기/쓰기 동작은 아직 없음.
+           WCS_TASK_CV.exe 재빌드 필요(소스: 4_Static\cHmiDeleteMap.cs, SYS_MAIN.cs). 섹션 내용은 TASK\WCS_TASK_CV_BIN\bin\Debug\WCS_DB.INI 끝부분 참고.
