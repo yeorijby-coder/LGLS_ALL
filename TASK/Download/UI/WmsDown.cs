@@ -52,6 +52,9 @@ namespace EcsClient
 
 		private void WmsDown_Load(object sender, EventArgs e)
 		{
+			// [LGLS 2026-10-15] 지난번 자기 교체 때 비켜 둔 .old 를 지운다
+			try { string strSelf0 = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName; if (System.IO.File.Exists(strSelf0 + ".old")) System.IO.File.Delete(strSelf0 + ".old"); } catch { }
+
 			//--------------------------------------------------
 			// 프로그램이 기동중인지 확인
 			//--------------------------------------------------
@@ -639,6 +642,19 @@ namespace EcsClient
 
 
 							dr_s.GetBytes(iPictureCol, 0, b, 0, b.Length);
+
+							// [LGLS 2026-10-15] 받을 파일이 지금 돌고 있는 이 런처(Ecs.exe) 자신이면 "다른 프로세스가 사용 중" 으로 덮어쓰기가 막힌다.
+							//   실행 중인 exe 는 이름 바꾸기는 되므로 .old 로 비켜 놓고 새 파일을 쓴다(다음 실행 때 .old 는 지운다).
+							try
+							{
+								string strSelf = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+								if (string.Equals(System.IO.Path.GetFullPath(strWK_DN_FNM), strSelf, StringComparison.OrdinalIgnoreCase))
+								{
+									if (System.IO.File.Exists(strSelf + ".old")) System.IO.File.Delete(strSelf + ".old");
+									System.IO.File.Move(strSelf, strSelf + ".old");
+								}
+							}
+							catch { }
 
 							System.IO.FileStream fs = new System.IO.FileStream(strWK_DN_FNM, System.IO.FileMode.Create, System.IO.FileAccess.Write);
 
