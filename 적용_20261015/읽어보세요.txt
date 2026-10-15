@@ -38,3 +38,10 @@
   2) Client : 깔린 폴더에 Client\* 덮어쓰기 (또는 새 PC 는 Client_설치\Setup.bat 관리자 권한)
   3) Ecs.ini 에 추가할_설정_Ecs.ini.txt 의 키 추가 (START_MONITOR, FORCE_BTN, JOB_PANEL_*, COLLECT_*)
   4) 완료처리 동작은 시험안내서의 네 상황으로 1건씩 확인
+
+== 10-15 추가 (CV 상태창 신호 LED 안 보임) ==
+  증상 : CV 상태창 아래 [상태] 그룹의 팔레트 감지/자동모드/입고대 신호 ... 아이콘이 전혀 안 그려짐.
+  원인 : 아이콘·그림 경로가 전부 ".\rc_resource\..." 상대경로인데, Windows 재시작 관리자(PC 재시작 뒤 자동 복원)나
+         바로가기 "시작 위치" 가 다른 경우 작업 디렉터리가 EXE 폴더가 아니어서 on.ico/off.ico 를 못 읽음.
+  조치 : EcsMain 이 시작하자마자 작업 디렉터리를 EXE 폴더로 고정 (Ecs.cpp InitInstance). Client\EcsMain.exe 교체.
+  확인 : 작업 디렉터리를 C:\ 로 두고 띄워도 신호 LED 정상 표시.

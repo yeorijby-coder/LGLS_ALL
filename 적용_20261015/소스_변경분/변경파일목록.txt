@@ -13,3 +13,4 @@ WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.cpp
 WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.h
 WCS/CPlusPlus/LGLS_CLIENT/Ecs/RtvSkinDlg.cpp
 WCS/CPlusPlus/LGLS_CLIENT/Ecs/ScSkinDlg.cpp
+WCS/CPlusPlus/LGLS_CLIENT/Ecs/Ecs.cpp   (10-15 추가 : 작업 디렉터리 EXE 폴더 고정)

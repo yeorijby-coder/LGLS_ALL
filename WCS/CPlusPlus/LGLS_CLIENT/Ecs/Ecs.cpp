@@ -67,6 +67,16 @@ BOOL CEcsApp::InitInstance()
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	Gdiplus::GdiplusStartup(&m_ulGdiplusToken, &gdiplusStartupInput, NULL);
 
+	// [LGLS 2026-10-15] 작업 디렉터리를 EXE 폴더로 고정한다.
+	//   rc_resource 아이콘·그림 경로가 전부 ".\\rc_resource\\..." 상대경로라, 재시작 관리자(/RestartByRestartManager)나
+	//   바로가기로 다른 작업 디렉터리에서 뜨면 CV 상태창의 신호 아이콘(on/off.ico) 등이 안 보였다(사용자 보고).
+	{
+		TCHAR szExe[MAX_PATH] = { 0 };
+		::GetModuleFileName(NULL, szExe, MAX_PATH);
+		CString strDir(szExe); int nPos = strDir.ReverseFind(_T('\\'));
+		if (nPos > 0) ::SetCurrentDirectory(strDir.Left(nPos));
+	}
+
 	InitCommonControls();
 
 	CWinApp::InitInstance();
