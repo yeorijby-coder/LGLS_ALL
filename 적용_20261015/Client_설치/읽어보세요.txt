@@ -1,0 +1,123 @@
+============================================================
+ LGLS CLIENT 설치 꾸러미
+ 2026-09-30
+============================================================
+
+
+[ 무엇인가 ]
+
+  새 PC 에 운전 화면(Client)을 까는 꾸러미입니다.
+  이것 하나만 가져가면 됩니다.
+
+
+[ 어떻게 하나 ]
+
+  1. 이 폴더를 통째로 새 PC 에 복사합니다 (USB 등).
+  2. Setup.bat 을 오른쪽 단추로 눌러 [관리자 권한으로 실행] 합니다.
+     (지울 때는 설치 폴더의 Uninstall.bat 을 같은 방법으로 실행합니다.)
+  3. 물어보는 것에 답합니다.
+
+       설치 위치     그대로 두려면 Enter (기본 C:\LGLS\CLIENT)
+       서버 IP       DB 가 있는 PC 의 주소
+       포트          기본 1433. 다르면 적어 주세요.
+       데이터베이스  기본 LGLS_IO
+
+  4. 끝나면 바탕화면에 [LGLS CLIENT] 가 생깁니다.
+
+
+[ 서버 주소를 어떻게 적나 ]
+
+  · 보통    : IP 와 포트를 따로 적으면 됩니다.
+              예) 192.100.1.191  /  1433
+
+  · 포트를 바꾼 현장 : 그 포트를 적습니다.
+              예) 127.0.0.1  /  1435
+
+  · 이름있는 인스턴스 : 서버 IP 칸에 인스턴스까지 적습니다.
+              예) PC이름\SQLEXPRESS
+              이때는 포트를 묻더라도 쓰지 않습니다.
+
+  적어 넣는 자리는 두 곳이고, 설치가 알아서 넣습니다.
+      Ecs.ini      [DB_2]      SERVER=      DATABASE=
+      WmsDown.ini  [DB Server] SERVERNAME=  DATABASE=
+
+  나중에 서버가 바뀌면 Setup.bat 을 다시 돌리면 됩니다.
+  (쓰던 설정은 그대로 두고 주소만 바꿔 줍니다.)
+
+
+[ 설치가 하는 일 ]
+
+  1) Visual C++ 재배포 패키지
+       Client 본체(EcsMain.exe)가 mfc140u.dll 을 씁니다. 없으면 아예 뜨지 않고
+       "mfc140u.dll 을 찾을 수 없습니다" 가 납니다.
+       이미 들어 있으면 건너뜁니다.
+
+  2) .NET Framework 4.8
+       내려받기 프로그램(Ecs.exe)이 .NET 으로 되어 있습니다.
+       Windows 10 이상은 이미 들어 있으므로 거의 건너뜁니다.
+
+  3) 프로그램 복사
+       프로그램과 함께 쓰는 파일, 화면 정의(xml), 다국어 문구(rc_resource)를
+       설치 위치에 복사합니다.
+       ★ 이미 쓰던 Ecs.ini / WmsDown.ini 는 덮어쓰지 않습니다.
+          새 것은 .new 로 남겨 두니 견주어 보고 필요한 줄만 옮기세요.
+
+  4) DB 서버 주소 적용
+       위에서 받은 주소를 두 설정 파일에 적습니다.
+       주석(; 로 시작하는 줄)은 건드리지 않습니다.
+
+  5) 바탕화면 바로가기
+
+
+[ MS-SQL 접속에 따로 깔 것 ]
+
+  없습니다.
+    · Client 본체(EcsMain.exe)는 Windows 에 늘 들어 있는 ODBC 드라이버
+      "SQL Server" 로 붙습니다 (Ecs.ini 의 [DB_2] DRIVER=SQL Server).
+    · Ecs.exe(내려받기)는 .NET 에 들어 있는 SqlClient 로 붙습니다.
+  둘 다 Windows 와 .NET 에 이미 들어 있는 것이라 따로 깔 것이 없습니다.
+
+
+[ 계정 ]
+
+  계정은 ★Ecs.ini 를 기준★ 으로 삼습니다.
+  설치는 Ecs.ini 의 [DB_2] 를 읽어 WmsDown.ini 에 그대로 옮깁니다.
+
+      Ecs.ini [DB_2]          WmsDown.ini [DB Server]
+        SERVER          ->      SERVERNAME
+        DATABASE        ->      DATABASE
+        USERID          ->      USERID
+        USERPASSWORD    ->      PASSWORD
+
+  기본값은 USERID=LGLS_IO / USERPASSWORD=LGLS_IO 입니다.
+  Windows 인증으로 붙이려면 Ecs.ini 의 TRUSTED 를 1 로 두면 됩니다.
+  그러면 WmsDown.ini 의 계정도 비워 줍니다.
+
+  나중에 계정이나 주소를 바꿀 때도 ★Ecs.ini 만 고치고★
+  Set-DbServer.ps1 을 한 번 돌리면 내려받기 쪽이 따라옵니다.
+
+      powershell -NoProfile -ExecutionPolicy Bypass -File "C:\LGLS\CLIENT\Set-DbServer.ps1" -InstDir "C:\LGLS\CLIENT"
+
+
+[ 지우려면 ]
+
+  설치 폴더의 Uninstall.bat 을 오른쪽 단추로 눌러
+  [관리자 권한으로 실행] 하면 됩니다.
+
+    · 정말 그 폴더가 맞는지, 프로그램이 돌고 있지 않은지 먼저 확인합니다.
+    · 무엇을 지울지 보여 주고, YES 를 적어야 지웁니다.
+    · 설정 파일(Ecs.ini / WmsDown.ini)은 원하면 따로 남겨 둡니다.
+      다시 깔 때 그것만 덮어쓰면 DB 주소를 또 넣지 않아도 됩니다.
+    · Visual C++ 재배포 패키지와 .NET 은 남깁니다 - 다른 프로그램도 씁니다.
+
+
+[ 바탕화면의 [LGLS CLIENT] 를 누르면 ]
+
+  Ecs.exe 가 먼저 뜹니다. 이것이
+    · DB 에 올라와 있는 프로그램 판과 지금 PC 의 것을 견주어
+    · 바뀐 파일만 내려받고
+    · 이어서 Client 본체(EcsMain.exe)를 띄웁니다.
+
+  그래서 앞으로 프로그램을 고치면, 각 PC 를 돌아다닐 필요 없이
+  WmsUp.exe 로 한 번 올리기만 하면 됩니다.
+

@@ -1,0 +1,1106 @@
+# -*- coding: utf-8 -*-
+u"""Client 설치 꾸러미를 만든다. 2026-09-30.
+
+   실행 : python gen_client_setup.py
+   결과 : 적용_20260929/Client_설치/  (리포에는 넣지 않는다 - 다른 폴더의 파일을 모아 만든다)
+
+   새 PC 에 이것 하나만 가져가면 Client 가 돌게 한다.
+     · Client 실행에 필요한 파일 전부
+     · 내려받기 프로그램(Ecs.exe)과 그 설정
+     · Visual C++ 재배포 패키지(mfc140u.dll 등 - 없으면 Client 가 아예 뜨지 않는다)
+     · .NET Framework 4.8 (Windows 10 이상은 이미 들어 있다 - 없을 때만 깐다)
+
+   MS-SQL 접속에 따로 깔 것은 없다.
+     Client 는 Windows 에 늘 들어 있는 ODBC 드라이버 "SQL Server" 로 붙고
+     (Ecs.ini 의 [DB_2] DRIVER=SQL Server),
+     Ecs.exe(내려받기)는 .NET 에 들어 있는 System.Data.SqlClient 로 붙는다.
+"""
+import os, shutil, stat
+
+ROOT = r'D:\project\LGLS\Renewal'
+SRC_CLIENT = os.path.join(ROOT, 'EXE_NEWUI', 'WCS_CLIENT')
+SRC_DOWN = os.path.join(ROOT, 'TASK', 'Download', 'bin', 'Release')   # 배포는 Release 판
+SRC_BIN = os.path.join(ROOT, 'WCS', 'CPlusPlus', 'LGLS_CLIENT', 'Bin', 'Release')
+SRC_PRE = os.path.join(ROOT, 'EXE', 'Prerequisites')
+DST = os.path.join(ROOT, '적용_20261015', 'Client_설치')
+
+# 새로 만든다
+def _drop_readonly(func, path, _exc):
+    # 원본에 읽기전용이 붙어 있으면 지워지지 않는다 - 풀고 다시 지운다
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+
+if os.path.isdir(DST):
+    shutil.rmtree(DST, onexc=_drop_readonly)
+os.makedirs(os.path.join(DST, 'Client'))
+os.makedirs(os.path.join(DST, 'Prerequisites'))
+
+# ── Client 실행에 필요한 것 ───────────────────────────────────────
+FILES = [
+    # [LGLS 2026-09-30] 본체 exe 는 SRC_BIN(방금 빌드한 Release)에서 따로 가져온다.
+    #   사람이 누르는 Ecs.exe 는 내려받기 프로그램이고, 본체는 EcsMain.exe 다.
+    # 함께 쓰는 라이브러리 (본체가 곧바로 부른다)
+    'DciLib.dll', 'EcsLib.dll', 'XmlLib.dll', 'BuilderLib.dll',
+    'SPR32DU70.DLL', 'spr32d70.dll', 'QUvc_dll.dll',
+    # 설정과 화면 정의
+    'Ecs.ini', 'EcsDefine.xml', 'KeyWord.xml', 'SC.XML', 'observables.tsv',
+    '화면배율_방식.bat',      # [2026-10-01] 4K 에서 Windows 에게 확대를 맡기는 대안
+    'EcsLayout1.xml', 'EcsLayout2.xml', 'EcsLayout3.xml',
+    # 설비 주소 정의
+    'DeviceMap01.xml', 'DeviceMap02.xml', 'DeviceMap03.xml', 'DeviceMap04.xml',
+    'DeviceMap05.xml', 'DeviceMap06.xml', 'DeviceMap07.xml', 'DeviceMap08.xml',
+    # 옛 라이브러리 (구 ECS 에서 이어진 것 - 빠지면 일부 화면이 뜨지 않는다)
+    'MFC42D.DLL', 'MFCN42D.DLL', 'MFCO42D.DLL', 'MSVCP60D.DLL', 'MSVCRTD.DLL',
+    'mfc42.dll', 'mfc100.dll', 'mfc100u.dll', 'msvcirt.dll', 'msvcp60.dll',
+    'msvcr100.dll', 'msvcrt.dll', 'msxml4.dll', 'nmsql.dll',
+]
+
+miss = []
+for f in FILES:
+    src = os.path.join(SRC_CLIENT, f)
+    if os.path.isfile(src):
+        shutil.copy2(src, os.path.join(DST, 'Client', f))
+    else:
+        miss.append(f)
+
+# ── Client 본체 - 이름을 EcsMain.exe 로 (사람이 누르는 Ecs.exe 와 겹치지 않게) ──
+src_main = os.path.join(SRC_BIN, 'EcsMain.exe')
+if os.path.isfile(src_main):
+    shutil.copy2(src_main, os.path.join(DST, 'Client', 'EcsMain.exe'))
+else:
+    miss.append('EcsMain.exe')
+
+# 다국어 문구
+shutil.copytree(os.path.join(SRC_CLIENT, 'rc_resource'),
+                os.path.join(DST, 'Client', 'rc_resource'))
+# 로그 폴더는 비워서 만들어 둔다
+os.makedirs(os.path.join(DST, 'Client', 'LOG'))
+
+# ── 내려받기 프로그램 ─────────────────────────────────────────────
+# ── 내려받기 프로그램 - 이것이 사람이 누르는 Ecs.exe 다 ──────────
+for f in ('Ecs.exe', 'WmsDown.ini'):
+    shutil.copy2(os.path.join(SRC_DOWN, f), os.path.join(DST, 'Client', f))
+
+ico = os.path.join(ROOT, '참조', 'WCS_HUONS', 'WCS.ico')
+if os.path.isfile(ico):
+    shutil.copy2(ico, os.path.join(DST, 'Client', 'WCS.ico'))
+else:
+    miss.append('WCS.ico')
+
+# ── [2026-10-01] 폰트 잠금 강제 풀기 도구 (setup_extra 에 둔 원본을 그대로 넣는다) ──
+for f in os.listdir(os.path.join(ROOT, '적용_20261015', 'setup_extra')):
+    shutil.copy2(os.path.join(ROOT, '적용_20261015', 'setup_extra', f), os.path.join(DST, f))
+
+# ── 먼저 깔아야 하는 것 ───────────────────────────────────────────
+for f in ('vc_redist.x86.exe', 'ndp48-web.exe'):
+    shutil.copy2(os.path.join(SRC_PRE, f), os.path.join(DST, 'Prerequisites', f))
+
+print('빠진 파일 :', miss if miss else '없다')
+n = sum(len(fs) for _, _, fs in os.walk(os.path.join(DST, 'Client')))
+sz = sum(os.path.getsize(os.path.join(r, f))
+         for r, _, fs in os.walk(DST) for f in fs)
+print('Client 파일 %d 개, 꾸러미 전체 %.1f MB' % (n, sz / 1024.0 / 1024.0))
+
+
+# ══════════ 설치 실행 파일과 안내문 ══════════
+ROOT = r'D:\project\LGLS\Renewal'
+DST = os.path.join(ROOT, '적용_20261015', 'Client_설치')
+N = '\r\n'
+
+
+def wr(path, lines):
+    data = (N.join(lines) + N).encode('cp949')          # 먼저 검증
+    with open(path, 'wb') as f:                          # 그 다음 연다
+        f.write(data)
+    print(path)
+
+
+wr(os.path.join(DST, 'Setup.bat'), [
+ '@echo off',
+ 'chcp 949 > nul',
+ 'setlocal enabledelayedexpansion',
+ '',
+ 'rem ============================================================',
+ 'rem  LGLS CLIENT 설치',
+ 'rem  2026-09-30',
+ 'rem ============================================================',
+ '',
+ 'set "INSTDIR=C:\\LGLS\\CLIENT"',
+ 'set "SRC=%~dp0"',
+ 'set "DBIP=127.0.0.1"',
+ 'set "DBPORT=1433"',
+ 'set "DBNAME=LGLS_MCS_IO"',
+ '',
+ 'echo.',
+ 'echo  ============================================================',
+ 'echo   LGLS CLIENT 설치',
+ 'echo  ============================================================',
+ 'echo.',
+ '',
+ 'rem ── 관리자 권한이 있어야 재배포 패키지를 깔 수 있다 ──────────',
+ 'net session >nul 2>&1',
+ 'if errorlevel 1 (',
+ '    echo  [주의] 관리자 권한으로 실행해 주세요.',
+ '    echo      이 파일을 오른쪽 단추로 눌러 "관리자 권한으로 실행" 을 고르면 됩니다.',
+ '    echo.',
+ '    pause',
+ '    exit /b 1',
+ ')',
+ '',
+ 'rem ── 설치 위치 ────────────────────────────────────────────────',
+ 'echo  [ 설치 위치 ]',
+ 'echo    그대로 하려면 Enter, 바꾸려면 경로를 적으세요.',
+ 'rem    set /p 는 엔터만 치면 변수를 지우지 않고 ★이전 값을 그대로 둔다★.',
+ 'rem    그래서 앞 물음의 답이 다음 물음에 그대로 들어갔다.',
+ 'rem    (포트에 1435 를 넣고 데이터베이스를 엔터로 넘기면 DATABASE=1435 가 되었다)',
+ 'rem    물어보기 전에 매번 비운다.',
+ 'set "ANS="',
+ 'set /p ANS=   설치 위치 [%INSTDIR%] : ',
+ 'if not "!ANS!"=="" set "INSTDIR=!ANS!"',
+ 'echo.',
+ '',
+ 'rem ── DB 서버 ──────────────────────────────────────────────────',
+ 'echo  [ DB 서버 ]',
+ 'echo    Client 와 내려받기 프로그램이 붙을 SQL Server 입니다.',
+ 'echo    PC 마다 다르므로 여기서 받아 설정에 적어 둡니다.',
+ 'echo.',
+ 'set "ANS="',
+ 'set /p ANS=   서버 IP [%DBIP%] : ',
+ 'if not "!ANS!"=="" set "DBIP=!ANS!"',
+ 'set "ANS="',
+ 'set /p ANS=   포트 [%DBPORT%] : ',
+ 'if not "!ANS!"=="" set "DBPORT=!ANS!"',
+ 'set "ANS="',
+ 'set /p ANS=   데이터베이스 [%DBNAME%] : ',
+ 'if not "!ANS!"=="" set "DBNAME=!ANS!"',
+ '',
+ 'rem    SQL Server 는 "주소,포트" 로 적는다. 1433 이면 포트를 생략해도 된다.',
+ 'rem    괄호 블록 안에서는 %VAR% 가 블록에 들어가기 전에 치환된다.',
+ 'rem    방금 받은 값을 쓰려면 !VAR! 로 읽어야 한다.',
+ 'if "!DBPORT!"=="1433" (',
+ '    set "DBSERVER=!DBIP!"',
+ ') else (',
+ '    set "DBSERVER=!DBIP!,!DBPORT!"',
+ ')',
+ '',
+ 'rem    이름있는 인스턴스(예 PC이름\SQLEXPRESS)를 적었으면 포트를 붙이지 않는다',
+ 'rem    역슬래시를 지운 값과 다르면 역슬래시가 들어 있다는 뜻이다.',
+ 'rem    (find 같은 바깥 명령을 부르지 않는다 - 환경을 타지 않는다)',
+ 'if not "!DBIP!"=="!DBIP:\=!" set "DBSERVER=!DBIP!"',
+ '',
+ 'echo.',
+ 'echo  ------------------------------------------------------------',
+ 'echo   설치 위치   : %INSTDIR%',
+ 'echo   DB 서버     : %DBSERVER%',
+ 'echo   데이터베이스 : %DBNAME%',
+ 'echo  ------------------------------------------------------------',
+ 'set "ANS="',
+ 'set /p ANS=   이대로 설치할까요? (Y/n) : ',
+ 'if /i "!ANS!"=="n" (',
+ '    echo   취소했습니다.',
+ '    pause',
+ '    exit /b 0',
+ ')',
+ 'echo.',
+ '',
+ 'rem ── 1. Visual C++ 재배포 패키지 ───────────────────────────────',
+ 'rem    Client 본체(EcsMain.exe)가 mfc140u.dll / MSVCP140.dll 을 쓴다. 없으면 아예 뜨지 않는다.',
+ 'echo  [1/5] Visual C++ 재배포 패키지를 확인합니다...',
+ 'if exist "%WINDIR%\\SysWOW64\\mfc140u.dll" (',
+ '    echo        이미 들어 있습니다. 건너뜁니다.',
+ ') else (',
+ '    if exist "%WINDIR%\\System32\\mfc140u.dll" (',
+ '        echo        이미 들어 있습니다. 건너뜁니다.',
+ '    ) else (',
+ '        echo        설치합니다. 잠시 기다려 주세요...',
+ '        "%SRC%Prerequisites\\vc_redist.x86.exe" /install /quiet /norestart',
+ '        if errorlevel 1 echo        [주의] 설치가 끝나지 않았습니다. 나중에 직접 실행해 주세요.',
+ '    )',
+ ')',
+ 'echo.',
+ '',
+ 'rem ── 2. .NET Framework 4.8 ─────────────────────────────────────',
+ 'rem    내려받기 프로그램(Ecs.exe)이 .NET 으로 만들어져 있다.',
+ 'rem    Windows 10 이상은 이미 들어 있으므로 대개 건너뛴다.',
+ 'echo  [2/5] .NET Framework 를 확인합니다...',
+ 'reg query "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" /v Release >nul 2>&1',
+ 'if errorlevel 1 (',
+ '    echo        설치합니다. 인터넷 연결이 필요합니다...',
+ '    "%SRC%Prerequisites\\ndp48-web.exe" /q /norestart',
+ ') else (',
+ '    echo        이미 들어 있습니다. 건너뜁니다.',
+ ')',
+ 'echo.',
+ '',
+ 'rem ── 3. 프로그램 복사 ─────────────────────────────────────────',
+ 'echo  [3/5] 프로그램을 복사합니다...',
+ '',
+ 'rem    [2026-10-01] 옛 Client 가 등록한 폰트는 로그오프 전까지 잠긴다. 지우다 만 폰트가 남은 폴더에는',
+ 'rem    복사가 막히므로, 그런 폴더면 ★옆 이름(_2, _3 ...)★ 에 깐다 - 로그오프 없이 설치할 수 있다.',
+ 'rem    (옛 폴더는 나중에 로그오프한 뒤 지우면 된다)',
+ 'set "BASEDIR=%INSTDIR%"',
+ 'set "SUFFIX=0"',
+ 'set "TRIEDFORCE="',
+ ':PROBE',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Release-Fonts.ps1" -Dir "%INSTDIR%" -SrcDir "%SRC%Client" -Probe >nul 2>&1',
+ 'if errorlevel 2 (',
+ '    if not defined TRIEDFORCE (',
+ '        set "TRIEDFORCE=1"',
+ '        echo        이 폴더에 옛 Client 가 잠가 놓은 폰트 파일이 있습니다. 먼저 풀어 봅니다...',
+ '        powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Force-ReleaseFonts.ps1" -Dir "%INSTDIR%"',
+ '        echo.',
+ '        goto PROBE',
+ '    )',
+ '    set /a SUFFIX+=1',
+ '    if !SUFFIX! GEQ 6 goto PROBEDONE',
+ '    set "INSTDIR=!BASEDIR!_!SUFFIX!"',
+ '    goto PROBE',
+ ')',
+ ':PROBEDONE',
+ 'if not "%INSTDIR%"=="%BASEDIR%" (',
+ '    echo        [안내] %BASEDIR% 에는 지우다 만 폰트 파일이 잠겨 있습니다 ^(로그오프 전까지 풀리지 않음^).',
+ '    echo               로그오프 없이 깔 수 있게 옆 폴더에 깝니다 : %INSTDIR%',
+ '    echo               옛 폴더는 나중에 로그오프한 뒤 지우면 됩니다.',
+ '    echo.',
+ ')',
+ 'if not exist "%INSTDIR%" mkdir "%INSTDIR%"',
+ '',
+ 'rem    설정 파일은 이미 있으면 덮어쓰지 않는다 - 현장 값이 들어 있다.',
+ 'if exist "%INSTDIR%\\Ecs.ini"     copy /y "%INSTDIR%\\Ecs.ini"     "%INSTDIR%\\Ecs.ini.before_setup"     >nul',
+ 'if exist "%INSTDIR%\\WmsDown.ini" copy /y "%INSTDIR%\\WmsDown.ini" "%INSTDIR%\\WmsDown.ini.before_setup" >nul',
+ '',
+ 'rem    돌고 있으면 exe 가 잠겨 복사가 중간에 끊긴다.',
+ 'rem    (그러면 파일이 몇 개만 들어가 프로그램이 이상하게 뜬다)',
+ 'set "RUNNING="',
+ '''for /f "tokens=1 delims=," %%a in ('tasklist /FI "IMAGENAME eq Ecs.exe" /NH /FO CSV 2^>nul') do (''',
+ '    if /i "%%~a"=="Ecs.exe" set "RUNNING=1"',
+ ')',
+ '''for /f "tokens=1 delims=," %%a in ('tasklist /FI "IMAGENAME eq EcsMain.exe" /NH /FO CSV 2^>nul') do (''',
+ '    if /i "%%~a"=="EcsMain.exe" set "RUNNING=1"',
+ ')',
+ 'if defined RUNNING (',
+ '    echo        [주의] Client 가 돌고 있습니다. 먼저 닫아 주세요.',
+ '    echo               Ecs.exe  /  EcsMain.exe',
+ '    echo.',
+ '    pause',
+ '    exit /b 1',
+ ')',
+ '',
+ 'rem    Client 가 등록한 폰트는 Client 를 닫아도 잠겨 있다(AddFontResource). 먼저 푼다.',
+ 'rem    풀지 않으면 폰트 파일에서 "액세스가 거부되었습니다" 가 나고 복사가 거기서 끊긴다.',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Release-Fonts.ps1" -Dir "%INSTDIR%" -SrcDir "%SRC%Client" >nul 2>&1',
+ '',
+ 'rem    /C 하나가 실패해도 나머지는 계속  /R 읽기전용도 덮어쓴다',
+ 'xcopy "%SRC%Client\\*" "%INSTDIR%\\" /E /I /Y /Q /C /R',
+ 'copy /y "%SRC%Release-Fonts.ps1" "%INSTDIR%\\" >nul',
+ 'copy /y "%SRC%Force-ReleaseFonts.ps1" "%INSTDIR%\\" >nul',
+ 'copy /y "%SRC%폰트잠금_풀기.bat" "%INSTDIR%\\" >nul',
+ 'rem    주소를 나중에 바꿀 수 있게 도우미와 안내문도 함께 둔다',
+ 'copy /y "%SRC%Set-DbServer.ps1" "%INSTDIR%\\" >nul',
+ 'copy /y "%SRC%확인하는_법.txt" "%INSTDIR%\\" >nul',
+ 'copy /y "%SRC%Uninstall.bat" "%INSTDIR%\\" >nul',
+ 'if errorlevel 1 (',
+ '    echo        [주의] 복사에 실패했습니다.',
+ '    pause',
+ '    exit /b 1',
+ ')',
+ '',
+ 'rem    정말 다 들어갔는지 ★이름으로★ 대조한다. 빠진 것이 있으면 어느 파일인지 보여 준다.',
+ 'rem    (개수만 세면 대상 폴더의 다른 파일 때문에 맞는 것처럼 보일 수 있다)',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Release-Fonts.ps1" -Dir "%INSTDIR%" -SrcDir "%SRC%Client" -Check',
+ 'if errorlevel 1 (',
+ '    echo.',
+ '    echo        [주의] 위 파일이 들어가지 않았습니다. 이대로 두면 프로그램이 이상하게 뜹니다.',
+ '    echo               - Client^(Ecs.exe / EcsMain.exe^) 와 설치 폴더를 연 창을 모두 닫고 다시 실행해 주세요.',
+ '    echo               - 폰트^(.ttf^) 가 남아 있으면 Windows 를 로그오프했다가 다시 실행하면 풀립니다.',
+ '    echo.',
+ '    pause',
+ '    exit /b 1',
+ ')',
+ 'echo        모두 들어갔습니다.',
+ '',
+ 'rem    설정을 되돌려 준다 - 새 설정은 .new 로 남긴다',
+ 'if exist "%INSTDIR%\\Ecs.ini.before_setup" (',
+ '    move /y "%INSTDIR%\\Ecs.ini" "%INSTDIR%\\Ecs.ini.new" >nul',
+ '    move /y "%INSTDIR%\\Ecs.ini.before_setup" "%INSTDIR%\\Ecs.ini" >nul',
+ '    echo        Ecs.ini 는 쓰던 것을 그대로 두었습니다 ^(새 것은 Ecs.ini.new^).',
+ ')',
+ 'if exist "%INSTDIR%\\WmsDown.ini.before_setup" (',
+ '    move /y "%INSTDIR%\\WmsDown.ini" "%INSTDIR%\\WmsDown.ini.new" >nul',
+ '    move /y "%INSTDIR%\\WmsDown.ini.before_setup" "%INSTDIR%\\WmsDown.ini" >nul',
+ '    echo        WmsDown.ini 는 쓰던 것을 그대로 두었습니다 ^(새 것은 WmsDown.ini.new^).',
+ ')',
+ 'echo.',
+ '',
+ 'rem ── 4. DB 서버 주소 적용 ─────────────────────────────────────',
+ 'rem    ini 한 줄만 바꾸는 일은 배치로 하면 한글이 깨지므로 PowerShell 로 한다.',
+ 'echo  [4/5] DB 서버 주소를 설정에 적습니다...',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%Set-DbServer.ps1" -InstDir "%INSTDIR%" -Server "%DBSERVER%" -Database "%DBNAME%"',
+ 'if errorlevel 1 (',
+ '    echo        [주의] 설정을 적지 못했습니다. 아래 두 곳을 직접 고쳐 주세요.',
+ '    echo            %INSTDIR%\\Ecs.ini       [DB_2] SERVER=',
+ '    echo            %INSTDIR%\\WmsDown.ini   [DB Server] SERVERNAME=',
+ ')',
+ 'echo.',
+ '',
+ 'rem ── 5. 바탕화면 바로가기 ─────────────────────────────────────',
+ 'echo  [5/5] 바로가기를 만듭니다...',
+ 'set "VBS=%TEMP%\\lgls_shortcut.vbs"',
+ '> "%VBS%" echo Set oWS = WScript.CreateObject^("WScript.Shell"^)',
+ '>>"%VBS%" echo sLink = oWS.SpecialFolders^("AllUsersDesktop"^) ^& "\\LGLS CLIENT.lnk"',
+ '>>"%VBS%" echo Set oLink = oWS.CreateShortcut^(sLink^)',
+ '>>"%VBS%" echo oLink.TargetPath = "%INSTDIR%\\Ecs.exe"',
+ '>>"%VBS%" echo oLink.WorkingDirectory = "%INSTDIR%"',
+ '>>"%VBS%" echo oLink.IconLocation = "%INSTDIR%\\Ecs.exe,0"',
+ '>>"%VBS%" echo oLink.Description = "LGLS 자동창고 운전 화면"',
+ '>>"%VBS%" echo oLink.Save',
+ 'cscript //nologo "%VBS%"',
+ 'del "%VBS%" >nul 2>&1',
+ 'echo.',
+ '',
+ 'echo  ============================================================',
+ 'echo   설치가 끝났습니다.',
+ 'echo  ============================================================',
+ 'echo.',
+ 'echo   설치 위치   : %INSTDIR%',
+ 'echo   DB 서버     : %DBSERVER%',
+ 'echo   데이터베이스 : %DBNAME%',
+ 'echo   실행        : 바탕화면의 [LGLS CLIENT]',
+ 'echo.',
+ 'echo   지우려면   : %INSTDIR%\\Uninstall.bat ^(관리자 권한으로^)',
+ 'echo.',
+ 'echo   계정을 쓰려면 아래에 적어 주세요. 비워 두면 Windows 인증으로 붙습니다.',
+ 'echo     %INSTDIR%\\WmsDown.ini   [DB Server] USERID= / PASSWORD=',
+ 'echo.',
+ 'pause',
+ 'endlocal',
+])
+
+def wr_ps(path, text):
+    data = text.replace('\r\n', '\n').replace('\n', '\r\n').encode('ascii')   # 먼저 검증 - ASCII 만
+    with open(path, 'wb') as f:
+        f.write(data)
+    print(path)
+
+# ── 폰트 잠금 풀기 / 복사 대조 ── 2026-09-30
+wr_ps(os.path.join(DST, 'Release-Fonts.ps1'), r"""# Release fonts that the Client registered with AddFontResource (they stay locked
+# until logoff even after the Client exits), and optionally verify the copy.
+#   -Dir     install folder
+#   -SrcDir  package folder (Client) - font names are taken from here too
+#   -Check   list files that exist in SrcDir but not in Dir; exit 1 if any
+param([Parameter(Mandatory=$true)][string]$Dir, [string]$SrcDir = "", [switch]$Check, [switch]$Probe)
+
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public class FontRel {
+  [DllImport("gdi32.dll", CharSet=CharSet.Unicode)] public static extern bool RemoveFontResourceW(string f);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessageTimeout(IntPtr h, uint m, IntPtr w, IntPtr l, uint f, uint t, out IntPtr r);
+}
+"@
+
+function Get-Rel([string]$root) {
+  if (-not $root -or -not (Test-Path -LiteralPath $root)) { return @() }
+  $r = (Resolve-Path -LiteralPath $root).Path.TrimEnd('\')
+  @(Get-ChildItem -LiteralPath $r -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName.Substring($r.Length + 1) })
+}
+
+if ($Probe) {
+  # delete-pending font in Dir?  exit 2 = yes (folder unusable until logoff), 0 = fine
+  if (-not $Dir -or -not (Test-Path -LiteralPath $Dir)) { exit 0 }
+  $exts = '.ttf', '.ttc', '.otf', '.fon'
+  $dstRoot = $Dir.TrimEnd('\')
+  foreach ($rel in (Get-Rel $SrcDir)) {
+    if ($exts -notcontains [System.IO.Path]::GetExtension($rel).ToLower()) { continue }
+    $full = Join-Path $dstRoot $rel
+    $dir  = Split-Path $full -Parent
+    $name = Split-Path $full -Leaf
+    if (-not (Test-Path -LiteralPath $dir)) { continue }
+    $listed = $false
+    try { $listed = ([System.IO.Directory]::GetFiles($dir, $name).Count -gt 0) } catch { $listed = $false }
+    if (-not $listed) { continue }
+    $ok = $false
+    try { $fs = [System.IO.File]::Open($full, 'Open', 'Read', 'ReadWrite'); $fs.Close(); $ok = $true } catch { $ok = $false }
+    if (-not $ok) { Write-Host ("        locked " + $rel); exit 2 }
+  }
+  exit 0
+}
+
+if ($Check) {
+  $dstRoot = $Dir.TrimEnd('\')
+  $miss = @()
+  foreach ($rel in (Get-Rel $SrcDir)) {
+    $ok = $false
+    try { $ok = [System.IO.File]::Exists((Join-Path $dstRoot $rel)) } catch { $ok = $false }
+    if ($ok) { try { $fs = [System.IO.File]::Open((Join-Path $dstRoot $rel), 'Open', 'Read', 'ReadWrite'); $fs.Close() } catch { $ok = $false } }
+    if (-not $ok) { $miss += $rel }
+  }
+  if ($miss.Count -gt 0) {
+    Write-Host ("        missing " + $miss.Count + " :")
+    $miss | Select-Object -First 10 | ForEach-Object { Write-Host ("          " + $_) }
+    exit 1
+  }
+  exit 0
+}
+
+# font files : those present in Dir + the names the package has (a locked file may not be listable)
+$exts = '.ttf', '.ttc', '.otf', '.fon'
+$rels = @()
+$rels += Get-Rel $Dir    | Where-Object { $exts -contains [System.IO.Path]::GetExtension($_).ToLower() }
+$rels += Get-Rel $SrcDir | Where-Object { $exts -contains [System.IO.Path]::GetExtension($_).ToLower() }
+$rels = $rels | Sort-Object -Unique
+$n = 0
+foreach ($rel in $rels) {
+  $full = Join-Path $Dir.TrimEnd('\') $rel
+  for ($i = 0; $i -lt 100; $i++) { if (-not [FontRel]::RemoveFontResourceW($full)) { break }; $n++ }
+}
+if ($n -gt 0) {
+  $r = [IntPtr]::Zero
+  [void][FontRel]::SendMessageTimeout([IntPtr]0xFFFF, 0x001D, [IntPtr]::Zero, [IntPtr]::Zero, 2, 1000, [ref]$r)
+}
+Write-Host ("released " + $n)
+exit 0
+""")
+
+wr(os.path.join(DST, '읽어보세요.txt'), [
+ '============================================================',
+ ' LGLS CLIENT 설치 꾸러미',
+ ' 2026-09-30',
+ '============================================================',
+ '',
+ '',
+ '[ 무엇인가 ]',
+ '',
+ '  새 PC 에 운전 화면(Client)을 까는 꾸러미입니다.',
+ '  이것 하나만 가져가면 됩니다.',
+ '',
+ '',
+ '[ 어떻게 하나 ]',
+ '',
+ '  1. 이 폴더를 통째로 새 PC 에 복사합니다 (USB 등).',
+ '  2. Setup.bat 을 오른쪽 단추로 눌러 [관리자 권한으로 실행] 합니다.',
+ '     (지울 때는 설치 폴더의 Uninstall.bat 을 같은 방법으로 실행합니다.)',
+ '  3. 물어보는 것에 답합니다.',
+ '',
+ '       설치 위치     그대로 두려면 Enter (기본 C:\\LGLS\\CLIENT)',
+ '       서버 IP       DB 가 있는 PC 의 주소',
+ '       포트          기본 1433. 다르면 적어 주세요.',
+ '       데이터베이스  기본 LGLS_IO',
+ '',
+ '  4. 끝나면 바탕화면에 [LGLS CLIENT] 가 생깁니다.',
+ '',
+ '',
+ '[ 서버 주소를 어떻게 적나 ]',
+ '',
+ '  · 보통    : IP 와 포트를 따로 적으면 됩니다.',
+ '              예) 192.100.1.191  /  1433',
+ '',
+ '  · 포트를 바꾼 현장 : 그 포트를 적습니다.',
+ '              예) 127.0.0.1  /  1435',
+ '',
+ '  · 이름있는 인스턴스 : 서버 IP 칸에 인스턴스까지 적습니다.',
+ '              예) PC이름\\SQLEXPRESS',
+ '              이때는 포트를 묻더라도 쓰지 않습니다.',
+ '',
+ '  적어 넣는 자리는 두 곳이고, 설치가 알아서 넣습니다.',
+ '      Ecs.ini      [DB_2]      SERVER=      DATABASE=',
+ '      WmsDown.ini  [DB Server] SERVERNAME=  DATABASE=',
+ '',
+ '  나중에 서버가 바뀌면 Setup.bat 을 다시 돌리면 됩니다.',
+ '  (쓰던 설정은 그대로 두고 주소만 바꿔 줍니다.)',
+ '',
+ '',
+ '[ 설치가 하는 일 ]',
+ '',
+ '  1) Visual C++ 재배포 패키지',
+ '       Client 본체(EcsMain.exe)가 mfc140u.dll 을 씁니다. 없으면 아예 뜨지 않고',
+ '       "mfc140u.dll 을 찾을 수 없습니다" 가 납니다.',
+ '       이미 들어 있으면 건너뜁니다.',
+ '',
+ '  2) .NET Framework 4.8',
+ '       내려받기 프로그램(Ecs.exe)이 .NET 으로 되어 있습니다.',
+ '       Windows 10 이상은 이미 들어 있으므로 거의 건너뜁니다.',
+ '',
+ '  3) 프로그램 복사',
+ '       프로그램과 함께 쓰는 파일, 화면 정의(xml), 다국어 문구(rc_resource)를',
+ '       설치 위치에 복사합니다.',
+ '       ★ 이미 쓰던 Ecs.ini / WmsDown.ini 는 덮어쓰지 않습니다.',
+ '          새 것은 .new 로 남겨 두니 견주어 보고 필요한 줄만 옮기세요.',
+ '',
+ '  4) DB 서버 주소 적용',
+ '       위에서 받은 주소를 두 설정 파일에 적습니다.',
+ '       주석(; 로 시작하는 줄)은 건드리지 않습니다.',
+ '',
+ '  5) 바탕화면 바로가기',
+ '',
+ '',
+ '[ MS-SQL 접속에 따로 깔 것 ]',
+ '',
+ '  없습니다.',
+ '    · Client 본체(EcsMain.exe)는 Windows 에 늘 들어 있는 ODBC 드라이버',
+ '      "SQL Server" 로 붙습니다 (Ecs.ini 의 [DB_2] DRIVER=SQL Server).',
+ '    · Ecs.exe(내려받기)는 .NET 에 들어 있는 SqlClient 로 붙습니다.',
+ '  둘 다 Windows 와 .NET 에 이미 들어 있는 것이라 따로 깔 것이 없습니다.',
+ '',
+ '',
+ '[ 계정 ]',
+ '',
+ '  계정은 ★Ecs.ini 를 기준★ 으로 삼습니다.',
+ '  설치는 Ecs.ini 의 [DB_2] 를 읽어 WmsDown.ini 에 그대로 옮깁니다.',
+ '',
+ '      Ecs.ini [DB_2]          WmsDown.ini [DB Server]',
+ '        SERVER          ->      SERVERNAME',
+ '        DATABASE        ->      DATABASE',
+ '        USERID          ->      USERID',
+ '        USERPASSWORD    ->      PASSWORD',
+ '',
+ '  기본값은 USERID=LGLS_IO / USERPASSWORD=LGLS_IO 입니다.',
+ '  Windows 인증으로 붙이려면 Ecs.ini 의 TRUSTED 를 1 로 두면 됩니다.',
+ '  그러면 WmsDown.ini 의 계정도 비워 줍니다.',
+ '',
+ '  나중에 계정이나 주소를 바꿀 때도 ★Ecs.ini 만 고치고★',
+ '  Set-DbServer.ps1 을 한 번 돌리면 내려받기 쪽이 따라옵니다.',
+ '',
+ '      powershell -NoProfile -ExecutionPolicy Bypass -File "C:\LGLS\CLIENT\Set-DbServer.ps1" -InstDir "C:\LGLS\CLIENT\"',
+ '',
+ '',
+ '[ 지우려면 ]',
+ '',
+ '  설치 폴더의 Uninstall.bat 을 오른쪽 단추로 눌러',
+ '  [관리자 권한으로 실행] 하면 됩니다.',
+ '',
+ '    · 정말 그 폴더가 맞는지, 프로그램이 돌고 있지 않은지 먼저 확인합니다.',
+ '    · 무엇을 지울지 보여 주고, YES 를 적어야 지웁니다.',
+ '    · 설정 파일(Ecs.ini / WmsDown.ini)은 원하면 따로 남겨 둡니다.',
+ '      다시 깔 때 그것만 덮어쓰면 DB 주소를 또 넣지 않아도 됩니다.',
+ '    · Visual C++ 재배포 패키지와 .NET 은 남깁니다 - 다른 프로그램도 씁니다.',
+ '',
+ '',
+ '[ 바탕화면의 [LGLS CLIENT] 를 누르면 ]',
+ '',
+ '  Ecs.exe 가 먼저 뜹니다. 이것이',
+ '    · DB 에 올라와 있는 프로그램 판과 지금 PC 의 것을 견주어',
+ '    · 바뀐 파일만 내려받고',
+ '    · 이어서 Client 본체(EcsMain.exe)를 띄웁니다.',
+ '',
+ '  그래서 앞으로 프로그램을 고치면, 각 PC 를 돌아다닐 필요 없이',
+ '  WmsUp.exe 로 한 번 올리기만 하면 됩니다.',
+ '',
+])
+
+
+# ══════════ DB 서버 주소를 적어 주는 도우미 ══════════
+DST = r'D:\project\LGLS\Renewal\적용_20260930\Client_설치'
+N = '\r\n'
+
+
+def wr(path, lines, enc='utf-8'):
+    d = os.path.dirname(path)
+    if not os.path.isdir(d):
+        os.makedirs(d)
+    data = (N.join(lines) + N).encode(enc)
+    with open(path, 'wb') as f:
+        f.write(data)
+    print(path)
+
+
+wr(os.path.join(DST, 'Set-DbServer.ps1'), [
+ '# ============================================================',
+ '#  DB 접속 정보를 설정 파일에 적는다.',
+ '#  2026-09-30',
+ '#',
+ '#  Ecs.ini 를 기준으로 삼는다.',
+ '#    - 인자로 받은 주소가 있으면 Ecs.ini 에 먼저 적고',
+ '#    - 그 다음 Ecs.ini 의 [DB_2] 를 읽어 WmsDown.ini 에 그대로 옮긴다.',
+ '#  둘이 어긋날 일이 없다. Ecs.ini 만 고친 뒤 이것을 돌려도 된다.',
+ '#',
+ '#  ini 는 CP949 라 인코딩을 지켜 읽고 쓴다(Default = 시스템 ANSI).',
+ '# ============================================================',
+ 'param(',
+ '    [Parameter(Mandatory=$true)][string]$InstDir,',
+ '    [string]$Server   = "",      # 비우면 Ecs.ini 의 값을 그대로 쓴다',
+ '    [string]$Database = "",',
+ '    [switch]$Quiet',
+ ')',
+ '',
+ '$ErrorActionPreference = "Stop"',
+ '',
+ 'function Say([string]$msg) { if (-not $Quiet) { Write-Host $msg } }',
+ '',
+ '# ── ini 한 줄 읽기 ───────────────────────────────────────────',
+ 'function Get-IniValue {',
+ '    param([string]$Path, [string]$Section, [string]$Key)',
+ '',
+ '    if (-not (Test-Path $Path)) { return $null }',
+ '    $inSec = $false',
+ '    foreach ($ln in @(Get-Content $Path -Encoding Default)) {',
+ '        if ($ln -match "^\\s*\\[(.+?)\\]") {',
+ '            $inSec = ($matches[1].Trim() -eq $Section)',
+ '            continue',
+ '        }',
+ '        if (-not $inSec) { continue }',
+ '        if ($ln -match "^\\s*[;-]") { continue }          # 주석은 건너뛴다',
+ '        if ($ln -match ("^\\s*" + [regex]::Escape($Key) + "\\s*=(.*)$")) {',
+ '            return $matches[1].Trim()',
+ '        }',
+ '    }',
+ '    return $null',
+ '}',
+ '',
+ '# ── ini 한 줄 쓰기 ───────────────────────────────────────────',
+ 'function Set-IniValue {',
+ '    param([string]$Path, [string]$Section, [string]$Key, [string]$Value)',
+ '',
+ '    $name = Split-Path $Path -Leaf',
+ '    if (-not (Test-Path $Path)) {',
+ '        Say ("        [주의] " + $name + " 가 없어 건너뜁니다.")',
+ '        return $false',
+ '    }',
+ '',
+ '    $lines = @(Get-Content $Path -Encoding Default)',
+ '    $inSec = $false',
+ '    $done  = $false',
+ '    $out   = New-Object System.Collections.ArrayList',
+ '',
+ '    foreach ($ln in $lines) {',
+ '        if ($ln -match "^\\s*\\[(.+?)\\]") {',
+ '            $inSec = ($matches[1].Trim() -eq $Section)',
+ '            [void]$out.Add($ln)',
+ '            continue',
+ '        }',
+ '        if ($inSec -and (-not $done) -and',
+ '            ($ln -notmatch "^\\s*[;-]") -and',
+ '            ($ln -match ("^\\s*" + [regex]::Escape($Key) + "\\s*="))) {',
+ '            [void]$out.Add($Key + "=" + $Value)',
+ '            $done = $true',
+ '            continue',
+ '        }',
+ '        [void]$out.Add($ln)',
+ '    }',
+ '',
+ '    if (-not $done) {',
+ '        Say ("        [주의] " + $name + " 의 [" + $Section + "] 에서 " + $Key + " 줄을 찾지 못했습니다.")',
+ '        return $false',
+ '    }',
+ '',
+ '    Set-Content -Path $Path -Value $out -Encoding Default',
+ '    Say ("        " + $name + "  [" + $Section + "] " + $Key + "=" + $Value)',
+ '    return $true',
+ '}',
+ '',
+ '$ecs  = Join-Path $InstDir "Ecs.ini"',
+ '$down = Join-Path $InstDir "WmsDown.ini"',
+ '',
+ 'if (-not (Test-Path $ecs)) {',
+ '    Write-Host "        [주의] Ecs.ini 가 없습니다 : $ecs"',
+ '    exit 1',
+ '}',
+ '',
+ '# ── 1. 받은 주소를 Ecs.ini 에 적는다 ─────────────────────────',
+ 'Say "        [ Ecs.ini ]"',
+ 'if ($Server   -ne "") { [void](Set-IniValue -Path $ecs -Section "DB_2" -Key "SERVER"   -Value $Server) }',
+ 'if ($Database -ne "") { [void](Set-IniValue -Path $ecs -Section "DB_2" -Key "DATABASE" -Value $Database) }',
+ '',
+ '# ── 2. Ecs.ini 를 읽어 WmsDown.ini 로 옮긴다 ─────────────────',
+ '#      여기서부터가 기준이다. 사람이 Ecs.ini 를 고친 뒤 돌려도 된다.',
+ '$srv  = Get-IniValue -Path $ecs -Section "DB_2" -Key "SERVER"',
+ '$db   = Get-IniValue -Path $ecs -Section "DB_2" -Key "DATABASE"',
+ '$uid  = Get-IniValue -Path $ecs -Section "DB_2" -Key "USERID"',
+ '$pwd  = Get-IniValue -Path $ecs -Section "DB_2" -Key "USERPASSWORD"',
+ '$trst = Get-IniValue -Path $ecs -Section "DB_2" -Key "TRUSTED"',
+ '',
+ '# Windows 인증이면 계정을 비운다 - 내려받기 쪽도 같은 규칙이다.',
+ 'if ($trst -eq "1") {',
+ '    $uid = ""',
+ '    $pwd = ""',
+ '}',
+ 'if ($uid -eq $null) { $uid = "" }',
+ 'if ($pwd -eq $null) { $pwd = "" }',
+ '',
+ 'Say ""',
+ 'Say "        [ WmsDown.ini ]  - Ecs.ini 의 값을 그대로 옮깁니다"',
+ 'if ($srv -ne $null -and $srv -ne "") { [void](Set-IniValue -Path $down -Section "DB Server" -Key "SERVERNAME" -Value $srv) }',
+ 'if ($db  -ne $null -and $db  -ne "") { [void](Set-IniValue -Path $down -Section "DB Server" -Key "DATABASE"   -Value $db) }',
+ '[void](Set-IniValue -Path $down -Section "DB Server" -Key "USERID"   -Value $uid)',
+ '[void](Set-IniValue -Path $down -Section "DB Server" -Key "PASSWORD" -Value $pwd)',
+ '',
+ 'if ($trst -eq "1") {',
+ '    Say ""',
+ '    Say "        Ecs.ini 가 TRUSTED=1 이라 Windows 인증입니다. 계정은 비웠습니다."',
+ '}',
+ '',
+ 'exit 0',
+])
+
+
+# ══════════ 손으로 확인하는 법 ══════════
+DST = r'D:\project\LGLS\Renewal\적용_20260930\Client_설치'
+N = '\r\n'
+
+
+def wr(path, lines):
+    data = (N.join(lines) + N).encode('cp949')
+    with open(path, 'wb') as f:
+        f.write(data)
+    print(path)
+
+
+wr(os.path.join(DST, '확인하는_법.txt'), [
+ '============================================================',
+ ' 설치가 제대로 됐는지 손으로 확인하는 법',
+ ' 2026-09-30',
+ '============================================================',
+ '',
+ ' 아래 명령을 그대로 복사해 명령 프롬프트에 붙여넣으면 됩니다.',
+ ' 경로는 설치한 곳에 맞게 바꿔 주세요.',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 1. DB 서버 주소를 다시 적기',
+ '------------------------------------------------------------',
+ '',
+ '   설치할 때 물어본 주소를 나중에 바꾸고 싶을 때 씁니다.',
+ '   Setup.bat 을 다시 돌려도 되고, 이 명령만 써도 됩니다.',
+ '',
+ 'powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\LGLS\\CLIENT\\Set-DbServer.ps1" -InstDir "C:\\LGLS\\CLIENT" -Server "192.100.1.191" -Database "LGLS_MCS_IO"',
+ '',
+ '   이렇게 나오면 제대로 된 것입니다.',
+ '',
+ '        Ecs.ini  [DB_2] SERVER=192.100.1.191',
+ '        Ecs.ini  [DB_2] DATABASE=LGLS_IO',
+ '        WmsDown.ini  [DB Server] SERVERNAME=192.100.1.191',
+ '        WmsDown.ini  [DB Server] DATABASE=LGLS_IO',
+ '',
+ '   네 줄이 다 나와야 합니다. "찾지 못했습니다" 가 나오면',
+ '   그 파일의 섹션 이름이나 항목 이름이 다른 것이니 알려 주세요.',
+ '',
+ '   포트가 1433 이 아니면 주소 뒤에 쉼표로 붙입니다.',
+ '       -Server "192.100.1.191,1435"',
+ '   이름있는 인스턴스면 포트를 붙이지 않습니다.',
+ '       -Server "PC이름\\SQLEXPRESS"',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 2. 지금 설정이 어떻게 되어 있는지 보기',
+ '------------------------------------------------------------',
+ '',
+ 'powershell -NoProfile -Command "Get-Content C:\\LGLS\\CLIENT\\Ecs.ini -Encoding Default | Select-String \'^SERVER=|^DATABASE=\'"',
+ '',
+ 'powershell -NoProfile -Command "Get-Content C:\\LGLS\\CLIENT\\WmsDown.ini -Encoding Default | Select-String \'^SERVERNAME=|^DATABASE=\'"',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 3. 어느 판을 받아 두었는지 보기',
+ '------------------------------------------------------------',
+ '',
+ '   내려받기가 WmsDown.ini 아래쪽에 스스로 적습니다.',
+ '',
+ 'powershell -NoProfile -Command "Get-Content C:\\LGLS\\CLIENT\\WmsDown.ini -Encoding Default | Select-String \'COMMON->\'"',
+ '',
+ '   예)',
+ '        COMMON->DciLib.dll=1',
+ '        COMMON->EcsDefine.xml=1',
+ '        COMMON->EcsLayout1.xml=1',
+ '        COMMON->KeyWord.xml=1',
+ '',
+ '   여기 적힌 판과 DB 에 올라온 판이 같으면 내려받지 않고 지나갑니다.',
+ '   일부러 다시 받게 하려면 이 줄들을 지우고 다시 실행하면 됩니다.',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 4. 설치된 파일이 무엇인지',
+ '------------------------------------------------------------',
+ '',
+ '   Ecs.exe       사람이 누르는 것. 바뀐 파일을 받아 오고 본체를 띄웁니다.',
+ '   EcsMain.exe   운전 화면 본체. 내려받기가 이어서 띄웁니다.',
+ '',
+ '   두 파일은 아이콘이 같습니다. 누르는 것은 Ecs.exe 하나뿐입니다.',
+ '',
+ 'powershell -NoProfile -Command "Get-ChildItem C:\\LGLS\\CLIENT\\*.exe | Select-Object Name,Length,LastWriteTime"',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 5. ★올리면 안 되는 파일★',
+ '------------------------------------------------------------',
+ '',
+ '   설정 파일은 PC 마다 다릅니다. 올려 두면 각 PC 가 그것을 받아',
+ '   자기 설정을 잃고, DB 에 붙지 못해 화면이 뜨지 않습니다.',
+ '',
+ '       Ecs.ini',
+ '       WmsDown.ini',
+ '',
+ '   실수로 올라오더라도 내려받기가 이 둘은 받지 않게 해 두었습니다.',
+ '   목록을 바꾸려면 WmsDown.ini 에 이렇게 적습니다.',
+ '',
+ '       [APPLICATION]',
+ '       SKIP_FILES=Ecs.ini,WmsDown.ini',
+ '',
+ '',
+ '------------------------------------------------------------',
+ ' 6. 잘 안 될 때',
+ '------------------------------------------------------------',
+ '',
+ '   · "mfc140u.dll 을 찾을 수 없습니다"',
+ '       Visual C++ 재배포 패키지가 없습니다.',
+ '       Prerequisites\\vc_redist.x86.exe 를 직접 실행해 주세요.',
+ '',
+ '   · 내려받기 창이 뜬 뒤 아무 일도 없다',
+ '       DB 주소가 틀렸을 수 있습니다. 위 2번으로 확인해 주세요.',
+ '',
+ '   · 에러 창이 뜬다',
+ '       창에 어디서 났는지까지 나옵니다. 그 내용을 그대로 알려 주세요.',
+ '',
+])
+
+
+# ══════════ 제거 프로그램 ══════════
+DST = r'D:\project\LGLS\Renewal\적용_20260930\Client_설치'
+N = '\r\n'
+LINE = '=' * 60
+
+
+def wr(path, lines):
+    d = os.path.dirname(path)
+    if not os.path.isdir(d):
+        os.makedirs(d)
+    data = (N.join(lines) + N).encode('cp949')      # 먼저 검증
+    with open(path, 'wb') as f:                      # 그 다음 연다
+        f.write(data)
+    print(path)
+
+
+wr(os.path.join(DST, 'Uninstall.bat'), [
+ '@echo off',
+ 'chcp 949 > nul',
+ 'setlocal enabledelayedexpansion',
+ '',
+ 'rem ===========================================================',
+ 'rem  LGLS CLIENT 제거   2026-09-30',
+ 'rem',
+ 'rem  지우는 일은 되돌릴 수 없다. 묻기 전에 스스로 확인한다.',
+ 'rem    1) 정말 우리가 깐 폴더인가',
+ 'rem    2) 프로그램이 돌고 있지 않은가',
+ 'rem    3) 사람이 무엇을 지울지 보고 승낙했는가',
+ 'rem ===========================================================',
+ '',
+ 'set "INSTDIR=C:\\LGLS\\CLIENT"',
+ 'set "RC=0"',
+ '',
+ 'echo.',
+ 'echo  ' + LINE,
+ 'echo   LGLS CLIENT 제거',
+ 'echo  ' + LINE,
+ 'echo.',
+ '',
+ 'rem --- 관리자 권한 ---',
+ 'net session >nul 2>&1',
+ 'if errorlevel 1 goto NOADMIN',
+ '',
+ 'rem --- [1/4] 지울 폴더 ---',
+ 'echo  [1/4] 지울 폴더',
+ 'echo.',
+ 'echo        지금 정한 곳 : %INSTDIR%',
+ 'echo.',
+ 'echo        이대로면 그냥 Enter 를 누르세요.',
+ 'echo        다른 곳을 지우려면 그 ^"폴더 경로^" 를 적으세요.',
+ 'echo        (여기는 예/아니오를 적는 자리가 아닙니다)',
+ 'echo.',
+ 'set "ANS="',
+ 'set /p ANS=        입력 : ',
+ 'rem    경로를 따옴표로 감싸 붙여넣는 일이 많다. 따옴표는 걷어낸다.',
+ 'if defined ANS set "ANS=!ANS:\"=!"',
+ 'if not "!ANS!"=="" set "INSTDIR=!ANS!"',
+ 'echo.',
+ 'echo        지울 폴더 : !INSTDIR!',
+ 'echo.',
+ '',
+ 'rem --- 안전 확인 : 경로가 말이 되는가 ---',
+ 'if "!INSTDIR!"=="" goto BADPATH',
+ 'set "CHK=!INSTDIR!"',
+ 'if "!CHK:~3!"=="" goto ROOTPATH',
+ 'if not exist "!INSTDIR!" goto NOFOLDER',
+ '',
+ 'rem --- 안전 확인 : 정말 우리가 깐 폴더인가 ---',
+ 'set "ISOURS="',
+ 'if exist "!INSTDIR!\\EcsMain.exe" set "ISOURS=1"',
+ 'if exist "!INSTDIR!\\Ecs.exe"     set "ISOURS=1"',
+ 'if not defined ISOURS goto NOTOURS',
+ '',
+ 'rem --- 안전 확인 : 돌고 있지 않은가 ---',
+ 'echo  [2/4] 프로그램이 돌고 있는지 봅니다',
+ 'set "RUNNING="',
+ 'for /f "tokens=1 delims=," %%a in (\'tasklist /FI "IMAGENAME eq Ecs.exe" /NH /FO CSV 2^>nul\') do (',
+ '    if /i "%%~a"=="Ecs.exe" set "RUNNING=1"',
+ ')',
+ 'for /f "tokens=1 delims=," %%a in (\'tasklist /FI "IMAGENAME eq EcsMain.exe" /NH /FO CSV 2^>nul\') do (',
+ '    if /i "%%~a"=="EcsMain.exe" set "RUNNING=1"',
+ ')',
+ 'if not defined RUNNING goto NOTRUNNING',
+ '',
+ 'echo        돌고 있습니다. 먼저 닫아야 지울 수 있습니다.',
+ 'echo.',
+ 'set "ANS="',
+ 'set /p ANS=        지금 닫을까요? y 를 적으면 닫습니다 : ',
+ 'if /i not "!ANS!"=="y" goto KEEPRUN',
+ 'taskkill /F /IM EcsMain.exe >nul 2>&1',
+ 'taskkill /F /IM Ecs.exe     >nul 2>&1',
+ 'echo        닫았습니다.',
+ 'goto RUNDONE',
+ '',
+ ':NOTRUNNING',
+ 'echo        돌고 있지 않습니다.',
+ '',
+ ':RUNDONE',
+ 'echo.',
+ '',
+ 'rem --- [3/4] 설정을 남길까 ---',
+ 'echo  [3/4] 설정 파일',
+ 'echo.',
+ 'echo        Ecs.ini 와 WmsDown.ini 에는 이 PC 의 DB 주소가 들어 있습니다.',
+ 'echo        남겨 두면 다시 깔 때 주소를 또 넣지 않아도 됩니다.',
+ 'echo.',
+ 'set "BACKUP=1"',
+ 'set "ANS="',
+ 'set /p ANS=        남겨 둘까요? 남기지 않으려면 n 을 적으세요 : ',
+ 'if /i "!ANS!"=="n" set "BACKUP="',
+ 'echo.',
+ '',
+ 'rem --- [4/4] 마지막 확인 ---',
+ 'echo  [4/4] 지울 것을 확인해 주세요',
+ 'echo.',
+ 'echo        폴더     : !INSTDIR!',
+ 'echo                   그 안의 파일을 모두 지웁니다.',
+ 'echo        바로가기 : 바탕화면의 LGLS CLIENT',
+ 'echo.',
+ 'echo        남기는 것',
+ 'echo          Visual C++ 재배포 패키지와 .NET Framework',
+ 'echo          다른 프로그램도 쓰므로 건드리지 않습니다.',
+ 'if defined BACKUP echo          설정 파일 두 개 - 아래 자리에 남깁니다.',
+ 'echo.',
+ 'echo        지우면 되돌릴 수 없습니다.',
+ 'echo.',
+ 'set "ANS="',
+ 'set /p ANS=        지우려면 YES 를 적으세요 : ',
+ 'if /i not "!ANS!"=="yes" goto CANCEL',
+ 'echo.',
+ '',
+ 'rem --- 1. 설정 빼 두기 ---',
+ 'set "SAVEDIR="',
+ 'if not defined BACKUP goto SKIPSAVE',
+ 'echo  설정을 빼 둡니다...',
+ 'for /f "tokens=1-3 delims=-/. " %%a in ("%DATE%") do set "D8=%%a%%b%%c"',
+ 'set "T6=%TIME: =0%"',
+ 'set "T6=!T6:~0,2!!T6:~3,2!"',
+ 'set "SAVEDIR=!INSTDIR!_설정백업_!D8!_!T6!"',
+ 'if not exist "!SAVEDIR!" mkdir "!SAVEDIR!" >nul 2>&1',
+ 'if exist "!INSTDIR!\\Ecs.ini"     copy /y "!INSTDIR!\\Ecs.ini"     "!SAVEDIR!\\" >nul',
+ 'if exist "!INSTDIR!\\WmsDown.ini" copy /y "!INSTDIR!\\WmsDown.ini" "!SAVEDIR!\\" >nul',
+ 'echo        !SAVEDIR!',
+ 'echo.',
+ '',
+ ':SKIPSAVE',
+ '',
+ 'rem --- 2. 바로가기 지우기 ---',
+ 'echo  바로가기를 지웁니다...',
+ 'set "LNK1=%PUBLIC%\\Desktop\\LGLS CLIENT.lnk"',
+ 'set "LNK2=%USERPROFILE%\\Desktop\\LGLS CLIENT.lnk"',
+ 'set "LNKGONE=1"',
+ 'if exist "!LNK1!" (',
+ '    del /f /q "!LNK1!" >nul 2>&1',
+ '    echo        !LNK1!',
+ '    set "LNKGONE="',
+ ')',
+ 'if exist "!LNK2!" (',
+ '    del /f /q "!LNK2!" >nul 2>&1',
+ '    echo        !LNK2!',
+ '    set "LNKGONE="',
+ ')',
+ 'if defined LNKGONE echo        지울 바로가기가 없습니다.',
+ 'echo.',
+ '',
+ 'rem --- 3. 폴더 지우기 ---',
+ 'echo  프로그램을 지웁니다...',
+ 'attrib -r -h -s "!INSTDIR!\\*" /s /d >nul 2>&1',
+ 'rem    Client 가 등록한 폰트를 먼저 푼다 - 안 풀면 폰트 파일이 잠긴 채 남아 다음 설치를 막는다',
+ 'if exist "%~dp0Release-Fonts.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Release-Fonts.ps1" -Dir "!INSTDIR!" >nul 2>&1',
+ 'cd /d "%SystemRoot%" >nul 2>&1',
+ 'rmdir /s /q "!INSTDIR!" 2>nul',
+ 'if exist "!INSTDIR!" goto LEFTOVER',
+ 'echo        지웠습니다.',
+ 'goto FINISH',
+ '',
+ ':LEFTOVER',
+ 'echo        [주의] 다 지우지 못했습니다. 쓰고 있는 파일이 있을 수 있습니다.',
+ 'echo               !INSTDIR!',
+ 'echo               열려 있는 창을 닫고 다시 실행해 주세요.',
+ 'set "RC=1"',
+ '',
+ ':FINISH',
+ 'echo.',
+ 'echo  ' + LINE,
+ 'echo   제거가 끝났습니다.',
+ 'echo  ' + LINE,
+ 'echo.',
+ 'if defined SAVEDIR echo   남긴 설정 : !SAVEDIR!',
+ 'if defined SAVEDIR echo     다시 깔고 나서 이 안의 ini 를 설치 폴더에 덮어쓰면',
+ 'if defined SAVEDIR echo     DB 주소를 다시 넣지 않아도 됩니다.',
+ 'if defined SAVEDIR echo.',
+ 'echo   Visual C++ 재배포 패키지와 .NET 은 남겨 두었습니다.',
+ 'echo   다른 프로그램도 쓰므로 함부로 지우지 않습니다.',
+ 'echo.',
+ 'goto END',
+ '',
+ ':NOADMIN',
+ 'echo  [주의] 관리자 권한으로 실행해 주세요.',
+ 'echo         이 파일을 오른쪽 단추로 눌러 "관리자 권한으로 실행" 을 고르면 됩니다.',
+ 'echo.',
+ 'set "RC=1"',
+ 'goto END',
+ '',
+ ':BADPATH',
+ 'echo  [주의] 폴더 경로가 비었습니다. 아무것도 하지 않습니다.',
+ 'echo.',
+ 'set "RC=1"',
+ 'goto END',
+ '',
+ ':ROOTPATH',
+ 'echo  [주의] 드라이브 맨 위는 지울 수 없습니다.',
+ 'echo         적으신 것 : !INSTDIR!',
+ 'echo         [1/4] 에서는 ^"폴더 경로^" 를 적어야 합니다.',
+ 'echo         그대로 지우려면 아무것도 적지 말고 Enter 만 누르세요.',
+ 'echo.',
+ 'set "RC=1"',
+ 'goto END',
+ '',
+ ':NOFOLDER',
+ 'echo  그 폴더가 없습니다.',
+ 'echo         !INSTDIR!',
+ 'echo  이미 지워졌거나 다른 곳에 깔았을 수 있습니다.',
+ 'echo.',
+ 'goto END',
+ '',
+ ':NOTOURS',
+ 'echo  [주의] 여기는 LGLS CLIENT 를 깐 폴더가 아닌 것 같습니다.',
+ 'echo         !INSTDIR!',
+ 'echo         Ecs.exe 도 EcsMain.exe 도 없습니다. 아무것도 하지 않습니다.',
+ 'echo.',
+ 'set "RC=1"',
+ 'goto END',
+ '',
+ ':KEEPRUN',
+ 'echo        그대로 두었습니다. 프로그램을 닫은 뒤 다시 실행해 주세요.',
+ 'echo.',
+ 'set "RC=1"',
+ 'goto END',
+ '',
+ ':CANCEL',
+ 'echo.',
+ 'echo   YES 가 아니므로 아무것도 지우지 않았습니다.',
+ 'echo.',
+ 'goto END',
+ '',
+ ':END',
+ 'pause',
+ 'endlocal',
+ 'exit /b %RC%',
+])

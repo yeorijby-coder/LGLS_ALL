@@ -1,0 +1,650 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using EQP_SIM.Core;
+using EQP_SIM.Sim;
+using EQP_SIM.Xgt;
+
+namespace EQP_SIM
+{
+    public partial class MainForm : Form
+    {
+        private SimConfig config;
+        private PlcMemory memory;
+        private ObservableMap obsMap;
+        private PlcIo io;
+        private XgtServer server;
+        private ScenarioEngine engine;
+        private ScenarioAutoRunner autoRunner;   // [LGLS 2026-09-01] 시나리오 헤드리스 검증
+        private readonly Queue<string> pendingLogs = new Queue<string>();
+        private readonly object logSync = new object();
+
+        public MainForm()
+        {
+            InitializeComponent();
+
+            // [LGLS 2026-09-06] 실행 파일에 박힌 응용 아이콘을 창/작업표시줄에도 쓴다.
+            //   (ApplicationIcon 은 EXE 아이콘만 바꾸고 폼 아이콘은 기본값으로 남는다)
+            try { this.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
+            catch { }
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                // [LGLS 2026-09-16] 이 현장은 이중입고/공출고가 없다(사용자 확인) - 주입 체크박스 숨김
+                chkInjectDouble.Visible = false;
+                chkInjectEmpty.Visible  = false;
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                config = new SimConfig(Path.Combine(baseDir, "EQP_SIM.ini"));
+
+                // 관측값 주소 맵
+                // [LGLS 2026-08-21] 1순위 = 주소맵 XML(PlcAddressMap.xml, EQP_TASK 와 공유) - XML 하나로 양쪽이 함께 바뀐다
+                //   2순위(폴백) = observables.tsv (구 TB_OBSERVABLE 덤프)
+                obsMap = new ObservableMap();
+                if (!obsMap.LoadFromAddrMap())
+                {
+                    string tsv = Path.Combine(baseDir, "observables.tsv");
+                    if (!File.Exists(tsv))
+                    {
+                        MessageBox.Show(this, "주소맵 XML 도 observables.tsv 도 없습니다.\n(PlcAddressMap.xml 또는 tsv 가 필요)",
+                            "EQP_SIM", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Close();
+                        return;
+                    }
+                    obsMap.Load(tsv);
+                    obsMap.Source = "observables.tsv (폴백)";
+                }
+                Text += "   [주소: " + obsMap.Source + "]";
+
+                memory = new PlcMemory();
+                io = new PlcIo(memory, obsMap);
+                engine = new ScenarioEngine(io, config);
+                autoRunner = new ScenarioAutoRunner(engine);
+                engine.StopConsumedEvent += OnStopConsumed;   // [LGLS 2026-10-14]
+                engine.LogAdded += OnEngineLog;
+
+                string dataDir = Path.Combine(baseDir, "Data");
+                memory.Load(Path.Combine(dataDir, "plc_memory.bin"));
+                engine.Start(dataDir, config);
+
+                chkAutoFeed.Checked = config.GetBool("FEED", "AUTO", true);
+
+                // XGT 서버
+                server = new XgtServer(memory);
+                server.Log += OnEngineLog;
+                server.ClientCountChanged += n => SafeUI(() =>
+                {
+                    lblServer.ForeColor = n > 0 ? System.Drawing.Color.Green : System.Drawing.Color.Black;
+                });
+                int[] ports = config.Get("XGT", "PORTS", "2004,3001")
+                    .Split(',').Select(s => int.Parse(s.Trim())).ToArray();
+                server.Start(ports);
+                lblServer.Text = "XGT 서버: 포트 " + string.Join(", ", ports.Select(p => p.ToString()).ToArray()) +
+                                 " (관측값 " + obsMap.Count + "점)";
+                lblStatus.Text = "가동 중 — ECS 접속 대기";
+
+                // [LGLS 2026-09-12] 고장 주입 프리셋 (EQP_SIM.ini [FAULT] A=1 / B=1 / COUNT=n) - 자동 시험용.
+                //   체크박스 Checked 대입이 CheckedChanged 를 태워 엔진 플래그까지 같이 선다.
+                try
+                {
+                    nudFaultA.Value = Math.Max(0, Math.Min(99, config.GetInt("FAULT", "COUNT", 1)));
+                    if (config.GetBool("FAULT", "A", false)) chkFaultA.Checked = true;
+                    else if (config.GetBool("FAULT", "B", false)) chkFaultB.Checked = true;
+                }
+                catch { }
+
+                InitErrInjectUi();     // [LGLS 2026-09-21] 설비 에러 주입 콤보 채우기
+                BuildMemToolPanel();   // [LGLS 2026-09-02] 수동 메모리 쓰기/읽기 + 구ECS 주소 변환
+                timerUi.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "초기화 실패: " + ex.Message, "EQP_SIM",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ── [LGLS 2026-09-02] 수동 메모리 도구 (사용자 요청) ──────────────────────
+        //   ① 특정 영역 강제 쓰기/읽기 : D(워드,10진) / M(비트) / R(워드,10진)
+        //   ② 구ECS 표기(B/W/R, 16진) → 실주소 변환 (CV_TASK 메모리맵 계산기와 동일 공식)
+        private ComboBox mtDev; private TextBox mtAddr; private TextBox mtVal; private Label mtOut;
+        private ComboBox cvDev; private TextBox cvAddr; private Label cvOut;
+        private void BuildMemToolPanel()
+        {
+            var pnl = new Panel { Dock = DockStyle.Bottom, Height = 58, BackColor = System.Drawing.Color.WhiteSmoke };
+            Controls.Add(pnl);
+            pnl.BringToFront();
+
+            Func<string,int,int,Label> L = delegate(string t, int x, int y)
+            { var l = new Label { Text = t, Location = new System.Drawing.Point(x, y + 4), AutoSize = true }; pnl.Controls.Add(l); return l; };
+
+            // ① 강제 쓰기/읽기
+            L("메모리", 6, 4);
+            mtDev = new ComboBox { Location = new System.Drawing.Point(52, 4), Width = 46, DropDownStyle = ComboBoxStyle.DropDownList };
+            mtDev.Items.AddRange(new object[] { "D", "M", "R" }); mtDev.SelectedIndex = 0;
+            mtAddr = new TextBox { Location = new System.Drawing.Point(102, 4), Width = 60, Text = "210" };
+            L("값", 166, 4);
+            mtVal = new TextBox { Location = new System.Drawing.Point(186, 4), Width = 60, Text = "1" };
+            var btnW = new Button { Text = "쓰기", Location = new System.Drawing.Point(252, 3), Width = 48 };
+            var btnR = new Button { Text = "읽기", Location = new System.Drawing.Point(304, 3), Width = 48 };
+            mtOut = L("(D=워드10진, M=비트, R=워드10진)", 358, 4);
+            btnW.Click += delegate { MemToolRun(true); };
+            btnR.Click += delegate { MemToolRun(false); };
+            pnl.Controls.Add(mtDev); pnl.Controls.Add(mtAddr); pnl.Controls.Add(mtVal);
+            pnl.Controls.Add(btnW); pnl.Controls.Add(btnR);
+
+            // ② 구ECS 주소 변환
+            L("구ECS", 6, 30);
+            cvDev = new ComboBox { Location = new System.Drawing.Point(52, 30), Width = 46, DropDownStyle = ComboBoxStyle.DropDownList };
+            cvDev.Items.AddRange(new object[] { "W", "B", "R" }); cvDev.SelectedIndex = 0;
+            cvAddr = new TextBox { Location = new System.Drawing.Point(102, 30), Width = 60, Text = "0150" };
+            var btnC = new Button { Text = "변환", Location = new System.Drawing.Point(166, 29), Width = 48 };
+            var btnToMt = new Button { Text = "메모리 읽기/쓰기로", Location = new System.Drawing.Point(218, 29), Width = 118 };
+            cvOut = L("(16진 입력 → 실주소)", 342, 30);
+            btnC.Click += delegate { ConvertOldAddr(); };
+            btnToMt.Click += delegate { ApplyConvToMemTool(); };
+            pnl.Controls.Add(cvDev); pnl.Controls.Add(cvAddr); pnl.Controls.Add(btnC); pnl.Controls.Add(btnToMt);
+        }
+
+        private void MemToolRun(bool bWrite)
+        {
+            try
+            {
+                char dev = mtDev.Text[0];
+                int addr = Convert.ToInt32(mtAddr.Text.Trim(), 10);
+                if (bWrite)
+                {
+                    int val = Convert.ToInt32(mtVal.Text.Trim(), 10);
+                    if (dev == 'M') memory.SetBit('M', addr, val != 0);
+                    else memory.SetWord(dev, addr, (ushort)val);
+                    mtOut.Text = string.Format("{0}{1} <- {2} 기록됨", dev, addr, val);
+                }
+                else
+                {
+                    int val = (dev == 'M') ? (memory.GetBit('M', addr) ? 1 : 0) : memory.GetWord(dev, addr);
+                    if (dev == 'M')
+                        mtOut.Text = string.Format("{0}{1} = {2}", dev, addr, val);
+                    else
+                    {
+                        // [LGLS 2026-09-02] 워드 16진 + 2워드(문자열/작업번호) ASCII 병기
+                        string asc = "";
+                        try { asc = (memory.GetString(dev, addr, 2) ?? "").Trim(); } catch {}
+                        mtOut.Text = string.Format("{0}{1} = {2} (0x{3:X4}){4}", dev, addr, val, val,
+                            (asc.Length > 0 ? " ASCII2=\"" + asc + "\"" : ""));
+                    }
+                }
+            }
+            catch (Exception ex) { mtOut.Text = "오류: " + ex.Message; }
+        }
+
+        private char mtTargetDev = 'D';   // [LGLS 2026-09-02] 변환 결과의 실주소(위 메모리도구로 넘길 값)
+        private int  mtTargetAddr = -1;
+        private void ApplyConvToMemTool()
+        {
+            if (mtTargetAddr < 0) { ConvertOldAddr(); }
+            if (mtTargetAddr < 0) return;
+            mtDev.SelectedItem = mtTargetDev.ToString();
+            mtAddr.Text = mtTargetAddr.ToString();
+            mtOut.Text = string.Format("메모리 도구에 {0}{1} 세팅됨 - 위에서 읽기/쓰기", mtTargetDev, mtTargetAddr);
+        }
+
+        private void ConvertOldAddr()
+        {
+            try
+            {
+                int n = Convert.ToInt32(cvAddr.Text.Trim(), 16);
+                char dev = cvDev.Text[0];
+                mtTargetAddr = -1;
+                if (dev == 'B')       // 비트 16진 → %MX / M워드.비트
+                {
+                    cvOut.Text = string.Format("B{0} -> %MX{1} = M{2:000}.{3:X} (비트 {1})",
+                        cvAddr.Text.Trim().ToUpper(), n, n / 16, n % 16);
+                    mtTargetDev = 'M'; mtTargetAddr = n;   // M 은 절대 비트번호
+                }
+                else if (dev == 'W')  // 워드 16진 → 구환산 %DW = 같은 수의 10진
+                {
+                    cvOut.Text = string.Format("W{0} -> D{1} (구환산 %DW{1} / %DB{2})",
+                        cvAddr.Text.Trim().ToUpper(), n, n * 2);
+                    mtTargetDev = 'D'; mtTargetAddr = n;
+                }
+                else                  // R : 10진 확정(구 문서도 10진) - 참고로 16진 해석값 병기
+                {
+                    int nDec = Convert.ToInt32(cvAddr.Text.Trim(), 10);
+                    cvOut.Text = string.Format("R{0} -> R{1} (10진 확정) / 16진 해석 시 R{2}",
+                        cvAddr.Text.Trim(), nDec, n);
+                    mtTargetDev = 'R'; mtTargetAddr = nDec;
+                }
+            }
+            catch (Exception ex) { cvOut.Text = "오류: " + ex.Message; }
+        }
+
+        private void OnEngineLog(string msg)
+        {
+            lock (logSync)
+            {
+                pendingLogs.Enqueue(msg);
+                while (pendingLogs.Count > 500) pendingLogs.Dequeue();
+            }
+        }
+
+        private void timerUi_Tick(object sender, EventArgs e)
+        {
+            // 로그 반영
+            List<string> logs = null;
+            lock (logSync)
+            {
+                if (pendingLogs.Count > 0)
+                {
+                    logs = new List<string>(pendingLogs);
+                    pendingLogs.Clear();
+                }
+            }
+            if (logs != null)
+            {
+                lvLog.BeginUpdate();
+                foreach (string msg in logs)
+                {
+                    var item = new ListViewItem(DateTime.Now.ToString("HH:mm:ss.fff"));
+                    item.SubItems.Add(msg);
+                    lvLog.Items.Add(item);
+                }
+                while (lvLog.Items.Count > 2000) lvLog.Items.RemoveAt(0);
+                if (lvLog.Items.Count > 0) lvLog.Items[lvLog.Items.Count - 1].EnsureVisible();
+                lvLog.EndUpdate();
+            }
+
+            // 설비 상태 표
+            if (engine == null) return;
+            var rows = new List<string[]>();
+            foreach (var cv in engine.AllConveyors.OrderBy(c => c.Def.No))
+            {
+                var sb = new StringBuilder();
+                for (int i = 1; i <= cv.Def.Ports.Length; i++)
+                {
+                    SimPallet p;
+                    string cell = cv.Pallets.TryGetValue(i, out p)
+                        ? (p.Id.Length > 0 ? p.Id : "(대기)")
+                        : "-";
+                    sb.Append("P").Append(cv.Def.PortOfOrder(i)).Append(":").Append(cell).Append("  ");
+                }
+                if (cv.Def.HasDirection)
+                {
+                    sb.Append(" [방향 ").Append(cv.Direction == "0" ? "입고" : "출고").Append("]");
+                    // [LGLS 2026-08-22] 방향 파생 신호 — 출고 모드에서만 ON
+                    if (cv.Def.RtvArrivePort > 0)
+                        sb.Append(" P").Append(cv.Def.RtvArrivePort).Append(" RTV도착지:").Append(cv.RtvArriveHs ? "ON" : "OFF");
+                    if (cv.Def.RetHsPort > 0)
+                        sb.Append(" P").Append(cv.Def.RetHsPort).Append(" 출고HS:").Append(cv.RetHs ? "ON" : "OFF");
+                }
+                rows.Add(new[] { "C/V #" + cv.Def.No, sb.ToString() });
+            }
+            foreach (var v in engine.AllVehicles.OrderBy(x => x.Def.Id))
+            {
+                string name = v.Def.IsRgv ? "RGV #1" : "S/C #" + v.Def.ScNo;
+                rows.Add(new[] { name, v.StatusText });
+            }
+            rows.Add(new[] { "랙 재고", engine.Rack.Count + "셀 (출고완료 " + engine.CompletedOutgoCount + "건)" });
+
+            lvDevices.BeginUpdate();
+            while (lvDevices.Items.Count < rows.Count)
+                lvDevices.Items.Add(new ListViewItem(new[] { "", "" }));
+            while (lvDevices.Items.Count > rows.Count)
+                lvDevices.Items.RemoveAt(lvDevices.Items.Count - 1);
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (lvDevices.Items[i].Text != rows[i][0]) lvDevices.Items[i].Text = rows[i][0];
+                if (lvDevices.Items[i].SubItems[1].Text != rows[i][1]) lvDevices.Items[i].SubItems[1].Text = rows[i][1];
+            }
+            lvDevices.EndUpdate();
+        }
+
+        private void chkAutoFeed_CheckedChanged(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            foreach (var cv in engine.AllConveyors)
+                // [LGLS 2026-10-01] 종전엔 WCS 모드에서 C/V#11 을 "IO_TASK(FeedInGate) 소유" 라며 체크박스에서 뺐다.
+                //   그 구 경로(FeedInGate)는 2026-09-01 IO_TASK 에서 폐기됐으므로 C/V#11 도 기동 시(ScenarioEngine)와 같이
+                //   INI [FEED] CV11 설정 + 체크박스를 따른다. (사용자 보고 : 자동 투입을 켜도 C/V#11 에 화물이 안 올라옴)
+                if (cv.Def.IngoPath != null && cv.Def.No >= 11)
+                    cv.AutoFeed = chkAutoFeed.Checked && cv.AutoFeedConfigured;               // INI [FEED] CVnn=0 은 체크박스로도 켜지지 않음
+        }
+
+        // [LGLS] 이중입고/공출고 에러 주입: 체크 시 다음 최초 입고/출고 S/C 작업에서 1회 발생 (VehicleSim 소비)
+        // [LGLS 2026-09-16] ★이 현장은 이중입고/공출고가 없다(사용자 확인)★ - 주입 기능 미사용. 핸들러는 무력화, 체크박스는 숨김.
+        private void chkInjectDouble_CheckedChanged(object sender, EventArgs e)
+        {
+            //if (engine == null) return;
+            //engine.InjectDoubleStorage = chkInjectDouble.Checked;
+            //if (chkInjectDouble.Checked) lblStatus.Text = "이중입고 에러 예약됨 — 다음 입고 크레인에서 발생(ERR 54)";
+            if (chkInjectDouble.Checked) chkInjectDouble.Checked = false;
+        }
+
+        private void chkInjectEmpty_CheckedChanged(object sender, EventArgs e)
+        {
+            //if (engine == null) return;
+            //engine.InjectEmptyRetrieval = chkInjectEmpty.Checked;
+            //if (chkInjectEmpty.Checked) lblStatus.Text = "공출고 에러 예약됨 — 다음 출고 크레인에서 발생(ERR 58)";
+            if (chkInjectEmpty.Checked) chkInjectEmpty.Checked = false;
+        }
+
+        // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (현장 2026-09-11 재현) - 사용자 지시
+        //   A : WCS 가 쓴 Unload Complete Ack 를 지운다(외부 되쓰기). 크레인은 M785 를 들고 기다린다.
+        //   B : 크레인이 Unload Complete 를 올렸다 바로 철회하고 자기 사이클을 끝낸다(포기).
+        //   둘 다 하역 포트의 벨트 인수가 보류된다. A 해제 = 다음 Ack 부터 정상, B 해제 = 보류 화물 수동 인수.
+        private void chkFaultA_CheckedChanged(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            engine.FaultAckLoss = chkFaultA.Checked;
+            engine.FaultAckLossCount = (int)nudFaultA.Value;
+            engine.Log("[고장 주입] 상황 A " + (chkFaultA.Checked ? "켬 (지울 횟수 " + nudFaultA.Value + ", 0=계속)" : "끔"));
+            if (chkFaultA.Checked)
+            {
+                if (chkFaultB.Checked) chkFaultB.Checked = false;   // 둘 중 하나만
+                lblStatus.Text = "상황 A 예약됨 — 다음 1호기 출고 하역에서 Ack 를 " + (nudFaultA.Value == 0 ? "계속" : nudFaultA.Value + "회") + " 지운다 (벨트 인수 보류)";
+            }
+            else
+            {
+                engine.CancelFaultA();
+                lblStatus.Text = "상황 A 해제 — 진행 중이던 건은 다음 Ack 부터 정상 완료";
+            }
+        }
+
+        // [LGLS 2026-10-14] 완료처리 시험용 설비 강제 정지 4종. ②③④ 는 다음 1건에 걸리고 엔진이 스스로 끈다(StopConsumedEvent → 체크 해제).
+        private bool m_bStopSync = false;
+        private void chkStop_CheckedChanged(object sender, EventArgs e)
+        {
+            if (engine == null || m_bStopSync) return;
+            CheckBox c = (CheckBox)sender;
+            int n = (c == chkStop1) ? 1 : (c == chkStop2) ? 2 : (c == chkStop3) ? 3 : 4;
+            string msg = engine.SetStop(n, c.Checked);
+            engine.Log("[시험정지] " + msg);
+            lblStatus.Text = msg;
+            if (n == 1)
+            {
+                m_bStopSync = true;
+                try { nudFaultA.Value = 0; chkFaultA.Checked = c.Checked; } catch { }
+                m_bStopSync = false;
+            }
+        }
+        private void OnStopConsumed(int n)
+        {
+            SafeUI(() =>
+            {
+                m_bStopSync = true;
+                try
+                {
+                    if (n == 2) chkStop2.Checked = false;
+                    else if (n == 3) chkStop3.Checked = false;
+                    else if (n == 4) chkStop4.Checked = false;
+                    lblStatus.Text = "시험정지 " + n + " 적용됨 - 작업정보 판넬에서 [완료처리] 하세요";
+                }
+                finally { m_bStopSync = false; }
+            });
+        }
+
+        private void nudFaultA_ValueChanged(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            engine.FaultAckLossCount = (int)nudFaultA.Value;
+        }
+
+        // [LGLS 2026-09-12] [고장 해제·수동 인수] : A/B 를 끄고, 보류 중인 화물의 벨트 인수를 재개한다
+        //   (현장에서 PLC 담당자가 포트 시퀀스를 다시 태우거나 벨트를 수동으로 돌린 것에 해당)
+        private void btnFaultClear_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            if (chkFaultA.Checked) chkFaultA.Checked = false;   // → CancelFaultA
+            if (chkFaultB.Checked) chkFaultB.Checked = false;   // → ReleaseBlockedHandovers
+            int n = engine.ReleaseBlockedHandovers();           // 체크가 이미 꺼져 있던 경우도 보류 화물은 푼다
+            engine.Log("[고장 주입] 해제 버튼 - 보류 화물 " + n + "건 수동 인수");
+            lblStatus.Text = "고장 주입 해제 — 보류 화물 " + n + "건 수동 인수(벨트 재개)";
+        }
+
+        private void chkFaultB_CheckedChanged(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            engine.FaultAckTimeout = chkFaultB.Checked;
+            engine.Log("[고장 주입] 상황 B " + (chkFaultB.Checked ? "켬" : "끔"));
+            if (chkFaultB.Checked)
+            {
+                if (chkFaultA.Checked) chkFaultA.Checked = false;   // 둘 중 하나만
+                lblStatus.Text = "상황 B 예약됨 — 다음 1호기 출고 하역에서 보고를 바로 철회 (벨트 인수 보류, 해제 시 수동 인수)";
+            }
+            else
+            {
+                int n = engine.ReleaseBlockedHandovers();
+                lblStatus.Text = "상황 B 해제 — 보류 화물 " + n + "건 수동 인수(벨트 재개)";
+            }
+        }
+
+        // ── [LGLS 2026-09-21] 설비 에러 주입 (사용자 지시) ─────────────────────────
+        //   콤보에서 설비(S/C 1~5호기, RTV 1호기)를 고르고 에러코드를 넣어 [에러 발생]을 누르면
+        //   그 설비가 실 PLC 알람과 같은 신호(ALARM_SET_CODE, ERR_CODE_RD, SUBSYSTEM_STATUS=DOWN, 알람 보고 비트)를 세운다.
+        private sealed class ErrEqpItem
+        {
+            public string Id, Text;
+            public override string ToString() { return Text; }
+        }
+
+        private void InitErrInjectUi()
+        {
+            cboErrEqp.Items.Clear();
+            for (int k = 1; k <= 5; k++)
+                cboErrEqp.Items.Add(new ErrEqpItem { Id = "VEHICLE:1" + k, Text = "S/C " + k + "호기" });
+            cboErrEqp.Items.Add(new ErrEqpItem { Id = "VEHICLE:1", Text = "RTV 1호기" });
+            // [LGLS 2026-09-21] C/V 트랙 전부 (사용자 지시) - 포트 번호 순, 트랙 번호(WCS 미러) 병기
+            var cvs = new List<ConveyorSim>(engine.AllConveyors);
+            cvs.Sort((a, b) => a.Def.No.CompareTo(b.Def.No));
+            foreach (var cv in cvs)
+            {
+                var ports = (int[])cv.Def.Ports.Clone(); Array.Sort(ports);
+                foreach (int port in ports)
+                {
+                    int trk = cv.TrackOfPort(port);
+                    cboErrEqp.Items.Add(new ErrEqpItem { Id = "CV:" + port, Text = "C/V#" + cv.Def.No + " P" + port + (trk > 0 ? " (트랙 " + trk + (ConveyorSim.IsWcsAlarmTrack(trk) ? "" : ", 알람신호 없음") + ")" : "") });
+                }
+            }
+            cboErrEqp.SelectedIndex = 0;
+        }
+
+        private ErrEqpItem SelectedErrEqp()
+        {
+            var it = cboErrEqp.SelectedItem as ErrEqpItem;
+            if (it == null) lblStatus.Text = "설비를 먼저 고르십시오";
+            return it;
+        }
+
+        private void btnErrRaise_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            var it = SelectedErrEqp(); if (it == null) return;
+            int code;
+            if (!int.TryParse((txtErrCode.Text ?? "").Trim(), out code) || code <= 0 || code > 9999)
+            {
+                lblStatus.Text = "에러코드는 1~9999 숫자로 넣으십시오";
+                txtErrCode.Focus(); txtErrCode.SelectAll();
+                return;
+            }
+            bool ok = it.Id.StartsWith("CV:") ? engine.RaiseConveyorError(int.Parse(it.Id.Substring(3)), code)
+                                              : engine.RaiseVehicleError(it.Id, code);
+            lblStatus.Text = ok ? (it.Text + " 에러 " + code.ToString("0000") + " 발생 — " + (it.Id.StartsWith("CV:") ? "벨트 정지" + (ConveyorSim.IsWcsAlarmTrack(engine.Conveyor(engine.World.FindByPort(int.Parse(it.Id.Substring(3))).Id).TrackOfPort(int.Parse(it.Id.Substring(3)))) ? " + 과부하 알람 비트(WCS 코드=트랙번호)" : " (PLC 알람 신호 없는 트랙 - WCS 미전달)") : "설비 DOWN") + ". 해제는 [선택 설비 해제] 또는 [설비 에러 해제]")
+                               : (it.Text + " 에러 주입 실패");
+        }
+
+        // [LGLS 2026-09-21] 운전모드 수동/자동 (사용자 지시) - 콤보에서 고른 설비의 OPERATION_MODE 워드를 바꾼다.
+        private void btnOpManual_Click(object sender, EventArgs e) { SetOpMode(false); }
+        private void btnOpAuto_Click(object sender, EventArgs e) { SetOpMode(true); }
+
+        private void SetOpMode(bool bAuto)
+        {
+            if (engine == null) return;
+            var it = SelectedErrEqp(); if (it == null) return;
+            if (it.Id.StartsWith("CV:"))
+            {
+                lblStatus.Text = "운전모드 전환은 S/C·RTV 만 됩니다 (C/V 는 해당 없음)";
+                return;
+            }
+            if (!engine.SetVehicleOperationMode(it.Id, bAuto)) return;
+            lblStatus.Text = it.Text + " 운전모드 " + (bAuto ? "자동" : "수동")
+                + " — WCS 에 전달되려면 WCS_DB.INI [CNF] OP_MODE_USE=1 (기본 0)";
+        }
+
+        private void btnErrClearSel_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            var it = SelectedErrEqp(); if (it == null) return;
+            bool ok = it.Id.StartsWith("CV:") ? engine.ClearConveyorError(int.Parse(it.Id.Substring(3)))
+                                              : engine.ClearVehicleError(it.Id);
+            lblStatus.Text = ok ? (it.Text + " 에러 해제" + (it.Id.StartsWith("CV:") ? "" : " — IDLE 복귀")) : (it.Text + " 는 에러 상태가 아닙니다");
+        }
+
+        // [LGLS 2026-09-05] [설비 에러 해제] : 현장 조작반에서 사람이 크레인 에러를 푸는 동작을 흉내낸다.
+        private void btnClearErr_Click(object sender, EventArgs e)
+        {
+            int n = engine.ClearVehicleErrors();
+            lblStatus.Text = (n > 0) ? ("설비 에러 해제 - " + n + "대") : "에러 상태인 설비가 없습니다";
+        }
+
+        // [LGLS 2026-09-17] [INI 열기] - EQP_SIM.ini 를 메모장으로 연다. [TIMING] 값(HS_RECORD_LAG_MS 등)을 고친 뒤
+        //   [INI 다시 읽기]를 누르면 재기동 없이 반영된다(사용자 지시). 그 외 섹션(XGT 포트, 주입 프리셋 등)은 재기동이 필요하다.
+        private string IniPath { get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EQP_SIM.ini"); } }
+
+        private void btnOpenIni_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!File.Exists(IniPath)) { lblStatus.Text = "INI 없음: " + IniPath; return; }
+                // [LGLS 2026-09-17] "notepad.exe" 이름으로 띄우면 Windows 11 의 스토어 메모장 별칭이 잡혀
+                //   x86 프로세스에서 Microsoft.UI.Windowing.Core.dll 오류가 난다(사용자 실측).
+                //   → .ini 연결 프로그램(셸)으로 연다. 실패하면 System32 메모장, 그것도 안 되면 폴더를 연다.
+                bool bOpened = false;
+                try
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo(IniPath) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi); bOpened = true;
+                }
+                catch { }
+                if (!bOpened)
+                {
+                    try
+                    {
+                        string np = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
+                        var psi = new System.Diagnostics.ProcessStartInfo(np, "\"" + IniPath + "\"") { UseShellExecute = true };
+                        System.Diagnostics.Process.Start(psi); bOpened = true;
+                    }
+                    catch { }
+                }
+                if (!bOpened)
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo("explorer.exe", "/select,\"" + IniPath + "\"") { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                lblStatus.Text = "INI 열림 - [TIMING] 은 저장 후 [INI 다시 읽기], 나머지 섹션은 재기동 필요";
+            }
+            catch (Exception ex) { lblStatus.Text = "INI 열기 실패: " + ex.Message; }
+        }
+
+        private void btnReloadIni_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            try
+            {
+                config = new SimConfig(IniPath);
+                engine.ReloadTiming(config);
+                lblStatus.Text = "INI [TIMING] 다시 읽음 - H/S 기록 지연 " + engine.HsRecordLagMs + "ms, 이동 " + engine.MoveMs
+                               + "ms, 반출 " + engine.OutRemoveMs + "ms (다음 동작부터 적용)";
+            }
+            catch (Exception ex) { lblStatus.Text = "INI 다시 읽기 실패: " + ex.Message; }
+        }
+
+        private void btnFeed11_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:11"); }
+
+        // [LGLS 2026-08-24] 가운데 투입 버튼 = "24 입고대"(C/V#12).
+        //   현장 확인 기준 : C/V#12 = 입고대(TR#24) / C/V#13 = 출고대(TR#26).
+        //   두 모드 모두 C/V#12 가 입고대이므로 분기 없이 12 로 보낸다.
+        private void btnFeed12_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:12"); }
+
+        private void btnFeed15_Click(object sender, EventArgs e) { ManualFeed("CONVEYOR:15"); }
+
+        private void ManualFeed(string id)
+        {
+            if (engine != null && !engine.ManualInject(id))
+                lblStatus.Text = id + " 투입 불가 (포트 점유/방향)";
+        }
+
+        private void btnReset_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            if (MessageBox.Show(this, "모든 파렛트/랙/PLC 메모리를 초기화합니다.", "EQP_SIM",
+                MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
+            {
+                engine.ResetAll();
+            }
+        }
+
+        // [LGLS 2026-08-22] 잔재 화물 강제 제거 - 작업은 지워졌는데 실물만 남아
+        //   RGV/S/C 의 HS 를 막고 있을 때 그 슬롯만 비운다([상태 초기화]와 달리 전체를 건드리지 않는다).
+        private void btnClearPallet_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            string spec = txtClearTrack.Text;
+            if (MessageBox.Show(this, "[" + spec + "] 의 화물을 강제로 제거합니다.\r\n" +
+                                      "정상 운전 경로가 아닙니다 - 잔재 정리에만 쓰세요.", "EQP_SIM",
+                MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
+            string msg;
+            engine.RemovePallet(spec, out msg);
+            lblStatus.Text = msg;
+        }
+
+        // [LGLS 2026-09-06] 시험용 화물 생성 - 원하는 트랙/포트에 파렛트를 하나 만든다.
+        //   작업번호를 비우면 "작업번호 없는 화물" 이 된다. 크레인이 오류로 멈춰 운전원이
+        //   수동조작으로 출고 H/S 에 내려놓은 상황([H/S 배출] 시험)을 그대로 재현할 수 있다.
+        //   정상 운전 경로가 아니므로 Load Complete 는 내지 않는다 - 시험 전용이다.
+        private void btnSpawnPallet_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            string spec = txtSpawnTrack.Text;
+            string job  = txtSpawnJob.Text;
+            bool   outg = chkSpawnOut.Checked;
+            if (string.IsNullOrEmpty(spec.Trim()))
+            {
+                lblStatus.Text = "트랙/포트 번호를 입력하세요 (예: 104, 131, 13:25)";
+                return;
+            }
+            string msg;
+            engine.SpawnPallet(spec, job, outg, out msg);
+            lblStatus.Text = msg;
+        }
+        // [LGLS 2026-07-24] [시나리오 테스트] — 자동 운전 정지 + PPT 시나리오 수동 재현 창
+        private ScenarioTestForm scenarioForm;
+        private void btnScenarioTest_Click(object sender, EventArgs e)
+        {
+            if (engine == null) return;
+            if (scenarioForm != null && !scenarioForm.IsDisposed) { scenarioForm.Activate(); return; }
+            engine.Pause();
+            lblStatus.Text = "[시나리오 테스트] 자동 운전 정지 — 시나리오 창에서 수동 재현";
+            scenarioForm = new ScenarioTestForm(engine);
+            scenarioForm.FormClosed += (s, ev) => { lblStatus.Text = "가동 중 — 자동 운전 재개됨"; };
+            scenarioForm.Show(this);
+        }
+
+        private void SafeUI(Action action)
+        {
+            if (IsDisposed) return;
+            if (InvokeRequired) { try { BeginInvoke(action); } catch { } }
+            else action();
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            try { if (server != null) server.Dispose(); } catch { }
+            try { if (autoRunner != null) autoRunner.Dispose(); } catch { }
+            try { if (engine != null) engine.Dispose(); } catch { }
+        }
+    }
+}

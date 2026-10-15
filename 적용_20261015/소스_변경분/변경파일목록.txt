@@ -1,0 +1,15 @@
+SIM/EQP_SIM/EQP_SIM.ini
+SIM/EQP_SIM/MainForm.Designer.cs
+SIM/EQP_SIM/MainForm.cs
+SIM/EQP_SIM/Sim/ConveyorSim.cs
+SIM/EQP_SIM/Sim/ScenarioEngine.cs
+SIM/EQP_SIM/Sim/VehicleSim.cs
+SIM/EQP_SIM/Sim/WorldModel.cs
+TASK/Download/UI/WmsDown.cs
+TASK/IO_TASK/CLS/Thread/cThread_SCH.cs
+WCS/CPlusPlus/LGLS_CLIENT/Ecs/CollectDB.cpp
+WCS/CPlusPlus/LGLS_CLIENT/Ecs/EcsView.cpp
+WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.cpp
+WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.h
+WCS/CPlusPlus/LGLS_CLIENT/Ecs/RtvSkinDlg.cpp
+WCS/CPlusPlus/LGLS_CLIENT/Ecs/ScSkinDlg.cpp

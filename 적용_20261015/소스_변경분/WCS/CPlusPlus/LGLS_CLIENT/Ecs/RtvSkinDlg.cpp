@@ -1,0 +1,1681 @@
+// RtvSkinDlg.cpp : 구현 파일입니다.
+//
+
+#include "stdafx.h"
+#include <uxtheme.h>	// [LGLS 2026-08-05] 그룹박스 비주얼스타일 해제용
+#pragma comment(lib, "uxtheme.lib")
+#include "Ecs.h"
+#include "RtvSkinDlg.h"
+#include "afxdialogex.h"
+#include "RecordSetWrap.h"
+
+
+// CRtvSkinDlg 대화 상자입니다.
+IMPLEMENT_DYNAMIC(CRtvSkinDlg, CSkinDialog)
+
+
+CRtvSkinDlg::CRtvSkinDlg(CEcsDoc* pDoc, CWnd* pParent /*=NULL*/)
+	: CSkinDialog(CRtvSkinDlg::IDD, pParent)
+{
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;
+	m_bRtvvJobInDb = FALSE;	// [LGLS 2026-10-01]	// [LGLS 2026-09-12]
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bInitialized = FALSE;
+	m_pDoc = pDoc;
+	m_nLang = m_pDoc->m_enLang;
+	m_pRTV_DATA = NULL;
+	m_brLedOn = NULL; m_brLedOff = NULL; m_brStatus = NULL;
+}
+CRtvSkinDlg::CRtvSkinDlg(CWnd* pParent /*=NULL*/)
+	: CSkinDialog(CRtvSkinDlg::IDD, pParent)
+{
+	m_bVehExpanded = FALSE; m_nVehBaseH = 0; m_nVehPanelH = 0; m_nVehBaseW = 0; m_nVehPanelW = 0;
+	m_bRtvvJobInDb = FALSE;	// [LGLS 2026-10-01]	// [LGLS 2026-09-12]
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bInitialized = FALSE;
+	m_pRTV_DATA = NULL;
+	m_brLedOn = NULL; m_brLedOff = NULL; m_brStatus = NULL;
+}
+
+CRtvSkinDlg::~CRtvSkinDlg()
+{
+	m_pDoc->m_pRtvSkinDlg = NULL;
+	if(m_brLedOn) ::DeleteObject(m_brLedOn);
+	if(m_brLedOff) ::DeleteObject(m_brLedOff);
+	if(m_brStatus) ::DeleteObject(m_brStatus);
+	this->DestroyWindow();
+}
+
+// [LGLS 2026-08-31] 작업구분을 "[코드]명칭" 으로 표기한다(작업상태 표기와 통일).
+static CString FormatJobTyp(const CString& strTyp)
+{
+	CString t(strTyp); t.Trim();
+	if (t.IsEmpty() || t == _T("0")) return _T("-");
+
+	LPCTSTR pszNm = _T("");
+	if      (t == _T("1"))  pszNm = _T("입고");
+	else if (t == _T("2"))  pszNm = _T("출고");
+	else if (t == _T("3"))  pszNm = _T("피킹출고");
+	else if (t == _T("4"))  pszNm = _T("랙이동");
+	else if (t == _T("5"))  pszNm = _T("호기간이동");
+	else if (t == _T("6"))  pszNm = _T("이동");
+	else if (t == _T("11")) pszNm = _T("반자동입고");
+	else if (t == _T("12")) pszNm = _T("반자동출고");
+	else if (t == _T("13")) pszNm = _T("반자동랙이동");
+	else if (t == _T("14")) pszNm = _T("반자동피킹출고");
+	else if (t == _T("15")) pszNm = _T("반자동이동");
+
+	CString s;
+	s.Format(_T("[%s]%s"), (LPCTSTR)t, pszNm);
+	return s;
+}
+
+void CRtvSkinDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CSkinDialog::DoDataExchange(pDX);
+	// [LGLS 2026-08-05] DDX 가 없어서 명령 버튼이 CSkinButton 에 붙지 않았고,
+	//   이미 있던 SetBitmaps/SetIcon 이 전부 무효(m_hWnd=NULL)라 아이콘이 안 나왔다.
+	DDX_Control(pDX, IDC_BTN_RTV_COMPLETE,      m_btnRtvComplete);
+	DDX_Control(pDX, IDC_LGLS_RTV_ZOOM,         m_btnVehZoom);	// [LGLS 2026-08-05] 확대/축소
+	DDX_Control(pDX, IDC_LGLS_RTV_RESEND,       m_btnRtvResend);	// [LGLS 2026-08-12] 지시 재전송
+	DDX_Control(pDX, IDC_BTN_RTV_MANUAL,        m_btnRtvManual);
+	DDX_Control(pDX, IDC_BTN_RTV_SUSPEND,       m_btnRtvSuspend);
+}
+
+BEGIN_MESSAGE_MAP(CRtvSkinDlg, CSkinDialog)
+		ON_MESSAGE(WM_USER_DIALOG_MESSAGE_REFRESH, &CRtvSkinDlg::OnMessagSwitch)
+		ON_WM_TIMER()
+		ON_WM_CLOSE()
+		ON_BN_CLICKED(IDC_BTN_RTV_COMPLETE, &CRtvSkinDlg::OnBnClickedBtnRtvComplete)
+		ON_BN_CLICKED(IDC_BTN_RTV_SUSPEND, &CRtvSkinDlg::OnBnClickedBtnRtvSuspend)
+		ON_BN_CLICKED(IDC_CHK_RTV_FORK1, &CRtvSkinDlg::OnBnClickedChkRtvFork1)
+		ON_BN_CLICKED(IDC_CHK_RTV_FORK2, &CRtvSkinDlg::OnBnClickedChkRtvFork2)
+		ON_BN_CLICKED(IDC_CHK_RTV_FORK12, &CRtvSkinDlg::OnBnClickedChkRtvFork12)
+		ON_WM_CTLCOLOR()
+		ON_BN_CLICKED(IDC_RTVV_RESEND, &CRtvSkinDlg::OnBnClickedRtvvResend)
+		ON_BN_CLICKED(IDC_RTVV_BTN_FORCE,   &CRtvSkinDlg::OnRtvvForce)		// [LGLS 2026-10-01] 구 ECS [완료처리]
+		ON_BN_CLICKED(IDC_RTVV_BTN_ABORT,   &CRtvSkinDlg::OnRtvvAbort)		// [LGLS 2026-10-01] 구 ECS [이상종료]
+		ON_BN_CLICKED(IDC_RTVV_CHK_DISABLE, &CRtvSkinDlg::OnRtvvDisable)	// [LGLS 2026-10-01] 구 ECS [사용금지]
+	ON_BN_CLICKED(IDC_LGLS_RTV_RESEND, &CRtvSkinDlg::OnBnClickedRtvvResend)	// [LGLS 2026-08-12] 원 대화상자 버튼(동일 기능)
+		ON_BN_CLICKED(IDC_RTVV_OK, &CRtvSkinDlg::OnBnClickedRtvvOk)
+	ON_BN_CLICKED(IDC_LGLS_RTV_ZOOM, &CRtvSkinDlg::OnBnClickedVehZoom)
+	ON_COMMAND_RANGE(IDC_RTVV_BTN_LCA_W, IDC_RTVV_BTN_UCA_W, &CRtvSkinDlg::OnAckWrite)	// [LGLS 2026-09-12] Ack 수동 쓰기
+	ON_BN_CLICKED(IDC_BTN_RTV_MANUAL, &CRtvSkinDlg::OnBnClickedBtnRtvManual)   // [LGLS 2026-09-03]
+END_MESSAGE_MAP()
+
+
+BOOL CRtvSkinDlg::OnInitDialog()
+{
+	m_bDisableMaximize = TRUE;	// [LGLS] 최대화 버튼 숨김+크기고정
+	CSkinDialog::OnInitDialog();
+	SetTimer(1, 1500, NULL);
+	SetTimer(7, 300, NULL);	// [LGLS 2026-09-21] EDIT 흐름 표시 (CLib::MarqueeTick)
+
+	EN_LANG pEn = (m_pDoc == NULL) ? EN_ENG : m_pDoc->m_enLang;
+	InitializeFontManager(this);
+	SetFontNation((int)pEn);
+	CSkinDialog::SetFont(this->GetFont());
+	// [LGLS 2026-09-17] 컨트롤 위치·크기는 Ecs.rc 가 최종값이다(런타임 재배치 없음 - 리소스 뷰 = 실행 화면).
+	m_bInitialized = TRUE;
+	m_strRtvFork = _T("0");
+
+	InitializeResource(pEn);
+
+	m_brLedOn = ::CreateSolidBrush(RGB(0,200,0)); m_brLedOff = ::CreateSolidBrush(RGB(90,90,90)); m_brStatus = ::CreateSolidBrush(RGB(255,255,150));	// [LGLS] RTV 싱글 포크: Fork2 계열 숨김 + Fork1 라벨 정리
+	BuildVehStatusPanel();	// [LGLS 2026-08-01] 통신상태 패널 생성(rc 미포함 컨트롤 보완)
+	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+// [LGLS] RTV는 싱글 포크이므로 Fork2 관련 컨트롤과 포크 선택 체크박스를 숨긴다.
+
+
+
+BOOL CRtvSkinDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: 여기에 특수화된 코드를 추가 및/또는 기본 클래스를 호출합니다.
+	int a = 0;
+	return CSkinDialog::PreTranslateMessage(pMsg);
+}
+
+void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
+{
+	if(m_pDoc == NULL) return;
+	if(m_pRTV_DATA == NULL) return;
+	CSingleLock _lockRtvRead(&m_pDoc->m_csEqpData, TRUE);   // [LGLS] 수집 thread write serialize (refcount assert guard)
+
+	int nPlc = CConvert::ToInt(m_pRTV_DATA->K_PLC_NO);
+	// [LGLS] 설비명 = RGV N호기 (상단 박스 + 창 제목)
+	CString strEqpNm;
+	strEqpNm.Format(_T("RGV %d호기"), nPlc);
+	SetDlgItemText(IDC_EDIT_RTV_NO, strEqpNm);
+	{
+		TCHAR _cf[MAX_PATH] = {0}; GetModuleFileName(NULL, _cf, MAX_PATH);
+		CString _ap = _cf;
+		CString _fp = Global.GetConcatPath(_ap.Left(_ap.ReverseFind(_T('\\'))) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), _T(".ini"));
+		CString _cap = CLib::GetIniStringFromPath(_fp, _T("dlgname"), (int)pLang);
+		if(_cap.IsEmpty()) _cap = _T("RTV 상태");
+		_cap += _T(" - ") + strEqpNm;
+		CString _cur; GetWindowText(_cur);
+		if(_cur != _cap) { SetWindowText(_cap); RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW); }
+	}
+
+	CString N = m_pDoc->NVL;
+	CString strSql =
+		_T("SELECT ") + N + _T("(SUBSYSTEM_STATUS_RD,'0') AS ST, ")
+		+ N + _T("(LOAD_COMPLETE_RD,'0') AS A1, ")
+		+ N + _T("(LOAD_COMPLETE_ACK_OD,'0') AS A2, ")
+		+ N + _T("(UNLOAD_COMPLETE_RD,'0') AS A3, ")
+		+ N + _T("(UNLOAD_COMPLETE_ACK_OD,'0') AS A4, ")
+		+ N + _T("(TRANSFER_REQUEST_OD,'0') AS A5, ")
+		+ N + _T("(TRANSFER_ACK_RD,'0') AS A6, ")
+		+ N + _T("(SENSOR_RTV_RD,'0') AS A7, ")
+		+ N + _T("(PALLET_ON_VEHICLE_RD,'') AS PID, ")
+		+ N + _T("(ALARM_SET_REPORT_RD,'0') AS A8, ")
+		+ N + _T("(ALARM_SET_REPORT_ACK_OD,'0') AS A9, ")
+		+ N + _T("(ALARM_RESET_REPORT_RD,'0') AS A10, ")
+		+ N + _T("(ALARM_RESET_REPORT_ACK_OD,'0') AS A11, ")
+		+ N + _T("(LOCATION_01_RD,'') AS L1, ") + N + _T("(LOCATION_02_RD,'') AS L2, ") + N + _T("(LOCATION_03_RD,'') AS L3, ")
+		+ N + _T("(FROM_01_OD,'') AS F1, ") + N + _T("(FROM_02_OD,'') AS F2, ") + N + _T("(FROM_03_OD,'') AS F3, ")
+		+ N + _T("(TO_01_OD,'') AS T1, ") + N + _T("(TO_02_OD,'') AS T2, ") + N + _T("(TO_03_OD,'') AS T3, ")
+		+ N + _T("(TRANSFER_COMPLETE_LOCATION_01_RD,'') AS C1, ") + N + _T("(TRANSFER_COMPLETE_LOCATION_02_RD,'') AS C2, ") + N + _T("(TRANSFER_COMPLETE_LOCATION_03_RD,'') AS C3, ")
+		+ N + _T("(ALARM_SET_CODE_RD,'') AS AC, ")
+		+ N + _T("(PALLET_ID_OD,'') AS POD, ")
+		+ N + _T("(JOB_TYP_OD,'') AS JT, ")
+		+ N + _T("(SUSPEND,'0') AS SUS, ")
+		+ N + _T("(AUTO_MODE_RD,'0') AS AUT, ") + N + _T("(ERR_CODE_RD,'0000') AS ERR, ")
+		+ N + _T("(POS_H_RD,'0') AS PH, ") + N + _T("(COMPLETE_RD,'0') AS CMPRD, ")
+		+ N + _T("(LUGG_OD,'0') AS LOD, ") + N + _T("(PALLET_ON_VEHICLE_RD,'0') AS ITN ")
+		+ _T("FROM RTV_DATA_LGLS WHERE WH_TYP='") + m_pDoc->m_WH_TYP + _T("' AND PLC_NO='") + m_pRTV_DATA->K_PLC_NO + _T("' AND RTV_NO='") + m_pRTV_DATA->K_RTV_NO + _T("'");
+
+	CString strMessage; int nRowCnt = -1;
+	DWORD dwQ1 = ::GetTickCount();
+	_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CLib::UiLog(_T("[RTV] SQL1 RTV_DATA_LGLS %u ms rows=%d %s"), (unsigned)(::GetTickCount() - dwQ1), nRowCnt,
+		strMessage.IsEmpty() ? _T("") : _T("ERR"));
+	if(nRowCnt > 0)
+	{
+		CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
+		pRsw->MoveFirst();
+		CString st = pRsw->GetItem(_T("ST"));
+		// [LGLS 2026-09-01] 원시값을 함께 표기 (사용자 요청) - 시나리오 문서의
+		//   "D0210 IDLE=1 확인" 과 그대로 대응되게 "1 = IDLE" 형식으로 보인다.
+		//   매핑 근거 = 구 ECS Vehicle.OnVehicleState : 0=DOWN / 1=IDLE / 2=RUN.
+		CString stMean = (st == _T("2")) ? _T("RUN") : ((st == _T("1")) ? _T("IDLE") : _T("DOWN"));
+		CString stTxt = stMean;	// [LGLS 2026-10-01] 구 ECS 사진처럼 낱말만 (DOWN/IDLE/RUN)
+		SetDlgItemText(IDC_RTVV_STATUS, stTxt);
+		SetLed(IDC_RTVV_LED_LOAD_CMP,        pRsw->GetItem(_T("A1")));
+		SetLed(IDC_RTVV_LED_LOAD_CMP_ACK,    pRsw->GetItem(_T("A2")));
+		SetLed(IDC_RTVV_LED_UNLOAD_CMP,      pRsw->GetItem(_T("A3")));
+		SetLed(IDC_RTVV_LED_UNLOAD_CMP_ACK,  pRsw->GetItem(_T("A4")));
+		SetLed(IDC_RTVV_LED_TR_REQ,          pRsw->GetItem(_T("A5")));
+		SetLed(IDC_RTVV_LED_TR_REQ_ACK,      pRsw->GetItem(_T("A6")));
+		SetLed(IDC_RTVV_LED_PALLET_EXIST,    pRsw->GetItem(_T("A7")));
+		SetLed(IDC_RTVV_LED_ALARM_SET,       pRsw->GetItem(_T("A8")));
+		SetLed(IDC_RTVV_LED_ALARM_SET_ACK,   pRsw->GetItem(_T("A9")));
+		SetLed(IDC_RTVV_LED_ALARM_RESET,     pRsw->GetItem(_T("A10")));
+		SetLed(IDC_RTVV_LED_ALARM_RESET_ACK, pRsw->GetItem(_T("A11")));
+		SetDlgItemText(IDC_RTVV_PALLET_ID, pRsw->GetItem(_T("PID")));
+		SetDlgItemText(IDC_RTVV_CUR1, pRsw->GetItem(_T("L1")));
+		SetDlgItemText(IDC_RTVV_CUR2, pRsw->GetItem(_T("L2")));
+		SetDlgItemText(IDC_RTVV_CUR3, pRsw->GetItem(_T("L3")));
+		SetDlgItemText(IDC_RTVV_FROM1, pRsw->GetItem(_T("F1")));
+		SetDlgItemText(IDC_RTVV_FROM2, pRsw->GetItem(_T("F2")));
+		SetDlgItemText(IDC_RTVV_FROM3, pRsw->GetItem(_T("F3")));
+		SetDlgItemText(IDC_RTVV_TO1, pRsw->GetItem(_T("T1")));
+		SetDlgItemText(IDC_RTVV_TO2, pRsw->GetItem(_T("T2")));
+		SetDlgItemText(IDC_RTVV_TO3, pRsw->GetItem(_T("T3")));
+		SetDlgItemText(IDC_RTVV_CMP1, pRsw->GetItem(_T("C1")));
+		SetDlgItemText(IDC_RTVV_CMP2, pRsw->GetItem(_T("C2")));
+		SetDlgItemText(IDC_RTVV_CMP3, pRsw->GetItem(_T("C3")));
+		SetDlgItemText(IDC_RTVV_ALARM_CODE, pRsw->GetItem(_T("AC")));
+		SetDlgItemText(IDC_RTVV_PALLET, pRsw->GetItem(_T("POD")));
+		CString jt = pRsw->GetItem(_T("JT"));
+		CString io = (jt == _T("1")) ? _T("입고") : ((jt == _T("2")) ? _T("출고") : _T(""));
+		SetDlgItemText(IDC_RTVV_IO_TAG, io);
+		// [LGLS 2026-10-01] 구 ECS 안내문/완료처리/이상종료 판단용
+		m_strRtvvState = st;
+		m_strRtvvJob = pRsw->GetItem(_T("PID"));
+		if (m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000")) m_strRtvvJob = pRsw->GetItem(_T("POD"));
+		CString sus = pRsw->GetItem(_T("SUS"));
+		CheckDlgButton(IDC_RTVV_CHK_DISABLE, (sus == _T("1")) ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(IDC_BTN_RTV_SUSPEND, (sus == _T("1")) ? BST_CHECKED : BST_UNCHECKED);
+
+		// [LGLS 2026-08-05] 제목 두 칸 - SC 와 같은 규칙(호기명 + 설비명). 채우는 코드가 없어 비어 있었다.
+		{
+			CString strT1; strT1.Format(_T("RGV %d호기"), CConvert::ToInt(m_pRTV_DATA->K_PLC_NO));
+			CString strT2; strT2.Format(_T("RTV %s"), (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+			SetDlgItemText(IDC_RTVV_TITLE1, strT1);
+			SetDlgItemText(IDC_RTVV_TITLE2, strT2);
+		}
+
+		// [LGLS 2026-08-01] 대화상자 상단(RTV 상태/작업) 항목 채우기 : 기존엔 통신상태 패널만 채워 비어 있었다.
+		{
+			CString aut = pRsw->GetItem(_T("AUT"));
+			CString err = pRsw->GetItem(_T("ERR"));
+			CString cmp = pRsw->GetItem(_T("CMPRD"));
+			CString sen = pRsw->GetItem(_T("A7"));
+			CString lod = pRsw->GetItem(_T("LOD"));
+
+			// [LGLS 2026-09-21] 운영모드·ACTIVE 칸 제거 (사용자 지시) - SUBSYSTEM_STATUS 파생값
+			SetDlgItemText(IDC_EDT_RTV_STATUS,      stTxt);
+			SetDlgItemText(IDC_EDT_RTV_COMPLETE,    (cmp == _T("1")) ? _T("완료") : _T("-"));
+			SetDlgItemText(IDC_EDT_RTV_PRODLOAD,    (sen == _T("1")) ? _T("있음") : _T("없음"));
+			SetDlgItemText(IDC_EDT_RTV_HORIZONTAL_POS, pRsw->GetItem(_T("PH")));
+			// [LGLS 2026-08-05] 에러 그룹에 화물번호(lod)가 나오던 버그 - 에러코드(ERR_CODE_RD)로 교정
+			SetDlgItemText(IDC_EDT_RTV_DIAGNOSIS,   (err.IsEmpty() || err == _T("0") || err == _T("0000")) ? CString(_T("-")) : CLib::ErrCodeText(m_pDoc, _T("RTV"), err));	// [LGLS 2026-09-17] 코드 + 알람 문구
+			SetDlgItemText(IDC_EDT_RTV_SUSPEND,     (sus == _T("1")) ? _T("정지") : _T("-"));
+
+			CString sLoc, dLoc;
+			sLoc.Format(_T("%s-%s-%s"), pRsw->GetItem(_T("F1")), pRsw->GetItem(_T("F2")), pRsw->GetItem(_T("F3")));
+			dLoc.Format(_T("%s-%s-%s"), pRsw->GetItem(_T("T1")), pRsw->GetItem(_T("T2")), pRsw->GetItem(_T("T3")));
+			SetDlgItemText(IDC_EDT_RTV_JOB_START_LOC, sLoc);
+			SetDlgItemText(IDC_EDT_RTV_JOB_DEST_LOC,  dLoc);
+
+			// [LGLS 2026-08-05] RTV상태 그룹이 계속 비어 있던 부분.
+			//   SC 대화상자와 같은 출처를 쓴다 : 작업구분/출발·도착위치는 PLC 로 내보낸 지시값(_OD),
+			//   작업번호는 PLC 가 돌려주는 실적재 화물번호(PALLET_ON_VEHICLE_RD).
+			CString itn = pRsw->GetItem(_T("ITN"));
+			if (itn == _T("0") || itn == _T("0000") || itn.IsEmpty()) itn = lod;
+			// [LGLS 2026-08-31] 작업상태와 같은 "[코드]명칭" 표기로 통일한다(사용자 요구).
+			//   종전에는 1/2 만 알아서 반자동(11/12)이 "-" 로 나왔다.
+			CString jtTxt = FormatJobTyp(jt);
+			SetDlgItemText(IDC_EDIT_RTV_JOB_NO,   (itn == _T("0") || itn == _T("0000") || itn.IsEmpty()) ? _T("-") : itn);
+			SetDlgItemText(IDC_CBX_RTV_JOB_TYP,   jtTxt);
+			SetDlgItemText(IDC_CBX_RTV_START_POS, sLoc);
+			SetDlgItemText(IDC_CBX_RTV_DEST_POS,  dLoc);
+
+			// [LGLS 2026-08-05] PLC 에서 받아오는 현재위치/완료위치도 RTV상태 그룹에 표시
+			CString curLoc, cmpLoc;
+			curLoc.Format(_T("%s-%s-%s"), pRsw->GetItem(_T("L1")), pRsw->GetItem(_T("L2")), pRsw->GetItem(_T("L3")));
+			cmpLoc.Format(_T("%s-%s-%s"), pRsw->GetItem(_T("C1")), pRsw->GetItem(_T("C2")), pRsw->GetItem(_T("C3")));
+			SetDlgItemText(IDC_LGLS_RTV_CUR_VAL, curLoc);
+			SetDlgItemText(IDC_LGLS_RTV_CMP_VAL, cmpLoc);
+		}
+		delete pRsw;
+	}
+
+	strSql = GetQrySelectJOB_MST(m_pRTV_DATA);
+	nRowCnt = -1;
+	DWORD dwQ2 = ::GetTickCount();
+	_RecordsetPtr ptr2 = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CLib::UiLog(_T("[RTV] SQL2 JOB_MST %u ms rows=%d %s"), (unsigned)(::GetTickCount() - dwQ2), nRowCnt,
+		strMessage.IsEmpty() ? _T("") : _T("ERR"));
+	if(nRowCnt > 0)
+	{
+		CRecordSetWrap* pRsw2 = new CRecordSetWrap(ptr2);
+		pRsw2->MoveFirst();
+		// [LGLS] 작업정보를 실제 rc 컨트롤(하단 JOB_STATUS 그룹)에 바인딩 (IDC_RTVV_*는 rc 미배치라 무효였음)
+		SetDlgItemText(IDC_EDIT_RTV_JOB_JOB_NO,    pRsw2->GetItem(_T("LUGG_NO")));		// 작업번호
+		SetDlgItemText(IDC_CBX_RTV_JOB_JOB_TYP,    pRsw2->GetItem(_T("JOB_TYP")));		// 작업구분
+		SetDlgItemText(IDC_CBX_RTV_JOB_JOB_STATUS, pRsw2->GetItem(_T("JOB_STATUS")));	// 작업상태
+		SetDlgItemText(IDC_CBX_RTV_JOB_START_POS,  pRsw2->GetItem(_T("START_POS")));		// 출발위치
+		SetDlgItemText(IDC_EDT_RTV_JOB_START_LOC,  pRsw2->GetItem(_T("START_LOCATION")));	// 출발지
+		SetDlgItemText(IDC_CBX_RTV_JOB_DEST_POS,   pRsw2->GetItem(_T("DEST_POS")));		// 도착위치
+		SetDlgItemText(IDC_EDT_RTV_JOB_DEST_LOC,   pRsw2->GetItem(_T("DEST_LOCATION")));
+		SetDlgItemText(IDC_LGLS_RTV_LOT_VAL,       pRsw2->GetItem(_T("LOT_NO")));		// [LGLS] 적재 용기
+		SetDlgItemText(IDC_LGLS_RTV_PRD_VAL,       pRsw2->GetItem(_T("PRODUCT_ID")));	// [LGLS] 제품 정보	// 도착지
+		// [LGLS 2026-09-07] 확대(통신상태) 패널의 작업정보 항목에도 같은 값을 채운다.
+		//   컨트롤을 이제 실제로 만들었으므로(BuildVehStatusPanel) 여기서 채우면 화면에 나온다.
+		SetDlgItemText(IDC_RTVV_REQ_NO,    pRsw2->GetItem(_T("LUGG_NO")));
+		SetDlgItemText(IDC_RTVV_START_POS, pRsw2->GetItem(_T("START_POS")));
+		SetDlgItemText(IDC_RTVV_DEST_POS,  pRsw2->GetItem(_T("DEST_POS")));
+		SetDlgItemText(IDC_RTVV_PROD_ID,   pRsw2->GetItem(_T("PRODUCT_ID")));
+		SetDlgItemText(IDC_RTVV_BATCH_NO,  pRsw2->GetItem(_T("LOT_NO")));		// [LGLS 2026-10-01] 구 ECS 배치번호
+		SetDlgItemText(IDC_RTVV_REQ_NO2,   pRsw2->GetItem(_T("JOB_STATUS")));	// [LGLS 2026-10-01] 구 ECS 명령순번 = 작업상태
+		m_bRtvvJobInDb = TRUE;
+		delete pRsw2;
+	}
+	else
+	{	// [LGLS 2026-08-01] 조회 실패/무작업 시 이전 값이 남지 않도록 비운다
+		m_bRtvvJobInDb = FALSE;
+		SetDlgItemText(IDC_EDIT_RTV_JOB_JOB_NO,    _T("-"));
+		SetDlgItemText(IDC_CBX_RTV_JOB_JOB_TYP,    _T(""));
+		SetDlgItemText(IDC_CBX_RTV_JOB_JOB_STATUS, _T(""));
+		SetDlgItemText(IDC_CBX_RTV_JOB_START_POS,  _T(""));
+		SetDlgItemText(IDC_EDT_RTV_JOB_START_LOC,  _T(""));
+		SetDlgItemText(IDC_CBX_RTV_JOB_DEST_POS,   _T(""));
+		SetDlgItemText(IDC_EDT_RTV_JOB_DEST_LOC,   _T(""));
+		SetDlgItemText(IDC_LGLS_RTV_LOT_VAL,       _T(""));
+		SetDlgItemText(IDC_LGLS_RTV_PRD_VAL,       _T(""));
+		SetDlgItemText(IDC_RTVV_REQ_NO,    _T(""));
+		SetDlgItemText(IDC_RTVV_START_POS, _T(""));
+		SetDlgItemText(IDC_RTVV_DEST_POS,  _T(""));
+		SetDlgItemText(IDC_RTVV_PROD_ID,   _T(""));
+	}
+	// [LGLS 2026-10-01] 구 ECS 팝업의 안내문(labelAdvice)
+	{
+		BOOL bJob = !(m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000"));
+		CString adv;
+		if (!bJob)
+			SetDlgItemText(IDC_RTVV_IO_TAG, (m_strRtvvState == _T("0")) ? _T("에러") : (m_strRtvvState == _T("2")) ? _T("작업중") : _T("대기"));
+		else if (!m_bRtvvJobInDb)      adv = _T("입/출고 요청번호가 DB에 없습니다.  [이상종료]처리하세요!!");
+		else if (m_strRtvvState == _T("1")) adv = _T("입/출고 명령이 완료되지 않았습니다. [완료처리]하세요!!");
+		else if (m_strRtvvState == _T("0")) adv = _T("RGV 의 상태를 확인하고, [명령재전송] 또는 매뉴얼처리하세요!!");
+		SetDlgItemText(IDC_RTVV_ADVICE, adv);
+	}
+}
+
+void CRtvSkinDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CSkinDialog::OnSize(nType, cx, cy);
+
+	// TODO: Add your message handler code here
+
+}
+HCURSOR CRtvSkinDlg::OnQueryDragIcon()
+{
+	return static_cast<HCURSOR>(m_hIcon);
+}
+
+void CRtvSkinDlg::OnPaint()
+{
+	CSkinDialog::OnPaint();
+}
+
+
+void CRtvSkinDlg::RedrawImage()
+{
+	// [LGLS 2026-08-05] 여기 있던 return; 때문에 버튼 스킨/아이콘 지정이 통째로 죽어 있었다.
+	//   (CV 대화상자는 이 return 이 없어서 아이콘이 나온다.)
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath = _T("");
+	CString strAppPath2 = _T("");
+	CString strAppPath_BaseButton = _T("");
+	strAppPath.Format(_T("%s"),chrFileName);
+	strAppPath2.Format(_T("%s"),chrFileName);
+
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sc\\20x20\\");
+	strAppPath2 = strAppPath2.Left(strAppPath2.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sctime\\128x32\\");
+
+	CString strExtension = _T(".png");
+
+
+	m_btnRtvComplete.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnRtvComplete.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("forcecompletion"), strExtension)), NULL, 5, 5);
+
+
+
+
+
+
+
+	m_btnRtvManual.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnRtvManual.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("manual"), strExtension)), NULL, 5, 5);
+
+	m_btnRtvSuspend.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnRtvSuspend.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("save"), strExtension)), NULL, 5, 5);
+
+	// [LGLS 2026-08-05] 확대/축소 버튼도 같은 스킨 + 아이콘.
+	//   ★비트맵만 주고 아이콘이 없으면 PrepareBitmapRect 가 캡션 영역을 비트맵 폭만큼
+	//   오른쪽으로 밀어 글자가 통째로 안 그려진다(빈 버튼 증상의 원인).
+	//   아이콘이 있으면 DrawItem 이 캡션 영역을 다시 잡으므로 다른 버튼처럼 나온다.
+	// [LGLS 2026-08-12] 원 대화상자 [지시 재전송] 버튼도 같은 스킨 + 아이콘
+	m_btnRtvResend.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnRtvResend.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("manual"), strExtension)), NULL, 5, 5);
+
+	m_btnVehZoom.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnVehZoom.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("arrow-down"), strExtension)), NULL, 5, 5);
+
+	// [LGLS 2026-09-17] 명령 버튼(지시 재전송/강제완료/수동지시/확대)과 일시정지 에디트·버튼의 위치·크기(비트맵 110x27)는
+	//   Ecs.rc 에 최종값으로 넣었다. 종전의 런타임 세로 쌓기(StackCommandButtons)·명령 그룹 바닥 붙이기·수동지시 표시는 없앴다.
+	// [LGLS 2026-09-06] ★[지시 삭제] 제외★ - S/C 와 같은 이유다.
+	//   RGV(VEHICLE:1) 의 구 ECS 태그도 29개뿐이고 취소·삭제 신호가 없다
+	//   (ECS→PLC 쓰기 = FROM/TO/PALLET_ID/TRANSFER_REQUEST + 4개 Ack).
+	// [LGLS 2026-09-04] [확대] 는 Ecs.ini [MENU] ZOOM_BTN=1/0 으로 표시 여부 선택(기본 1)
+	ApplyZoomBtnIni();
+
+}
+
+LRESULT CRtvSkinDlg::OnMessagSwitch(WPARAM wParam, LPARAM lParam)
+{
+	CRTV_DATA* pRTV_DATA = (CRTV_DATA*)wParam;
+	if(pRTV_DATA == NULL)
+	{
+		// [LGLS 2026-09-16] wParam NULL (OnRefreshDialog path) -> keep current selection, no modal warning
+		if(m_pRTV_DATA == NULL) return 0;
+		pRTV_DATA = m_pRTV_DATA;
+	}
+
+	m_pRTV_DATA = pRTV_DATA;
+
+	EN_LANG enLangTemp = (EN_LANG)lParam;
+	if(m_nLang != enLangTemp)
+	{
+		m_nLang = enLangTemp;
+		InvalidateLangControl(enLangTemp);
+	}
+
+	InvalidateRtvData(enLangTemp);
+
+	return 0;
+}
+
+void CRtvSkinDlg::SetButtonScImage( CButton& pButton, CString pFieldName, int pValue )
+{
+	//HICON hIcon = Global.GetIcon(Global.GetCvIconIndex(pFieldName, pValue));
+	//pButton.SetIcon(hIcon);
+}
+
+void CRtvSkinDlg::InvalidateLangControl( EN_LANG enLangTemp )
+{ // 데이터가 아닌 레이블 / 버튼 등의 값만 수정시킬것
+	if(m_pDoc == NULL)
+		return;
+
+}
+
+
+// [LGLS 2026-08-05] 런타임에 만든 라벨은 RenameResource 가 돌 때 아직 존재하지 않는다.
+//   생성 직후 같은 ini 로 다시 이름을 붙여 다국어가 적용되게 한다.
+
+// [LGLS 2026-08-05] 그룹박스 캡션 뒤에 회색 네모가 남는 문제.
+//   이 그룹박스들은 비주얼 스타일(테마)이 직접 그리기 때문에 WM_CTLCOLOR 로는 못 막는다.
+//   테마를 떼면 클래식 방식으로 그려지고, 그때는 OnCtlColor 의 투명 처리가 그대로 먹는다.
+void CRtvSkinDlg::MakeGroupBoxesTransparent()
+{
+	for (CWnd* pChild = GetWindow(GW_CHILD); pChild != NULL; pChild = pChild->GetWindow(GW_HWNDNEXT))
+	{
+		TCHAR szCls[32] = { 0 };
+		::GetClassName(pChild->GetSafeHwnd(), szCls, 31);
+		if (_tcsicmp(szCls, _T("Button")) != 0) continue;
+		if ((pChild->GetStyle() & BS_TYPEMASK) != BS_GROUPBOX) continue;
+		::SetWindowTheme(pChild->GetSafeHwnd(), L" ", L" ");
+		pChild->Invalidate();
+	}
+}
+
+void CRtvSkinDlg::RenameRuntimeLabels()
+{
+	TCHAR chrFile[500]; GetModuleFileName(NULL, chrFile, MAX_PATH);
+	CString strApp; strApp.Format(_T("%s"), chrFile);
+	CString strPath = Global.GetConcatPath(strApp.Left(strApp.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), _T(".ini"));
+	EN_LANG enLang = (m_pDoc == NULL) ? EN_KOR : m_pDoc->m_enLang;
+	CString s;
+	CDC* pDC = GetDC();
+	CFont* pOld = (pDC != NULL) ? pDC->SelectObject(GetFont()) : NULL;
+	s = CLib::GetIniStringFromPath(strPath, _T("lotno"),     (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_LOT_LBL, s);
+	s = CLib::GetIniStringFromPath(strPath, _T("productid"), (int)enLang); if (!s.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_PRD_LBL, s);
+
+	// 번역문이 원래 한글보다 길면 잘리므로 글자 폭에 맞춰 오른쪽 끝을 고정한 채 넓힌다.
+	if (pDC != NULL)
+	{
+		const int nIds[] = { IDC_LGLS_RTV_LOT_LBL, IDC_LGLS_RTV_PRD_LBL };
+		for (int i = 0; i < 2; i++)
+		{
+			CWnd* pL = GetDlgItem(nIds[i]);
+			if (pL == NULL) continue;
+			CString t; pL->GetWindowText(t);
+			// 라벨이 대화상자와 다른 글꼴을 쓰므로 그 라벨의 글꼴로 재야 정확하다.
+			CFont* pPrev = (pL->GetFont() != NULL) ? pDC->SelectObject(pL->GetFont()) : NULL;
+			CSize sz = pDC->GetTextExtent(t);
+			if (pPrev != NULL) pDC->SelectObject(pPrev);
+			CRect rc; pL->GetWindowRect(&rc); ScreenToClient(&rc);
+			if (sz.cx + 6 > rc.Width())
+			{
+				rc.left = rc.right - (sz.cx + 6);
+				pL->MoveWindow(rc);
+			}
+		}
+		if (pOld != NULL) pDC->SelectObject(pOld);
+		ReleaseDC(pDC);
+	}
+}
+
+void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
+{
+	// [LGLS 2026-08-05] 여기 있던 return; 때문에 RTV 대화상자만 다국어 적용이 통째로 죽어 있었다.
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath = _T("");
+	strAppPath.Format(_T("%s"),chrFileName);
+	CString strExtension = _T(".ini");
+
+
+	CString strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	CString strValue = CLib::GetIniStringFromPath(strFullPath, _T("dlgname"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetWindowText(strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("forcecompletion"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_COMPLETE, strValue);
+
+
+
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("resend"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_RESEND, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("manualorder"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_MANUAL, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobno"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JOB_NO, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("startpos"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_START_POS, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("destpos"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_DEST_POS, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobtyp"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JOB_TYP, strValue);
+
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("completestatus"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_COMPLETE, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("freightyn"), (int)m_enLang); //화물유무
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_PRODLOAD, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvstauts"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_STATUS, strValue);
+
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("horizontallocation"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_HORIZONTAL_POS, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobno"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JOB_JOB_NO, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("startpos"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JOB_START_POS, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("destpos"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JOB_DEST_POS, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobtyp"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LBL_RTV_JOB_JOB_TYP, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("suspend"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_BTN_RTV_SUSPEND, strValue);
+
+	//grp
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvstauts"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_RTV_STATUS, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("item"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_RTV_STATUS_ITEM, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("fork1"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_RTV_STATUS_FK1, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("fork2"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_RTV_STATUS_FK2, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("command"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_COMMAND, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("item"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_ITEM3, strValue);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_ITEM4, strValue);	// [LGLS 2026-09-17] RTV상태 두 번째 열(사용자 배치)
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("rtvstauts"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_RTV, strValue);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_FK_FK_STATUS_RTV2, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("jobsta"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_JOB_STATUS, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("fork2"), (int)m_enLang);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("error"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_STATUS_SENSOR, strValue);
+
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("suspend"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_GRP_RTV_SUSPEND, strValue);
+
+	
+
+	// [LGLS 2026-08-05] 런타임/신규 라벨도 다국어 대상에 포함한다.
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("lotno"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_LOT_LBL, strValue);
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("productid"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_PRD_LBL, strValue);
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("curloc"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_CUR_LBL, strValue);
+	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("cmploc"), (int)m_enLang);
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_CMP_LBL, strValue);
+}
+
+void CRtvSkinDlg::InitializeResource(EN_LANG nEN_LANG)
+{
+	TCHAR chrFileName[500];
+	GetModuleFileName(NULL, chrFileName, MAX_PATH);
+	CString strAppPath = _T("");
+	strAppPath.Format(_T("%s"),chrFileName);
+	strAppPath = strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_sctime\\16x16\\");
+	CString strExtension = _T(".png");
+
+	CImageList imageList;
+	imageList.Create(16, 16, TRUE/*bMask*/,	1/*nInitial*/, 1/*nGrow*/);
+	imageList.Add(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("cv"), strExtension)));
+	imageList.Add(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("sc"), strExtension)));
+
+	RenameResource(nEN_LANG);
+	RedrawImage();
+}
+
+void CRtvSkinDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == 7) { CLib::MarqueeTick(this); return; }	// [LGLS 2026-09-21] EDIT 흐름 표시
+	if (nIDEvent == 1 && m_pDoc != NULL)
+		InvalidateRtvData(m_pDoc->m_enLang);
+	CSkinDialog::OnTimer(nIDEvent);
+}
+
+void CRtvSkinDlg::OnClose()
+{
+	KillTimer(1);
+	m_pDoc->m_pRtvSkinDlg = NULL;
+	delete this;
+}
+
+//강제완료
+void CRtvSkinDlg::OnBnClickedBtnRtvComplete()
+{
+
+	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+
+	// [LGLS 2026-10-05] 구 ECS RGVForm.buttonForceComplete_Click 과 같게 (사용자 지시) :
+	//   설비가 RUN(작업중) 이면 거부한다. 완료 뒤 설비에 물린 명령을 비우는 것은 IO_TASK(ForceComplete → ClearVehOrderAll) 가 한다.
+	//   상태는 화면에 남은 값이 아니라 지금 DB 값을 본다([확대] 패널을 열지 않았으면 기억값이 비어 있다).
+	{
+		CString strChk, strChkMsg; int nChk = -1;
+		strChk.Format(_T("SELECT ") + m_pDoc->NVL + _T("(SUBSYSTEM_STATUS_RD,'0') AS ST FROM RTV_DATA_LGLS WHERE WH_TYP = '%s' AND PLC_NO = '%02s' AND RTV_NO = '%s'"),
+			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_PLC_NO, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+		_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
+		if (nChk > 0)
+		{
+			CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
+			pChk->MoveFirst();
+			CString strSt = pChk->GetItem(_T("ST"));
+			delete pChk;
+			if (strSt == _T("2"))
+			{
+				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(작업중) 상태입니다. 작업이 완료될때 까지 기다리십시오.")));
+				return;
+			}
+		}
+	}
+
+	UpdateRtvData(EN_BtnRtvConfirm);
+}
+
+void CRtvSkinDlg::UpdateRtvData(int nBtnJob)
+{
+	CString strSql, strWhTyp, strRtvNo, strPlcNo, strScGrpNo, strCmdId, strFK, strMsg=_T("");
+	UpdateData(TRUE);
+
+	strWhTyp = m_pDoc->m_WH_TYP;
+	strRtvNo = m_pRTV_DATA->K_RTV_NO;
+	strPlcNo = m_pRTV_DATA->K_PLC_NO;
+
+	//CMD_RQ_ID 공통코드 참조
+	if (     nBtnJob == EN_BtnRtvConfirm  )  { strCmdId = _T("FCMP"); strFK = _T("0"); strMsg = _T("강제완료를 진행하시겠습니까?");   } //강제완료
+	else if (nBtnJob == EN_BtnRtvEmergency)  { strCmdId = _T("EMERGENCY"); strFK = _T("0"); strMsg = _T("비상정지를 진행하시겠습니까?");   } //비상정지
+	else if (nBtnJob == EN_BtnRtvActive)     { strCmdId = _T("ACTIVE"); strFK = _T("0"); strMsg = _T("ACTIVE를 진행하시겠습니까?");	 } //ACTIVE
+	else if (nBtnJob == EN_BtnRtvStop)	    { strCmdId = _T("PAUSE"); strFK = _T("0"); strMsg = _T("STOP을 진행하시겠습니까?");		 } //정지
+	else if (nBtnJob == EN_BtnRtvErrReset)   { strCmdId = _T("RESET"); strFK = _T("0"); strMsg = _T("ERROR RESET을 진행하시겠습니까?");} //ERROR RESET
+	else if (nBtnJob == EN_BtnRtvFk1Delete)     { strCmdId = _T("DELFK1"); strFK = _T("1");   strMsg = _T("삭제를 진행하시겠습니까?");		 } //삭제
+	else if (nBtnJob == EN_BtnRtvFk2Delete)     { strCmdId = _T("DELFK2"); strFK = _T("2");   strMsg = _T("Fork2 삭제를 진행하시겠습니까?");		 } //삭제
+	else if (nBtnJob == EN_BtnRtvFk1Fk2Delete)     { strCmdId = _T("DELFK12"); strFK = _T("0");   strMsg = _T("Fork1,2 삭제를 진행하시겠습니까?");		 } //삭제
+	else if (nBtnJob == EN_BtnRtvCallToHome) { strCmdId = _T("CTH"); strFK = _T("0");  strMsg = _T("홈복귀를 진행하시겠습니까?");	 } //홈복귀
+
+	if (AfxMessageBox(m_pDoc->GetMsgLangDef(strMsg), MB_YESNO) != IDYES)
+		return;
+
+	strSql.Format(_T(" UPDATE RTV_DATA_LGLS		\n")
+		_T("    SET CMD_RQ_ID = '%s'		\n")
+		_T("	  , CMD_RQ_YN = 'Y'		    \n")
+		_T("  WHERE WH_TYP = '%s'			\n")
+		_T("	AND PLC_NO = '%02s'			\n")
+		_T("    AND RTV_NO = '%s'			  "), strCmdId, strWhTyp, strPlcNo, strRtvNo);
+
+	BOOL isSuccess = FALSE;
+
+	m_pDoc->BeginTrans_DLG();
+	isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
+
+	// [LGLS 2026-09-01] ★삭제는 최소한 내부 작업번호(지시값)를 지운다★ (사용자 지시)
+	//   DELFK 명령은 통신 Task 에 소비자가 없어 명령만 남고 지시 정보가 그대로였다.
+	//   지시(_OD) 일체를 비워 스케줄러/화면이 이 RTV 를 유휴로 보게 한다.
+	if (isSuccess && (nBtnJob == EN_BtnRtvFk1Delete || nBtnJob == EN_BtnRtvFk2Delete || nBtnJob == EN_BtnRtvFk1Fk2Delete))
+	{
+		CString strSqlClr;
+		strSqlClr.Format(_T(" UPDATE RTV_DATA_LGLS \n")
+			_T("    SET LUGG_OD      = '0000' \n")
+			_T("      , PALLET_ID_OD = '0000' \n")
+			_T("      , JOB_TYP_OD   = '0' \n")
+			_T("      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' \n")
+			_T("      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' \n")
+			_T("      , RTV_DEST_OD = '', RTV_PASSCV_OD = '' \n")
+			// [LGLS 2026-09-03] 요청 플래그/트랙까지 비운다 - 내용 없는 OD_RQ_YN='Y' 가 남아
+			//   스케줄러가 새 지시를 못 내리던 것(사용자 지시 : 삭제 버튼으로 풀 수 있게).
+			_T("      , OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N' \n")
+			_T("      , DEPART_TRACK = '', ARRIVE_TRACK = '' \n")
+			_T("  WHERE WH_TYP = '%s' \n")
+			_T("    AND RTV_NO = '%s'   "), strWhTyp, strRtvNo);
+		isSuccess = m_pDoc->ExcuteQueryString_DLG(strSqlClr);
+	}
+
+	if(isSuccess == TRUE)
+	{
+		CString strLOG_LUGG_NO1 = m_pRTV_DATA->V_ITN_LUGG_FK1;
+		if (strLOG_LUGG_NO1 == _T("")) { strLOG_LUGG_NO1 = _T("0");}
+		CString strLOG_LUGG_NO2 = m_pRTV_DATA->V_ITN_LUGG_FK2;
+		if (strLOG_LUGG_NO2 == _T("")) { strLOG_LUGG_NO2 = _T("0");}
+		CString strLOG_BOTTOM_TRAY = _T("");
+		CString strLOG_TOP_TRAY = _T("");
+		CString strLOG_MSG = _T("");
+		strLOG_MSG.Format(_T("RTV ACTION BUTTON -> SC NO : %s , ACTION : %s"), strRtvNo, strCmdId);
+
+		if (strFK == _T("1"))
+		{
+			if (strLOG_LUGG_NO1 != _T("0"))
+			{
+				if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO1, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+				{
+					m_pDoc->RollbackTrans_DLG();
+					return;
+				}
+			}
+		}
+		else if (strFK == _T("2"))
+		{
+			if (strLOG_LUGG_NO2 != _T("0"))
+			{
+				if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO2, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+				{
+					m_pDoc->RollbackTrans_DLG();
+					return;
+				}
+			}
+		}
+		else
+		{
+			if (strLOG_LUGG_NO1 == _T("0") && strLOG_LUGG_NO2 == _T("0"))
+			{
+				if (strCmdId != _T("DELFK12"))
+				{
+					if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO1, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+					{
+						m_pDoc->RollbackTrans_DLG();
+						return;
+					}
+				}
+			}
+			else if (strLOG_LUGG_NO1 != _T("0") && strLOG_LUGG_NO2 == _T("0"))
+			{
+				if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO1, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+				{
+					m_pDoc->RollbackTrans_DLG();
+					return;
+				}
+			}
+			else if (strLOG_LUGG_NO1 == _T("0") && strLOG_LUGG_NO2 != _T("0"))
+			{
+				if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO2, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+				{
+					m_pDoc->RollbackTrans_DLG();
+					return;
+				}
+			}
+			else
+			{
+				if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO1, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+				{
+					m_pDoc->RollbackTrans_DLG();
+					return;
+				}
+				if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO2, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+				{
+					m_pDoc->RollbackTrans_DLG();
+					return;
+				}
+			}
+		}
+		m_pDoc->CommitTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+		return;
+	}
+	m_pDoc->RollbackTrans_DLG();
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+	return;
+}
+
+void CRtvSkinDlg::OnBnClickedBtnRtvSuspend()
+{
+
+	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+
+	CString strSql = _T("");
+	int nRowCnt = 0;
+	CString strMessage;
+	CString strMsg;
+	CString strWhTyp = m_pDoc->m_WH_TYP;
+	CString strPlcNo = m_pRTV_DATA->K_PLC_NO;
+	CString strRtvNo = m_pRTV_DATA->K_RTV_NO;
+
+	strSql.Format(_T(" SELECT SUSPEND		\n")
+		_T("			 FROM RTV_DATA_LGLS		\n")
+		_T("			WHERE WH_TYP = '%s'			\n")
+		_T("		      AND PLC_NO = '%02s'			\n")
+		_T("			  AND RTV_NO = '%s'			")
+		_T("			  AND SUSPEND IN ('1')			"), strWhTyp, strPlcNo, strRtvNo);
+
+	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+	/*
+	pRsw->MoveFirst(); 
+	*/
+	delete pRsw;
+	if (nRowCnt == 0)
+	{
+		strMsg = _T("Suspend");
+		if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("Rtv 사용을 중지하시겠습니까?")), MB_YESNO) != IDYES)
+		return;
+	}
+	else
+	{
+		strMsg = _T("Release");
+		if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("Rtv를 사용하시겠습니까?")), MB_YESNO) != IDYES)
+			return;
+	}
+
+	strSql.Format(_T(" UPDATE RTV_DATA_LGLS		\n")
+		_T("    SET SUSPEND = %s		\n")
+		_T("  WHERE WH_TYP = '%s'			\n")
+		_T("	AND PLC_NO = '%02s'			\n")
+		_T("    AND RTV_NO = '%s'			  "), _T("1 - SUSPEND"),strWhTyp, strPlcNo, strRtvNo);
+
+	BOOL isSuccess = FALSE;
+	m_pDoc->BeginTrans_DLG();
+	isSuccess = m_pDoc->ExcuteQueryString_DLG(strSql);
+
+	if(isSuccess == TRUE)
+	{
+		CString strLOG_LUGG_NO =  m_pRTV_DATA->V_ITN_LUGG_FK1;
+		if (strLOG_LUGG_NO == _T("")) { strLOG_LUGG_NO = _T("0");}
+		CString strLOG_BOTTOM_TRAY = _T("");
+		CString strLOG_TOP_TRAY = _T("");
+		CString strLOG_MSG = _T("");
+		strLOG_MSG.Format(_T("RTV SUSPEND BOTTON -> RTV_NO : %s , %s"), strRtvNo, strMsg);
+		if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), strLOG_LUGG_NO, strLOG_BOTTOM_TRAY, strLOG_TOP_TRAY, strLOG_MSG))
+		{
+			m_pDoc->RollbackTrans_DLG();
+			return;
+		}
+		m_pDoc->CommitTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+		return;
+	}
+	m_pDoc->RollbackTrans_DLG();
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+	return;
+}
+
+
+
+void CRtvSkinDlg::OnBnClickedChkRtvFork1()
+{
+	UpdateData(TRUE);
+
+	if (m_chkRtvFork1.GetCheck() == 1)
+	{
+		m_strRtvFork = _T("1");
+		//Enable 처리
+		m_chkRtvFork1.EnableWindow(TRUE);
+		m_chkRtvFork2.EnableWindow(FALSE);
+		m_chkRtvFork1Fork2.EnableWindow(FALSE);
+	}else{
+		m_strRtvFork = _T("0");
+		m_chkRtvFork1.EnableWindow(TRUE);
+		m_chkRtvFork2.EnableWindow(TRUE);
+		m_chkRtvFork1Fork2.EnableWindow(TRUE);
+	}
+	UpdateData(FALSE);
+
+	return;
+}
+
+
+void CRtvSkinDlg::OnBnClickedChkRtvFork2()
+{
+	UpdateData(TRUE);
+
+	if (m_chkRtvFork2.GetCheck() == 1)
+	{
+		m_strRtvFork = _T("2");
+		//Enable 처리
+		m_chkRtvFork1.EnableWindow(FALSE);
+		m_chkRtvFork2.EnableWindow(TRUE);
+		m_chkRtvFork1Fork2.EnableWindow(FALSE);
+	}else{
+		m_strRtvFork = _T("0");
+		m_chkRtvFork1.EnableWindow(TRUE);
+		m_chkRtvFork2.EnableWindow(TRUE);
+		m_chkRtvFork1Fork2.EnableWindow(TRUE);
+	}
+	UpdateData(FALSE);
+
+	return;
+}
+
+
+void CRtvSkinDlg::OnBnClickedChkRtvFork12()
+{
+	UpdateData(TRUE);
+
+	if (m_chkRtvFork1Fork2.GetCheck() == 1)
+	{
+		m_strRtvFork = _T("3");
+		//Enable 처리
+		m_chkRtvFork1.EnableWindow(FALSE);
+		m_chkRtvFork2.EnableWindow(FALSE);
+		m_chkRtvFork1Fork2.EnableWindow(TRUE);
+	}else{
+		m_strRtvFork = _T("0");
+		m_chkRtvFork1.EnableWindow(TRUE);
+		m_chkRtvFork2.EnableWindow(TRUE);
+		m_chkRtvFork1Fork2.EnableWindow(TRUE);
+	}
+	UpdateData(FALSE);
+
+	return;
+}
+void CRtvSkinDlg::GetErrorCode(CString strEqpTyp, CString strErrorCode, int nEN_LANG, CString& strGetErrorCode)
+{
+	CStringList strList;
+	CString strSql;
+	CString strMSG_KOR, strMSG_CHIN, strMSG_ENG, strMSG_HUN;
+	int nRowCnt = 0, j=0;
+	CString strMessage;
+	strSql.Format(_T(" SELECT MSG_KOR, ") + m_pDoc->NVL + _T("(MSG_CHIN,MSG_KOR) AS MSG_CHIN, ") + m_pDoc->NVL + _T("(MSG_ENG,MSG_KOR) AS MSG_ENG, ") + m_pDoc->NVL + _T("(MSG_HUN,MSG_KOR) AS MSG_HUN   ")
+		_T("    FROM EQP_ECD_MST                     ")
+		_T("   WHERE EQP_TYP      = '%s'               ")
+		_T("    AND EQP_ERR_CD   = '%04s'               "), strEqpTyp, strErrorCode);
+
+	_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRowCnt, strMessage);
+	CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+
+	pRsw->MoveFirst(); 
+
+
+	strMSG_KOR = pRsw->GetItem(_T("MSG_KOR"));
+	strMSG_CHIN = pRsw->GetItem(_T("MSG_CHIN"));
+	strMSG_ENG = pRsw->GetItem(_T("MSG_ENG"));
+	strMSG_HUN = pRsw->GetItem(_T("MSG_HUN"));
+	if(nEN_LANG == 0)
+	{
+		strGetErrorCode.Format(_T("[%s] %s"), strErrorCode, strMSG_KOR);
+	}
+	else if(nEN_LANG == 1)
+	{
+		strGetErrorCode.Format(_T("[%s] %s"), strErrorCode, strMSG_ENG);
+	}
+	else if(nEN_LANG == 2)
+	{
+		strGetErrorCode.Format(_T("[%s] %s"), strErrorCode, strMSG_HUN);
+	}
+	else if(nEN_LANG == 3)
+	{
+		strGetErrorCode.Format(_T("[%s] %s"), strErrorCode, strMSG_CHIN);
+	}
+
+	delete pRsw;
+
+}
+
+CString CRtvSkinDlg::GetQrySelectJOB_MST( CRTV_DATA* pRTV_DATA )
+{
+	if(pRTV_DATA == NULL)
+		return _T("");
+
+	CString CRLF = _T("\r\n");
+	CString strSql = _T("");
+	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("(JM.LUGG_NO, '0') AS LUGG_NO ");
+	strSql += CRLF + _T("	  , ") + _T("'[' + JM.JOB_STATUS + '] ' + ") + m_pDoc->NVL + _T("(CCD.CCD_NM_KOR, '0') AS JOB_STATUS ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_POS, '00000') AS START_POS ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_POS, '00000') AS DEST_POS ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.PRODUCT_ID, '') AS PRODUCT_ID ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.LOT_NO, '') AS LOT_NO ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, '[' + JM.JOB_TYP + ']') AS JOB_TYP ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_LOCATION, '00-000-00') AS START_LOCATION ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, '00-000-00') AS DEST_LOCATION ");
+	strSql += CRLF + _T("  FROM JOB_MST JM INNER JOIN RTV_DATA_LGLS RD_FK1 ");
+	strSql += CRLF + _T("                         ON JM.WH_TYP = ") + CLib::Quot(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                        AND JM.WH_TYP = RD_FK1.WH_TYP ");
+	strSql += CRLF + _T("                        AND JM.LUGG_NO = RD_FK1.LUGG_OD ");	// [LGLS] ITN_LUGG_FK1 -> LUGG_OD
+	strSql += CRLF + _T("		     RIGHT OUTER JOIN ( SELECT '1' AS D ) TRASH ");
+	strSql += CRLF + _T("                          ON 1=1 ");
+	strSql += CRLF + _T("             LEFT OUTER JOIN COMMON_CODE CCD ");
+	strSql += CRLF + _T("                          ON CCD.CDX_CD = 'JOB_STATUS' ");
+	strSql += CRLF + _T("                         AND CCD.CCD_CD = JM.JOB_STATUS ");
+	strSql += CRLF + _T("                         AND CCD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("             LEFT OUTER JOIN COMMON_CODE CCD_JT ");
+	strSql += CRLF + _T("                          ON CCD_JT.CDX_CD = 'JOB_TYP' ");
+	strSql += CRLF + _T("                         AND CCD_JT.CCD_CD = JM.JOB_TYP ");
+	strSql += CRLF + _T("                         AND CCD_JT.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("UNION ALL ");
+	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("(JM.LUGG_NO, '0') AS LUGG_NO ");
+	strSql += CRLF + _T("	  , ") + _T("'[' + JM.JOB_STATUS + '] ' + ") + m_pDoc->NVL + _T("(CCD.CCD_NM_KOR, '0') AS JOB_STATUS ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_POS, '00000') AS START_POS ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_POS, '00000') AS DEST_POS ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.PRODUCT_ID, '') AS PRODUCT_ID ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.LOT_NO, '') AS LOT_NO ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(CCD_JT.CCD_NM_KOR, '[' + JM.JOB_TYP + ']') AS JOB_TYP ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.START_LOCATION, '00-000-00') AS START_LOCATION ");
+	strSql += CRLF + _T("	  , ") + m_pDoc->NVL + _T("(JM.DEST_LOCATION, '00-000-00') AS DEST_LOCATION ");
+	strSql += CRLF + _T("  FROM JOB_MST JM INNER JOIN RTV_DATA_LGLS RD_FK2 ");
+	strSql += CRLF + _T("                         ON JM.WH_TYP = ") + CLib::Quot(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                        AND JM.WH_TYP = RD_FK2.WH_TYP ");
+	strSql += CRLF + _T("                        AND JM.LUGG_NO = NULL ");	// [LGLS] ITN_LUGG_FK2 has no equivalent: never match (fork2 unused)
+	strSql += CRLF + _T("		     RIGHT OUTER JOIN ( SELECT '1' AS D ) TRASH ");
+	strSql += CRLF + _T("                          ON 1=1 ");
+	strSql += CRLF + _T("             LEFT OUTER JOIN COMMON_CODE CCD ");
+	strSql += CRLF + _T("                          ON CCD.CDX_CD = 'JOB_STATUS' ");
+	strSql += CRLF + _T("                         AND CCD.CCD_CD = JM.JOB_STATUS ");
+	strSql += CRLF + _T("                         AND CCD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("             LEFT OUTER JOIN COMMON_CODE CCD_JT ");
+	strSql += CRLF + _T("                          ON CCD_JT.CDX_CD = 'JOB_TYP' ");
+	strSql += CRLF + _T("                         AND CCD_JT.CCD_CD = JM.JOB_TYP ");
+	strSql += CRLF + _T("                         AND CCD_JT.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+
+	return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
+}
+
+CString CRtvSkinDlg::GetQrySelectRTV_STATUS_CCD( CRTV_DATA* pRTV_DATA )
+{
+	CString CRLF = _T("\r\n");
+	CString strSql = _T("");
+	// [LGLS 2026-08-31] "[코드]명칭" 표기 (사용자 요구)
+	strSql += CRLF + _T("SELECT ") + m_pDoc->NVL + _T("(CCD_JOB_TYP.CCD_NM_KOR, '[' + RD.JOB_TYP_OD + ']') AS JOB_TYP_RD ");
+	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_COMPLETE_RD.CCD_NM_KOR, '0') AS COMPLETE_RD ");
+	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_SENSOR_FK_RD.CCD_NM_KOR, '0') AS SENSOR_FK_RD ");
+	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_AUTO_MODE_RD.CCD_NM_KOR, '0') AS AUTO_MODE_RD ");
+	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_UCSTATUS_RD.CCD_NM_KOR, '0') AS UCSTATUS_RD ");
+	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_ACTIVE_MODE_RD.CCD_NM_KOR, '0') AS ACTIVE_MODE_RD ");
+	strSql += CRLF + _T("	   ,") + m_pDoc->NVL + _T("(CCD_SUSPEND.CCD_NM_KOR, '0') AS SUSPEND ");
+	strSql += CRLF + _T("  FROM RTV_DATA_LGLS RD LEFT OUTER JOIN COMMON_CODE CCD_JOB_TYP");
+	strSql += CRLF + _T("                          ON CCD_JOB_TYP.CDX_CD = 'JOB_TYP' ");
+	strSql += CRLF + _T("                         AND CCD_JOB_TYP.CCD_CD = RD.JOB_TYP_OD ");	// [LGLS] JOB_TYP_RD -> JOB_TYP_OD
+	strSql += CRLF + _T("                         AND CCD_JOB_TYP.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                  LEFT OUTER JOIN COMMON_CODE CCD_COMPLETE_RD ");
+	strSql += CRLF + _T("                          ON CCD_COMPLETE_RD.CDX_CD = 'RTV_COMPLETE' ");
+	strSql += CRLF + _T("                         AND CCD_COMPLETE_RD.CCD_CD = RD.UNLOAD_COMPLETE_RD ");	// [LGLS] COMPLETE_RD -> UNLOAD_COMPLETE_RD
+	strSql += CRLF + _T("                         AND CCD_COMPLETE_RD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                  LEFT OUTER JOIN COMMON_CODE CCD_SENSOR_FK_RD ");
+	strSql += CRLF + _T("                          ON CCD_SENSOR_FK_RD.CDX_CD = 'RTV_SENSOR_FK' ");
+	strSql += CRLF + _T("                         AND CCD_SENSOR_FK_RD.CCD_CD = RD.SENSOR_RTV_RD ");	// [LGLS] SENSOR_FK_RD -> SENSOR_RTV_RD
+	strSql += CRLF + _T("                         AND CCD_SENSOR_FK_RD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                  LEFT OUTER JOIN COMMON_CODE CCD_AUTO_MODE_RD ");
+	strSql += CRLF + _T("                          ON CCD_AUTO_MODE_RD.CDX_CD = 'RTV_AUTO_MODE' ");
+	strSql += CRLF + _T("                         AND CCD_AUTO_MODE_RD.CCD_CD = RD.AUTO_MODE_RD ");
+	strSql += CRLF + _T("                         AND CCD_AUTO_MODE_RD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                  LEFT OUTER JOIN COMMON_CODE CCD_ACTIVE_MODE_RD ");
+	strSql += CRLF + _T("                          ON CCD_ACTIVE_MODE_RD.CDX_CD = 'RTV_ACTIVE_MODE' ");
+	strSql += CRLF + _T("                         AND CCD_ACTIVE_MODE_RD.CCD_CD = (CASE WHEN RD.SUBSYSTEM_STATUS_RD = '2' THEN '1' ELSE '0' END) ");	// [LGLS] ACTIVE_MODE_RD derived from SUBSYSTEM_STATUS_RD
+	strSql += CRLF + _T("                         AND CCD_ACTIVE_MODE_RD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                  LEFT OUTER JOIN COMMON_CODE CCD_UCSTATUS_RD ");
+	strSql += CRLF + _T("                          ON CCD_UCSTATUS_RD.CDX_CD = 'RTV_UCSTATUS' ");
+	strSql += CRLF + _T("                         AND CCD_UCSTATUS_RD.CCD_CD = RD.SUBSYSTEM_STATUS_RD ");	// [LGLS] UCSTATUS -> SUBSYSTEM_STATUS_RD
+	strSql += CRLF + _T("                         AND CCD_UCSTATUS_RD.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("                  LEFT OUTER JOIN COMMON_CODE CCD_SUSPEND ");
+	strSql += CRLF + _T("                          ON CCD_SUSPEND.CDX_CD = 'RTV_SUSPEND' ");
+	strSql += CRLF + _T("                         AND CCD_SUSPEND.CCD_CD = RD.SUSPEND ");
+	strSql += CRLF + _T("                         AND CCD_SUSPEND.WH_TYP LIKE ") + CLib::QuotLikeLR(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T(" WHERE RD.WH_TYP = ") + CLib::Quot(pRTV_DATA->K_WH_TYP);
+	strSql += CRLF + _T("   AND RD.PLC_NO = ") + CLib::Quot(pRTV_DATA->K_PLC_NO);
+	strSql += CRLF + _T("   AND RD.RTV_NO = ") + CLib::Quot(pRTV_DATA->K_RTV_NO);
+
+	return CLib::GetCommonCodeLang(strSql, (int)m_pDoc->m_enLang);
+}
+
+
+HBRUSH CRtvSkinDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = __super::OnCtlColor(pDC, pWnd, nCtlColor);
+	int nId = pWnd->GetDlgCtrlID();
+	if(nId >= IDC_RTVV_LED_LOAD_CMP && nId <= IDC_RTVV_LED_ALARM_RESET_ACK)
+	{
+		CString t; pWnd->GetWindowText(t);
+		if(t == _T("1"))
+		{
+			pDC->SetBkColor(RGB(0,200,0)); pDC->SetTextColor(RGB(0,200,0));
+			if(m_brLedOn) return m_brLedOn;
+		}
+		else
+		{
+			pDC->SetBkColor(RGB(90,90,90)); pDC->SetTextColor(RGB(90,90,90));
+			if(m_brLedOff) return m_brLedOff;
+		}
+	}
+	else if(nId == IDC_RTVV_STATUS)
+	{
+		// [LGLS 2026-10-01] 구 ECS 처럼 상태색 : DOWN 빨강 / IDLE 노랑 / RUN 초록
+		static CBrush s_brRun(RGB(0,255,0)), s_brIdle(RGB(255,255,0)), s_brDown(RGB(255,0,0));
+		CString t; pWnd->GetWindowText(t);
+		BOOL bRun = (t.Find(_T("RUN")) >= 0), bIdle = (t.Find(_T("IDLE")) >= 0);
+		COLORREF c = bRun ? RGB(0,255,0) : bIdle ? RGB(255,255,0) : RGB(255,0,0);
+		pDC->SetBkColor(c); pDC->SetTextColor((bRun || bIdle) ? RGB(0,0,0) : RGB(255,255,255));	// 사진 : DOWN 은 빨강 바탕 흰 글자
+		return bRun ? (HBRUSH)s_brRun : bIdle ? (HBRUSH)s_brIdle : (HBRUSH)s_brDown;
+	}
+	else if(nId == IDC_RTVV_ADVICE)
+	{
+		pDC->SetTextColor(RGB(200,0,0)); pDC->SetBkMode(TRANSPARENT);
+		return (HBRUSH)::GetStockObject(NULL_BRUSH);
+	}
+	else if (nId == IDC_LGLS_ADDR_LBL)
+	{
+		// [LGLS 2026-08-06] 실주소 라벨은 파란 글씨(값이 안 변하므로 투명 배경 안전)
+		pDC->SetTextColor(RGB(0,0,200));
+		pDC->SetBkMode(TRANSPARENT);
+		return (HBRUSH)::GetStockObject(NULL_BRUSH);
+	}
+	else if(nId == IDC_RTVV_TITLE1 || nId == IDC_RTVV_TITLE2)
+	{
+		pDC->SetTextColor(RGB(0,0,200));
+		pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));	// [LGLS 2026-08-05] 잔상 방지
+		return ::GetSysColorBrush(COLOR_WINDOW);
+	}
+	else
+	{
+		// [LGLS 2026-08-05] CV 대화상자처럼 라벨 배경이 비치게 한다.
+		//   여기 라벨들은 CStaticTransparent 로 묶여 있지 않아 기본 회색 브러시로 칠해졌다.
+		//   위에서 걸러진 LED/상태/제목 컨트롤은 이 분기에 오지 않는다.
+		if (nCtlColor == CTLCOLOR_STATIC && pWnd != NULL)
+		{
+			TCHAR szCls[32] = { 0 };
+			::GetClassName(pWnd->GetSafeHwnd(), szCls, 31);
+			if (_tcsicmp(szCls, _T("Static")) == 0)
+			{
+				// 텍스트용 STATIC 만 대상 - 프레임/아이콘/비트맵 스타일은 건드리지 않는다.
+				DWORD dwType = pWnd->GetStyle() & SS_TYPEMASK;
+				if (dwType == SS_LEFT || dwType == SS_CENTER || dwType == SS_RIGHT
+				 || dwType == SS_SIMPLE || dwType == SS_LEFTNOWORDWRAP)
+				{
+					// [LGLS 2026-08-05] 값 상자(WS_BORDER)는 투명이면 글자가 바뀔 때 이전 글자가
+					//   지워지지 않고 겹쳐 보인다(잔상). 불투명 흰 배경으로 지우면서 그린다.
+					if (pWnd->GetStyle() & WS_BORDER)
+					{
+						pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));
+						pDC->SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
+						return ::GetSysColorBrush(COLOR_WINDOW);
+					}
+					pDC->SetBkMode(TRANSPARENT);
+					return (HBRUSH)::GetStockObject(NULL_BRUSH);
+				}
+			}
+			// [LGLS 2026-08-05] 읽기전용 EDIT 는 기본값이 회색이라 일반 입력칸과 달라 보인다.
+			//   CV 대화상자와 같이 값 칸 배경을 일반 입력칸과 같게 그린다.
+			else if (_tcsicmp(szCls, _T("Edit")) == 0)
+			{
+				pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));
+				pDC->SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
+				return ::GetSysColorBrush(COLOR_WINDOW);
+			}
+		}
+		// [LGLS 2026-08-05] 그룹박스 캡션 배경도 라벨과 같이 비치게 한다.
+		//   CSkinDialog 는 모든 CButton 에 단색 브러시를 돌려주어 캡션 자리에 네모가 생긴다.
+		if (pWnd != NULL && (pWnd->GetStyle() & BS_TYPEMASK) == BS_GROUPBOX)
+		{
+			// [LGLS 2026-08-12] 완전 투명(NULL_BRUSH)이면 그룹 경계선이 캡션 글자를
+			//   관통해 보인다. 바탕색과 같은 불투명 배경으로 글자 뒤의 선만 가린다
+			//   (배경이 단색이라 시각적으로는 투명과 동일).
+			pDC->SetBkMode(OPAQUE);
+			pDC->SetBkColor(Global.GetRGB(IDX_RGB_BACKGROUND));
+			return (HBRUSH)m_CtlColorBrush;
+		}
+	}
+	return hbr;
+}
+
+
+// [LGLS 2026-08-01] RTVV 통신상태 패널을 런타임에 생성한다.
+//   배경: InvalidateXxData 가 IDC_RTVV_* 컨트롤에 값을 쓰는데, Ecs.rc 의 대화상자 템플릿에는
+//   그 컨트롤들이 하나도 없었다(리소스 편집 미완). SetDlgItemText/GetDlgItem 은 없는 ID 에 대해
+//   조용히 실패하므로 "대화상자에 값이 하나도 안 나오는" 증상이 됐다.
+//   → rc 를 손대는 대신 동일한 ID 로 컨트롤을 직접 만들어 기존 표시 코드가 그대로 동작하게 한다.
+
+void CRtvSkinDlg::BuildVehStatusPanel()
+{
+	// [LGLS 2026-08-01] 다른 호기를 선택하면 대화상자 창이 다시 만들어져 런타임 컨트롤이 사라진다.
+	//   배열에 남은 포인터의 창이 이미 없으면 정리하고 재생성한다([확대] 버튼/적재용기 행 소실 방지).
+	if (m_arVehCtrl.GetCount() > 0)
+	{
+		CWnd* pFirst = (CWnd*)m_arVehCtrl.GetAt(0);
+		if (pFirst != NULL && ::IsWindow(pFirst->GetSafeHwnd()))
+			return;
+		int i;
+		for (i = 0; i < m_arVehCtrl.GetCount(); i++)  { CWnd* p = (CWnd*)m_arVehCtrl.GetAt(i);  if (p != NULL) delete p; }
+		m_arVehCtrl.RemoveAll();
+	}
+
+	// [LGLS 2026-09-17] 적재용기/제품정보 두 행(종전 CLib::AddTwoRowsBelow 런타임 생성), 작업상태 두 열 배치,
+	//   ERROR INFORMATION 끌어올림·창 높이 축소는 모두 Ecs.rc 에 최종 위치로 옮겼다(런타임 재배치 없음).
+
+	CRect rcCli; GetClientRect(&rcCli);
+	CRect rcWin; GetWindowRect(&rcWin);
+
+	// [LGLS 2026-10-01] ★구 ECS 설비 팝업(StackerForm / RGVForm)과 같은 배치★ (사용자 지시 - 내용 전부, 위치도 맞춘다)
+	//   구 ECS 팝업 panel1(505x349) :
+	//     panel2 (y 0~46)   : 상태(DOWN/IDLE/RUN 색) · 설비명 · 설명
+	//     panel3 (y 46~126) : 신호 LED 4열 x 3행 + Pallet ID,  현재위치/출발지/도착지/완료위치(각 3칸) + 알람코드
+	//     panel4 (y 124~285): 요청번호 ― 명령순번, 배치번호, 자재코드, 팔렛(+입고/출고), 출발위치, 도착위치, 안내문
+	//                         오른쪽 [명령 재전송] [완료처리] [이상종료]
+	//     panel5 (y 288~349): [사용금지] 체크, [확인]
+	//   좌표는 구 ECS Designer 값을 그대로 쓰고, 패널 왼쪽 끝(nLeft)만 더한다.
+	//   PLC 실주소(파랑)는 종전처럼 이름 옆에 작게 병기한다(사용자 요청 2026-08-05).
+	const int PW    = 528;	// [LGLS 2026-10-01] 사진 배치 (영문 LED 이름이 길어 16 더 넓힘)
+	const int STRIP = 30;
+	int nLeft = rcCli.Width();
+	if (m_nVehBaseH <= 0) m_nVehBaseH = rcWin.Height();
+	if (m_nVehBaseW <= 0) m_nVehBaseW = rcWin.Width();
+	m_nVehPanelW = PW;
+	m_nVehPanelH = 0;
+	UNREFERENCED_PARAMETER(STRIP);
+
+	CFont* pFont = GetFont();
+	struct MK {
+		CWnd* dlg; CFont* font; CPtrArray* arr;
+		void Add(CWnd* p) { if (font) p->SetFont(font); arr->Add(p); }
+		void Label(LPCTSTR s, int x, int y, int w, int h, DWORD extra = 0) {
+			CStatic* p = new CStatic();
+			p->Create(s, WS_CHILD | WS_VISIBLE | SS_LEFT | extra, CRect(x, y, x + w, y + h), dlg);
+			Add(p);
+		}
+		void LabelA(LPCTSTR nm, const CString& addr, int x, int y, int wN, int wA) {
+			Label(nm, x, y, wN, 16);
+			if (addr.IsEmpty() || wA <= 0) return;
+			CStatic* p = new CStatic();
+			p->Create(addr, WS_CHILD | WS_VISIBLE | SS_LEFT, CRect(x + wN + 2, y, x + wN + 2 + wA, y + 16), dlg, IDC_LGLS_ADDR_LBL);
+			Add(p);
+		}
+		void Value(int id, int x, int y, int w, int h, DWORD extra = 0) {
+			CStatic* p = new CStatic();
+			p->Create(_T(""), WS_CHILD | WS_VISIBLE | SS_CENTERIMAGE | WS_BORDER | extra, CRect(x, y, x + w, y + h), dlg, id);
+			Add(p);
+		}
+		void Led(int id, int x, int y) {
+			CStatic* p = new CStatic();
+			p->Create(_T("0"), WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER, CRect(x, y, x + 14, y + 13), dlg, id);
+			Add(p);
+		}
+		void Button(int id, LPCTSTR s, int x, int y, int w, int h) {
+			CButton* p = new CButton();
+			p->Create(s, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_MULTILINE, CRect(x, y, x + w, y + h), dlg, id);
+			Add(p);
+		}
+		void Check(int id, LPCTSTR s, int x, int y, int w, int h) {
+			CButton* p = new CButton();
+			p->Create(s, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, CRect(x, y, x + w, y + h), dlg, id);
+			Add(p);
+		}
+	} mk = { this, pFont, &m_arVehCtrl };
+
+	int X = nLeft + 4;				// 구 ECS panel1 의 원점
+	CString strOwner = _T("VEHICLE:1");	// RTV(RGV) 는 관측표에서 VEHICLE:1
+
+	// [LGLS 2026-09-12] 완료 Ack [쓰기] 버튼 글자 (rc_resource\dlg_xx\dlg_xx.ini  ackwrite=)
+	CString strAckW = _T("쓰기");
+	{
+		TCHAR _cfA[MAX_PATH] = {0}; GetModuleFileName(NULL, _cfA, MAX_PATH);
+		CString _apA = _cfA;
+		CString _fpA = Global.GetConcatPath(_apA.Left(_apA.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), _T(".ini"));
+		CString _sA = CLib::GetIniStringFromPath(_fpA, _T("ackwrite"), (int)((m_pDoc == NULL) ? EN_KOR : m_pDoc->m_enLang));
+		if (!_sA.IsEmpty()) strAckW = _sA;
+	}
+	// ── [LGLS 2026-10-01] ★리소스 방식★ : 패널은 Ecs.rc 의 IDD_RTVV_PANEL (자식 대화상자 템플릿) 에 그려 둔다 (사용자 지시)
+	//   템플릿으로 자식 창을 하나 만든 뒤, 그 안의 컨트롤을 전부 이 창(본체)으로 옮겨 붙이고 껍데기는 없앤다.
+	//   그래서 종전 코드(SetDlgItemText / GetDlgItem / ON_BN_CLICKED / OnCtlColor)가 ID 그대로 동작한다.
+	//   배치는 VS 리소스 편집기에서 고치면 된다. 런타임에 정해지는 글자(설비명·PLC 주소·[쓰기] 문구)만 아래서 채운다.
+	{
+		CDialog dlgTpl;
+		if (dlgTpl.Create(IDD_RTVV_PANEL, this))
+		{
+			CWnd* pK = dlgTpl.GetWindow(GW_CHILD);
+			while (pK != NULL)
+			{
+				HWND h = pK->GetSafeHwnd();
+				HWND hNext = ::GetWindow(h, GW_HWNDNEXT);
+				CRect rc; ::GetWindowRect(h, &rc); dlgTpl.ScreenToClient(&rc);
+				::SetParent(h, m_hWnd);
+				::SetWindowPos(h, NULL, rc.left + X, rc.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+				CWnd* pW = new CWnd(); pW->Attach(h);
+				if (pFont) pW->SetFont(pFont);
+				m_arVehCtrl.Add(pW);
+				pK = (hNext != NULL) ? CWnd::FromHandle(hNext) : NULL;
+			}
+			dlgTpl.DestroyWindow();
+		}
+		else
+		{
+			AfxMessageBox(_T("IDD_RTVV_PANEL 리소스를 만들지 못했습니다."));
+		}
+		// 설비명은 굵게
+		{
+			static CFont s_fntTitle;
+			if (s_fntTitle.GetSafeHandle() == NULL) { LOGFONT lf = {0}; if (pFont) pFont->GetLogFont(&lf); lf.lfHeight = -16; lf.lfWeight = FW_BOLD; s_fntTitle.CreateFontIndirect(&lf); }
+			CWnd* pT = GetDlgItem(IDC_RTVV_TITLE1); if (pT && s_fntTitle.GetSafeHandle()) pT->SetFont(&s_fntTitle);
+		}
+		SetDlgItemText(IDC_RTVV_BTN_LCA_W, _T("Load ACK ") + strAckW);
+		SetDlgItemText(IDC_RTVV_BTN_UCA_W, _T("Unload ACK ") + strAckW);
+		CString strAddrLine;
+		strAddrLine.Format(_T("LoadCmp %s / UnloadCmp %s / TrReq %s / Pallet %s / Alarm %s / 위치 %s / 출발 %s / 도착 %s / 완료 %s / 알람코드 %s"),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("LOAD_COMPLETE")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("UNLOAD_COMPLETE")),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("TRANSFER_REQUEST")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("PALLET_EXIST_FLAG")),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("ALARM_SET_REPORT")),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("SUBSYSTEM_LOCATION_01")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("FROM_01")),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("TO_01")), (LPCTSTR)CLib::GetObsAddr(strOwner, _T("TRANSFER_COMPLETE_LOCATION_01")),
+			(LPCTSTR)CLib::GetObsAddr(strOwner, _T("ALARM_SET_CODE")));
+		SetDlgItemText(IDC_LGLS_ADDR_LBL, strAddrLine);
+	}
+
+	SetVehPanelExpanded(FALSE);		// 기본은 축소(원래 DLG 만)
+}
+
+// [LGLS 2026-08-01] 상태 패널 표시/숨김 + 창 크기 전환.
+//   확대 : 원래 DLG + 통신상태 패널(이전 창 내용) / 축소 : 원래 DLG 만
+void CRtvSkinDlg::SetVehPanelExpanded(BOOL bExpand)
+{
+	m_bVehExpanded = bExpand;
+	for (int i = 0; i < m_arVehCtrl.GetCount(); i++)
+	{
+		CWnd* p = (CWnd*)m_arVehCtrl.GetAt(i);
+		if (p != NULL && ::IsWindow(p->m_hWnd)) p->ShowWindow(bExpand ? SW_SHOW : SW_HIDE);
+	}
+	CRect rc; GetWindowRect(&rc);
+	// [LGLS 2026-09-12] 세로가 아니라 가로를 늘린다 (S/C 와 동일).
+	if (m_nVehBaseW <= 0) m_nVehBaseW = rc.Width();
+	SetWindowPos(NULL, 0, 0, m_nVehBaseW + (bExpand ? m_nVehPanelW : 0), m_nVehBaseH,
+	             SWP_NOMOVE | SWP_NOZORDER);
+	RedrawWindow(NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+	if (bExpand)
+		for (int i = 0; i < m_arVehCtrl.GetCount(); i++)
+		{ CWnd* p = (CWnd*)m_arVehCtrl.GetAt(i); if (p && ::IsWindow(p->m_hWnd)) p->RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW); }
+	if (bExpand)
+	{
+		// [LGLS 2026-08-06] 확대한 창이 모니터 작업영역보다 크면 하단이 화면 밖으로 잘린다
+		//   (SC 에서 '테두리가 안 보인다'던 증상의 실체). 넘치는 만큼 위로 밀어 올린다.
+		HMONITOR hMon = ::MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+		MONITORINFO mi; ::ZeroMemory(&mi, sizeof(mi)); mi.cbSize = sizeof(mi);
+		if (::GetMonitorInfo(hMon, &mi))
+		{
+			// [LGLS 2026-09-12] 오른쪽으로 펴므로 우측이 넘치면 왼쪽으로 밀어 넣는다(세로 보정도 유지).
+			CRect rcNow; GetWindowRect(&rcNow);
+			int nLeftNew = rcNow.left, nTopNew = rcNow.top;
+			int nOverR = rcNow.right - mi.rcWork.right;
+			if (nOverR > 0) nLeftNew = rcNow.left - nOverR;
+			if (nLeftNew < mi.rcWork.left) nLeftNew = mi.rcWork.left;
+			int nOver = rcNow.bottom - mi.rcWork.bottom;
+			if (nOver > 0) nTopNew = rcNow.top - nOver;
+			if (nTopNew < mi.rcWork.top) nTopNew = mi.rcWork.top;
+			if (nLeftNew != rcNow.left || nTopNew != rcNow.top)
+			{
+				SetWindowPos(NULL, nLeftNew, nTopNew, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+			}
+		}
+	}
+	if (::IsWindow(m_btnVehZoom.m_hWnd))
+	{
+		// [LGLS 2026-08-05] 버튼 문구도 다국어 ini 에서 읽는다(없으면 기본 한글).
+		TCHAR chrFile[500]; GetModuleFileName(NULL, chrFile, MAX_PATH);
+		CString strApp; strApp.Format(_T("%s"), chrFile);
+		CString strPath = Global.GetConcatPath(strApp.Left(strApp.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), _T(".ini"));
+		EN_LANG enLang = (m_pDoc == NULL) ? EN_KOR : m_pDoc->m_enLang;
+		CString strTxt = CLib::GetIniStringFromPath(strPath, bExpand ? _T("zoomout") : _T("zoomin"), (int)enLang);
+		if (strTxt.IsEmpty()) strTxt = bExpand ? _T("축소") : _T("확대");
+		m_btnVehZoom.SetWindowText(strTxt);
+		CString strIco = strApp.Left(strApp.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\20x20\\")
+		               + (bExpand ? _T("arrow-up.png") : _T("arrow-down.png"));
+		m_btnVehZoom.SetIcon(Global.HICONFromPATH(strIco), NULL, 5, 5);
+	}
+}
+
+void CRtvSkinDlg::OnBnClickedVehZoom()
+{
+	SetVehPanelExpanded(!m_bVehExpanded);
+}
+
+void CRtvSkinDlg::SetLed(int nId, CString strVal)
+{
+	CString t = (strVal == _T("1")) ? _T("1") : _T("0");
+	SetDlgItemText(nId, t);
+	CWnd* p = GetDlgItem(nId);
+	if(p) p->Invalidate();
+}
+
+void CRtvSkinDlg::OnBnClickedRtvvResend()
+{
+	if(m_pRTV_DATA == NULL) return;
+	if(!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+
+	// [LGLS 2026-08-13] 구 ECS(RGVForm buttonRetry)와 동일: 진행 중 지시(LUGG_OD)가 없으면(IDLE)
+	//   재전송할 명령이 없으므로 안내만 하고 중단한다.
+	{
+		CString strChk = _T("SELECT ISNULL(LUGG_OD,'') AS ITN FROM RTV_DATA_LGLS WHERE WH_TYP = ")
+		               + CLib::Quot(m_pDoc->m_WH_TYP)
+		               + _T(" AND RTV_NO = ") + CLib::Quot(m_pRTV_DATA->K_RTV_NO);
+		int nCnt = 0; CString strMsg;
+		_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nCnt, strMsg);
+		CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
+		CString strItn;
+		if (nCnt > 0) { pRsw->MoveFirst(); strItn = pRsw->GetItem(_T("ITN")); }
+		delete pRsw;
+		strItn.Trim();
+		if (strItn.IsEmpty() || strItn == _T("0") || strItn == _T("0000"))
+		{
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("재전송 가능한 명령이 없습니다")));
+			return;
+		}
+	}
+	if(AfxMessageBox(m_pDoc->GetMsgLangDef(_T("명령을 재전송 하시겠습니까?")), MB_YESNO) != IDYES)
+		return;
+	CString strSql;
+	// [LGLS 2026-10-01] 지시 재전송 = CMD_RQ_ID RESEND (WCS_TASK_CV VehThread.ConsumeOperatorCommands 가 _OD 지시를 다시 내보내고 N 으로 소비)
+	strSql.Format(_T(" UPDATE RTV_DATA_LGLS SET CMD_RQ_ID='RESEND', CMD_RQ_YN='Y' WHERE WH_TYP='%s' AND PLC_NO='%02s' AND RTV_NO='%s' "),
+		m_pDoc->m_WH_TYP, m_pRTV_DATA->K_PLC_NO, m_pRTV_DATA->K_RTV_NO);
+	m_pDoc->BeginTrans_DLG();
+	if(m_pDoc->ExcuteQueryString_DLG(strSql))
+	{
+		m_pDoc->CommitTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("성공")));
+	}
+	else
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+	}
+}
+
+void CRtvSkinDlg::OnBnClickedRtvvOk()
+{
+	m_pDoc->m_pRtvSkinDlg = NULL;
+	delete this;
+}
+
+// [LGLS 2026-09-03] [수동지시] : 리본 MANUAL > RTV 와 같은 창을 연다
+void CRtvSkinDlg::OnBnClickedBtnRtvManual()
+{
+	if (m_pDoc != NULL) m_pDoc->OnCommandRangeMainFrameMANUAL(ID_MANUAL_RTV);
+}
+
+// [LGLS 2026-09-12] 확대 패널 [쓰기] : 완료 Ack 를 운전원이 직접 켜고/끈다 (상황 A 구제).
+//   Client 는 PLC 에 직접 쓰지 않는다. RTV_DATA_LGLS 의 명령 컬럼에 "ACKW:..=1|0" 을 남기면
+//   WCS_TASK_CV 의 해당 스레드가 소비해 그 스레드가 쓴다 - 같은 Ack 워드를 만지는 다른 손이 없게 하고,
+//   (S/C·RGV 는) 캐시를 함께 맞춰 설비가 보고를 내릴 때 규약대로 Ack 도 내리게 한다.
+//   대상은 완료 Ack 두 종류뿐 - 이송지시·PLC→WCS 보고 비트는 절대 쓰지 않는다.
+void CRtvSkinDlg::OnAckWrite(UINT nID)
+{
+	if (m_pDoc == NULL || m_pRTV_DATA == NULL) return;
+	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), UPD_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+	BOOL bLoad = (nID == IDC_RTVV_BTN_LCA_W);
+	CString strName = CString(_T("RGV ")) + m_pRTV_DATA->K_RTV_NO;
+	CString strOwner = _T("VEHICLE:1");
+	CString strObs = CString(bLoad ? _T("LOAD_COMPLETE_ACK") : _T("UNLOAD_COMPLETE_ACK")) + _T("");
+	CString strRep = CString(bLoad ? _T("LOAD_COMPLETE") : _T("UNLOAD_COMPLETE")) + _T("");
+	CString strSig; strSig.Format(_T("%s"), bLoad ? _T("LC") : _T("UC"));
+	CString strCur;    GetDlgItemText(bLoad ? IDC_RTVV_LED_LOAD_CMP_ACK : IDC_RTVV_LED_UNLOAD_CMP_ACK, strCur);
+	CString strRepNow; GetDlgItemText(bLoad ? IDC_RTVV_LED_LOAD_CMP : IDC_RTVV_LED_UNLOAD_CMP, strRepNow);
+
+	// 다른 명령이 처리 대기 중이면 덮어쓰지 않는다
+	{
+		CString strChk;
+		strChk.Format(_T(" SELECT CMD_RQ_ID, CMD_RQ_YN FROM RTV_DATA_LGLS WHERE WH_TYP = '%s' AND PLC_NO = '%02s' AND RTV_NO = '%s' "), (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_PLC_NO, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+		int nRowCnt = -1; CString strMessage;
+		_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nRowCnt, strMessage);
+		if (nRowCnt > 0)
+		{
+			CRecordSetWrap* pRsw = new CRecordSetWrap(ptr);
+			pRsw->MoveFirst();
+			CString strPendId = pRsw->GetItem(_T("CMD_RQ_ID"));
+			CString strPendYn = pRsw->GetItem(_T("CMD_RQ_YN"));
+			delete pRsw;
+			strPendId.Trim(); strPendYn.Trim();
+			if (strPendYn == _T("Y") && strPendId.Left(4) != _T("ACKW"))
+			{
+				CString strBusy; strBusy.Format(_T("다른 명령(%s)이 처리 대기 중입니다. 잠시 후 다시 하세요."), (LPCTSTR)strPendId);
+				AfxMessageBox(strBusy);
+				return;
+			}
+		}
+	}
+
+	CString strMsg;
+	strMsg.Format(_T("%s\n%s  (%s)\n\n현재 Ack = %s   /   설비 보고 %s = %s\n\n[예] = ON 으로 쓰기      [아니오] = OFF 로 쓰기      [취소]"),
+		(LPCTSTR)strName, (LPCTSTR)strObs, (LPCTSTR)(CLib::GetObsAddr(strOwner, strObs).IsEmpty() ? CString(_T("주소 미상")) : CLib::GetObsAddr(strOwner, strObs)),
+		(LPCTSTR)strCur, (LPCTSTR)strRep, (LPCTSTR)strRepNow);
+	int nRet = AfxMessageBox(strMsg, MB_YESNOCANCEL | MB_ICONQUESTION | MB_DEFBUTTON3);
+	if (nRet != IDYES && nRet != IDNO) return;
+	CString strCmd; strCmd.Format(_T("ACKW-%s=%d"), (LPCTSTR)strSig, (nRet == IDYES) ? 1 : 0);	// 구분자 '-' (':' 는 TASK DB 계층이 '@' 로 바꾼다)
+
+	CString strSql;
+	strSql.Format(_T(" UPDATE RTV_DATA_LGLS SET CMD_RQ_ID = '%s', CMD_RQ_YN = 'Y' WHERE WH_TYP = '%s' AND PLC_NO = '%02s' AND RTV_NO = '%s' AND (CMD_RQ_YN <> 'Y' OR CMD_RQ_ID LIKE 'ACKW%%') "),
+		(LPCTSTR)strCmd, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_PLC_NO, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+	if (m_pDoc->ExcuteQueryString_DLG(strSql) != TRUE)
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+	CString strLog; strLog.Format(_T("Ack 수동 쓰기 %s -> %s (%s %s)"), (LPCTSTR)strName, (LPCTSTR)strCmd, (LPCTSTR)strObs, (LPCTSTR)CLib::GetObsAddr(strOwner, strObs));
+	m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), m_pRTV_DATA->V_ITN_LUGG_FK1, _T(""), _T(""), strLog);
+}
+
+// [LGLS 2026-09-12] Ecs.ini [MENU] ZOOM_BTN=1/0 → [확대] 를 표시/숨김.
+//   창을 만들 때(RedrawImage)와 CEcsView 가 ini 저장을 감지했을 때 부른다. 숨길 때 패널이 펼쳐져 있으면 먼저 접는다.
+//   [LGLS 2026-09-17] [확대] 는 rc 에서 명령 버튼 맨 아래에 있으므로 숨겨도 빈틈이 생기지 않는다(버튼 재배치 없음).
+void CRtvSkinDlg::ApplyZoomBtnIni()
+{
+	if (GetSafeHwnd() == NULL) return;
+	BOOL bZoom = (::GetPrivateProfileInt(_T("MENU"), _T("ZOOM_BTN"), 1, ECS_INI_FILE) != 0);
+	if (!bZoom && m_bVehExpanded) SetVehPanelExpanded(FALSE);
+	CWnd* pZ = GetDlgItem(IDC_LGLS_RTV_ZOOM);
+	if (pZ) pZ->ShowWindow(bZoom ? SW_SHOW : SW_HIDE);
+
+	// [LGLS 2026-09-18] [수동지시] 표시 여부 - Ecs.ini [MENU] RTV_MANUAL_BTN=1/0 (기본 1)
+	//   숨겨도 다른 버튼은 옮기지 않는다(자리는 rc 가 정한다). 그 자리는 빈칸으로 남는다.
+	BOOL bManual = FALSE;	// [LGLS 2026-09-28] 수동지시 폐기 - 늘 숨긴다 (사용자 지시)
+	CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL);
+	if (pM) pM->ShowWindow(bManual ? SW_SHOW : SW_HIDE);
+
+	// [LGLS 2026-10-05] [강제완료] 표시 여부 - Ecs.ini [MENU] FORCE_BTN=1/0 (기본 1) (사용자 지시 - 판넬 [완료처리] 로 일원화할 때 0)
+	//   본체의 [강제완료] 와 [확대] 패널의 [완료처리] 는 같은 기능이라 함께 숨긴다. 자리는 빈칸으로 남는다.
+	BOOL bForce = (::GetPrivateProfileInt(_T("MENU"), _T("FORCE_BTN"), 1, ECS_INI_FILE) != 0);
+	CWnd* pF = GetDlgItem(IDC_BTN_RTV_COMPLETE);
+	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
+	pF = GetDlgItem(IDC_RTVV_BTN_FORCE);
+	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
+}
+
+// ===================================================================
+// [LGLS 2026-10-01] 구 ECS RGVForm 의 [완료처리] / [이상종료] / [사용금지] (사용자 지시)
+// ===================================================================
+static BOOL LglsRtvExecUpdate(CEcsDoc* pDoc, const CString& strSql, const CString& strLog, CString strLugg, LPCTSTR strWid)
+{
+	if (pDoc == NULL) return FALSE;
+	if (!pDoc->Permission(strWid, UPD_YN)) { AfxMessageBox(pDoc->GetMsgLangDef(_T("권한이 없습니다"))); return FALSE; }
+	if (pDoc->BeginTrans_DLG() < 1) return FALSE;
+	if (strLugg.IsEmpty()) strLugg = _T("0");
+	if (!pDoc->GetQueryInsertClientLog(strWid, strLugg, _T(""), _T(""), strLog)) { pDoc->RollbackTrans_DLG(); return FALSE; }
+	if (!pDoc->ExcuteQueryString_DLG(strSql)) { pDoc->RollbackTrans_DLG(); AfxMessageBox(pDoc->GetMsgLangDef(_T("실패"))); return FALSE; }
+	pDoc->CommitTrans_DLG();
+	return TRUE;
+}
+
+void CRtvSkinDlg::OnRtvvForce()
+{
+	// [LGLS 2026-10-05] 본체 [강제완료] 와 같은 경로로 보낸다 - RUN 거부 → IO_TASK 가 작업을 다음 단계로 넘기고
+	//   (출고면 H/S 에 작업번호도 찍고) 설비에 물린 명령을 비운다. 종전처럼 여기서 JOB_STATUS 만 바꾸면 설비 쪽 명령이 남았다.
+	OnBnClickedBtnRtvComplete();
+}
+
+void CRtvSkinDlg::OnRtvvAbort()
+{
+	if (m_pDoc == NULL || m_pRTV_DATA == NULL) return;
+	if (m_strRtvvState == _T("2")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(작업중) 상태입니다. 작업완료후 [이상종료]처리를 하십시오."))); return; }
+	if (m_strRtvvState == _T("0")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("DOWN(작업중단) 상태에서는 [이상종료]처리를 할 수 없습니다."))); return; }
+	if (m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("[이상종료]처리할 명령이 없습니다."))); return; }
+	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("이상종료 하시겠습니까? (지시 연결 해제, 작업정보는 유지)")) + _T(" [RTV ") + m_pRTV_DATA->K_RTV_NO + _T("]"), MB_YESNO) != IDYES) return;
+	CString strSql;
+	strSql.Format(_T("UPDATE RTV_DATA_LGLS SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0'")
+		_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00'")
+		_T(", TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
+		_T(", RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N', DEPART_TRACK = '', ARRIVE_TRACK = ''")
+		_T(" WHERE WH_TYP = '%s' AND RTV_NO = '%s'"),
+		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+	if (LglsRtvExecUpdate(m_pDoc, strSql, CString(_T("이상종료(구ECS) : 지시(OD) 해제 (RTV ")) + m_pRTV_DATA->K_RTV_NO + _T(")"), _T("0"), _T("CRtvSkinDlg")))
+		AfxMessageBox(_T("[이상종료]처리를 완료하였습니다."));
+}
+
+void CRtvSkinDlg::OnRtvvDisable()
+{
+	CWnd* pBtn = GetDlgItem(IDC_BTN_RTV_SUSPEND);
+	if (pBtn == NULL) return;
+	SendMessage(WM_COMMAND, MAKEWPARAM(IDC_BTN_RTV_SUSPEND, BN_CLICKED), (LPARAM)pBtn->GetSafeHwnd());
+}

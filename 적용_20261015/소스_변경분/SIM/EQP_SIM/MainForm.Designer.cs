@@ -1,0 +1,448 @@
+﻿namespace EQP_SIM
+{
+    partial class MainForm
+    {
+        private System.ComponentModel.IContainer components = null;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null)) components.Dispose();
+            base.Dispose(disposing);
+        }
+
+        private void InitializeComponent()
+        {
+            this.pnlTop = new System.Windows.Forms.Panel();
+            this.lblServer = new System.Windows.Forms.Label();
+            this.chkAutoFeed = new System.Windows.Forms.CheckBox();
+            this.chkInjectDouble = new System.Windows.Forms.CheckBox();
+            this.chkInjectEmpty = new System.Windows.Forms.CheckBox();
+            this.chkFaultA = new System.Windows.Forms.CheckBox();
+            this.chkStop1 = new System.Windows.Forms.CheckBox();
+            this.chkStop2 = new System.Windows.Forms.CheckBox();
+            this.chkStop3 = new System.Windows.Forms.CheckBox();
+            this.chkStop4 = new System.Windows.Forms.CheckBox();
+            this.lblStop = new System.Windows.Forms.Label();
+            this.nudFaultA = new System.Windows.Forms.NumericUpDown();
+            this.lblFaultA = new System.Windows.Forms.Label();
+            this.chkFaultB = new System.Windows.Forms.CheckBox();
+            this.btnFaultClear = new System.Windows.Forms.Button();
+            this.btnClearErr = new System.Windows.Forms.Button();
+            this.btnOpenIni = new System.Windows.Forms.Button();
+            this.btnReloadIni = new System.Windows.Forms.Button();
+            this.btnFeed11 = new System.Windows.Forms.Button();
+            this.btnFeed12 = new System.Windows.Forms.Button();
+            this.btnFeed15 = new System.Windows.Forms.Button();
+            this.btnReset = new System.Windows.Forms.Button();
+            this.txtClearTrack = new System.Windows.Forms.TextBox();
+            this.btnClearPallet = new System.Windows.Forms.Button();
+            this.btnScenarioTest = new System.Windows.Forms.Button();
+            this.splitMain = new System.Windows.Forms.SplitContainer();
+            this.lvDevices = new System.Windows.Forms.ListView();
+            this.colDev = new System.Windows.Forms.ColumnHeader();
+            this.colState = new System.Windows.Forms.ColumnHeader();
+            this.lvLog = new System.Windows.Forms.ListView();
+            this.colTime = new System.Windows.Forms.ColumnHeader();
+            this.colMsg = new System.Windows.Forms.ColumnHeader();
+            this.statusStrip = new System.Windows.Forms.StatusStrip();
+            this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.timerUi = new System.Windows.Forms.Timer(this.components = new System.ComponentModel.Container());
+            this.pnlTop.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
+            this.splitMain.Panel1.SuspendLayout();
+            this.splitMain.Panel2.SuspendLayout();
+            this.splitMain.SuspendLayout();
+            this.SuspendLayout();
+            //
+            // pnlTop
+            //
+            this.pnlTop.Controls.Add(this.lblServer);
+            this.pnlTop.Controls.Add(this.chkAutoFeed);
+            this.pnlTop.Controls.Add(this.chkInjectDouble);
+            this.pnlTop.Controls.Add(this.chkInjectEmpty);
+            this.pnlTop.Controls.Add(this.chkFaultA);
+            this.pnlTop.Controls.Add(this.chkStop1);
+            this.pnlTop.Controls.Add(this.chkStop2);
+            this.pnlTop.Controls.Add(this.chkStop3);
+            this.pnlTop.Controls.Add(this.chkStop4);
+            this.pnlTop.Controls.Add(this.lblStop);
+            this.pnlTop.Controls.Add(this.nudFaultA);
+            this.pnlTop.Controls.Add(this.lblFaultA);
+            this.pnlTop.Controls.Add(this.chkFaultB);
+            this.pnlTop.Controls.Add(this.btnFaultClear);
+            this.pnlTop.Controls.Add(this.btnClearErr);
+            this.pnlTop.Controls.Add(this.btnOpenIni);
+            this.pnlTop.Controls.Add(this.btnReloadIni);
+            this.pnlTop.Controls.Add(this.btnFeed11);
+            this.pnlTop.Controls.Add(this.btnFeed12);
+            this.pnlTop.Controls.Add(this.btnFeed15);
+            this.pnlTop.Controls.Add(this.btnReset);
+            this.pnlTop.Controls.Add(this.txtClearTrack);
+            this.pnlTop.Controls.Add(this.btnClearPallet);
+            this.pnlTop.Controls.Add(this.btnScenarioTest);
+            this.pnlTop.Controls.Add(this.lblSpawn);
+            this.pnlTop.Controls.Add(this.txtSpawnTrack);
+            this.pnlTop.Controls.Add(this.lblSpawnJob);
+            this.pnlTop.Controls.Add(this.txtSpawnJob);
+            this.pnlTop.Controls.Add(this.chkSpawnOut);
+            this.pnlTop.Controls.Add(this.btnSpawnPallet);
+            this.pnlTop.Controls.Add(this.lblSpawnHint);
+            this.pnlTop.Controls.Add(this.lblErrInj);
+            this.pnlTop.Controls.Add(this.cboErrEqp);
+            this.pnlTop.Controls.Add(this.lblErrCode);
+            this.pnlTop.Controls.Add(this.txtErrCode);
+            this.pnlTop.Controls.Add(this.btnErrRaise);
+            this.pnlTop.Controls.Add(this.btnErrClearSel);
+            this.pnlTop.Controls.Add(this.btnOpManual);
+            this.pnlTop.Controls.Add(this.btnOpAuto);
+            this.pnlTop.Controls.Add(this.lblErrHint);
+            this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlTop.Height = 202;   // [LGLS 2026-10-14] 시험정지 행 추가 /   // [LGLS 2026-09-06] 화물 생성 행 추가 / [LGLS 2026-09-12] 고장 주입 행 추가 / [LGLS 2026-09-21] 설비 에러 주입 행 추가
+            //
+            // lblServer
+            //
+            this.lblServer.Location = new System.Drawing.Point(12, 8);
+            this.lblServer.Size = new System.Drawing.Size(280, 18);
+            this.lblServer.Text = "XGT 서버: -";
+            //
+            // chkAutoFeed
+            //
+            this.chkAutoFeed.Location = new System.Drawing.Point(12, 28);
+            this.chkAutoFeed.Size = new System.Drawing.Size(200, 22);
+            this.chkAutoFeed.Text = "입고대 자동 투입 (작업자 자동화)";
+            this.chkAutoFeed.CheckedChanged += new System.EventHandler(this.chkAutoFeed_CheckedChanged);
+            //
+            // chkInjectDouble / chkInjectEmpty (이중입고/공출고 에러 주입)
+            //
+            this.chkInjectDouble.Location = new System.Drawing.Point(12, 56);
+            this.chkInjectDouble.Size = new System.Drawing.Size(190, 22);
+            this.chkInjectDouble.Text = "이중입고 에러 (다음 입고 크레인)";
+            this.chkInjectDouble.ForeColor = System.Drawing.Color.DarkRed;
+            this.chkInjectDouble.CheckedChanged += new System.EventHandler(this.chkInjectDouble_CheckedChanged);
+            this.chkInjectEmpty.Location = new System.Drawing.Point(210, 56);
+            this.chkInjectEmpty.Size = new System.Drawing.Size(190, 22);
+            this.chkInjectEmpty.Text = "공출고 에러 (다음 출고 크레인)";
+            this.chkInjectEmpty.ForeColor = System.Drawing.Color.DarkBlue;
+            this.chkInjectEmpty.CheckedChanged += new System.EventHandler(this.chkInjectEmpty_CheckedChanged);
+            //
+            // [LGLS 2026-09-21] 설비 에러 주입 행 (사용자 지시) : 설비(S/C 1~5, RTV 1) 고르고 코드 넣고 [에러 발생]
+            //
+            this.lblErrInj.Location = new System.Drawing.Point(12, 149);
+            this.lblErrInj.Size = new System.Drawing.Size(90, 20);
+            this.lblErrInj.Text = "설비 에러 주입";
+            this.lblErrInj.ForeColor = System.Drawing.Color.DarkRed;
+            this.lblErrInj.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.cboErrEqp.Location = new System.Drawing.Point(104, 146);
+            this.cboErrEqp.Size = new System.Drawing.Size(110, 25);
+            this.cboErrEqp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.lblErrCode.Location = new System.Drawing.Point(222, 149);
+            this.lblErrCode.Size = new System.Drawing.Size(64, 20);
+            this.lblErrCode.Text = "에러코드";
+            this.txtErrCode.Location = new System.Drawing.Point(286, 146);
+            this.txtErrCode.Size = new System.Drawing.Size(60, 25);
+            this.txtErrCode.Text = "11";
+            this.txtErrCode.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.btnErrRaise.Location = new System.Drawing.Point(352, 145);
+            this.btnErrRaise.Size = new System.Drawing.Size(96, 26);
+            this.btnErrRaise.Text = "에러 발생";
+            this.btnErrRaise.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnErrRaise.BackColor = System.Drawing.Color.MistyRose;
+            this.btnErrRaise.UseVisualStyleBackColor = false;
+            this.btnErrRaise.Click += new System.EventHandler(this.btnErrRaise_Click);
+            this.btnErrClearSel.Location = new System.Drawing.Point(452, 145);
+            this.btnErrClearSel.Size = new System.Drawing.Size(120, 26);
+            this.btnErrClearSel.Text = "선택 설비 해제";
+            this.btnErrClearSel.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnErrClearSel.BackColor = System.Drawing.Color.LightYellow;
+            this.btnErrClearSel.UseVisualStyleBackColor = false;
+            this.btnErrClearSel.Click += new System.EventHandler(this.btnErrClearSel_Click);
+            // [LGLS 2026-09-21] 운전모드(OPERATION_MODE) 수동/자동 - 선택한 설비의 조작반 스위치 흉내
+            this.btnOpManual.Location = new System.Drawing.Point(576, 145);
+            this.btnOpManual.Size = new System.Drawing.Size(110, 26);
+            this.btnOpManual.Text = "기상반 수동";
+            this.btnOpManual.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnOpManual.BackColor = System.Drawing.Color.Lavender;
+            this.btnOpManual.UseVisualStyleBackColor = false;
+            this.btnOpManual.Click += new System.EventHandler(this.btnOpManual_Click);
+            this.btnOpAuto.Location = new System.Drawing.Point(690, 145);
+            this.btnOpAuto.Size = new System.Drawing.Size(96, 26);
+            this.btnOpAuto.Text = "자동 복귀";
+            this.btnOpAuto.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnOpAuto.BackColor = System.Drawing.Color.Honeydew;
+            this.btnOpAuto.UseVisualStyleBackColor = false;
+            this.btnOpAuto.Click += new System.EventHandler(this.btnOpAuto_Click);
+            this.lblErrHint.Location = new System.Drawing.Point(794, 149);
+            this.lblErrHint.Size = new System.Drawing.Size(420, 20);
+            this.lblErrHint.Text = "코드=PLC 알람 리스트 번호. 수동은 WCS_DB.INI [CNF] OP_MODE_USE=1 일 때만 WCS 에 전달";
+            this.lblErrHint.ForeColor = System.Drawing.Color.DimGray;
+            //
+            // [LGLS 2026-10-14] 작업정보 판넬 [완료처리] 시험용 설비 강제 정지 4종 (다음 1건에만, 스스로 꺼짐. ①은 상황 A 횟수 0 과 같다)
+            this.lblStop.Location = new System.Drawing.Point(12, 178);
+            this.lblStop.Size = new System.Drawing.Size(92, 20);
+            this.lblStop.Text = "완료처리 시험:";
+            this.lblStop.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.lblStop.ForeColor = System.Drawing.Color.Purple;
+            this.chkStop1.Location = new System.Drawing.Point(104, 176);
+            this.chkStop1.Size = new System.Drawing.Size(230, 22);
+            this.chkStop1.Text = "① 크레인 하역 Ack 유실 (1호기 출고)";
+            this.chkStop1.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            this.chkStop2.Location = new System.Drawing.Point(338, 176);
+            this.chkStop2.Size = new System.Drawing.Size(190, 22);
+            this.chkStop2.Text = "② 통로 C/V 번호 소실";
+            this.chkStop2.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            this.chkStop3.Location = new System.Drawing.Point(532, 176);
+            this.chkStop3.Size = new System.Drawing.Size(200, 22);
+            this.chkStop3.Text = "③ RGV 하역 완료 보고 유실";
+            this.chkStop3.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            this.chkStop4.Location = new System.Drawing.Point(736, 176);
+            this.chkStop4.Size = new System.Drawing.Size(220, 22);
+            this.chkStop4.Text = "④ 출고대 도착 번호 소실 (신호 없음)";
+            this.chkStop4.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
+            foreach (System.Windows.Forms.CheckBox c in new System.Windows.Forms.CheckBox[] { this.chkStop1, this.chkStop2, this.chkStop3, this.chkStop4 }) c.ForeColor = System.Drawing.Color.Purple;
+            // [LGLS 2026-09-12] 크레인 1호기 출고 하역 핸드셰이크 고장 주입 (상황 A / 상황 B)
+            //
+            this.chkFaultA.Location = new System.Drawing.Point(12, 116);
+            this.chkFaultA.Size = new System.Drawing.Size(372, 22);
+            this.chkFaultA.Text = "상황 A : 1호기 출고 하역완료 Ack 유실 (외부 되쓰기 재현)";
+            this.chkFaultA.ForeColor = System.Drawing.Color.DarkOrange;
+            this.chkFaultA.CheckedChanged += new System.EventHandler(this.chkFaultA_CheckedChanged);
+            this.nudFaultA.Location = new System.Drawing.Point(386, 115);
+            this.nudFaultA.Size = new System.Drawing.Size(46, 25);
+            this.nudFaultA.Minimum = 0;
+            this.nudFaultA.Maximum = 99;
+            this.nudFaultA.Value = 1;
+            this.nudFaultA.ValueChanged += new System.EventHandler(this.nudFaultA_ValueChanged);
+            this.lblFaultA.Location = new System.Drawing.Point(434, 118);
+            this.lblFaultA.Size = new System.Drawing.Size(112, 20);
+            this.lblFaultA.Text = "회 지움(0=계속)";
+            this.lblFaultA.ForeColor = System.Drawing.Color.DimGray;
+            this.chkFaultB.Location = new System.Drawing.Point(552, 116);
+            this.chkFaultB.Size = new System.Drawing.Size(430, 22);
+            this.chkFaultB.Text = "상황 B : 1호기 출고 하역완료 보고 조기 철회 (크레인 포기 재현)";
+            this.chkFaultB.ForeColor = System.Drawing.Color.Maroon;
+            this.chkFaultB.CheckedChanged += new System.EventHandler(this.chkFaultB_CheckedChanged);
+            this.btnFaultClear.Location = new System.Drawing.Point(986, 113);
+            this.btnFaultClear.Size = new System.Drawing.Size(120, 26);
+            this.btnFaultClear.Text = "고장 해제·수동 인수";
+            this.btnFaultClear.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnFaultClear.BackColor = System.Drawing.Color.MistyRose;
+            this.btnFaultClear.UseVisualStyleBackColor = false;
+            this.btnFaultClear.Click += new System.EventHandler(this.btnFaultClear_Click);
+            // [LGLS 2026-09-05] [설비 에러 해제] - 현장 조작반에서 사람이 에러를 푸는 동작.
+            //   공출고(58)는 재지정이 없어 작업을 삭제하는데, 그러면 스케줄러가 에러난 크레인에
+            //   새 지시를 주지 않아 에러가 영영 남는다. 그 상황을 현장처럼 풀어 준다.
+            this.btnClearErr.Location = new System.Drawing.Point(430, 52);
+            this.btnClearErr.Name = "btnClearErr";
+            this.btnClearErr.Size = new System.Drawing.Size(120, 23);
+            this.btnClearErr.Text = "설비 에러 해제";
+            this.btnClearErr.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnClearErr.BackColor = System.Drawing.Color.LightYellow;
+            this.btnClearErr.UseVisualStyleBackColor = false;
+            this.btnClearErr.Click += new System.EventHandler(this.btnClearErr_Click);
+            // [LGLS 2026-09-17] [INI 열기] / [INI 다시 읽기] - EQP_SIM.ini [TIMING](HS_RECORD_LAG_MS 등)을 운전 중 조절(사용자 지시)
+            this.btnOpenIni.Location = new System.Drawing.Point(556, 52);
+            this.btnOpenIni.Name = "btnOpenIni";
+            this.btnOpenIni.Size = new System.Drawing.Size(92, 23);
+            this.btnOpenIni.Text = "INI 열기";
+            this.btnOpenIni.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnOpenIni.BackColor = System.Drawing.Color.Honeydew;
+            this.btnOpenIni.UseVisualStyleBackColor = false;
+            this.btnOpenIni.Click += new System.EventHandler(this.btnOpenIni_Click);
+            this.btnReloadIni.Location = new System.Drawing.Point(652, 52);
+            this.btnReloadIni.Name = "btnReloadIni";
+            this.btnReloadIni.Size = new System.Drawing.Size(92, 23);
+            this.btnReloadIni.Text = "INI 다시 읽기";
+            this.btnReloadIni.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnReloadIni.BackColor = System.Drawing.Color.Honeydew;
+            this.btnReloadIni.UseVisualStyleBackColor = false;
+            this.btnReloadIni.Click += new System.EventHandler(this.btnReloadIni_Click);
+            //
+            // btnFeed11 / 12 / 15
+            //
+            this.btnFeed11.Location = new System.Drawing.Point(320, 14);
+            this.btnFeed11.Size = new System.Drawing.Size(130, 30);
+            this.btnFeed11.Text = "CV#11 파렛트 투입";
+            this.btnFeed11.Click += new System.EventHandler(this.btnFeed11_Click);
+            this.btnFeed12.Location = new System.Drawing.Point(456, 14);
+            this.btnFeed12.Size = new System.Drawing.Size(130, 30);
+            this.btnFeed12.Text = "24 입고대 파렛트 투입 (CV#12)";
+            this.btnFeed12.Click += new System.EventHandler(this.btnFeed12_Click);
+            this.btnFeed15.Location = new System.Drawing.Point(592, 14);
+            this.btnFeed15.Size = new System.Drawing.Size(130, 30);
+            this.btnFeed15.Text = "CV#15 파렛트 투입";
+            this.btnFeed15.Click += new System.EventHandler(this.btnFeed15_Click);
+            //
+            // btnReset
+            //
+            this.btnReset.Location = new System.Drawing.Point(750, 14);
+            this.btnReset.Size = new System.Drawing.Size(120, 30);
+            this.btnReset.Text = "상태 초기화";
+            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
+            //
+            // txtClearTrack
+            // 
+            this.txtClearTrack.Location = new System.Drawing.Point(750, 54);
+            this.txtClearTrack.Size = new System.Drawing.Size(70, 25);
+            // 
+            // btnClearPallet
+            // 
+            this.btnClearPallet.Location = new System.Drawing.Point(828, 52);
+            this.btnClearPallet.Size = new System.Drawing.Size(192, 27);
+            this.btnClearPallet.Text = "화물 제거 (P번호 31 / 트랙 131)";
+            this.btnClearPallet.Click += new System.EventHandler(this.btnClearPallet_Click);
+            // 
+            // btnScenarioTest
+            //
+            this.btnScenarioTest.Location = new System.Drawing.Point(880, 14);
+            this.btnScenarioTest.Size = new System.Drawing.Size(140, 30);
+            this.btnScenarioTest.Text = "[시나리오 테스트]";
+            this.btnScenarioTest.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnScenarioTest.ForeColor = System.Drawing.Color.DarkRed;
+            this.btnScenarioTest.Click += new System.EventHandler(this.btnScenarioTest_Click);
+            //
+            // [LGLS 2026-09-06] 시험용 화물 생성 행
+            //   원하는 트랙/포트에 파렛트를 만든다. 작업번호를 비우면 "작업번호 없는 화물" 이 되어
+            //   크레인이 수동조작으로 H/S 에 내려놓은 상황을 그대로 재현할 수 있다.
+            //
+            this.lblSpawn.Location = new System.Drawing.Point(12, 90);
+            this.lblSpawn.Size = new System.Drawing.Size(66, 20);
+            this.lblSpawn.Text = "트랙/포트";
+            this.txtSpawnTrack.Location = new System.Drawing.Point(80, 87);
+            this.txtSpawnTrack.Size = new System.Drawing.Size(62, 25);
+            this.lblSpawnJob.Location = new System.Drawing.Point(150, 90);
+            this.lblSpawnJob.Size = new System.Drawing.Size(60, 20);
+            this.lblSpawnJob.Text = "작업번호";
+            this.txtSpawnJob.Location = new System.Drawing.Point(212, 87);
+            this.txtSpawnJob.Size = new System.Drawing.Size(62, 25);
+            this.chkSpawnOut.Location = new System.Drawing.Point(284, 88);
+            this.chkSpawnOut.Size = new System.Drawing.Size(84, 22);
+            this.chkSpawnOut.Text = "출고 화물";
+            this.btnSpawnPallet.Location = new System.Drawing.Point(374, 85);
+            this.btnSpawnPallet.Size = new System.Drawing.Size(110, 27);
+            this.btnSpawnPallet.Text = "화물 생성";
+            this.btnSpawnPallet.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+            this.btnSpawnPallet.BackColor = System.Drawing.Color.Honeydew;
+            this.btnSpawnPallet.UseVisualStyleBackColor = false;
+            this.btnSpawnPallet.Click += new System.EventHandler(this.btnSpawnPallet_Click);
+            this.lblSpawnHint.Location = new System.Drawing.Point(492, 90);
+            this.lblSpawnHint.Size = new System.Drawing.Size(530, 20);
+            this.lblSpawnHint.ForeColor = System.Drawing.Color.DimGray;
+            this.lblSpawnHint.Text = "작업번호를 비우면 '작업번호 없는 화물' (예: 트랙 104 + 빈 작업번호 = H/S 배출 시험)";
+            //
+            // splitMain
+            //
+            this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitMain.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.splitMain.Panel1.Controls.Add(this.lvDevices);
+            this.splitMain.Panel2.Controls.Add(this.lvLog);
+            this.splitMain.SplitterDistance = 420;
+            //
+            // lvDevices
+            //
+            this.lvDevices.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lvDevices.View = System.Windows.Forms.View.Details;
+            this.lvDevices.FullRowSelect = true;
+            this.lvDevices.GridLines = true;
+            this.lvDevices.HideSelection = false;
+            this.lvDevices.Font = new System.Drawing.Font("맑은 고딕", 9F);
+            this.lvDevices.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { this.colDev, this.colState });
+            this.colDev.Text = "설비"; this.colDev.Width = 110;
+            this.colState.Text = "상태"; this.colState.Width = 290;
+            //
+            // lvLog
+            //
+            this.lvLog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lvLog.View = System.Windows.Forms.View.Details;
+            this.lvLog.FullRowSelect = true;
+            this.lvLog.GridLines = true;
+            this.lvLog.HideSelection = false;
+            this.lvLog.Font = new System.Drawing.Font("Consolas", 9F);
+            this.lvLog.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { this.colTime, this.colMsg });
+            this.colTime.Text = "시각"; this.colTime.Width = 90;
+            this.colMsg.Text = "내용"; this.colMsg.Width = 420;
+            //
+            // statusStrip
+            //
+            this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.lblStatus });
+            this.lblStatus.Text = "대기";
+            //
+            // timerUi
+            //
+            this.timerUi.Interval = 500;
+            this.timerUi.Tick += new System.EventHandler(this.timerUi_Tick);
+            //
+            // MainForm
+            //
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(1040, 672);   // [LGLS 2026-09-06] 화물 생성 행 + 우측 버튼 잘림 해소
+            this.Controls.Add(this.splitMain);
+            this.Controls.Add(this.statusStrip);
+            this.Controls.Add(this.pnlTop);
+            this.Text = "EQP_SIM - XGT PLC Equipment Simulator (LGLS ECS)";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.Load += new System.EventHandler(this.MainForm_Load);
+            this.pnlTop.ResumeLayout(false);
+            this.splitMain.Panel1.ResumeLayout(false);
+            this.splitMain.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
+            this.splitMain.ResumeLayout(false);
+            this.ResumeLayout(false);
+        }
+
+        private System.Windows.Forms.Panel pnlTop;
+        private System.Windows.Forms.Label lblServer;
+        private System.Windows.Forms.CheckBox chkAutoFeed;
+        private System.Windows.Forms.CheckBox chkInjectDouble;
+        private System.Windows.Forms.CheckBox chkInjectEmpty;
+        private System.Windows.Forms.CheckBox chkFaultA;
+        private System.Windows.Forms.CheckBox chkStop1;
+        private System.Windows.Forms.CheckBox chkStop2;
+        private System.Windows.Forms.CheckBox chkStop3;
+        private System.Windows.Forms.CheckBox chkStop4;
+        private System.Windows.Forms.Label lblStop;
+        private System.Windows.Forms.NumericUpDown nudFaultA;
+        private System.Windows.Forms.Label lblFaultA;
+        private System.Windows.Forms.CheckBox chkFaultB;
+        private System.Windows.Forms.Button btnFaultClear;
+        private System.Windows.Forms.Button btnClearErr;
+        private System.Windows.Forms.Button btnOpenIni;
+        private System.Windows.Forms.Button btnReloadIni;
+        private System.Windows.Forms.Button btnFeed11;
+        private System.Windows.Forms.Button btnFeed12;
+        private System.Windows.Forms.Button btnFeed15;
+        private System.Windows.Forms.Button btnReset;
+        private System.Windows.Forms.TextBox txtClearTrack;
+        private System.Windows.Forms.Button btnClearPallet;
+        // [LGLS 2026-09-06] 시험용 화물 생성
+        private System.Windows.Forms.Label lblSpawn = new System.Windows.Forms.Label();
+        private System.Windows.Forms.TextBox txtSpawnTrack = new System.Windows.Forms.TextBox();
+        private System.Windows.Forms.Label lblSpawnJob = new System.Windows.Forms.Label();
+        private System.Windows.Forms.TextBox txtSpawnJob = new System.Windows.Forms.TextBox();
+        private System.Windows.Forms.CheckBox chkSpawnOut = new System.Windows.Forms.CheckBox();
+        private System.Windows.Forms.Button btnSpawnPallet = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Label lblSpawnHint = new System.Windows.Forms.Label();
+        // [LGLS 2026-09-21] 설비 에러 주입
+        private System.Windows.Forms.Label lblErrInj = new System.Windows.Forms.Label();
+        private System.Windows.Forms.ComboBox cboErrEqp = new System.Windows.Forms.ComboBox();
+        private System.Windows.Forms.Label lblErrCode = new System.Windows.Forms.Label();
+        private System.Windows.Forms.TextBox txtErrCode = new System.Windows.Forms.TextBox();
+        private System.Windows.Forms.Button btnErrRaise = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Button btnErrClearSel = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Label lblErrHint = new System.Windows.Forms.Label();
+        private System.Windows.Forms.Button btnOpManual = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Button btnOpAuto = new System.Windows.Forms.Button();
+        private System.Windows.Forms.Button btnScenarioTest;
+        private System.Windows.Forms.SplitContainer splitMain;
+        private System.Windows.Forms.ListView lvDevices;
+        private System.Windows.Forms.ColumnHeader colDev;
+        private System.Windows.Forms.ColumnHeader colState;
+        private System.Windows.Forms.ListView lvLog;
+        private System.Windows.Forms.ColumnHeader colTime;
+        private System.Windows.Forms.ColumnHeader colMsg;
+        private System.Windows.Forms.StatusStrip statusStrip;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatus;
+        private System.Windows.Forms.Timer timerUi;
+    }
+}

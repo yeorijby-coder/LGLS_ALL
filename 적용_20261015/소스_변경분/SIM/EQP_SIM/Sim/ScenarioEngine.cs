@@ -1,0 +1,879 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using EQP_SIM.Core;
+
+namespace EQP_SIM.Sim
+{
+    /// <summary>
+    /// 시나리오 엔진: 100ms 주기로 모든 컨베이어/차량 상태 머신을 구동하고,
+    /// 이벤트↔Ack 핸드셰이크(Event SET → ECS Ack SET → PLC가 둘 다 RESET, 슬라이드5)를 관리한다.
+    /// 상태는 파일(Data\)에 저장한다 — DB 미사용.
+    /// </summary>
+    public class ScenarioEngine : IDisposable
+    {
+        public readonly WorldModel World;
+        private readonly PlcIo io;
+
+        /// <summary>
+        /// [MODE] TARGET=WCS(기본) : 대체 WCS 체인 지원 — CV12/13 스왑 배치 + 재현/픽업 훅 + D영역 미러.
+        /// [MODE] TARGET=ECS : 구(원본) ECS 연동 — 원본 배치(C/V#12=입고, C/V#13=출고),
+        ///   차량 반송은 VehicleSim 의 실제 TRANSFER_REQUEST 핸드셰이크로만 진행(훅/미러 비활성).
+        /// </summary>
+        public bool WcsSupport { get; private set; }
+
+        /// <summary>
+        /// [MODE] LEGACY_HOOKS=1 : 구(§8~13) WCS 설계용 재현/픽업 훅 활성.
+        /// 현행 WCS 설계(2026-07-17: EQP_TASK 는 마스터 PLC COMM0 만 브리지, 스테이션·차량 애니메이션은
+        /// IO_TASK 가 DB 직접 구동 — FeedInGate/AutoRun*)에서는 훅이 IO_TASK 소유 상태를 오염시키므로 기본 OFF.
+        /// (예: 122 입고 트래킹 기록을 '출고 재현'으로 오인 → 파렛트 즉시 배출 → 입고 레그 교착)
+        /// </summary>
+        public bool LegacyWcsHooks { get; private set; }
+        private readonly Dictionary<string, ConveyorSim> conveyors = new Dictionary<string, ConveyorSim>();
+        private readonly Dictionary<string, VehicleSim> vehicles = new Dictionary<string, VehicleSim>();
+
+        // 진행 중 이벤트 핸드셰이크
+        private class PendingEvent
+        {
+            public string Owner, EventName, AckName;
+            public DateTime ExpireAt;   // Ack 미수신 시 자동 해제
+            // [LGLS 2026-09-12] 고장 주입 : 0=정상, 1=상황 A(Ack 유실), 2=상황 B(조기 철회)
+            public int Fault;
+            public int AckLossRemaining;   // 상황 A 에서 앞으로 지울 Ack 횟수 (-1 = 계속)
+            public int Port;               // 하역한 포트(벨트 인수 보류/재개 대상), 0 = 해당 없음
+            public string CvId;
+        }
+        private readonly List<PendingEvent> pendingEvents = new List<PendingEvent>();
+        private readonly object sync = new object();
+
+        // [LGLS 2026-07-20] 설비군별 처리 스레드 3개 (CV/SC/RTV — 사용자 요구 구조)
+        private Thread cvTickThread, scTickThread, rtvTickThread;
+        private DateTime lastTickAt = DateTime.MinValue;   // [LGLS 2026-09-17] 세 틱 스레드 공용(sync 안에서만 읽고 쓴다) - 시계 건너뜀 감지
+        private volatile bool running;
+        private volatile bool paused;   // [LGLS 2026-07-24] [시나리오 테스트] 자동 운전 일시정지
+        private string dataDir;
+        private DateTime nextSaveAt = DateTime.MinValue;
+        private StreamWriter logWriter;
+
+        // 타이밍 (ms) — ECS 판독주기(수 초)를 감안해 여유있게
+        public int MoveMs = 2000;
+        public int TravelMs = 2500;
+        // [LGLS 2026-08-23] 크레인 구분 동작(포크 출/호이스트/포크 센터) 1단계 시간
+        public int ForkStepMs = 3000;
+        public int WaitOutHoldMs = 9000;
+        /// <summary>[LGLS 2026-09-16] 크레인 하차 후 H/S 워드(재석/트래킹) 기록 지연(ms). 0=즉시(종전). 현장 재현 시 ~1200.</summary>
+        public int HsRecordLagMs = 0;
+        /// <summary>[LGLS 2026-10-14] RGV 하역 때 시뮬(PLC)이 트래킹에 번호를 얹는가. true=종전. false=재석만 세우고 번호는 ECS(IO_TASK)가 써야 하며 그 전엔 벨트가 옮기지 않는다(현장 PLC 담당자 : 하역 후 번호는 ECS 가 쓴다).</summary>
+        public bool RgvDropStamp = true;
+        /// <summary>[LGLS 2026-09-17] H/S 워드 기록이 드러난 뒤 벨트가 다음 칸으로 옮기기까지 최소 체류(ms). Client 가 짝수 칸 기록을 볼 수 있게. 0=즉시.</summary>
+        public int HsAfterRecordHoldMs = 3000;
+
+        /// <summary>
+        /// [LGLS 2026-09-17] EQP_SIM.ini [TIMING] 을 (다시) 읽어 타이밍 값을 적용한다 - 기동 시와 화면 [INI 다시 읽기] 버튼(사용자 지시).
+        ///   값은 다음 동작부터 쓰이므로 운전 중 바꿔도 안전하다(진행 중 타이머는 종전 값으로 끝난다).
+        /// </summary>
+        public void ReloadTiming(SimConfig config)
+        {
+            MoveMs = config.GetInt("TIMING", "MOVE_MS", MoveMs);
+            TravelMs = config.GetInt("TIMING", "TRAVEL_MS", TravelMs);
+            ForkStepMs = config.GetInt("TIMING", "FORK_STEP_MS", ForkStepMs);
+            WaitOutHoldMs = config.GetInt("TIMING", "WAITOUT_HOLD_MS", WaitOutHoldMs);
+            HsRecordLagMs = config.GetInt("TIMING", "HS_RECORD_LAG_MS", HsRecordLagMs);   // [LGLS 2026-09-16]
+            RgvDropStamp = config.GetInt("TIMING", "RGV_DROP_STAMP", RgvDropStamp ? 1 : 0) != 0;   // [LGLS 2026-10-14]
+            HsAfterRecordHoldMs = config.GetInt("TIMING", "HS_AFTER_RECORD_HOLD_MS", HsAfterRecordHoldMs);   // [LGLS 2026-09-17]
+            { int nStop = config.GetInt("FAULT", "STOP", 0); if (nStop >= 1 && nStop <= 4) Log("[시험정지] ini 예약 : " + SetStop(nStop, true)); }   // [LGLS 2026-10-14]
+            OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
+            WaitInOff = config.GetBool("FAULT", "WAIT_IN_OFF", false);   // [LGLS 2026-09-30] 시험용 - 출고대 신호(WAIT_IN)를 올리지 않는다
+            SrcCargoTimeoutMs = config.GetInt("TIMING", "SRC_CARGO_TIMEOUT_MS", SrcCargoTimeoutMs);
+            OutTrackClearMs = config.GetInt("TIMING", "OUT_TRACK_CLEAR_MS", OutTrackClearMs);
+            InSensorDelayMs = config.GetInt("TIMING", "IN_SENSOR_DELAY_MS", InSensorDelayMs);
+            Log("[TIMING] MOVE=" + MoveMs + " TRAVEL=" + TravelMs + " FORK_STEP=" + ForkStepMs + " WAITOUT_HOLD=" + WaitOutHoldMs
+                + " HS_RECORD_LAG=" + HsRecordLagMs + " HS_AFTER_RECORD_HOLD=" + HsAfterRecordHoldMs + " OUT_REMOVE=" + OutRemoveMs + " OUT_TRACK_CLEAR=" + OutTrackClearMs
+                + " SRC_CARGO_TIMEOUT=" + SrcCargoTimeoutMs + " IN_SENSOR_DELAY=" + InSensorDelayMs + " (ms)");
+        }
+        public int SrcCargoTimeoutMs = 60000;   // [LGLS 2026-09-04] 차량이 출발지에서 화물을 기다리는 최대 시간(넘으면 지시 포기)
+        public bool WaitInOff = false;      // [LGLS 2026-09-30] [FAULT] WAIT_IN_OFF=1 이면 출고대 신호를 안 올린다(IO_TASK 실도착 경로 시험용)
+        public int OutRemoveMs = 3000;       // [LGLS 2026-08-22] 출고대 신호 ON 후 지게차가 화물을 가져가기까지
+        public int OutTrackClearMs = 3000;   // [LGLS 2026-08-22] 화물 반출 후 남은 데이터(트래킹) 제거까지
+        // [LGLS 2026-07-31] 차량(RGV/S/C) 상차 후 "출발지 화물·트래킹 소멸"을 확인하고 그 상태를 유지하는 시간.
+        //   상위(WCS_TASK_CV) 미러 주기 동안 출발지 클리어가 관측되도록 보장해, 도착지에 먼저 화물이
+        //   생기는 순서 역전을 막는다. 값이 상위 미러 1주기보다 짧으면 화면상 겹쳐 보일 수 있다.
+        //   기본 4000ms = 상위 미러 1주기(계측 ~2.5~3.4초)보다 크게 잡은 값. 미러가 느려지면 이 값도 올릴 것.
+        public int SrcClearDwellMs = 4000;
+        /// <summary>[LGLS 2026-08-22] 출발지 클리어 대기 상한. 넘기면 경고 후 진행(교착 방지)</summary>
+        public int SrcClearTimeoutMs = 20000;
+        public int InReadyDelayMs = 3000;    // [LGLS 2026-08-22] 입고대 화물감지 유지 → 입고대(반출요청) ON 까지
+        public int InSensorDelayMs = 2000;   // [LGLS 2026-07-21] 입고대 적재 후 재하감지 ON까지 지연 (PLC 2초 규약)
+        public int FeedMs = 5000;
+        public int AckTimeoutMs = 60000;
+        // [LGLS 2026-07-31] 30000 → 60000. 상위가 작업을 배정(지시)한 뒤 PLC 트래킹에 작업번호가 실제로
+        //   기록되기까지 '작업 접수 지연 + 미러 1주기'가 걸리는데, 30초는 그 최악값과 겹쳐
+        //   지시받은 파렛트를 회수해 버리는 사고(작업 0221)를 냈다. 안전 마진을 2배로 둔다.
+        //   (회수 직전 트래킹 재확인 로직과 함께 이중 방어 — ConveyorSim '작업자 회피' 블록)
+        public int UnstampedTimeoutMs = 60000;   // 입출고 겸용 C/V 미지정 파렛트 회수 대기
+
+        // [LGLS] 이중입고/공출고 에러 주입 (시나리오 테스트): 체크 시 다음 최초 입고/출고 S/C 작업에서 1회 발생
+        public volatile bool InjectDoubleStorage = false;   // 이중입고 (입고 목적셀 이미 점유 → ERR 54)
+        public volatile bool InjectEmptyRetrieval = false;  // 공출고 (출고 출발셀 재고없음 → ERR 58)
+        // [LGLS 2026-09-15] 자동 테스트용 : N건 연속 주입 카운터. Data/inject_ctrl.txt 에 "D=10" / "E=10" 로 예약(폴링).
+        public volatile int InjectDoubleCount = 0;
+        public volatile int InjectEmptyCount  = 0;
+
+        // [LGLS 2026-09-12] 크레인 하역 핸드셰이크 고장 주입 (현장 2026-09-11 S/C#1 출고 정체 재현) - 사용자 지시
+        //   상황 A : Ack 유실 - WCS 가 쓴 UNLOAD_COMPLETE_ACK 를 외부 손이 지운다. 크레인은 질문(M785)을 들고 기다린다.
+        //   상황 B : 크레인 포기 - UNLOAD_COMPLETE 를 WCS 가 볼 틈 없이 철회하고 자기 사이클을 끝낸다.
+        //   두 경우 모두 PLC 의 벨트 인수(하역 포트 → RGV 측)는 핸드셰이크가 끝날 때까지 보류된다.
+        //   대상 = S/C FaultTargetScNo 호기의 ★포트 하역(출고)★ 만.
+        public volatile bool FaultAckLoss = false;
+        public volatile bool FaultAckTimeout = false;
+        public volatile int  FaultAckLossCount = 1;      // 상황 A 에서 지울 횟수 (0 = 계속)
+        public volatile int  FaultTargetScNo = 1;
+
+        // [LGLS 2026-10-14] 작업정보 판넬 [완료처리] 시험용 설비 강제 정지 (사용자 지시 - 4구간을 손으로 재현)
+        //   ① 크레인 하역 Ack 유실      = 상황 A(횟수 0)        → 출고 25 정체, 크레인 RUN, H/S 화물 감지만
+        //   ② 통로 C/V 번호 소실         = 통로 짝수→홀수 칸으로 옮길 때 트래킹을 비운다 → 출고 16 정체, 픽업 칸 화물만
+        //   ③ RGV 하역 완료 보고 유실    = RGV 가 내려놓고 완료 보고를 올리지 않는다 → 35 정체, 도착 칸 화물만(번호는 ECS 몫)
+        //   ④ 출고대 도착 신호 유실      = 출고대 WAIT_IN 을 올리지 않고 지게차가 빼 간다 → 15 정체
+        //   ②③④ 는 "다음 1건" 에만 걸리고 스스로 꺼진다(StopConsumed). ① 은 상황 A 그대로(해제는 [고장 해제]).
+        public volatile bool StopAisleNoTrack = false;
+        public volatile bool StopRgvNoComplete = false;
+        public volatile bool StopOutNoSignal = false;
+        public event Action<int> StopConsumedEvent;
+        public void StopConsumed(int n)
+        {
+            if (n == 2) StopAisleNoTrack = false;
+            else if (n == 3) StopRgvNoComplete = false;
+            else if (n == 4) StopOutNoSignal = false;
+            Log("[시험정지 " + n + "] 적용됨 - 자동 해제");
+            var h = StopConsumedEvent; if (h != null) { try { h(n); } catch { } }
+        }
+        /// <summary>STOP 1~4 켬 / 0 = 전부 끔. 1 은 상황 A(횟수 0) 와 같다.</summary>
+        public string SetStop(int n, bool on)
+        {
+            if (n == 0) { CancelFaultA(); FaultAckLoss = false; StopAisleNoTrack = StopRgvNoComplete = StopOutNoSignal = false; return "시험정지 전부 끔"; }
+            if (n == 1) { if (on) { FaultAckLossCount = 0; FaultAckLoss = true; } else { CancelFaultA(); FaultAckLoss = false; } }
+            else if (n == 2) StopAisleNoTrack = on;
+            else if (n == 3) StopRgvNoComplete = on;
+            else if (n == 4) StopOutNoSignal = on;
+            else return "알 수 없는 번호";
+            string[] nm = { "", "크레인 하역 Ack 유실", "통로 C/V 번호 소실", "RGV 완료 보고 유실", "출고대 도착 번호 소실" };
+            return "시험정지 " + n + " " + nm[n] + (on ? " 켬 (다음 1건)" : " 끔");
+        }
+
+        public event Action<string> LogAdded;
+        public event Action StateChanged;
+
+        // 랙 재고 (셀 BBbbLL → JOB)
+        public readonly Dictionary<string, string> Rack = new Dictionary<string, string>();
+        public int CompletedOutgoCount { get; private set; }
+
+        public ScenarioEngine(PlcIo io, SimConfig config)
+        {
+            this.io = io;
+            WcsSupport = !"ECS".Equals(config.Get("MODE", "TARGET", "WCS"), StringComparison.OrdinalIgnoreCase);
+            LegacyWcsHooks = WcsSupport && config.GetBool("MODE", "LEGACY_HOOKS", false);
+            World = new WorldModel(WcsSupport);
+            foreach (var def in World.Conveyors.Values)
+                conveyors[def.Id] = new ConveyorSim(def, io, this);
+            foreach (var def in World.Vehicles.Values)
+                vehicles[def.Id] = new VehicleSim(def, io, this);
+        }
+
+        public ConveyorSim Conveyor(string id) { return conveyors[id]; }
+        public IEnumerable<ConveyorSim> AllConveyors { get { return conveyors.Values; } }
+        public IEnumerable<VehicleSim> AllVehicles { get { return vehicles.Values; } }
+
+        public VehicleSim Vehicle(string id) { VehicleSim v; return vehicles.TryGetValue(id, out v) ? v : null; }
+
+        /// <summary>[LGLS 2026-09-21] 지정 설비에 에러 코드 주입 (시뮬 화면 [에러 발생]). 성공 여부.</summary>
+        public bool RaiseVehicleError(string id, int code)
+        {
+            lock (sync)
+            {
+                var v = Vehicle(id);
+                if (v == null) { Log("[설비 에러 주입] 알 수 없는 설비 " + id); return false; }
+                if (v.IsError) v.ClearError();   // 이미 에러면 새 코드로 갈아 끼운다
+                return v.RaiseError(code);
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-21] 설비 운전모드(자동/수동) 전환. 설비를 못 찾으면 false.</summary>
+        public bool SetVehicleOperationMode(string id, bool bAuto)
+        {
+            lock (sync)
+            {
+                var v = Vehicle(id);
+                if (v == null) { Log("[운전모드] 알 수 없는 설비 " + id); return false; }
+                v.SetOperationMode(bAuto);
+                return true;
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-21] C/V 포트(트랙)에 에러 코드 주입 (시뮬 화면 [에러 발생]).</summary>
+        public bool RaiseConveyorError(int port, int code)
+        {
+            lock (sync)
+            {
+                var def = World.FindByPort(port);
+                if (def == null) { Log("[C/V 에러 주입] 알 수 없는 포트 " + port); return false; }
+                return Conveyor(def.Id).RaiseError(port, code);
+            }
+        }
+
+        public bool ClearConveyorError(int port)
+        {
+            lock (sync)
+            {
+                var def = World.FindByPort(port);
+                if (def == null) return false;
+                bool b = Conveyor(def.Id).ClearError(port);
+                if (!b) Log("[C/V 에러 해제] P" + port + " 는 에러 상태가 아닙니다");
+                return b;
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-21] 지정 설비만 에러 해제. 해제했으면 true.</summary>
+        public bool ClearVehicleError(string id)
+        {
+            lock (sync)
+            {
+                var v = Vehicle(id);
+                if (v == null) return false;
+                bool b = v.ClearError();
+                if (!b) Log("[설비 에러 해제] " + id + " 는 에러 상태가 아닙니다");
+                return b;
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-05] 설비(현장 조작반) 에러 해제 - 에러 상태인 차량을 모두 푼다. 해제한 대수를 돌려준다.</summary>
+        public int ClearVehicleErrors()
+        {
+            lock (sync)
+            {
+                int n = 0;
+                foreach (var v in vehicles.Values) if (v.ClearError()) n++;
+                foreach (var c in conveyors.Values) n += c.ClearAllErrors();   // [LGLS 2026-09-21] C/V 주입 에러도 함께
+                foreach (var v in vehicles.Values) if (v.IsManualMode) { v.SetOperationMode(true); n++; }   // [LGLS 2026-09-21] 수동 전환도 자동 복귀
+                if (n == 0) Log("[설비 에러 해제] 에러 상태인 설비가 없습니다");
+                return n;
+            }
+        }
+
+        public void Start(string dataDir, SimConfig config)
+        {
+            this.dataDir = dataDir;
+            Directory.CreateDirectory(dataDir);
+            logWriter = new StreamWriter(Path.Combine(dataDir,
+                "eqp_sim_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".log"), true, Encoding.UTF8) { AutoFlush = true };
+
+            ReloadTiming(config);   // [LGLS 2026-09-17] [TIMING] 은 화면의 [INI 다시 읽기]로 운전 중에도 재적용된다
+            InReadyDelayMs  = config.GetInt("TIMING", "IN_READY_DELAY_MS", InReadyDelayMs);
+            SrcClearTimeoutMs = config.GetInt("TIMING", "SRC_CLEAR_TIMEOUT_MS", SrcClearTimeoutMs);
+            SrcClearDwellMs = config.GetInt("TIMING", "SRC_CLEAR_DWELL_MS", SrcClearDwellMs);
+            FeedMs = config.GetInt("TIMING", "FEED_MS", FeedMs);
+            UnstampedTimeoutMs = config.GetInt("TIMING", "UNSTAMPED_TIMEOUT_MS", UnstampedTimeoutMs);
+
+            bool autoFeed = config.GetBool("FEED", "AUTO", true);
+            foreach (var cv in conveyors.Values)
+            {
+                if (cv.Def.IngoPath != null && cv.Def.No >= 11)
+                {
+                    cv.AutoFeedConfigured = config.GetBool("FEED", "CV" + cv.Def.No, true);
+                    cv.AutoFeed = autoFeed && cv.AutoFeedConfigured;
+                }
+                // [WCS 미러] 대체 WCS(WCS_TASK_CV)의 D영역 트랙 모델 매핑 (INI [WCS_MIRROR] CVnn=시작트랙)
+                cv.WcsTrackBase = config.GetInt("WCS_MIRROR", "CV" + cv.Def.No, 0);
+            }
+
+            LoadState();
+
+            foreach (var cv in conveyors.Values) cv.Initialize();
+            foreach (var v in vehicles.Values) v.Initialize();
+
+            running = true;
+            // [LGLS 2026-07-20] CV/SC/RTV 설비군별 처리 스레드 분리 기동
+            cvTickThread  = new Thread(() => TickLoop("CV"))  { IsBackground = true, Name = "SimTick:CV" };
+            scTickThread  = new Thread(() => TickLoop("SC"))  { IsBackground = true, Name = "SimTick:SC" };
+            rtvTickThread = new Thread(() => TickLoop("RTV")) { IsBackground = true, Name = "SimTick:RTV" };
+            cvTickThread.Start(); scTickThread.Start(); rtvTickThread.Start();
+            Log("시나리오 엔진 시작 [" + (WcsSupport ? "WCS 모드" : "구 ECS 모드") +
+                "] (이동 " + MoveMs + "ms, 주행 " + TravelMs + "ms, WaitOut 체류 " + WaitOutHoldMs + "ms)");
+        }
+
+        // [LGLS 2026-07-20] 설비군별 처리 스레드(사용자 요구 구조): CV / SC / RTV 각각 별도 스레드에서
+        //   해당 설비군의 명령 소비·동작·이벤트 핸드셰이크를 처리한다.
+        //   월드(파렛트/랙/PLC 메모리)는 공유 자원이므로 sync 락으로 직렬화한다
+        //   (크레인이 컨베이어 파렛트를 상·하차하는 교차 접근이 있어 무락 병렬은 유실을 만든다).
+        // [LGLS 2026-09-02] 시뮬 월드에 없는 트랙의 R 트래킹 잔재 청소 (사용자 보고: 색 없는 번호 잔재).
+        //   시뮬에 정의되지 않은 트랙에는 실물이 존재할 수 없으므로 그 R 은 '0000' 이 참값이다.
+        //   CV 트래킹 영역(0 ~ 최대CV번호*10)만 대상으로 하고, 시뮬이 소유한 슬롯은 건드리지 않는다.
+        private DateTime lastRSweep = DateTime.MinValue;
+        private void SweepUnownedRTracking(DateTime now)
+        {
+            if ((now - lastRSweep).TotalMilliseconds < 2000) return;
+            lastRSweep = now;
+            var owned = new HashSet<int>();
+            int maxNo = 0;
+            foreach (var cv in conveyors.Values)
+            {
+                if (cv.Def.No < 1) continue;
+                if (cv.Def.No > maxNo) maxNo = cv.Def.No;
+                for (int i = 1; i <= cv.Def.Ports.Length; i++)
+                    owned.Add((cv.Def.No - 1) * 10 + (i - 1) * 2);
+            }
+            if (maxNo < 1) return;
+            int limit = maxNo * 10;
+            for (int w = 0; w < limit; w += 2)
+            {
+                if (owned.Contains(w)) continue;
+                string cur = (io.Memory.GetString('R', w, 2) ?? "").Trim().Trim(' ');
+                if (cur.Length > 0 && cur != "0000")
+                    io.Memory.SetString('R', w, 2, "0000");
+            }
+        }
+
+        private void TickLoop(string kind)
+        {
+            while (running)
+            {
+                DateTime now = DateTime.Now;
+                try
+                {
+                    lock (sync)
+                    {
+                        // [LGLS 2026-09-17] PC 절전·일시정지로 시계가 건너뛰면(틱 간격 3초 초과) 그 공백만큼
+                        //   Ack 대기 기한을 뒤로 민다. 종전에는 깨어난 첫 틱에 기한이 모두 지난 것으로 보고
+                        //   하역완료 보고를 스스로 내려, WCS 가 한 번도 못 본 채 크레인 완료(29)가 유실됐다(8283, 08:33 절전).
+                        if (lastTickAt != DateTime.MinValue)
+                        {
+                            double gapMs = (now - lastTickAt).TotalMilliseconds;
+                            if (gapMs > 3000)
+                            {
+                                TimeSpan shift = TimeSpan.FromMilliseconds(gapMs - 100);
+                                foreach (var pe in pendingEvents)
+                                    if (pe.ExpireAt != DateTime.MaxValue) pe.ExpireAt = pe.ExpireAt + shift;
+                                Log("[시계 건너뜀] 틱 공백 " + (int)(gapMs / 1000) + "초 - Ack 대기 기한 " + pendingEvents.Count + "건을 그만큼 연장 (" + kind + ")");
+                            }
+                        }
+                        lastTickAt = now;
+
+                        // [LGLS 2026-07-24] [시나리오 테스트] 일시정지 중에는 자동 운전(핸드셰이크/설비 Tick)을 멈춘다.
+                        //   단 XGT 서버·메모리 저장(아래)은 계속 → 사용자가 수동으로 세팅한 EQP 메모리에 WCS 가 반응할 수 있음.
+                        if (!paused)
+                        {
+                            ProcessHandshakes(now, kind);
+                            if (kind == "CV")
+                            {
+                                foreach (var cv in conveyors.Values) cv.Tick(now);
+                                SweepUnownedRTracking(now);   // [LGLS 2026-09-02] 미정의 트랙 R 잔재 청소
+                            }
+                            else if (kind == "SC")
+                            {
+                                foreach (var v in vehicles.Values) if (!v.Def.IsRgv) v.Tick(now);
+                            }
+                            else // RTV
+                            {
+                                foreach (var v in vehicles.Values) if (v.Def.IsRgv) v.Tick(now);
+                            }
+                        }
+                    }
+                    if (kind == "CV")
+                    {
+                        if (now >= nextSaveAt)
+                        {
+                            SaveState();
+                            nextSaveAt = now.AddSeconds(2);
+                        }
+                        PollSimCmd(now);        // [LGLS 2026-10-14] Data/sim_cmd.txt 파일 명령(시험 자동화 - 화면 입력칸은 자동화가 안 된다)
+                        //PollInjectCtrl(now);   // [LGLS 2026-09-15] Data/inject_ctrl.txt 로 이중입고/공출고 N건 예약(자동 테스트)  [LGLS 2026-09-16] 이 현장 미사용 - 주석
+                        var h = StateChanged;
+                        if (h != null) h();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log("엔진 오류(" + kind + "): " + ex.Message);
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+        // [LGLS 2026-10-14] 시험 자동화 : Data/sim_cmd.txt 를 1초마다 읽어 한 줄씩 실행하고 지운다. 결과는 Data/sim_cmd.log 에 덧붙인다.
+        //   SPAWN <트랙|cv:port> [작업번호] [OUT]   번호 없는 화물 = 작업번호 생략.  예) SPAWN 104 / SPAWN 103 0012 OUT
+        //   REMOVE <트랙|cv:port>                   화물 제거(확인 없이)
+        //   FAULTA <횟수|OFF>                        상황 A(1호기 출고 하역 Ack 유실) 켬(횟수 0=계속) / 끔
+        //   RELEASE                                  [고장 해제·수동 인수] 와 같다
+        private DateTime nextSimCmdAt = DateTime.MinValue;
+        private void PollSimCmd(DateTime now)
+        {
+            try
+            {
+                if (now < nextSimCmdAt) return;
+                nextSimCmdAt = now.AddMilliseconds(1000);
+                if (string.IsNullOrEmpty(dataDir)) return;
+                string p = Path.Combine(dataDir, "sim_cmd.txt");
+                if (!File.Exists(p)) return;
+                string[] lines = File.ReadAllLines(p);
+                File.Delete(p);
+                string logp = Path.Combine(dataDir, "sim_cmd.log");
+                foreach (string raw in lines)
+                {
+                    string line = (raw ?? "").Trim();
+                    if (line.Length == 0) continue;
+                    string[] t = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    string cmd = t[0].ToUpperInvariant(), msg = "";
+                    bool ok = false;
+                    if (cmd == "SPAWN" && t.Length >= 2)
+                    {
+                        string job = (t.Length >= 3 && t[2].ToUpperInvariant() != "OUT") ? t[2] : "";
+                        bool outg = line.ToUpperInvariant().EndsWith(" OUT");
+                        ok = SpawnPallet(t[1], job, outg, out msg);
+                    }
+                    else if (cmd == "REMOVE" && t.Length >= 2) ok = RemovePallet(t[1], out msg);
+                    else if (cmd == "FAULTA" && t.Length >= 2)
+                    {
+                        if (t[1].ToUpperInvariant() == "OFF") { CancelFaultA(); FaultAckLoss = false; msg = "상황 A 끔"; }
+                        else { int n; int.TryParse(t[1], out n); FaultAckLossCount = n; FaultAckLoss = true; msg = "상황 A 켬 (지울 횟수 " + n + ", 0=계속)"; }
+                        ok = true;
+                    }
+                    else if (cmd == "STOP" && t.Length >= 2)
+                    {
+                        if (t[1].ToUpperInvariant() == "OFF") { msg = SetStop(0, false); ok = true; }
+                        else { int n; if (int.TryParse(t[1], out n)) { bool on = !(t.Length >= 3 && t[2].ToUpperInvariant() == "OFF"); msg = SetStop(n, on); ok = true; } else msg = "번호 오류"; }
+                    }
+                    else if (cmd == "RELEASE")
+                    {
+                        CancelFaultA(); FaultAckLoss = false; FaultAckTimeout = false;
+                        int n = ReleaseBlockedHandovers();
+                        msg = "고장 해제 - 보류 화물 " + n + "건 수동 인수"; ok = true;
+                    }
+                    else msg = "알 수 없는 명령";
+                    Log("[sim_cmd] " + line + " -> " + (ok ? "OK " : "FAIL ") + msg);
+                    try { File.AppendAllText(logp, DateTime.Now.ToString("HH:mm:ss.fff") + " " + line + " -> " + (ok ? "OK " : "FAIL ") + msg + "\r\n"); } catch { }
+                }
+            }
+            catch (Exception ex) { Log("[sim_cmd] 오류: " + ex.Message); }
+        }
+
+        // [LGLS 2026-09-15] 자동 테스트 : Data/inject_ctrl.txt 를 폴링해 이중입고/공출고를 N건 예약한다.
+        //   파일 내용 예) "D=10" 또는 "E=10" 또는 "D=10 E=10". 읽고 나서 파일을 지운다(1회 소비).
+        private DateTime nextInjectPollAt = DateTime.MinValue;
+        private void PollInjectCtrl(DateTime now)
+        {
+            try
+            {
+                if (now < nextInjectPollAt) return;
+                nextInjectPollAt = now.AddMilliseconds(1000);
+                if (string.IsNullOrEmpty(dataDir)) return;
+                string p = Path.Combine(dataDir, "inject_ctrl.txt");
+                if (!File.Exists(p)) return;
+                string txt = File.ReadAllText(p);
+                File.Delete(p);
+                foreach (string tok in txt.Split(new char[] { ' ', '\t', '\r', '\n', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    string[] kv = tok.Split('=');
+                    if (kv.Length != 2) continue;
+                    int n; if (!int.TryParse(kv[1].Trim(), out n)) continue;
+                    if (kv[0].Trim().ToUpper() == "D") { InjectDoubleCount = n; Log("[주입예약] 이중입고 " + n + "건 예약"); }
+                    else if (kv[0].Trim().ToUpper() == "E") { InjectEmptyCount = n; Log("[주입예약] 공출고 " + n + "건 예약"); }
+                }
+            }
+            catch { }
+        }
+
+        // ------------------------------------------------------------------
+        // 이벤트 ↔ Ack 핸드셰이크 (슬라이드 5: Reset By PLC When Event Reset)
+        // ------------------------------------------------------------------
+        public void RaiseEvent(string owner, string eventName, string ackName, int expireMs = 0)
+        {
+            io.SetBool(owner, eventName, true);
+            lock (sync)
+            {
+                pendingEvents.Add(new PendingEvent
+                {
+                    Owner = owner,
+                    EventName = eventName,
+                    AckName = ackName,
+                    ExpireAt = DateTime.Now.AddMilliseconds(expireMs > 0 ? expireMs : AckTimeoutMs)
+                });
+            }
+        }
+
+        /// <summary>이벤트 비트가 (Ack 완료로) 내려갔는지</summary>
+        public bool IsEventCleared(string owner, string eventName)
+        {
+            return !io.GetBool(owner, eventName);
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-12] 차량 하역 완료 보고. 고장 주입 대상이면 상황 A/B 로 올린다.
+        ///   port : 포트 하역이면 포트 번호(벨트 인수 보류 대상), 랙 셀 하역이면 0.
+        /// </summary>
+        public void RaiseUnloadComplete(VehicleDef d, int port)
+        {
+            int fault = 0;
+            if (port > 0 && d != null && !d.IsRgv && d.ScNo == FaultTargetScNo)
+            {
+                if (FaultAckLoss) fault = 1;
+                else if (FaultAckTimeout) fault = 2;
+            }
+            if (fault == 0)
+            {
+                RaiseEvent(d.Id, "UNLOAD_COMPLETE", "UNLOAD_COMPLETE_ACK");
+                return;
+            }
+
+            string cvId = null;
+            var cv = World.FindByPort(port);
+            if (cv != null) { cvId = cv.Id; Conveyor(cvId).SetHandoverBlocked(port, true); }
+
+            if (fault == 2)
+            {
+                // 상황 B : 올렸다가 WCS 폴링(0.3초)이 볼 틈 없이 바로 거둔다. 크레인은 자기 사이클을 끝낸다.
+                //   TRANSFER_ACK(1.5초)는 정상이므로 WCS 는 그것으로 완료를 잡고 위치판정으로 15 까지 간다 - 현장 그대로.
+                io.SetBool(d.Id, "UNLOAD_COMPLETE", true);
+                Thread.Sleep(2);
+                io.SetBool(d.Id, "UNLOAD_COMPLETE", false);
+                Log(d.Id + " ★[상황 B] 하역완료 보고를 올렸다가 Ack 를 기다리지 않고 철회 (크레인 포기 재현) - P" + port + " 벨트 인수 보류. B 체크 해제 시 수동 인수");
+                return;
+            }
+
+            // 상황 A : 질문을 들고 기다린다(타임아웃 없음). WCS 가 쓴 Ack 를 N번 지운다.
+            io.SetBool(d.Id, "UNLOAD_COMPLETE", true);
+            int nLoss = (FaultAckLossCount <= 0) ? -1 : FaultAckLossCount;
+            lock (sync)
+            {
+                pendingEvents.Add(new PendingEvent
+                {
+                    Owner = d.Id, EventName = "UNLOAD_COMPLETE", AckName = "UNLOAD_COMPLETE_ACK",
+                    ExpireAt = DateTime.MaxValue, Fault = 1, AckLossRemaining = nLoss, Port = port, CvId = cvId
+                });
+            }
+            Log(d.Id + " ★[상황 A] 하역완료 보고 ON - WCS 의 Ack 를 " + (nLoss < 0 ? "계속" : nLoss + "회") + " 지운다 (외부 되쓰기 재현) - P" + port + " 벨트 인수 보류");
+        }
+
+        /// <summary>[LGLS 2026-09-12] 상황 A 해제 : 더 지우지 않고 정상 타임아웃으로 되돌린다. 다음 Ack 부터 정상 완료.</summary>
+        public void CancelFaultA()
+        {
+            lock (sync)
+            {
+                foreach (var pe in pendingEvents)
+                {
+                    if (pe.Fault != 1) continue;
+                    pe.AckLossRemaining = 0;
+                    pe.ExpireAt = DateTime.Now.AddMilliseconds(AckTimeoutMs);
+                    Log(pe.Owner + " [상황 A 해제] 더 지우지 않는다 - 다음 Ack 부터 정상 완료 (타임아웃 " + AckTimeoutMs + "ms 복원)");
+                }
+            }
+        }
+
+        /// <summary>[LGLS 2026-09-12] 보류된 벨트 인수를 전부 재개 (운전원이 PLC 에서 수동 인수한 상황). 반환: 푼 개수.</summary>
+        public int ReleaseBlockedHandovers()
+        {
+            int n = 0;
+            foreach (var cv in conveyors.Values) n += cv.ReleaseBlockedHandovers();
+            if (n > 0) Log("[수동 인수] 보류 중이던 화물 " + n + "건의 벨트 인수를 재개");
+            return n;
+        }
+
+        // [LGLS 2026-07-20] kind: 담당 설비군의 이벤트만 처리 (CV=CONVEYOR:*, RTV=VEHICLE:1, SC=그 외 VEHICLE:*)
+        private void ProcessHandshakes(DateTime now, string kind)
+        {
+            for (int i = pendingEvents.Count - 1; i >= 0; i--)
+            {
+                var pe = pendingEvents[i];
+                bool mine = (kind == "CV") ? pe.Owner.StartsWith("CONVEYOR:")
+                          : (kind == "RTV") ? pe.Owner == "VEHICLE:1"
+                          : pe.Owner.StartsWith("VEHICLE:") && pe.Owner != "VEHICLE:1";
+                if (!mine) continue;
+                bool acked = pe.AckName != null && io.GetBool(pe.Owner, pe.AckName);
+                // [LGLS 2026-09-12] 상황 A : WCS 가 올린 Ack 를 외부 손이 지운다(워드 되쓰기 재현). 이벤트는 그대로 든다.
+                if (acked && pe.Fault == 1 && pe.AckLossRemaining != 0)
+                {
+                    io.SetBool(pe.Owner, pe.AckName, false);
+                    if (pe.AckLossRemaining > 0) pe.AckLossRemaining--;
+                    Log(pe.Owner + " ★[상황 A] WCS 의 " + pe.AckName + " 를 지웠다 (남은 " + (pe.AckLossRemaining < 0 ? "계속" : pe.AckLossRemaining + "회") + ") - 크레인은 계속 기다린다");
+                    continue;
+                }
+                if (acked || now >= pe.ExpireAt)
+                {
+                    io.SetBool(pe.Owner, pe.EventName, false);
+                    if (pe.AckName != null) io.SetBool(pe.Owner, pe.AckName, false);
+                    pendingEvents.RemoveAt(i);
+                    if (!acked && pe.AckName != null)
+                        Log(pe.Owner + " " + pe.EventName + " Ack 타임아웃 — 자동 해제");
+                    // [LGLS 2026-09-12] 핸드셰이크가 끝났으면(정상 수신이든 타임아웃이든) 보류했던 벨트 인수를 재개
+                    if (pe.Port > 0 && pe.CvId != null)
+                    {
+                        if (acked) Log(pe.Owner + " ★[상황 A] Ack 정상 수신 - 핸드셰이크 완료 → P" + pe.Port + " 벨트 인수 재개");
+                        Conveyor(pe.CvId).SetHandoverBlocked(pe.Port, false);
+                    }
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // 랙 재고
+        // ------------------------------------------------------------------
+        public void StoreToRack(string cell, string palletId)
+        {
+            lock (sync) Rack[cell] = palletId ?? "";
+        }
+
+        public string TakeFromRack(string cell)
+        {
+            lock (sync)
+            {
+                string id;
+                if (Rack.TryGetValue(cell, out id)) { Rack.Remove(cell); return id; }
+                return null;
+            }
+        }
+
+        public void NotifyOutgoRemoved(string jobId)
+        {
+            CompletedOutgoCount++;
+        }
+
+        // ------------------------------------------------------------------
+        // 수동 조작 (UI)
+        // ------------------------------------------------------------------
+        public bool ManualInject(string conveyorId)
+        {
+            lock (sync)
+            {
+                ConveyorSim cv;
+                return conveyors.TryGetValue(conveyorId, out cv) && cv.InjectPallet();
+            }
+        }
+
+        // [LGLS 2026-07-24] [시나리오 테스트] — 자동 운전 정지/재개 + PLC 메모리 직접 접근
+        public bool IsPaused { get { return paused; } }
+        public void Pause()  { paused = true;  Log("[시나리오 테스트] 자동 운전 일시정지"); }
+        public void Resume() { paused = false; Log("[시나리오 테스트] 자동 운전 재개"); }
+        public PlcMemory Memory { get { return io.Memory; } }
+
+        /// <summary>
+        /// [LGLS 2026-08-22] 잔재 화물 강제 제거.
+        ///   spec = "31"       → 포트 번호 (화면 표기 P31 과 동일. 통로 C/V 포함 전 설비)
+        ///        = "131"      → 트랙 번호 (WCS 표기. ini [WCS_MIRROR] 설정 설비만)
+        ///        = "13:25"    → 설비번호:포트번호
+        /// </summary>
+        public bool RemovePallet(string spec, out string msg)
+        {
+            ConveyorSim target; int order;
+            if (!ResolveSlot(spec, out target, out order, out msg)) return false;
+            return RemovePalletAt(target, order, out msg);
+        }
+
+        /// <summary>
+        /// [LGLS 2026-09-06] 시험용 화물 생성 - 원하는 트랙/포트에 파렛트를 하나 올린다.
+        ///   spec   : RemovePallet 과 같은 표기 ("31" 포트 / "131" 트랙 / "13:25" 설비:포트)
+        ///   jobNo  : 비우면 ★작업번호 없는 화물★. 크레인이 수동조작으로 출고 H/S 에
+        ///            내려놓은 상황([H/S 배출] 시험)을 그대로 만들 수 있다.
+        ///   bOutgo : true = 출고 화물, false = 입고 화물
+        /// </summary>
+        public bool SpawnPallet(string spec, string jobNo, bool bOutgo, out string msg)
+        {
+            ConveyorSim target; int order;
+            if (!ResolveSlot(spec, out target, out order, out msg)) return false;
+
+            bool ok;
+            lock (sync)
+            {
+                ok = target.SpawnPalletAt(order, jobNo, bOutgo ? FlowDir.Outgo : FlowDir.Ingo, out msg);
+            }
+            if (!ok) { Log("[시험] 화물 생성 실패 - " + msg); return false; }
+
+            Log("[시험] " + msg);
+            SaveState();
+            return true;
+        }
+
+        /// <summary>[LGLS 2026-09-06] spec 문자열 → 설비 + 슬롯 (제거·생성이 함께 쓴다)</summary>
+        private bool ResolveSlot(string spec, out ConveyorSim target, out int order, out string msg)
+        {
+            msg = "";
+            target = null;
+            order = 0;
+            if (string.IsNullOrEmpty(spec)) { msg = "트랙 번호를 입력하세요"; return false; }
+            spec = spec.Trim().ToUpper().Replace("CV", "").Replace("C/V", "").Replace("#", "");
+
+            int colon = spec.IndexOf(':');
+            if (colon > 0)
+            {
+                int no, port;
+                if (!int.TryParse(spec.Substring(0, colon), out no) ||
+                    !int.TryParse(spec.Substring(colon + 1), out port))
+                { msg = "형식 오류 - 설비번호:포트번호 (예 13:25)"; return false; }
+                foreach (var cv in AllConveyors)
+                    if (cv.Def.No == no) { target = cv; order = cv.Def.OrderOf(port); break; }
+                if (target == null) { msg = "C/V #" + no + " 없음"; return false; }
+                if (order <= 0) { msg = "C/V #" + no + " 에 포트 " + port + " 없음"; return false; }
+            }
+            else
+            {
+                int n;
+                if (!int.TryParse(spec, out n)) { msg = "숫자가 아님: " + spec; return false; }
+                if (n < 100)
+                {
+                    // 두 자리 = 포트 번호(화면 표기 P25/P31 과 같다). 포트 번호는 전 설비에서 유일하다.
+                    foreach (var cv in AllConveyors)
+                    {
+                        int o = cv.Def.OrderOf(n);
+                        if (o > 0) { target = cv; order = o; break; }
+                    }
+                    if (target == null) { msg = "포트 " + n + " 을 가진 설비 없음"; return false; }
+                }
+                else
+                {
+                    // 세 자리 = 트랙 번호(WCS 표기 125/131). 미러 미설정 설비는 포트 번호로 지정한다.
+                    foreach (var cv in AllConveyors)
+                    {
+                        int o = cv.OrderOfTrack(n);
+                        if (o > 0) { target = cv; order = o; break; }
+                    }
+                    // [LGLS 2026-09-06] 미러(ini [WCS_MIRROR]) 미설정 설비 폴백 : 트랙 = 100 + 포트.
+                    //   이 현장은 C/V#1~#15 전 설비가 이 규칙이다(C/V#2 포트3/4 = 트랙 103/104,
+                    //   C/V#13 포트25/26 = 125/126, C/V#15 포트30/31/32 = 130/131/132).
+                    //   종전에는 통로 C/V 를 포트 번호로만 지정할 수 있어 트랙 104 가 안 먹혔다.
+                    if (target == null && n > 100 && n < 200)
+                    {
+                        int port = n - 100;
+                        foreach (var cv in AllConveyors)
+                        {
+                            int o = cv.Def.OrderOf(port);
+                            if (o > 0) { target = cv; order = o; break; }
+                        }
+                    }
+                    if (target == null)
+                    { msg = "트랙 " + n + " 을 가진 설비 없음 (통로 C/V 는 포트 번호로 지정)"; return false; }
+                }
+            }
+            return true;
+        }
+
+        private bool RemovePalletAt(ConveyorSim target, int order, out string msg)
+        {
+            string what;
+            bool had = target.ForceClearOrder(order, out what);
+            if (!had)
+            {
+                msg = target.Def.Id + " 슬롯 " + order + " - 화물 없음 (신호만 정리)";
+                Log(msg);
+                return false;
+            }
+            msg = target.Def.Id + " 슬롯 " + order + " 화물 제거 - " + what;
+            Log("[정리] " + msg);
+            return true;
+        }
+
+        public void ResetAll()
+        {
+            lock (sync)
+            {
+                pendingEvents.Clear();
+                Rack.Clear();
+                foreach (var cv in conveyors.Values) cv.Pallets.Clear();
+                io.Memory.Clear();
+                foreach (var cv in conveyors.Values) cv.Initialize();
+                foreach (var v in vehicles.Values) v.Initialize();
+                SaveState();
+                // [LGLS] 상태 저장 파일 삭제 — 재기동 시 잔류 시뮬 상태(화물감지·트래킹 등) 로드 방지
+                try { if (File.Exists(StatePath)) File.Delete(StatePath); } catch { }
+                try { if (File.Exists(MemoryPath)) File.Delete(MemoryPath); } catch { }
+                // 루트 폴더에 남을 수 있는 구(舊) 상태파일도 정리
+                try { if (File.Exists("eqp_state.txt")) File.Delete("eqp_state.txt"); } catch { }
+            }
+            Log("전체 상태/메모리 초기화 (상태 파일 삭제)");
+        }
+
+        // ------------------------------------------------------------------
+        // 파일 저장/복원
+        // ------------------------------------------------------------------
+        private string StatePath { get { return Path.Combine(dataDir, "eqp_state.txt"); } }
+        private string MemoryPath { get { return Path.Combine(dataDir, "plc_memory.bin"); } }
+
+        private void SaveState()
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                lock (sync)
+                {
+                    foreach (var kv in Rack)
+                        sb.AppendLine("RACK," + kv.Key + "," + kv.Value);
+                    foreach (var cv in conveyors.Values)
+                        foreach (string line in cv.SaveLines())
+                            sb.AppendLine(line);
+                }
+                File.WriteAllText(StatePath, sb.ToString(), Encoding.UTF8);
+                io.Memory.Save(MemoryPath);
+            }
+            catch (Exception ex)
+            {
+                Log("상태 저장 실패: " + ex.Message);
+            }
+        }
+
+        private void LoadState()
+        {
+            try
+            {
+                if (!File.Exists(StatePath)) return;
+                foreach (string raw in File.ReadAllLines(StatePath))
+                {
+                    string[] p = raw.Split(',');
+                    if (p.Length >= 3 && p[0] == "RACK")
+                    {
+                        Rack[p[1]] = p.Length > 2 ? p[2] : "";
+                    }
+                    else if (p.Length >= 5 && p[0] == "CV")
+                    {
+                        ConveyorSim cv;
+                        int idx, dir;
+                        if (conveyors.TryGetValue(p[1], out cv) &&
+                            int.TryParse(p[2], out idx) && int.TryParse(p[4], out dir))
+                        {
+                            cv.RestorePallet(idx, p[3], (FlowDir)dir);
+                        }
+                    }
+                }
+                Log("저장 상태 복원: 랙 " + Rack.Count + "셀, 컨베이어 파렛트 " +
+                    conveyors.Values.Sum(c => c.Pallets.Count) + "개");
+            }
+            catch (Exception ex)
+            {
+                Log("상태 복원 실패: " + ex.Message);
+            }
+        }
+
+        public void Log(string msg)
+        {
+            // [LGLS 2026-07-21] 파일 기록과 UI 이벤트를 완전 격리 — 어느 한쪽 예외가 엔진 틱/다른 로그를 못 죽이게.
+            try
+            {
+                if (logWriter != null)
+                    lock (logWriter)
+                        logWriter.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + msg);
+            }
+            catch { }
+            try
+            {
+                var h = LogAdded;
+                if (h != null) h(msg);
+            }
+            catch { }
+        }
+
+        public void Dispose()
+        {
+            running = false;
+            try { SaveState(); } catch { }
+            try { if (logWriter != null) logWriter.Close(); } catch { }
+        }
+    }
+}

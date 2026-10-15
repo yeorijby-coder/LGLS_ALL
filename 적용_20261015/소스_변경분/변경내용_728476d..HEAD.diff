@@ -1,0 +1,1053 @@
+diff --git a/SIM/EQP_SIM/EQP_SIM.ini b/SIM/EQP_SIM/EQP_SIM.ini
+index d158ca4..f89d637 100644
+--- a/SIM/EQP_SIM/EQP_SIM.ini
++++ b/SIM/EQP_SIM/EQP_SIM.ini
+@@ -11,6 +11,8 @@ PORTS=2004,3001
+ HS_RECORD_LAG_MS=1500
+ ; [LGLS 2026-09-17] H/S ê¸°ë¡ì´ ë“œëŸ¬ë‚œ ë’¤ ë²¨íŠ¸ê°€ ë‹¤ìŒ ì¹¸ìœ¼ë¡œ ì˜®ê¸°ê¸°ê¹Œì§€ ìµœì†Œ ì²´ë¥˜(ms). Client ê°€ ì§ìˆ˜ H/S ê¸°ë¡ì„ ë³´ê²Œ. 0=ì¦‰ì‹œ
+ HS_AFTER_RECORD_HOLD_MS=3000
++; [LGLS 2026-10-14] RGV í•˜ì—­ ë•Œ ì‹œë®¬ì´ íŠ¸ë˜í‚¹ì— ë²ˆí˜¸ë¥¼ ì–¹ëŠ”ê°€. 1=ì–¹ìŒ(ì¢…ì „) / 0=ì¬ì„ë§Œ, ë²ˆí˜¸ëŠ” ECS(IO_TASK)ê°€ ì¨ì•¼ ë²¨íŠ¸ê°€ ì˜®ê¸´ë‹¤(í˜„ì¥ê³¼ ê°™ê²Œ)
++RGV_DROP_STAMP=0
+ # ì»¨ë² ì´ì–´ 1êµ¬ê°„ ì´ë™ ì‹œê°„
+ MOVE_MS=2000
+ # S/C Â· RGV ì£¼í–‰ ì‹œê°„
+@@ -55,3 +57,5 @@ CV15=130
+ A=0
+ B=0
+ COUNT=1
++; [LGLS 2026-10-14] ì™„ë£Œì²˜ë¦¬ ì‹œí—˜ìš© ì„¤ë¹„ ê°•ì œ ì •ì§€ ì˜ˆì•½ : 0 ì—†ìŒ / 1 í¬ë ˆì¸ Ack ìœ ì‹¤(=A íšŸìˆ˜0) / 2 í†µë¡œ ë²ˆí˜¸ ì†Œì‹¤ / 3 RGV ì™„ë£Œ ë³´ê³  ìœ ì‹¤ / 4 ì¶œê³ ëŒ€ ë„ì°© ë²ˆí˜¸ ì†Œì‹¤
++STOP=0
+diff --git a/SIM/EQP_SIM/MainForm.Designer.cs b/SIM/EQP_SIM/MainForm.Designer.cs
+index 699a8aa..3097459 100644
+--- a/SIM/EQP_SIM/MainForm.Designer.cs
++++ b/SIM/EQP_SIM/MainForm.Designer.cs
+@@ -18,6 +18,11 @@
+             this.chkInjectDouble = new System.Windows.Forms.CheckBox();
+             this.chkInjectEmpty = new System.Windows.Forms.CheckBox();
+             this.chkFaultA = new System.Windows.Forms.CheckBox();
++            this.chkStop1 = new System.Windows.Forms.CheckBox();
++            this.chkStop2 = new System.Windows.Forms.CheckBox();
++            this.chkStop3 = new System.Windows.Forms.CheckBox();
++            this.chkStop4 = new System.Windows.Forms.CheckBox();
++            this.lblStop = new System.Windows.Forms.Label();
+             this.nudFaultA = new System.Windows.Forms.NumericUpDown();
+             this.lblFaultA = new System.Windows.Forms.Label();
+             this.chkFaultB = new System.Windows.Forms.CheckBox();
+@@ -56,6 +61,11 @@
+             this.pnlTop.Controls.Add(this.chkInjectDouble);
+             this.pnlTop.Controls.Add(this.chkInjectEmpty);
+             this.pnlTop.Controls.Add(this.chkFaultA);
++            this.pnlTop.Controls.Add(this.chkStop1);
++            this.pnlTop.Controls.Add(this.chkStop2);
++            this.pnlTop.Controls.Add(this.chkStop3);
++            this.pnlTop.Controls.Add(this.chkStop4);
++            this.pnlTop.Controls.Add(this.lblStop);
+             this.pnlTop.Controls.Add(this.nudFaultA);
+             this.pnlTop.Controls.Add(this.lblFaultA);
+             this.pnlTop.Controls.Add(this.chkFaultB);
+@@ -87,7 +97,7 @@
+             this.pnlTop.Controls.Add(this.btnOpAuto);
+             this.pnlTop.Controls.Add(this.lblErrHint);
+             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
+-            this.pnlTop.Height = 176;   // [LGLS 2026-09-06] í™”ë¬¼ ìƒì„± í–‰ ì¶”ê°€ / [LGLS 2026-09-12] ê³ ì¥ ì£¼ì… í–‰ ì¶”ê°€ / [LGLS 2026-09-21] ì„¤ë¹„ ì—ëŸ¬ ì£¼ì… í–‰ ì¶”ê°€
++            this.pnlTop.Height = 202;   // [LGLS 2026-10-14] ì‹œí—˜ì •ì§€ í–‰ ì¶”ê°€ /   // [LGLS 2026-09-06] í™”ë¬¼ ìƒì„± í–‰ ì¶”ê°€ / [LGLS 2026-09-12] ê³ ì¥ ì£¼ì… í–‰ ì¶”ê°€ / [LGLS 2026-09-21] ì„¤ë¹„ ì—ëŸ¬ ì£¼ì… í–‰ ì¶”ê°€
+             //
+             // lblServer
+             //
+@@ -166,6 +176,29 @@
+             this.lblErrHint.Text = "ì½”ë“œ=PLC ì•ŒëŒ ë¦¬ìŠ¤íŠ¸ ë²ˆí˜¸. ìˆ˜ë™ì€ WCS_DB.INI [CNF] OP_MODE_USE=1 ì¼ ë•Œë§Œ WCS ì— ì „ë‹¬";
+             this.lblErrHint.ForeColor = System.Drawing.Color.DimGray;
+             //
++            // [LGLS 2026-10-14] ì‘ì—…ì •ë³´ íŒë„¬ [ì™„ë£Œì²˜ë¦¬] ì‹œí—˜ìš© ì„¤ë¹„ ê°•ì œ ì •ì§€ 4ì¢… (ë‹¤ìŒ 1ê±´ì—ë§Œ, ìŠ¤ìŠ¤ë¡œ êº¼ì§. â‘ ì€ ìƒí™© A íšŸìˆ˜ 0 ê³¼ ê°™ë‹¤)
++            this.lblStop.Location = new System.Drawing.Point(12, 178);
++            this.lblStop.Size = new System.Drawing.Size(92, 20);
++            this.lblStop.Text = "ì™„ë£Œì²˜ë¦¬ ì‹œí—˜:";
++            this.lblStop.Font = new System.Drawing.Font("ë§‘ì€ ê³ ë”•", 9F, System.Drawing.FontStyle.Bold);
++            this.lblStop.ForeColor = System.Drawing.Color.Purple;
++            this.chkStop1.Location = new System.Drawing.Point(104, 176);
++            this.chkStop1.Size = new System.Drawing.Size(230, 22);
++            this.chkStop1.Text = "â‘  í¬ë ˆì¸ í•˜ì—­ Ack ìœ ì‹¤ (1í˜¸ê¸° ì¶œê³ )";
++            this.chkStop1.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
++            this.chkStop2.Location = new System.Drawing.Point(338, 176);
++            this.chkStop2.Size = new System.Drawing.Size(190, 22);
++            this.chkStop2.Text = "â‘¡ í†µë¡œ C/V ë²ˆí˜¸ ì†Œì‹¤";
++            this.chkStop2.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
++            this.chkStop3.Location = new System.Drawing.Point(532, 176);
++            this.chkStop3.Size = new System.Drawing.Size(200, 22);
++            this.chkStop3.Text = "â‘¢ RGV í•˜ì—­ ì™„ë£Œ ë³´ê³  ìœ ì‹¤";
++            this.chkStop3.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
++            this.chkStop4.Location = new System.Drawing.Point(736, 176);
++            this.chkStop4.Size = new System.Drawing.Size(220, 22);
++            this.chkStop4.Text = "â‘£ ì¶œê³ ëŒ€ ë„ì°© ë²ˆí˜¸ ì†Œì‹¤ (ì‹ í˜¸ ì—†ìŒ)";
++            this.chkStop4.CheckedChanged += new System.EventHandler(this.chkStop_CheckedChanged);
++            foreach (System.Windows.Forms.CheckBox c in new System.Windows.Forms.CheckBox[] { this.chkStop1, this.chkStop2, this.chkStop3, this.chkStop4 }) c.ForeColor = System.Drawing.Color.Purple;
+             // [LGLS 2026-09-12] í¬ë ˆì¸ 1í˜¸ê¸° ì¶œê³  í•˜ì—­ í•¸ë“œì…°ì´í¬ ê³ ì¥ ì£¼ì… (ìƒí™© A / ìƒí™© B)
+             //
+             this.chkFaultA.Location = new System.Drawing.Point(12, 116);
+@@ -364,6 +397,11 @@
+         private System.Windows.Forms.CheckBox chkInjectDouble;
+         private System.Windows.Forms.CheckBox chkInjectEmpty;
+         private System.Windows.Forms.CheckBox chkFaultA;
++        private System.Windows.Forms.CheckBox chkStop1;
++        private System.Windows.Forms.CheckBox chkStop2;
++        private System.Windows.Forms.CheckBox chkStop3;
++        private System.Windows.Forms.CheckBox chkStop4;
++        private System.Windows.Forms.Label lblStop;
+         private System.Windows.Forms.NumericUpDown nudFaultA;
+         private System.Windows.Forms.Label lblFaultA;
+         private System.Windows.Forms.CheckBox chkFaultB;
+diff --git a/SIM/EQP_SIM/MainForm.cs b/SIM/EQP_SIM/MainForm.cs
+index 907cb2f..652bcdd 100644
+--- a/SIM/EQP_SIM/MainForm.cs
++++ b/SIM/EQP_SIM/MainForm.cs
+@@ -65,6 +65,7 @@ namespace EQP_SIM
+                 io = new PlcIo(memory, obsMap);
+                 engine = new ScenarioEngine(io, config);
+                 autoRunner = new ScenarioAutoRunner(engine);
++                engine.StopConsumedEvent += OnStopConsumed;   // [LGLS 2026-10-14]
+                 engine.LogAdded += OnEngineLog;
+ 
+                 string dataDir = Path.Combine(baseDir, "Data");
+@@ -353,6 +354,39 @@ namespace EQP_SIM
+             }
+         }
+ 
++        // [LGLS 2026-10-14] ì™„ë£Œì²˜ë¦¬ ì‹œí—˜ìš© ì„¤ë¹„ ê°•ì œ ì •ì§€ 4ì¢…. â‘¡â‘¢â‘£ ëŠ” ë‹¤ìŒ 1ê±´ì— ê±¸ë¦¬ê³  ì—”ì§„ì´ ìŠ¤ìŠ¤ë¡œ ëˆë‹¤(StopConsumedEvent â†’ ì²´í¬ í•´ì œ).
++        private bool m_bStopSync = false;
++        private void chkStop_CheckedChanged(object sender, EventArgs e)
++        {
++            if (engine == null || m_bStopSync) return;
++            CheckBox c = (CheckBox)sender;
++            int n = (c == chkStop1) ? 1 : (c == chkStop2) ? 2 : (c == chkStop3) ? 3 : 4;
++            string msg = engine.SetStop(n, c.Checked);
++            engine.Log("[ì‹œí—˜ì •ì§€] " + msg);
++            lblStatus.Text = msg;
++            if (n == 1)
++            {
++                m_bStopSync = true;
++                try { nudFaultA.Value = 0; chkFaultA.Checked = c.Checked; } catch { }
++                m_bStopSync = false;
++            }
++        }
++        private void OnStopConsumed(int n)
++        {
++            SafeUI(() =>
++            {
++                m_bStopSync = true;
++                try
++                {
++                    if (n == 2) chkStop2.Checked = false;
++                    else if (n == 3) chkStop3.Checked = false;
++                    else if (n == 4) chkStop4.Checked = false;
++                    lblStatus.Text = "ì‹œí—˜ì •ì§€ " + n + " ì ìš©ë¨ - ì‘ì—…ì •ë³´ íŒë„¬ì—ì„œ [ì™„ë£Œì²˜ë¦¬] í•˜ì„¸ìš”";
++                }
++                finally { m_bStopSync = false; }
++            });
++        }
++
+         private void nudFaultA_ValueChanged(object sender, EventArgs e)
+         {
+             if (engine == null) return;
+diff --git a/SIM/EQP_SIM/Sim/ConveyorSim.cs b/SIM/EQP_SIM/Sim/ConveyorSim.cs
+index 87c0a93..5f2a015 100644
+--- a/SIM/EQP_SIM/Sim/ConveyorSim.cs
++++ b/SIM/EQP_SIM/Sim/ConveyorSim.cs
+@@ -501,6 +501,9 @@ namespace EQP_SIM.Sim
+             if (p.HandoverBlocked == blocked) return true;
+             p.HandoverBlocked = blocked;
+             if (!blocked) p.MoveReadyAt = DateTime.Now.AddMilliseconds(engine.MoveMs);
++            // [LGLS 2026-10-14] í˜„ì¥ê³¼ ê°™ê²Œ : í•¸ë“œì…°ì´í¬ê°€ ë§‰í˜€ë„ H/S ì—ëŠ” í™”ë¬¼ ê°ì§€ê°€ ì„ ë‹¤(ë°ì´í„°ë§Œ ì—†ë‹¤). ì¢…ì „ì—” ë°˜ì†¡ ì™„ë£Œ ë’¤ì—ì•¼
++            //   ì¬ì„Â·íŠ¸ë˜í‚¹ì„ í•¨ê»˜ ë“œëŸ¬ë‚´ì„œ "í™”ë¬¼ ê°ì§€ë„ ì—†ìŒ" ì´ ëë‹¤(ì‚¬ìš©ì ì§€ì  - í˜„ì¥ì€ "ì¶œê³  H/S ì— í™”ë¬¼ë§Œ ê°ì§€").
++            if (blocked && !p.RecordDone) { SetExist(idx, true); engine.Log(Def.Id + " P" + port + " í™”ë¬¼ ê°ì§€ ON (ë°ì´í„° ì—†ìŒ - í•¸ë“œì…°ì´í¬ ëŒ€ê¸°)"); }
+             engine.Log(Def.Id + " P" + port + (blocked ? " ë²¨íŠ¸ ì¸ìˆ˜ ë³´ë¥˜(í•¸ë“œì…°ì´í¬ ëŒ€ê¸°)" : " ë²¨íŠ¸ ì¸ìˆ˜ ì¬ê°œ") + " (JOB " + p.Id + ")");
+             return true;
+         }
+@@ -995,6 +998,24 @@ namespace EQP_SIM.Sim
+                 SetExist(curIdx, false);
+                 SetTracking(curIdx, "");
+                 SetExist(nextIdx, true);
++                // [LGLS 2026-10-14] ì‹œí—˜ì •ì§€ â‘¡ : í†µë¡œ C/V(2~10)ì˜ ì¶œê³  í™”ë¬¼ì´ í™€ìˆ˜(RGV í”½ì—…) ì¹¸ìœ¼ë¡œ ì˜®ê²¨ì§ˆ ë•Œ ë²ˆí˜¸ë¥¼ ë¹„ìš´ë‹¤.
++                //   í˜„ì¥ì˜ "ë²ˆí˜¸ ì—†ì´ êµ´ëŸ¬ì˜¨ í™”ë¬¼" ì¬í˜„. ECS ê°€ ë²ˆí˜¸ë¥¼ ì¨ ì£¼ë©´(JOB ë¶€ì—¬ë¨) ë‹¤ì‹œ ì •ìƒ.
++                if (engine.StopAisleNoTrack && Def.No >= 2 && Def.No <= 10 && p.Dir == FlowDir.Outgo)
++                {
++                    engine.Log(Def.Id + " P" + path[i + 1] + " â˜…[ì‹œí—˜ì •ì§€ 2] ë²ˆí˜¸ ì—†ì´ ì˜®ê¹€ (JOB " + p.Id + " ì†Œì‹¤)");
++                    p.Id = "";
++                    engine.StopConsumed(2);
++                }
++                // [LGLS 2026-10-14] ì‹œí—˜ì •ì§€ â‘£ : ì¶œê³  í™”ë¬¼ì´ ì¶œê³ ëŒ€(ì¶œê³  ê²½ë¡œ ë§ˆì§€ë§‰ ì¹¸)ì— ë“¤ì–´ì„¤ ë•Œ ë²ˆí˜¸ë¥¼ ë¹„ìš´ë‹¤.
++                //   IO_TASK ëŠ” "ì¶œê³ ëŒ€ì— ê·¸ ì‘ì—…ë²ˆí˜¸ì˜ í™”ë¬¼" ë¡œ ë„ì°©ì„ íŒì •í•˜ë¯€ë¡œ 15 ì— ë¨¸ë¬¼ê³ , ë²ˆí˜¸ê°€ ì—†ì–´ ì¶œê³ ëŒ€ ì‹ í˜¸ë„ ì„œì§€ ì•ŠëŠ”ë‹¤.
++                //   (ì‹ í˜¸ë§Œ ëŠëŠ” ë°©ì‹ì€ IO_TASK ì˜ ì‹¤ë„ì°© íŒì •(OUT_DONE_ON_ARRIVAL)ì— ê±¸ë ¤ ë©ˆì¶”ì§€ ì•Šì•˜ë‹¤ - 0539 ì‹¤ì¸¡)
++                if (engine.StopOutNoSignal && Def.No >= 11 && p.Dir == FlowDir.Outgo && Def.OutgoPath != null
++                    && nextIdx == Def.OrderOf(Def.OutgoPath[Def.OutgoPath.Length - 1]))
++                {
++                    engine.Log(Def.Id + " P" + path[i + 1] + " â˜…[ì‹œí—˜ì •ì§€ 4] ì¶œê³ ëŒ€ ë„ì°© - ë²ˆí˜¸ ì†Œì‹¤ (JOB " + p.Id + ")");
++                    p.Id = "";
++                    engine.StopConsumed(4);
++                }
+                 SetTracking(nextIdx, p.Id);
+                 p.ArrivedAt = now;
+                 // [LGLS 2026-08-22] ìœ„ì¹˜ê°€ ë°”ë€Œë©´ í™”ë¬¼ê°ì§€Â·ì¶œê³ ëŒ€ ì‹ í˜¸ëŠ” ìƒˆ ìœ„ì¹˜ì—ì„œ ìƒˆë¡œ ì„œëŠ” ê²ƒì´ë‹¤.
+diff --git a/SIM/EQP_SIM/Sim/ScenarioEngine.cs b/SIM/EQP_SIM/Sim/ScenarioEngine.cs
+index 2eff805..fc3c24b 100644
+--- a/SIM/EQP_SIM/Sim/ScenarioEngine.cs
++++ b/SIM/EQP_SIM/Sim/ScenarioEngine.cs
+@@ -66,6 +66,8 @@ namespace EQP_SIM.Sim
+         public int WaitOutHoldMs = 9000;
+         /// <summary>[LGLS 2026-09-16] í¬ë ˆì¸ í•˜ì°¨ í›„ H/S ì›Œë“œ(ì¬ì„/íŠ¸ë˜í‚¹) ê¸°ë¡ ì§€ì—°(ms). 0=ì¦‰ì‹œ(ì¢…ì „). í˜„ì¥ ì¬í˜„ ì‹œ ~1200.</summary>
+         public int HsRecordLagMs = 0;
++        /// <summary>[LGLS 2026-10-14] RGV í•˜ì—­ ë•Œ ì‹œë®¬(PLC)ì´ íŠ¸ë˜í‚¹ì— ë²ˆí˜¸ë¥¼ ì–¹ëŠ”ê°€. true=ì¢…ì „. false=ì¬ì„ë§Œ ì„¸ìš°ê³  ë²ˆí˜¸ëŠ” ECS(IO_TASK)ê°€ ì¨ì•¼ í•˜ë©° ê·¸ ì „ì—” ë²¨íŠ¸ê°€ ì˜®ê¸°ì§€ ì•ŠëŠ”ë‹¤(í˜„ì¥ PLC ë‹´ë‹¹ì : í•˜ì—­ í›„ ë²ˆí˜¸ëŠ” ECS ê°€ ì“´ë‹¤).</summary>
++        public bool RgvDropStamp = true;
+         /// <summary>[LGLS 2026-09-17] H/S ì›Œë“œ ê¸°ë¡ì´ ë“œëŸ¬ë‚œ ë’¤ ë²¨íŠ¸ê°€ ë‹¤ìŒ ì¹¸ìœ¼ë¡œ ì˜®ê¸°ê¸°ê¹Œì§€ ìµœì†Œ ì²´ë¥˜(ms). Client ê°€ ì§ìˆ˜ ì¹¸ ê¸°ë¡ì„ ë³¼ ìˆ˜ ìˆê²Œ. 0=ì¦‰ì‹œ.</summary>
+         public int HsAfterRecordHoldMs = 3000;
+ 
+@@ -80,7 +82,9 @@ namespace EQP_SIM.Sim
+             ForkStepMs = config.GetInt("TIMING", "FORK_STEP_MS", ForkStepMs);
+             WaitOutHoldMs = config.GetInt("TIMING", "WAITOUT_HOLD_MS", WaitOutHoldMs);
+             HsRecordLagMs = config.GetInt("TIMING", "HS_RECORD_LAG_MS", HsRecordLagMs);   // [LGLS 2026-09-16]
++            RgvDropStamp = config.GetInt("TIMING", "RGV_DROP_STAMP", RgvDropStamp ? 1 : 0) != 0;   // [LGLS 2026-10-14]
+             HsAfterRecordHoldMs = config.GetInt("TIMING", "HS_AFTER_RECORD_HOLD_MS", HsAfterRecordHoldMs);   // [LGLS 2026-09-17]
++            { int nStop = config.GetInt("FAULT", "STOP", 0); if (nStop >= 1 && nStop <= 4) Log("[ì‹œí—˜ì •ì§€] ini ì˜ˆì•½ : " + SetStop(nStop, true)); }   // [LGLS 2026-10-14]
+             OutRemoveMs = config.GetInt("TIMING", "OUT_REMOVE_MS", OutRemoveMs);
+             WaitInOff = config.GetBool("FAULT", "WAIT_IN_OFF", false);   // [LGLS 2026-09-30] ì‹œí—˜ìš© - ì¶œê³ ëŒ€ ì‹ í˜¸(WAIT_IN)ë¥¼ ì˜¬ë¦¬ì§€ ì•ŠëŠ”ë‹¤
+             SrcCargoTimeoutMs = config.GetInt("TIMING", "SRC_CARGO_TIMEOUT_MS", SrcCargoTimeoutMs);
+@@ -128,6 +132,37 @@ namespace EQP_SIM.Sim
+         public volatile int  FaultAckLossCount = 1;      // ìƒí™© A ì—ì„œ ì§€ìš¸ íšŸìˆ˜ (0 = ê³„ì†)
+         public volatile int  FaultTargetScNo = 1;
+ 
++        // [LGLS 2026-10-14] ì‘ì—…ì •ë³´ íŒë„¬ [ì™„ë£Œì²˜ë¦¬] ì‹œí—˜ìš© ì„¤ë¹„ ê°•ì œ ì •ì§€ (ì‚¬ìš©ì ì§€ì‹œ - 4êµ¬ê°„ì„ ì†ìœ¼ë¡œ ì¬í˜„)
++        //   â‘  í¬ë ˆì¸ í•˜ì—­ Ack ìœ ì‹¤      = ìƒí™© A(íšŸìˆ˜ 0)        â†’ ì¶œê³  25 ì •ì²´, í¬ë ˆì¸ RUN, H/S í™”ë¬¼ ê°ì§€ë§Œ
++        //   â‘¡ í†µë¡œ C/V ë²ˆí˜¸ ì†Œì‹¤         = í†µë¡œ ì§ìˆ˜â†’í™€ìˆ˜ ì¹¸ìœ¼ë¡œ ì˜®ê¸¸ ë•Œ íŠ¸ë˜í‚¹ì„ ë¹„ìš´ë‹¤ â†’ ì¶œê³  16 ì •ì²´, í”½ì—… ì¹¸ í™”ë¬¼ë§Œ
++        //   â‘¢ RGV í•˜ì—­ ì™„ë£Œ ë³´ê³  ìœ ì‹¤    = RGV ê°€ ë‚´ë ¤ë†“ê³  ì™„ë£Œ ë³´ê³ ë¥¼ ì˜¬ë¦¬ì§€ ì•ŠëŠ”ë‹¤ â†’ 35 ì •ì²´, ë„ì°© ì¹¸ í™”ë¬¼ë§Œ(ë²ˆí˜¸ëŠ” ECS ëª«)
++        //   â‘£ ì¶œê³ ëŒ€ ë„ì°© ì‹ í˜¸ ìœ ì‹¤      = ì¶œê³ ëŒ€ WAIT_IN ì„ ì˜¬ë¦¬ì§€ ì•Šê³  ì§€ê²Œì°¨ê°€ ë¹¼ ê°„ë‹¤ â†’ 15 ì •ì²´
++        //   â‘¡â‘¢â‘£ ëŠ” "ë‹¤ìŒ 1ê±´" ì—ë§Œ ê±¸ë¦¬ê³  ìŠ¤ìŠ¤ë¡œ êº¼ì§„ë‹¤(StopConsumed). â‘  ì€ ìƒí™© A ê·¸ëŒ€ë¡œ(í•´ì œëŠ” [ê³ ì¥ í•´ì œ]).
++        public volatile bool StopAisleNoTrack = false;
++        public volatile bool StopRgvNoComplete = false;
++        public volatile bool StopOutNoSignal = false;
++        public event Action<int> StopConsumedEvent;
++        public void StopConsumed(int n)
++        {
++            if (n == 2) StopAisleNoTrack = false;
++            else if (n == 3) StopRgvNoComplete = false;
++            else if (n == 4) StopOutNoSignal = false;
++            Log("[ì‹œí—˜ì •ì§€ " + n + "] ì ìš©ë¨ - ìë™ í•´ì œ");
++            var h = StopConsumedEvent; if (h != null) { try { h(n); } catch { } }
++        }
++        /// <summary>STOP 1~4 ì¼¬ / 0 = ì „ë¶€ ë”. 1 ì€ ìƒí™© A(íšŸìˆ˜ 0) ì™€ ê°™ë‹¤.</summary>
++        public string SetStop(int n, bool on)
++        {
++            if (n == 0) { CancelFaultA(); FaultAckLoss = false; StopAisleNoTrack = StopRgvNoComplete = StopOutNoSignal = false; return "ì‹œí—˜ì •ì§€ ì „ë¶€ ë”"; }
++            if (n == 1) { if (on) { FaultAckLossCount = 0; FaultAckLoss = true; } else { CancelFaultA(); FaultAckLoss = false; } }
++            else if (n == 2) StopAisleNoTrack = on;
++            else if (n == 3) StopRgvNoComplete = on;
++            else if (n == 4) StopOutNoSignal = on;
++            else return "ì•Œ ìˆ˜ ì—†ëŠ” ë²ˆí˜¸";
++            string[] nm = { "", "í¬ë ˆì¸ í•˜ì—­ Ack ìœ ì‹¤", "í†µë¡œ C/V ë²ˆí˜¸ ì†Œì‹¤", "RGV ì™„ë£Œ ë³´ê³  ìœ ì‹¤", "ì¶œê³ ëŒ€ ë„ì°© ë²ˆí˜¸ ì†Œì‹¤" };
++            return "ì‹œí—˜ì •ì§€ " + n + " " + nm[n] + (on ? " ì¼¬ (ë‹¤ìŒ 1ê±´)" : " ë”");
++        }
++
+         public event Action<string> LogAdded;
+         public event Action StateChanged;
+ 
+@@ -352,6 +387,7 @@ namespace EQP_SIM.Sim
+                             SaveState();
+                             nextSaveAt = now.AddSeconds(2);
+                         }
++                        PollSimCmd(now);        // [LGLS 2026-10-14] Data/sim_cmd.txt íŒŒì¼ ëª…ë ¹(ì‹œí—˜ ìë™í™” - í™”ë©´ ì…ë ¥ì¹¸ì€ ìë™í™”ê°€ ì•ˆ ëœë‹¤)
+                         //PollInjectCtrl(now);   // [LGLS 2026-09-15] Data/inject_ctrl.txt ë¡œ ì´ì¤‘ì…ê³ /ê³µì¶œê³  Nê±´ ì˜ˆì•½(ìë™ í…ŒìŠ¤íŠ¸)  [LGLS 2026-09-16] ì´ í˜„ì¥ ë¯¸ì‚¬ìš© - ì£¼ì„
+                         var h = StateChanged;
+                         if (h != null) h();
+@@ -365,6 +401,63 @@ namespace EQP_SIM.Sim
+             }
+         }
+ 
++        // [LGLS 2026-10-14] ì‹œí—˜ ìë™í™” : Data/sim_cmd.txt ë¥¼ 1ì´ˆë§ˆë‹¤ ì½ì–´ í•œ ì¤„ì”© ì‹¤í–‰í•˜ê³  ì§€ìš´ë‹¤. ê²°ê³¼ëŠ” Data/sim_cmd.log ì— ë§ë¶™ì¸ë‹¤.
++        //   SPAWN <íŠ¸ë™|cv:port> [ì‘ì—…ë²ˆí˜¸] [OUT]   ë²ˆí˜¸ ì—†ëŠ” í™”ë¬¼ = ì‘ì—…ë²ˆí˜¸ ìƒëµ.  ì˜ˆ) SPAWN 104 / SPAWN 103 0012 OUT
++        //   REMOVE <íŠ¸ë™|cv:port>                   í™”ë¬¼ ì œê±°(í™•ì¸ ì—†ì´)
++        //   FAULTA <íšŸìˆ˜|OFF>                        ìƒí™© A(1í˜¸ê¸° ì¶œê³  í•˜ì—­ Ack ìœ ì‹¤) ì¼¬(íšŸìˆ˜ 0=ê³„ì†) / ë”
++        //   RELEASE                                  [ê³ ì¥ í•´ì œÂ·ìˆ˜ë™ ì¸ìˆ˜] ì™€ ê°™ë‹¤
++        private DateTime nextSimCmdAt = DateTime.MinValue;
++        private void PollSimCmd(DateTime now)
++        {
++            try
++            {
++                if (now < nextSimCmdAt) return;
++                nextSimCmdAt = now.AddMilliseconds(1000);
++                if (string.IsNullOrEmpty(dataDir)) return;
++                string p = Path.Combine(dataDir, "sim_cmd.txt");
++                if (!File.Exists(p)) return;
++                string[] lines = File.ReadAllLines(p);
++                File.Delete(p);
++                string logp = Path.Combine(dataDir, "sim_cmd.log");
++                foreach (string raw in lines)
++                {
++                    string line = (raw ?? "").Trim();
++                    if (line.Length == 0) continue;
++                    string[] t = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
++                    string cmd = t[0].ToUpperInvariant(), msg = "";
++                    bool ok = false;
++                    if (cmd == "SPAWN" && t.Length >= 2)
++                    {
++                        string job = (t.Length >= 3 && t[2].ToUpperInvariant() != "OUT") ? t[2] : "";
++                        bool outg = line.ToUpperInvariant().EndsWith(" OUT");
++                        ok = SpawnPallet(t[1], job, outg, out msg);
++                    }
++                    else if (cmd == "REMOVE" && t.Length >= 2) ok = RemovePallet(t[1], out msg);
++                    else if (cmd == "FAULTA" && t.Length >= 2)
++                    {
++                        if (t[1].ToUpperInvariant() == "OFF") { CancelFaultA(); FaultAckLoss = false; msg = "ìƒí™© A ë”"; }
++                        else { int n; int.TryParse(t[1], out n); FaultAckLossCount = n; FaultAckLoss = true; msg = "ìƒí™© A ì¼¬ (ì§€ìš¸ íšŸìˆ˜ " + n + ", 0=ê³„ì†)"; }
++                        ok = true;
++                    }
++                    else if (cmd == "STOP" && t.Length >= 2)
++                    {
++                        if (t[1].ToUpperInvariant() == "OFF") { msg = SetStop(0, false); ok = true; }
++                        else { int n; if (int.TryParse(t[1], out n)) { bool on = !(t.Length >= 3 && t[2].ToUpperInvariant() == "OFF"); msg = SetStop(n, on); ok = true; } else msg = "ë²ˆí˜¸ ì˜¤ë¥˜"; }
++                    }
++                    else if (cmd == "RELEASE")
++                    {
++                        CancelFaultA(); FaultAckLoss = false; FaultAckTimeout = false;
++                        int n = ReleaseBlockedHandovers();
++                        msg = "ê³ ì¥ í•´ì œ - ë³´ë¥˜ í™”ë¬¼ " + n + "ê±´ ìˆ˜ë™ ì¸ìˆ˜"; ok = true;
++                    }
++                    else msg = "ì•Œ ìˆ˜ ì—†ëŠ” ëª…ë ¹";
++                    Log("[sim_cmd] " + line + " -> " + (ok ? "OK " : "FAIL ") + msg);
++                    try { File.AppendAllText(logp, DateTime.Now.ToString("HH:mm:ss.fff") + " " + line + " -> " + (ok ? "OK " : "FAIL ") + msg + "\r\n"); } catch { }
++                }
++            }
++            catch (Exception ex) { Log("[sim_cmd] ì˜¤ë¥˜: " + ex.Message); }
++        }
++
+         // [LGLS 2026-09-15] ìë™ í…ŒìŠ¤íŠ¸ : Data/inject_ctrl.txt ë¥¼ í´ë§í•´ ì´ì¤‘ì…ê³ /ê³µì¶œê³ ë¥¼ Nê±´ ì˜ˆì•½í•œë‹¤.
+         //   íŒŒì¼ ë‚´ìš© ì˜ˆ) "D=10" ë˜ëŠ” "E=10" ë˜ëŠ” "D=10 E=10". ì½ê³  ë‚˜ì„œ íŒŒì¼ì„ ì§€ìš´ë‹¤(1íšŒ ì†Œë¹„).
+         private DateTime nextInjectPollAt = DateTime.MinValue;
+diff --git a/SIM/EQP_SIM/Sim/VehicleSim.cs b/SIM/EQP_SIM/Sim/VehicleSim.cs
+index f23d0a1..3fffbf9 100644
+--- a/SIM/EQP_SIM/Sim/VehicleSim.cs
++++ b/SIM/EQP_SIM/Sim/VehicleSim.cs
+@@ -522,6 +522,23 @@ namespace EQP_SIM.Sim
+                         break;
+                     }
+                     UnloadAtDest();
++                    // [LGLS 2026-10-14] ì‹œí—˜ì •ì§€ â‘¢ : RGV ê°€ ë‚´ë ¤ë†“ê³ ë„ ì™„ë£Œ ë³´ê³ (UNLOAD_COMPLETE/TRANSFER_ACK)ë¥¼ ì˜¬ë¦¬ì§€ ì•ŠëŠ”ë‹¤.
++                    //   ì°¨ìƒ ë°ì´í„°ë§Œ ë¹„ìš°ê³  IDLE ë¡œ. WCS ëŠ” 35 ì— ë¨¸ë¬¸ë‹¤(íŒë„¬ RGV ì¤„ [ì™„ë£Œì²˜ë¦¬] ë¡œ ë„˜ê¸´ë‹¤).
++                    if (Def.IsRgv && engine.StopRgvNoComplete)
++                    {
++                        io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
++                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_01", to01);
++                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_02", to02);
++                        io.SetString(Def.Id, "SUBSYSTEM_LOCATION_03", to03);
++                        io.SetShort(Def.Id, "SUBSYSTEM_STATUS", 1);
++                        io.SetString(Def.Id, "PALLET_ON_VEHICLE", "");
++                        engine.Log(Def.Id + " â˜…[ì‹œí—˜ì •ì§€ 3] í•˜ì°¨ ë’¤ ì™„ë£Œ ë³´ê³ ë¥¼ ì˜¬ë¦¬ì§€ ì•ŠìŒ (JOB " + palletId + ")");
++                        carrying = null;
++                        state = VState.Idle;
++                        StatusText = "IDLE (ì™„ë£Œ ë³´ê³  ìœ ì‹¤)";
++                        engine.StopConsumed(3);
++                        break;
++                    }
+                     // [LGLS 2026-08-22] í•˜ì°¨ëŠ” í™”ë¬¼ê°ì§€ë§Œ ë‚´ë¦°ë‹¤. ë°ì´í„°(ì‘ì—…ë²ˆí˜¸)ëŠ” ë°˜ì†¡ ì™„ë£Œê¹Œì§€ ìœ ì§€ â€”
+                     //   í•˜ì—­ ê·œì•½(RvSeq 4ë‹¨ê³„)ì˜ "ì°¨ í™”ë¬¼ ì‚¬ë¼ì§ â†’ ë¼ì¸ì— í™”ë¬¼ â†’ ì°¨ ë°ì´í„° ì‚¬ë¼ì§" ìˆœì„œì™€ ê°™ë‹¤.
+                     io.SetBool(Def.Id, "PALLET_EXIST_FLAG", false);
+@@ -671,7 +688,11 @@ namespace EQP_SIM.Sim
+                             : Def.IsRgv ? FlowDir.Ingo : FlowDir.Outgo;
+                 carrying.Dir = dir;
+                 bool deferRec = (!Def.IsRgv && engine.HsRecordLagMs > 0);   // [LGLS 2026-09-16] í¬ë ˆì¸ H/S ê¸°ë¡ ì§€ì—° ì¬í˜„
+-                engine.Conveyor(cv.Id).PlacePallet(port, carrying.Id, dir, deferRec);
++                // [LGLS 2026-10-14] RGV_DROP_STAMP=0 : RGV í•˜ì—­ ì¹¸ì—ëŠ” ì¬ì„ë§Œ ì„œê³  ë²ˆí˜¸ëŠ” ë¹„ìš´ë‹¤ â†’ ECS ê°€ íŠ¸ë˜í‚¹ì— ë²ˆí˜¸ë¥¼ ì“°ë©´
++                //   ConveyorSim ì´ "JOB ë¶€ì—¬ë¨" ìœ¼ë¡œ ë°›ì•„ ê·¸ë•Œë¶€í„° ë²¨íŠ¸ê°€ ì˜®ê¸´ë‹¤(ë²ˆí˜¸ ì—†ëŠ” í™”ë¬¼ì€ ì´ë™ ê¸ˆì§€). í¬ë ˆì¸ì€ ì¢…ì „ëŒ€ë¡œ.
++                string stampId = (Def.IsRgv && !engine.RgvDropStamp) ? "" : carrying.Id;
++                engine.Conveyor(cv.Id).PlacePallet(port, stampId, dir, deferRec);
++                if (Def.IsRgv && !engine.RgvDropStamp) engine.Log(Def.Id + " P" + port + " í•˜ì°¨ - ë²ˆí˜¸ëŠ” ì–¹ì§€ ì•ŠìŒ(RGV_DROP_STAMP=0, ECS ê¸°ë¡ ëŒ€ê¸°) JOB " + carrying.Id);
+                 if (deferRec) { m_lastDropCvId = cv.Id; m_lastDropPort = port; }
+                 engine.Log(Def.Id + " P" + port + " í•˜ì°¨ (JOB " + carrying.Id + ")");
+             }
+diff --git a/SIM/EQP_SIM/Sim/WorldModel.cs b/SIM/EQP_SIM/Sim/WorldModel.cs
+index 3f98a44..9f59e4b 100644
+--- a/SIM/EQP_SIM/Sim/WorldModel.cs
++++ b/SIM/EQP_SIM/Sim/WorldModel.cs
+@@ -23,6 +23,7 @@ namespace EQP_SIM.Sim
+         /// <summary>[LGLS 2026-09-12] ì°¨ëŸ‰ í•˜ì—­ í•¸ë“œì…°ì´í¬(Unload Complete â†” Ack)ê°€ ëë‚  ë•Œê¹Œì§€ PLC ê°€ ë²¨íŠ¸ ì¸ìˆ˜ë¥¼
+         /// ë³´ë¥˜í•˜ëŠ” ìƒíƒœ. ê³ ì¥ ì£¼ì…(ìƒí™© A/B)ì—ì„œë§Œ ì„¸ì›Œì§„ë‹¤ - ì •ìƒ ìš´ì „ì—ì„œëŠ” í•­ìƒ false.</summary>
+         public bool HandoverBlocked = false;
++        public bool OutSignalLost = false;      // [LGLS 2026-10-14] ì‹œí—˜ì •ì§€ â‘£ : ì¶œê³ ëŒ€ ì‹ í˜¸ë¥¼ ì˜¬ë¦¬ì§€ ì•Šì€ í™”ë¬¼
+         /// <summary>[LGLS 2026-09-16] H/S ê¸°ë¡ ì§€ì—° ì¬í˜„: í¬ë ˆì¸ í•˜ì°¨ í›„ PLC ì›Œë“œ(ì¬ì„/íŠ¸ë˜í‚¹) ê¸°ë¡ì„ ë¯¸ë¤„ ë‘ëŠ” ì‹œê°.
+         /// RecordDone=false ì´ë©´ ì•„ì§ WCS ì— ì•ˆ ë³´ì´ëŠ” ìƒíƒœ. (í˜„ì¥: í¬ë ˆì¸ ì™„ë£Œ í›„ ~1ì´ˆ ë’¤ H/S ë°ì´í„° ê¸°ë¡)</summary>
+         public DateTime RecordVisibleAt = DateTime.MinValue;
+diff --git a/TASK/Download/UI/WmsDown.cs b/TASK/Download/UI/WmsDown.cs
+index 7d0e49f..0ac5ec5 100644
+--- a/TASK/Download/UI/WmsDown.cs
++++ b/TASK/Download/UI/WmsDown.cs
+@@ -74,7 +74,17 @@ namespace EcsClient
+ 			// í”„ë¡œê·¸ë¨ì´ ê¸°ë™ì¤‘ì¸ì§€ í™•ì¸
+ 			//--------------------------------------------------
+ 			{
+-				if ((Information.UBound(System.Diagnostics.Process.GetProcessesByName(System.Diagnostics.Process.GetCurrentProcess().ProcessName)) > 0) == true)
++				// [LGLS 2026-10-07] ê°™ì€ ì´ë¦„(Ecs)ì˜ ë‹¤ë¥¸ í”„ë¡œê·¸ë¨ì´ ë–  ìˆì–´ë„ ë§‰ì§€ ì•ŠëŠ”ë‹¤ - ê°™ì€ ì‹¤í–‰ íŒŒì¼(ê²½ë¡œ)ì´ ë‘˜ì¼ ë•Œë§Œ ì¤‘ë³µì´ë‹¤ (ì‚¬ìš©ì í™˜ê²½ì—ì„œ ë‹¤ë¥¸ í˜„ì¥ Ecs.exe ì™€ ê²¹ì³¤ë‹¤)
++				int nSame = 0;
++				string strMe = "";
++				try { strMe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName; } catch { }
++				foreach (System.Diagnostics.Process pr in System.Diagnostics.Process.GetProcessesByName(System.Diagnostics.Process.GetCurrentProcess().ProcessName))
++				{
++					string strPath = "";
++					try { strPath = pr.MainModule.FileName; } catch { strPath = strMe; }   // ê²½ë¡œë¥¼ ëª» ì½ëŠ”(ê¶Œí•œ ë‹¤ë¥¸) í”„ë¡œì„¸ìŠ¤ëŠ” ê°™ì€ ê²ƒìœ¼ë¡œ ë³¸ë‹¤
++					if (string.Equals(strPath, strMe, StringComparison.OrdinalIgnoreCase)) nSame++;
++				}
++				if (nSame > 1)
+ 				{
+ 					MessageBox.Show("ê¸°ì¡´ í”„ë¡œê·¸ë¨ì´ ì´ë¯¸ ì‚¬ìš©ì¤‘ ì…ë‹ˆë‹¤.", "Running...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+ 					Application.Exit();
+diff --git a/TASK/IO_TASK/CLS/Thread/cThread_SCH.cs b/TASK/IO_TASK/CLS/Thread/cThread_SCH.cs
+index b570131..0be9656 100644
+--- a/TASK/IO_TASK/CLS/Thread/cThread_SCH.cs
++++ b/TASK/IO_TASK/CLS/Thread/cThread_SCH.cs
+@@ -5030,6 +5030,9 @@ namespace TSK_COMM_IOSCH
+                             continue;   // ìš”ì²­ì„ ë‚¨ê²¨ ë‹¤ìŒ ì£¼ê¸°ì— ì¬ì‹œë„
+                         }
+                     }
++                    // [LGLS 2026-10-05] êµ¬ ECS StackerForm [ì™„ë£Œì²˜ë¦¬] ì²˜ëŸ¼ ì„¤ë¹„ê°€ ë¬¼ê³  ìˆë˜ ëª…ë ¹ì„ í†µì§¸ë¡œ ë¹„ìš´ë‹¤ (ì‚¬ìš©ì ì§€ì‹œ).
++                    //   êµ¬ ECS ëŠ” ì™„ë£Œ ë’¤ vehicle.Commandid / CommandSeq ë¥¼ "" ë¡œ ì§€ì›Œ ê·¸ ì„¤ë¹„ê°€ ë‹¤ìŒ ëª…ë ¹ì„ ë°›ê²Œ í–ˆë‹¤.
++                    ClearVehOrderAll(true, scNo);
+                     ClearVehCmdFlag("SC_DATA_LGLS", "SC_NO", scNo);
+                 }
+             }
+@@ -5104,6 +5107,7 @@ namespace TSK_COMM_IOSCH
+                             continue;
+                         }
+                     }
++                    ClearVehOrderAll(false, rtvNo);     // [LGLS 2026-10-05] êµ¬ ECS RGVForm [ì™„ë£Œì²˜ë¦¬] ì™€ ê°™ì´ ë¬¼ë¦° ëª…ë ¹ì„ ë¹„ìš´ë‹¤
+                     ClearVehCmdFlag("RTV_DATA_LGLS", "RTV_NO", rtvNo);
+                 }
+             }
+@@ -5232,6 +5236,49 @@ namespace TSK_COMM_IOSCH
+             catch { }
+         }
+ 
++        /// <summary>
++        /// [LGLS 2026-10-05] [ê°•ì œì™„ë£Œ] ë’¤ ê·¸ ì„¤ë¹„ì— ë‚¨ì€ ì§€ì‹œ(_OD)ì™€ ì”ë¥˜ ê´€ì¸¡ê°’ì„ í†µì§¸ë¡œ ë¹„ìš´ë‹¤ (ì‚¬ìš©ì ì§€ì‹œ).
++        ///   êµ¬ ECS StackerForm / RGVForm.buttonForceComplete_Click ì´ ì™„ë£Œ ë’¤ vehicle.Commandid / CommandSeq ë¥¼
++        ///   ë¹„ìš°ëŠ” ê²ƒê³¼ ê°™ë‹¤ - ë¹„ìš°ì§€ ì•Šìœ¼ë©´ "ì‘ì—…ì€ ëë‚¬ëŠ”ë° ì„¤ë¹„ëŠ” ì•„ì§ ê·¸ ëª…ë ¹ì„ ë¬¼ê³  ìˆëŠ”" ìƒíƒœë¡œ ë‚¨ì•„
++        ///   ë‹¤ìŒ ì§€ì‹œë¥¼ ëª» ë°›ê±°ë‚˜ í™”ë©´ì— ì˜› ì‘ì—…ë²ˆí˜¸ê°€ ë¶™ì–´ ë³´ì¸ë‹¤. DB ë§Œ ê³ ì¹œë‹¤(PLC ì— ì“°ì§€ ì•ŠëŠ”ë‹¤).
++        /// </summary>
++        private void ClearVehOrderAll(bool bSc, string strNo)
++        {
++            try
++            {
++                string q = "";
++                if (bSc)
++                {
++                    q += CRLF + " UPDATE SC_DATA_LGLS                                         ";
++                    q += CRLF + "    SET LUGG_NO_FK1_OD = '0000', PALLET_ID_OD = '0000'       ";
++                    q += CRLF + "      , JOB_TYP_OD = '0', JOB_TYP_RD = '0'                   ";
++                    q += CRLF + "      , ITN_LUGG_FK1 = '0', PALLET_ON_VEHICLE_RD = ''        ";
++                    q += CRLF + "      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' ";
++                    q += CRLF + "      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' ";
++                    q += CRLF + "      , OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N'            ";
++                    q += CRLF + "  WHERE WH_TYP = :WH_TYP AND SC_NO = :NO                     ";
++                }
++                else
++                {
++                    q += CRLF + " UPDATE RTV_DATA_LGLS                                        ";
++                    q += CRLF + "    SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0' ";
++                    q += CRLF + "      , FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00' ";
++                    q += CRLF + "      , TO_01_OD   = '00', TO_02_OD   = '00', TO_03_OD   = '00' ";
++                    q += CRLF + "      , RTV_DEST_OD = '', RTV_PASSCV_OD = ''                 ";
++                    q += CRLF + "      , OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N'            ";
++                    q += CRLF + "      , DEPART_TRACK = '', ARRIVE_TRACK = ''                 ";
++                    q += CRLF + "  WHERE WH_TYP = :WH_TYP AND RTV_NO = :NO                    ";
++                }
++                _pBdb.mComMain.CommandType = CommandType.Text;
++                _pBdb.mComMain.Parameters.Clear();
++                _pBdb.mComMain.Parameters.Add("WH_TYP", DbLang.VARCHAR).Value = SCH_WH_TYP;
++                _pBdb.mComMain.Parameters.Add("NO",     DbLang.VARCHAR).Value = strNo;
++                DbNonQry(q);
++                MakeMsg_Imp(string.Format("[SCH][ê°•ì œì™„ë£Œ] {0} #{1} ì— ë‚¨ì€ ì§€ì‹œ ì •ë³´ë¥¼ ë¹„ì› ìŠµë‹ˆë‹¤.", bSc ? "S/C" : "RTV", strNo));
++            }
++            catch (Exception ex) { MakeMsg_Error("[SCH][ê°•ì œì™„ë£Œ] ì§€ì‹œ ì •ë¦¬ ì˜¤ë¥˜: " + ex.Message); }
++        }
++
+         /// <summary>ìš´ì „ í™”ë©´ ëª…ë ¹ í”Œë˜ê·¸ ì†Œë¹„(CMD_RQ_YN='N').</summary>
+         private void ClearVehCmdFlag(string strTable, string strKeyCol, string strKeyVal)
+         {
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CollectDB.cpp b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CollectDB.cpp
+index 4d820ca..dd5c630 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CollectDB.cpp
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CollectDB.cpp
+@@ -199,9 +199,11 @@ UINT CCollectDB::DoWork(LPVOID pParm)
+ 					double dQ = LglsQpcMs(liQ0, liQ1);
+ 					s_nLglsSqlCnt++; s_dLglsSqlSum += dQ; if (dQ > s_dLglsSqlMax) s_dLglsSqlMax = dQ;
+ 				}
+-				::Sleep(50); //Ãß°¡
++				// [LGLS 2026-10-14] ¼³ºñ¸¶´Ù 50ms °íÁ¤ ´ë±â¸¦ ¾ø¾Ø´Ù - ¼³ºñ 3´ë+Á¢¼Ó 2°ÇÀÌ¸é ¹ÙÄû´ç 250ms ¸¦ ±×³É ¹ö·È´Ù(½ÇÃø ÇÑ ¹ÙÄû 620ms).
++				//   ÇÊ¿äÇÏ¸é Ecs.ini [ETC] COLLECT_STEP_MS ·Î µÇ»ì¸°´Ù(±âº» 0).
++				{ int nStep = ::GetPrivateProfileInt(_T("ETC"), _T("COLLECT_STEP_MS"), 0, ECS_INI_FILE); if (nStep > 0) ::Sleep(nStep); }
+ 			}
+-		}	
++		}
+ 
+ 		// [LGLS 2026-09-10] DB °¡ ²÷±â¸é IsDB_POSSIBLE ÀÌ Á¢¼Ó °´Ã¼¸¦ Áö¿ì°í NULL ·Î ¸¸µç´Ù.
+ 		//   Á¾Àü¿¡´Â ±× »óÅÂ·Î ¾Æ·¡ ConnectStatus ¿¡ µé¾î°¡ NULL À» ¿ªÂüÁ¶Çß´Ù
+@@ -219,17 +221,15 @@ UINT CCollectDB::DoWork(LPVOID pParm)
+ 			{
+ 				CString strHostNum = _T("HOST2");  //_T("HOST") + CConvert::ToString(nIdxHost+1); 
+ 				pThis->ConnectStatus(pDoc->m_pConnectStatus, strHostNum);
+-				::Sleep(50);
+ 				// [LGLS] SCH = IO_TASK heartbeat (EQP_MST EQP_TYP='SCH') -> V_EQP_TIME3 / V_EQP_CONN3
+ 				pThis->ConnectStatus(pDoc->m_pConnectStatus, _T("SCH"));
+-				::Sleep(50); //Ãß°¡
+ 			}
+ 		}
+ 		// [LGLS 2026-09-08] ¼³ºñ ¼öÁı ÁÖ±â. Á¾Àü °íÁ¤ 1000ms ¶ó È­¸éÀÌ ½Ç µ¥ÀÌÅÍº¸´Ù 1ÃÊÂë ´Ê¾ú´Ù.
+ 		//   ¼³ºñ Åë½Å(VehThread)Àº 0.3ÃÊ ÁÖ±â·Î DB ¸¦ °»½ÅÇÏ´Âµ¥ È­¸éÀÌ ±×°ÍÀ» 1ÃÊ¸¶´Ù ÀĞ¾î
+ 		//   ÀüÃ¼°¡ ÇÑ ¹ÚÀÚ ´À¸®°Ô º¸¿´´Ù. Ecs.ini [ETC] COLLECT_INTERVAL_MS ·Î Á¶Á¤ÇÑ´Ù.
+ 		{
+-			int nItv = ::GetPrivateProfileInt(_T("ETC"), _T("COLLECT_INTERVAL_MS"), 300, ECS_INI_FILE);
++			int nItv = ::GetPrivateProfileInt(_T("ETC"), _T("COLLECT_INTERVAL_MS"), 200, ECS_INI_FILE);	// [LGLS 2026-10-14] ±âº» 300 ¡æ 200
+ 			if (nItv < 100)  nItv = 100;      // ³Ê¹« ³·Ãß¸é DB ºÎÇÏ¸¸ ´Â´Ù
+ 			if (nItv > 5000) nItv = 5000;
+ 			::Sleep(nItv);
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/EcsView.cpp b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/EcsView.cpp
+index dde9aef..afca655 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/EcsView.cpp
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/EcsView.cpp
+@@ -1950,6 +1950,10 @@ void CEcsView::ReloadIniHot()
+ 		}
+ 	}
+ 
++	// [LGLS 2026-10-05] [MENU] FORCE_BTN : í¬ë ˆì¸Â·RGV ì°½ì˜ [ê°•ì œì™„ë£Œ] í‘œì‹œ/ìˆ¨ê¹€ - ë–  ìˆëŠ” ì°½ì— ë°”ë¡œ ë°˜ì˜í•œë‹¤(ê°’ì€ ì°½ì´ ìŠ¤ìŠ¤ë¡œ ì½ëŠ”ë‹¤)
++	if (pDoc->m_pScSkinDlg  != NULL && ::IsWindow(pDoc->m_pScSkinDlg->m_hWnd))  ((CScSkinDlg*)pDoc->m_pScSkinDlg)->ApplyZoomBtnIni();
++	if (pDoc->m_pRtvSkinDlg != NULL && ::IsWindow(pDoc->m_pRtvSkinDlg->m_hWnd)) ((CRtvSkinDlg*)pDoc->m_pRtvSkinDlg)->ApplyZoomBtnIni();
++
+ 	// [LGLS 2026-09-22] ì²´ë¥˜ ì•ŒëŒ íê¸° - ê²½ê³ ì°½ì˜ JOB_STALL_WARN_SEC í•« ë¦¬ë¡œë“œë„ ì œê±°
+ 
+ 	// [Title] BuildDate/DbInfo/Path Â· [RibbonMenu] ToolTip â†’ ë©”ì¸ í”„ë ˆì„(ì œëª©ì¤„Â·ë¦¬ë³¸ íˆ´íŒ)
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.cpp b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.cpp
+index 6ec4e04..02787dd 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.cpp
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.cpp
+@@ -60,6 +60,7 @@ BEGIN_MESSAGE_MAP(CPanelJobDlg, CDialog)
+ 	ON_BN_CLICKED(IDC_PANEL_JOB_TRANSFER, OnTransferCtl)
+ 	ON_BN_CLICKED(IDC_PANEL_JOB_COMPLETE, OnComplete)
+ 	ON_BN_CLICKED(IDC_PANEL_JOB_SPLIT_BTN, OnSplitToggle)
++	ON_NOTIFY(NM_CUSTOMDRAW, IDC_PANEL_JOB_SEQ, OnSeqCustomDraw)
+ 	ON_WM_LBUTTONDOWN()
+ 	ON_WM_MOUSEMOVE()
+ 	ON_WM_LBUTTONUP()
+@@ -84,8 +85,15 @@ BOOL CPanelJobDlg::OnInitDialog()
+ 	for (int i = 0; i < (int)m_arCols.GetCount(); i++)
+ 		m_list.InsertColumn(i, COL_DEF[m_arCols[i]].strHead, LVCFMT_LEFT, CLib::DpiPx(m_arColW[i]));
+ 	BuildOldEcsControls();
++	// [LGLS 2026-10-07] ¿ŞÂÊ Ä­(¿ì¼±¼øÀ§/¡ã¡å/¹İ¼ÛÁ¶Á¤/°¡·Îº¸±â) Àº ¾²Áö ¾Ê´Â´Ù (»ç¿ëÀÚ Áö½Ã - »çÁøÀÇ ºÓÀº ºÎºĞ Á¦°Å).
++	//   ¸®¼Ò½º¿Í Ã³¸® ÄÚµå´Â µÎ°í ¼û±â±â¸¸ ÇÑ´Ù. ¸ñ·ÏÀº ¿ŞÂÊ ³¡ºÎÅÍ ¾´´Ù(OnSize ÀÇ L = 0).
++	{
++		CWnd* pHide[] = { &m_lblPriTitle, &m_lblPriVal, &m_btnPriUp, &m_btnPriDn, &m_btnTransfer, &m_btnSplit };
++		for (int i = 0; i < 6; i++) if (::IsWindow(pHide[i]->m_hWnd)) pHide[i]->ShowWindow(SW_HIDE);
++	}
+ 
+-	SetTimer(TIMER_PANEL_JOB, TIMER_PANEL_JOB_MS, NULL);
++	// [LGLS 2026-10-14] °»½Å ÁÖ±â Ecs.ini [DISPLAY] JOB_PANEL_REFRESH_MS (±âº» 1000, Á¾Àü 2000 °íÁ¤) - È­¸éÀÌ ´À¸®´Ù´Â ÁöÀû
++	{ int nMs = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_REFRESH_MS"), 1000, ECS_INI_FILE); if (nMs < 300) nMs = 300; if (nMs > 10000) nMs = 10000; SetTimer(TIMER_PANEL_JOB, nMs, NULL); }
+ 	Refresh();
+ 	return TRUE;
+ }
+@@ -197,6 +205,8 @@ int CPanelJobDlg::FindRow(const CString& strLugg)
+ 
+ void CPanelJobDlg::Refresh()
+ {
++	DWORD dwT0 = ::GetTickCount();	// [LGLS 2026-10-14] °»½Å ½Ã°£ °èÃø(UI_TRACE)
++
+ 	if (m_pDoc == NULL || !::IsWindow(m_list.m_hWnd))
+ 		return;
+ 
+@@ -299,6 +309,7 @@ void CPanelJobDlg::Refresh()
+ 
+ 	// [LGLS 2026-10-01] ¿À¸¥ÂÊ »ó¼¼´Â ¼±ÅÃÀÌ »ì¾Æ ÀÖÀ¸¸é »õ °ªÀ¸·Î, ¾Æ´Ï¸é ºñ¿î´Ù
+ 	FillDetail(nFound);
++	{ static DWORD s_dwLast = 0; DWORD dwEl = ::GetTickCount() - dwT0; if (dwEl >= 150 || ::GetTickCount() - s_dwLast >= 30000) { CLib::UiLog(_T("[PANEL] refresh %u ms rows=%d"), (unsigned)dwEl, (int)m_arRow.GetCount()); s_dwLast = ::GetTickCount(); } }
+ }
+ 
+ // [LGLS 2026-10-01] ¼±ÅÃÇÑ ÀÛ¾÷ÀÇ »ó¼¼(¿À¸¥ÂÊ) + ¿ì¼±¼øÀ§(¿ŞÂÊ)
+@@ -352,6 +363,16 @@ CString CPanelJobDlg::CvDevText(int nTrk)
+ 	if (cv > 0) t.Format(_T("CONVEYOR:%d"), cv); else t = _T("CONVEYOR");
+ 	return t;
+ }
++// [LGLS 2026-10-05] ÀÛ¾÷´ëÀÇ RGV ÂÊ Ä­(ÀÔ°í = RGV ÇÈ¾÷ Ä­, Ãâ°í = RGV ÇÏ¿ª Ä­). IO_TASK cThread_SCH.RgvPickupTrack °ú °°Àº ±Ô¾à :
++//   Â¦¼ö¸é -1 ÇÑ È¦¼ö Æ®·¢, È¦¼ö¸é ±×´ë·Î. ¿¹¿Ü 130 ¡æ 131 (C/V#15), 129 ¡æ 127 (C/V#14 ´Â 127 ¡æ 128 ¡æ 129 ¼¼ Ä­).
++//   Á¾Àü¿¡´Â "°°Àº C/V ÀÇ ÀÌ¿ô Ä­" À¸·Î ±¸ÇØ 129 °¡ 128 ·Î ³ª¿Ô´Ù(½Ã¹Ä 0012 ·Î È®ÀÎ - IO_TASK ´Â 127 ¿¡ ³»¸°´Ù).
++int CPanelJobDlg::RgvSideTrack(int nPos)
++{
++	if (nPos == 130) return 131;
++	if (nPos == 129) return 127;
++	if (nPos < 100 || nPos >= 900) return 0;
++	return (nPos % 2 == 0) ? (nPos - 1) : nPos;
++}
+ int CPanelJobDlg::NeighborTrack(int nTrk)
+ {
+ 	int cv = CvOfTrack(nTrk); if (cv <= 0) return 0;
+@@ -409,6 +430,8 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
+ 	int s = _ttoi(r.staCd);
+ 
+ 	int nStart = _ttoi(r.startPos), nDest = _ttoi(r.destPos), nHs = _ttoi(r.hs);
++	// [LGLS 2026-10-14] HS_TRACK_NO ´Â RGV Áö½Ã µÚ¿¡´Â RGV µµÂø Ä­(ÀÛ¾÷´ë Æ®·¢ 1xx)ÀÌ µÈ´Ù - Åë·Î(103~120)ÀÏ ¶§¸¸ Åë·Î·Î ¾²°í, ±× ¹ÛÀº Å©·¹ÀÎ ¹øÈ£·Î ¿¹ÃøÇÑ´Ù(½Ã¹Ä Ä¸Ã³¿¡¼­ ¹ß°ß)
++	if (!(nHs >= 103 && nHs <= 120)) nHs = 0;
+ 	// ·¢ ÂÊÀº LOC:bb-bbb-ll
+ 	CString strStartLoc = (nStart >= 900 || nStart < 100) ? (_T("LOC:") + r.startLoc) : PortText(nStart);
+ 	CString strDestLoc  = (nDest  >= 900 || nDest  < 100) ? (_T("LOC:") + r.destLoc)  : PortText(nDest);
+@@ -444,19 +467,21 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
+ 	CString strHs  = (nHs > 0) ? PortText(nHs) : _T("Åë·Î");
+ 	CString strHs2 = (nHs2 > 0) ? PortText(nHs2) : strHs;
+ 
+-	struct STEP { CString dev, from, to; int kind; };		// kind : 0 ÀÛ¾÷´ë C/V / 1 RGV / 2 Åë·Î C/V / 3 S/C
++	struct STEP { CString dev, from, to; int kind; int toTrk; };		// kind : 0 ÀÛ¾÷´ë C/V / 1 RGV / 2 Åë·Î C/V / 3 S/C
+ 	CArray<STEP, STEP&> steps;
+ 	m_arSeqKind.RemoveAll();
++	m_arSeqToTrk.RemoveAll();
+ 	int nPhase = 0;			// ÁøÇà ÁßÀÎ ´Ü°è (steps.GetCount() ÀÌ¸é ¸ğµÎ ¿Ï·á)
+ 	STEP st;
++	st.toTrk = 0;
+ 	switch (typ)
+ 	{
+ 	case 1:		// ÀÔ°í : C/V(ÀÔ°í´ë¡æÇÈ¾÷) ¡æ RGV(ÇÈ¾÷¡æÅë·Î) ¡æ C/V(Åë·Î µÎ Ä­) ¡æ S/C(Åë·Î¡æ·¢)
+ 	{
+-		int nPick = NeighborTrack(nStart);
+-		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); steps.Add(st);
+-		st.kind = 1; st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      steps.Add(st);
+-		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
++		int nPick = RgvSideTrack(nStart);
++		st.kind = 0; st.dev = CvDevText(nStart); st.from = PortText(nStart); st.to = PortText(nPick > 0 ? nPick : nStart); st.toTrk = (nPick > 0 ? nPick : nStart); steps.Add(st); st.toTrk = 0;
++		st.kind = 1; st.dev = _T("RGV");         st.from = st.to;             st.to = strHs;      st.toTrk = nHs; steps.Add(st); st.toTrk = 0;
++		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; st.toTrk = nHs2; steps.Add(st); st.toTrk = 0; }
+ 		st.kind = 3; st.dev = strSc;             st.from = strHs2;           st.to = strDestLoc; steps.Add(st);
+ 		int nCvHs = (nHs2 > 0) ? 1 : 0;
+ 		if      (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 0;
+@@ -468,14 +493,19 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
+ 	}
+ 	case 2: case 3:		// Ãâ°í / ÇÇÅ·Ãâ°í : S/C(·¢¡æÅë·Î) ¡æ C/V(Åë·Î µÎ Ä­) ¡æ RGV(Åë·Î¡æÃâ°í ÇÈ¾÷) ¡æ C/V(ÇÈ¾÷¡æÃâ°í´ë)
+ 	{
+-		int nPick = NeighborTrack(nDest);
++		int nPick = RgvSideTrack(nDest);
+ 		st.kind = 3; st.dev = strSc;             st.from = strStartLoc;      st.to = strHs;      steps.Add(st);
+-		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; steps.Add(st); }
+-		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); steps.Add(st);
+-		st.kind = 0; st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); steps.Add(st);
++		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; st.toTrk = nHs2; steps.Add(st); st.toTrk = 0; }
++		st.kind = 1; st.dev = _T("RGV");         st.from = strHs2;           st.to = PortText(nPick > 0 ? nPick : nDest); st.toTrk = (nPick > 0 ? nPick : nDest); steps.Add(st); st.toTrk = 0;
++		st.kind = 0; st.dev = CvDevText(nDest);  st.from = st.to;             st.to = PortText(nDest); st.toTrk = nDest; steps.Add(st); st.toTrk = 0;
+ 		int nCvHs = (nHs2 > 0) ? 1 : 0;
++		// [LGLS 2026-10-14] Ãâ°í 15/16 Àº µÎ ¹ø ³ª¿Â´Ù : Å©·¹ÀÎ ÇÏ¿ª µÚ(Åë·Î C/V ±¸°£, HS_TRACK_NO = Åë·Î Æ®·¢ 103~120) ¿Í
++		//   RGV ÇÏ¿ª µÚ(ÀÛ¾÷´ë C/V ±¸°£, HS_TRACK_NO = ÀÛ¾÷´ë Æ®·¢). Á¾Àü¿£ µÑ ´Ù ÀÛ¾÷´ë ÁÙ·Î º¸¿© ½Ã¹Ä Ä¸Ã³¿¡¼­ Æ²·È´Ù.
++		int nHsJob = _ttoi(r.hs);
++		BOOL bHsAisle = (nHsJob >= 103 && nHsJob <= 120);
+ 		if      (s == 99 || s == 20 || s == 21 || s == 25)            nPhase = 0;
+ 		else if (s == 29)                                             nPhase = 1;
++		else if ((s == 15 || s == 16) && bHsAisle)                    nPhase = (nCvHs > 0) ? 1 : 1 + nCvHs;	// Åë·Î C/V ÁÙ(¾øÀ¸¸é RGV ÁÙ)
+ 		else if (s == 30 || s == 31 || s == 35)                       nPhase = 1 + nCvHs;
+ 		else if (s == 39 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 2 + nCvHs;
+ 		else                                                          nPhase = (int)steps.GetCount();
+@@ -510,10 +540,11 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
+ 		m_listSeq.SetItemText(i, 3, steps[i].from);
+ 		m_listSeq.SetItemText(i, 4, steps[i].to);
+ 		m_arSeqKind.Add(steps[i].kind);
++		m_arSeqToTrk.Add(steps[i].toTrk);
+ 	}
+ 	m_nSeqPhase = nPhase;
+-	if (nPhase < steps.GetCount())
+-		m_listSeq.SetItemState(nPhase, LVIS_SELECTED, LVIS_SELECTED);
++	// [LGLS 2026-10-07] ÁøÇàÁß ÁÙÀº ¼±ÅÃ Ç¥½Ã ´ë½Å ÆÄ¶õ ¹è°æ(OnSeqCustomDraw) - ¼±ÅÃ »öÀÌ ¹è°æÀ» °¡¸®Áö ¾Ê°Ô ¼±ÅÃÇÏÁö ¾Ê´Â´Ù
++	m_listSeq.Invalidate(FALSE);
+ }
+ 
+ // [LGLS 2026-10-01] ÀÛ¾÷¹øÈ£ °ªÀº ±¸ ECS Ã³·³ ºÓ°Ô
+@@ -560,7 +591,8 @@ BOOL CPanelJobDlg::ExecUpdate(CString strSql, CString strLogMsg, CString strLugg
+ }
+ 
+ // [LGLS 2026-10-01] ¡ã / ¡å : ¼±ÅÃ ÀÛ¾÷ÀÇ JOB_PRIORITY ¸¦ 1 ¾¿ (001~999, ÆÇ³ÚÀÇ ¿ì¼±¼øÀ§ º¯°æ°ú °°Àº °»½Å)
+-static void LglsPriStep(CPanelJobDlg* pDlg, CEcsDoc* pDoc, const CString& strLugg, const CString& strPri, int nDelta, BOOL (CPanelJobDlg::*pfnExec)(CString, CString, CString))
++// [LGLS 2026-10-05] ÀÛ¾÷¹øÈ£¡¤¿ì¼±¼øÀ§´Â °ªÀ¸·Î ¹Ş´Â´Ù - È®ÀÎÃ¢ÀÌ ¶° ÀÖ´Â µ¿¾È ¼±ÅÃÀÌ ¹Ù²î¾îµµ Ã³À½ °í¸¥ ÀÛ¾÷¿¡¸¸ Àû¿ëµÇ°Ô
++static void LglsPriStep(CPanelJobDlg* pDlg, CEcsDoc* pDoc, CString strLugg, CString strPri, int nDelta, BOOL (CPanelJobDlg::*pfnExec)(CString, CString, CString))
+ {
+ 	if (pDoc == NULL || strLugg.IsEmpty()) { AfxMessageBox(_T("ÀÛ¾÷À» ¸ÕÀú °í¸£¼¼¿ä.")); return; }
+ 	int n = _ttoi(strPri) + nDelta;
+@@ -622,7 +654,9 @@ void CPanelJobDlg::OnComplete()
+ {
+ 	int i = FindRow(m_strSelLugg);
+ 	if (m_pDoc == NULL || i < 0) { AfxMessageBox(_T("ÀÛ¾÷À» ¸ÕÀú °í¸£¼¼¿ä.")); return; }
+-	const ROW& r = m_arRow[i];
++	// [LGLS 2026-10-05] ÂüÁ¶°¡ ¾Æ´Ï¶ó º¹»çº»À» ¾´´Ù - È®ÀÎÃ¢ÀÌ ¶° ÀÖ´Â µ¿¾È ÀÚµ¿ °»½ÅÀÌ m_arRow ¸¦ ´Ù½Ã ¸¸µé¸é
++	//   ÂüÁ¶°¡ Á×Àº ¸Ş¸ğ¸®¸¦ °¡¸®ÄÑ Client °¡ ³»·Á°¬´Ù(½Ã¹Ä 0012, ¸ñ·ÏÀÌ ¹Ù²î´Â Áß¿¡ [¿¹] ¸¦ ´©¸¥ °æ¿ì). ´Ü°èÇ¥ °ªµµ Ã¢À» ¶ç¿ì±â Àü¿¡ Àâ¾Æ µĞ´Ù.
++	const ROW r = m_arRow[i];
+ 	int typ = _ttoi(r.typCd); if (typ >= 10) typ -= 10;
+ 
+ 	int nSeq = m_listSeq.GetNextItem(-1, LVNI_SELECTED);
+@@ -631,21 +665,96 @@ void CPanelJobDlg::OnComplete()
+ 	CString strSta = StepDoneStatus(typ, m_arSeqKind[nSeq]);
+ 	if (strSta.IsEmpty()) { AfxMessageBox(_T("ÀÌ ´Ü°è´Â ¿Ï·á Ã³¸®ÇÒ ¼ö ¾ø½À´Ï´Ù.")); return; }
+ 	CString strSeq = m_listSeq.GetItemText(nSeq, 1), strDev = m_listSeq.GetItemText(nSeq, 2);
+-	if (strSta == r.staCd) { AfxMessageBox(_T("ÀÌ¹Ì ±× ´Ü°è°¡ ³¡³­ »óÅÂÀÔ´Ï´Ù. [") + r.staCd + _T("]")); return; }
++	if (strSta == r.staCd)
++	{
++		// [LGLS 2026-10-07] ÀÛ¾÷ »óÅÂ·Î´Â ÀÌ¹Ì ±× ±¸°£ÀÇ ¿Ï·á ÄÚµå´Ù(¿¹ : ÀÔ°í 15 = ÀÛ¾÷´ë C/V ±¸µ¿ÁßÀÌÀÚ RGV °¡ °¡Á®°¥ ¼ö ÀÖ´Â »óÅÂ).
++		//   ÀÌ¶§ ´ÙÀ½ ±¸°£ÀÌ ¾È ³ª°¡´Â ÀÌÀ¯´Â »óÅÂ°¡ ¾Æ´Ï¶ó "µµÂø Ä­¿¡ È­¹°¡¤ÀÛ¾÷¹øÈ£°¡ ¾ø¾î¼­" ´Ù(IO_TASK ´Â ÇÈ¾÷ Ä­ÀÇ ¹øÈ£¸¦ º»´Ù).
++		//   ±×·¡¼­ C/V ±¸°£ÀÌ¸é µµÂø Ä­¿¡ ÀÛ¾÷¹øÈ£¸¦ ±â·ÏÇÏ´Â ±æÀ» ÁØ´Ù(C/V »óÅÂÃ¢ [¾²±â] ¿Í °°Àº ±â·Ï, È­¹°ÀÌ °¨ÁöµÉ ¶§¸¸). (»ç¿ëÀÚ ÁöÀû)
++		TrackWriteOffer(r, nSeq, TRUE);
++		return;
++	}
+ 
++	const int nKind = m_arSeqKind[nSeq];
++	const int nToTrk = (nSeq < m_arSeqToTrk.GetCount()) ? m_arSeqToTrk[nSeq] : 0;
++	const int nSeqHs = m_nSeqHs;
+ 	CString strMsg;
+ 	strMsg.Format(_T("ÀÛ¾÷¹øÈ£(%s), ¼ø¹ø(%s) %s ±¸°£À» ¿Ï·á Ã³¸®ÇÏ½Ã°Ú½À´Ï±î?  [%s -> %s]"),
+ 		(LPCTSTR)r.lugg, (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
+ 	if (AfxMessageBox(strMsg, MB_YESNO) != IDYES) return;
++	BOOL bOut = (typ == 2 || typ == 3);
++
++	// [LGLS 2026-10-05] S/C¡¤RGV ±¸°£Àº ±¸ ECS ¼³ºñ Ã¢ [¿Ï·áÃ³¸®](buttonForceComplete_Click) °¡ ÇÏ´ø ÀÏ±îÁö ÇÔ²² ÇÑ´Ù (»ç¿ëÀÚ Áö½Ã -
++	//   ¼³ºñ Ã¢ [°­Á¦¿Ï·á] ¸¦ ¾²Áö ¾Ê°í ÆÇ³Ú [¿Ï·áÃ³¸®] ÇÏ³ª·Î Ã³¸®).
++	//   ¨ç ±× ÀÛ¾÷À» ¹°°í ÀÖ´Â ¼³ºñÀÇ Áö½Ã(_OD)¡¤ÀÜ·ù °üÃø°ª¡¤¿Ï·á½ÅÈ£¸¦ ºñ¿î´Ù ¡æ ¼³ºñ°¡ ´ÙÀ½ ¸í·ÉÀ» ¹Ş´Â´Ù.
++	//      ºñ¿ìÁö ¾ÊÀ¸¸é IO_TASK ÀÇ "¾ÆÁ÷ Â÷»ó¿¡ ÀÖ´Ù" ÆÇÁ¤¿¡ °É·Á H/S ¹øÈ£ Âï±âµµ µÇÁö ¾Ê´Â´Ù.
++	//   ¨è ¹øÈ£ Âï±â´Â IO_TASK °¡ ÇÑ´Ù : Ãâ°í S/C 29 ¡æ LandScDrop ÀÌ H/S ÀÇ È­¹°¿¡ ÀÛ¾÷¹øÈ£¸¦ Âï°í 16,
++	//      RGV 39 ¡æ LandRgvDrop ÀÌ HS_TRACK_NO(µµÂø Æ®·¢)ÀÇ È­¹°¿¡ ÀÛ¾÷¹øÈ£¸¦ Âï°í 15/16.
++	//      ±×·¡¼­ RGV ±¸°£Àº HS_TRACK_NO ¸¦ RGV µµÂø Æ®·¢À¸·Î ¸ÂÃç ÁØ´Ù(ForceCompleteRtv ¿Í °°´Ù).
++	CString strVehWhere, strVehTbl;
++	if (nKind == 3)
++	{
++		strVehTbl = _T("SC_DATA_LGLS");
++		strVehWhere.Format(_T(" WHERE WH_TYP = '%s' AND (LUGG_NO_FK1_OD = '%s' OR ITN_LUGG_FK1 = '%s' OR PALLET_ON_VEHICLE_RD = '%s' OR PALLET_ID_OD = '%s')"),
++			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg);
++	}
++	else if (nKind == 1)
++	{
++		strVehTbl = _T("RTV_DATA_LGLS");
++		strVehWhere.Format(_T(" WHERE WH_TYP = '%s' AND (LUGG_OD = '%s' OR PALLET_ON_VEHICLE_RD = '%s' OR PALLET_ID_OD = '%s')"),
++			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg, (LPCTSTR)r.lugg);
++	}
++	if (!strVehTbl.IsEmpty())
++	{
++		// ±× ¼³ºñ°¡ ¾ÆÁ÷ RUN(ÀÛ¾÷Áß) ÀÌ¸é ÇÑ ¹ø ´õ ¹¯´Â´Ù (±¸ ECS ¼³ºñ Ã¢Àº RUN ¿¡¼­ °ÅºÎÇß´Ù. ÆÇ³ÚÀº Ack ´ë±â·Î RUN ¿¡ ¸Ó¹® ¼³ºñµµ
++		// ³Ñ°Ü¾ß ÇÏ¹Ç·Î ¸·Áö´Â ¾Ê´Â´Ù)
++		CString strChk = _T("SELECT COUNT(*) AS CNT FROM ") + strVehTbl + strVehWhere + _T(" AND SUBSYSTEM_STATUS_RD = '2'");
++		CString strChkMsg; int nChk = -1;
++		_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
++		if (nChk > 0)
++		{
++			CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
++			pChk->MoveFirst();
++			int nRun = _ttoi(pChk->GetItem(_T("CNT")));
++			delete pChk;
++			if (nRun > 0 && AfxMessageBox(_T("ÀÌ ÀÛ¾÷À» ¸ÃÀº ¼³ºñ°¡ RUN(ÀÛ¾÷Áß) »óÅÂÀÔ´Ï´Ù.\nÈ­¹°À» ÀÌ¹Ì ³»·Á³õÀº °ÍÀÌ È®½ÇÇÕ´Ï±î?\n(¼³ºñ¿¡ ³²Àº Áö½Ã Á¤º¸¸¦ ºñ¿ó´Ï´Ù)"),
++				MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES) return;
++		}
++	}
++
+ 	CString strSql;
+-	// Åë·Î(HS_TRACK_NO)°¡ ¾ÆÁ÷ ¾øÀ¸¸é ´Ü°èÇ¥°¡ ¿¹ÃøÇÑ Åë·Î Æ®·¢À» °°ÀÌ ³Ö´Â´Ù - IO_TASK °¡ ´ÙÀ½ ±¸°£(RGV/Å©·¹ÀÎ)À» ³¾ ¶§ ÇÊ¿ä
++	// HS_TRACK_NO : RGV ±¸°£Àº RGV µµÂø Æ®·¢À¸·Î ¸ÂÃá´Ù. ±× ¹Û¿¡´Â ºñ¾î ÀÖÀ» ¶§¸¸ ´Ü°èÇ¥°¡ ¿¹ÃøÇÑ Åë·Î Æ®·¢À» ³Ö´Â´Ù
++	//   - IO_TASK °¡ ´ÙÀ½ ±¸°£(RGV/Å©·¹ÀÎ)À» ³»°Å³ª ÂøÁö È­¹°¿¡ ¹øÈ£¸¦ ÂïÀ» ¶§ ÀÌ °ªÀ¸·Î Æ®·¢À» Ã£´Â´Ù
+ 	CString strHsSet;
+-	if (r.hs.IsEmpty() && m_nSeqHs > 0) strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), m_nSeqHs);
++	if (nKind == 1 && nToTrk > 0)
++		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), nToTrk);
++	else if (r.hs.IsEmpty() && nSeqHs > 0)
++		strHsSet.Format(_T(", HS_TRACK_NO = '%d'"), nSeqHs);
+ 	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '%s'%s, UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
+ 		(LPCTSTR)strSta, (LPCTSTR)strHsSet, (LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)r.lugg);
+-	CString strLog; strLog.Format(_T("JOB_MST UPDATE : ¿Ï·áÃ³¸®(½ºÅÜ %s %s) JOB_STATUS %s -> %s%s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta, (LPCTSTR)strHsSet);
++	CString strVehLog;
++	if (nKind == 3)
++	{
++		strSql += _T("; UPDATE SC_DATA_LGLS SET LUGG_NO_FK1_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0', JOB_TYP_RD = '0'")
++			_T(", ITN_LUGG_FK1 = '0', PALLET_ON_VEHICLE_RD = '', COMPLETE_RD = '0'")
++			_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00', TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
++			_T(", OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N'") + strVehWhere;
++		strVehLog = _T(" + S/C Áö½Ã Á¤¸®");
++	}
++	else if (nKind == 1)
++	{
++		strSql += _T("; UPDATE RTV_DATA_LGLS SET LUGG_OD = '0000', PALLET_ID_OD = '0000', JOB_TYP_OD = '0', COMPLETE_RD = '0'")
++			_T(", FROM_01_OD = '00', FROM_02_OD = '00', FROM_03_OD = '00', TO_01_OD = '00', TO_02_OD = '00', TO_03_OD = '00'")
++			_T(", RTV_DEST_OD = '', RTV_PASSCV_OD = '', OD_RQ_YN = 'N', TRANSFER_REQUEST_OD = 'N', DEPART_TRACK = '', ARRIVE_TRACK = ''") + strVehWhere;
++		strVehLog = _T(" + RTV Áö½Ã Á¤¸®");
++	}
++	UNREFERENCED_PARAMETER(bOut);
++	CString strLog; strLog.Format(_T("JOB_MST UPDATE : ¿Ï·áÃ³¸®(½ºÅÜ %s %s) JOB_STATUS %s -> %s%s%s"), (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta, (LPCTSTR)strHsSet, (LPCTSTR)strVehLog);
+ 	if (ExecUpdate(strSql, strLog, r.lugg))
++	{
+ 		Refresh();
++		// [LGLS 2026-10-14] C/V ±¸°£ÀÌ¸é µµÂø Ä­¿¡ È­¹°¸¸ ÀÖ°í ¹øÈ£°¡ ¾øÀ» ¶§ ¹Ù·Î ±â·ÏÀ» Á¦¾ÈÇÑ´Ù (µÎ ¹ø ´©¸£Áö ¾Ê°Ô - ½Ã¹Ä ½ÃÇè¿¡¼­ È®ÀÎ)
++		if (nKind == 0 || nKind == 2) { ROW r2 = r; r2.staCd = strSta; TrackWriteOffer(r2, nSeq, FALSE); }
++	}
+ }
+ 
+ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
+@@ -661,7 +770,7 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
+ 	const int nListY = 2;
+ 	const int nChkY = CLib::DpiPx(4),  nChkH  = CLib::DpiPx(18);
+ 	const int nGap  = CLib::DpiPx(6);				// ºĞÇÒ¼± Æø
+-	const int L  = (m_nRcLeftW > 0) ? m_nRcLeftW + 2 : CLib::DpiPx(96);	// ¿ŞÂÊ Ä­ Æø = ¸®¼Ò½ºÀÇ ¿ŞÂÊ ÄÁÆ®·Ñ ¿À¸¥ÂÊ ³¡
++	const int L  = 0;	// [LGLS 2026-10-07] ¿ŞÂÊ Ä­À» ¾ø¾İ´Ù(¼û±è) - ¸ñ·ÏÀÌ ¿ŞÂÊ ³¡ºÎÅÍ (»ç¿ëÀÚ Áö½Ã)
+ 	// [LGLS 2026-10-01] ºĞÇÒ ¹æÇâÀ» Ecs.ini ·Î Á¤ÇÑ´Ù (»ç¿ëÀÚ Áö½Ã)
+ 	//   [DISPLAY] JOB_PANEL_SPLIT    = 0 ÀÚµ¿(Æø 620px ¹Ì¸¸ÀÌ¸é ¼¼·Î) / 1 °¡·Î(»ó¼¼¸¦ ¿À¸¥ÂÊ) / 2 ¼¼·Î(»ó¼¼¸¦ ¾Æ·¡)
+ 	//   [DISPLAY] JOB_PANEL_DETAIL_W = °¡·ÎÀÏ ¶§ »ó¼¼ Ä­ Æø(px, 0=38%%)   JOB_PANEL_DETAIL_H = ¼¼·ÎÀÏ ¶§ »ó¼¼ Ä­ ³ôÀÌ(px, 0=178)
+@@ -671,12 +780,13 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
+ 	const int nSplitMode = m_nSplitMode;
+ 	const int nIniW = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_W"), 0, ECS_INI_FILE);
+ 	const int nIniH = ::GetPrivateProfileInt(_T("DISPLAY"), _T("JOB_PANEL_DETAIL_H"), 0, ECS_INI_FILE);
+-	const BOOL bNarrow = (nSplitMode == 2) ? TRUE : (nSplitMode == 1) ? FALSE : (cx < CLib::DpiPx(620));
++	// [LGLS 2026-10-07] ¹èÄ¡´Â ´Ã À§¾Æ·¡(¸ñ·Ï À§ / »ó¼¼ ¾Æ·¡) - »ç¿ëÀÚ Áö½Ã(»çÁø). ini JOB_PANEL_SPLIT Àº ´õ º¸Áö ¾Ê´Â´Ù.
++	const BOOL bNarrow = TRUE; UNREFERENCED_PARAMETER(nSplitMode);
+ 	int R = (m_nSplitR > 0) ? m_nSplitR : (nIniW > 0) ? CLib::DpiPx(nIniW) : cx * 38 / 100;		// ¿À¸¥ÂÊ Ä­ Æø
+ 	if (R < CLib::DpiPx(200)) R = CLib::DpiPx(200);
+ 	if (R > cx - L - CLib::DpiPx(160)) R = max(0, cx - L - CLib::DpiPx(160));
+ 	if (bNarrow) R = 0;
+-	int xM = L + nGap, wM = cx - L - R - 2 * nGap; if (wM < 100) wM = 100;
++	int xM = L, wM = cx - L - R - (bNarrow ? 0 : 2 * nGap); if (wM < 100) wM = 100;
+ 	int xR = cx - R;
+ 	const int hD = (m_nSplitB > 0) ? m_nSplitB : CLib::DpiPx((nIniH > 0) ? nIniH : 178);		// ¾Æ·¡ Ä­ ³ôÀÌ
+ 	int cyTop = bNarrow ? max(CLib::DpiPx(80), cy - hD - nGap) : cy;
+@@ -740,6 +850,82 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
+ 	}
+ }
+ 
++// [LGLS 2026-10-07] ÀÌ¹Ì ¿Ï·á ÄÚµåÀÎ ±¸°£À» [¿Ï·áÃ³¸®] ÇßÀ» ¶§ : C/V ±¸°£ÀÌ¸é µµÂø Ä­¿¡ ÀÛ¾÷¹øÈ£ ±â·ÏÀ» Á¦¾ÈÇÑ´Ù
++void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone)
++{
++	int nKind = (nSeq >= 0 && nSeq < m_arSeqKind.GetCount()) ? m_arSeqKind[nSeq] : -1;
++	int nTrk  = (nSeq >= 0 && nSeq < m_arSeqToTrk.GetCount()) ? m_arSeqToTrk[nSeq] : 0;
++	CString strTo = (nSeq >= 0) ? m_listSeq.GetItemText(nSeq, 4) : _T("");
++	if ((nKind != 0 && nKind != 2) || nTrk <= 0)
++	{
++		if (!bAlreadyDone) return;
++		CString strMsg;
++		strMsg.Format(_T("ÀÛ¾÷ »óÅÂ°¡ ÀÌ¹Ì ÀÌ ±¸°£ÀÇ ¿Ï·á ÄÚµåÀÔ´Ï´Ù. [%s]\n´ÙÀ½ ±¸°£Àº È­¹°ÀÌ %s ¿¡ °¨ÁöµÇ°í ÀÛ¾÷¹øÈ£°¡ ºÙ¾î ÀÖ¾î¾ß ³ª°©´Ï´Ù."),
++			(LPCTSTR)r.staCd, strTo.IsEmpty() ? _T("µµÂø Ä­") : (LPCTSTR)strTo);
++		AfxMessageBox(strMsg);
++		return;
++	}
++	// µµÂø Ä­ÀÇ Áö±İ »óÅÂ
++	CString strChk, strChkMsg; int nChk = -1;
++	strChk.Format(_T("SELECT ") + m_pDoc->NVL + _T("(SENSOR0_DATA_RD,'0') AS SEN, ") + m_pDoc->NVL + _T("(LUGG_NO_RD,'') AS LUGG FROM CV_DATA WHERE WH_TYP = '%s' AND MC_NO = '%d'"),
++		(LPCTSTR)m_pDoc->m_WH_TYP, nTrk);
++	_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
++	CString strSen = _T("0"), strLugg;
++	if (nChk > 0)
++	{
++		CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
++		pChk->MoveFirst();
++		strSen = pChk->GetItem(_T("SEN")); strLugg = pChk->GetItem(_T("LUGG")); strLugg.Trim();
++		delete pChk;
++	}
++	if (strLugg == r.lugg)
++	{
++		if (!bAlreadyDone) return;
++		CString strMsg;
++		strMsg.Format(_T("ÀÛ¾÷ »óÅÂ°¡ ÀÌ¹Ì ÀÌ ±¸°£ÀÇ ¿Ï·á ÄÚµåÀÌ°í [%s], %s ¿¡ ÀÛ¾÷¹øÈ£ %s µµ ºÙ¾î ÀÖ½À´Ï´Ù.\n´ÙÀ½ ±¸°£Àº IO_TASK °¡ ¼³ºñ Á¶°ÇÀÌ ¸ÂÀ¸¸é ³À´Ï´Ù (RGV ¿¡·¯/ÀÛ¾÷Á¤Áö, µµÂøÁö ºñ¾î ÀÖÀ½ µîÀ» È®ÀÎÇÏ¼¼¿ä)."),
++			(LPCTSTR)r.staCd, (LPCTSTR)strTo, (LPCTSTR)r.lugg);
++		AfxMessageBox(strMsg);
++		return;
++	}
++	if (strSen != _T("1"))
++	{
++		if (!bAlreadyDone) return;
++		CString strMsg;
++		strMsg.Format(_T("ÀÛ¾÷ »óÅÂ°¡ ÀÌ¹Ì ÀÌ ±¸°£ÀÇ ¿Ï·á ÄÚµåÀÔ´Ï´Ù. [%s]\n±×·±µ¥ %s ¿¡ È­¹°ÀÌ °¨ÁöµÇÁö ¾Ê¾Æ ÀÛ¾÷¹øÈ£¸¦ ±â·ÏÇÒ ¼ö ¾ø½À´Ï´Ù.\nÈ­¹°ÀÌ ±× Ä­¿¡ ¿À¸é ´Ù½Ã ´©¸£¼¼¿ä."),
++			(LPCTSTR)r.staCd, (LPCTSTR)strTo);
++		AfxMessageBox(strMsg);
++		return;
++	}
++	CString strMsg;
++	strMsg.Format(bAlreadyDone ? _T("ÀÛ¾÷ »óÅÂ°¡ ÀÌ¹Ì ÀÌ ±¸°£ÀÇ ¿Ï·á ÄÚµåÀÔ´Ï´Ù. [%s]\n%s ¿¡ È­¹°Àº ÀÖ´Âµ¥ ÀÛ¾÷¹øÈ£°¡ %s ÀÔ´Ï´Ù.\nÀÌ Ä­¿¡ ÀÛ¾÷¹øÈ£ %s ¸¦ ±â·ÏÇÒ±î¿ä? (C/V »óÅÂÃ¢ [¾²±â] ¿Í °°½À´Ï´Ù)")
++	                           : _T("»óÅÂ´Â ³Ñ°å½À´Ï´Ù. [%s]\n±×·±µ¥ %s ¿¡ È­¹°Àº ÀÖ´Âµ¥ ÀÛ¾÷¹øÈ£°¡ %s ÀÔ´Ï´Ù. ´ÙÀ½ ±¸°£Àº ¹øÈ£°¡ ÀÖ¾î¾ß ³ª°©´Ï´Ù.\nÀÌ Ä­¿¡ ÀÛ¾÷¹øÈ£ %s ¸¦ ±â·ÏÇÒ±î¿ä? (C/V »óÅÂÃ¢ [¾²±â] ¿Í °°½À´Ï´Ù)"),
++		(LPCTSTR)r.staCd, (LPCTSTR)strTo, strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000") ? _T("¾ø½À´Ï´Ù") : (LPCTSTR)(_T("'") + strLugg + _T("'")), (LPCTSTR)r.lugg);
++	if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return;
++	CString strSql;
++	strSql.Format(_T("UPDATE CV_DATA SET LUGG_NO_OD = '%s', TRACKING_WRITE_YN = 'Y', WRITE_UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND MC_NO = '%d'"),
++		(LPCTSTR)r.lugg, (LPCTSTR)m_pDoc->m_WH_TYP, nTrk);
++	CString strLog; strLog.Format(_T("CV_DATA UPDATE : ¿Ï·áÃ³¸®(½ºÅÜ %s) µµÂø Ä­ %d ¿¡ ÀÛ¾÷¹øÈ£ ±â·Ï ¿äÃ» (Á¾Àü '%s')"), (LPCTSTR)m_listSeq.GetItemText(nSeq, 1), nTrk, (LPCTSTR)strLugg);
++	if (ExecUpdate(strSql, strLog, r.lugg))
++		Refresh();
++}
++
++// [LGLS 2026-10-07] ´Ü°èÇ¥¿¡¼­ "ÁøÇàÁß" ÁÙÀº ÆÄ¶õ ¹è°æÀ¸·Î (»ç¿ëÀÚ Áö½Ã)
++void CPanelJobDlg::OnSeqCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
++{
++	NMLVCUSTOMDRAW* pCD = (NMLVCUSTOMDRAW*)pNMHDR;
++	*pResult = CDRF_DODEFAULT;
++	if (pCD->nmcd.dwDrawStage == CDDS_PREPAINT) { *pResult = CDRF_NOTIFYITEMDRAW; return; }
++	if (pCD->nmcd.dwDrawStage == CDDS_ITEMPREPAINT)
++	{
++		if ((int)pCD->nmcd.dwItemSpec == m_nSeqPhase && m_nSeqPhase >= 0)
++		{
++			pCD->clrTextBk = RGB(120, 170, 255);
++			pCD->clrText   = RGB(0, 0, 0);
++		}
++		*pResult = CDRF_DODEFAULT;
++	}
++}
++
+ // [LGLS 2026-10-01] ¸ñ·Ï|»ó¼¼ ºĞÇÒ¼± ²ø±â
+ void CPanelJobDlg::OnLButtonDown(UINT nFlags, CPoint pt)
+ {
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.h b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.h
+index 7b311f1..5f4febf 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.h
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/PanelJobDlg.h
+@@ -61,14 +61,17 @@ protected:
+ 	void BuildOldEcsControls();
+ 	void FillDetail(int nRow);
+ 	void BuildSeqRows(const ROW& r);
++	CArray<int, int> m_arSeqToTrk;	// SEQ Ç¥ °¢ ÁÙÀÇ µµÂø Æ®·¢ (RGV ÁÙ¸¸ Ã¤¿î´Ù - ¿Ï·áÃ³¸® ¶§ HS_TRACK_NO ·Î ¾´´Ù)
+ 	CArray<int, int> m_arSeqKind;	// SEQ Ç¥ °¢ ÁÙÀÇ ¼³ºñ Á¾·ù (0 ÀÛ¾÷´ë C/V / 1 RGV / 2 Åë·Î C/V / 3 S/C)
+ 	int m_nSeqPhase;				// ÁøÇàÁß ÁÙ
+ 	int m_nSeqHs;					// ´Ü°èÇ¥°¡ ¾´ Åë·Î Æ®·¢(¿¹Ãø Æ÷ÇÔ)
+ 	CString StepDoneStatus(int typ, int kind);
++	void TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone);	// [LGLS 2026-10-07] ÀÌ¹Ì ¿Ï·á ÄÚµåÀÎ C/V ±¸°£ : µµÂø Ä­¿¡ ¹øÈ£ ±â·Ï Á¦¾È
+ 	CMap<int, int, int, int> m_mapTrackCv;	// Æ®·¢(3ÀÚ¸®) ¡æ C/V ¹øÈ£
+ 	void LoadTrackCvMap();
+ 	int  CvOfTrack(int nTrk);
+ 	int  NeighborTrack(int nTrk);
++	int RgvSideTrack(int nPos);		// ÀÛ¾÷´ëÀÇ RGV ÂÊ Ä­ (IO_TASK RgvPickupTrack °ú °°Àº ±Ô¾à)
+ 	BOOL CvTracks(int nCv, int& nLo, int& nHi);
+ 	int  HsCvOfCrane(int nSc, BOOL bInbound);
+ 	CString PortText(int nTrk);
+@@ -89,6 +92,7 @@ protected:
+ 	afx_msg void OnTransferCtl();
+ 	afx_msg void OnComplete();
+ 	afx_msg void OnSplitToggle();
++	afx_msg void OnSeqCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);	// [LGLS 2026-10-07] ÁøÇàÁß ÁÙ ÆÄ¶õ ¹è°æ
+ 	afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
+ 	afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
+ 	afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/RtvSkinDlg.cpp b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/RtvSkinDlg.cpp
+index 31dd22d..0c241f5 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/RtvSkinDlg.cpp
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/RtvSkinDlg.cpp
+@@ -710,6 +710,28 @@ void CRtvSkinDlg::OnBnClickedBtnRtvComplete()
+ 		return;
+ 	}
+ 
++	// [LGLS 2026-10-05] ±¸ ECS RGVForm.buttonForceComplete_Click °ú °°°Ô (»ç¿ëÀÚ Áö½Ã) :
++	//   ¼³ºñ°¡ RUN(ÀÛ¾÷Áß) ÀÌ¸é °ÅºÎÇÑ´Ù. ¿Ï·á µÚ ¼³ºñ¿¡ ¹°¸° ¸í·ÉÀ» ºñ¿ì´Â °ÍÀº IO_TASK(ForceComplete ¡æ ClearVehOrderAll) °¡ ÇÑ´Ù.
++	//   »óÅÂ´Â È­¸é¿¡ ³²Àº °ªÀÌ ¾Æ´Ï¶ó Áö±İ DB °ªÀ» º»´Ù([È®´ë] ÆĞ³ÎÀ» ¿­Áö ¾Ê¾ÒÀ¸¸é ±â¾ï°ªÀÌ ºñ¾î ÀÖ´Ù).
++	{
++		CString strChk, strChkMsg; int nChk = -1;
++		strChk.Format(_T("SELECT ") + m_pDoc->NVL + _T("(SUBSYSTEM_STATUS_RD,'0') AS ST FROM RTV_DATA_LGLS WHERE WH_TYP = '%s' AND PLC_NO = '%02s' AND RTV_NO = '%s'"),
++			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_PLC_NO, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
++		_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
++		if (nChk > 0)
++		{
++			CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
++			pChk->MoveFirst();
++			CString strSt = pChk->GetItem(_T("ST"));
++			delete pChk;
++			if (strSt == _T("2"))
++			{
++				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(ÀÛ¾÷Áß) »óÅÂÀÔ´Ï´Ù. ÀÛ¾÷ÀÌ ¿Ï·áµÉ¶§ ±îÁö ±â´Ù¸®½Ê½Ã¿À.")));
++				return;
++			}
++		}
++	}
++
+ 	UpdateRtvData(EN_BtnRtvConfirm);
+ }
+ 
+@@ -1601,6 +1623,14 @@ void CRtvSkinDlg::ApplyZoomBtnIni()
+ 	BOOL bManual = FALSE;	// [LGLS 2026-09-28] ¼öµ¿Áö½Ã Æó±â - ´Ã ¼û±ä´Ù (»ç¿ëÀÚ Áö½Ã)
+ 	CWnd* pM = GetDlgItem(IDC_BTN_RTV_MANUAL);
+ 	if (pM) pM->ShowWindow(bManual ? SW_SHOW : SW_HIDE);
++
++	// [LGLS 2026-10-05] [°­Á¦¿Ï·á] Ç¥½Ã ¿©ºÎ - Ecs.ini [MENU] FORCE_BTN=1/0 (±âº» 1) (»ç¿ëÀÚ Áö½Ã - ÆÇ³Ú [¿Ï·áÃ³¸®] ·Î ÀÏ¿øÈ­ÇÒ ¶§ 0)
++	//   º»Ã¼ÀÇ [°­Á¦¿Ï·á] ¿Í [È®´ë] ÆĞ³ÎÀÇ [¿Ï·áÃ³¸®] ´Â °°Àº ±â´ÉÀÌ¶ó ÇÔ²² ¼û±ä´Ù. ÀÚ¸®´Â ºóÄ­À¸·Î ³²´Â´Ù.
++	BOOL bForce = (::GetPrivateProfileInt(_T("MENU"), _T("FORCE_BTN"), 1, ECS_INI_FILE) != 0);
++	CWnd* pF = GetDlgItem(IDC_BTN_RTV_COMPLETE);
++	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
++	pF = GetDlgItem(IDC_RTVV_BTN_FORCE);
++	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
+ }
+ 
+ // ===================================================================
+@@ -1620,15 +1650,9 @@ static BOOL LglsRtvExecUpdate(CEcsDoc* pDoc, const CString& strSql, const CStrin
+ 
+ void CRtvSkinDlg::OnRtvvForce()
+ {
+-	if (m_pDoc == NULL || m_pRTV_DATA == NULL) return;
+-	if (m_strRtvvState == _T("2")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(ÀÛ¾÷Áß) »óÅÂÀÔ´Ï´Ù. ÀÛ¾÷ÀÌ ¿Ï·áµÉ¶§ ±îÁö ±â´Ù¸®½Ê½Ã¿À."))); return; }
+-	if (m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("[¿Ï·áÃ³¸®]ÇÒ ¸í·ÉÀÌ ¾ø½À´Ï´Ù."))); return; }
+-	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("°­Á¦¿Ï·á ÇÏ½Ã°Ú½À´Ï±î?")) + _T(" [") + m_strRtvvJob + _T(" -> 39]"), MB_YESNO) != IDYES) return;
+-	CString strSql;
+-	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '39', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
+-		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_strRtvvJob);
+-	if (LglsRtvExecUpdate(m_pDoc, strSql, _T("JOB_MST UPDATE : ¿Ï·áÃ³¸®(±¸ECS) JOB_STATUS -> 39"), m_strRtvvJob, _T("CRtvSkinDlg")))
+-		AfxMessageBox(_T("[ ") + m_strRtvvJob + _T(" ] ¸í·ÉÀ» ¿Ï·áÇÏ¿´½À´Ï´Ù."));
++	// [LGLS 2026-10-05] º»Ã¼ [°­Á¦¿Ï·á] ¿Í °°Àº °æ·Î·Î º¸³½´Ù - RUN °ÅºÎ ¡æ IO_TASK °¡ ÀÛ¾÷À» ´ÙÀ½ ´Ü°è·Î ³Ñ±â°í
++	//   (Ãâ°í¸é H/S ¿¡ ÀÛ¾÷¹øÈ£µµ Âï°í) ¼³ºñ¿¡ ¹°¸° ¸í·ÉÀ» ºñ¿î´Ù. Á¾ÀüÃ³·³ ¿©±â¼­ JOB_STATUS ¸¸ ¹Ù²Ù¸é ¼³ºñ ÂÊ ¸í·ÉÀÌ ³²¾Ò´Ù.
++	OnBnClickedBtnRtvComplete();
+ }
+ 
+ void CRtvSkinDlg::OnRtvvAbort()
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/ScSkinDlg.cpp b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/ScSkinDlg.cpp
+index 4282caf..1b1ff7e 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/ScSkinDlg.cpp
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/ScSkinDlg.cpp
+@@ -768,6 +768,28 @@ void CScSkinDlg::OnBnClickedBtnScConfirm()
+ 		return;
+ 	}
+ 
++	// [LGLS 2026-10-05] ±¸ ECS StackerForm.buttonForceComplete_Click °ú °°°Ô (»ç¿ëÀÚ Áö½Ã) :
++	//   ¼³ºñ°¡ RUN(ÀÛ¾÷Áß) ÀÌ¸é °ÅºÎÇÑ´Ù. ¿Ï·á µÚ ¼³ºñ¿¡ ¹°¸° ¸í·ÉÀ» ºñ¿ì´Â °ÍÀº IO_TASK(ForceComplete ¡æ ClearVehOrderAll) °¡ ÇÑ´Ù.
++	//   »óÅÂ´Â È­¸é¿¡ ³²Àº °ªÀÌ ¾Æ´Ï¶ó Áö±İ DB °ªÀ» º»´Ù([È®´ë] ÆĞ³ÎÀ» ¿­Áö ¾Ê¾ÒÀ¸¸é ±â¾ï°ªÀÌ ºñ¾î ÀÖ´Ù).
++	{
++		CString strChk, strChkMsg; int nChk = -1;
++		strChk.Format(_T("SELECT ") + m_pDoc->NVL + _T("(SUBSYSTEM_STATUS_RD,'0') AS ST FROM SC_DATA_LGLS WHERE WH_TYP = '%s' AND PLC_NO = '%s' AND MC_NO = '%s'"),
++			(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pSC_DATA->K_PLC_NO, (LPCTSTR)m_pSC_DATA->K_SC_NO);
++		_RecordsetPtr ptrChk = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nChk, strChkMsg);
++		if (nChk > 0)
++		{
++			CRecordSetWrap* pChk = new CRecordSetWrap(ptrChk);
++			pChk->MoveFirst();
++			CString strSt = pChk->GetItem(_T("ST"));
++			delete pChk;
++			if (strSt == _T("2"))
++			{
++				AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(ÀÛ¾÷Áß) »óÅÂÀÔ´Ï´Ù. ÀÛ¾÷ÀÌ ¿Ï·áµÉ¶§ ±îÁö ±â´Ù¸®½Ê½Ã¿À.")));
++				return;
++			}
++		}
++	}
++
+ 	UpdateScData(EN_BtnScConfirm);
+ }
+ 
+@@ -2316,6 +2338,14 @@ void CScSkinDlg::ApplyZoomBtnIni()
+ 	BOOL bManual = FALSE;	// [LGLS 2026-09-28] ¼öµ¿Áö½Ã Æó±â - ´Ã ¼û±ä´Ù (»ç¿ëÀÚ Áö½Ã)
+ 	CWnd* pM = GetDlgItem(IDC_BTN_SC_MANUAL);
+ 	if (pM) pM->ShowWindow(bManual ? SW_SHOW : SW_HIDE);
++
++	// [LGLS 2026-10-05] [°­Á¦¿Ï·á] Ç¥½Ã ¿©ºÎ - Ecs.ini [MENU] FORCE_BTN=1/0 (±âº» 1) (»ç¿ëÀÚ Áö½Ã - ÆÇ³Ú [¿Ï·áÃ³¸®] ·Î ÀÏ¿øÈ­ÇÒ ¶§ 0)
++	//   º»Ã¼ÀÇ [°­Á¦¿Ï·á] ¿Í [È®´ë] ÆĞ³ÎÀÇ [¿Ï·áÃ³¸®] ´Â °°Àº ±â´ÉÀÌ¶ó ÇÔ²² ¼û±ä´Ù. ÀÚ¸®´Â ºóÄ­À¸·Î ³²´Â´Ù.
++	BOOL bForce = (::GetPrivateProfileInt(_T("MENU"), _T("FORCE_BTN"), 1, ECS_INI_FILE) != 0);
++	CWnd* pF = GetDlgItem(IDC_BTN_SC_CONFIRM);
++	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
++	pF = GetDlgItem(IDC_SCV_BTN_FORCE);
++	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
+ }
+ 
+ // ===================================================================
+@@ -2338,15 +2368,9 @@ static BOOL LglsScExecUpdate(CEcsDoc* pDoc, const CString& strSql, const CString
+ 
+ void CScSkinDlg::OnScvForce()
+ {
+-	if (m_pDoc == NULL || m_pSC_DATA == NULL) return;
+-	if (m_strScvState == _T("2")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("RUN(ÀÛ¾÷Áß) »óÅÂÀÔ´Ï´Ù. ÀÛ¾÷ÀÌ ¿Ï·áµÉ¶§ ±îÁö ±â´Ù¸®½Ê½Ã¿À."))); return; }
+-	if (m_strScvJob.IsEmpty() || m_strScvJob == _T("0") || m_strScvJob == _T("0000")) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("[¿Ï·áÃ³¸®]ÇÒ ¸í·ÉÀÌ ¾ø½À´Ï´Ù."))); return; }
+-	if (AfxMessageBox(m_pDoc->GetMsgLangDef(_T("°­Á¦¿Ï·á ÇÏ½Ã°Ú½À´Ï±î?")) + _T(" [") + m_strScvJob + _T(" -> 29]"), MB_YESNO) != IDYES) return;
+-	CString strSql;
+-	strSql.Format(_T("UPDATE JOB_MST SET JOB_STATUS = '29', UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND LUGG_NO = '%s'"),
+-		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_strScvJob);
+-	if (LglsScExecUpdate(m_pDoc, strSql, _T("JOB_MST UPDATE : ¿Ï·áÃ³¸®(±¸ECS) JOB_STATUS -> 29"), m_strScvJob, _T("CScSkinDlg")))
+-		AfxMessageBox(_T("[ ") + m_strScvJob + _T(" ] ¸í·ÉÀ» ¿Ï·áÇÏ¿´½À´Ï´Ù."));
++	// [LGLS 2026-10-05] º»Ã¼ [°­Á¦¿Ï·á] ¿Í °°Àº °æ·Î·Î º¸³½´Ù - RUN °ÅºÎ ¡æ IO_TASK °¡ ÀÛ¾÷À» ´ÙÀ½ ´Ü°è·Î ³Ñ±â°í
++	//   (Ãâ°í¸é H/S ¿¡ ÀÛ¾÷¹øÈ£µµ Âï°í) ¼³ºñ¿¡ ¹°¸° ¸í·ÉÀ» ºñ¿î´Ù. Á¾ÀüÃ³·³ ¿©±â¼­ JOB_STATUS ¸¸ ¹Ù²Ù¸é ¼³ºñ ÂÊ ¸í·ÉÀÌ ³²¾Ò´Ù.
++	OnBnClickedBtnScConfirm();
+ }
+ 
+ void CScSkinDlg::OnScvAbort()
