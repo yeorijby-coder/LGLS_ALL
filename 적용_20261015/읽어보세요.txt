@@ -1,0 +1,40 @@
+[적용_20261015]  2026-10-01 ~ 10-14 작업분 (적용_20260930 다음 판)
+
+== 무엇이 바뀌었나 ==
+[Client]  EcsMain.exe 빌드 2026-10-14 22:56 / Ecs.exe(런처) 2026-10-07
+  - 작업정보 판넬 : 구 ECS 반송 판넬 이식 (목록 위 / 단계표 아래, 작업번호·팔렛, [완료처리])
+      · [완료처리] = 스텝(SEQ) 단위. 고른 줄(안 고르면 진행중 줄)의 구간 완료 코드로 JOB_STATUS 이동
+      · S/C·RGV 구간이면 그 작업을 문 설비의 지시(_OD)·완료신호도 함께 비움 (설비가 RUN 이면 재확인)
+      · C/V 구간이면 도착 칸에 화물만 있고 번호가 없을 때 "작업번호 기록할까요?" (C/V 상태창 [쓰기]와 같음)
+      · 단계표 진행중 줄 파란 배경, 출고 15/16 통로/작업대 구분
+  - 설비 상태창 [확대] 패널을 구 ECS 폼 배치로 (SC/RTV/CV, 리소스 템플릿)
+  - 크레인·RGV 창 [강제완료] : RUN 이면 거부, 완료 뒤 설비 지시 비움. [MENU] FORCE_BTN=0 이면 숨김
+  - 지시 재전송 = RESEND (WCS_TASK_CV 가 _OD 지시를 다시 내보냄)
+  - 기동 모니터 [DISPLAY] START_MONITOR, 판넬 열 순서 JOB_PANEL_COLS, 갱신 주기 JOB_PANEL_REFRESH_MS
+  - 화면 반응 속도 : 수집 한 바퀴 620ms -> 320ms ([ETC] COLLECT_INTERVAL_MS=200, COLLECT_STEP_MS=0)
+  - 런처 Ecs.exe : 이름만 같은 다른 프로그램이 떠 있어도 띄움
+  ※ DciLib.dll 은 EcsMain.exe 와 같이 바꾼다. 설정은 Client\추가할_설정_Ecs.ini.txt 를 보고 Ecs.ini 에 덧붙인다(ini 통째 복사 금지).
+
+[TASK]
+  IO_TASK\IO_TASK_SEMI_FINISH.exe (10-05)  [강제완료] 뒤 설비에 남은 지시를 통째로 비움 (ClearVehOrderAll)
+  EQP_TASK\WCS_TASK_CV.exe (10-01)          RESEND 명령 소비 (적용_20260930 과 같은 판 - 이미 적용했으면 생략)
+  HOST_TASK 변경 없음.
+
+[SIM]  EQP_SIM.exe (시험용, 현장 설치 아님)
+  - "완료처리 시험:" 체크박스 1~4 로 설비를 강제 정지 (문서\2026-10-14_완료처리_시험안내서.docx)
+  - [TIMING] RGV_DROP_STAMP=0 (RGV 하역 칸 번호는 ECS 가 씀), Data\sim_cmd.txt 파일 명령
+
+[문서]
+  2026-10-14_완료처리_시험보고서.docx   4구간 설비 정지 -> 완료처리 캡처 8장
+  2026-10-14_완료처리_시험안내서.docx   직접 재현하는 절차
+  2026-10-01_설비대화상자_비교_구ECS_vs_신ECS.docx, 2026-10-01_적용안내서_추가분.docx
+
+[SQL]  DB 변경 없음 (SQL\DB_변경_없음.txt). 적용_20260930\SQL 의 0929 스크립트가 아직이면 그것부터.
+
+[소스_변경분]  10-01 이후 바뀐 소스 15개(원본 경로 그대로) + 변경내용 .diff + 커밋목록
+
+== 적용 순서 ==
+  1) TASK 셋 중 IO_TASK 교체 (WCS_TASK_CV 는 0930 판을 이미 넣었으면 생략)
+  2) Client : 깔린 폴더에 Client\* 덮어쓰기 (또는 새 PC 는 Client_설치\Setup.bat 관리자 권한)
+  3) Ecs.ini 에 추가할_설정_Ecs.ini.txt 의 키 추가 (START_MONITOR, FORCE_BTN, JOB_PANEL_*, COLLECT_*)
+  4) 완료처리 동작은 시험안내서의 네 상황으로 1건씩 확인
