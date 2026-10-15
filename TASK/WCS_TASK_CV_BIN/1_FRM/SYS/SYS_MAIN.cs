@@ -170,6 +170,9 @@ namespace WCS_TASK_CV
                 btnXmlSync.Location = btnMemMap.Location; // 맵보기 자리로 이동
             }
 
+            // [LGLS 2026-10-15] 지상반 [삭제] 버튼 영역 정의(ini [HMI_DELETE]) 로드 - 정의만 읽고 검증한다(동작은 PLC 담당자 확정 뒤)
+            try { WcsCommon.cHmiDeleteMap.Load(cDefApp.GM_ENV_INI); WcsCommon.cTaskLog.Write("EQP", "EQP_CV", "I", WcsCommon.cHmiDeleteMap.Summary()); } catch { }
+
             // [LGLS 2026-08-19] R(트래킹) 주소 해석 모드 로드 (ini [PLC] R_ADDR_MODE : HEX=구 ECS 호환, DEC=현행 10진)
             //   R 영역을 쓰는 전 지점(CvThread 통신 / VehThread 관측 / 메모리맵 직접 읽기·쓰기 / 시나리오 테스트)이
             //   cDefApp.GsRTrackWord() 를 거치므로 이 라디오 하나로 일괄 전환된다.

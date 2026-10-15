@@ -646,7 +646,9 @@ namespace WmsUp
 			string strIN_DT_TO = null;
 
 			strIN_DT_FROM = modDateTime.GetDateCode(dtpFrDate.Value) + modDateTime.GetTimeCode(dtpFrTime.Value);
-			strIN_DT_TO = modDateTime.GetDateCode(dtpToDate.Value) + modDateTime.GetTimeCode(dtpToTime.Value);
+			// [LGLS 2026-10-15] 끝 시각은 그 날 끝(23:59:59)까지로 본다. 종전엔 화면을 연 시각이 끝이라, 연 뒤에 올린 파일(UP_DNT=GETDATE())이
+			//   끝 시각보다 늦어 조회에서 빠졌다("업로드 완료 메시지는 봤는데 조회 목록이 비어 있다").
+			strIN_DT_TO = modDateTime.GetDateCode(dtpToDate.Value) + "235959";
 #if oracle
 			m_strSql = modCom.CRLF + "";
 			m_strSql += modCom.CRLF + "            SELECT DN_NO                                                   ";
