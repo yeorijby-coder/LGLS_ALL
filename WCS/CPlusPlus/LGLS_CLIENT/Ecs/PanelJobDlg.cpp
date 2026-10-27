@@ -27,7 +27,7 @@ CPanelJobDlg::CPanelJobDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPanelJobDlg::IDD, pParent)
 {
 	m_pDoc = NULL;
-	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0; m_nSplitMode = 0; m_nSeqPhase = -1; m_nSeqHs = 0;
+	m_nSplitR = 0; m_nSplitB = 0; m_bSplitVert = FALSE; m_bDragSplit = FALSE; m_rcSplit.SetRectEmpty(); m_nRcLeftW = 0; m_nSplitMode = 0; m_nSeqPhase = -1; m_nSeqHs = 0; m_bRouteSearch = FALSE;
 }
 
 void CPanelJobDlg::DoDataExchange(CDataExchange* pDX)
@@ -662,6 +662,14 @@ void CPanelJobDlg::OnComplete()
 	int nSeq = m_listSeq.GetNextItem(-1, LVNI_SELECTED);
 	if (nSeq < 0) nSeq = m_nSeqPhase;
 	if (nSeq < 0 || nSeq >= m_arSeqKind.GetCount()) { AfxMessageBox(_T("완료 처리할 단계(SEQ)를 고르세요.")); return; }
+	DoCompleteStep(r, nSeq, FALSE);
+}
+
+// [LGLS 2026-10-27] 고른 단계의 완료 처리 본체. 경로 탐색(RouteSearchOffer)이 다른 단계로 넘길 때도 이것을 부른다.
+void CPanelJobDlg::DoCompleteStep(const ROW& r, int nSeq, BOOL bConfirmed)
+{
+	int typ = _ttoi(r.typCd); if (typ >= 10) typ -= 10;
+	if (nSeq < 0 || nSeq >= m_arSeqKind.GetCount()) return;
 	CString strSta = StepDoneStatus(typ, m_arSeqKind[nSeq]);
 	if (strSta.IsEmpty()) { AfxMessageBox(_T("이 단계는 완료 처리할 수 없습니다.")); return; }
 	CString strSeq = m_listSeq.GetItemText(nSeq, 1), strDev = m_listSeq.GetItemText(nSeq, 2);
@@ -680,7 +688,7 @@ void CPanelJobDlg::OnComplete()
 	CString strMsg;
 	strMsg.Format(_T("작업번호(%s), 순번(%s) %s 구간을 완료 처리하시겠습니까?  [%s -> %s]"),
 		(LPCTSTR)r.lugg, (LPCTSTR)strSeq, (LPCTSTR)strDev, (LPCTSTR)r.staCd, (LPCTSTR)strSta);
-	if (AfxMessageBox(strMsg, MB_YESNO) != IDYES) return;
+	if (!bConfirmed && AfxMessageBox(strMsg, MB_YESNO) != IDYES) return;
 	BOOL bOut = (typ == 2 || typ == 3);
 
 	// [LGLS 2026-10-05] S/C·RGV 구간은 구 ECS 설비 창 [완료처리](buttonForceComplete_Click) 가 하던 일까지 함께 한다 (사용자 지시 -
@@ -850,6 +858,92 @@ void CPanelJobDlg::OnSize(UINT nType, int cx, int cy)
 	}
 }
 
+// [LGLS 2026-10-27] 도착 칸에 화물이 없을 때 : 경로의 다른 C/V 칸(단계표 각 줄의 도착 칸)을 찾아 본다 (현장 2161 사례).
+//   · 이 작업번호가 붙어 있는 칸 > 화물만 감지되고 번호는 없는 칸 순으로, 가장 뒤 단계를 고른다.
+//     (남의 번호가 붙은 칸은 남의 화물이므로 건드리지 않는다)
+//   · 찾으면 그 단계로 넘기고 그 칸에 번호 기록까지 이어서 제안한다(DoCompleteStep → TrackWriteOffer).
+//   · 어느 칸에도 없으면(크레인에 실린 채 등) 무엇을 해야 하는지 알려 준다.
+//   메시지를 띄웠으면 TRUE 를 돌려 준다 - 부르는 쪽은 그 뒤 아무것도 하지 않는다.
+BOOL CPanelJobDlg::RouteSearchOffer(const ROW& r, int nSeq, BOOL bAlreadyDone)
+{
+	if (m_bRouteSearch || m_pDoc == NULL) return FALSE;
+	const int nCnt = (int)m_arSeqToTrk.GetCount();
+	if (nCnt <= 0) return FALSE;
+
+	// 경로의 C/V 칸들
+	CString strIn;
+	for (int j = 0; j < nCnt; j++)
+	{
+		if (j == nSeq || m_arSeqToTrk[j] <= 0) continue;
+		CString t; t.Format(_T("%s'%d'"), strIn.IsEmpty() ? _T("") : _T(","), m_arSeqToTrk[j]);
+		strIn += t;
+	}
+	if (strIn.IsEmpty()) return FALSE;
+
+	CString strSql, strMsgQ; int nRow = -1;
+	strSql.Format(_T("SELECT MC_NO, ") + m_pDoc->NVL + _T("(SENSOR0_DATA_RD,'0') AS SEN, ") + m_pDoc->NVL + _T("(LUGG_NO_RD,'') AS LUGG FROM CV_DATA WHERE WH_TYP = '%s' AND MC_NO IN (%s)"),
+		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)strIn);
+	_RecordsetPtr ptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strSql, nRow, strMsgQ);
+	int nBestSeq = -1, nBestTrk = 0; BOOL bBestMine = FALSE;
+	if (nRow > 0)
+	{
+		CRecordSetWrap* pRs = new CRecordSetWrap(ptr);
+		pRs->MoveFirst();
+		for (int i = 0; i < nRow; i++)
+		{
+			int nTrk = _ttoi(pRs->GetItem(_T("MC_NO")));
+			CString strSen = pRs->GetItem(_T("SEN")); strSen.Trim();
+			CString strLugg = pRs->GetItem(_T("LUGG")); strLugg.Trim();
+			pRs->MoveNext();
+			BOOL bMine  = (strLugg == r.lugg);
+			BOOL bEmpty = (strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000"));
+			if (!bMine && !(strSen == _T("1") && bEmpty)) continue;		// 남의 화물이거나 빈 칸
+			// 그 칸이 단계표의 몇 번째 줄인가 (뒤 단계 우선)
+			int nJ = -1;
+			for (int j = nCnt - 1; j >= 0; j--) if (j != nSeq && m_arSeqToTrk[j] == nTrk) { nJ = j; break; }
+			if (nJ < 0) continue;
+			if (nBestSeq < 0 || (bMine && !bBestMine) || (bMine == bBestMine && nJ > nBestSeq))
+			{ nBestSeq = nJ; nBestTrk = nTrk; bBestMine = bMine; }
+		}
+		delete pRs;
+	}
+
+	CString strHere = (nSeq >= 0) ? m_listSeq.GetItemText(nSeq, 4) : _T("도착 칸");
+	if (nBestSeq >= 0)
+	{
+		CString strMsg;
+		strMsg.Format(_T("작업 상태는 [%s] 이고 단계 %s 의 %s 에는 화물이 없습니다.\n")
+			_T("대신 %s (단계 %s %s) 에 %s.\n\n")
+			_T("그 단계로 넘기고 %s 에 작업번호 %s 를 기록할까요?\n(아니오 = 아무것도 바꾸지 않습니다)"),
+			(LPCTSTR)r.staCd, (LPCTSTR)m_listSeq.GetItemText(nSeq, 1), (LPCTSTR)strHere,
+			(LPCTSTR)PortText(nBestTrk), (LPCTSTR)m_listSeq.GetItemText(nBestSeq, 1), (LPCTSTR)m_listSeq.GetItemText(nBestSeq, 2),
+			bBestMine ? _T("이 작업번호가 붙어 있습니다") : _T("화물이 감지됩니다(작업번호 없음)"),
+			(LPCTSTR)PortText(nBestTrk), (LPCTSTR)r.lugg);
+		if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return TRUE;
+		m_bRouteSearch = TRUE;
+		DoCompleteStep(r, nBestSeq, TRUE);
+		m_bRouteSearch = FALSE;
+		return TRUE;
+	}
+
+	// 어느 칸에도 없다 - 상태를 넘긴 직후(bAlreadyDone=FALSE)면 종전대로 조용히 둔다
+	if (!bAlreadyDone) return FALSE;
+	int nLastCv = -1, nLast = nCnt - 1;
+	for (int j = nCnt - 1; j >= 0; j--) if (m_arSeqToTrk[j] > 0) { nLastCv = j; break; }
+	CString strCells;
+	for (int j = 0; j < nCnt; j++) if (m_arSeqToTrk[j] > 0) { if (!strCells.IsEmpty()) strCells += _T(", "); strCells += PortText(m_arSeqToTrk[j]); }
+	CString strMsg;
+	strMsg.Format(_T("작업 상태는 [%s] 인데 경로의 어느 칸(%s)에도 화물이 감지되지 않습니다.\n\n")
+		_T("· 설비(크레인/RGV)에 실린 채라면 : 화물을 %s 에 내린 뒤 단계 %s 줄을 골라 [완료처리] 하세요.\n")
+		_T("· 이미 마지막까지(랙/작업대) 옮겨졌다면 : 단계 %s (%s) 줄을 골라 [완료처리] 하세요.\n\n")
+		_T("단계표의 줄을 고르면 그 구간 기준으로 처리됩니다."),
+		(LPCTSTR)r.staCd, (LPCTSTR)strCells,
+		(nLastCv >= 0) ? (LPCTSTR)PortText(m_arSeqToTrk[nLastCv]) : _T("도착 칸"), (nLastCv >= 0) ? (LPCTSTR)m_listSeq.GetItemText(nLastCv, 1) : _T("?"),
+		(LPCTSTR)m_listSeq.GetItemText(nLast, 1), (LPCTSTR)m_listSeq.GetItemText(nLast, 2));
+	AfxMessageBox(strMsg, MB_ICONINFORMATION);
+	return TRUE;
+}
+
 // [LGLS 2026-10-07] 이미 완료 코드인 구간을 [완료처리] 했을 때 : C/V 구간이면 도착 칸에 작업번호 기록을 제안한다
 void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone)
 {
@@ -889,6 +983,10 @@ void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone)
 	}
 	if (strSen != _T("1"))
 	{
+		// [LGLS 2026-10-27] 화물이 이 칸에 없다 - 경로의 다른 칸에 있으면 그 단계로 넘기기를 제안한다.
+		//   현장(작업 2161) : 화물은 통로 PORT:12 까지 가 크레인에 실렸는데 상태는 15, 단계표는 첫 줄에
+		//   머물러 [완료처리] 가 "PORT:23 에 화물이 없다" 로만 끝났다. 다른 줄을 골라야 한다는 것을 알 길이 없었다.
+		if (RouteSearchOffer(r, nSeq, bAlreadyDone)) return;
 		if (!bAlreadyDone) return;
 		CString strMsg;
 		strMsg.Format(_T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n그런데 %s 에 화물이 감지되지 않아 작업번호를 기록할 수 없습니다.\n화물이 그 칸에 오면 다시 누르세요."),
@@ -900,7 +998,7 @@ void CPanelJobDlg::TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone)
 	strMsg.Format(bAlreadyDone ? _T("작업 상태가 이미 이 구간의 완료 코드입니다. [%s]\n%s 에 화물은 있는데 작업번호가 %s 입니다.\n이 칸에 작업번호 %s 를 기록할까요? (C/V 상태창 [쓰기] 와 같습니다)")
 	                           : _T("상태는 넘겼습니다. [%s]\n그런데 %s 에 화물은 있는데 작업번호가 %s 입니다. 다음 구간은 번호가 있어야 나갑니다.\n이 칸에 작업번호 %s 를 기록할까요? (C/V 상태창 [쓰기] 와 같습니다)"),
 		(LPCTSTR)r.staCd, (LPCTSTR)strTo, strLugg.IsEmpty() || strLugg == _T("0") || strLugg == _T("0000") ? _T("없습니다") : (LPCTSTR)(_T("'") + strLugg + _T("'")), (LPCTSTR)r.lugg);
-	if (AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return;
+	if (!m_bRouteSearch && AfxMessageBox(strMsg, MB_YESNO | MB_ICONQUESTION) != IDYES) return;   // RouteSearchOffer 에서 이미 물었으면 다시 묻지 않는다
 	CString strSql;
 	strSql.Format(_T("UPDATE CV_DATA SET LUGG_NO_OD = '%s', TRACKING_WRITE_YN = 'Y', WRITE_UPD_DT = GETDATE() WHERE WH_TYP = '%s' AND MC_NO = '%d'"),
 		(LPCTSTR)r.lugg, (LPCTSTR)m_pDoc->m_WH_TYP, nTrk);

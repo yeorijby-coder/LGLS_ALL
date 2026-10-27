@@ -66,7 +66,12 @@ protected:
 	int m_nSeqPhase;				// 진행중 줄
 	int m_nSeqHs;					// 단계표가 쓴 통로 트랙(예측 포함)
 	CString StepDoneStatus(int typ, int kind);
-	void TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone);	// [LGLS 2026-10-07] 이미 완료 코드인 C/V 구간 : 도착 칸에 번호 기록 제안
+	void TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone);
+	// [LGLS 2026-10-27] 고른 단계를 완료 처리한다 (OnComplete 본체). bConfirmed 면 확인창 없이.
+	void DoCompleteStep(const ROW& r, int nSeq, BOOL bConfirmed);
+	// [LGLS 2026-10-27] 도착 칸에 화물이 없을 때 경로의 다른 칸을 찾아 그 단계로 넘기기를 제안한다. 메시지를 띄웠으면 TRUE.
+	BOOL RouteSearchOffer(const ROW& r, int nSeq, BOOL bAlreadyDone);
+	BOOL m_bRouteSearch;		// 경로 탐색으로 넘기는 중(재탐색 방지)	// [LGLS 2026-10-07] 이미 완료 코드인 C/V 구간 : 도착 칸에 번호 기록 제안
 	CMap<int, int, int, int> m_mapTrackCv;	// 트랙(3자리) → C/V 번호
 	void LoadTrackCvMap();
 	int  CvOfTrack(int nTrk);
