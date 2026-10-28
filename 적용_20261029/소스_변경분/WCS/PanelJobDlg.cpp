@@ -484,7 +484,13 @@ void CPanelJobDlg::BuildSeqRows(const ROW& r)
 		if (nHs2 > 0) { st.kind = 2; st.dev = CvDevText(nHs); st.from = strHs; st.to = strHs2; st.toTrk = nHs2; steps.Add(st); st.toTrk = 0; }
 		st.kind = 3; st.dev = strSc;             st.from = strHs2;           st.to = strDestLoc; steps.Add(st);
 		int nCvHs = (nHs2 > 0) ? 1 : 0;
-		if      (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 0;
+		// [LGLS 2026-10-28] 입고 15/16 도 두 번 나온다 : CV 이동 중(HS_TRACK_NO 없음) 과 RGV 하역 뒤(HS_TRACK_NO = 통로 트랙 103~120).
+		//   종전엔 둘 다 첫 줄(입고대 C/V)로 보여, 화물이 통로 H/S 에 내려와 있어도 Step 1 에 머문 것으로 보였다 (현장 작업 2161).
+		//   통로 트랙이 배정돼 있으면 RGV 는 끝난 것이므로 통로 C/V 줄(없으면 S/C 줄)이 진행중이다.
+		int nHsIn = _ttoi(r.hs);
+		BOOL bHsAisleIn = (nHsIn >= 103 && nHsIn <= 120);
+		if      ((s == 15 || s == 16) && bHsAisleIn)                  nPhase = 2;
+		else if (s == 99 || s == 10 || s == 11 || s == 15 || s == 16) nPhase = 0;
 		else if (s == 30 || s == 31 || s == 35 || s == 39)            nPhase = 1;
 		else if (s == 20 || s == 21)                                  nPhase = 1 + nCvHs;
 		else if (s == 25)                                             nPhase = 2 + nCvHs;
