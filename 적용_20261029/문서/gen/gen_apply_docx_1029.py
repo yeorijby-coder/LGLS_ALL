@@ -56,7 +56,7 @@ d = G.new_doc('2026-10-29 적용 안내서 (추가분)',
 
 d.add_heading('0. 이 문서는 무엇인가', 1)
 G.para(d, '2026-10-15 꾸러미(적용_20261015)를 이미 받아 보셨다면, 그 뒤에 더해진 것만 여기에 담았다. '
-          '바뀐 것은 Client(EcsMain.exe) 한 가지이고 DB·TASK 는 손대지 않았다. 파일은 적용_20261029 폴더에 있다.')
+          '바뀐 것은 Client(EcsMain.exe) 와 IO_TASK(이력 자동 삭제, 6절) 두 가지이고 DB 는 손대지 않았다. 파일은 적용_20261029 폴더에 있다.')
 note(d, '앞 문서들(09-29 ~ 10-15)의 내용은 그대로 유효하다. 이 문서는 그 위에 얹는 것이다.')
 
 d.add_heading('1. 현장에서 생긴 일 (2026-10-27, 작업 2161 입고)', 1)
@@ -130,10 +130,32 @@ G.table(d, ['자료', '무엇을 알 수 있나', '보존'], [
     ['HOST_IF_LOG / EQP_ERR_HIS', '상위 전문 / 그 시간대 설비 에러', '60일 / 30일'],
 ], widths=[3.5, 10.0, 2.5])
 
-d.add_heading('6. 바뀐 파일 / 적용 순서', 1)
+d.add_heading('6. 고친 것 (3) IO_TASK 가 보존기간 지난 이력을 지운다 (2026-10-29)', 1)
+G.para(d, '설정 화면 [로그 삭제 설정] 이 보여 주는 DEL_HIS_SETTING(JOB_MST_HIS·WCS_LOG_PGR·WCS_CLIENT_LOG·HOST_IF_LOG 60일, EQP_ERR_HIS 30일)은 '
+          '지금까지 값을 보여 주고 고치기만 했을 뿐, ★어느 프로그램도 읽어 지우지 않았다★ (구 ECS/ECP 에도 없고, SQL Express 라 Agent 잡도 둘 수 없다). '
+          '5절의 "60일 남는다" 는 말은 그래서 "60일 뒤에도 지워지지 않고 계속 쌓인다" 가 실상이었다. 개발 PC 에는 9월 2일부터 WCS_LOG_PGR 133만 건, '
+          'JOB_MST_HIS 28만 건이 그대로 있었다.')
+G.table(d, ['항목', '내용'], [
+    ['누가', 'IO_TASK 스케줄러 스레드. 기동 2분 뒤 첫 검사, 그 뒤 1시간마다.'],
+    ['무엇을', 'DEL_HIS_SETTING 의 unit 이 DAY/HOUR/MONTH 이고 cycle 이 1 이상인 표. key_column(INS_DT / ERROR_DT) 이 "지금 - cycle" 보다 앞선 행을 지운다. '
+              'WH_TYP 열이 있는 표는 창고구분(10)으로 좁힌다. empty_ret_auto_del(Y/N) 같은 행과, 이 DB 에 없는 표(cv_data_pb·bcr_his·rtv_data_pb·sc_data_murata_pb)는 건너뛴다(한 번만 알림).'],
+    ['어떻게', '★사이클(200ms)마다 표 하나에서 2,000행씩★ 지우고 다음 사이클로 넘긴다. 긴 DELETE 하나로 스케줄링을 세우지 않기 위해서다. 적체가 남으면 이어서 지운다.'],
+    ['설정 반영', '검사 때마다 DEL_HIS_SETTING 을 다시 읽는다. Client 설정 화면에서 보존기간을 바꾸면 다음 검사(최대 1시간)부터 반영. 재기동 불필요.'],
+    ['확인', 'IO_TASK 화면 로그 구분 [HIS] : "eqp_err_his : 30 DAY 지난 50건 삭제", "이력 정리 끝 (2초) - 다음 검사 12:34". 지운 게 없는 표는 줄을 내지 않는다.'],
+    ['끄기 / 조정', 'ENV_IOSCH.INI [CNF] HIS_DEL_ENABLE=0 (끔) / HIS_DEL_INTERVAL_MIN(기본 60) / HIS_DEL_BATCH(기본 2000) / HIS_DEL_START_SEC(기본 120). 안 적으면 기본값. 재기동 불필요.'],
+], widths=[2.5, 13.5], font=9)
+G.image(d, os.path.join(SHOT, 'iotask_his_purge.png'), 15.0,
+        '시험(개발 PC, 2026-10-29) : 없는 표 4개 건너뜀(1회 알림) → eqp_err_his 30일 지난 50건 삭제 → 이력 정리 끝. '
+        '이어서 wcs_log_pgr 보존을 55일로 잠시 낮춰 172,451건이 25초 만에 2,000행씩 나뉘어 지워지는 것을 확인했다(그 사이 스케줄러 사이클 정상).')
+note(d, '처음 적용하는 현장은 쌓인 양이 많을 수 있다. 2,000행/0.2초 = 분당 약 60만 행이므로 수백만 건이라도 몇 분 안에 끝나며, 그동안 스케줄링은 그대로 돈다. '
+        '지운 뒤의 DB 파일 크기는 줄지 않는다(SQL Server 특성). 디스크를 되찾으려면 따로 DBCC SHRINKDATABASE 를 하면 되지만 필수는 아니다.')
+note(d, '보존기간을 늘리고 싶으면(예 : 작업 이력 1년) Client [로그 삭제 설정] 에서 job_mst_his 의 주기를 365 로 바꾸면 된다. 지운 행은 되돌릴 수 없으니 줄일 때는 신중히.')
+
+d.add_heading('7. 바뀐 파일 / 적용 순서', 1)
 G.table(d, ['폴더', '파일', '비고'], [
     ['Client', 'EcsMain.exe, DciLib.dll, EcsLib.dll, XmlLib.dll', '★넷을 같이★ 복사 (빌드 2026-10-28 10:20). 10-15 의 Ecs.exe(런처)·설정·EcsDefine.xml 은 그대로'],
-    ['소스_변경분', 'PanelJobDlg.cpp / .h + .diff', '입고 단계표 통로 구분, RouteSearchOffer, DoCompleteStep 분리'],
+    ['TASK\\IO_TASK', 'IO_TASK_SEMI_FINISH.exe', '빌드 2026-10-29 11:28. 이력 자동 삭제(6절). 추가할_설정_ENV_IOSCH.ini.txt 는 값을 바꿀 때만'],
+    ['소스_변경분', 'PanelJobDlg.cpp / .h + .diff, TASK\\cThread_SCH.cs + .diff', '입고 단계표 통로 구분, RouteSearchOffer, DoCompleteStep 분리 / PurgeHistory'],
     ['SQL', '261029_사후확인_작업번호.sql', '읽기 전용 조회 (DB 변경 없음)'],
     ['문서', '이 문서, 2026-10-29_끝난작업_사후확인방법.docx, shots_1029', ''],
 ], widths=[3.0, 7.0, 6.0])
@@ -141,6 +163,8 @@ G.numbered(d, [
     'Client 를 닫는다.',
     'Client\\ 의 네 파일을 깔린 폴더(예 C:\\LGLS\\CLIENT)에 덮어쓴다. ini 는 손대지 않는다 (새 설정 없음).',
     '다시 띄워 제목줄 [Build:2026.10.28 10:20:16] 을 확인한다.',
+    'IO_TASK 를 끝내고(ALL_TASK 면 [IO] 정지) TASK\\IO_TASK\\IO_TASK_SEMI_FINISH.exe 를 덮어쓴 뒤 다시 기동한다. ini 는 손대지 않아도 된다. '
+    '2분 뒤 화면 로그에 [HIS] 줄이 나오면 된다.',
     '같은 상황이 오면 4절대로 처리한다.',
 ])
 note(d, 'Upload/Download 를 쓰고 있다면 Upload 로 EcsMain.exe 와 DLL 3개를 올려 각 PC 의 런처가 받게 해도 된다 (2026-10-15_Upload_사용매뉴얼).')

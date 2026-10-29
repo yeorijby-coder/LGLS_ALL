@@ -25,3 +25,13 @@
   - 현장 2161 : 작업자가 급한 출고 때문에 크레인을 수동으로 조작해 화물을 H/S 에 옮기고 H/S 데이터를 지웠다. 출고가 끝난 뒤 H/S 에
     작업번호만 기록하자 정상 입고되었다. 크레인에 지시가 없던 것은 그래서 정상이다.
   - 이력(JOB_MST_HIS 등)은 60일(에러 이력 30일) 뒤 자동 삭제되므로 의문이 생기면 그 주 안에 조회해 결과를 보관한다.
+
+== 2026-10-29 추가 : IO_TASK 이력 자동 삭제 (DEL_HIS_SETTING) ==
+[TASK\IO_TASK]  IO_TASK_SEMI_FINISH.exe 빌드 2026-10-29 11:28  (+ 추가할_설정_ENV_IOSCH.ini.txt = 선택)
+  - 설정 화면 [로그 삭제 설정](DEL_HIS_SETTING) 의 보존기간(JOB_MST_HIS/WCS_LOG_PGR/WCS_CLIENT_LOG/HOST_IF_LOG 60일, EQP_ERR_HIS 30일)은
+    지금까지 보여 주기만 했을 뿐 어느 프로그램도 지우지 않았다 (구 ECS/ECP 에도 없고, SQL Express 라 Agent 잡도 없다).
+    → IO_TASK 가 기동 2분 뒤, 그 뒤 1시간마다 설정표를 읽어 지난 행을 지운다. 사이클(200ms)마다 표 하나에 2,000행씩만
+      지우므로 스케줄링은 멈추지 않는다 (개발 PC : 17만 건 25초). 설정표에 있으나 이 DB 에 없는 표(cv_data_pb 등)는 건너뛴다.
+  - IO_TASK 화면 로그 [HIS] 로 확인 : "job_mst_his : 60 DAY 지난 12,345건 삭제" / "이력 정리 끝 (n초) - 다음 검사 HH:mm"
+  - 끄려면 ENV_IOSCH.INI [CNF] HIS_DEL_ENABLE=0 (재기동 불필요). 처음 적용 뒤 첫 1시간은 쌓인 양에 따라 몇 분 걸릴 수 있다.
+  - 적용 : IO_TASK 를 끝내고(ALL_TASK 면 [IO] 정지) exe 덮어쓰기 → 다시 기동. DB 변경 없음.
