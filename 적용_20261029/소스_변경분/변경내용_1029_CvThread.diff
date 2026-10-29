@@ -1,0 +1,33 @@
+﻿diff --git a/TASK/WCS_TASK_CV_BIN/2_Thread/EQP_THREAD/CvThread.cs b/TASK/WCS_TASK_CV_BIN/2_Thread/EQP_THREAD/CvThread.cs
+index 12b1553..7da83b7 100644
+--- a/TASK/WCS_TASK_CV_BIN/2_Thread/EQP_THREAD/CvThread.cs
++++ b/TASK/WCS_TASK_CV_BIN/2_Thread/EQP_THREAD/CvThread.cs
+@@ -2491,6 +2491,16 @@ namespace WCS_TASK_CV
+         //   종전에는 LUGG_NO / TRACK_FROM / TRACK_TO 에 NULL 을 그대로 넣고 트랙번호는
+         //   RQ_INS_ID 에만 들어가, Client 로그 조회에서 작업번호로 걸 수도 없고
+         //   그리드의 작업 칸도 늘 비어 있었다.
++        /// <summary>[LGLS 2026-10-29] 트래킹 작업번호가 "없음" 인가 - null/빈 문자열/0/0000 전부 같은 뜻이다.</summary>
++        private static bool IsNoJobNo(string s)
++        {
++            if (string.IsNullOrEmpty(s)) return true;
++            s = s.Trim();
++            if (s.Length == 0) return true;
++            foreach (char c in s) if (c != '0') return false;
++            return true;
++        }
++
+         public bool InsertWcsLogPgr(string strTRACK_NO, string strLOG_MSG, string strLUGG_NO = "")
+         {
+             try
+@@ -4391,7 +4401,10 @@ namespace WCS_TASK_CV
+                     string strPrevLog;
+                     if (!m_dicLastJobLog.TryGetValue(nCvNo, out strPrevLog)) strPrevLog = cv.V11_JOBNO ?? "";
+                     m_dicLastJobLog[nCvNo] = strJobNo;
+-                    if (strPrevLog != strJobNo)
++                    // [LGLS 2026-10-29] "없음" 끼리의 변화([] -> [0000], [0] -> [0000] 등)는 남기지 않는다(사용자 지시).
++                    //   캐시가 비어 있던 자리(기동 직후·재동기화)가 0000 으로 채워지는 것은 작업번호 변화가 아니다.
++                    //   개발 DB 에 이 줄만 32.9만 건이 쌓여 있었다. 실제 번호가 생기거나 사라지는 변화만 남긴다.
++                    if (IsNoJobNo(strPrevLog) != IsNoJobNo(strJobNo) || (!IsNoJobNo(strJobNo) && strPrevLog != strJobNo))
+                         {
+                             cv.V11_JOBNO = strPrevLog;   // 아래 로그 문구의 직전 값
+                             // [LGLS 2026-08-23] 작업번호가 사라지는 로그([1718] -> [0])도 그 작업으로 조회되도록

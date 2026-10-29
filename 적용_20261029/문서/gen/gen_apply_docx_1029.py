@@ -151,11 +151,17 @@ note(d, '처음 적용하는 현장은 쌓인 양이 많을 수 있다. 2,000행
         '지운 뒤의 DB 파일 크기는 줄지 않는다(SQL Server 특성). 디스크를 되찾으려면 따로 DBCC SHRINKDATABASE 를 하면 되지만 필수는 아니다.')
 note(d, '보존기간을 늘리고 싶으면(예 : 작업 이력 1년) Client [로그 삭제 설정] 에서 job_mst_his 의 주기를 365 로 바꾸면 된다. 지운 행은 되돌릴 수 없으니 줄일 때는 신중히.')
 
+d.add_heading('6.1 덤 - WCS_TASK_CV 의 "[] -> [0000]" 트래킹 로그를 없앴다', 2)
+G.para(d, 'WCS_LOG_PGR 에 "트랙 nnn R트래킹 JOB NO 변경 [] -> [0000]" 이 쉬지 않고 쌓였다(개발 DB 32.9만 건 = 전체의 1/4). 캐시가 비어 있던 자리가 '
+          '0000 으로 채워지는 것일 뿐 작업번호의 변화가 아니다. 빈 값·0·0000 을 전부 "없음" 으로 같게 보고, ★번호가 실제로 생기거나 사라질 때만★ 남기도록 '
+          'WCS_TASK_CV(EQP_TASK)를 고쳤다. 시험 : 시뮬 15설비 연결 70초 동안 새로 한 줄도 생기지 않음. 6절의 삭제와 합쳐 로그 표가 더 작게 유지된다.')
+
 d.add_heading('7. 바뀐 파일 / 적용 순서', 1)
 G.table(d, ['폴더', '파일', '비고'], [
     ['Client', 'EcsMain.exe, DciLib.dll, EcsLib.dll, XmlLib.dll', '★넷을 같이★ 복사 (빌드 2026-10-28 10:20). 10-15 의 Ecs.exe(런처)·설정·EcsDefine.xml 은 그대로'],
     ['TASK\\IO_TASK', 'IO_TASK_SEMI_FINISH.exe', '빌드 2026-10-29 11:28. 이력 자동 삭제(6절). 추가할_설정_ENV_IOSCH.ini.txt 는 값을 바꿀 때만'],
-    ['소스_변경분', 'PanelJobDlg.cpp / .h + .diff, TASK\\cThread_SCH.cs + .diff', '입고 단계표 통로 구분, RouteSearchOffer, DoCompleteStep 분리 / PurgeHistory'],
+    ['TASK\\EQP_TASK', 'WCS_TASK_CV.exe', '빌드 2026-10-29 11:43. "[] -> [0000]" 트래킹 로그 억제(6.1절)'],
+    ['소스_변경분', 'PanelJobDlg.cpp / .h + .diff, TASK\\cThread_SCH.cs · CvThread.cs + .diff', '입고 단계표 통로 구분, RouteSearchOffer, DoCompleteStep 분리 / PurgeHistory / IsNoJobNo'],
     ['SQL', '261029_사후확인_작업번호.sql', '읽기 전용 조회 (DB 변경 없음)'],
     ['문서', '이 문서, 2026-10-29_끝난작업_사후확인방법.docx, shots_1029', ''],
 ], widths=[3.0, 7.0, 6.0])
@@ -165,6 +171,7 @@ G.numbered(d, [
     '다시 띄워 제목줄 [Build:2026.10.28 10:20:16] 을 확인한다.',
     'IO_TASK 를 끝내고(ALL_TASK 면 [IO] 정지) TASK\\IO_TASK\\IO_TASK_SEMI_FINISH.exe 를 덮어쓴 뒤 다시 기동한다. ini 는 손대지 않아도 된다. '
     '2분 뒤 화면 로그에 [HIS] 줄이 나오면 된다.',
+    'WCS_TASK_CV 도 같은 식으로 끝내고(ALL_TASK 면 [EQP] 정지) TASK\\EQP_TASK\\WCS_TASK_CV.exe 를 덮어쓴 뒤 다시 기동한다.',
     '같은 상황이 오면 4절대로 처리한다.',
 ])
 note(d, 'Upload/Download 를 쓰고 있다면 Upload 로 EcsMain.exe 와 DLL 3개를 올려 각 PC 의 런처가 받게 해도 된다 (2026-10-15_Upload_사용매뉴얼).')
