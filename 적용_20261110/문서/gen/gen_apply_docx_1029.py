@@ -10,8 +10,8 @@ u"""2026-10-27 적용 안내서 - ★추가분만★ (Word).
 """
 import os, sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))        # 적용_20261029/문서/gen
-DOCS = os.path.dirname(HERE)                             # 적용_20261029/문서
+HERE = os.path.dirname(os.path.abspath(__file__))        # 적용_20261110/문서/gen (10-29 작성, 11-10 적용분으로 이동)
+DOCS = os.path.dirname(HERE)                             # 적용_20261110/문서
 ROOT = os.path.dirname(os.path.dirname(DOCS))            # Renewal
 sys.path.insert(0, os.path.join(ROOT, 'docs', '산출물_20260927', 'gen'))
 
@@ -56,7 +56,7 @@ d = G.new_doc('2026-10-29 적용 안내서 (추가분)',
 
 d.add_heading('0. 이 문서는 무엇인가', 1)
 G.para(d, '2026-10-15 꾸러미(적용_20261015)를 이미 받아 보셨다면, 그 뒤에 더해진 것만 여기에 담았다. '
-          '바뀐 것은 Client(EcsMain.exe) 와 IO_TASK(이력 자동 삭제, 6절) 두 가지이고 DB 는 손대지 않았다. 파일은 적용_20261029 폴더에 있다.')
+          '바뀐 것은 Client(EcsMain.exe) 와 IO_TASK(이력 자동 삭제, 6절) 두 가지이고 DB 는 손대지 않았다. 파일은 적용_20261110 폴더에 있다 (10-29 에 준비했으나 현장 적용이 2026-11-10 으로 미뤄져 폴더 이름을 옮겼다).')
 note(d, '앞 문서들(09-29 ~ 10-15)의 내용은 그대로 유효하다. 이 문서는 그 위에 얹는 것이다.')
 
 d.add_heading('1. 현장에서 생긴 일 (2026-10-27, 작업 2161 입고)', 1)
@@ -122,7 +122,7 @@ G.table(d, ['Client', '하는 법'], [
 d.add_heading('5. 끝난 작업을 사후에 확인하는 방법', 1)
 G.para(d, '2161 처럼 끝나서 JOB_MST 에서 지워진 작업은 JOB_MST 로 볼 수 없다. 그래도 아래 자료가 60일(에러 이력은 30일) 남으므로, '
           '"RGV·크레인을 IO_TASK 가 지시했나, 사람이 움직였나" 를 사후에 가려낼 수 있다. 상세 순서와 읽는 법은 별도 문서 '
-          '"2026-10-29_끝난작업_사후확인방법.docx" 에, 한 번에 돌리는 조회는 SQL\261029_사후확인_작업번호.sql 에 있다.')
+          '"2026-10-29_끝난작업_사후확인방법.docx" 에, 한 번에 돌리는 조회는 SQL\\261029_사후확인_작업번호.sql 에 있다.')
 G.table(d, ['자료', '무엇을 알 수 있나', '보존'], [
     ['JOB_MST_HIS', '작업 상태가 바뀐 순서·시각, 그때의 HS_TRACK_NO. 35 가 있으면 RGV 를, 25 가 있으면 크레인을 IO_TASK 가 지시한 것', '60일'],
     ['WCS_LOG_PGR', '트랙별 작업번호 이동([0000]->[번호]), 설비가 받은 반송 지시, IO_TASK 보류 사유', '60일'],
@@ -158,7 +158,7 @@ G.para(d, 'WCS_LOG_PGR 에 "트랙 nnn R트래킹 JOB NO 변경 [] -> [0000]" �
 
 d.add_heading('7. 바뀐 파일 / 적용 순서', 1)
 G.table(d, ['폴더', '파일', '비고'], [
-    ['Client', 'EcsMain.exe, DciLib.dll, EcsLib.dll, XmlLib.dll', '★넷을 같이★ 복사 (빌드 2026-10-28 10:20). 10-15 의 Ecs.exe(런처)·설정·EcsDefine.xml 은 그대로'],
+    ['Client', 'EcsMain.exe', '★이 파일 하나만★ 복사 (빌드 2026-10-28 10:20). DciLib/EcsLib/XmlLib.dll 은 10-15 판과 같아 바꾸지 않는다. Ecs.exe(런처)·설정·EcsDefine.xml 도 그대로'],
     ['TASK\\IO_TASK', 'IO_TASK_SEMI_FINISH.exe', '빌드 2026-10-29 11:28. 이력 자동 삭제(6절). 추가할_설정_ENV_IOSCH.ini.txt 는 값을 바꿀 때만'],
     ['TASK\\EQP_TASK', 'WCS_TASK_CV.exe', '빌드 2026-10-29 11:43. "[] -> [0000]" 트래킹 로그 억제(6.1절)'],
     ['소스_변경분', 'PanelJobDlg.cpp / .h + .diff, TASK\\cThread_SCH.cs · CvThread.cs + .diff', '입고 단계표 통로 구분, RouteSearchOffer, DoCompleteStep 분리 / PurgeHistory / IsNoJobNo'],
@@ -167,14 +167,14 @@ G.table(d, ['폴더', '파일', '비고'], [
 ], widths=[3.0, 7.0, 6.0])
 G.numbered(d, [
     'Client 를 닫는다.',
-    'Client\\ 의 네 파일을 깔린 폴더(예 C:\\LGLS\\CLIENT)에 덮어쓴다. ini 는 손대지 않는다 (새 설정 없음).',
+    'Client\\EcsMain.exe 를 깔린 폴더(예 C:\\LGLS\\CLIENT)에 덮어쓴다. ini·DLL 은 손대지 않는다 (새 설정 없음).',
     '다시 띄워 제목줄 [Build:2026.10.28 10:20:16] 을 확인한다.',
     'IO_TASK 를 끝내고(ALL_TASK 면 [IO] 정지) TASK\\IO_TASK\\IO_TASK_SEMI_FINISH.exe 를 덮어쓴 뒤 다시 기동한다. ini 는 손대지 않아도 된다. '
     '2분 뒤 화면 로그에 [HIS] 줄이 나오면 된다.',
     'WCS_TASK_CV 도 같은 식으로 끝내고(ALL_TASK 면 [EQP] 정지) TASK\\EQP_TASK\\WCS_TASK_CV.exe 를 덮어쓴 뒤 다시 기동한다.',
     '같은 상황이 오면 4절대로 처리한다.',
 ])
-note(d, 'Upload/Download 를 쓰고 있다면 Upload 로 EcsMain.exe 와 DLL 3개를 올려 각 PC 의 런처가 받게 해도 된다 (2026-10-15_Upload_사용매뉴얼).')
+note(d, 'Upload/Download 를 쓰고 있다면 Upload 로 EcsMain.exe 를 올려 각 PC 의 런처가 받게 해도 된다 (2026-10-15_Upload_사용매뉴얼).')
 
 out = os.path.join(DOCS, '2026-10-29_적용안내서_추가분.docx')
 d.save(out)
