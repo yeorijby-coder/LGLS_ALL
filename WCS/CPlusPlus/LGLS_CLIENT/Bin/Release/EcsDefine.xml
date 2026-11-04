@@ -8,173 +8,173 @@
 		<Tracks plcno="02" cid="17110100" FirstTrack="103">
 			<Track	number="103">
 				<Status>
-					<RtvDepartHS name="S/C#1 출고 H/S (TR#03)" id="103"/>
-					<RtvArriveHS name="S/C#1 입고 H/S (TR#03)" id="103"/>
+					<RtvDepartHS/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="104">
 				<Status>
-					<ScStoHS name="S/C#1 입고 H/S (TR#04)" id="104"/>
-					<ScRetHS name="S/C#1 출고 H/S (TR#04)" id="104"/>
+					<ScStoHS/>
+					<ScRetHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="03" cid="17110100" FirstTrack="105">
 			<Track	number="105">
 				<Status>
-					<RtvDepartHS name="S/C#2 출고 H/S (TR#05)" id="105"/>
+					<RtvDepartHS/>
 				</Status>
 			</Track>
 			<Track	number="106">
 				<Status>
-					<ScRetHS name="S/C#2 출고 H/S (TR#06)" id="106"/>
+					<ScRetHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="04" cid="17110100" FirstTrack="107">
 			<Track	number="107">
 				<Status>
-					<RtvArriveHS name="S/C#2 입고 H/S (TR#07)" id="107"/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="108">
 				<Status>
-					<ScStoHS name="S/C#2 입고 H/S (TR#08)" id="108"/>
+					<ScStoHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="05" cid="17110100" FirstTrack="109">
 			<Track	number="109">
 				<Status>
-					<RtvDepartHS name="S/C#3 출고 H/S (TR#09)" id="109"/>
+					<RtvDepartHS/>
 				</Status>
 			</Track>
 			<Track	number="110">
 				<Status>
-					<ScRetHS name="S/C#3 출고 H/S (TR#10)" id="110"/>
+					<ScRetHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="06" cid="17110100" FirstTrack="111">
 			<Track	number="111">
 				<Status>
-					<RtvArriveHS name="S/C#3 입고 H/S (TR#11)" id="111"/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="112">
 				<Status>
-					<ScStoHS name="S/C#3 입고 H/S (TR#12)" id="112"/>
+					<ScStoHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="07" cid="17110100" FirstTrack="113">
 			<Track	number="113">
 				<Status>
-					<RtvDepartHS name="S/C#4 출고 H/S (TR#13)" id="113"/>
+					<RtvDepartHS/>
 				</Status>
 			</Track>
 			<Track	number="114">
 				<Status>
-					<ScRetHS name="S/C#4 출고 H/S (TR#14)" id="114"/>
+					<ScRetHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="08" cid="17110100" FirstTrack="115">
 			<Track	number="115">
 				<Status>
-					<RtvArriveHS name="S/C#4 입고 H/S (TR#15)" id="115"/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="116">
 				<Status>
-					<ScStoHS name="S/C#4 입고 H/S (TR#16)" id="116"/>
+					<ScStoHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="09" cid="17110100" FirstTrack="117">
 			<Track	number="117">
 				<Status>
-					<RtvDepartHS name="S/C#5 출고 H/S (TR#17)" id="117"/>
+					<RtvDepartHS/>
 				</Status>
 			</Track>
 			<Track	number="118">
 				<Status>
-					<ScRetHS name="S/C#5 출고 H/S (TR#18)" id="118"/>
+					<ScRetHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="10" cid="17110100" FirstTrack="119">
 			<Track	number="119">
 				<Status>
-					<RtvArriveHS name="S/C#5 입고 H/S (TR#19)" id="119"/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="120">
 				<Status>
-					<ScStoHS name="S/C#5 입고 H/S (TR#20)" id="120"/>
+					<ScStoHS/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="11" cid="17110100" FirstTrack="121">
 			<Track	number="121">
 				<Status>
-					<RtvDepartHS name="입출고대 RGV 픽업 (TR#21)" id="121"/>
-					<RtvArriveHS name="입출고대 RGV 하역 (TR#21)" id="121"/>
+					<RtvDepartHS/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="122">
 				<Status>
-					<StoStation name="입출고대 (TR#22)" id="122"/>
-					<RetStation name="입출고대 (TR#22)" id="122"/>
+					<StoStation name="외부 입고 전용 입출고대" id="101"/>
+					<RetStation name="외부 입고 전용 입출고대" id="101"/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="12" cid="17110100" FirstTrack="123">
 			<Track	number="123">
 				<Status>
-					<RtvDepartHS name="입고대 RGV 픽업 (TR#23)" id="123"/>
+					<RtvDepartHS/>
 				</Status>
 			</Track>
 			<Track	number="124">
 				<Status>
-					<StoStation name="입고대 (TR#24)" id="124"/>
+					<StoStation name="제품 입고대" id="103"/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="13" cid="17110100" FirstTrack="125">
 			<Track	number="125">
 				<Status>
-					<RtvArriveHS name="출고대 RGV 하역 (TR#25)" id="125"/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="126">
 				<Status>
-					<RetStation name="출고대 (TR#26)" id="126"/>
+					<RetStation name="원부자재 불출대" id="104"/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="14" cid="17110100" FirstTrack="127">
 			<Track	number="127">
 				<Status>
-					<RtvArriveHS name="출고대 RGV 하역 (TR#27)" id="127"/>
+					<RtvArriveHS/>
 				</Status>
 			</Track>
 			<Track	number="128"/>
 			<Track	number="129">
 				<Status>
-					<RetStation name="출고대 (TR#29)" id="129"/>
+					<RetStation name="Picking 작업대" id="102"/>
 				</Status>
 			</Track>
 		</Tracks>
 		<Tracks plcno="15" cid="17110100" FirstTrack="130">
 			<Track	number="130">
 				<Status>
-					<StoStation name="입고대 (TR#30)" id="130"/>
+					<StoStation name="Picking 작업대" id="102"/>
 				</Status>
 			</Track>
 			<Track	number="131">
 				<Status>
-					<RtvDepartHS name="입고대 RGV 픽업 (TR#31)" id="131"/>
+					<RtvDepartHS/>
 				</Status>
 			</Track>
 			<Track	number="132"/>

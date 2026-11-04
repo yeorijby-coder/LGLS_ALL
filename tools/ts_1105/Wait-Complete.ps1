@@ -42,7 +42,7 @@ foreach ($cs in ($DlgCids -split ',' | Where-Object { $_ -ne "" })) {
   if ($d) { Cap-Win $d (Join-Path $OutDir ("dlg_" + $cid2 + "_" + $Tag + "_1105.png")); [void][W]::PostMessage($d, $WM_CLOSE, [IntPtr]::Zero, [IntPtr]::Zero); Start-Sleep 1 }
 }
 # 3. 작업 목록에서 행 클릭 → 선택 작업번호 확인
-$lv = [W]::Children($m) | Where-Object { ([W]::Cls($_)) -eq 'SysListView32' } | ForEach-Object { $r = New-Object W+R; [void][W]::GetWindowRect($_, [ref]$r); [pscustomobject]@{H=$_; T=$r.T; W=($r.Rt-$r.L)} } | Where-Object { $_.W -gt 800 } | Sort-Object T
+$lv = [W]::Children($m) | Where-Object { ([W]::Cls($_)) -eq 'SysListView32' } | ForEach-Object { $r = New-Object W+R; [void][W]::GetWindowRect($_, [ref]$r); [pscustomobject]@{H=$_; T=$r.T; W=($r.Rt-$r.L)} } | Where-Object { $_.W -gt 500 } | Sort-Object T
 $jobLv = $lv[1].H; $seqLv = $lv[2].H
 $panel = [W]::GetParent($jobLv)
 $btn = [W]::Children($panel) | Where-Object { ([W]::Text($_)) -eq '완료처리' } | Select-Object -First 1

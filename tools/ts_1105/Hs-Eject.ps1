@@ -16,8 +16,8 @@ if (-not $d) { Write-Output "dlg none"; exit }
 Cap-Win $d (Join-Path $OutDir ("dlg_" + $Cid + "_" + $Tag + "_1105.png"))
 $hb = [W]::GetDlgItem($d, 8245); Write-Output ("btn [{0}]" -f [W]::Text($hb))
 Click-Btn $hb
-[void](Answer-Box $pidE "*" 6 6 (Join-Path $OutDir ("ask_8245_" + $Tag + "_1105.png")))
-[void](Answer-Box $pidE "*" 1 6 (Join-Path $OutDir ("result_8245_" + $Tag + "_1105.png")))
+[void](Answer-Box $pidE "Ecs" 6 6 (Join-Path $OutDir ("ask_8245_" + $Tag + "_1105.png")))
+[void](Answer-Box $pidE "Ecs" 1 6 (Join-Path $OutDir ("result_8245_" + $Tag + "_1105.png")))
 Start-Sleep 25
 Cap-Win $d (Join-Path $OutDir ("dlg_" + $Cid + "_" + $Tag + "_after_1105.png"))
 Cap-Win $m (Join-Path $OutDir ("main_" + $Tag + "_after_1105.png"))
