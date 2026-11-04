@@ -95,6 +95,7 @@ BEGIN_MESSAGE_MAP(CEcsDoc, CDocument)
 	ON_COMMAND(ID_ALARM_SHOW, &CEcsDoc::OnCommandAlarmShow)	// [LGLS 2026-08-22]
 	ON_COMMAND(ID_MANUAL_SEMITEST, &CEcsDoc::OnCommandSemiTestOpen)	// [LGLS 2026-08-13]
 	ON_COMMAND(ID_MANUAL_TESTCLEAR, &CEcsDoc::OnCommandSemiTestClear)	// [LGLS 2026-08-13]
+	ON_COMMAND(ID_MANUAL_CVCLEAR, &CEcsDoc::OnCommandCvClear)	// [LGLS 2026-11-04] CV 지우기
 END_MESSAGE_MAP()
 
 
@@ -2733,4 +2734,36 @@ void CEcsDoc::OnCommandSemiTestClear()
 	}
 	CommitTrans_DLG();
 	AfxMessageBox(GetMsgLangDef(_T("TEST 초기화 완료")));
+}
+
+// ===================================================================
+// [LGLS 2026-11-04] 리본 [수동조작]-[CV 지우기] (사용자 지시).
+//   R 트래킹은 ASCII 라 ECS 가 '0' 을 써도 0x30 이 남아 PLC 는 값이 있다고 본다. 그래서 PLC 담당자가 M 영역 한 비트(7번째,
+//   WCS_DB.INI [HMI_DELETE] CV_AREA/CV_ADDR)를 열어 주고, 그 비트가 1 이면 PLC 가 모든 C/V 의 R 영역을 0 으로 지운다.
+//   ECS 는 CV_DATA 한 행(가장 작은 트랙)에 CMD_RQ_ID 'CVCLR' 를 남기고, 설비 통신(WCS_TASK_CV CvThread)이 그 비트에 1 을 쓴다.
+//   끄는 것은 PLC 다. DB 열 추가 없음 - 기존 CMD_RQ_ID/CMD_RQ_YN 명령 통로를 그대로 쓴다.
+// ===================================================================
+void CEcsDoc::OnCommandCvClear()
+{
+	CString strAsk;
+	strAsk.Format(_T("%s\n\n%s"),
+		(LPCTSTR)GetMsgLangDef(_T("모든 C/V 의 트래킹(R 영역) 데이터를 지우도록 PLC 에 신호(M 비트 1)를 보내시겠습니까?")),
+		(LPCTSTR)GetMsgLangDef(_T("설비 위 화물 정보가 모두 지워집니다. 반송 중인 화물이 없을 때만 누르십시오.")));
+	if (AfxMessageBox(strAsk, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES) return;
+
+	CString strSql;
+	strSql.Format(_T(" UPDATE CV_DATA SET CMD_RQ_ID = 'CVCLR', CMD_RQ_PARM = '', CMD_RQ_YN = 'Y', WRITE_UPD_DT = ") + SYSDATE +
+		_T(" WHERE WH_TYP = '%s' AND MC_NO = (SELECT MIN(MC_NO) FROM CV_DATA WHERE WH_TYP = '%s') "),
+		(LPCTSTR)m_WH_TYP, (LPCTSTR)m_WH_TYP);
+	CString strLog = _T("CV 지우기 요청(CVCLR) - 설비 통신이 [HMI_DELETE] CV M 비트에 1 을 쓴다(R 트래킹 0 클리어는 PLC)");
+	if (BeginTrans_DLG() < 1) { AfxMessageBox(GetMsgLangDef(_T("실패"))); return; }
+	if (!GetQueryInsertClientLog(_T("CEcsDoc"), _T(""), _T(""), _T(""), strLog) || !ExcuteQueryString_DLG(strSql))
+	{
+		RollbackTrans_DLG();
+		AfxMessageBox(GetMsgLangDef(_T("실패")));
+		return;
+	}
+	CommitTrans_DLG();
+	CLib::UiLog(_T("[CVCLR] request"));
+	AfxMessageBox(GetMsgLangDef(_T("CV 지우기를 요청했습니다. 설비 통신이 PLC 에 기록합니다.")));
 }

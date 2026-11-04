@@ -142,6 +142,7 @@ bullets(d, [
     '출고대 도착(WAIT_IN) 신호는 3초 펄스라 사이클당 1회 샘플링으로 놓칠 수 있다 → OUT_SCAN_MS 간격으로 출고대만 따로 보고 CV_DATA.RET_READY_LATCH 에 래치한다(2026-09-29). 별도 스레드는 두지 않는다(소켓 1개).',
     '크레인 에러 판정 SC_ERR_CODE_BLOCK (현장 권장 3 : 보고 비트 래치 + 워드 0 해제) - 3·5호기 유령 에러 대책(5.2).',
     '2026-10-29 부터 "[] -> [0000]" 트래킹 변화 로그를 남기지 않는다(빈 값/0/0000 은 모두 "없음").',
+    '기동 로그 [HMI_DEL] 에 WCS_DB.INI [HMI_DELETE] 7개 영역(SC1~SC5 · RTV1 · CV)이 풀려 보인다. "-" 는 미정의. 운전 화면 [데이터 삭제]/[CV 지우기] 처리 결과는 WCS_LOG_PGR 에 남는다(2026-11-04).',
     '화면의 라디오(R 주소 10진/16진)와 PlcAddressMap.xml 의 rAddrMode 는 함께 바뀐다. 현장 확정값 DEC / DOC. 바꾸지 않는다.',
 ])
 d.add_heading('4.3 스케줄러 IO_TASK', 2)
@@ -203,6 +204,8 @@ table(d, ['프로그램 / 섹션.키', '권장', '요점'], [
     ['운전 화면 [MENU] VEH_CLEAR_MODE', '3', '크레인·RGV 색·번호 지우는 시점(새 트랙 기록 시)'],
     ['운전 화면 [MENU] VEH_SHOW_ON_ORDER', '1', '크레인 번호·색은 지시(25)된 뒤에만'],
     ['운전 화면 [MENU] ZOOM_BTN · FORCE_BTN', '1 · 1', '상태창 [확대] / [강제완료] 표시'],
+    ['운전 화면 [MENU] HMIDEL_BTN', '1', '크레인·RGV 상태창 [데이터 삭제] 표시 (2026-11-04)'],
+    ['설비 통신 [HMI_DELETE] SC1~SC5 · RTV1 · CV 의 _AREA / _ADDR', '(비움)', 'PLC 담당자가 준 삭제 신호 M 비트 7개(2026-11-04). 운전 화면 [데이터 삭제]/[CV 지우기] 가 1 을 쓰는 자리(끄는 것은 PLC). 비우면 이력만 남기고 쓰지 않음. 기입 뒤 EQP 재기동'],
     ['운전 화면 [ETC] COLLECT_INTERVAL_MS · COLLECT_STEP_MS', '200 · 0', '설비 데이터 수집 주기 / 설비 간 대기(DB 부하 시 20~50)'],
     ['운전 화면 [DISPLAY] START_MONITOR · UI_SCALE · LAYOUT_FONT_SCALE · LAMP_STYLE', '0 · 0 · 0 · 0', '기동 모니터 / 배율(0 자동) / 그림 글자 배율 / 신호등 그리기 방식'],
     ['운전 화면 [DISPLAY] JOB_PANEL_SPLIT · _DETAIL_W · _DETAIL_H · _COLS · JOB_PANEL_REFRESH_MS', '0 · 0 · 0 · (기본) · 1000', '작업정보 판넬 배치·열·갱신 주기'],
@@ -292,11 +295,11 @@ table(d, ['규칙', '이유'], [
 ], widths=[8.0, 9.0], font=8.5)
 d.add_heading('7.3 2026-11-10 적용분 (적용_20261110)', 2)
 table(d, ['폴더', '파일', '적용'], [
-    ['Client', 'EcsMain.exe (빌드 2026-10-28 10:20)', 'Client 닫기 → 덮어쓰기(또는 Upload) → 제목줄 확인. DLL·ini 그대로'],
+    ['Client', 'EcsMain.exe (빌드 2026-11-04) + rc_resource 발췌(dlg_sc · dlg_rtv · mainframe_manual) + 추가할_설정_Ecs.ini.txt', 'Client 닫기 → exe 덮어쓰기(또는 Upload) + rc_resource 파일 덮어쓰기 + Ecs.ini [MENU] HMIDEL_BTN=1 → 제목줄 확인. DLL 그대로'],
     ['TASK\\IO_TASK', 'IO_TASK_SEMI_FINISH.exe (10-29 11:28) + 추가할_설정_ENV_IOSCH.ini.txt(선택)', 'IO 정지 → 덮어쓰기 → 기동. 2분 뒤 [HIS] 로그'],
-    ['TASK\\EQP_TASK', 'WCS_TASK_CV.exe (10-29 11:43)', 'EQP 정지 → 덮어쓰기 → 기동'],
+    ['TASK\\EQP_TASK', 'WCS_TASK_CV.exe (11-04) + 추가할_설정_WCS_DB.ini.txt', 'EQP 정지 → 덮어쓰기 → WCS_DB.INI [HMI_DELETE] 에 CV_AREA/CV_ADDR 키 추가(주소는 PLC 담당자 확정 뒤) → 기동. 기동 로그 [HMI_DEL] 확인'],
     ['SQL', '261029_사후확인_작업번호.sql', '필요할 때 조회'],
-    ['문서', '2026-10-29_적용안내서_추가분 · 끝난작업_사후확인방법', ''],
+    ['문서', '2026-10-29_적용안내서_추가분 · 끝난작업_사후확인방법 · 2026-11-04_적용안내서_추가분', ''],
 ], widths=[3.0, 8.0, 6.0], font=8.5)
 d.add_page_break()
 
@@ -327,6 +330,7 @@ table(d, ['증상', '먼저 볼 곳', '원인 후보', '처치'], [
     ['크레인 3·5호기가 실제 에러 없이 에러색', 'WCS_DB.INI SC_ERR_CODE_BLOCK', '워드 상시 판정(0)이 하트비트 값을 에러로 오독', '3 으로(5.2). 저장 후 2초 내 반영'],
     ['S/C#1 통로에서 입고·출고가 서로 기다림', '운전 화면 방향 칸 · IO_TASK 로그 "사용권"', '방향 불일치 · 사용권 교착', '운전 화면 방향 더블클릭(120초 자동 억제). CV2_DIR_MODE=2 확인'],
     ['작업이 25/35 에서 오래 머문다', '설비 상태창 · 작업정보 단계표', '설비 에러 · 완료 신호 유실 · 포크 위 화물', '설비 에러 해제(조작반) → 안 풀리면 [완료처리](02 사용자 매뉴얼 5.7)'],
+    ['화물을 옮겨 놓아도 크레인·RGV 가 새 지시를 안 받음', '설비 지상반 · 상태창', '설비 안에 지난 작업 데이터 잔존', '상태창 [데이터 삭제] 또는 지상반 [삭제] → [완료처리]. [HMI_DELETE] 주소가 비어 있으면 운전 화면 단추는 이력만 남긴다(5.2)'],
     ['출고대에 화물이 왔는데 작업이 15 로 남음', 'CV_DATA 129/126 의 LUGG_NO_RD · RET_READY_LATCH', '3초 펄스 유실 · 번호 소실', 'OUT_DONE_ON_ARRIVAL=1 이면 번호 있는 실도착은 자동 완료. 번호 없으면 [완료처리] ④'],
     ['RGV 가 홈에 고착', 'RTV_DATA_LGLS.PLC_NO', 'EQP_MST 와 자릿수 불일치("1" vs "01") → 화면 조회 0행', 'PLC_NO 를 "01" 로'],
     ['Client 가 아이콘 없이 뜸 / 폰트 설치 거부', '2.3', '작업 디렉터리 · 폰트 잠금', '2.3 처치'],

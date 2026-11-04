@@ -1,0 +1,8 @@
+[2026-11-04 추가] Client Ecs.ini 에 더할 설정 - [MENU] 절 ZOOM_BTN 아래에 두 줄을 더한다 (ini 통째 덮어쓰기 금지)
+
+; [LGLS 2026-11-04] 1=크레인/RTV 상태창의 '데이터 삭제' 버튼 표시(지상반 [삭제] 와 같은 PLC M 비트 1 쓰기 요청), 0=숨김
+HMIDEL_BTN=1
+
+- 안 적으면 기본 1 (보임). 리본 MANUAL > 수동조작 > [CV 지우기] 는 설정과 무관하게 늘 보인다.
+- 버튼이 보여도 서버 WCS_DB.INI [HMI_DELETE] 주소가 비어 있으면 PLC 에는 쓰지 않고 이력(WCS_LOG_PGR)만 남는다.
+- rc_resource 폴더의 4개 파일(dlg_sc.ini, dlg_rtv.ini, manual.ini, cvclear.png)도 같은 자리에 덮어쓴다 - 버튼 글자(4개 언어)와 리본 아이콘.

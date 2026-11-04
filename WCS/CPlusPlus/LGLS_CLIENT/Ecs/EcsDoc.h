@@ -117,6 +117,7 @@ public:
 	afx_msg void OnUpdateTrackTextMode(CCmdUI* pCmdUI);	// [LGLS 2026-08-22] 현재 선택된 보기 표시
 	afx_msg void OnCommandSemiTestOpen();	// [LGLS 2026-08-13] 반자동 TEST 창
 	afx_msg void OnCommandSemiTestClear();	// [LGLS 2026-08-13] TEST 초기화	// [LGLS 2026-07-20 재적용] 트랙 표시모드(작업번호/트랙번호/제품정보)
+	afx_msg void OnCommandCvClear();	// [LGLS 2026-11-04] 리본 [수동조작]-[CV 지우기] (CMD_RQ_ID CVCLR)
 	afx_msg void OnCommandRangeMainFrameLOG(UINT nID);
 	afx_msg void OnCommandRangeMainFrameUSER(UINT nID);
 	afx_msg void OnCommandRangeMainFrameSTATUS(UINT nID);

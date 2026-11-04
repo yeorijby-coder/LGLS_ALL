@@ -24,6 +24,7 @@ public:
 	CPtrArray m_arLglsCtrl;		// [LGLS 2026-08-01] 적재 용기/제품 정보 행(확대·축소와 무관하게 항상 표시)
 	CSkinButton m_btnVehZoom;	// [LGLS 2026-08-01] [확대]/[축소] 토글 버튼
 	CSkinButton m_btnScResend;	// [LGLS 2026-08-12] 지시 재전송(원 대화상자)
+	CSkinButton m_btnScHmiDel;	// [LGLS 2026-11-04] 데이터 삭제(지상반 [삭제] 와 같은 PLC M 비트 1 쓰기 요청, CMD_RQ_ID HMIDEL)
 	BOOL    m_bVehExpanded;	// TRUE=확대(상태 패널 표시)
 	int     m_nVehBaseH;	// 축소 상태 창 높이
 	int     m_nVehPanelH;	// 상태 패널 높이
@@ -266,6 +267,7 @@ public:
 	void SetScStatus(CString pCMD, CString pSC_SUSPEND);
 	void SelCommonCode(CString pCCD_CD, CString pCMD, CString& pCCD_NM_KOR);
 	afx_msg void OnBnClickedScvResend();
+	afx_msg void OnBnClickedScHmiDel();	// [LGLS 2026-11-04] [데이터 삭제]
 	afx_msg void OnBnClickedScvOk();
 	void SetLed(int nId, CString strVal);
 	HBRUSH m_brLedOn;

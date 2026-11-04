@@ -1,0 +1,27 @@
+[2026-11-04 추가] 설비 통신(WCS_TASK_CV) WCS_DB.INI 의 [HMI_DELETE] 절 - 기존 6키 아래에 CV 2키를 더한다 (ini 통째 덮어쓰기 금지)
+
+[HMI_DELETE]
+; PLC 담당자가 열어 주는 M 영역 7개 = SC1~SC5 + RTV1 (6개) + CV (1개). ECS 는 1 만 쓰고, 끄는 것은 PLC 다.
+;   SC1~SC5 / RTV1 : 운전 화면 크레인/RTV 상태창 [데이터 삭제]           -> 그 비트에 1 (CMD_RQ_ID HMIDEL)
+;   CV             : 운전 화면 리본 MANUAL > 수동조작 > [CV 지우기]      -> 그 비트에 1 (CMD_RQ_ID CVCLR)
+;                    R 트래킹은 ASCII 라 ECS 가 0 을 써도 0x30 이 남아 PLC 가 "값 있음" 으로 보므로, PLC 가 이 비트를 보고 모든 C/V 의 R 영역을 0 으로 지운다.
+;   _AREA = M (D / R 도 허용 - 그 워드에 1)   _ADDR = 비트 주소 10진 (M)  /  워드 10진 (D, R)   둘 다 비우면 미사용(이력만)
+;   예) SC1_AREA=M  SC1_ADDR=9000  -> %MX9000
+SC1_AREA=
+SC1_ADDR=
+SC2_AREA=
+SC2_ADDR=
+SC3_AREA=
+SC3_ADDR=
+SC4_AREA=
+SC4_ADDR=
+SC5_AREA=
+SC5_ADDR=
+RTV1_AREA=
+RTV1_ADDR=
+CV_AREA=
+CV_ADDR=
+
+★ 주소 7개는 PLC 담당자가 확정해 주는 값을 적는다 (2026-11-04 현재 미확정). 적은 뒤 WCS_TASK_CV 를 재기동한다(기동 때 한 번 읽음).
+   기동 로그 [HMI_DEL] 줄에 7개가 "SC1=M9000 ..." 처럼 풀려 보이면 반영된 것. "-" 는 미정의.
+   개발 PC 시뮬 검증값 : M 60000~60006 (현장 값 아님).

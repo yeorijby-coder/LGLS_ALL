@@ -43,6 +43,25 @@
     빈 값/0/0000 은 전부 "작업번호 없음" 으로 같게 보고, 번호가 실제로 생기거나(0000 -> 1234) 사라질 때(1234 -> 0000)만 남긴다.
   - 적용 : WCS_TASK_CV 를 끝내고(ALL_TASK 면 [EQP] 정지) exe 덮어쓰기 → 다시 기동. ini/DB 변경 없음.
 
+== 2026-11-04 추가 : 크레인/RTV [데이터 삭제] + 리본 [CV 지우기] (PLC M 비트 7개) ==
+  배경 : 크레인·RGV 가 비정상 정지한 뒤 설비 안에 지난 작업 데이터가 남으면 화물을 옮겨도 새 지시를 받지 않아 지상반 [삭제] 를 눌러야 했다.
+         PLC 담당자가 그 동작을 ECS 에서 하도록 M 영역 비트 7개(SC1~SC5, RTV1 = 6개 + CV = 1개)를 열어 준다. ECS 는 1 만 쓰고, 끄는 것은 PLC 다.
+         CV 비트는 PLC 가 모든 C/V 의 R 트래킹을 0 으로 지우는 용도(ECS 가 "0" 을 써도 ASCII 0x30 이 남아 PLC 는 값 있음으로 본다).
+[Client]  EcsMain.exe 빌드 2026-11-04 (+ Client\rc_resource 4개 파일 + 추가할_설정_Ecs.ini.txt)
+  1) 크레인(S/C)·RGV 상태창 명령 그룹에 [데이터 삭제] 버튼 - 확인창 [예] → SC_DATA_LGLS / RTV_DATA_LGLS 의 CMD_RQ_ID=HMIDEL, CMD_RQ_YN=Y
+       권한 EXE_YN. 표시 여부 Ecs.ini [MENU] HMIDEL_BTN (기본 1).
+  2) 리본 MANUAL > 수동조작 > [CV 지우기] - 확인창 [예] → CV_DATA(가장 작은 트랙 1행) CMD_RQ_ID=CVCLR, CMD_RQ_YN=Y
+  - 둘 다 WCS_CLIENT_LOG 에 남는다. ★DB 변경 없음★ (기존 명령 열 CMD_RQ_ID/CMD_RQ_YN 재사용)
+[TASK\EQP_TASK]  WCS_TASK_CV.exe 빌드 2026-11-04 12:05 (+ 추가할_설정_WCS_DB.ini.txt)
+  - HMIDEL : VehThread 가 WCS_DB.INI [HMI_DELETE] 의 SC<n>/RTV1 비트에 1 을 쓰고 CMD_RQ_YN=N. WCS_LOG_PGR(VEH_SC/VEH_RTV) 에 "운전 명령 HMIDEL ..." 기록
+  - CVCLR  : CvThread 가 [HMI_DELETE] 의 CV 비트에 1 을 쓰고 CMD_RQ_YN=N. WCS_LOG_PGR(COMM0) 에 "[CVCLR] ..." 기록
+  - 주소가 비어 있으면(기본) 쓰지 않고 이력만 남긴다. 기동 로그 [HMI_DEL] 에 7개가 풀려 보인다.
+  - 적용 : WCS_TASK_CV 를 끝내고 exe 덮어쓰기 → WCS_DB.INI [HMI_DELETE] 에 CV_AREA= / CV_ADDR= 두 키를 더함(값은 담당자 확정 뒤) → 기동
+[소스_변경분]  TASK\cHmiDeleteMap.cs · VehThread.cs · CvThread.cs / WCS\ScSkinDlg · RtvSkinDlg · EcsDoc · MainFrm · resource.h · Ecs.rc + 변경내용_1104_*.diff
+[문서]  2026-11-04_적용안내서_추가분.docx (캡처 shots_1104)
+  ★ PLC 담당자가 준 비트 주소 7개를 받으면 WCS_DB.INI [HMI_DELETE] 에 적고 WCS_TASK_CV 를 재기동한다. 그 전까지는 버튼이 이력만 남긴다.
+  ★ 개발 PC 시뮬(EQP_SIM) 에서 M60000~60006 으로 세 경로(SC1/RTV1/CV) 모두 비트 1 기록을 확인했다.
+
 == 종료 문서 (인수인계용) ==
   docs\산출물_20261110\ 에 네 건 (Word) : 01_ECS_운영자_매뉴얼 / 02_ECS_사용자_매뉴얼 / 03_테이블_정의서 / 04_인터페이스_정의서
   - 이 꾸러미의 적용 절차는 위 "적용 순서" 와 문서\2026-10-29_적용안내서_추가분.docx 를 따른다. 종료 문서는 그 뒤 운영·인수인계용.

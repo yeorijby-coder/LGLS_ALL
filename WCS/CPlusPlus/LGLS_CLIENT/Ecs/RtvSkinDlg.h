@@ -20,6 +20,7 @@ public:
 	CPtrArray m_arVehCtrl;
 	CSkinButton m_btnVehZoom;	// [LGLS 2026-08-01] [확대]/[축소] 토글 버튼
 	CSkinButton m_btnRtvResend;	// [LGLS 2026-08-12] 지시 재전송(원 대화상자)
+	CSkinButton m_btnRtvHmiDel;	// [LGLS 2026-11-04] 데이터 삭제(지상반 [삭제] 와 같은 PLC M 비트 1 쓰기 요청, CMD_RQ_ID HMIDEL)
 	BOOL    m_bVehExpanded;	// TRUE=확대(상태 패널 표시)
 	int     m_nVehBaseH;	// 축소 상태 창 높이
 	int     m_nVehPanelH;	// 상태 패널 높이
@@ -191,6 +192,7 @@ public:
 	afx_msg void OnBnClickedChkRtvFork12();
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	afx_msg void OnBnClickedRtvvResend();
+	afx_msg void OnBnClickedRtvHmiDel();	// [LGLS 2026-11-04] [데이터 삭제]
 	afx_msg void OnBnClickedRtvvOk();
 	void SetLed(int nId, CString strVal);
 	HBRUSH m_brLedOn;

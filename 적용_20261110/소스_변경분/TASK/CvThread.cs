@@ -2070,6 +2070,43 @@ namespace WCS_TASK_CV
                     }
                     //*/
                     #endregion
+                    // [LGLS 2026-11-04] ※ 위 #region(ROTATE~2) 은 사용자가 /* */ 로 묶어 둔 비활성 블록이라 그 안에 두면 안 된다 - 활성 체인(DIR / 3 / else)에 둔다.
+                    else if (CMD_RQ_ID == "CVCLR")
+                    {
+                        // [LGLS 2026-11-04] 리본 [수동조작]-[CV 지우기] = CMD_RQ_ID 'CVCLR' (Client 가 CV_DATA 가장 작은 트랙 한 행에 남긴다).
+                        //   R 트래킹은 ASCII 라 ECS 가 0 을 써도 0x30 이 남아 PLC 는 "값 있음" 으로 본다. 그래서 PLC 담당자가
+                        //   M 영역 한 비트(7번째, WCS_DB.INI [HMI_DELETE] CV_AREA/CV_ADDR)를 열어 주고, 그 비트가 1 이면 PLC 가
+                        //   모든 C/V 의 R 영역을 0 으로 지운다. ECS 는 1 만 쓴다. 끄는 것은 PLC 다.
+                        //   영역이 비어 있으면 쓰지 않고 이력에만 남긴다. 결과와 무관하게 명령은 소비한다(실패면 운전원이 다시 누른다).
+                        WcsCommon.cHmiDeleteMap.Area aClr = WcsCommon.cHmiDeleteMap.Get("CV");
+                        bool bClrOk = false;
+                        string strClrRes;
+                        if (aClr == null || !aClr.Used)
+                            strClrRes = "CV 영역 미정의(WCS_DB.INI [HMI_DELETE] CV_AREA/CV_ADDR) - PLC 에 쓰지 않음";
+                        else
+                        {
+                            if (aClr.Device == "M")
+                                bClrOk = WriteMBit(aClr.Addr, true);
+                            else
+                            {
+                                byte[] byClr = new byte[2]; byClr[0] = 1; byClr[1] = 0;
+                                byte devClr = (byte)(aClr.Device == "D" ? MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D : MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R);
+                                bClrOk = m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, devClr, aClr.Addr, 1, byClr);
+                            }
+                            strClrRes = "CV 지우기 " + aClr.Xgt + " <- 1 " + (bClrOk ? "기록 (R 트래킹 0 클리어는 PLC 가, 끄는 것도 PLC)" : "기록 실패");
+                        }
+                        m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [CVCLR] " + strClrRes;
+                        if (bClrOk) MakeMsg_Imp(m_strLogMsg, m_nthNo, m_msQPlc.LastAddrText);
+                        else        MakeMsg_Error(m_strLogMsg, m_nthNo);
+                        if (!InsertWcsLogPgr(TRACK_NO, m_strLogMsg))
+                        {
+                            return false;
+                        }
+                        if (!UpdateCvDataCmd(TRACK_NO))
+                        {
+                            return false;
+                        }
+                    }
                     else if (CMD_RQ_ID == "3") //트랙 대기
                     {
                         Array.Clear(byTxBuff, 0, byTxBuff.Length);

@@ -1,0 +1,51 @@
+diff --git a/TASK/WCS_TASK_CV_BIN/4_Static/cHmiDeleteMap.cs b/TASK/WCS_TASK_CV_BIN/4_Static/cHmiDeleteMap.cs
+index 7d14071..ebc8d13 100644
+--- a/TASK/WCS_TASK_CV_BIN/4_Static/cHmiDeleteMap.cs
++++ b/TASK/WCS_TASK_CV_BIN/4_Static/cHmiDeleteMap.cs
+@@ -11,21 +11,26 @@ namespace WcsCommon
+     //          [삭제] 버튼을 누르면 SC 에 있던 작업이 지워지고 진행 중이던 작업이 완료 처리된다.
+     //          PLC 담당자가 이 버튼에 대응하는 영역을 따로 열어 주기로 해서, 그 자리를 미리 ini 로 정의해 둔다.
+     //
+-    //   정의 : 영역마다 (영역 D/R/M, 주소) 두 값. 6개 = SC1~SC5 + RTV1.  비워 두면 미사용.
++    //   정의 : 영역마다 (영역 D/R/M, 주소) 두 값. 7개 = SC1~SC5 + RTV1 + CV.  비워 두면 미사용.
++    //   [LGLS 2026-11-04] PLC 담당자 확정 : SC·RTV 6개 + C/V 용 1개, 모두 M 영역 한 비트씩.
++    //     · SC1~SC5 / RTV1 : 운전 화면 상태창 [데이터 삭제] → 설비 통신(VehThread, CMD_RQ_ID HMIDEL)이 그 비트에 1 을 쓴다.
++    //     · CV              : 리본 [수동조작]-[CV 지우기] → CvThread(CMD_RQ_ID CVCLR)가 그 비트에 1 을 쓴다.
++    //                         R 트래킹은 ASCII 라 ECS 가 0 을 써도 0x30 이 남아 PLC 는 "값 있음" 으로 본다 - 그래서 PLC 가
++    //                         이 비트를 보고 모든 C/V 의 R 영역을 0 으로 지운다.
++    //     ECS 는 1 만 쓴다. 끄는 것은 PLC 다. D/R 로 정의되면 그 워드에 1 을 쓴다.
+     //     [HMI_DELETE]
+     //     SC1_AREA=D          ; D | R | M
+     //     SC1_ADDR=1234       ; 문서 표기 주소 (D/R = 워드 10진, M = 비트 주소 10진)
+-    //     ...  SC5_*, RTV1_*
++    //     ...  SC5_*, RTV1_*, CV_*
+     //
+-    //   이 클래스는 정의를 읽고 검증하고 XGT 실주소 문자열로 풀어 주기까지만 한다.
+-    //   PLC 를 읽거나 쓰는 동작은 담당자가 영역을 확정해 준 뒤(비트인지 워드인지, 누름/해제 극성 등) 붙인다.
++    //   이 클래스는 정의를 읽고 검증하고 XGT 실주소 문자열로 풀어 주기까지만 한다. 쓰기는 각 스레드가 한다.
+     //   ※ 구 ECS / EQP_TASK 의 PLC 통신부는 건드리지 않는다.
+     // ─────────────────────────────────────────────────────────────────────────
+     public static class cHmiDeleteMap
+     {
+         public class Area
+         {
+-            public string Name;     // SC1..SC5, RTV1
++            public string Name;     // SC1..SC5, RTV1, CV
+             public string Device;   // D / R / M  (비어 있으면 미사용)
+             public int    Addr;     // 문서 표기 주소
+             public bool   Used;     // 영역·주소가 모두 유효
+@@ -43,12 +48,12 @@ namespace WcsCommon
+             }
+         }
+ 
+-        public static readonly string[] Names = new string[] { "SC1", "SC2", "SC3", "SC4", "SC5", "RTV1" };
++        public static readonly string[] Names = new string[] { "SC1", "SC2", "SC3", "SC4", "SC5", "RTV1", "CV" };
+ 
+         private static readonly List<Area> m_list = new List<Area>();
+         public static IList<Area> Areas { get { return m_list; } }
+ 
+-        /// <summary>ini 를 읽어 6개 영역을 만든다. 읽기 실패해도 예외를 던지지 않는다.</summary>
++        /// <summary>ini 를 읽어 7개 영역을 만든다. 읽기 실패해도 예외를 던지지 않는다.</summary>
+         public static void Load(string pIni)
+         {
+             m_list.Clear();

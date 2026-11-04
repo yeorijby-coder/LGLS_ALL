@@ -1119,6 +1119,25 @@ namespace WCS_TASK_CV
                 return;
             }
 
+            // [LGLS 2026-11-04] 운전 화면 상태창 [데이터 삭제] = CMD_RQ_ID 'HMIDEL'.
+            //   지상반(HMI) [삭제] 와 같은 동작 - SC 가 비정상 정지해 설비에 작업 데이터가 남으면 화물이 넘어가도 진행이 안 된다.
+            //   PLC 담당자가 호기마다 M 영역 한 비트(SC1~SC5, RTV1)를 열어 주고, 그 주소는 WCS_DB.INI [HMI_DELETE] 에 둔다.
+            //   ECS 는 그 비트에 1 만 쓴다. 끄는 것은 PLC 다(1 을 보고 설비 데이터를 지운 뒤 스스로 내린다).
+            //   영역이 비어 있으면(미정의) 쓰지 않고 이력에만 남긴다. 결과와 무관하게 명령은 소비한다(운전원이 다시 누른다).
+            if (cmd == "HMIDEL")
+            {
+                int nKey = 0; int.TryParse(v.KeyVal, out nKey);
+                string strArea = (m_strKind == "SC") ? ("SC" + (nKey - 900)) : "RTV1";
+                string strResH = WriteHmiDelete(strArea);
+                string strUpdH = "";
+                strUpdH += CRLF + " UPDATE " + m_strTable + " SET CMD_RQ_YN = 'N', WRITE_UPD_DT = GETDATE()";
+                strUpdH += CRLF + "  WHERE WH_TYP = '" + Esc(m_strWhTyp) + "' AND " + m_strKeyCol + " = '" + Esc(v.KeyVal) + "' ";
+                strUpdH += CRLF + "    AND CMD_RQ_YN = 'Y' AND CMD_RQ_ID = 'HMIDEL' ";
+                DbExec(strUpdH);
+                LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 HMIDEL(데이터 삭제) → " + strResH);
+                return;
+            }
+
             string act;
             string extra = "";
             if (cmd.StartsWith("DELFK"))
@@ -1137,6 +1156,26 @@ namespace WCS_TASK_CV
             strUpd += CRLF + "    AND CMD_RQ_YN = 'Y' AND CMD_RQ_ID = '" + Esc(cmd) + "'                   ";
             DbExec(strUpd);
             LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 " + cmd + " → " + act);
+        }
+
+        /// <summary>
+        /// [LGLS 2026-11-04] [HMI_DELETE] 영역(SC1~SC5/RTV1)에 1 을 쓴다. M 이면 단일 비트 쓰기(%MX), D/R 이면 그 워드에 1.
+        ///   영역이 정의되지 않았으면 쓰지 않는다. 돌려주는 문자열은 이력용 결과 설명.
+        /// </summary>
+        private string WriteHmiDelete(string strArea)
+        {
+            WcsCommon.cHmiDeleteMap.Area a = WcsCommon.cHmiDeleteMap.Get(strArea);
+            if (a == null || !a.Used)
+                return strArea + " 영역 미정의(WCS_DB.INI [HMI_DELETE] " + strArea + "_AREA/" + strArea + "_ADDR) - PLC 에 쓰지 않음";
+            bool bOk;
+            if (a.Device == "M")
+                bOk = m_msQPlc.WRITE_BIT((byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, a.Addr, true);
+            else
+            {
+                byte[] tx = new byte[2]; tx[0] = 1; tx[1] = 0;
+                bOk = PlcWriteWords(a.Device[0], a.Addr, 1, tx);
+            }
+            return strArea + " " + a.Xgt + " <- 1 " + (bOk ? "기록 (끄는 것은 PLC)" : "기록 실패");
         }
 
         // ---------- 지시(_od) → Vehicle 명령 메모리 ----------

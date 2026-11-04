@@ -235,6 +235,17 @@ table(d, ['그룹', '신호', '주소 (M 비트)', '뜻'], [
 note(d, '사용 여부 WCS_DB.INI [CNF] MAIN_ALM_BITS (1 사용). 주소 표기 : 워드 10진 + 비트 16진 (M5501 = 550x16+1 = 8801).')
 d.add_page_break()
 
+d.add_heading('3.5.1 운전 화면 삭제 신호 비트 (WCS_DB.INI [HMI_DELETE], 2026-11-04)', 3)
+para(d, 'PLC 담당자가 지상반(HMI) [삭제] 와 같은 동작을 ECS 에서 하도록 M 영역 비트 7개를 열어 준다. ECS 는 1 만 쓰고, 끄는 것은 PLC 다(1 을 보고 처리한 뒤 스스로 내린다). '
+        '주소는 서버 WCS_DB.INI [HMI_DELETE] 의 <이름>_AREA(M) / <이름>_ADDR(비트 10진) 에 두고, 비어 있으면 쓰지 않는다(기동 로그 [HMI_DEL] 에 7개가 풀려 보인다).')
+table(d, ['이름', '뜻', '운전 화면', 'DB 명령 (CMD_RQ_ID / CMD_RQ_YN=Y)', 'PLC 가 하는 일'], [
+    ['SC1 ~ SC5', '크레인 1~5호기 데이터 삭제', '크레인 상태창 [데이터 삭제]', 'SC_DATA_LGLS(901~905).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '그 크레인의 작업 데이터를 지우고 비트를 내린다'],
+    ['RTV1', 'RGV 데이터 삭제', 'RGV 상태창 [데이터 삭제]', 'RTV_DATA_LGLS(801).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '〃'],
+    ['CV', '모든 C/V 의 R 트래킹 0 클리어', 'MANUAL ▷ 수동조작 ▷ [CV 지우기]', 'CV_DATA(가장 작은 트랙 1행).CMD_RQ_ID = CVCLR → CvThread 가 비트 1, N 으로 소비', 'R 영역(ASCII 트래킹)을 모두 0 으로 지우고 비트를 내린다. ECS 가 "0" 을 써도 0x30 이 남아 PLC 는 값이 있다고 보므로'],
+], widths=[2.0, 4.0, 4.0, 7.0, 5.5], font=8.5)
+note(d, 'DB 열 추가 없음 - 기존 CMD_RQ_ID/CMD_RQ_YN 명령 통로를 쓴다. 비트 주소는 2026-11-04 현재 미확정(담당자 확정 뒤 ini 기입 + WCS_TASK_CV 재기동). 시뮬 검증값 M60000~60006. '
+        'D/R 로 정의하면 그 워드에 1 을 쓴다. 이력 : WCS_LOG_PGR(VEH_SC/VEH_RTV "운전 명령 HMIDEL", COMM0 "[CVCLR]") · WCS_CLIENT_LOG.')
+
 d.add_heading('3.6 핸드셰이크 규약', 2)
 para(d, '모든 비트 신호는 "요청 → 응답(ACK) → 해제" 한 바퀴다. 설비가 신호를 세우면 WCS 가 같은 이름의 Ack 를 세우고, 설비가 신호를 내리면 WCS 도 Ack 를 내린다(설비 리셋). '
         '반송 지시는 데이터(D)를 먼저 쓰고 요청 비트(M)를 세운다.')
@@ -310,7 +321,7 @@ table(d, ['표', '쓰는 쪽 → 읽는 쪽', '주요 열', '규약'], [
      'EQP 는 OD/CMD 를 소비하면 YN 을 N 으로. ":" 는 토큰 구분자로 쓰지 않는다(DB 계층이 @ 로 바꿈)'],
     ['SC_DATA_LGLS (901~905)', 'EQP → IO · 화면 / IO · 화면 → EQP',
      'SUBSYSTEM_STATUS_RD ERR_CODE_RD ERR_STA_FK1_RD PALLET_ON_VEHICLE_RD LOCATION_RD / FROM_01~03_OD TO_01~03_OD PALLET_ID_OD TRANSFER_REQUEST_OD OD_RQ_YN JOB_TYP_RD',
-     'OD_RQ_YN=Y 가 지시 요청. EQP 가 PLC 에 쓰고 N. [지시 재전송] = 다시 Y. [강제완료]/[완료처리] = OD 비움'],
+     'OD_RQ_YN=Y 가 지시 요청. EQP 가 PLC 에 쓰고 N. [지시 재전송] = 다시 Y. [강제완료]/[완료처리] = OD 비움. [데이터 삭제] = CMD_RQ_ID HMIDEL → [HMI_DELETE] M 비트 1 (3.5.1)'],
     ['RTV_DATA_LGLS (801)', '〃', 'DEPART_TRACK ARRIVE_TRACK(실제 트랙번호) TRANSFER_REQUEST_OD PALLET_ON_VEHICLE_RD ERR_CODE_RD(메인 알람 비트 파생)', 'PLC_NO 는 EQP_MST 와 같은 "01"'],
     ['EQP_MST', 'TASK 3종 → 화면', 'UPD_DT CONNECTED_YN (EQP / SCH / HOST / HOST2)', '하트비트. 운전 화면 신호등이 이 표로 판정(EQP 1행이 PLC 소켓 대표)'],
     ['DEL_HIS_SETTING', '화면 → IO', 'TABLE_NAME CYCLE UNIT KEY_COLUMN', 'IO PurgeHistory 가 1시간마다 읽어 삭제(2026-10-29)'],
@@ -326,6 +337,7 @@ table(d, ['기능', '표 · 열', '규약'], [
     ['방향 전환 더블클릭', 'CV_DATA.CMD_RQ_ID = DIR 명령 (+ Ecs.ini DIR_ADDR_CV11/CV2 로 확인창에 PLC 주소 표시)', 'EQP 가 D 방향 워드에 즉시 쓴다. IO 는 MANUAL_DIR_HOLD_SEC 동안 자동 정합 억제'],
     ['[완료처리] (스텝 단위)', 'JOB_MST.JOB_STATUS 이동(15/39/16/29/19) + 설비 OD 해제 + CV_DATA 번호 기록 요청', '경로의 다른 칸에 화물이 있으면 그 단계로(2026-10-28). WCS_CLIENT_LOG 기록'],
     ['[지시 재전송] / [강제완료] / [이상종료]', 'SC/RTV OD_RQ_YN=Y 재세움 / OD 비움 + 상태 29·39 / OD 비움', '권한 UPD_YN, 확인창, WCS_CLIENT_LOG'],
+    ['[데이터 삭제] / [CV 지우기] (2026-11-04)', 'SC_DATA_LGLS · RTV_DATA_LGLS CMD_RQ_ID=HMIDEL / CV_DATA(최소 트랙) CMD_RQ_ID=CVCLR, CMD_RQ_YN=Y', 'EQP 가 [HMI_DELETE] M 비트에 1 (3.5.1). 권한 EXE_YN, 확인창, WCS_CLIENT_LOG. 표시 Ecs.ini [MENU] HMIDEL_BTN'],
     ['우선순위 ▲▼ / [수정]', 'JOB_MST.JOB_PRIORITY ±1 / 직접 입력', 'IO 는 다음 사이클부터 반영'],
     ['수동지시 / [H/S 배출]', 'JOB_MST 생성 (JOB_TYP 1x 반자동, LUGG_NO 9001~9900)', 'HOST 보고 안 함, 완료 시 삭제'],
     ['로그 삭제 설정', 'DEL_HIS_SETTING.CYCLE', 'IO 가 다음 검사(최대 1시간)부터 반영'],
@@ -345,6 +357,7 @@ table(d, ['일자', '내용'], [
     ['2026-09-29 ~ 30', '출고대 3초 펄스 래치(RET_READY_LATCH*), OUT_DONE_ON_ARRIVAL, HOST 접속별 수신(SRV_MULTI_CONN), IMS STN 24/26 표 정정'],
     ['2026-10-15', 'Upload/Download 표(UP_DOWN/DN_MST/DN_SEQ). 스텝 단위 [완료처리]'],
     ['2026-10-29', '[완료처리] 경로 탐색. DEL_HIS_SETTING 을 IO 가 실제로 소비. "[] -> [0000]" 트래킹 로그 억제'],
+    ['2026-11-04', '[HMI_DELETE] M 비트 7개(SC1~5 · RTV1 · CV, 3.5.1). 운전 화면 [데이터 삭제](HMIDEL) · [CV 지우기](CVCLR). DB 변경 없음'],
 ], widths=[3.0, 19.5], font=8.5)
 
 para(d, '')

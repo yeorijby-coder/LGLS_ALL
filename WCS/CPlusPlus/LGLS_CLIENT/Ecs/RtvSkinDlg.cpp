@@ -78,6 +78,7 @@ void CRtvSkinDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_RTV_COMPLETE,      m_btnRtvComplete);
 	DDX_Control(pDX, IDC_LGLS_RTV_ZOOM,         m_btnVehZoom);	// [LGLS 2026-08-05] 확대/축소
 	DDX_Control(pDX, IDC_LGLS_RTV_RESEND,       m_btnRtvResend);	// [LGLS 2026-08-12] 지시 재전송
+	DDX_Control(pDX, IDC_LGLS_RTV_HMIDEL,       m_btnRtvHmiDel);	// [LGLS 2026-11-04] 데이터 삭제
 	DDX_Control(pDX, IDC_BTN_RTV_MANUAL,        m_btnRtvManual);
 	DDX_Control(pDX, IDC_BTN_RTV_SUSPEND,       m_btnRtvSuspend);
 }
@@ -97,6 +98,7 @@ BEGIN_MESSAGE_MAP(CRtvSkinDlg, CSkinDialog)
 		ON_BN_CLICKED(IDC_RTVV_BTN_ABORT,   &CRtvSkinDlg::OnRtvvAbort)		// [LGLS 2026-10-01] 구 ECS [이상종료]
 		ON_BN_CLICKED(IDC_RTVV_CHK_DISABLE, &CRtvSkinDlg::OnRtvvDisable)	// [LGLS 2026-10-01] 구 ECS [사용금지]
 	ON_BN_CLICKED(IDC_LGLS_RTV_RESEND, &CRtvSkinDlg::OnBnClickedRtvvResend)	// [LGLS 2026-08-12] 원 대화상자 버튼(동일 기능)
+	ON_BN_CLICKED(IDC_LGLS_RTV_HMIDEL, &CRtvSkinDlg::OnBnClickedRtvHmiDel)	// [LGLS 2026-11-04] 데이터 삭제
 		ON_BN_CLICKED(IDC_RTVV_OK, &CRtvSkinDlg::OnBnClickedRtvvOk)
 	ON_BN_CLICKED(IDC_LGLS_RTV_ZOOM, &CRtvSkinDlg::OnBnClickedVehZoom)
 	ON_COMMAND_RANGE(IDC_RTVV_BTN_LCA_W, IDC_RTVV_BTN_UCA_W, &CRtvSkinDlg::OnAckWrite)	// [LGLS 2026-09-12] Ack 수동 쓰기
@@ -413,6 +415,9 @@ void CRtvSkinDlg::RedrawImage()
 	// [LGLS 2026-08-12] 원 대화상자 [지시 재전송] 버튼도 같은 스킨 + 아이콘
 	m_btnRtvResend.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnRtvResend.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("manual"), strExtension)), NULL, 5, 5);
+	// [LGLS 2026-11-04] [데이터 삭제] 버튼도 같은 스킨 + 아이콘
+	m_btnRtvHmiDel.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
+	m_btnRtvHmiDel.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("delete"), strExtension)), NULL, 5, 5);
 
 	m_btnVehZoom.SetBitmaps(Global.GetBitmap(IDX_BMP_BTN_BASE_LARGE), Global.GetRGB(IDX_RGB_MASK), 0, 0);
 	m_btnVehZoom.SetIcon(Global.HICONFromPATH(Global.GetConcatPath(strAppPath, _T("arrow-down"), strExtension)), NULL, 5, 5);
@@ -545,6 +550,8 @@ void CRtvSkinDlg::RenameResource( EN_LANG m_enLang)
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("resend"), (int)m_enLang);
 	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_RESEND, strValue);
+	strValue = CLib::GetIniStringFromPath(strFullPath, _T("hmidel"), (int)m_enLang);	// [LGLS 2026-11-04]
+	if (!strValue.IsEmpty()) SetDlgItemText(IDC_LGLS_RTV_HMIDEL, strValue);
 
 	strFullPath = Global.GetConcatPath(strAppPath.Left(strAppPath.ReverseFind('\\')) + _T("\\rc_resource\\dlg_rtv\\"), _T("dlg_rtv"), strExtension);
 	strValue = CLib::GetIniStringFromPath(strFullPath, _T("manualorder"), (int)m_enLang);
@@ -1631,6 +1638,11 @@ void CRtvSkinDlg::ApplyZoomBtnIni()
 	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
 	pF = GetDlgItem(IDC_RTVV_BTN_FORCE);
 	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
+
+	// [LGLS 2026-11-04] [데이터 삭제] 표시 여부 - Ecs.ini [MENU] HMIDEL_BTN=1/0 (기본 1). 자리는 rc 가 정한다(명령 그룹 맨 아래).
+	BOOL bHmiDel = (::GetPrivateProfileInt(_T("MENU"), _T("HMIDEL_BTN"), 1, ECS_INI_FILE) != 0);
+	CWnd* pH = GetDlgItem(IDC_LGLS_RTV_HMIDEL);
+	if (pH) pH->ShowWindow(bHmiDel ? SW_SHOW : SW_HIDE);
 }
 
 // ===================================================================
@@ -1678,4 +1690,42 @@ void CRtvSkinDlg::OnRtvvDisable()
 	CWnd* pBtn = GetDlgItem(IDC_BTN_RTV_SUSPEND);
 	if (pBtn == NULL) return;
 	SendMessage(WM_COMMAND, MAKEWPARAM(IDC_BTN_RTV_SUSPEND, BN_CLICKED), (LPARAM)pBtn->GetSafeHwnd());
+}
+
+// ===================================================================
+// [LGLS 2026-11-04] [데이터 삭제] - 지상반(HMI) [삭제] 와 같은 동작을 운전 화면에서 (사용자 지시).
+//   SC/RTV 가 비정상 정지해 설비에 작업 데이터가 남으면 화물이 넘어가도 진행이 안 된다. PLC 담당자가 호기마다 M 영역 한 비트를
+//   열어 주고(WCS_DB.INI [HMI_DELETE] SC1~SC5 / RTV1), 설비 통신(WCS_TASK_CV VehThread)이 CMD_RQ_ID 'HMIDEL' 을 보고 그 비트에 1 을 쓴다.
+//   끄는 것은 PLC 다. 여기서는 명령만 남기고 CLIENT_LOG 에 기록한다. 표시 여부 Ecs.ini [MENU] HMIDEL_BTN=1/0 (기본 1).
+// ===================================================================
+void CRtvSkinDlg::OnBnClickedRtvHmiDel()
+{
+	if (m_pRTV_DATA == NULL || m_pDoc == NULL) return;
+	if (!m_pDoc->Permission(_T("CRtvSkinDlg"), EXE_YN))
+	{
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("권한이 없습니다")));
+		return;
+	}
+	CString strAsk;
+	strAsk.Format(_T("%s\n\n[RTV %s]\n%s"),
+		(LPCTSTR)m_pDoc->GetMsgLangDef(_T("설비 데이터 삭제 신호(PLC M 비트 1)를 보내시겠습니까?")),
+		(LPCTSTR)m_pRTV_DATA->K_RTV_NO,
+		(LPCTSTR)m_pDoc->GetMsgLangDef(_T("설비에 남은 작업 데이터가 지워집니다. 화물을 먼저 내려놓은 뒤 누르십시오.")));
+	if (AfxMessageBox(strAsk, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES) return;
+
+	CString strSql;
+	strSql.Format(_T(" UPDATE RTV_DATA_LGLS SET CMD_RQ_ID='HMIDEL', CMD_RQ_YN='Y' WHERE WH_TYP='%s' AND PLC_NO='%02s' AND RTV_NO='%s' "),
+		(LPCTSTR)m_pDoc->m_WH_TYP, (LPCTSTR)m_pRTV_DATA->K_PLC_NO, (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+	CString strLog;
+	strLog.Format(_T("데이터 삭제 신호 요청(HMIDEL) RTV %s - 설비 통신이 [HMI_DELETE] M 비트에 1 을 쓴다"), (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+	if (m_pDoc->BeginTrans_DLG() < 1) { AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패"))); return; }
+	if (!m_pDoc->GetQueryInsertClientLog(_T("CRtvSkinDlg"), _T(""), _T(""), _T(""), strLog) || !m_pDoc->ExcuteQueryString_DLG(strSql))
+	{
+		m_pDoc->RollbackTrans_DLG();
+		AfxMessageBox(m_pDoc->GetMsgLangDef(_T("실패")));
+		return;
+	}
+	m_pDoc->CommitTrans_DLG();
+	CLib::UiLog(_T("[HMIDEL] request RTV %s"), (LPCTSTR)m_pRTV_DATA->K_RTV_NO);
+	AfxMessageBox(m_pDoc->GetMsgLangDef(_T("데이터 삭제 신호를 요청했습니다. 설비 통신이 PLC 에 기록합니다.")));
 }

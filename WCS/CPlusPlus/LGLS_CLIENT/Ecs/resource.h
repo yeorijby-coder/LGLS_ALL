@@ -3296,6 +3296,8 @@
 #define IDC_LGLS_RTV_RESEND             8243
 #define IDC_LGLS_CV_EJECT_GRP           8244
 #define IDC_LGLS_CV_HS_EJECT            8245
+#define IDC_LGLS_SC_HMIDEL              8246
+#define IDC_LGLS_RTV_HMIDEL             8247
 #define IDC_CVV_TITLE1                  8250
 #define IDC_CVV_TITLE2                  8251
 #define IDC_CVV_STATUS                  8252
@@ -3511,6 +3513,7 @@
 #define ID_MONITORING_VIEW_PRODINFO     35068
 #define ID_MANUAL_SEMITEST              35069
 #define ID_MANUAL_TESTCLEAR             35070
+#define ID_MANUAL_CVCLEAR               35071
 #define ID_ALARM_SHOW                   35090
 #define ID_PANE_JOB                     35091
 #define ID_PANE_INFO                    35092
