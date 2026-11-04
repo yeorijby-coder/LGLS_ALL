@@ -847,7 +847,10 @@ void CDciRvCtrl::UpdateControl(CDC* pDC)
 		}
 
 		CPen* pOldPen = NULL;
-		CPen penRail(PS_SOLID, 1, m_clrRail);
+		// [LGLS 2026-11-05] 레일 선은 1px 라 정지(주황/분홍/진빨강)·에러·작업중 색이 눈에 띄지 않았다
+		//   (캡처 픽셀로 확인 - 선은 제대로 색이 바뀌고 있었고 끝점만 보였다). 검정이 아닐 때는 3px 로 굵게.
+		int nRailWidth = (m_clrRail == RGB(0,0,0)) ? 1 : 3;
+		CPen penRail(PS_SOLID, nRailWidth, m_clrRail);
 
 		CBrush* pOldBrush = NULL;
 		CBrush bgBrush(m_clrBgColor), wingBrush(m_clrWing), railBrush(m_clrRail);
