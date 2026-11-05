@@ -1,27 +1,29 @@
-[2026-11-04 추가] 설비 통신(WCS_TASK_CV) WCS_DB.INI 의 [HMI_DELETE] 절 - 기존 6키 아래에 CV 2키를 더한다 (ini 통째 덮어쓰기 금지)
+[2026-11-05 주소 확정] 설비 통신(WCS_TASK_CV) WCS_DB.INI 의 [HMI_DELETE] 절 - 아래 14줄을 그대로 적는다 (ini 통째 덮어쓰기 금지)
+  ※ WCS_TASK_CV.exe 를 2026-11-05 빌드로 먼저 바꾼다. 이전 exe 는 _ADDR 을 다른 방식(비트 주소 10진)으로 읽는다.
 
 [HMI_DELETE]
-; PLC 담당자가 열어 주는 M 영역 7개 = SC1~SC5 + RTV1 (6개) + CV (1개). ECS 는 1 만 쓰고, 끄는 것은 PLC 다.
-;   SC1~SC5 / RTV1 : 운전 화면 크레인/RTV 상태창 [데이터 삭제]           -> 그 비트에 1 (CMD_RQ_ID HMIDEL)
-;   CV             : 운전 화면 리본 MANUAL > 수동조작 > [CV 지우기]      -> 그 비트에 1 (CMD_RQ_ID CVCLR)
-;                    R 트래킹은 ASCII 라 ECS 가 0 을 써도 0x30 이 남아 PLC 가 "값 있음" 으로 보므로, PLC 가 이 비트를 보고 모든 C/V 의 R 영역을 0 으로 지운다.
-;   _AREA = M (D / R 도 허용 - 그 워드에 1)   _ADDR = 비트 주소 10진 (M)  /  워드 10진 (D, R)   둘 다 비우면 미사용(이력만)
-;   예) SC1_AREA=M  SC1_ADDR=9000  -> %MX9000
-SC1_AREA=
-SC1_ADDR=
-SC2_AREA=
-SC2_ADDR=
-SC3_AREA=
-SC3_ADDR=
-SC4_AREA=
-SC4_ADDR=
-SC5_AREA=
-SC5_ADDR=
-RTV1_AREA=
-RTV1_ADDR=
-CV_AREA=
-CV_ADDR=
+; PLC 담당자 확정(2026-11-05) : S/C#1~#5 DATA 삭제 = M6800~M6804, RGV DATA 삭제 = M6805, CONVEYOR DATA 삭제 = M6806
+;   작업순서(S/C#1 예) : 1. ECS 가 M6800 ON -> 2. PLC 가 DATA 삭제 -> 3. PLC 가 M6800 OFF   (ECS 는 켜기만 한다)
+;   SC1~SC5 / RTV1 : 운전 화면 크레인/RGV 상태창 [데이터 삭제]           (CMD_RQ_ID HMIDEL)
+;   CV             : 운전 화면 리본 MANUAL > 수동조작 > [CV 지우기]      (CMD_RQ_ID CVCLR)
+;   _AREA = M   _ADDR = PLC 담당자 표기 그대로 (끝 한 자리 = 비트 0~F, 앞 = 워드 10진)   둘 다 비우면 미사용(이력만)
+;   예) 6800 -> 워드 680 비트 0 -> %MX10880
+SC1_AREA=M
+SC1_ADDR=6800
+SC2_AREA=M
+SC2_ADDR=6801
+SC3_AREA=M
+SC3_ADDR=6802
+SC4_AREA=M
+SC4_ADDR=6803
+SC5_AREA=M
+SC5_ADDR=6804
+RTV1_AREA=M
+RTV1_ADDR=6805
+CV_AREA=M
+CV_ADDR=6806
 
-★ 주소 7개는 PLC 담당자가 확정해 주는 값을 적는다 (2026-11-04 현재 미확정). 적은 뒤 WCS_TASK_CV 를 재기동한다(기동 때 한 번 읽음).
-   기동 로그 [HMI_DEL] 줄에 7개가 "SC1=M9000 ..." 처럼 풀려 보이면 반영된 것. "-" 는 미정의.
-   개발 PC 시뮬 검증값 : M 60000~60006 (현장 값 아님).
+★ 적은 뒤 WCS_TASK_CV 를 재기동한다(기동 때 한 번 읽음).
+   확인 : 버튼을 누르면 WCS_LOG_PGR 에 "... SC1 M6800(%MX10880) <- 1 기록 (끄는 것은 PLC)" 처럼 남는다.
+          "영역 미정의" 로 남으면 ini 가 반영되지 않은 것이다.
+   개발 PC 시뮬 검증(2026-11-05) : 버튼 7개 모두 M 워드 680 의 비트 0~6 이 차례로 켜지는 것을 PLC 메모리 읽기로 확인했다.

@@ -205,7 +205,7 @@ table(d, ['프로그램 / 섹션.키', '권장', '요점'], [
     ['운전 화면 [MENU] VEH_SHOW_ON_ORDER', '1', '크레인 번호·색은 지시(25)된 뒤에만'],
     ['운전 화면 [MENU] ZOOM_BTN · FORCE_BTN', '1 · 1', '상태창 [확대] / [강제완료] 표시'],
     ['운전 화면 [MENU] HMIDEL_BTN', '1', '크레인·RGV 상태창 [데이터 삭제] 표시 (2026-11-04)'],
-    ['설비 통신 [HMI_DELETE] SC1~SC5 · RTV1 · CV 의 _AREA / _ADDR', '(비움)', 'PLC 담당자가 준 삭제 신호 M 비트 7개(2026-11-04). 운전 화면 [데이터 삭제]/[CV 지우기] 가 1 을 쓰는 자리(끄는 것은 PLC). 비우면 이력만 남기고 쓰지 않음. 기입 뒤 EQP 재기동'],
+    ['설비 통신 [HMI_DELETE] SC1~SC5 · RTV1 · CV 의 _AREA / _ADDR', 'M / 6800 ~ 6806', 'PLC 담당자가 준 삭제 신호 M 비트 7개(2026-11-05 확정 : S/C#1~#5 = M6800~M6804, RGV = M6805, CONVEYOR = M6806). _ADDR 은 PLC 표기 그대로 적는다(6800 = 워드 680 비트 0). 운전 화면 [데이터 삭제]/[CV 지우기] 가 1 을 쓰는 자리(끄는 것은 PLC). 비우면 이력만 남기고 쓰지 않음. 기입 뒤 EQP 재기동'],
     ['운전 화면 [ETC] COLLECT_INTERVAL_MS · COLLECT_STEP_MS', '200 · 0', '설비 데이터 수집 주기 / 설비 간 대기(DB 부하 시 20~50)'],
     ['운전 화면 [DISPLAY] START_MONITOR · UI_SCALE · LAYOUT_FONT_SCALE · LAMP_STYLE', '0 · 0 · 0 · 0', '기동 모니터 / 배율(0 자동) / 그림 글자 배율 / 신호등 그리기 방식'],
     ['운전 화면 [DISPLAY] JOB_PANEL_SPLIT · _DETAIL_W · _DETAIL_H · _COLS · JOB_PANEL_REFRESH_MS', '0 · 0 · 0 · (기본) · 1000', '작업정보 판넬 배치·열·갱신 주기'],
@@ -297,7 +297,7 @@ d.add_heading('7.3 2026-11-10 적용분 (적용_20261110)', 2)
 table(d, ['폴더', '파일', '적용'], [
     ['Client', 'EcsMain.exe (빌드 2026-11-04) + rc_resource 발췌(dlg_sc · dlg_rtv · mainframe_manual) + 추가할_설정_Ecs.ini.txt', 'Client 닫기 → exe 덮어쓰기(또는 Upload) + rc_resource 파일 덮어쓰기 + Ecs.ini [MENU] HMIDEL_BTN=1 → 제목줄 확인. DLL 그대로'],
     ['TASK\\IO_TASK', 'IO_TASK_SEMI_FINISH.exe (10-29 11:28) + 추가할_설정_ENV_IOSCH.ini.txt(선택)', 'IO 정지 → 덮어쓰기 → 기동. 2분 뒤 [HIS] 로그'],
-    ['TASK\\EQP_TASK', 'WCS_TASK_CV.exe (11-04) + 추가할_설정_WCS_DB.ini.txt', 'EQP 정지 → 덮어쓰기 → WCS_DB.INI [HMI_DELETE] 에 CV_AREA/CV_ADDR 키 추가(주소는 PLC 담당자 확정 뒤) → 기동. 기동 로그 [HMI_DEL] 확인'],
+    ['TASK\\EQP_TASK', 'WCS_TASK_CV.exe (11-05) + 추가할_설정_WCS_DB.ini.txt', 'EQP 정지 → 덮어쓰기 → WCS_DB.INI [HMI_DELETE] 에 7개 주소 기입(M / 6800 ~ 6806, 안내 파일 그대로) → 기동. 기동 로그 [HMI_DEL] 에 SC1=M6800(%MX10880) … CV=M6806(%MX10886) 확인'],
     ['SQL', '261029_사후확인_작업번호.sql', '필요할 때 조회'],
     ['문서', '2026-10-29_적용안내서_추가분 · 끝난작업_사후확인방법 · 2026-11-04_적용안내서_추가분', ''],
 ], widths=[3.0, 8.0, 6.0], font=8.5)

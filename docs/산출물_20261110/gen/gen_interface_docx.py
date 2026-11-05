@@ -235,15 +235,15 @@ table(d, ['그룹', '신호', '주소 (M 비트)', '뜻'], [
 note(d, '사용 여부 WCS_DB.INI [CNF] MAIN_ALM_BITS (1 사용). 주소 표기 : 워드 10진 + 비트 16진 (M5501 = 550x16+1 = 8801).')
 d.add_page_break()
 
-d.add_heading('3.5.1 운전 화면 삭제 신호 비트 (WCS_DB.INI [HMI_DELETE], 2026-11-04)', 3)
-para(d, 'PLC 담당자가 지상반(HMI) [삭제] 와 같은 동작을 ECS 에서 하도록 M 영역 비트 7개를 열어 준다. ECS 는 1 만 쓰고, 끄는 것은 PLC 다(1 을 보고 처리한 뒤 스스로 내린다). '
-        '주소는 서버 WCS_DB.INI [HMI_DELETE] 의 <이름>_AREA(M) / <이름>_ADDR(비트 10진) 에 두고, 비어 있으면 쓰지 않는다(기동 로그 [HMI_DEL] 에 7개가 풀려 보인다).')
-table(d, ['이름', '뜻', '운전 화면', 'DB 명령 (CMD_RQ_ID / CMD_RQ_YN=Y)', 'PLC 가 하는 일'], [
-    ['SC1 ~ SC5', '크레인 1~5호기 데이터 삭제', '크레인 상태창 [데이터 삭제]', 'SC_DATA_LGLS(901~905).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '그 크레인의 작업 데이터를 지우고 비트를 내린다'],
-    ['RTV1', 'RGV 데이터 삭제', 'RGV 상태창 [데이터 삭제]', 'RTV_DATA_LGLS(801).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '〃'],
-    ['CV', '모든 C/V 의 R 트래킹 0 클리어', 'MANUAL ▷ 수동조작 ▷ [CV 지우기]', 'CV_DATA(가장 작은 트랙 1행).CMD_RQ_ID = CVCLR → CvThread 가 비트 1, N 으로 소비', 'R 영역(ASCII 트래킹)을 모두 0 으로 지우고 비트를 내린다. ECS 가 "0" 을 써도 0x30 이 남아 PLC 는 값이 있다고 보므로'],
-], widths=[2.0, 4.0, 4.0, 7.0, 5.5], font=8.5)
-note(d, 'DB 열 추가 없음 - 기존 CMD_RQ_ID/CMD_RQ_YN 명령 통로를 쓴다. 비트 주소는 2026-11-04 현재 미확정(담당자 확정 뒤 ini 기입 + WCS_TASK_CV 재기동). 시뮬 검증값 M60000~60006. '
+d.add_heading('3.5.1 운전 화면 삭제 신호 비트 (WCS_DB.INI [HMI_DELETE], 2026-11-05 주소 확정)', 3)
+para(d, 'PLC 담당자가 지상반(HMI) [삭제] 와 같은 동작을 ECS 에서 하도록 M 영역 비트 7개(M6800 ~ M6806)를 열어 주었다. 작업순서(S/C#1 예) : ① ECS 가 M6800 ON → ② PLC 가 DATA 삭제 → ③ PLC 가 M6800 OFF. ECS 는 1 만 쓰고, 끄는 것은 PLC 다(1 을 보고 처리한 뒤 스스로 내린다). '
+        '주소는 서버 WCS_DB.INI [HMI_DELETE] 의 <이름>_AREA(M) / <이름>_ADDR(PLC 표기 그대로, 예 6800 = 워드 680 비트 0 = %MX10880) 에 두고, 비어 있으면 쓰지 않는다(기동 로그 [HMI_DEL] 에 7개가 풀려 보인다).')
+table(d, ['이름', 'PLC 주소', '뜻', '운전 화면', 'DB 명령 (CMD_RQ_ID / CMD_RQ_YN=Y)', 'PLC 가 하는 일'], [
+    ['SC1 ~ SC5', 'M6800 ~ M6804', '크레인 1~5호기 데이터 삭제', '크레인 상태창 [데이터 삭제]', 'SC_DATA_LGLS(901~905).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '그 크레인의 작업 데이터를 지우고 비트를 내린다'],
+    ['RTV1', 'M6805', 'RGV 데이터 삭제', 'RGV 상태창 [데이터 삭제]', 'RTV_DATA_LGLS(801).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '〃'],
+    ['CV', 'M6806', 'CONVEYOR 데이터 삭제 = 모든 C/V 의 R 트래킹 0 클리어', 'MANUAL ▷ 수동조작 ▷ [CV 지우기]', 'CV_DATA(가장 작은 트랙 1행).CMD_RQ_ID = CVCLR → CvThread 가 비트 1, N 으로 소비', 'R 영역(ASCII 트래킹)을 모두 0 으로 지우고 비트를 내린다. ECS 가 "0" 을 써도 0x30 이 남아 PLC 는 값이 있다고 보므로'],
+], widths=[1.8, 2.4, 3.6, 3.6, 6.4, 4.7], font=8.5)
+note(d, 'DB 열 추가 없음 - 기존 CMD_RQ_ID/CMD_RQ_YN 명령 통로를 쓴다. 비트 주소는 2026-11-05 PLC 담당자 확정값이다(주소를 바꾸면 ini 기입 + WCS_TASK_CV 재기동). M 표기는 끝 한 자리가 비트(0~F), 앞이 워드 10진이다. '
         'D/R 로 정의하면 그 워드에 1 을 쓴다. 이력 : WCS_LOG_PGR(VEH_SC/VEH_RTV "운전 명령 HMIDEL", COMM0 "[CVCLR]") · WCS_CLIENT_LOG.')
 
 d.add_heading('3.6 핸드셰이크 규약', 2)
@@ -358,6 +358,7 @@ table(d, ['일자', '내용'], [
     ['2026-10-15', 'Upload/Download 표(UP_DOWN/DN_MST/DN_SEQ). 스텝 단위 [완료처리]'],
     ['2026-10-29', '[완료처리] 경로 탐색. DEL_HIS_SETTING 을 IO 가 실제로 소비. "[] -> [0000]" 트래킹 로그 억제'],
     ['2026-11-04', '[HMI_DELETE] M 비트 7개(SC1~5 · RTV1 · CV, 3.5.1). 운전 화면 [데이터 삭제](HMIDEL) · [CV 지우기](CVCLR). DB 변경 없음'],
+    ['2026-11-05', '[HMI_DELETE] 주소 확정 : S/C#1~#5 = M6800~M6804, RGV = M6805, CONVEYOR = M6806. ini _ADDR 은 PLC 표기 그대로 적는다(3.5.1)'],
 ], widths=[3.0, 19.5], font=8.5)
 
 para(d, '')

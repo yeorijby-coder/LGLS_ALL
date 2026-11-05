@@ -69,3 +69,10 @@
 [2026-11-05 추가] Client(EcsMain.exe) - 크레인/RGV 상태창 명령 버튼 순서 변경
   위에서부터 [지시 재전송] / [데이터 삭제] / [강제완료]. 종전에는 [강제완료] 가 가운데였다.
   [강제완료] 는 Ecs.ini [MENU] FORCE_BTN=0 이면 숨는다(종전과 같음). 설정 변경은 없다.
+
+[2026-11-05 추가] 설비 통신(WCS_TASK_CV.exe) - [데이터 삭제]/[CV 지우기] PLC 주소 확정 (PLC 담당자 표)
+  S/C#1~#5 = M6800~M6804, RGV = M6805, CONVEYOR = M6806.  작업순서 : ECS 가 ON -> PLC 가 DATA 삭제 -> PLC 가 OFF.
+  WCS_DB.INI [HMI_DELETE] 의 _ADDR 은 이제 PLC 표기 그대로 적는다(6800 = 워드 680 비트 0 = %MX10880). 종전 exe 는 비트 주소 10진으로 읽었다.
+  적용 : WCS_TASK_CV 정지 -> TASK\EQP_TASK\WCS_TASK_CV.exe 덮어쓰기 -> 추가할_설정_WCS_DB.ini.txt 의 14줄 기입 -> 기동.
+  확인 : 버튼을 누른 뒤 WCS_LOG_PGR 에 "SC1 M6800(%MX10880) <- 1 기록" 이 남는다. 시뮬에서 7개 모두 확인했다.
+  소스 : 소스_변경분\TASK\cHmiDeleteMap.cs + 변경내용_1105_cHmiDeleteMap.diff (VehThread.cs / CvThread.cs 는 변경 없음)
