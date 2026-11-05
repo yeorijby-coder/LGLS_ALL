@@ -35,18 +35,30 @@ function pngSize(p) {                  // PNG IHDR
   return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
 }
 function shot(name) { const p = path.join(SHOTS, name); if (!fs.existsSync(p)) throw new Error('없는 캡처: ' + name); return p; }
+const { execFileSync } = require('child_process');
+const ZOOMDIR = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tszoom_'));
 function has(name) { return fs.existsSync(path.join(SHOTS, name)); }
 
 // 그림을 (x,y,maxW,maxH) 안에 비율 유지로 넣고, 픽셀 좌표 강조 박스를 얹는다. 실제 놓인 크기를 돌려준다.
 function img(slide, name, x, y, maxW, maxH, boxes, opts) {
-  const p = shot(name); const s = pngSize(p);
+  let p = shot(name); let s = pngSize(p); let ox = 0, oy = 0;
+  if (opts && opts.crop) {                              // 관심 영역만 잘라 크게 보여준다 (픽셀 [x,y,w,h])
+    let [cx, cy, cw, ch] = opts.crop.map(Math.round);
+    cx = Math.max(0, cx); cy = Math.max(0, cy); cw = Math.min(cw, s.w - cx); ch = Math.min(ch, s.h - cy);
+    const dst = path.join(ZOOMDIR, name.replace(/\.png$/, '') + '_' + [cx, cy, cw, ch].join('_') + '.png');
+    execFileSync('python', ['-c', 'import sys;from PIL import Image;a=sys.argv;x,y,w,h=map(int,a[3:7]);Image.open(a[1]).crop((x,y,x+w,y+h)).save(a[2])', p, dst, cx, cy, cw, ch].map(String));
+    p = dst; ox = cx; oy = cy; s = { w: cw, h: ch };
+  }
   if (y < 1.45) { maxH -= (1.64 - y); y = 1.64; }      // 소제목·캡션(2줄) 아래부터
   let w = maxW, h = maxW * s.h / s.w;
   if (h > maxH) { h = maxH; w = maxH * s.w / s.h; }
   if (opts && opts.center) x = x + (maxW - w) / 2;
   slide.addImage({ path: p, x, y, w, h, objectName: name });
   (boxes || []).forEach(b => {
-    const [px, py, pw, ph, col] = b;
+    let [px, py, pw, ph, col] = b;
+    const x0 = Math.max(px - ox, 0), y0 = Math.max(py - oy, 0), x1 = Math.min(px - ox + pw, s.w), y1 = Math.min(py - oy + ph, s.h);
+    if (x1 <= x0 || y1 <= y0) return;                    // 잘라낸 범위 밖의 박스
+    px = x0; py = y0; pw = x1 - x0; ph = y1 - y0;
     slide.addShape(pres.ShapeType.rect, { x: x + px / s.w * w, y: y + py / s.h * h, w: pw / s.w * w, h: ph / s.h * h,
       fill: { type: 'none' }, line: { color: col || RED, width: 2.25 }, objectName: 'hl' });
   });
@@ -120,6 +132,7 @@ const RTV = { resend: [410, 118, 122, 24], force: [410, 144, 122, 24], hmidel: [
 // 창고 그림 크롭 (1270x730, 메인 660,230 기준) - 레이아웃 XML(EcsLayout1.xml)의 셀(73x42)을 픽셀로 바꾼다
 const CELL = 1270 / 73;
 const C = (l, b, r, t) => [l * CELL, 730 - t * CELL, (r - l) * CELL, (t - b) * CELL];
+const Z = (l, b, r, t) => ({ crop: C(l, b, r, t) });      // 창고 그림에서 잘라 보여줄 범위(셀)
 const LY = { t124: C(7,32,10,34), t123: C(10,32,13,34), t126: C(7,30,10,32), t125: C(10,30,13,32), t129: C(7,24,10,26), t130: C(7,22,10,24), t131: C(10,20,13,22),
   cv2: C(25,32,28,34), t103: C(22,32,25,34), cv2dir: C(19,34,25,36), cv11dir: C(25,2,31,4), cv11: C(22,4,28,6), lbl103: C(2,32,7,34), lbl104: C(0,30,7,32),
   sc1: C(25,34,28,36), sc1busy: C(25,34,28,36), sc2: C(25,28,28,30), rail1: C(28,34,73,36), rail2: C(28,28,73,30),
@@ -212,13 +225,14 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 // 3-1 C/V 에러 (모터 과부하)
 {
   const s = body('3', 'Troubleshooting - Conveyor', 'C/V 에러 - 모터 과부하 (트랙이 에러색)');
-  img(s, 'crop_layout_cverr_1105.png', 0.53, 1.4, 3.0, 2.4, [[...LY.t124, RED]]);
+  img(s, 'crop_layout_cverr_1105.png', 0.53, 1.4, 3.0, 2.4, [[...LY.t124, RED]], Z(0,26,20,39));
   img(s, 'alarm_cverr_1105.png', 3.65, 1.4, 3.0, 1.75, [[...AL.msg, ORANGE], [...AL.row1, ORANGE]]);
   img(s, 'dlg_17110124_cverr_1105.png', 0.53, 4.05, 2.75, 2.95, [[...CV.err, ORANGE]]);
   img(s, 'legend_1105.png', 3.65, 3.45, 3.0, 0.9, [[...LG.cverr, RED]]);
   note(s, 3.65, 4.45, 3.0, 2.5, '알람 경고창', ['설비 에러가 나면 화면 오른쪽 아래에 스스로 뜬다(10초마다 확인). 해제되면 목록에서 빠진다. [STOP] 은 소리만 끄고 창을 감춘다.'], 8.5);
   caption(s, '창고 그림 - 트랙 124 가 에러색(빨강) / 알람 경고창(오른쪽 아래 자동)', 0.53, 1.1, 6.1);
-  caption(s, 'C/V 상태창 - 에러코드 [0124] / 범례 C/V 상태 "에러"', 0.53, 3.82, 2.8);
+  caption(s, 'C/V 상태창 - 에러코드 [0124]', 0.53, 3.82, 2.8);
+  caption(s, '범례 C/V 상태 "에러"', 3.65, 3.2, 3.0);
   rhs(s,
     [B('트랙이 범례의 C/V 상태 "에러" 색(빨강)으로 바뀌고 화물이 다음 트랙으로 넘어가지 않는다.', { color: RED }),
      B('화면 오른쪽 아래에 알람 경고창이 뜬다. 트랙을 더블클릭한 C/V 상태창의 에러코드에 [코드] 문구가 보인다.', { color: ORANGE }),
@@ -234,7 +248,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 {
   const s = body('3', 'Troubleshooting - Conveyor', 'C/V 데이터 불일치 - 화면의 작업번호 위치와 실제 화물 위치가 다르다');
   img(s, 'dlg_17110104_nolugg_1105.png', 0.53, 1.4, 3.3, 3.55, [[...CV.lugg, RED], [...CV.plt, RED], [...CV.cmd, BLUE], [...CV.auto, GREEN]]);
-  img(s, 'crop_layout_nolugg_1105.png', 4.0, 1.4, 2.65, 2.1, [[...LY.cv2, RED]]);
+  img(s, 'crop_layout_nolugg_1105.png', 4.0, 1.4, 2.65, 2.1, [[...LY.cv2, RED]], Z(12,28,32,39));
   note(s, 4.0, 3.65, 2.65, 1.3, '창고 그림에서 보이는 모습', ['작업번호가 있는 화물 = 번호 글자가 그 칸에 보인다.', '번호 없는 화물 = 칸에 화물 감지 테두리만 있고 글자가 없다.'], 9);
   note(s, 0.53, 5.05, 6.12, 1.95, '명령 그룹의 뜻 (C/V 상태창 오른쪽)', [
     '쓰기 : 작업번호 칸에 적은 번호를 이 트랙에 기록   /   삭제 : 이 트랙의 번호를 지움',
@@ -254,13 +268,13 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 // 3-3 작업번호 없는 화물이 출고 H/S 에 있다
 {
   const s = body('3', 'Troubleshooting - Conveyor', '작업번호 없는 화물이 출고 H/S(통로) 에 놓여 있다 - [H/S 배출]');
-  img(s, 'crop_layout_nolugg_1105.png', 0.53, 1.4, 2.6, 2.1, [[...LY.cv2, RED]]);
+  img(s, 'crop_layout_nolugg_1105.png', 0.53, 1.4, 2.6, 2.1, [[...LY.cv2, RED]], Z(12,28,32,39));
   img(s, 'dlg_17110104_nolugg_1105.png', 3.25, 1.4, 2.2, 2.4, [[...CV.lugg, RED], [...CV.plt, RED], [...CV.hseject, BLUE]]);
   note(s, 5.55, 1.48, 1.1, 2.3, '[H/S 배출]', ['크레인 쪽 통로 칸(104)의 번호 없는 화물을 출고대까지 내보내는 반자동 작업을 만든다.'], 8.5);
   img(s, 'ask_8245_nolugg_1105.png', 0.53, 4.05, 2.6, 1.35);
   img(s, 'result_8245_nolugg_1105.png', 3.25, 4.05, 1.1, 0.8);
   img(s, 'crop_veh_nolugg_eject_1105.png', 3.25, 5.0, 3.4, 1.0, [[...VH.rgv, GREEN], [...VH.job1, GREEN]]);
-  img(s, 'crop_layout_nolugg_eject_1105.png', 0.53, 5.45, 2.0, 1.55, [[...LY.rgvbusy, GREEN]]);
+  img(s, 'crop_layout_nolugg_eject_1105.png', 0.53, 5.45, 2.0, 1.55, [[...LY.rgvbusy, GREEN]], Z(4,18,30,38));
   caption(s, '창고 그림 - 출고 H/S(104)에 테두리만 있는 화물 / 그 트랙 C/V 상태창 예외 처리 [H/S 배출]', 0.53, 1.1, 6.1);
   caption(s, '[H/S 배출] 확인창 → 결과 / 반자동 출고 9001 이 생겨 RGV 가 나른다', 0.53, 3.82, 6.1);
   rhs(s,
@@ -276,7 +290,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 {
   const s = body('3', 'Troubleshooting - Conveyor', '출고대에 화물이 왔는데 작업이 [15] 로 남는다 - 완료 보고 안 나감');
   img(s, 'crop_panel_st15out_sel_1105.png', 0.53, 1.4, 3.6, 2.25, [[...PN.row(2), RED], [...PN.seq(4), ORANGE], [...PN.done, BLUE]]);
-  img(s, 'crop_layout_st15out_1105.png', 4.25, 1.4, 2.4, 1.9, [[...LY.t129, RED]]);
+  img(s, 'crop_layout_st15out_1105.png', 4.25, 1.4, 2.4, 1.9, [[...LY.t129, RED]], Z(0,18,16,32));
   img(s, 'ask_complete_st15out_0_1105.png', 0.53, 3.95, 2.9, 1.15);
   img(s, 'ask_complete_st15out_1_1105.png', 3.55, 3.95, 3.1, 1.55);
   img(s, 'dlg_17110129_st15out_1105.png', 0.53, 5.2, 1.7, 1.8, [[...CV.lugg, RED], [...CV.plt, RED]]);
@@ -297,7 +311,8 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 // 3-5 S/C#1 통로 방향
 {
   const s = body('3', 'Troubleshooting - Conveyor', 'S/C#1 통로(C/V#2) 방향 불일치 - 입고·출고가 서로 기다린다');
-  img(s, 'crop_layout_1105.png', 0.53, 1.4, 3.4, 2.7, [[...LY.cv2dir, RED], [...LY.cv2, ORANGE], [...LY.lbl103, ORANGE], [...LY.lbl104, ORANGE], [...LY.cv11dir, BLUE]]);
+  img(s, 'crop_layout_1105.png', 0.53, 1.4, 3.4, 1.49, [[...LY.cv2dir, RED], [...LY.cv2, ORANGE], [...LY.lbl103, ORANGE], [...LY.lbl104, ORANGE]], Z(0,28,34,40));
+  img(s, 'crop_layout_1105.png', 0.53, 2.98, 3.4, 1.2, [[...LY.cv11dir, BLUE]], Z(14,0,38,7.5));
   img(s, 'ask_dir_cv2_1105.png', 4.05, 1.4, 2.6, 1.45);
   caption(s, '방향 글자 더블클릭 → 확인창(바꿀 PLC 주소와 값)', 4.05, 2.95, 2.6);
   note(s, 4.05, 3.25, 2.6, 2.0, '103·104 는 C/V#2 한 라인을 함께 쓴다', [
@@ -326,7 +341,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
   const s = body('4', 'Troubleshooting - Stacker Crane', 'S/C 입고 이상 - 입고 H/S 가 준비되지 않음 (PLC 신호)');
   img(s, 'dlg_17110104_1105.png', 0.53, 1.4, 2.9, 3.1, [[...CV.inhs, RED], [...CV.automode, RED], [...CV.plt, RED], [...CV.lugg, ORANGE]]);
   img(s, 'dlg_17120901_1105.png', 3.55, 1.4, 2.6, 3.1, [[...SC.ucsta, ORANGE], [...SC.susp, ORANGE], [...SC.err, ORANGE]]);
-  img(s, 'crop_layout_1105.png', 0.53, 4.7, 2.9, 2.3, [[...LY.cv2, RED], [...LY.sc1, ORANGE]]);
+  img(s, 'crop_layout_1105.png', 0.53, 4.7, 2.9, 2.3, [[...LY.cv2, RED], [...LY.sc1, ORANGE]], Z(6,26,36,40));
   note(s, 3.55, 4.7, 3.1, 2.3, '스케줄러가 크레인에 입고를 지시하는 조건', [
     '작업상태 16 (통로 C/V 구동중)',
     '+ 입고 H/S 트랙(크레인 쪽 칸, 1호기는 104)에 팔레트 감지 ON · 같은 작업번호',
@@ -347,7 +362,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 {
   const s = body('4', 'Troubleshooting - Stacker Crane', 'S/C 가 자동 작업을 받지 않음 - 입고 정지 · 출고 정지 · 작업금지');
   img(s, 'dlg_17120901_instop_1105.png', 0.53, 1.4, 3.0, 3.6, [[...SC.susp, RED], [...SC.stopbtns, BLUE]]);
-  img(s, 'crop_layout_instop_1105.png', 3.65, 1.4, 3.0, 2.4, [[...LY.rail1, RED]]);
+  img(s, 'crop_layout_instop_1105.png', 3.65, 1.4, 3.0, 2.4, [[...LY.rail1, RED]], Z(18,29,46,40));
   img(s, 'ask_1087_instop_off_1105.png', 3.65, 3.95, 2.0, 1.3);
   img(s, 'result_1087_instop_off_1105.png', 5.8, 3.95, 0.85, 0.7);
   img(s, 'dlg_17120901_instop_off_1105.png', 0.53, 5.15, 1.55, 1.85, [[...SC.susp, GREEN]]);
@@ -366,7 +381,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 // 4-3 수동 / 에러
 {
   const s = body('4', 'Troubleshooting - Stacker Crane', 'S/C 가 자동 작업을 받지 않음 - 수동 모드 · 에러 (크레인 칸 색)');
-  img(s, 'crop_layout_scerr_1105.png', 0.53, 1.4, 2.9, 2.3, [[...LY.sc1, RED]]);
+  img(s, 'crop_layout_scerr_1105.png', 0.53, 1.4, 2.9, 2.3, [[...LY.sc1, RED]], Z(8,26,36,40));
   img(s, 'dlg_17120901_scerr_1105.png', 3.55, 1.4, 2.6, 3.1, [[...SC.ucsta, RED], [...SC.err, RED], [...SC.resend, BLUE]]);
   img(s, 'alarm_scerr_1105.png', 0.53, 3.95, 2.9, 1.7, [[...AL.msg, ORANGE]]);
   img(s, 'legend_1105.png', 0.53, 5.7, 2.9, 0.86, [[...LG.scerr, RED]]);
@@ -388,7 +403,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
   img(s, 'dlg_17110104_nolugg_1105.png', 0.53, 1.4, 2.9, 3.1, [[...CV.lugg, RED], [...CV.plt, RED], [...CV.hseject, BLUE]]);
   img(s, 'view_joblist_1105.png', 3.55, 1.4, 3.1, 2.0, [[973, 278, 106, 22, BLUE]]);
   img(s, 'manual_job_1105.png', 3.55, 3.5, 3.1, 1.1, [[125, 160, 180, 23, BLUE], [410, 197, 180, 21, BLUE], [608, 138, 104, 26, BLUE]]);
-  img(s, 'crop_layout_nolugg_1105.png', 0.53, 4.65, 2.9, 2.35, [[...LY.cv2, RED]]);
+  img(s, 'crop_layout_nolugg_1105.png', 0.53, 4.65, 2.9, 2.35, [[...LY.cv2, RED]], Z(6,26,34,40));
   img(s, 'popup_route_found.png', 3.55, 4.7, 3.1, 1.6);
   caption(s, '입고 H/S(104) C/V 상태창 - 팔레트 감지 ON · 작업번호 0000 / ECS ▷ 뷰 ▷ 작업정보 [복사] / MANUAL ▷ 작업(수동지시) / 창고 그림 / [완료처리] 안내', 0.53, 1.1, 6.1);
   rhs(s,
@@ -403,7 +418,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 {
   const s = body('4', 'Troubleshooting - Stacker Crane', 'S/C 작업이 [25] 에서 오래 머문다 - 하역 완료 신호(Ack) 유실');
   img(s, 'crop_panel_st25ack_sel_1105.png', 0.53, 1.4, 3.6, 2.25, [[...PN.row(2), RED], [...PN.seq(1), ORANGE], [...PN.done, BLUE]]);
-  img(s, 'crop_layout_st25ack_1105.png', 4.25, 1.4, 2.4, 1.9, [[...LY.sc1busy, RED], [...LY.cv2, RED]]);
+  img(s, 'crop_layout_st25ack_1105.png', 4.25, 1.4, 2.4, 1.9, [[...LY.sc1busy, RED], [...LY.cv2, RED]], Z(16,28,34,39));
   img(s, 'dlg_17120901_st25ack_1105.png', 0.53, 3.95, 2.5, 3.0, [[...SC.ucsta, ORANGE], [...SC.job, RED], [...SC.resend, BLUE], [...SC.hmidel, BLUE]]);
   img(s, 'ask_complete_st25ack_0_1105.png', 3.15, 3.95, 3.5, 1.3);
   img(s, 'ask_complete_st25ack_1_1105.png', 3.15, 5.3, 2.4, 1.1);
@@ -470,7 +485,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
   const s = body('5', 'Troubleshooting - RGV', 'RGV 가 움직이지 않음 - 출발지·도착지 준비 안 됨 (PLC 신호)');
   img(s, 'dlg_17110124_1105.png', 0.53, 1.4, 2.9, 3.1, [[...CV.rgvdep, RED], [...CV.rgvarr, RED], [...CV.automode, ORANGE], [...CV.plt, ORANGE]]);
   img(s, 'dlg_17130801_rtvsusp_1105.png', 3.55, 1.4, 2.6, 2.65, [[...RTV.sta, ORANGE], [...RTV.err, ORANGE]]);
-  img(s, 'crop_layout_1105.png', 0.53, 4.7, 2.9, 2.3, [[...LY.t124, RED], [...LY.rgv, ORANGE]]);
+  img(s, 'crop_layout_1105.png', 0.53, 4.7, 2.9, 2.3, [[...LY.t124, RED], [...LY.rgv, ORANGE]], Z(0,22,24,39));
   note(s, 3.55, 4.2, 3.1, 2.8, '스케줄러가 RGV 에 지시하는 조건', [
     '작업상태 15 (입고대 C/V 끝) 또는 출고의 16 (통로 RGV 측)',
     '+ 출발 트랙에 팔레트 감지 ON · 같은 작업번호 · RGV 출발 HS 신호 ON',
@@ -492,11 +507,11 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 {
   const s = body('5', 'Troubleshooting - RGV', 'RGV 가 자동 작업을 받지 않음 - [RTV 금지] 상태 · 수동 · 에러');
   img(s, 'dlg_17130801_rtvsusp_1105.png', 0.53, 1.4, 3.1, 3.3, [[...RTV.suspbox, RED], [...RTV.suspbtn, BLUE], [...RTV.sta, ORANGE], [...RTV.err, ORANGE]]);
-  img(s, 'ask_1086_rtvsusp_toggle_1105.png', 3.75, 1.4, 1.75, 1.2);
+  img(s, 'ask_1086_rtvsusp_off_1105.png', 3.75, 1.4, 1.75, 1.2);
   img(s, 'result_1086_rtvsusp_toggle_1105.png', 5.6, 1.4, 0.9, 1.2);
   img(s, 'crop_panel_rtvsusp_1105.png', 3.75, 2.9, 2.9, 1.85, [[0, 30, 624, 52, RED]]);
   img(s, 'legend_1105.png', 0.53, 5.05, 2.3, 0.7, [[...LG.scstate, ORANGE]]);
-  img(s, 'crop_layout_rtvsusp_1105.png', 2.95, 5.05, 3.7, 1.95, [[...LY.rgv, ORANGE], [...LY.t124, RED], [...LY.t130, RED]]);
+  img(s, 'crop_layout_rtvsusp_1105.png', 2.95, 5.05, 3.7, 1.95, [[...LY.rgv, ORANGE], [...LY.t124, RED], [...LY.t130, RED]], Z(0,20,32,38));
   caption(s, 'RTV 상태창 - 정지 칸이 비어 있고 [RTV 금지] / 누르면 "Rtv를 사용하시겠습니까?" → 성공 / 작업이 [15]/[16] 에서 기다림', 0.53, 1.1, 6.1);
   caption(s, '범례 S/C·RGV 상태 / 창고 그림 - RGV 는 홈', 0.53, 4.8, 6.1);
   rhs(s,
@@ -513,10 +528,10 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 {
   const s = body('5', 'Troubleshooting - RGV', 'RGV 작업이 [35] 에서 오래 머문다 - 하역 완료 보고 유실');
   img(s, 'crop_panel_st35_sel_1105.png', 0.53, 1.4, 3.6, 2.25, [[...PN.row(1), RED], [...PN.seq(3), ORANGE], [...PN.done, BLUE]]);
-  img(s, 'dlg_17130801_st35_1105.png', 4.25, 1.4, 2.4, 2.45, [[...RTV.sta, ORANGE], [...RTV.job, RED], [...RTV.resend, BLUE]]);
+  img(s, 'dlg_17130801_st35_1105.png', 4.25, 1.4, 2.4, 2.3, [[...RTV.sta, ORANGE], [...RTV.job, RED], [...RTV.resend, BLUE]]);
   img(s, 'ask_complete_st35_0_1105.png', 0.53, 3.95, 3.0, 1.2);
   img(s, 'crop_veh_st35_1105.png', 0.53, 5.25, 3.0, 0.85, [[...VH.rgv, RED]]);
-  img(s, 'crop_layout_st35_1105.png', 3.65, 4.0, 3.0, 2.4, [[...LY.rgvbusy, RED], [...LY.t127, RED]]);
+  img(s, 'crop_layout_st35_1105.png', 3.65, 4.0, 3.0, 2.4, [[...LY.rgvbusy, RED], [...LY.t127, RED]], Z(0,18,26,36));
   note(s, 0.53, 6.2, 3.0, 0.8, '처리 뒤', ['[35 → 39] 로 넘기고 도착 칸에 번호를 기록 → 통로 벨트(입고) / 출고대(출고)로 이어진다.'], 8.5);
   caption(s, '작업정보 판넬 - 0298 이 [35] 그대로, 단계표 RGV 줄 진행중 / RTV 상태창 - IDLE 인데 작업상태 칸에 [35] 작업', 0.53, 1.1, 6.1);
   caption(s, '[완료처리] 확인창 [35 → 39] / 설비 반송 RGV 줄 / 창고 그림 - RGV 칸 · 하역 칸(127)', 0.53, 3.72, 6.1);
@@ -533,7 +548,7 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
 {
   const s = body('5', 'Troubleshooting - RGV', 'RGV 픽업 칸에 화물은 있는데 작업번호가 없다 - 작업 [16] 머묾');
   img(s, 'crop_panel_st16_sel_1105.png', 0.53, 1.4, 3.6, 2.25, [[...PN.row(2), RED], [...PN.seq(2), ORANGE], [...PN.done, BLUE]]);
-  img(s, 'crop_layout_st16_1105.png', 4.25, 1.4, 2.4, 1.9, [[...LY.t113, RED]]);
+  img(s, 'crop_layout_st16_1105.png', 4.25, 1.4, 2.4, 1.9, [[...LY.t113, RED]], Z(14,12,34,26));
   img(s, 'ask_complete_st16_0_1105.png', 0.53, 3.95, 2.95, 1.15);
   img(s, 'ask_complete_st16_1_1105.png', 3.6, 3.95, 3.05, 1.55);
   note(s, 0.53, 5.2, 6.12, 1.8, '[완료처리] 의 경로 탐색이 보는 범위', [
