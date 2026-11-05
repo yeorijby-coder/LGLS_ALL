@@ -2354,7 +2354,7 @@ void CScSkinDlg::ApplyZoomBtnIni()
 	pF = GetDlgItem(IDC_SCV_BTN_FORCE);
 	if (pF) pF->ShowWindow(bForce ? SW_SHOW : SW_HIDE);
 
-	// [LGLS 2026-11-04] [데이터 삭제] 표시 여부 - Ecs.ini [MENU] HMIDEL_BTN=1/0 (기본 1). 자리는 rc 가 정한다(명령 그룹 맨 아래).
+	// [LGLS 2026-11-04] [데이터 삭제] 표시 여부 - Ecs.ini [MENU] HMIDEL_BTN=1/0 (기본 1). 자리는 rc 가 정한다. [LGLS 2026-11-05] 위에서부터 지시 재전송/데이터 삭제/강제완료 (사용자 지시 - 강제완료와 자리 교환).
 	BOOL bHmiDel = (::GetPrivateProfileInt(_T("MENU"), _T("HMIDEL_BTN"), 1, ECS_INI_FILE) != 0);
 	CWnd* pH = GetDlgItem(IDC_LGLS_SC_HMIDEL);
 	if (pH) pH->ShowWindow(bHmiDel ? SW_SHOW : SW_HIDE);
