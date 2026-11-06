@@ -6,3 +6,13 @@ HMIDEL_BTN=1
 - 안 적으면 기본 1 (보임). 리본 MANUAL > 수동조작 > [CV 지우기] 는 설정과 무관하게 늘 보인다.
 - 버튼이 보여도 서버 WCS_DB.INI [HMI_DELETE] 주소가 비어 있으면 PLC 에는 쓰지 않고 이력(WCS_LOG_PGR)만 남는다.
 - rc_resource 폴더의 4개 파일(dlg_sc.ini, dlg_rtv.ini, manual.ini, cvclear.png)도 같은 자리에 덮어쓴다 - 버튼 글자(4개 언어)와 리본 아이콘.
+
+[2026-11-06 추가] Client Ecs.ini 에 더할 설정 - [MENU] 절 HMIDEL_BTN 아래에 두 줄을 더한다 (안 적어도 기본값으로 동작한다)
+
+; [LGLS 2026-11-06] 판넬 [완료처리] 가 설비 [데이터 삭제] 도 같이 할지 묻는다. 0=안 물음 / 1=S/C 출고 구간 + RGV 구간(기본) / 2=S/C 입고 구간도
+HMIDEL_ASK=1
+; [LGLS 2026-11-06] [예] 를 누른 뒤 삭제 신호가 PLC 에 기록되기를 기다리는 시간(초, 기본 10). 넘기면 계속할지 묻는다
+HMIDEL_WAIT_SEC=10
+
+- HMIDEL_BTN=0 이면(버튼 숨김) 묻지 않는다.
+- 두 키는 [완료처리] 를 누를 때마다 읽으므로 Client 를 다시 띄우지 않아도 반영된다.

@@ -76,3 +76,18 @@
   적용 : WCS_TASK_CV 정지 -> TASK\EQP_TASK\WCS_TASK_CV.exe 덮어쓰기 -> 추가할_설정_WCS_DB.ini.txt 의 14줄 기입 -> 기동.
   확인 : 버튼을 누른 뒤 WCS_LOG_PGR 에 "SC1 M6800(%MX10880) <- 1 기록" 이 남는다. 시뮬에서 7개 모두 확인했다.
   소스 : 소스_변경분\TASK\cHmiDeleteMap.cs + 변경내용_1105_cHmiDeleteMap.diff (VehThread.cs / CvThread.cs 는 변경 없음)
+
+[2026-11-06 추가] Client(EcsMain.exe 빌드 2026-11-06) - 판넬 [완료처리] 가 [데이터 삭제] 를 같이 한다
+  배경 : PLC 프로그램 기준(PLC 담당자 11/6) - 크레인이 오류로 화물을 출고 H/S 에 내려놓았을 때 크레인에 데이터가 남아 있으면
+         H/S 에 번호를 기록해도 화물이 움직이지 않는다. 삭제가 먼저, 번호 기록이 그 다음이다.
+  동작 : 작업정보 판넬에서 S/C 출고 구간 또는 RGV 구간을 [완료처리] 하면 확인창이 "설비 [데이터 삭제] 도 같이 하시겠습니까?" 를 함께 묻는다.
+         [예]     = 그 설비에 HMIDEL 요청 -> 설비 통신이 PLC 비트에 쓰고 CMD_RQ_YN 을 N 으로 돌릴 때까지 기다림 -> 완료처리
+         [아니요] = 완료처리만 (종전과 같다)
+         [취소]   = 아무것도 하지 않음
+         기다리는 시간을 넘기면 "아직 PLC 에 기록되지 않았습니다. 계속할까요?" 를 묻는다. [아니요] 면 요청을 거두고 완료처리도 하지 않는다.
+  설정 : Ecs.ini [MENU] HMIDEL_ASK (0 안 물음 / 1 기본 / 2 S/C 입고 구간도), HMIDEL_WAIT_SEC (기본 10). Client\추가할_설정_Ecs.ini.txt 참고. 안 적어도 된다.
+  적용 : Client 닫기 -> Client\EcsMain.exe 덮어쓰기 -> 기동. ★DB · TASK 변경 없음★ (상태창 [데이터 삭제] 와 같은 CMD_RQ_ID 를 쓴다)
+  확인 : 개발 PC 시뮬에서 S/C(904, 902) 와 RGV(801) 로 확인 - WCS_CLIENT_LOG 에 "데이터 삭제 신호 요청(HMIDEL) ... - 완료처리와 함께" 가 먼저,
+         "JOB_MST UPDATE : 완료처리 ..." 가 그 뒤(0.3 ~ 1초)에 남고 PLC 비트 M6803 / M6801 / M6805 가 켜졌다. 실 PLC 에서는 아직 확인하지 않았다.
+  소스 : 소스_변경분\WCS\PanelJobDlg.cpp · PanelJobDlg.h + 변경내용_1106_PanelJobDlg.diff
+  문서 : docs\산출물_20261110 의 사용자 매뉴얼(5.7 · 6.9) · 운영자 매뉴얼 · 인터페이스 정의서 _1106재생성, 05_ECS_Troubleshooting_1105.pptx (개정 1.0.3)

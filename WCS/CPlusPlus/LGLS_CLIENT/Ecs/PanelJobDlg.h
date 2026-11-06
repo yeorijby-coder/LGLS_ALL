@@ -69,6 +69,9 @@ protected:
 	void TrackWriteOffer(const ROW& r, int nSeq, BOOL bAlreadyDone);
 	// [LGLS 2026-10-27] 고른 단계를 완료 처리한다 (OnComplete 본체). bConfirmed 면 확인창 없이.
 	void DoCompleteStep(const ROW& r, int nSeq, BOOL bConfirmed);
+	// [LGLS 2026-11-06] 완료처리와 함께 설비 [데이터 삭제](HMIDEL) 를 먼저 보낸다. 계속해도 되면 TRUE.
+	BOOL HmiDelBeforeComplete(const ROW& r, int nKind, const CString& strVehTbl, const CString& strVehWhere);
+	int m_nSeqSc;					// 단계표가 정한 크레인 호기(1~5)
 	// [LGLS 2026-10-27] 도착 칸에 화물이 없을 때 경로의 다른 칸을 찾아 그 단계로 넘기기를 제안한다. 메시지를 띄웠으면 TRUE.
 	BOOL RouteSearchOffer(const ROW& r, int nSeq, BOOL bAlreadyDone);
 	BOOL m_bRouteSearch;		// 경로 탐색으로 넘기는 중(재탐색 방지)	// [LGLS 2026-10-07] 이미 완료 코드인 C/V 구간 : 도착 칸에 번호 기록 제안

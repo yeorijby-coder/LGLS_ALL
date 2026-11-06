@@ -335,7 +335,7 @@ table(d, ['기능', '표 · 열', '규약'], [
     ['설비 상태 수집', 'CV_DATA / SC_DATA_LGLS / RTV_DATA_LGLS / JOB_MST', 'COLLECT_INTERVAL_MS(200) 마다 읽어 그림·판넬 갱신. 작업정보 판넬은 JOB_PANEL_REFRESH_MS(1000)'],
     ['트랙 [쓰기]/[삭제]/[붙여넣기]', 'CV_DATA.LUGG_NO_OD + TRACKING_WRITE_YN=Y, JOB_MST.JOB_STATUS(통로 16 / 작업대 15)', 'EQP 가 R 트래킹에 쓴다'],
     ['방향 전환 더블클릭', 'CV_DATA.CMD_RQ_ID = DIR 명령 (+ Ecs.ini DIR_ADDR_CV11/CV2 로 확인창에 PLC 주소 표시)', 'EQP 가 D 방향 워드에 즉시 쓴다. IO 는 MANUAL_DIR_HOLD_SEC 동안 자동 정합 억제'],
-    ['[완료처리] (스텝 단위)', 'JOB_MST.JOB_STATUS 이동(15/39/16/29/19) + 설비 OD 해제 + CV_DATA 번호 기록 요청', '경로의 다른 칸에 화물이 있으면 그 단계로(2026-10-28). WCS_CLIENT_LOG 기록'],
+    ['[완료처리] (스텝 단위)', 'JOB_MST.JOB_STATUS 이동(15/39/16/29/19) + 설비 OD 해제 + CV_DATA 번호 기록 요청', '경로의 다른 칸에 화물이 있으면 그 단계로(2026-10-28). S/C 출고 · RGV 구간은 데이터 삭제를 같이 할지 묻고, [예] 면 HMIDEL 을 먼저 남겨 EQP 가 CMD_RQ_YN 을 N 으로 돌린 뒤(최대 HMIDEL_WAIT_SEC 초) 상태를 옮긴다(2026-11-06). WCS_CLIENT_LOG 기록'],
     ['[지시 재전송] / [강제완료] / [이상종료]', 'SC/RTV OD_RQ_YN=Y 재세움 / OD 비움 + 상태 29·39 / OD 비움', '권한 UPD_YN, 확인창, WCS_CLIENT_LOG'],
     ['[데이터 삭제] / [CV 지우기] (2026-11-04)', 'SC_DATA_LGLS · RTV_DATA_LGLS CMD_RQ_ID=HMIDEL / CV_DATA(최소 트랙) CMD_RQ_ID=CVCLR, CMD_RQ_YN=Y', 'EQP 가 [HMI_DELETE] M 비트에 1 (3.5.1). 권한 EXE_YN, 확인창, WCS_CLIENT_LOG. 표시 Ecs.ini [MENU] HMIDEL_BTN'],
     ['우선순위 ▲▼ / [수정]', 'JOB_MST.JOB_PRIORITY ±1 / 직접 입력', 'IO 는 다음 사이클부터 반영'],
@@ -359,6 +359,7 @@ table(d, ['일자', '내용'], [
     ['2026-10-29', '[완료처리] 경로 탐색. DEL_HIS_SETTING 을 IO 가 실제로 소비. "[] -> [0000]" 트래킹 로그 억제'],
     ['2026-11-04', '[HMI_DELETE] M 비트 7개(SC1~5 · RTV1 · CV, 3.5.1). 운전 화면 [데이터 삭제](HMIDEL) · [CV 지우기](CVCLR). DB 변경 없음'],
     ['2026-11-05', '[HMI_DELETE] 주소 확정 : S/C#1~#5 = M6800~M6804, RGV = M6805, CONVEYOR = M6806. ini _ADDR 은 PLC 표기 그대로 적는다(3.5.1)'],
+    ['2026-11-06', '[완료처리] 가 S/C 출고 · RGV 구간에서 [데이터 삭제](HMIDEL) 를 같이 한다 : 삭제 요청 → EQP 기록 확인 → JOB_STATUS 이동 순서. Ecs.ini [MENU] HMIDEL_ASK · HMIDEL_WAIT_SEC. DB · TASK 변경 없음'],
 ], widths=[3.0, 19.5], font=8.5)
 
 para(d, '')
