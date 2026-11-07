@@ -175,6 +175,11 @@ BEGIN_MESSAGE_MAP(CCvSkinDlg, CSkinDialog)
 	ON_BN_CLICKED(IDC_BTN_CV_TRACK_PAUSE, &CCvSkinDlg::OnBnClickedBtnCvTrackPause)
 	ON_BN_CLICKED(IDC_LGLS_CV_HS_EJECT, &CCvSkinDlg::OnBnClickedBtnCvHsEject)	// [LGLS 2026-09-06]
 	ON_BN_CLICKED(IDC_CHK_AUTO_SEL, &CCvSkinDlg::OnBnClickedChkAutoSel)
+	// [LGLS 2026-11-07] H/S 신호 단추 4개 → 조건 칸 깜빡임
+	ON_BN_CLICKED(IDC_BTN_STATUS_STOHS_READY, &CCvSkinDlg::OnBnClickedHsSignal)
+	ON_BN_CLICKED(IDC_BTN_STATUS_RETHS_READY, &CCvSkinDlg::OnBnClickedHsSignal)
+	ON_BN_CLICKED(IDC_BTN_STATUS_RTV_DEPARTHS_READY, &CCvSkinDlg::OnBnClickedHsSignal)
+	ON_BN_CLICKED(IDC_BTN_STATUS_RTV_ARRIVEHS_READY, &CCvSkinDlg::OnBnClickedHsSignal)
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
@@ -230,6 +235,7 @@ BOOL CCvSkinDlg::OnInitDialog()
 
 	// [LGLS 2026-08-23] 표시 전용 항목 상시 갱신(1초). [자동조회] 와 별개로 항상 돈다.
 	//   타이머 1 = [자동조회](전체 재조회, 입력값도 덮어씀) / 타이머 2 = 표시 전용.
+	m_nHsBlinkCnt = 0;
 	SetTimer(2, 1000, NULL);
 	SetTimer(7, 300, NULL);	// [LGLS 2026-09-21] EDIT 흐름 표시 (CLib::MarqueeTick)
 
@@ -892,6 +898,26 @@ void CCvSkinDlg::InvalidateComboBoxData(EN_LANG enLangTemp, CComboBox* pComboBox
 	pComboBox->InsertString(0,pTemp);
 }
 
+
+// [LGLS 2026-11-07] H/S 신호 단추 → 조건 칸 깜빡임 (사용자 지시 11/7)
+//   PLC 에는 "입고 H/S" 같은 신호가 따로 없다. 설비 통신(WCS_TASK_CV)이 트랙의 역할과 화물 감지 · 작업번호로
+//   만들어 CV_DATA 에 넣는 값이다(집는 자리 = 둘 다 있음 / 놓는 자리 = 둘 다 없음). 스케줄러는 여기에
+//   자동모드 · 에러 없음을 더 본다. 단추를 누르면 그 네 칸을 1초 간격으로 3번 숨겼다 보여 준다
+//   (리본 [찾기] 의 트랙 깜빡임과 같은 요령). 깜빡이는 중에 또 누르면 처음부터 다시.
+void CCvSkinDlg::OnBnClickedHsSignal()
+{
+	m_nHsBlinkCnt = 5;
+	HsBlinkShow(FALSE);
+	SetTimer(8, 1000, NULL);
+}
+
+void CCvSkinDlg::HsBlinkShow(BOOL bShow)
+{
+	const int nCmd = bShow ? SW_SHOW : SW_HIDE;
+	CWnd* ar[4] = { &m_btnCvSenserProd0, &m_edtCvJobNo, &m_btnCvAutoMode, &m_edtCvErrorCode };
+	for (int i = 0; i < 4; i++)
+		if (ar[i]->GetSafeHwnd() != NULL) ar[i]->ShowWindow(nCmd);
+}
 
 void CCvSkinDlg::OnClose()
 {
@@ -2035,7 +2061,15 @@ void CCvSkinDlg::OnBnClickedChkAutoSel()
 
 void CCvSkinDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	if (nIDEvent == 7) { CLib::MarqueeTick(this); return; }	// [LGLS 2026-09-21] EDIT 흐름 표시
+	if (nIDEvent == 7) { CLib::MarqueeTick(this); return; }
+	if (nIDEvent == 8)
+	{	// [LGLS 2026-11-07] H/S 신호 조건 칸 깜빡임 - 1초마다 숨김/보임 교대, 3번 숨긴 뒤 원래대로
+		if (m_nHsBlinkCnt <= 0) { KillTimer(8); HsBlinkShow(TRUE); return; }
+		m_nHsBlinkCnt--;
+		HsBlinkShow((m_nHsBlinkCnt % 2) == 0);
+		if (m_nHsBlinkCnt == 0) KillTimer(8);
+		return;
+	}	// [LGLS 2026-09-21] EDIT 흐름 표시
 	if (nIDEvent == 2)
 	{	// [LGLS 2026-08-23] 표시 전용 항목만 갱신 - 입력 중인 값은 보존
 		InvalidateReadOnlyData(m_nLang);

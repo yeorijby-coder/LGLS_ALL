@@ -261,6 +261,11 @@ public:
 	BOOL IsValidataEditData(CString pJobNo, CString pDestPos, CString pJobTyp);
 
 	afx_msg void OnClose();
+	// [LGLS 2026-11-07] 입고 H/S · 출고 H/S · RTV 출발 H/S · RTV 도착 H/S 신호 단추를 누르면
+	//   그 신호를 만드는 조건 칸(화물 감지 · 작업번호 · 자동모드 · 에러코드)이 1초 간격으로 3번 깜빡인다 (사용자 지시).
+	afx_msg void OnBnClickedHsSignal();
+	void HsBlinkShow(BOOL bShow);
+	int  m_nHsBlinkCnt;
 	afx_msg void OnBnClickedBtnCvWrite();
 	afx_msg void OnBnClickedBtnCvDelete();
 	afx_msg void OnBnClickedBtnCvCopy();
