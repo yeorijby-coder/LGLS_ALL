@@ -68,7 +68,7 @@ table(d, ['폴더', '프로그램', '실행 파일', '비고'], [
     ['Client_설치\\Prerequisites', '사전 설치', 'vc_redist.x86.exe / ndp48-web.exe', 'VC++ 2015-2022 x86, .NET Framework 4.8'],
     ['TASK\\Upload', '배포 도구', 'WmsUp.exe + WmsUp.ini', '관리 PC 에만'],
     ['DB_BACKUP', 'DB 백업', '*.bak, 서버_구축_절차.md', 'DB 이관용 (6장)'],
-    ['SQL', '현장 DB 반영 SQL', '00_현장DB_공통코드_추가.sql, 260917_알람리스트_EQP_ECD_MST.sql, 261029_사후확인_작업번호.sql', '앞 둘은 멱등, 셋째는 읽기 전용'],
+    ['SQL', '사후 확인 조회 SQL', '261029_사후확인_작업번호.sql', '읽기 전용 (6.4)'],
 ], widths=[4.2, 2.4, 5.6, 4.8], font=8)
 
 d.add_heading('2.2 서버 요건', 2)
@@ -76,7 +76,7 @@ bullets(d, [
     'Windows Server 2019 이상(또는 Windows 10/11). .NET Framework 4.8 (TASK 3종·Upload). IO/HOST 는 4.0 대상이지만 4.8 위에서 돈다.',
     'Microsoft Visual C++ 2015-2022 Redistributable (x86) - 운전 화면(Release 빌드, mfc140u / vcruntime140 / msvcp140 / UCRT).',
     'SQL Server (Express 가능). 혼합 인증, TCP 1433 고정, 방화벽 1433 인바운드. 복원 절차는 6.1.',
-    '설치 순서 : .NET 4.8 → vc_redist.x86 → (재부팅 요구 시 재부팅) → DB 복원(6.1) → 폴더 복사 → INI 수정(5장) → 현장 DB 반영 SQL(6.3) → 기동(3장).',
+    '설치 순서 : .NET 4.8 → vc_redist.x86 → (재부팅 요구 시 재부팅) → DB 복원(6.1) → 폴더 복사 → INI 수정(5장) → 기동(3장).',
 ])
 
 d.add_heading('2.3 운전 화면(Client) 설치 - Setup.bat 과 폰트 잠금', 2)
@@ -136,7 +136,7 @@ d.add_heading('4.2 스케줄러 IO_TASK', 2)
 image(d, shot('iotask_main_1109.png'), width_cm=15.0, caption='스케줄러 화면 - 사이클 로그')
 bullets(d, [
     '작업 상태 기계. JOB_MST 를 읽어 CV/RGV/SC 지시(OD_RQ_YN=Y)를 내리고, 설비 신호로 완료를 판정한다. 체류는 경고만 하고 자동 완료하지 않는다.',
-    'ENV_IOSCH.INI [CNF] : CV2_DIR_MODE(2 = 통로 사용권) / IN_HS_STATUS(15·16) / MANUAL_DIR_HOLD_SEC(120) / OUT_DONE_ON_ARRIVAL(1 = 출고대 실도착 즉시 완료) / HIS_DEL_*(이력 삭제, 6.4).',
+    'ENV_IOSCH.INI [CNF] : CV2_DIR_MODE(2 = 통로 사용권) / IN_HS_STATUS(15·16) / MANUAL_DIR_HOLD_SEC(120) / OUT_DONE_ON_ARRIVAL(1 = 출고대 실도착 즉시 완료) / HIS_DEL_*(이력 삭제, 6.3).',
     '화면 로그 구분 [HIS] 로 이력 삭제를 확인한다 : "job_mst_his : 60 DAY 지난 12,345건 삭제" / "이력 정리 끝 (n초) - 다음 검사 HH:mm". 일반 로그는 화면만, 중요/에러 로그는 파일(ECS_LOG)에도 남는다.',
     '크레인당 사이클 1건 지시 · S/C#1 통로 2-deep 입고 · 겸용대 122 입고 전환 가드 등 교착 방지 규칙이 들어 있다(세부는 산출물_20260927 의 04 기능 흐름).',
 ])
@@ -182,7 +182,7 @@ table(d, ['프로그램 / 섹션.키', '권장', '요점'], [
     ['스케줄러 [CNF] IN_HS_STATUS', '16', '입고가 통로 H/S 에 내려진 뒤 작업상태 15/16. 읽는 쪽은 둘 다 수용'],
     ['스케줄러 [CNF] MANUAL_DIR_HOLD_SEC', '120', '운전 화면 수동 방향 전환 뒤 자동 정합 억제(초)'],
     ['스케줄러 [CNF] OUT_DONE_ON_ARRIVAL', '1', '출고대에 그 작업번호 화물이 실제 도착하면 즉시 19(완료). 현장에서 설비가 3초 펄스를 못 잡던 대책'],
-    ['스케줄러 [CNF] HIS_DEL_ENABLE · _INTERVAL_MIN · _BATCH · _START_SEC', '1 · 60 · 2000 · 120', '이력 자동 삭제(6.4). 끄려면 ENABLE=0, 재기동 불필요'],
+    ['스케줄러 [CNF] HIS_DEL_ENABLE · _INTERVAL_MIN · _BATCH · _START_SEC', '1 · 60 · 2000 · 120', '이력 자동 삭제(6.3). 끄려면 ENABLE=0, 재기동 불필요'],
     ['상위 통신 [Host] StationMapMode', 'WMS', 'IMS 스테이션 해석 기준. 바꾸지 않는다'],
     ['상위 통신 [Host] RE_REPORT_09_SEC', '60', '완료 보고 재전송 간격'],
     ['상위 통신 [Host] SRV_MULTI_CONN', '1', '접속별 수신 작업(겹친 접속 경합 방지)'],
@@ -220,7 +220,7 @@ numbered(d, ['백업 파일을 서버 로컬 경로로 복사(SQL 서비스 계�
              'SSMS > 데이터베이스 > 복원 : 대상 이름 LGLS_MCS_IO, 파일 경로를 서버 DATA 폴더로 재배치.',
              '혼합 인증 전환 → 서비스 재시작 → 로그인 LGLS_IO 생성(db_owner).',
              'TCP 1433 고정 · 방화벽 → 다른 PC 에서 sqlcmd -S 서버IP,1433 -U LGLS_IO 로 접속 확인.',
-             '현장 DB 반영 SQL(6.3) 실행 → 각 INI DB 섹션 변경(5.1).'])
+             '각 INI DB 섹션 변경(5.1).'])
 d.add_heading('6.2 정기 백업', 2)
 bullets(d, [
     'Express 는 SQL Server Agent 가 없다. 아래 배치 파일을 만들어 Windows 작업 스케줄러에 매일 등록한다(보관 폴더와 기간은 현장 정책대로). '
@@ -238,16 +238,7 @@ bullets(d, [
     'D:\\DB_BACKUP 폴더는 SQL Server 서비스 계정이 쓸 수 있어야 한다(권한이 없으면 "운영 체제 오류 5").',
 ])
 note(d, '이력 표를 IO_TASK 가 지우므로 DB 가 무한히 커지지 않는다. 지운 뒤 파일 크기는 줄지 않으니 디스크가 급하면 DBCC SHRINKDATABASE.')
-d.add_heading('6.3 현장 DB 반영 SQL', 2)
-table(d, ['파일 (SQL 폴더)', '대상', '내용', '성격'], [
-    ['00_현장DB_공통코드_추가.sql', 'COMMON_CODE', 'JOB_STATUS 16 (통로CV 구동중), SC_ERR_STA_FK 3 (사용정지 DOWN)', '멱등(있으면 건너뜀)'],
-    ['260917_알람리스트_EQP_ECD_MST.sql', 'EQP_ECD_MST', 'PLC 알람 리스트 SC_LGLS(크레인 지상반)·CV·RTV 코드', '멱등'],
-    ['261029_사후확인_작업번호.sql', '(조회만)', '끝나서 JOB_MST 에서 지워진 작업을 이력·로그로 추적(6.5)', '읽기 전용'],
-], widths=[5.0, 2.5, 7.0, 2.5], font=8.5)
-code(d, ['sqlcmd -S 서버IP,1433 -d LGLS_MCS_IO -U LGLS_IO -P (암호) -f 65001 -i 파일명      ; -f 65001 = UTF-8 BOM 파일'])
-para(d, '운전 화면은 에러코드 마스터를 기동할 때 읽으므로 SQL 실행 후 운전 화면을 다시 띄운다. TASK 는 재기동 불필요.', bold=True)
-
-d.add_heading('6.4 이력 자동 삭제 (DEL_HIS_SETTING → IO_TASK PurgeHistory)', 2)
+d.add_heading('6.3 이력 자동 삭제 (DEL_HIS_SETTING → IO_TASK PurgeHistory)', 2)
 para(d, '운전 화면 ECS ▷ 환경설정 ▷ 로그 삭제 설정 의 보존기간(JOB_MST_HIS · WCS_LOG_PGR · WCS_CLIENT_LOG · HOST_IF_LOG 60일, EQP_ERR_HIS 30일)은 '
         '종전에는 어느 프로그램도 읽어 지우지 않았다(구 ECS/ECP 에도 없고, Express 라 Agent 잡도 없었다). 지금은 스케줄러가 지운다.')
 table(d, ['항목', '내용'], [
@@ -259,7 +250,7 @@ table(d, ['항목', '내용'], [
 ], widths=[2.5, 14.5], font=8.5)
 note(d, '처음 적용하는 현장은 쌓인 양이 많을 수 있다(분당 약 60만 행 처리). 보존기간을 늘리려면 Client 설정 화면에서 cycle 을 바꾼다(예 작업 이력 365). 지운 행은 되돌릴 수 없다.')
 
-d.add_heading('6.5 끝난 작업 사후 확인', 2)
+d.add_heading('6.4 끝난 작업 사후 확인', 2)
 para(d, '완료(09)된 작업은 JOB_MST 에서 지워지지만 보존기간 안에는 아래 자료가 남아 "RGV·크레인을 IO_TASK 가 지시했나, 사람이 움직였나" 를 가려낼 수 있다. '
         'SQL\\261029_사후확인_작업번호.sql 의 맨 위 INSERT 한 줄에 작업번호·날짜를 넣고 ★전체★ 실행한다(DBeaver 는 Alt+X). 상세는 적용_20261110\\문서\\2026-10-29_끝난작업_사후확인방법.docx.')
 table(d, ['자료', '무엇을 알 수 있나', '보존'], [
@@ -332,7 +323,7 @@ table(d, ['증상', '먼저 볼 곳', '원인 후보', '처치'], [
     ['출고대에 화물이 왔는데 작업이 15 로 남음', 'CV_DATA 129/126 의 LUGG_NO_RD · RET_READY_LATCH', '3초 펄스 유실 · 번호 소실', 'OUT_DONE_ON_ARRIVAL=1 이면 번호 있는 실도착은 자동 완료. 번호 없으면 [완료처리] ④'],
     ['RGV 가 홈에 고착', 'RTV_DATA_LGLS.PLC_NO', 'EQP_MST 와 자릿수 불일치("1" vs "01") → 화면 조회 0행', 'PLC_NO 를 "01" 로'],
     ['Client 가 아이콘 없이 뜸 / 폰트 설치 거부', '2.3', '작업 디렉터리 · 폰트 잠금', '2.3 처치'],
-    ['WCS_LOG_PGR 이 급격히 커짐', 'SELECT TOP 100 … ORDER BY INS_DT DESC', '같은 문구 반복(예 "[] -> [0000]")', '적용_20261110 의 WCS_TASK_CV 적용 확인, 이력 삭제 동작 확인(6.4)'],
+    ['WCS_LOG_PGR 이 급격히 커짐', 'SELECT TOP 100 … ORDER BY INS_DT DESC', '같은 문구 반복(예 "[] -> [0000]")', '적용_20261110 의 WCS_TASK_CV 적용 확인, 이력 삭제 동작 확인(6.3)'],
 ], widths=[3.6, 3.6, 4.4, 5.4], font=8)
 warn(d, '어떤 경우에도 시간 경과로 작업을 자동 완료하지 않는다. 설비 신호가 없으면 사람이 실물을 확인하고 넘긴다.')
 
@@ -343,13 +334,5 @@ table(d, ['주기', '항목'], [
     ['매월', 'DEL_HIS_SETTING 보존기간 적정 · EQP_ERR_HIS 로 잦은 알람 설비 파악 · INI 현장값 점검표(5.1)'],
     ['프로그램 교체 때', '25/35 작업 없음 → 백업 → 덮어쓰기 → 기동 → 제목줄/화면 로그 확인 → 읽어보세요.txt 순서 준수'],
 ], widths=[2.5, 14.5], font=9)
-
-d.add_heading('부록 A. 적용 이력 (2026)', 1)
-table(d, ['꾸러미', '주요 내용'], [
-    ['산출물_20260921 / 0927', '현장 기본 시험 완료 기준 전면 갱신. PLC 알람 리스트 SC_LGLS, 통로 사용권, 미사용 표 12개 삭제, 문서 01~13'],
-    ['적용_20260930', '출고대 3초 펄스 래치(OUT_SCAN_MS / RET_READY_LATCH), OUT_DONE_ON_ARRIVAL, HOST 겹친 접속 경합(SRV_MULTI_CONN), 폰트 잠금(FR_PRIVATE)'],
-    ['적용_20261015', '4K@300% 배율(UI_SCALE/LAYOUT_FONT_SCALE/LAMP_STYLE), START_MONITOR, 작업정보 판넬 3칸 + 스텝 단위 [완료처리], [확대] 패널(구 ECS 폼 배치), 작업 디렉터리 보정, Upload/Download 런처, Setup.bat'],
-    ['적용_20261110 (10-29 준비)', '입고 단계표 통로 Step 3, [완료처리] 경로 탐색, 사후 확인 SQL, IO_TASK 이력 자동 삭제(PurgeHistory), WCS_TASK_CV "[] -> [0000]" 로그 억제'],
-], widths=[4.0, 13.0], font=8.5)
 
 save_doc(d, '01_ECS_운영자_매뉴얼.docx')
