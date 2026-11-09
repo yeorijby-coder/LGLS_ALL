@@ -1,0 +1,37 @@
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.cpp b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.cpp
+index d805e0b..7b6b584 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.cpp
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.cpp
+@@ -176,6 +176,8 @@ BEGIN_MESSAGE_MAP(CCvSkinDlg, CSkinDialog)
+ 	ON_BN_CLICKED(IDC_LGLS_CV_HS_EJECT, &CCvSkinDlg::OnBnClickedBtnCvHsEject)	// [LGLS 2026-09-06]
+ 	ON_BN_CLICKED(IDC_CHK_AUTO_SEL, &CCvSkinDlg::OnBnClickedChkAutoSel)
+ 	// [LGLS 2026-11-07] H/S 신호 단추 4개 → 조건 칸 깜빡임
++	ON_BN_CLICKED(IDC_BTN_STATUS_STO_READY, &CCvSkinDlg::OnBnClickedHsSignal)		// [LGLS 2026-11-10] 입고대 · 출고대 신호도
++	ON_BN_CLICKED(IDC_BTN_STATUS_RET_READY, &CCvSkinDlg::OnBnClickedHsSignal)
+ 	ON_BN_CLICKED(IDC_BTN_STATUS_STOHS_READY, &CCvSkinDlg::OnBnClickedHsSignal)
+ 	ON_BN_CLICKED(IDC_BTN_STATUS_RETHS_READY, &CCvSkinDlg::OnBnClickedHsSignal)
+ 	ON_BN_CLICKED(IDC_BTN_STATUS_RTV_DEPARTHS_READY, &CCvSkinDlg::OnBnClickedHsSignal)
+@@ -904,8 +906,11 @@ void CCvSkinDlg::InvalidateComboBoxData(EN_LANG enLangTemp, CComboBox* pComboBox
+ //   만들어 CV_DATA 에 넣는 값이다(집는 자리 = 둘 다 있음 / 놓는 자리 = 둘 다 없음). 스케줄러는 여기에
+ //   자동모드 · 에러 없음을 더 본다. 단추를 누르면 그 네 칸을 1초 간격으로 3번 숨겼다 보여 준다
+ //   (리본 [찾기] 의 트랙 깜빡임과 같은 요령). 깜빡이는 중에 또 누르면 처음부터 다시.
++// [LGLS 2026-11-10] 입고대 신호 · 출고대 신호 단추도 같이(여섯 개). 기능 자체는 Ecs.ini [MENU] HS_BLINK=1 일 때만
++//   켜지고 기본(키 없음 / 0)은 꺼져 있다 - 단추를 눌러도 아무 일도 없다 (사용자 지시 11/10).
+ void CCvSkinDlg::OnBnClickedHsSignal()
+ {
++	if (::GetPrivateProfileInt(_T("MENU"), _T("HS_BLINK"), 0, ECS_INI_FILE) == 0) return;
+ 	m_nHsBlinkCnt = 5;
+ 	HsBlinkShow(FALSE);
+ 	SetTimer(8, 1000, NULL);
+diff --git a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.h b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.h
+index e51962a..868ff51 100644
+--- a/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.h
++++ b/WCS/CPlusPlus/LGLS_CLIENT/Ecs/CvSkinDlg.h
+@@ -263,6 +263,7 @@ public:
+ 	afx_msg void OnClose();
+ 	// [LGLS 2026-11-07] 입고 H/S · 출고 H/S · RTV 출발 H/S · RTV 도착 H/S 신호 단추를 누르면
+ 	//   그 신호를 만드는 조건 칸(화물 감지 · 작업번호 · 자동모드 · 에러코드)이 1초 간격으로 3번 깜빡인다 (사용자 지시).
++	// [LGLS 2026-11-10] 입고대 · 출고대 신호 단추 추가(여섯 개). Ecs.ini [MENU] HS_BLINK=1 일 때만 동작, 기본 0(꺼짐).
+ 	afx_msg void OnBnClickedHsSignal();
+ 	void HsBlinkShow(BOOL bShow);
+ 	int  m_nHsBlinkCnt;

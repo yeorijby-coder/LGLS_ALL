@@ -190,6 +190,7 @@ table(d, ['프로그램 / 섹션.키', '권장', '요점'], [
     ['운전 화면 [MENU] VEH_CLEAR_MODE', '3', '크레인·RGV 색·번호 지우는 시점(새 트랙 기록 시)'],
     ['운전 화면 [MENU] VEH_SHOW_ON_ORDER', '1', '크레인 번호·색은 지시(25)된 뒤에만'],
     ['운전 화면 [MENU] ZOOM_BTN', '1', '상태창 [확대] 표시'],
+    ['운전 화면 [MENU] HS_BLINK', '0', 'C/V 상태창 신호 단추 6개(입고대 · 출고대 · 입고/출고 H/S · RGV 출발/도착 H/S)를 누르면 바탕 칸(팔레트 감지 · 작업번호 · 자동모드 · 에러코드)이 깜빡임. 0 안 함(기본) / 1 깜빡임. 누를 때마다 읽으므로 재기동 불필요'],
     ['운전 화면 [MENU] HMIDEL_BTN', '1', '크레인·RGV 상태창 [데이터 삭제] 표시'],
     ['운전 화면 [MENU] HMIDEL_ASK · HMIDEL_WAIT_SEC', '1 · 10', '[완료처리] 가 데이터 삭제를 같이 할지 묻는다. 0 안 물음 / 1 S/C 출고 구간 + RGV 구간 / 2 S/C 입고 구간도. [예] 면 삭제 신호가 PLC 에 기록될 때까지 WAIT_SEC 초 기다린 뒤 완료처리. 키가 없으면 1 · 10'],
     ['설비 통신 [HMI_DELETE] SC1~SC5 · RTV1 · CV 의 _AREA / _ADDR', 'M / 6800 ~ 6806', 'PLC 담당자가 준 삭제 신호 M 비트 7개(S/C#1~#5 = M6800~M6804, RGV = M6805, CONVEYOR = M6806). _ADDR 은 PLC 표기 그대로 적는다(6800 = 워드 680 비트 0). 운전 화면 [데이터 삭제]/[CV 지우기] 가 1 을 쓰는 자리(끄는 것은 PLC). 비우면 이력만 남기고 쓰지 않음. 기입 뒤 EQP 재기동'],
@@ -284,7 +285,7 @@ table(d, ['규칙', '이유'], [
 ], widths=[8.0, 9.0], font=8.5)
 d.add_heading('7.3 이번 적용분 (적용_20261110)', 2)
 table(d, ['폴더', '파일', '적용'], [
-    ['Client', 'EcsMain.exe (제목줄 [Build:2026.11.07 18:00:13]) + rc_resource 발췌(dlg_sc · dlg_rtv · mainframe_manual) + 추가할_설정_Ecs.ini.txt', 'Client 닫기 → exe 덮어쓰기(또는 Upload) + rc_resource 파일 덮어쓰기 + Ecs.ini [MENU] HMIDEL_BTN=1 → 제목줄 확인. DLL 그대로'],
+    ['Client', 'EcsMain.exe (제목줄 [Build:2026.11.10 08:18:28]) + rc_resource 발췌(dlg_sc · dlg_rtv · mainframe_manual) + 추가할_설정_Ecs.ini.txt', 'Client 닫기 → exe 덮어쓰기(또는 Upload) + rc_resource 파일 덮어쓰기 + Ecs.ini [MENU] HMIDEL_BTN=1 → 제목줄 확인. DLL 그대로'],
     ['TASK\\IO_TASK', 'IO_TASK_SEMI_FINISH.exe (10-29 11:28) + 추가할_설정_ENV_IOSCH.ini.txt(선택)', 'IO 정지 → 덮어쓰기 → 기동. 2분 뒤 [HIS] 로그'],
     ['TASK\\EQP_TASK', 'WCS_TASK_CV.exe (11-05) + 추가할_설정_WCS_DB.ini.txt', 'EQP 정지 → 덮어쓰기 → WCS_DB.INI [HMI_DELETE] 에 7개 주소 기입(M / 6800 ~ 6806, 안내 파일 그대로) → 기동. 기동 로그 [HMI_DEL] 에 SC1=M6800(%MX10880) … CV=M6806(%MX10886) 확인'],
     ['SQL', '261029_사후확인_작업번호.sql', '필요할 때 조회'],
