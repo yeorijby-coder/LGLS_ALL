@@ -226,17 +226,16 @@ bullets(d, [
     'Express 는 SQL Server Agent 가 없다. 아래 배치 파일을 만들어 Windows 작업 스케줄러에 매일 등록한다(보관 폴더와 기간은 현장 정책대로). '
     'Express 는 WITH COMPRESSION 을 지원하지 않으므로 쓰지 않는다.',
 ])
-code(d, ['@echo off                                               ; D:\DB_BACKUP\backup.bat',
+code(d, ['@echo off                                   ; D:\\DB_BACKUP\\backup.bat',
          'set D=%date:~0,4%%date:~5,2%%date:~8,2%',
-         'sqlcmd -S 서버IP,1433 -U LGLS_IO -P 암호 -Q "BACKUP DATABASE LGLS_MCS_IO TO DISK=N'D:\DB_BACKUP\LGLS_MCS_IO_%D%.bak' WITH INIT"',
-         'forfiles /p D:\DB_BACKUP /m LGLS_MCS_IO_*.bak /d -30 /c "cmd /c del @path"      ; 30일 지난 백업 삭제(선택)'])
+         'sqlcmd -S 서버IP,1433 -U LGLS_IO -P 암호 -Q "BACKUP DATABASE LGLS_MCS_IO TO DISK=N\'D:\\DB_BACKUP\\LGLS_MCS_IO_%D%.bak\' WITH INIT"',
+         'forfiles /p D:\\DB_BACKUP /m LGLS_MCS_IO_*.bak /d -30 /c "cmd /c del @path"      ; 30일 지난 백업 삭제(선택)'])
 para(d, 'PowerShell 에서 직접 한 번 받을 때 :', size=9, color=GRAY)
 code(d, ['$d = Get-Date -Format yyyyMMdd',
-         'sqlcmd -S 서버IP,1433 -U LGLS_IO -P 암호 -Q "BACKUP DATABASE LGLS_MCS_IO TO DISK=N'D:\DB_BACKUP\LGLS_MCS_IO_$d.bak' WITH INIT"'])
+         'sqlcmd -S 서버IP,1433 -U LGLS_IO -P 암호 -Q "BACKUP DATABASE LGLS_MCS_IO TO DISK=N\'D:\\DB_BACKUP\\LGLS_MCS_IO_$d.bak\' WITH INIT"'])
 bullets(d, [
-    '작업 스케줄러 등록 : 작업 만들기 → 트리거 매일(예 02:00) → 동작 "프로그램 시작" 프로그램 D:\DB_BACKUP\backup.bat, 시작 위치 D:\DB_BACKUP → "사용자가 로그온했는지 여부에 관계없이 실행". '
-    '처음 한 번은 손으로 실행해 .bak 이 생기는지 본다.',
-    'D:\DB_BACKUP 폴더는 SQL Server 서비스 계정이 쓸 수 있어야 한다(권한이 없으면 "운영 체제 오류 5").',
+    '작업 스케줄러 등록 : 작업 만들기 → 트리거 매일(예 02:00) → 동작 "프로그램 시작" 프로그램 D:\\DB_BACKUP\\backup.bat, 시작 위치 D:\\DB_BACKUP → "사용자가 로그온했는지 여부에 관계없이 실행". 처음 한 번은 손으로 실행해 .bak 이 생기는지 본다.',
+    'D:\\DB_BACKUP 폴더는 SQL Server 서비스 계정이 쓸 수 있어야 한다(권한이 없으면 "운영 체제 오류 5").',
 ])
 note(d, '이력 표를 IO_TASK 가 지우므로 DB 가 무한히 커지지 않는다. 지운 뒤 파일 크기는 줄지 않으니 디스크가 급하면 DBCC SHRINKDATABASE.')
 d.add_heading('6.3 현장 DB 반영 SQL', 2)
