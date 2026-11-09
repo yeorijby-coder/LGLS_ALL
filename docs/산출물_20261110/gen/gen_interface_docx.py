@@ -40,10 +40,10 @@ d.add_page_break()
 # ═════════════════════════════════════════════════════════════
 d.add_heading('2. 상위 (WMS / IMS) 인터페이스', 1)
 d.add_heading('2.1 접속', 2)
-table(d, ['소켓', '누가 접속', '포트 (현장)', '포트 (개발 PC)', '흐르는 전문', 'INI'], [
-    ['명령 수신', 'WMS → WCS', '서버 : 8001', '9911', 'O 작업지시 / R 재지정 / M 모드 전환 / D 작업 삭제 → 응답(소문자)', 'EcsComA.ini [Network] LocalPort'],
-    ['보고 송신', 'WCS → WMS', '192.100.1.191 : 8002', '127.0.0.1 : 9910', 'S 상태 / E 에러 / F 완료 → 응답(소문자) 수신', 'EcsComA.ini [Network] RemoteIP / RemotePort'],
-], widths=[2.2, 2.4, 3.2, 2.4, 8.0, 4.3], font=9)
+table(d, ['소켓', '누가 접속', '주소 · 포트', '흐르는 전문', 'INI'], [
+    ['명령 수신', 'WMS → WCS', '서버 : 8001', 'O 작업지시 / R 재지정 / M 모드 전환 / D 작업 삭제 → 응답(소문자)', 'EcsComA.ini [Network] LocalPort'],
+    ['보고 송신', 'WCS → WMS', '192.100.1.191 : 8002', 'S 상태 / E 에러 / F 완료 → 응답(소문자) 수신', 'EcsComA.ini [Network] RemoteIP / RemotePort'],
+], widths=[2.4, 2.6, 4.0, 9.0, 4.5], font=9)
 bullets(d, [
     '명령 수신 소켓은 접속별 작업 객체(SRV_MULTI_CONN=1)로 처리한다. 상위가 겹쳐 접속해도 먼저 붙은 소켓을 닫지 않는다(구 ECP 다중접속과 동일).',
     '보고 송신은 WCS 가 접속한다. 끊기면 재접속하고, 응답 없는 완료(09)는 RE_REPORT_09_SEC(60초)마다 재보고한다.',
@@ -190,7 +190,7 @@ table(d, ['항목', '값'], [
     ['D (데이터 레지스터, 워드)', 'id 0xA8. 방향 / 상태 / 명령. 문서표기 10진 그대로 = 워드주소 (D0160 = %DW160). [실PLC 대사 확정, dAddrMode=DOC]'],
     ['R (파일 레지스터, 워드)', 'id 0xAF. 트래킹(작업번호 ASCII 4자리 = 2워드). 문서표기 10진 (rAddrMode=DEC, 실PLC 대사 확정)'],
     ['블록 주소식', 'base = origin + (설비번호 - numberFrom) x stride,  주소 = base + offset'],
-    ['단일 기준', 'TASK\\WCS_TASK_CV_BIN\\7_DeviceMap\\PlcAddressMap.xml v1.4. 수정 후 bin\\Debug\\7_DeviceMap 에도 복사. 설비 통신 · 시뮬레이터 · 화면 메모리맵 · 시나리오가 모두 이 파일을 읽는다'],
+    ['단일 기준', 'TASK\\WCS_TASK_CV_BIN\\7_DeviceMap\\PlcAddressMap.xml v1.4. 수정 후 bin\\Debug\\7_DeviceMap 에도 복사. 설비 통신 · 화면 메모리맵 · 시나리오 시험이 모두 이 파일을 읽는다'],
 ], widths=[5.0, 17.5], font=8.5)
 
 d.add_heading('3.2 C/V (컨베이어 15대, 설비번호 1~15)', 2)
@@ -274,7 +274,7 @@ table(d, ['ID', '제목', '경로'], [
     ['4-1', '30 입고대 → S/C 입고', 'C/V #15 → RGV → 통로 → S/C → 랙'],
     ['4-2', 'S/C → 29 피킹대 출고', '랙 → S/C → 통로 → RGV → C/V #14'],
 ], widths=[1.5, 7.0, 14.0], font=9)
-note(d, '각 시나리오는 Step(kind = observe 관찰 / force WCS 가 세움 / word 워드 확인)으로 신호 순서를 정의하며, 시뮬레이터(EQP_SIM)와 설비 통신의 시나리오 시험이 같은 정의를 쓴다. '
+note(d, '각 시나리오는 Step(kind = observe 관찰 / force WCS 가 세움 / word 워드 확인)으로 신호 순서를 정의하며, 설비 통신의 시나리오 시험이 이 정의를 쓴다. '
         '호기를 고르면 $inCv / $outCv 가 <CraneMap> 으로 치환된다.')
 
 d.add_heading('3.8 설비 배치 (<Equipments> / <CraneMap>)', 2)
@@ -347,11 +347,11 @@ table(d, ['기능', '표 · 열', '규약'], [
 
 d.add_heading('6. 변경 이력 (인터페이스에 영향 있는 것)', 1)
 table(d, ['일자', '내용'], [
-    ['2026-07-30', 'HOST 전문을 2010 인터페이스명세서(1WH ECP 규격)로 통일. O66/R31/M7/S43/E23/F10/응답11. 작업대 101~104 변환. HOST_SIM 실기동 검증'],
+    ['2026-07-30', 'HOST 전문을 2010 인터페이스명세서(1WH ECP 규격)로 통일. O66/R31/M7/S43/E23/F10/응답11. 작업대 101~104 변환. 실기동 검증'],
     ['2026-09-01', '실PLC(테스트 베드) 대사 : D 블록 DOC(문서표기 10진), R 블록 DEC 확정'],
     ['2026-09-02', 'S/C 에러코드 블록 D1160 분리(Status offset10 겹침으로 전 크레인 유령 에러)'],
     ['2026-09-04', 'RGV Command To3 = D375 정정(구 표 W0345 오기, S/C#3 To3 와 충돌)'],
-    ['2026-09-15 ~ 16', 'C/V 방향 극성 DIR_CODE(IN0 시뮬 / IN1 현장). SC_ERR_CODE_BLOCK 모드 체계. RTV PLC_NO "01"'],
+    ['2026-09-15 ~ 16', 'C/V 방향 극성 DIR_CODE(현장 IN1). SC_ERR_CODE_BLOCK 모드 체계. RTV PLC_NO "01"'],
     ['2026-09-17', '메인 PLC 알람 비트(M8800 C/V 과부하, M8960 RGV) 반영. 알람 리스트 SC_LGLS. 체류복구 폐기(완료는 설비 신호로만)'],
     ['2026-09-29 ~ 30', '출고대 3초 펄스 래치(RET_READY_LATCH*), OUT_DONE_ON_ARRIVAL, HOST 접속별 수신(SRV_MULTI_CONN), IMS STN 24/26 표 정정'],
     ['2026-10-15', 'Upload/Download 표(UP_DOWN/DN_MST/DN_SEQ). 스텝 단위 [완료처리]'],

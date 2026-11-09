@@ -37,7 +37,7 @@ table(d, ['구간', '방향', '주소 · 포트', '설정 위치'], [
     ['상위 통신 → WMS (보고)', 'WCS 가 접속', '192.100.1.191 : 8002 (RemoteIP / RemotePort)', 'EcsComA.ini [Network]'],
     ['모든 프로그램 ↔ DB', 'TCP', '서버IP : 1433 (고정)', '각 INI 의 DB 섹션, Ecs.ini [DB_2]'],
 ], widths=[4.5, 2.5, 5.5, 4.5], font=8.5)
-note(d, '개발 PC 시험값(127.0.0.1 / 9911 / 9910 / localhost\\SQLEXPRESS,1435)이 현장 INI 에 남아 있으면 안 된다. 5장 점검표.')
+note(d, '현장 INI 의 접속값은 5.1 점검표와 같아야 한다. 다른 PC 에서 쓰던 값이 남아 있으면 안 된다.')
 
 d.add_heading('1.3 작업대 · 설비 배치', 2)
 image(d, shot('layout_stations_1109.png'), width_cm=17.5, caption='운전 화면 창고 그림(리본 [트랙번호] 보기) 위에 작업대 · 통로 · 크레인 · RGV 의 트랙 번호 · 설비 · 역할 · IMS 스테이션을 표시한 것')
@@ -163,14 +163,14 @@ table(d, ['프로그램', '설정 파일', 'DB 접속 섹션', '운전 옵션 �
 ], widths=[3.0, 3.0, 2.4, 4.6, 4.0], font=8.5)
 
 d.add_heading('5.1 현장 접속값 점검표', 2)
-table(d, ['파일', '키', '현장값', '개발 PC 시험값(현장에 남으면 안 됨)'], [
-    ['WCS_DB.INI [COMM0]', 'IP / CUR_PORT', '192.100.1.110 / 2004', '127.0.0.1 / 2004 (EQP_SIM)'],
-    ['EcsComA.ini [Network]', 'RemoteIP / LocalPort / RemotePort', '192.100.1.191 / 8001 / 8002', '127.0.0.1 / 9911 / 9910 (HOST_SIM)'],
-    ['WCS_DB.INI [DB_2] · ENV_IOSCH.INI [P_DB] · EcsComA.ini [DB]', 'IP(서버) / 계정', '서버IP,1433 / LGLS_IO', 'localhost\\SQLEXPRESS 또는 127.0.0.1,1435'],
-    ['Ecs.ini [DB_2]', 'SERVER / USERID / USERPASSWORD', '서버IP,1433 / LGLS_IO / (지정)', '〃'],
-    ['WCS_DB.INI [PLC]', 'DIR_CODE', 'IN1 (PLC 담당 확인값 : 입고 1 / 출고 0)', 'IN0 (시뮬레이터는 IN0 만 이해)'],
-    ['WCS_DB.INI', 'CNT (설비 수)', '15', '15'],
-], widths=[5.0, 4.0, 4.0, 4.0], font=8.5)
+table(d, ['파일', '키', '현장값'], [
+    ['WCS_DB.INI [COMM0]', 'IP / CUR_PORT', '192.100.1.110 / 2004'],
+    ['EcsComA.ini [Network]', 'RemoteIP / LocalPort / RemotePort', '192.100.1.191 / 8001 / 8002'],
+    ['WCS_DB.INI [DB_2] · ENV_IOSCH.INI [P_DB] · EcsComA.ini [DB]', 'IP(서버) / 계정', '서버IP,1433 / LGLS_IO'],
+    ['Ecs.ini [DB_2]', 'SERVER / USERID / USERPASSWORD', '서버IP,1433 / LGLS_IO / (지정)'],
+    ['WCS_DB.INI [PLC]', 'DIR_CODE', 'IN1 (PLC 담당 확인값 : 입고 1 / 출고 0)'],
+    ['WCS_DB.INI', 'CNT (설비 수)', '15'],
+], widths=[6.5, 5.0, 5.5], font=8.5)
 
 d.add_heading('5.2 주요 운영 키', 2)
 table(d, ['프로그램 / 섹션.키', '권장', '요점'], [
