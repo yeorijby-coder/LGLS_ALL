@@ -19,7 +19,7 @@ const path = require('path');
 const HERE = __dirname;
 const BASE = path.dirname(HERE);                       // docs/산출물_20261110
 const SHOTS = path.join(BASE, 'shots');
-const OUT = path.join(BASE, '05_ECS_Troubleshooting_1107.pptx');   // 11-07 판 (1105 는 사용자가 열어 보는 중이라 그대로 둔다)
+const OUT = path.join(BASE, '05_ECS_Troubleshooting.pptx');   // 종전 판은 사용자가 _ 접미로 옮겨 두었다(11-09)
 
 const FONT = '맑은 고딕';
 const BLUE = '0070C0', NAVY = '1B2A49', GREEN_BG = 'E2EFDA', GRAY = '666666', RED = 'E00000', ORANGE = 'ED7D31', PURPLE = '7030A0', GREEN = '00A050', LINE = '2E75B6', TITLE = '1F5FA8';
@@ -604,14 +604,14 @@ const AL = { msg: [3, 30, 318, 42], row1: [5, 228, 628, 20], rows: [5, 228, 628,
   img(s, 'crop_ribbon_comm_1105.png', 0.53, 1.4, 2.6, 1.0, [[5, 5, 170, 75, RED]]);
   img(s, 'lamp_plc_1105.png', 3.25, 1.4, 3.4, 1.7);
   caption(s, '신호등을 누르면 뜨는 통신 점검 창(PLC) - 핑 4회 · 포트', 3.25, 3.2, 3.4);
-  img(s, 'chk_TASK_LFC10_G1_ECSCOM.png', 0.53, 3.95, 3.3, 2.3);
+  img(s, 'hosttask_main_1109.png', 0.53, 3.95, 3.3, 2.3);
   note(s, 3.95, 3.6, 2.7, 3.4, '신호등이 보는 것', [
     'WMS1 : 상위가 우리에게 붙는 수신 소켓(8001)',
     'WMS2 : 우리가 상위로 보고하는 송신 소켓(8002)',
     'PLC : 설비 통신이 마스터 PLC 에 붙어 있는가(한 소켓이 C/V·S/C·RGV 를 대표)',
     'SCH : 스케줄러(IO TASK)가 살아 있는가',
     '위 빨강 = 끊김 / 노랑↔초록 1초 교대 = 정상(화면이 살아 있다는 뜻이기도)'], 9);
-  caption(s, '리본 [통신] 신호등 (모든 탭에서 보임, 지금은 정상 교대 중) / 서버 ALL_TASK 화면(HOST TASK)', 0.53, 1.1, 6.1);
+  caption(s, '리본 [통신] 신호등 (모든 탭에서 보임, 지금은 정상 교대 중) / 서버 상위 통신(HOST TASK) 화면', 0.53, 1.1, 6.1);
   rhs(s,
     [B('리본 [통신] 신호등 중 하나 이상이 위(빨강)에 멈춰 있다. PLC 빨강이면 설비 색이 갱신되지 않고, SCH 빨강이면 작업이 전혀 진행되지 않는다.', { color: RED })],
     [B('장비 전원·네트워크 끊김, 상대 프로그램(WMS · PLC)이 안 떠 있음, 우리 서버 TASK 가 죽음, DB 하트비트 끊김.')],

@@ -68,7 +68,7 @@ CDESC = {
 }
 
 EXCLUDE = ('CELL_MST', 'CELL_DTL')      # 2026-11-09 삭제한 표(DB_BACKUP/20_CELL표_삭제.sql). 스키마 파일에는 남아 있어 여기서 뺀다
-G.FINAL_NOTE = '현장 적용 기준 종료 산출물'  # 이 문서는 설명에 날짜를 쓰지 않는다(사용자 지시)
+# 본문 설명에는 날짜를 쓰지 않는다(사용자 지시 11/9). 표지 작성일 · 개정이력 표는 그대로 둔다(사용자 수정본과 같게).
 SPARE = re.compile(r'^(SPARE|RESERVE|DUMMY)\d*$', re.I)
 
 def read_txt(p):
@@ -114,12 +114,7 @@ table(d, ['구분', '대상', '왜'], [
     ['동작 변경', 'WCS_LOG_PGR', '"[] -> [0000]" 트래킹 로그 억제(개발 DB 32.9만 건이 쌓이던 원인)'],
     ['표 삭제', 'CELL_MST / CELL_DTL', '이 현장은 셀(랙 위치) 관리를 쓰지 않는다(상위가 로케이션을 정해 내려 줌). 프로그램은 이 표 없이 돌도록 되어 있다. DB_BACKUP/20_CELL표_삭제.sql, 되돌리기 21_CELL표_복구.sql'],
 ], widths=[2.2, 6.3, 8.5])
-table(d, ['문서', '무엇을 담았나', '누가 보나'], [
-    ['01 ECS 운영자 매뉴얼', '설치 · 기동/정지 · 서버 프로그램 · 설정 · DB 운영 · 배포 · 장애 대응', '서버/시스템을 관리하는 사람'],
-    ['02 ECS 사용자 매뉴얼', '운전 화면(Ecs)을 쓰는 순서, 자주 하는 일, 이상 대처', '운전 화면을 쓰는 작업자'],
-    ['03 테이블 정의서  (이 문서)', 'LGLS_MCS_IO 의 모든 표와 열, 트리거 · 인덱스 · 보존 정책', 'DB 를 조회·관리하는 사람'],
-    ['04 인터페이스 정의서', '상위(WMS/IMS) 전문, 설비(PLC) 신호, 프로그램 사이 DB 인터페이스', '연동 담당자 · 설비/상위 담당자'],
-], widths=[4.5, 8.0, 4.5])      # doc_set_table 의 "2026-09-27 판 ..." 주석 줄은 사용자가 지웠으므로 표만 둔다
+doc_set_table(d, 3)
 d.add_page_break()
 
 d.add_heading('1. 테이블 목록', 1)
@@ -200,10 +195,4 @@ table(d, ['코드', '뜻', '누가 세우나'], [
 para(d, '입고 : 99 → 10 → 11 → 15 → 30 → 31 → 35 → 39 → 15(16) → 20 → 21 → 25 → 29 → 09', size=9)
 para(d, '출고 : 20 → 21 → 25 → 29 → 15 → 30 → 31 → 35 → 39 → 15 → 19 → 09', size=9)
 
-out = os.path.join(OUT, '03_테이블_정의서.docx')
-try:
-    d.save(out)
-except PermissionError:          # 사용자가 열어 둔 채면 날짜판으로
-    import datetime
-    out = os.path.join(OUT, '03_테이블_정의서_%s재생성.docx' % datetime.date.today().strftime('%m%d')); d.save(out)
-print('saved', out, 'tables', len(by))
+save_doc(d, '03_테이블_정의서.docx'); print('tables', len(by))

@@ -62,5 +62,17 @@ def doc_set_table(d, this):
         if i == this:
             r[0] = r[0] + '  (이 문서)'
     table(d, ['문서', '무엇을 담았나', '누가 보나'], rows, widths=[4.5, 8.0, 4.5])
-    note(d, '2026-09-27 판 산출물(설치 안내서 01 · DB 구축 정보 02 · 운전 지침서 05 · 화면설계서 06 · 알람코드 11 · INI 정의서 12 · 사용자 매뉴얼 13)은 '
-            '그대로 유효하며, 이 네 문서는 그 뒤 10월~11월 변경분까지 합쳐 종료용으로 다시 묶은 것이다.')
+
+
+def save_doc(d, name):
+    """OUT 에 저장한다. 사용자가 열어 둔 채(PermissionError)면 _MMDD재생성.docx 로 낸다."""
+    import datetime
+    out = os.path.join(G.OUT, name)
+    try:
+        d.save(out)
+    except PermissionError:
+        out = os.path.join(G.OUT, name[:-5] + '_%s재생성.docx' % datetime.date.today().strftime('%m%d'))
+        d.save(out)
+    print('saved', out)
+    return out
+    # "2026-09-27 판 산출물 ... 다시 묶은 것" 주석 줄은 사용자가 지웠다(11/9, 본문 설명에 날짜 금지)

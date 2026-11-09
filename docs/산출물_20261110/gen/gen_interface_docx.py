@@ -45,7 +45,7 @@ table(d, ['소켓', '누가 접속', '포트 (현장)', '포트 (개발 PC)', '�
     ['보고 송신', 'WCS → WMS', '192.100.1.191 : 8002', '127.0.0.1 : 9910', 'S 상태 / E 에러 / F 완료 → 응답(소문자) 수신', 'EcsComA.ini [Network] RemoteIP / RemotePort'],
 ], widths=[2.2, 2.4, 3.2, 2.4, 8.0, 4.3], font=9)
 bullets(d, [
-    '명령 수신 소켓은 접속별 작업 객체(SRV_MULTI_CONN=1, 2026-09-30)로 처리한다. 상위가 겹쳐 접속해도 먼저 붙은 소켓을 닫지 않는다(구 ECP 다중접속과 동일).',
+    '명령 수신 소켓은 접속별 작업 객체(SRV_MULTI_CONN=1)로 처리한다. 상위가 겹쳐 접속해도 먼저 붙은 소켓을 닫지 않는다(구 ECP 다중접속과 동일).',
     '보고 송신은 WCS 가 접속한다. 끊기면 재접속하고, 응답 없는 완료(09)는 RE_REPORT_09_SEC(60초)마다 재보고한다.',
     '모든 송수신 전문은 HOST_IF_LOG 에 원문으로 남는다(60일).',
 ])
@@ -176,7 +176,7 @@ table(d, ['IMS 코드', '내부 트랙 (ToInner)', '역변환 (ToIms)', '설명'
     ['105 / 110', '103', '103 → 105', 'C/V#2 (S/C#1 통로, 방향전환용. M 전문에서만 쓰임)'],
     ['1~5 (또는 201~205)', '901~905', '90n → n', '크레인. WMS 모드는 1~5, 구 ECS 모드는 201~205'],
 ], widths=[3.5, 5.5, 4.0, 9.5], font=8.5)
-note(d, 'IMS 스테이션 번호는 IMS/프로토콜 문서의 Station Number 표 기준이다(2026-09-30 정정 : 종전 운영 표에서 24/26 의 STN 이 뒤집혀 있었으나 통신 코드는 처음부터 맞았다). '
+note(d, 'IMS 스테이션 번호는 IMS/프로토콜 문서의 Station Number 표 기준이다(종전 운영 표에는 24/26 의 STN 이 뒤집혀 있었으나 통신 코드는 처음부터 맞았다). '
         'EcsComA.ini [StationMap_WMS] 로 개별 재정의할 수 있다.')
 d.add_page_break()
 
@@ -187,7 +187,7 @@ table(d, ['항목', '값'], [
     ['접속', 'TCP 192.100.1.110 : 2004, LS XGT 전용 프로토콜(연속 읽기/쓰기, 비트 단일 쓰기 %MX). 마스터 PLC 한 대가 C/V 15 · S/C 5 · RGV 1 을 모두 대표하므로 소켓 1개'],
     ['순회', 'C/V 15대 + S/C 5 + RGV 1 한 바퀴 약 1초(일괄 읽기). 출고대는 OUT_SCAN_MS 간격으로 보강 스캔(3초 펄스)'],
     ['M (내부 릴레이, 비트)', 'id 0x90. 이벤트 / ACK / 알람. 워드주소 = 비트주소 ÷ 16, 비트위치 = 비트주소 % 16. 쓰기는 단일 비트(BIT_WRITE=1)'],
-    ['D (데이터 레지스터, 워드)', 'id 0xA8. 방향 / 상태 / 명령. 문서표기 10진 그대로 = 워드주소 (D0160 = %DW160). [확정 2026-09-01 실PLC 대사, dAddrMode=DOC]'],
+    ['D (데이터 레지스터, 워드)', 'id 0xA8. 방향 / 상태 / 명령. 문서표기 10진 그대로 = 워드주소 (D0160 = %DW160). [실PLC 대사 확정, dAddrMode=DOC]'],
     ['R (파일 레지스터, 워드)', 'id 0xAF. 트래킹(작업번호 ASCII 4자리 = 2워드). 문서표기 10진 (rAddrMode=DEC, 실PLC 대사 확정)'],
     ['블록 주소식', 'base = origin + (설비번호 - numberFrom) x stride,  주소 = base + offset'],
     ['단일 기준', 'TASK\\WCS_TASK_CV_BIN\\7_DeviceMap\\PlcAddressMap.xml v1.4. 수정 후 bin\\Debug\\7_DeviceMap 에도 복사. 설비 통신 · 시뮬레이터 · 화면 메모리맵 · 시나리오가 모두 이 파일을 읽는다'],
@@ -211,7 +211,7 @@ table(d, ['블록', '디바이스', 'origin', 'stride', '신호 (offset)', '방�
     ['Event', 'M', '768', '32', 'PalletExistFlag(0) LoadComplete(16) UnloadComplete(17) AlarmSetReport(18) AlarmResetReport(19) TransferAck(20)', '설비 → WCS. 차상 화물 / 적재·하역 완료 / 알람 발생·해제 보고 / 반송 지시 접수'],
     ['Ack', 'M', '1536', '16', 'TransferRequest(0) LoadCompleteAck(1) UnloadCompleteAck(2) AlarmSetReportAck(3) AlarmResetReportAck(4) TransferComplete(5)', 'WCS → 설비. 반송 요청 / 완료·알람 보고 응답 / 반송 완료 통지'],
     ['Status', 'D', '160', '10', 'SubsystemStatus(0 : 1 IDLE / 2 RUN) AlarmSetCode(1) AlarmResetCode(2) TransferCompleteLocation(3~5) SubsystemLocation(6~8 열/연/단) OperationMode(9)', '설비 → WCS'],
-    ['ErrCode', 'D', '1160', '10', 'ErrCode(0)', '설비 → WCS. 에러코드 전용 블록(2026-09-02 분리 : 종전 Status offset10 이 다음 호기 상태와 겹쳐 전 크레인 유령 에러). ★실PLC 주소 재확인 필요 항목★'],
+    ['ErrCode', 'D', '1160', '10', 'ErrCode(0)', '설비 → WCS. 에러코드 전용 블록(종전 Status offset10 은 다음 호기 상태와 겹쳐 전 크레인 유령 에러를 냈다 - 그래서 분리). ★실PLC 주소 재확인 필요 항목★'],
     ['Command', 'D', '320', '10', 'From(0~2 : 포트/열/연/단) To(3~5) JobNo(6~7, 2워드 ASCII)', 'WCS → 설비. 반송 지시 데이터. TransferRequest 를 세우기 전에 쓴다'],
     ['Tracking', 'R', '300', '2', 'PalletOnVehicle(0, 2워드 ASCII 4자리)', '설비 → WCS. 차상 작업번호'],
 ], widths=[1.8, 1.6, 1.3, 1.3, 8.5, 8.0], font=8)
@@ -221,7 +221,7 @@ table(d, ['블록', '디바이스', 'origin', 'stride', '신호 (offset)', '방�
     ['Event', 'M', '928', '32', 'S/C 와 같음 (PalletExistFlag 0, LoadComplete 16, UnloadComplete 17, AlarmSetReport 18, AlarmResetReport 19, TransferAck 20)', '설비 → WCS'],
     ['Ack', 'M', '1616', '16', 'S/C 와 같음 (TransferRequest 0 … TransferComplete 5)', 'WCS → 설비'],
     ['Status', 'D', '210', '10', 'S/C 와 같음 (SubsystemStatus 0 … OperationMode 9)', '설비 → WCS'],
-    ['Command', 'D', '370', '10', 'From(0~2) To1(3) To2(4) To3(5 = 트랙) JobNo(6~7)', 'WCS → 설비. To3 = D375 (2026-09-04 정정 : 구 ECS 표의 W0345 는 오기, S/C#3 To3 와 겹쳐 오지시 재현됨). ★실PLC 대사 시 D375 확인★'],
+    ['Command', 'D', '370', '10', 'From(0~2) To1(3) To2(4) To3(5 = 트랙) JobNo(6~7)', 'WCS → 설비'],
     ['Tracking', 'R', '310', '2', 'PalletOnVehicle(0)', '설비 → WCS. 차상 작업번호'],
 ], widths=[1.8, 1.6, 1.3, 1.3, 8.5, 8.0], font=8)
 
@@ -229,13 +229,13 @@ d.add_heading('3.5 공통 알람 비트', 2)
 table(d, ['그룹', '신호', '주소 (M 비트)', '뜻'], [
     ['Alarm (S/C#1 대표)', 'AlarmSet / AlarmReset', 'M786 / M787', '설비 → WCS. 사이클당 1회 점검'],
     ['', 'AlarmSetAck / AlarmResetAck', 'M1539 / M1540', 'WCS → 설비'],
-    ['MainAlarm (2026-09-17 알람 리스트)', 'CvOverloadWord', 'M8800 (= M5500 워드) bit1~D', 'C/V 119~131 모터 과부하 → CV_DATA.ERROR_CODE 0119~0131. 운전 화면 C/V 에러는 이것만'],
+    ['MainAlarm (PLC 알람 리스트)', 'CvOverloadWord', 'M8800 (= M5500 워드) bit1~D', 'C/V 119~131 모터 과부하 → CV_DATA.ERROR_CODE 0119~0131. 운전 화면 C/V 에러는 이것만'],
     ['', 'RgvAlarmWord', 'M8960 (= M5600 워드) bit1~F', 'RGV 알람 12,14,15,33,34,42,45,53,54,55,61,62,81,82,91 → RTV_DATA_LGLS.ERR_CODE_RD'],
 ], widths=[5.0, 5.0, 5.0, 7.5], font=8.5)
 note(d, '사용 여부 WCS_DB.INI [CNF] MAIN_ALM_BITS (1 사용). 주소 표기 : 워드 10진 + 비트 16진 (M5501 = 550x16+1 = 8801).')
 d.add_page_break()
 
-d.add_heading('3.5.1 운전 화면 삭제 신호 비트 (WCS_DB.INI [HMI_DELETE], 2026-11-05 주소 확정)', 3)
+d.add_heading('3.5.1 운전 화면 삭제 신호 비트 (WCS_DB.INI [HMI_DELETE])', 3)
 para(d, 'PLC 담당자가 지상반(HMI) [삭제] 와 같은 동작을 ECS 에서 하도록 M 영역 비트 7개(M6800 ~ M6806)를 열어 주었다. 작업순서(S/C#1 예) : ① ECS 가 M6800 ON → ② PLC 가 DATA 삭제 → ③ PLC 가 M6800 OFF. ECS 는 1 만 쓰고, 끄는 것은 PLC 다(1 을 보고 처리한 뒤 스스로 내린다). '
         '주소는 서버 WCS_DB.INI [HMI_DELETE] 의 <이름>_AREA(M) / <이름>_ADDR(PLC 표기 그대로, 예 6800 = 워드 680 비트 0 = %MX10880) 에 두고, 비어 있으면 쓰지 않는다(기동 로그 [HMI_DEL] 에 7개가 풀려 보인다).')
 table(d, ['이름', 'PLC 주소', '뜻', '운전 화면', 'DB 명령 (CMD_RQ_ID / CMD_RQ_YN=Y)', 'PLC 가 하는 일'], [
@@ -243,7 +243,7 @@ table(d, ['이름', 'PLC 주소', '뜻', '운전 화면', 'DB 명령 (CMD_RQ_ID 
     ['RTV1', 'M6805', 'RGV 데이터 삭제', 'RGV 상태창 [데이터 삭제]', 'RTV_DATA_LGLS(801).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '〃'],
     ['CV', 'M6806', 'CONVEYOR 데이터 삭제 = 모든 C/V 의 R 트래킹 0 클리어', 'MANUAL ▷ 수동조작 ▷ [CV 지우기]', 'CV_DATA(가장 작은 트랙 1행).CMD_RQ_ID = CVCLR → CvThread 가 비트 1, N 으로 소비', 'R 영역(ASCII 트래킹)을 모두 0 으로 지우고 비트를 내린다. ECS 가 "0" 을 써도 0x30 이 남아 PLC 는 값이 있다고 보므로'],
 ], widths=[1.8, 2.4, 3.6, 3.6, 6.4, 4.7], font=8.5)
-note(d, 'DB 열 추가 없음 - 기존 CMD_RQ_ID/CMD_RQ_YN 명령 통로를 쓴다. 비트 주소는 2026-11-05 PLC 담당자 확정값이다(주소를 바꾸면 ini 기입 + WCS_TASK_CV 재기동). M 표기는 끝 한 자리가 비트(0~F), 앞이 워드 10진이다. '
+note(d, 'DB 열 추가 없음 - 기존 CMD_RQ_ID/CMD_RQ_YN 명령 통로를 쓴다. 비트 주소는 PLC 담당자 확정값이다(주소를 바꾸면 ini 기입 + WCS_TASK_CV 재기동). M 표기는 끝 한 자리가 비트(0~F), 앞이 워드 10진이다. '
         'D/R 로 정의하면 그 워드에 1 을 쓴다. 이력 : WCS_LOG_PGR(VEH_SC/VEH_RTV "운전 명령 HMIDEL", COMM0 "[CVCLR]") · WCS_CLIENT_LOG.')
 
 d.add_heading('3.6 핸드셰이크 규약', 2)
@@ -261,7 +261,7 @@ table(d, ['단계', 'WCS', '설비', 'DB 상태'], [
 ], widths=[3.0, 8.0, 7.5, 4.0], font=8.5)
 bullets(d, [
     '알람 : AlarmSetReport ON + AlarmSetCode → WCS 가 AlarmSetReportAck, 에러 래치(SC_ERR_CODE_BLOCK=3 : 보고 비트 래치, RESET 보고 또는 워드 0 이면 해제). E 전문 발신.',
-    '완료 판정은 설비 신호로만 한다. 시간 경과로 자동 완료하지 않는다(체류복구 폐기 2026-09-17). 신호가 유실되면 운전 화면 [완료처리]가 DB 를 넘기고 트래킹 기록을 요청한다.',
+    '완료 판정은 설비 신호로만 한다. 신호가 유실되면 운전 화면 [완료처리]가 DB 를 넘기고 트래킹 기록을 요청한다.',
     '출고대 도착(WorkInstruction, 3초 펄스)은 OUT_SCAN_MS 보강 스캔으로 래치한다. OUT_DONE_ON_ARRIVAL=1 이면 출고대 트래킹에 그 작업번호가 실제 도착하면 즉시 19.',
 ])
 
@@ -300,7 +300,7 @@ d.add_page_break()
 # ═════════════════════════════════════════════════════════════
 d.add_heading('4. 프로그램 간 DB 인터페이스', 1)
 para(d, 'TASK 3종과 운전 화면은 서로 소켓으로 말하지 않는다. 모든 인계는 LGLS_MCS_IO 의 표로 한다. 열의 뜻은 03 테이블 정의서.')
-d.add_heading('4.1 작업 상태 기계 (JOB_MST.JOB_STATUS)', 2)
+d.add_heading('4.1 작업 상태(JOB_MST.JOB_STATUS)', 2)
 table(d, ['상태', '뜻', '세우는 쪽', '다음으로 넘기는 조건'], [
     ['99', '신규', 'HOST (O 전문)', 'IO 가 출발 설비·경로를 정하면 10 또는 20'],
     ['10 / 11', 'C/V 지시 / 전송', 'IO / EQP', '트래킹에 번호 기록 확인 → 15'],
@@ -321,10 +321,10 @@ table(d, ['표', '쓰는 쪽 → 읽는 쪽', '주요 열', '규약'], [
      'EQP 는 OD/CMD 를 소비하면 YN 을 N 으로. ":" 는 토큰 구분자로 쓰지 않는다(DB 계층이 @ 로 바꿈)'],
     ['SC_DATA_LGLS (901~905)', 'EQP → IO · 화면 / IO · 화면 → EQP',
      'SUBSYSTEM_STATUS_RD ERR_CODE_RD ERR_STA_FK1_RD PALLET_ON_VEHICLE_RD LOCATION_RD / FROM_01~03_OD TO_01~03_OD PALLET_ID_OD TRANSFER_REQUEST_OD OD_RQ_YN JOB_TYP_RD',
-     'OD_RQ_YN=Y 가 지시 요청. EQP 가 PLC 에 쓰고 N. [지시 재전송] = 다시 Y. [강제완료]/[완료처리] = OD 비움. [데이터 삭제] = CMD_RQ_ID HMIDEL → [HMI_DELETE] M 비트 1 (3.5.1)'],
+     'OD_RQ_YN=Y 가 지시 요청. EQP 가 PLC 에 쓰고 N. [지시 재전송] = 다시 Y. [완료처리] = OD 비움. [데이터 삭제] = CMD_RQ_ID HMIDEL → [HMI_DELETE] M 비트 1 (3.5.1)'],
     ['RTV_DATA_LGLS (801)', '〃', 'DEPART_TRACK ARRIVE_TRACK(실제 트랙번호) TRANSFER_REQUEST_OD PALLET_ON_VEHICLE_RD ERR_CODE_RD(메인 알람 비트 파생)', 'PLC_NO 는 EQP_MST 와 같은 "01"'],
     ['EQP_MST', 'TASK 3종 → 화면', 'UPD_DT CONNECTED_YN (EQP / SCH / HOST / HOST2)', '하트비트. 운전 화면 신호등이 이 표로 판정(EQP 1행이 PLC 소켓 대표)'],
-    ['DEL_HIS_SETTING', '화면 → IO', 'TABLE_NAME CYCLE UNIT KEY_COLUMN', 'IO PurgeHistory 가 1시간마다 읽어 삭제(2026-10-29)'],
+    ['DEL_HIS_SETTING', '화면 → IO', 'TABLE_NAME CYCLE UNIT KEY_COLUMN', 'IO PurgeHistory 가 1시간마다 읽어 삭제'],
     ['COMMON_CODE / EQP_ECD_MST', 'DB → 전부', 'JOB_STATUS 등 코드 / 에러코드 문구', '운전 화면은 기동 때 읽는다 → SQL 반영 뒤 재기동'],
 ], widths=[4.0, 5.0, 8.5, 5.0], font=8)
 d.add_page_break()
@@ -335,10 +335,9 @@ table(d, ['기능', '표 · 열', '규약'], [
     ['설비 상태 수집', 'CV_DATA / SC_DATA_LGLS / RTV_DATA_LGLS / JOB_MST', 'COLLECT_INTERVAL_MS(200) 마다 읽어 그림·판넬 갱신. 작업정보 판넬은 JOB_PANEL_REFRESH_MS(1000)'],
     ['트랙 [쓰기]/[삭제]/[붙여넣기]', 'CV_DATA.LUGG_NO_OD + TRACKING_WRITE_YN=Y, JOB_MST.JOB_STATUS(통로 16 / 작업대 15)', 'EQP 가 R 트래킹에 쓴다'],
     ['방향 전환 더블클릭', 'CV_DATA.CMD_RQ_ID = DIR 명령 (+ Ecs.ini DIR_ADDR_CV11/CV2 로 확인창에 PLC 주소 표시)', 'EQP 가 D 방향 워드에 즉시 쓴다. IO 는 MANUAL_DIR_HOLD_SEC 동안 자동 정합 억제'],
-    ['[완료처리] (스텝 단위)', 'JOB_MST.JOB_STATUS 이동(15/39/16/29/19) + 설비 OD 해제 + CV_DATA 번호 기록 요청', '경로의 다른 칸에 화물이 있으면 그 단계로(2026-10-28). S/C 출고 · RGV 구간은 데이터 삭제를 같이 할지 묻고, [예] 면 HMIDEL 을 먼저 남겨 EQP 가 CMD_RQ_YN 을 N 으로 돌린 뒤(최대 HMIDEL_WAIT_SEC 초) 상태를 옮긴다(2026-11-06). WCS_CLIENT_LOG 기록'],
-    ['[지시 재전송] / [강제완료] / [이상종료]', 'SC/RTV OD_RQ_YN=Y 재세움 / OD 비움 + 상태 29·39 / OD 비움', '권한 UPD_YN, 확인창, WCS_CLIENT_LOG'],
-    ['[데이터 삭제] / [CV 지우기] (2026-11-04)', 'SC_DATA_LGLS · RTV_DATA_LGLS CMD_RQ_ID=HMIDEL / CV_DATA(최소 트랙) CMD_RQ_ID=CVCLR, CMD_RQ_YN=Y', 'EQP 가 [HMI_DELETE] M 비트에 1 (3.5.1). 권한 EXE_YN, 확인창, WCS_CLIENT_LOG. 표시 Ecs.ini [MENU] HMIDEL_BTN'],
-    ['우선순위 ▲▼ / [수정]', 'JOB_MST.JOB_PRIORITY ±1 / 직접 입력', 'IO 는 다음 사이클부터 반영'],
+    ['[완료처리] (스텝 단위)', 'JOB_MST.JOB_STATUS 이동(15/39/16/29/19) + 설비 OD 해제 + CV_DATA 번호 기록 요청', '경로의 다른 칸에 화물이 있으면 그 단계로. S/C 출고 · RGV 구간은 데이터 삭제를 같이 할지 묻고, [예] 면 HMIDEL 을 먼저 남겨 EQP 가 CMD_RQ_YN 을 N 으로 돌린 뒤(최대 HMIDEL_WAIT_SEC 초) 상태를 옮긴다. WCS_CLIENT_LOG 기록'],
+    ['[지시 재전송] / [이상종료]', 'SC/RTV OD_RQ_YN=Y 재세움 / OD 비움', '권한 UPD_YN, 확인창, WCS_CLIENT_LOG'],
+    ['[데이터 삭제] / [CV 지우기]', 'SC_DATA_LGLS · RTV_DATA_LGLS CMD_RQ_ID=HMIDEL / CV_DATA(최소 트랙) CMD_RQ_ID=CVCLR, CMD_RQ_YN=Y', 'EQP 가 [HMI_DELETE] M 비트에 1 (3.5.1). 권한 EXE_YN, 확인창, WCS_CLIENT_LOG. 표시 Ecs.ini [MENU] HMIDEL_BTN'],
     ['수동지시 / [H/S 배출]', 'JOB_MST 생성 (JOB_TYP 1x 반자동, LUGG_NO 9001~9900)', 'HOST 보고 안 함, 완료 시 삭제'],
     ['로그 삭제 설정', 'DEL_HIS_SETTING.CYCLE', 'IO 가 다음 검사(최대 1시간)부터 반영'],
     ['조작 기록', 'WCS_CLIENT_LOG (사용자 · PC IP · 내용)', '60일'],
@@ -362,6 +361,4 @@ table(d, ['일자', '내용'], [
     ['2026-11-06', '[완료처리] 가 S/C 출고 · RGV 구간에서 [데이터 삭제](HMIDEL) 를 같이 한다 : 삭제 요청 → EQP 기록 확인 → JOB_STATUS 이동 순서. Ecs.ini [MENU] HMIDEL_ASK · HMIDEL_WAIT_SEC. DB · TASK 변경 없음'],
 ], widths=[3.0, 19.5], font=8.5)
 
-para(d, '')
-para(d, '문서 판 : %s' % G.DATE, size=9, color=GRAY)
-out = os.path.join(OUT, '04_인터페이스_정의서.docx'); d.save(out); print('saved', out)
+save_doc(d, '04_인터페이스_정의서.docx')
