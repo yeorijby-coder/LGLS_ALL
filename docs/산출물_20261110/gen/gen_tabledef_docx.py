@@ -111,7 +111,7 @@ table(d, ['구분', '대상', '왜'], [
     ['표 추가', 'DN_MST / DN_SEQ / UP_DOWN', 'Client 배포 런처(Upload/Download). 파일을 DB 에 올리면 각 PC 의 Ecs.exe 가 기동 때 받아 간다'],
     ['열 추가', 'CV_DATA.RET_READY_LATCH / RET_READY_LATCH_LUGG / RET_READY_LATCH_DT', '출고대 도착 신호가 3초 펄스라 사이클당 1회 샘플링으로 놓치던 것을 설비 통신이 래치해 두고 스케줄러가 소비'],
     ['동작 변경', 'DEL_HIS_SETTING', 'IO_TASK 가 이 표를 읽어 보존기간 지난 이력을 실제로 지운다(종전엔 아무도 지우지 않았다)'],
-    ['동작 변경', 'WCS_LOG_PGR', '"[] -> [0000]" 트래킹 로그 억제(개발 DB 32.9만 건이 쌓이던 원인)'],
+    ['동작 변경', 'WCS_LOG_PGR', '"[] -> [0000]" 트래킹 로그 억제(이 로그가 수십만 건씩 쌓이던 원인)'],
     ['표 삭제', 'CELL_MST / CELL_DTL', '이 현장은 셀(랙 위치) 관리를 쓰지 않는다(상위가 로케이션을 정해 내려 줌). 프로그램은 이 표 없이 돌도록 되어 있다. DB_BACKUP/20_CELL표_삭제.sql, 되돌리기 21_CELL표_복구.sql'],
 ], widths=[2.2, 6.3, 8.5])
 doc_set_table(d, 3)
@@ -123,7 +123,7 @@ for i, t in enumerate(by.keys(), 1):
     nm, desc = TDESC.get(t, ('', ''))
     lst.append([i, t, nm, len(by[t]), tinfo.get(t, ''), desc])
 table(d, ['No', '테이블', '한글명', '컬럼수', '행수', '설명'], lst, widths=[0.9, 4.2, 3.2, 1.3, 1.8, 6.3], font=8)
-note(d, '행수는 개발 PC 기준이며 현장과 다르다(이력 표는 보존기간이 지나면 IO_TASK 가 지운다).')
+note(d, '행수는 문서 작성 시점의 참고값이며 현장과 다르다(이력 표는 보존기간이 지나면 IO_TASK 가 지운다).')
 d.add_page_break()
 
 d.add_heading('2. 테이블 정의', 1)

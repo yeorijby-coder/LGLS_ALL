@@ -140,7 +140,7 @@ bullets(d, [
     '화면 로그 구분 [HIS] 로 이력 삭제를 확인한다 : "job_mst_his : 60 DAY 지난 12,345건 삭제" / "이력 정리 끝 (n초) - 다음 검사 HH:mm". 일반 로그는 화면만, 중요/에러 로그는 파일(ECS_LOG)에도 남는다.',
     '크레인당 사이클 1건 지시 · S/C#1 통로 2-deep 입고 · 겸용대 122 입고 전환 가드 등 교착 방지 규칙이 들어 있다(세부는 산출물_20260927 의 04 기능 흐름).',
 ])
-image(d, shot('iotask_his_purge.png'), width_cm=15.0, caption='이력 삭제 로그 예 (개발 PC) - 없는 표 건너뜀 → eqp_err_his 50건 삭제 → 정리 끝')
+image(d, shot('iotask_his_purge.png'), width_cm=15.0, caption='이력 삭제 로그 예 - 없는 표 건너뜀 → eqp_err_his 50건 삭제 → 정리 끝')
 d.add_heading('4.3 상위 통신 WCS_TASK_HOST', 2)
 image(d, shot('hosttask_main_1109.png'), width_cm=15.0, caption='상위 통신 화면 - 수신/송신 소켓 상태 · 전문 로그')
 bullets(d, [
@@ -242,7 +242,7 @@ para(d, '운전 화면 ECS ▷ 환경설정 ▷ 로그 삭제 설정 의 보존�
 table(d, ['항목', '내용'], [
     ['언제', '기동 HIS_DEL_START_SEC(120초) 뒤 첫 검사, 그 뒤 HIS_DEL_INTERVAL_MIN(60분)마다 설정표를 다시 읽는다'],
     ['무엇을', 'unit 이 DAY/HOUR/MONTH 이고 cycle ≥ 1 인 행. key_column(INS_DT / ERROR_DT) < 지금 - cycle. WH_TYP 열이 있으면 창고구분으로 좁힌다. 이 DB 에 없는 표는 건너뛰고 1회 알림'],
-    ['어떻게', '사이클(200ms)마다 표 하나에서 HIS_DEL_BATCH(2,000)행씩 DELETE TOP. 긴 DELETE 하나로 스케줄링을 세우지 않는다. 개발 PC 17만 건 25초'],
+    ['어떻게', '사이클(200ms)마다 표 하나에서 HIS_DEL_BATCH(2,000)행씩 DELETE TOP. 긴 DELETE 하나로 스케줄링을 세우지 않는다(17만 건에 약 25초)'],
     ['확인', 'IO_TASK 화면 로그 [HIS] 줄. 지운 게 없는 표는 줄을 내지 않는다'],
     ['끄기', 'ENV_IOSCH.INI [CNF] HIS_DEL_ENABLE=0. 재기동 불필요'],
 ], widths=[2.5, 14.5], font=8.5)
