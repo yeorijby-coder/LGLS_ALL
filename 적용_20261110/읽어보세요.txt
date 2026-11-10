@@ -151,3 +151,16 @@
   적용 : WCS_TASK_CV 정지 -> TASK\EQP_TASK\WCS_TASK_CV.exe 덮어쓰기 -> 기동. ini 는 안 적어도 된다. ★DB · Client 변경 없음★
   소스 : 소스_변경분\TASK\SYS_MAIN.cs · SYS_MAIN.Designer.cs · CvThread.cs · VehThread.cs · cHmiDeleteMap.cs + 변경내용_1110_CvTaskImpOnly.diff
   문서 : 01 운영자 매뉴얼 4.1(중요 로그만 · 이미 0 확인) · 5.2 INI 표(UI_LOG_IMP_ONLY)
+
+[2026-11-10 추가] 상위 통신(HOST_TASK, TASK_LFC10_G1_ECSCOM.exe) - 수신 접속은 하나만, 상대 IP:포트 표시, 거부 로그
+  변경 : 1) 수신(Server) 접속 로그에 Accept 해 준 상대를 "상대 [IP:포트] (내 수신 포트 8001, 접속 n개)" 로 적고, 제목줄 끝에 [수신 상대:IP:포트]
+            (없으면 "접속 없음")를 보인다.
+         2) 이미 한 접속이 살아 있으면 다른 접속은 받자마자 닫고, 수신 로그에 빨간 줄로
+            "접속이 거부되었습니다. 접속을 요청한 상대 [IP:포트] (이미 접속 중인 상대 [IP:포트] 가 있음)" 를 남긴다.
+            상대가 끊긴 것으로 보이는 접속(스레드 종료 · FIN/RST)은 새 접속을 막지 않는다.
+  설정 : EcsComA.ini [Host] SRV_SINGLE_CONN (1 = 하나만, 기본 / 0 = 종전대로 여러 접속). 접속 때마다 읽으므로 재기동 불필요. 안 적어도 기본 1.
+  ★주의 : 상위(WMS)가 30초마다 접속을 겹쳐 여는 현장이면(9/30 사건) 옛 접속이 살아 있는 동안 새 접속이 거부된다. 그런 경우 SRV_SINGLE_CONN=0.
+  적용 : HOST_TASK 정지 -> TASK\HOST_TASK\TASK_LFC10_G1_ECSCOM.exe 덮어쓰기 -> 기동. ★DB · ini 변경 없음★ (RemoteIP=192.100.1.191 등 현장값 그대로)
+  확인 : 시뮬(접속 2개)에서 첫 접속만 수락, 두 번째는 서버가 닫음 + 거부 로그, 첫 접속이 끊긴 뒤 새 접속 수락 · 제목줄 접속 없음으로 복귀.
+  소스 : 소스_변경분\TASK\modWorkThread.cs · frmMain.cs + 변경내용_1110_HostSingleConn.diff
+  문서 : 01 운영자 매뉴얼 4.3 · 5.2, 04 인터페이스 정의서 3장 · 변경 이력

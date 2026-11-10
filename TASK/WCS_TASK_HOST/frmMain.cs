@@ -235,6 +235,19 @@ int i;
 			}
 		}
 
+		// [LGLS 2026-11-10] 제목줄 끝에 수신 접속 상대(Accept 한 쪽 IP:포트)를 붙인다. null/빈 값이면 "접속 없음".
+		private string m_strTitleBase = null;
+		public void SetPeerTitle(string pPeer)
+		{
+			if (m_strTitleBase == null)
+			{
+				// 이전에 붙인 꼬리표가 있으면 떼어 기본 제목을 얻는다
+				int p = this.Text.IndexOf(" [수신 상대:");
+				m_strTitleBase = (p >= 0) ? this.Text.Substring(0, p) : this.Text;
+			}
+			this.Text = m_strTitleBase + " [수신 상대:" + (string.IsNullOrEmpty(pPeer) ? "접속 없음" : pPeer) + "]";
+		}
+
 		// [LGLS 2026-09-30] 살아 있는 수신 접속을 전부 닫고 스레드를 기다린다 (pJoinMs < 0 이면 끝까지)
 		private static void CloseAllSrvWork(int pJoinMs)
 		{

@@ -41,6 +41,56 @@ namespace TSK_HostCom
 			}
 		}
 
+		// [LGLS 2026-11-10] ★수신 접속을 하나만 허용할지★ (기본 1). 이미 접속이 살아 있으면 다른 접속은 받자마자 닫는다(사용자 지시).
+		//   0 이면 종전대로(SRV_MULTI_CONN 규칙) 새 접속을 그대로 받는다.
+		private static bool SrvSingleConn
+		{
+			get
+			{
+				try
+				{
+					string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+					return modDefAPI.GetPrivateProfileInt("Host", "SRV_SINGLE_CONN", 1, strIni) != 0;
+				}
+				catch { return true; }
+			}
+		}
+
+		// [LGLS 2026-11-10] 목록의 접속이 정말 살아 있는지 - 스레드가 돌고 소켓이 열려 있고, 상대가 FIN/RST 를 보내지 않았을 것.
+		//   (반쯤 끊긴 접속이 새 접속을 영영 막지 않도록, 죽은 것으로 보이면 여기서 닫고 목록에서 뺀다)
+		private static CSrvWork FindAliveSrvWork()
+		{
+			CSrvWork[] arr;
+			lock (modDefApp.g_lstSrvWork) { arr = modDefApp.g_lstSrvWork.ToArray(); }
+			foreach (CSrvWork x in arr)
+			{
+				bool bAlive = false;
+				try
+				{
+					Socket s = x.m_sktSock;
+					bAlive = (s != null && x.m_thrThreadObj != null && x.m_thrThreadObj.IsAlive && s.Connected
+							  && !(s.Poll(0, SelectMode.SelectRead) && s.Available == 0));
+				}
+				catch { bAlive = false; }
+				if (bAlive) return x;
+				// 죽은 접속 정리 (제 소켓만 닫는다 - 스레드는 스스로 끝나며 목록에서도 뺀다)
+				try { x.m_blSockConnected = false; modCmWork.CloseSocket(ref x.m_sktSock); } catch { }
+			}
+			return null;
+		}
+
+		// [LGLS 2026-11-10] 제목줄에 현재 접속한 상대(Accept 한 쪽)를 보인다. null 이면 "접속 없음".
+		private static void ShowPeerInTitle(string pPeer)
+		{
+			try
+			{
+				frmMain f = modDefApp.g_frmForm;
+				if (f == null || f.IsDisposed) return;
+				f.BeginInvoke(new System.Windows.Forms.MethodInvoker(delegate { f.SetPeerTitle(pPeer); }));
+			}
+			catch { }
+		}
+
 		// [LGLS 2026-09-30] 수신 스레드가 송신 쪽 DB 오류로도 끊던 종전 판정을 쓸지 (기본 0 = 쓰지 않음)
 		private static bool SrvStopOnCliDbErr
 		{
@@ -116,7 +166,13 @@ namespace TSK_HostCom
 					//   정리 코드가 같은 필드(= 새 소켓)를 닫아 버렸다. 상위가 30초마다 접속을 겹쳐 열면 매번 그랬다.
 					//   이제 접속마다 CSrvWork 를 하나씩 만들어(구 ECP TcpServer.Clients 와 같은 꼴) 제 소켓만 닫는다.
 					CSrvWork w;
-					if (SrvMultiConn)
+					bool bSingle = SrvSingleConn;   // [LGLS 2026-11-10]
+					if (bSingle)
+					{
+						// 접속 하나만 : 새 객체에 받아 보고, 이미 살아 있는 접속이 있으면 아래에서 거부한다.
+						w = new CSrvWork();
+					}
+					else if (SrvMultiConn)
 					{
 						w = new CSrvWork();
 					}
@@ -150,6 +206,19 @@ namespace TSK_HostCom
 
 					string strPeer = "";
 					try { strPeer = w.m_sktSock.RemoteEndPoint.ToString(); } catch { }
+					// [LGLS 2026-11-10] 이미 한 접속이 살아 있으면 다른 접속은 받지 않는다 - 받자마자 닫고 로그만 남긴다.
+					if (bSingle)
+					{
+						CSrvWork wAlive = FindAliveSrvWork();
+						if (wAlive != null)
+						{
+							string strHave = "";
+							try { strHave = wAlive.m_sktSock.RemoteEndPoint.ToString(); } catch { }
+							modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
+							try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
+							continue;
+						}
+					}
 					int nConn;
 					lock (modDefApp.g_lstSrvWork)
 					{
@@ -158,8 +227,10 @@ namespace TSK_HostCom
 					}
 					modDefApp.g_SrvWork = w;
 
-					strLog = string.Format("통신이 연결되었습니다.. [{0}] (접속 {1}개)", strPeer, nConn);
+					// [LGLS 2026-11-10] Accept 해 준 상대의 IP:포트 (내 수신 포트와 구분해서 적는다)
+					strLog = string.Format("통신이 연결되었습니다.. 상대 [{0}] (내 수신 포트 {1}, 접속 {2}개)", strPeer, modDefApp.g_iListenPort, nConn);
 					modCmWork.ShowMsgServer(strLog, modDefApp.MSG_IMP);
+					ShowPeerInTitle(strPeer);
 
 					// 서버 쓰레드 시작 - 이 접속의 객체를 넘긴다
 					CSrvWork wRun = w;
@@ -330,6 +401,7 @@ namespace TSK_HostCom
 			}
 			strLog = "통신 쓰레드를 종료합니다." + (nLeft > 0 ? " (남은 접속 " + nLeft + "개)" : "");
 			modCmWork.ShowMsgServer(strLog, modDefApp.MSG_IMP);
+			if (nLeft == 0) ShowPeerInTitle(null);   // [LGLS 2026-11-10] 제목줄 "접속 없음"
 			//소켓 연결종료표시
 			if (nLeft == 0)
 				modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picSrvCom, modDefApp.ComSts.ComErr);
