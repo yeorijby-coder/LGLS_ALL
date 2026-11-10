@@ -79,6 +79,44 @@ namespace TSK_HostCom
 			return null;
 		}
 
+		// [LGLS 2026-11-10] 상대(Accept 한 쪽) 표기. 같은 PC 에서 127.0.0.1 로 붙은 접속은 이 PC 의 실제 IP 를 함께 적는다
+		//   (루프백 주소는 "내 PC" 라는 뜻일 뿐이라 어느 PC 인지 알 수 없다 - 예 192.168.0.10(127.0.0.1):57412).
+		private static string PeerText(Socket pSock)
+		{
+			System.Net.IPEndPoint ep = pSock.RemoteEndPoint as System.Net.IPEndPoint;
+			if (ep == null) return pSock.RemoteEndPoint.ToString();
+			string strIp = ep.Address.ToString();
+			if (System.Net.IPAddress.IsLoopback(ep.Address))
+			{
+				string strMine = MyRealIp();
+				if (strMine.Length > 0) strIp = strMine + "(" + strIp + ")";
+			}
+			return strIp + ":" + ep.Port;
+		}
+
+		// 이 PC 의 실제 IPv4 - 켜져 있는 어댑터 중 게이트웨이가 있는 것을 먼저, 없으면 처음 보이는 것. 못 찾으면 빈 문자열.
+		private static string MyRealIp()
+		{
+			try
+			{
+				string strFirst = "";
+				foreach (System.Net.NetworkInformation.NetworkInterface ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+				{
+					if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
+					if (ni.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
+					System.Net.NetworkInformation.IPInterfaceProperties ip = ni.GetIPProperties();
+					foreach (System.Net.NetworkInformation.UnicastIPAddressInformation ua in ip.UnicastAddresses)
+					{
+						if (ua.Address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork) continue;
+						if (ip.GatewayAddresses.Count > 0 && ip.GatewayAddresses[0].Address.ToString() != "0.0.0.0") return ua.Address.ToString();
+						if (strFirst.Length == 0) strFirst = ua.Address.ToString();
+					}
+				}
+				return strFirst;
+			}
+			catch { return ""; }
+		}
+
 		// [LGLS 2026-11-10] 제목줄에 현재 접속한 상대(Accept 한 쪽)를 보인다. null 이면 "접속 없음".
 		private static void ShowPeerInTitle(string pPeer)
 		{
@@ -205,7 +243,7 @@ namespace TSK_HostCom
 					if (w.m_sktSock == null) continue;
 
 					string strPeer = "";
-					try { strPeer = w.m_sktSock.RemoteEndPoint.ToString(); } catch { }
+					try { strPeer = PeerText(w.m_sktSock); } catch { }
 					// [LGLS 2026-11-10] 이미 한 접속이 살아 있으면 다른 접속은 받지 않는다 - 받자마자 닫고 로그만 남긴다.
 					if (bSingle)
 					{
@@ -213,7 +251,7 @@ namespace TSK_HostCom
 						if (wAlive != null)
 						{
 							string strHave = "";
-							try { strHave = wAlive.m_sktSock.RemoteEndPoint.ToString(); } catch { }
+							try { strHave = PeerText(wAlive.m_sktSock); } catch { }
 							modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
 							try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
 							continue;
