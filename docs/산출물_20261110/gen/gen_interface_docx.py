@@ -47,6 +47,7 @@ table(d, ['소켓', '누가 접속', '주소 · 포트', '흐르는 전문', 'IN
 bullets(d, [
     '명령 수신 소켓은 접속별 작업 객체(SRV_MULTI_CONN=1)로 처리한다. 상위가 겹쳐 접속해도 먼저 붙은 소켓을 닫지 않는다(구 ECP 다중접속과 동일).',
     '수신 접속은 하나만 받는다([Host] SRV_SINGLE_CONN=1, 기본). 이미 한 접속이 살아 있으면 다른 접속은 받자마자 닫고, 요청한 상대의 IP:포트와 함께 "접속이 거부되었습니다" 를 수신 로그에 남긴다. 현재 붙은 상대는 제목줄 [수신 상대:IP:포트] 에 보인다.',
+    'ini [Network] RemoteIP 가 아닌 IP 에서 온 접속은 받자마자 닫는다([Host] SRV_ALLOW_ONLY_REMOTEIP=1, 기본). 요청한 상대의 IP:포트와 허용 IP 를 "접속이 거부되었습니다" 로그에 남긴다.',
     '보고 송신은 WCS 가 접속한다. 끊기면 재접속하고, 응답 없는 완료(09)는 RE_REPORT_09_SEC(60초)마다 재보고한다.',
     '모든 송수신 전문은 HOST_IF_LOG 에 원문으로 남는다(60일).',
 ])
@@ -361,7 +362,7 @@ table(d, ['일자', '내용'], [
     ['2026-11-05', '[HMI_DELETE] 주소 확정 : S/C#1~#5 = M6800~M6804, RGV = M6805, CONVEYOR = M6806. ini _ADDR 은 PLC 표기 그대로 적는다(3.5.1)'],
     ['2026-11-06', '[완료처리] 가 S/C 출고 · RGV 구간에서 [데이터 삭제](HMIDEL) 를 같이 한다 : 삭제 요청 → EQP 기록 확인 → JOB_STATUS 이동 순서. Ecs.ini [MENU] HMIDEL_ASK · HMIDEL_WAIT_SEC. DB · TASK 변경 없음'],
     ['2026-11-10', '[HMI_DELETE] 비트를 ECS 가 끌지(OFF_BY_ECS, 기본 0 = PLC) 몇 초 뒤 끌지(OFF_DELAY_SEC, 기본 3)를 WCS_DB.INI 로 정한다(3.5.1). C/V 상태창 신호 단추 깜빡임은 Ecs.ini [MENU] HS_BLINK=1 일 때만(기본 꺼짐). DB 변경 없음'],
-    ['2026-11-10', 'HOST 수신 접속 하나만 허용([Host] SRV_SINGLE_CONN=1 기본) - 이미 접속 중이면 다른 접속 거부 + 요청 IP:포트 로그. 제목줄 [수신 상대:IP:포트]'],
+    ['2026-11-10', 'HOST 수신 접속 하나만 허용([Host] SRV_SINGLE_CONN=1 기본) - 이미 접속 중이면 다른 접속 거부 + 요청 IP:포트 로그. 제목줄 [수신 상대:IP:포트]. RemoteIP 가 아닌 IP 의 접속 거절([Host] SRV_ALLOW_ONLY_REMOTEIP=1 기본)'],
 ], widths=[3.0, 19.5], font=8.5)
 
 save_doc(d, '04_인터페이스_정의서.docx')
