@@ -236,7 +236,7 @@ note(d, '사용 여부 WCS_DB.INI [CNF] MAIN_ALM_BITS (1 사용). 주소 표기 
 d.add_page_break()
 
 d.add_heading('3.5.1 운전 화면 삭제 신호 비트 (WCS_DB.INI [HMI_DELETE])', 3)
-para(d, 'PLC 담당자가 지상반(HMI) [삭제] 와 같은 동작을 ECS 에서 하도록 M 영역 비트 7개(M6800 ~ M6806)를 열어 주었다. 작업순서(S/C#1 예) : ① ECS 가 M6800 ON → ② PLC 가 DATA 삭제 → ③ PLC 가 M6800 OFF. ECS 는 1 만 쓰고, 끄는 것은 PLC 다(1 을 보고 처리한 뒤 스스로 내린다). '
+para(d, 'PLC 담당자가 지상반(HMI) [삭제] 와 같은 동작을 ECS 에서 하도록 M 영역 비트 7개(M6800 ~ M6806)를 열어 주었다. 작업순서(S/C#1 예) : ① ECS 가 M6800 ON → ② PLC 가 DATA 삭제 → ③ PLC 가 M6800 OFF. ECS 는 1 을 쓰고, 끄는 것은 기본적으로 PLC 다(1 을 보고 처리한 뒤 스스로 내린다). WCS_DB.INI [HMI_DELETE] OFF_BY_ECS=1 이면 ECS 가 OFF_DELAY_SEC(기본 3초) 뒤 0 을 써서 끈다(기본 0 = PLC 가 끈다) - 이력에 "<- 0 (ECS 가 3초 뒤 끔)" 이 남는다. '
         '주소는 서버 WCS_DB.INI [HMI_DELETE] 의 <이름>_AREA(M) / <이름>_ADDR(PLC 표기 그대로, 예 6800 = 워드 680 비트 0 = %MX10880) 에 두고, 비어 있으면 쓰지 않는다(기동 로그 [HMI_DEL] 에 7개가 풀려 보인다).')
 table(d, ['이름', 'PLC 주소', '뜻', '운전 화면', 'DB 명령 (CMD_RQ_ID / CMD_RQ_YN=Y)', 'PLC 가 하는 일'], [
     ['SC1 ~ SC5', 'M6800 ~ M6804', '크레인 1~5호기 데이터 삭제', '크레인 상태창 [데이터 삭제]', 'SC_DATA_LGLS(901~905).CMD_RQ_ID = HMIDEL → VehThread 가 비트 1, N 으로 소비', '그 크레인의 작업 데이터를 지우고 비트를 내린다'],
@@ -359,6 +359,7 @@ table(d, ['일자', '내용'], [
     ['2026-11-04', '[HMI_DELETE] M 비트 7개(SC1~5 · RTV1 · CV, 3.5.1). 운전 화면 [데이터 삭제](HMIDEL) · [CV 지우기](CVCLR). DB 변경 없음'],
     ['2026-11-05', '[HMI_DELETE] 주소 확정 : S/C#1~#5 = M6800~M6804, RGV = M6805, CONVEYOR = M6806. ini _ADDR 은 PLC 표기 그대로 적는다(3.5.1)'],
     ['2026-11-06', '[완료처리] 가 S/C 출고 · RGV 구간에서 [데이터 삭제](HMIDEL) 를 같이 한다 : 삭제 요청 → EQP 기록 확인 → JOB_STATUS 이동 순서. Ecs.ini [MENU] HMIDEL_ASK · HMIDEL_WAIT_SEC. DB · TASK 변경 없음'],
+    ['2026-11-10', '[HMI_DELETE] 비트를 ECS 가 끌지(OFF_BY_ECS, 기본 0 = PLC) 몇 초 뒤 끌지(OFF_DELAY_SEC, 기본 3)를 WCS_DB.INI 로 정한다(3.5.1). C/V 상태창 신호 단추 깜빡임은 Ecs.ini [MENU] HS_BLINK=1 일 때만(기본 꺼짐). DB 변경 없음'],
 ], widths=[3.0, 19.5], font=8.5)
 
 save_doc(d, '04_인터페이스_정의서.docx')

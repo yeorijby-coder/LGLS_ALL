@@ -2216,16 +2216,16 @@ void CCvSkinDlg::BuildCvStatusPanel()
 		SetDlgItemText(IDC_CVV_BTN_UCA_W, _T("하역ACK ") + strAckW);
 		// 신호 LED 옆 PLC 실주소 (템플릿의 IDC_CVV_ADDR_BASE+i, 순서는 템플릿과 같다)
 		CString obs[11] = {
-			_T("LOAD_COMPLETE") + strSfx + _T(""),
-			_T("LOAD_COMPLETE_ACK") + strSfx + _T(""),
-			_T("UNLOAD_COMPLETE") + strSfx + _T(""),
-			_T("UNLOAD_COMPLETE_ACK") + strSfx + _T(""),
-			_T("UNLOAD_REQUEST_02"),
-			_T("UNLOAD_REQUEST_ACK_02"),
-			_T("IN_READY_02"),
-			_T("WAIT_IN"),
-			_T("WAIT_OUT"),
-			_T("OPERATION_MODE"),
+			_T("LOAD_COMPLETE") + strSfx + _T(""),
+			_T("LOAD_COMPLETE_ACK") + strSfx + _T(""),
+			_T("UNLOAD_COMPLETE") + strSfx + _T(""),
+			_T("UNLOAD_COMPLETE_ACK") + strSfx + _T(""),
+			_T("UNLOAD_REQUEST_02"),
+			_T("UNLOAD_REQUEST_ACK_02"),
+			_T("IN_READY_02"),
+			_T("WAIT_IN"),
+			_T("WAIT_OUT"),
+			_T("OPERATION_MODE"),
 			_T("PALLET_EXIST_FLAG") + strSfx + _T(""),
 		};
 		for (int i = 0; i < 11; i++) SetDlgItemText(IDC_CVV_ADDR_BASE + i, CLib::GetObsAddr(strOwner, obs[i]));

@@ -27,3 +27,12 @@ CV_ADDR=6806
    확인 : 버튼을 누르면 WCS_LOG_PGR 에 "... SC1 M6800(%MX10880) <- 1 기록 (끄는 것은 PLC)" 처럼 남는다.
           "영역 미정의" 로 남으면 ini 가 반영되지 않은 것이다.
    개발 PC 시뮬 검증(2026-11-05) : 버튼 7개 모두 M 워드 680 의 비트 0~6 이 차례로 켜지는 것을 PLC 메모리 읽기로 확인했다.
+
+[2026-11-10 추가] WCS_DB.INI [HMI_DELETE] 절 끝(CV_ADDR 아래)에 두 줄을 더한다 (안 적으면 기본 = PLC 가 끈다)
+
+; [LGLS 2026-11-10] 켠 비트를 누가 끄나. OFF_BY_ECS=0 PLC 가 끈다(기본, 담당자 순서) / 1 ECS 가 OFF_DELAY_SEC(초, 기본 3) 뒤 0 을 쓴다. 기동 때 한 번 읽음
+OFF_BY_ECS=0
+OFF_DELAY_SEC=3
+
+- PLC 가 비트를 스스로 내리지 않는 것으로 확인되면 OFF_BY_ECS=1 로 바꾸고 WCS_TASK_CV 를 재기동한다. OFF_DELAY_SEC 는 1~600.
+- 확인 : 기동 로그 [HMI_DEL] 끝에 "OFF=PLC" 또는 "OFF=ECS 3s". 버튼을 누르면 WCS_LOG_PGR 에 "<- 1 기록 (3초 뒤 ECS 가 끔)" 이어서 "<- 0 (ECS 가 3초 뒤 끔)".

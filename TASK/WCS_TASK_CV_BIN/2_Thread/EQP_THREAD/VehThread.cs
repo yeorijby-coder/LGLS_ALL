@@ -469,6 +469,8 @@ namespace WCS_TASK_CV
                         try { ConsumeCommands(v); }
                         catch (Exception exc) { LogDb("[VEH_" + m_strKind + "] 지시 소비 실패: " + exc.Message + " @ " + (exc.StackTrace ?? "").Replace("\r\n", " | ")); }
                     }
+                    // [LGLS 2026-11-10] [데이터 삭제] 비트를 ECS 가 끄는 설정이면(ini OFF_BY_ECS=1) 시간이 된 것을 0 으로 쓴다
+                    try { ProcessHmiDeleteOff(); } catch (Exception exOff) { LogDb("[VEH_" + m_strKind + "] 데이터 삭제 끄기 실패: " + exOff.Message); }
 
                     // [LGLS 2026-08-22] 통신 연속 실패 감시 (CvThread 와 같은 규칙).
                     //   세션이 죽어도 소켓 플래그가 살아 있는 경우가 있어, 실패 횟수로 판단해 강제 재접속한다.
@@ -1124,6 +1126,7 @@ namespace WCS_TASK_CV
             //   PLC 담당자가 호기마다 M 영역 한 비트(SC1~SC5, RTV1)를 열어 주고, 그 주소는 WCS_DB.INI [HMI_DELETE] 에 둔다.
             //   ECS 는 그 비트에 1 만 쓴다. 끄는 것은 PLC 다(1 을 보고 설비 데이터를 지운 뒤 스스로 내린다).
             //   영역이 비어 있으면(미정의) 쓰지 않고 이력에만 남긴다. 결과와 무관하게 명령은 소비한다(운전원이 다시 누른다).
+            // [LGLS 2026-11-10] WCS_DB.INI [HMI_DELETE] OFF_BY_ECS=1 이면 ECS 가 OFF_DELAY_SEC 뒤 0 을 쓴다(ProcessHmiDeleteOff). 기본 0 = PLC 가 끈다.
             if (cmd == "HMIDEL")
             {
                 int nKey = 0; int.TryParse(v.KeyVal, out nKey);
@@ -1175,7 +1178,49 @@ namespace WCS_TASK_CV
                 byte[] tx = new byte[2]; tx[0] = 1; tx[1] = 0;
                 bOk = PlcWriteWords(a.Device[0], a.Addr, 1, tx);
             }
-            return strArea + " " + a.Xgt + " <- 1 " + (bOk ? "기록 (끄는 것은 PLC)" : "기록 실패");
+            // [LGLS 2026-11-10] ECS 가 끄는 설정이면 끌 시각을 걸어 둔다(같은 영역을 또 누르면 시각만 미룬다)
+            if (bOk && WcsCommon.cHmiDeleteMap.OffByEcs)
+            {
+                lock (m_lstHmiOff)
+                {
+                    m_lstHmiOff.RemoveAll(delegate(HmiOff o) { return o.Area == strArea; });
+                    HmiOff off = new HmiOff(); off.Area = strArea; off.Due = DateTime.Now.AddSeconds(WcsCommon.cHmiDeleteMap.OffDelaySec);
+                    m_lstHmiOff.Add(off);
+                }
+            }
+            return strArea + " " + a.Xgt + " <- 1 " + (bOk ? ("기록 (" + WcsCommon.cHmiDeleteMap.OffText + ")") : "기록 실패");
+        }
+
+        // [LGLS 2026-11-10] [데이터 삭제] 비트를 ECS 가 끄는 경우의 대기 목록 - 스레드 사이클(300ms)마다 ProcessHmiDeleteOff 가 본다.
+        //   별도 타이머 스레드를 두지 않는다(소켓 1개를 여러 스레드가 쓰면 안 된다).
+        private class HmiOff { public string Area; public DateTime Due; }
+        private readonly List<HmiOff> m_lstHmiOff = new List<HmiOff>();
+
+        /// <summary>[LGLS 2026-11-10] 끌 시각이 지난 [데이터 삭제] 비트에 0 을 쓴다. OFF_BY_ECS=0 이면 목록이 늘 비어 있다.</summary>
+        private void ProcessHmiDeleteOff()
+        {
+            List<HmiOff> due = null;
+            lock (m_lstHmiOff)
+            {
+                if (m_lstHmiOff.Count == 0) return;
+                DateTime now = DateTime.Now;
+                due = m_lstHmiOff.FindAll(delegate(HmiOff o) { return o.Due <= now; });
+                foreach (HmiOff o in due) m_lstHmiOff.Remove(o);
+            }
+            foreach (HmiOff o in due)
+            {
+                WcsCommon.cHmiDeleteMap.Area a = WcsCommon.cHmiDeleteMap.Get(o.Area);
+                if (a == null || !a.Used) continue;
+                bool bOk;
+                if (a.Device == "M")
+                    bOk = m_msQPlc.WRITE_BIT((byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, a.Addr, false);
+                else
+                {
+                    byte[] tx = new byte[2]; tx[0] = 0; tx[1] = 0;
+                    bOk = PlcWriteWords(a.Device[0], a.Addr, 1, tx);
+                }
+                LogDb("[VEH_" + m_strKind + "] 데이터 삭제 " + o.Area + " " + a.Xgt + " <- 0 " + (bOk ? ("(ECS 가 " + WcsCommon.cHmiDeleteMap.OffDelaySec + "초 뒤 끔)") : "기록 실패"));
+            }
         }
 
         // ---------- 지시(_od) → Vehicle 명령 메모리 ----------

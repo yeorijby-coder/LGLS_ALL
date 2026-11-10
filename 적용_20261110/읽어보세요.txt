@@ -124,3 +124,19 @@
          5초 뒤 원래대로 (docs\산출물_20261110\shots\cv_hsblink_sto_1110.png · cv_hsblink_off_1110.png).
   소스 : 소스_변경분\WCS\CvSkinDlg.cpp · CvSkinDlg.h + 변경내용_1110_CvSkinDlg.diff
   문서 : docs\산출물_20261110 의 01 운영자 매뉴얼(5.2 INI 표 HS_BLINK 행 · 7.3 빌드), 02 사용자 매뉴얼(4장 · 6.3), 05 Troubleshooting(개정 1.0.5 - 4-1 · 5-1)
+
+[2026-11-10 추가] 설비 통신(WCS_TASK_CV.exe 빌드 2026-11-10 14:37) - [데이터 삭제]/[CV 지우기] 비트를 ECS 가 끌지 · 몇 초 뒤 끌지를 ini 로
+  배경 : 11-05 담당자 순서는 "ECS 가 ON -> PLC 가 DATA 삭제 -> PLC 가 OFF" 라 ECS 는 켜기만 했다. PLC 가 내리지 않는 경우에 대비해
+         ECS 가 끄는 쪽도 고를 수 있게 했다(사용자 지시 11/10).
+  설정 : WCS_DB.INI [HMI_DELETE] OFF_BY_ECS (0 = PLC 가 끈다 - 기본 / 1 = ECS 가 끈다), OFF_DELAY_SEC (ECS 가 끌 때 1 을 쓴 뒤 기다리는 초, 기본 3, 1~600).
+         기동 때 한 번 읽으므로 바꾸면 WCS_TASK_CV 재기동. TASK\EQP_TASK\추가할_설정_WCS_DB.ini.txt 참고. 안 적으면 종전과 같다.
+  동작 : OFF_BY_ECS=1 이면 S/C·RGV [데이터 삭제](HMIDEL) 와 리본 [CV 지우기](CVCLR) 모두 1 을 쓴 뒤 설비 통신 스레드가 제 사이클 안에서
+         OFF_DELAY_SEC 가 지난 비트에 0 을 쓴다(별도 스레드 없음, 소켓 1개). 같은 호기를 또 누르면 끌 시각만 뒤로 미룬다.
+  확인 : 기동 로그 [HMI_DEL] 끝 "OFF=PLC" / "OFF=ECS 3s". WCS_LOG_PGR 에 "SC1 M6800(%MX10880) <- 1 기록 (3초 뒤 ECS 가 끔)" 뒤 "<- 0 (ECS 가 3초 뒤 끔)".
+  적용 : WCS_TASK_CV 정지 -> TASK\EQP_TASK\WCS_TASK_CV.exe 덮어쓰기 -> (필요하면 ini 두 줄) -> 기동. ★DB · Client 변경 없음★
+  소스 : 소스_변경분\TASK\cHmiDeleteMap.cs · VehThread.cs · CvThread.cs + 변경내용_1110_HmiDeleteOff.diff
+  문서 : docs\산출물_20261110 의 01 운영자 매뉴얼(5.2 INI 표 OFF_BY_ECS 행 · 7.3), 04 인터페이스 정의서(3.5.1 · 6장), 05 Troubleshooting(6-3)
+
+[2026-11-10 추가] Client 소스 줄끝 정리 - 동작 변경 없음
+  CvSkinDlg.cpp · RtvSkinDlg.cpp · ScSkinDlg.cpp · PanelInfoDlg.h 에 CR CR LF 로 겹친 줄끝이, HostSim/ScSim/백업 폴더 일부에 LF 가 섞여 있어
+  Visual Studio 가 열 때마다 "줄 끝을 정규화할까요?" 를 물었다. 전부 CRLF 로 통일했다(12 파일, 소스 내용 변경 없음).

@@ -572,6 +572,7 @@ namespace WCS_TASK_CV
 
                         swPh.Restart();
                         ScanPendingWork();
+                        ProcessCvClrOff();   // [LGLS 2026-11-10] [CV 지우기] 비트를 ECS 가 끄는 설정이면 시간이 된 뒤 0 을 쓴다
                         msScan = swPh.ElapsedMilliseconds;
 
                         // [LGLS 2026-08-22] 지시가 걸린 설비를 먼저 돈다.
@@ -2093,7 +2094,13 @@ namespace WCS_TASK_CV
                                 byte devClr = (byte)(aClr.Device == "D" ? MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D : MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R);
                                 bClrOk = m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, devClr, aClr.Addr, 1, byClr);
                             }
-                            strClrRes = "CV 지우기 " + aClr.Xgt + " <- 1 " + (bClrOk ? "기록 (R 트래킹 0 클리어는 PLC 가, 끄는 것도 PLC)" : "기록 실패");
+                            strClrRes = "CV 지우기 " + aClr.Xgt + " <- 1 " + (bClrOk ? ("기록 (R 트래킹 0 클리어는 PLC 가, " + WcsCommon.cHmiDeleteMap.OffText + ")") : "기록 실패");
+                            // [LGLS 2026-11-10] WCS_DB.INI [HMI_DELETE] OFF_BY_ECS=1 이면 OFF_DELAY_SEC 뒤 ECS 가 0 을 쓴다(ProcessCvClrOff). 기본 0 = PLC 가 끈다.
+                            if (bClrOk && WcsCommon.cHmiDeleteMap.OffByEcs)
+                            {
+                                m_dtCvClrOff = DateTime.Now.AddSeconds(WcsCommon.cHmiDeleteMap.OffDelaySec);
+                                m_strCvClrOffTrack = TRACK_NO;
+                            }
                         }
                         m_strLogMsg = strTitle + " 트랙번호 : [" + TRACK_NO + "] CMD_RQ_ID : [CVCLR] " + strClrRes;
                         if (bClrOk) MakeMsg_Imp(m_strLogMsg, m_nthNo, m_msQPlc.LastAddrText);
@@ -3156,6 +3163,36 @@ namespace WCS_TASK_CV
             int bitPos  = bitIndex % 8;
             if (byteIdx >= buf.Length) return false;
             return (buf[byteIdx] & (1 << bitPos)) != 0;
+        }
+
+        // [LGLS 2026-11-10] [CV 지우기] 비트를 ECS 가 끄는 경우(ini OFF_BY_ECS=1)의 끌 시각. MinValue = 걸린 것 없음.
+        //   사이클 루프 안에서 ProcessCvClrOff 가 본다 - 별도 타이머 스레드를 두지 않는다(소켓 1개).
+        private DateTime m_dtCvClrOff = DateTime.MinValue;
+        private string   m_strCvClrOffTrack = "";
+
+        /// <summary>[LGLS 2026-11-10] 끌 시각이 지났으면 [HMI_DELETE] CV 비트에 0 을 쓰고 이력을 남긴다.</summary>
+        private void ProcessCvClrOff()
+        {
+            if (m_dtCvClrOff == DateTime.MinValue || DateTime.Now < m_dtCvClrOff) return;
+            m_dtCvClrOff = DateTime.MinValue;
+            try
+            {
+                WcsCommon.cHmiDeleteMap.Area a = WcsCommon.cHmiDeleteMap.Get("CV");
+                if (a == null || !a.Used) return;
+                bool bOk;
+                if (a.Device == "M")
+                    bOk = WriteMBit(a.Addr, false);
+                else
+                {
+                    byte[] by = new byte[2];
+                    byte dev = (byte)(a.Device == "D" ? MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D : MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R);
+                    bOk = m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, dev, a.Addr, 1, by);
+                }
+                string msg = "CV 지우기 " + a.Xgt + " <- 0 " + (bOk ? ("(ECS 가 " + WcsCommon.cHmiDeleteMap.OffDelaySec + "초 뒤 끔)") : "기록 실패");
+                if (bOk) MakeMsg_Imp(msg, m_nthNo); else MakeMsg_Error(msg, m_nthNo);
+                InsertWcsLogPgr(m_strCvClrOffTrack, msg);
+            }
+            catch (Exception ex) { MakeMsg_Error("CV 지우기 끄기 실패: " + ex.Message, m_nthNo); }
         }
 
         /// <summary>

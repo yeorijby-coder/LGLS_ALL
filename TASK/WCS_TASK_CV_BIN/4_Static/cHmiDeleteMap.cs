@@ -58,6 +58,14 @@ namespace WcsCommon
 
         public static readonly string[] Names = new string[] { "SC1", "SC2", "SC3", "SC4", "SC5", "RTV1", "CV" };
 
+        // [LGLS 2026-11-10] 켠 비트를 누가 끄나 (사용자 지시 11/10 - ini 로 정한다)
+        //   OFF_BY_ECS   : 0 = PLC 가 끈다(기본, 11/5 담당자 순서 그대로) / 1 = ECS 가 OFF_DELAY_SEC 뒤 0 을 쓴다
+        //   OFF_DELAY_SEC: ECS 가 끌 때 1 을 쓴 뒤 기다리는 초(기본 3, 1~600). 기동 때 한 번 읽는다.
+        public static bool OffByEcs    = false;
+        public static int  OffDelaySec = 3;
+        /// <summary>이력용 - "끄는 것은 PLC" / "3초 뒤 ECS 가 끔"</summary>
+        public static string OffText { get { return OffByEcs ? (OffDelaySec + "초 뒤 ECS 가 끔") : "끄는 것은 PLC"; } }
+
         private static readonly List<Area> m_list = new List<Area>();
         public static IList<Area> Areas { get { return m_list; } }
 
@@ -65,6 +73,10 @@ namespace WcsCommon
         public static void Load(string pIni)
         {
             m_list.Clear();
+            // [LGLS 2026-11-10] 끄기 설정
+            OffByEcs = (Read(pIni, "OFF_BY_ECS") == "1");
+            int nDelay; if (!int.TryParse(Read(pIni, "OFF_DELAY_SEC"), out nDelay)) nDelay = 3;
+            OffDelaySec = Math.Max(1, Math.Min(600, nDelay));
             foreach (string n in Names)
             {
                 Area a = new Area();
@@ -101,6 +113,7 @@ namespace WcsCommon
             StringBuilder sb = new StringBuilder("[HMI_DEL]");
             foreach (Area a in m_list)
                 sb.Append(' ').Append(a.Name).Append('=').Append(a.Used ? (a.Device == "M" ? a.Xgt : (a.Device + a.Addr + "(" + a.Xgt + ")")) : "-");
+            sb.Append(" OFF=").Append(OffByEcs ? ("ECS " + OffDelaySec + "s") : "PLC");   // [LGLS 2026-11-10]
             return sb.ToString();
         }
 

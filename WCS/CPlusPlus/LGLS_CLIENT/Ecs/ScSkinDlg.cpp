@@ -699,17 +699,17 @@ void CScSkinDlg::InvalidateScData(EN_LANG pLang)
 			SetDlgItemText(IDC_LGLS_SC_PRD_VAL,       _T(""));
 		}
 	}
-	// [LGLS 2026-10-01] 구 ECS 팝업의 안내문(labelAdvice) - 같은 문구, 같은 조건
-	{
-		BOOL bJob = !(m_strScvJob.IsEmpty() || m_strScvJob == _T("0") || m_strScvJob == _T("0000"));
-		CString adv;
-		if (!bJob)
-			SetDlgItemText(IDC_SCV_IO_TAG, (m_strScvState == _T("0")) ? _T("에러") : (m_strScvState == _T("2")) ? _T("작업중") : _T("대기"));
-		else if (!m_bScvJobInDb)      adv = _T("입/출고 요청번호가 DB에 없습니다.  [이상종료]처리하세요!!");
-		else if (m_strScvState == _T("1")) adv = _T("입/출고 명령이 완료되지 않았습니다. [완료처리]하세요!!");
-		else if (m_strScvState == _T("0")) adv = _T("크레인의 상태를 확인하고, [명령재전송] 또는 매뉴얼처리하세요!!");
-		SetDlgItemText(IDC_SCV_ADVICE, adv);
-	}
+	// [LGLS 2026-10-01] 구 ECS 팝업의 안내문(labelAdvice) - 같은 문구, 같은 조건
+	{
+		BOOL bJob = !(m_strScvJob.IsEmpty() || m_strScvJob == _T("0") || m_strScvJob == _T("0000"));
+		CString adv;
+		if (!bJob)
+			SetDlgItemText(IDC_SCV_IO_TAG, (m_strScvState == _T("0")) ? _T("에러") : (m_strScvState == _T("2")) ? _T("작업중") : _T("대기"));
+		else if (!m_bScvJobInDb)      adv = _T("입/출고 요청번호가 DB에 없습니다.  [이상종료]처리하세요!!");
+		else if (m_strScvState == _T("1")) adv = _T("입/출고 명령이 완료되지 않았습니다. [완료처리]하세요!!");
+		else if (m_strScvState == _T("0")) adv = _T("크레인의 상태를 확인하고, [명령재전송] 또는 매뉴얼처리하세요!!");
+		SetDlgItemText(IDC_SCV_ADVICE, adv);
+	}
 }
 
 void CScSkinDlg::InvalidateLangControl( EN_LANG enLangTemp )

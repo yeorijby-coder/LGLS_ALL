@@ -344,17 +344,17 @@ void CRtvSkinDlg::InvalidateRtvData(EN_LANG pLang)
 		SetDlgItemText(IDC_RTVV_DEST_POS,  _T(""));
 		SetDlgItemText(IDC_RTVV_PROD_ID,   _T(""));
 	}
-	// [LGLS 2026-10-01] 구 ECS 팝업의 안내문(labelAdvice)
-	{
-		BOOL bJob = !(m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000"));
-		CString adv;
-		if (!bJob)
-			SetDlgItemText(IDC_RTVV_IO_TAG, (m_strRtvvState == _T("0")) ? _T("에러") : (m_strRtvvState == _T("2")) ? _T("작업중") : _T("대기"));
-		else if (!m_bRtvvJobInDb)      adv = _T("입/출고 요청번호가 DB에 없습니다.  [이상종료]처리하세요!!");
-		else if (m_strRtvvState == _T("1")) adv = _T("입/출고 명령이 완료되지 않았습니다. [완료처리]하세요!!");
-		else if (m_strRtvvState == _T("0")) adv = _T("RGV 의 상태를 확인하고, [명령재전송] 또는 매뉴얼처리하세요!!");
-		SetDlgItemText(IDC_RTVV_ADVICE, adv);
-	}
+	// [LGLS 2026-10-01] 구 ECS 팝업의 안내문(labelAdvice)
+	{
+		BOOL bJob = !(m_strRtvvJob.IsEmpty() || m_strRtvvJob == _T("0") || m_strRtvvJob == _T("0000"));
+		CString adv;
+		if (!bJob)
+			SetDlgItemText(IDC_RTVV_IO_TAG, (m_strRtvvState == _T("0")) ? _T("에러") : (m_strRtvvState == _T("2")) ? _T("작업중") : _T("대기"));
+		else if (!m_bRtvvJobInDb)      adv = _T("입/출고 요청번호가 DB에 없습니다.  [이상종료]처리하세요!!");
+		else if (m_strRtvvState == _T("1")) adv = _T("입/출고 명령이 완료되지 않았습니다. [완료처리]하세요!!");
+		else if (m_strRtvvState == _T("0")) adv = _T("RGV 의 상태를 확인하고, [명령재전송] 또는 매뉴얼처리하세요!!");
+		SetDlgItemText(IDC_RTVV_ADVICE, adv);
+	}
 }
 
 void CRtvSkinDlg::OnSize(UINT nType, int cx, int cy)
