@@ -1,0 +1,1168 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Net.Sockets;
+using log4net;
+using log4net.Config;
+using System.Diagnostics;
+
+namespace WCS_TASK_CV
+{
+	public delegate void DelPsMsgLog(DateTime LogDate, string strMsg, cDefApp.eLogWriteGbn eLogGbn);
+    public partial class SYS_MAIN : Form
+    {
+        private int m_nProcessCnt;
+        public string m_strConnectString;
+        public CvThread[] m_thCvThread     = new CvThread[200];
+        // [LGLS 2026-07-21] 물리 이관: SC/RTV 통신 스레드 (Vehicle 프로토콜 ↔ SC_DATA/RTV_DATA)
+        public VehThread m_thVehSc;
+        public VehThread m_thVehRtv;
+        public cLogThread[] m_thLogging = new cLogThread[200];
+        public string[] m_strCOMM_IP     = new string[200];
+        public string[] m_strPLC_NO = new string[200];
+        public string[] m_strEQMT_TYP = new string[200];
+        public int[] m_nCOMM_CUR_PORT      = new int[200];
+        public int[] m_nCOMM_FROM_PORT = new int[200];
+        public int[] m_nCOMM_TO_PORT = new int[200];
+        public int[] m_nCOMM_PORT_CNT = new int[200];
+        public int[] m_nCOMM_CNT       = new int[200];
+        public int[] m_nFrTrackNo = new int[200];
+        public int[] m_nToTrackNo = new int[200];
+        public string[] m_strLogPath = new string[200];
+        public string[] m_strLogFileNm = new string[200];
+        private string m_strRtnMsg          = "";
+        private maindefine m_mfgClass = new maindefine();
+        private bool m_bHex = true;
+        private bool m_bAscii = false;
+        private int m_nPlcMaker = 1;       // PLC 제조사 (ini [PLC] MAKER : 1=XGT, 0=Melsec)
+        private FRM_LOG_FILTER m_frmLogFilter;   // [LGLS 2026-09-02] 로그 필터 창(단일 인스턴스)
+        public bool IsHex { get { return m_bHex; } set { m_bHex = value; } }
+        public bool IsAscii { get { return m_bAscii; } set { m_bAscii = value; } }
+
+        #region@@@.생성자
+        public SYS_MAIN()
+        {
+            InitializeComponent();
+
+            // [LGLS 2026-07-27] CV_TASK [시나리오 테스트] 버튼 (동적 추가) — EQP_SIM 시나리오 테스트의 역할 반대판
+            try
+            {
+                // [LGLS 2026-09-04] 표시 여부는 INI [VIEW] SCENARIO_BTN (Y=표시 기본 / N=숨김)
+                if (cDefApi.GsReadInitProfileScenarioBtn())
+                {
+                var btnScenario = new System.Windows.Forms.Button();
+                btnScenario.Name = "btnScenarioTest";
+                btnScenario.Text = "시나리오 테스트";
+                btnScenario.Size = new System.Drawing.Size(120, 23);
+                btnScenario.Location = new System.Drawing.Point(960, 28);
+                btnScenario.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+                btnScenario.BackColor = System.Drawing.Color.MistyRose;
+                btnScenario.Click += btnScenarioTest_Click;
+                this.pnlTop.Controls.Add(btnScenario);
+                btnScenario.BringToFront();
+                }
+
+                // [LGLS 2026-07-28] [정리] 버튼 — 꼬인 출고 잔류(JOB_STATUS=15) + 유령 CV 파렛트 DB 정리
+                var btnCleanup = new System.Windows.Forms.Button();
+                btnCleanup.Name = "btnCleanupStuck";
+                btnCleanup.Text = "정리";
+                btnCleanup.Size = new System.Drawing.Size(70, 23);
+                btnCleanup.Location = new System.Drawing.Point(884, 28);
+                btnCleanup.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
+                btnCleanup.BackColor = System.Drawing.Color.LightYellow;
+                btnCleanup.Click += btnCleanupStuck_Click;
+                this.pnlTop.Controls.Add(btnCleanup);
+                btnCleanup.BringToFront();
+            }
+            catch { }
+        }
+
+        private void btnScenarioTest_Click(object sender, EventArgs e)
+        {
+            try { var frm = new FRM_SCENARIO_TEST(this); frm.Show(); }
+            catch (Exception ex)
+            { System.Windows.Forms.MessageBox.Show("시나리오 테스트 열기 실패: " + ex.Message, "CV_TASK", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error); }
+        }
+
+        // [LGLS 2026-07-28] 꼬인 출고 잔류 + 유령 CV 파렛트 정리 (이중입고/공출고 테스트 후 상태 불일치 해소)
+        private void btnCleanupStuck_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (System.Windows.Forms.MessageBox.Show(
+                        "꼬인 출고 잔류(JOB_STATUS=15 CV구동중, JOB_TYP=2 출고)와\n유령 CV 파렛트(JOB_MST 미존재)를 정리합니다.\n계속하시겠습니까?",
+                        "DB 정리", System.Windows.Forms.MessageBoxButtons.YesNo,
+                        System.Windows.Forms.MessageBoxIcon.Warning) != System.Windows.Forms.DialogResult.Yes)
+                    return;
+                string r = (m_thCvThread[0] != null) ? m_thCvThread[0].CleanupStuckOutgo() : "CvThread 미기동 — 정리 불가";
+                System.Windows.Forms.MessageBox.Show(r, "DB 정리 결과");
+            }
+            catch (Exception ex)
+            { System.Windows.Forms.MessageBox.Show("정리 실패: " + ex.Message, "DB 정리", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error); }
+        }
+        #endregion
+
+        /* 
+         * SYS_MAIN_Load
+         */
+        #region[Event]SYS_MAIN_Load
+
+        private void SYS_MAIN_Load(object sender, EventArgs e)
+        {
+			m_nProcessCnt = 0;
+
+            // [LGLS 2026-08-19] 상단 컨트롤(R주소 라디오 ~780, 메모리맵/정리/시나리오 버튼 ~1080)이
+            //   전부 보이도록 기본 창폭 확대 (종전 600 에서는 우측 버튼들이 잘려 있었다)
+            this.Width = 1110;
+            this.Height = 600;
+
+            //중복실행을 방지하는 함수.
+            if (cCmLib.GfPrevInstance() == true)
+            {
+                cDefApp.GM_RE_START = true;
+                Application.Exit();
+            }
+            
+            //this.Text = Process.GetCurrentProcess().ProcessName;
+
+            // [LGLS 2026-09-28] 창 아이콘을 ini 로 고른다 (사용자 지시).
+            //   WCS_DB.INI [CNF] APP_ICON = CV(기본) / EQP. 실행 폴더의 <이름>.ico 를 읽는다.
+            //   파일이 없거나 읽지 못하면 빌드에 박힌 기본 아이콘을 그대로 둔다.
+            try
+            {
+                string strIcon = cDefApi.GsReadInitProfileAppIcon();
+                string strPath = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(Application.ExecutablePath), strIcon + ".ico");
+                if (System.IO.File.Exists(strPath))
+                    this.Icon = new System.Drawing.Icon(strPath);
+            }
+            catch { }
+
+            this.IsAscii = checkBox1.Checked;
+            this.IsHex = checkBox2.Checked;
+
+            // PLC 제조사 설정 (ini [PLC] MAKER : 1=XGT, 0=Melsec)
+            m_nPlcMaker = cDefApi.GsReadInitProfilePlcMaker();
+            if (m_nPlcMaker == 1)
+            {
+                // XGT : 타이틀에 XGT 표시, 라디오(Display) 버튼/맵보기 버튼 표시, XML 파싱 버튼 숨김
+                this.Text = this.Text + " [XGT]";
+                checkBox1.Visible = true;
+                checkBox2.Visible = true;
+                btnMemMap.Visible = true;
+                btnXmlSync.Visible = false;
+            }
+            else
+            {
+                // Melsec : 타이틀에 Melsec 표시, 라디오(Display) 버튼/맵보기 버튼 숨김, XML 파싱 버튼 표시
+                this.Text = this.Text + " [Melsec]";
+                checkBox1.Visible = false;
+                checkBox2.Visible = false;
+                btnMemMap.Visible = false;
+                btnXmlSync.Visible = true;
+                btnXmlSync.Location = btnMemMap.Location; // 맵보기 자리로 이동
+            }
+
+            // [LGLS 2026-10-15] 지상반 [삭제] 버튼 영역 정의(ini [HMI_DELETE]) 로드 - 정의만 읽고 검증한다(동작은 PLC 담당자 확정 뒤)
+            try { WcsCommon.cHmiDeleteMap.Load(cDefApp.GM_ENV_INI); WcsCommon.cTaskLog.Write("EQP", "EQP_CV", "I", WcsCommon.cHmiDeleteMap.Summary()); } catch { }
+
+            // [LGLS 2026-08-19] R(트래킹) 주소 해석 모드 로드 (ini [PLC] R_ADDR_MODE : HEX=구 ECS 호환, DEC=현행 10진)
+            //   R 영역을 쓰는 전 지점(CvThread 통신 / VehThread 관측 / 메모리맵 직접 읽기·쓰기 / 시나리오 테스트)이
+            //   cDefApp.GsRTrackWord() 를 거치므로 이 라디오 하나로 일괄 전환된다.
+            // [LGLS 2026-08-21] 단일 기준 = XML(rAddrMode). XML 이 없을 때만 INI 폴백.
+            //   라디오 전환은 XML+INI 양쪽에 기록되므로 정상 상태에서 둘은 항상 같다.
+            if (cPlcAddrMap.IsLoaded)
+            {
+                cDefApp.GM_R_ADDR_HEX = cPlcAddrMap.RAddrModeHex;
+                cDefApi.GsWriteInitProfileRAddrHex(cDefApp.GM_R_ADDR_HEX);   // INI 동기화
+            }
+            else
+                cDefApp.GM_R_ADDR_HEX = cDefApi.GsReadInitProfileRAddrHex();
+            // 주소맵 파서(EQP_SIM 과 공유하는 파일)에도 같은 변환기를 꽂아 라디오와 연동한다.
+            cPlcAddrMap.RTrackWordFn = cDefApp.GsRTrackWord;
+
+            // [LGLS 2026-09-01] D 블록 해석 모드 (R 과 대칭) - XML dAddrMode 단일 기준, INI 폴백
+            if (cPlcAddrMap.IsLoaded)
+            {
+                cDefApp.GM_D_ADDR_DOC = cPlcAddrMap.DAddrModeDoc;
+                cDefApi.GsWriteInitProfileDAddrDoc(cDefApp.GM_D_ADDR_DOC);
+            }
+            else
+                cDefApp.GM_D_ADDR_DOC = cDefApi.GsReadInitProfileDAddrDoc();
+                cDefApp.GM_CV_DTRACK_WRITE = cDefApi.GsReadInitProfileCvDtrackWrite();   // [LGLS 2026-09-02]
+            // 라디오는 R 라디오 아래 줄에 런타임 생성 (Designer 무변경)
+            // [LGLS 2026-09-01 재배치] 아래 줄(+20)은 다른 컨트롤과 겹쳤다(사용자 지적) -
+            //   R 라디오 오른쪽 빈 공간에 같은 줄로 나란히 둔다.
+            m_rdoDDoc = new RadioButton { Text = "D:10진(문서)", AutoSize = false, Size = new System.Drawing.Size(110, 17),
+                BackColor = System.Drawing.Color.LightYellow };
+            m_rdoDLegacy = new RadioButton { Text = "D:구환산(ez)", AutoSize = false, Size = new System.Drawing.Size(110, 17),
+                BackColor = System.Drawing.Color.LightYellow };
+            // R 라디오와 그룹이 섞이지 않게 패널로 감싼다
+            var pnlD = new Panel { Location = new System.Drawing.Point(rdoRDec.Right + 10, rdoRDec.Top),
+                Size = new System.Drawing.Size(228, 18), BackColor = System.Drawing.Color.Transparent };
+            m_rdoDDoc.Location = new System.Drawing.Point(0, 0);
+            m_rdoDLegacy.Location = new System.Drawing.Point(114, 0);
+            pnlD.Controls.Add(m_rdoDDoc); pnlD.Controls.Add(m_rdoDLegacy);
+            rdoRHex.Parent.Controls.Add(pnlD); pnlD.BringToFront();
+            m_bDAddrLoading = true;
+            m_rdoDDoc.Checked = cDefApp.GM_D_ADDR_DOC;
+            m_rdoDLegacy.Checked = !cDefApp.GM_D_ADDR_DOC;
+            m_bDAddrLoading = false;
+            m_rdoDDoc.CheckedChanged += rdoDAddr_CheckedChanged;
+            m_rdoDLegacy.CheckedChanged += rdoDAddr_CheckedChanged;
+            m_rdoDDoc.Visible = m_rdoDLegacy.Visible = (m_nPlcMaker == 1);
+
+            // [LGLS 2026-09-15] C/V 방향 워드 부호 라디오 (사용자 지시 : PLC 담당자 확인값이 입고=1/출고=0)
+            //   D 라디오 오른쪽에 같은 줄로 둔다. WCS_DB.INI [PLC] DIR_CODE 에 저장, 다음 방향지시부터 바로 적용.
+            cDefApp.GM_DIR_IN1 = cDefApi.GsReadInitProfileDirIn1();
+            //   [사용자 지적] 첫 줄 오른쪽에 두니 글자가 잘리고 겹쳤다 - 위 패널을 한 줄 늘려 셋째 줄에 따로 둔다.
+            pnlTop.Height += 24;
+            m_rdoDirIn0 = new RadioButton { Text = "C/V 방향 부호(#11 제외) : 입고=0 / 출고=1", AutoSize = true,
+                BackColor = System.Drawing.Color.MistyRose };
+            m_rdoDirIn1 = new RadioButton { Text = "입고=1 / 출고=0 (PLC 담당자 확인값)", AutoSize = true,
+                BackColor = System.Drawing.Color.MistyRose };
+            var pnlDir = new Panel { Location = new System.Drawing.Point(rdoRHex.Left, rdoRHex.Top + 48),
+                Size = new System.Drawing.Size(560, 20), BackColor = System.Drawing.Color.Transparent };
+            m_rdoDirIn0.Location = new System.Drawing.Point(0, 0);
+            m_rdoDirIn1.Location = new System.Drawing.Point(270, 0);
+            pnlDir.Controls.Add(m_rdoDirIn0); pnlDir.Controls.Add(m_rdoDirIn1);
+            rdoRHex.Parent.Controls.Add(pnlDir); pnlDir.BringToFront();
+            m_bDirLoading = true;
+            m_rdoDirIn0.Checked = !cDefApp.GM_DIR_IN1;
+            m_rdoDirIn1.Checked = cDefApp.GM_DIR_IN1;
+            m_bDirLoading = false;
+            m_rdoDirIn0.CheckedChanged += rdoDirCode_CheckedChanged;
+            m_rdoDirIn1.CheckedChanged += rdoDirCode_CheckedChanged;
+
+            // [LGLS 2026-09-23] C/V#11 전용 부호 라디오 (사용자 지시).
+            //   C/V#11 은 현장 조작반에 입고/출고 모드 스위치가 따로 있어 규약이 다를 수 있다.
+            //   [PLC] DIR_CODE_CV11 에 저장. 미설정이면 위 공통값을 따른다.
+            cDefApp.GM_DIR_IN1_CV11 = cDefApi.GsReadInitProfileDirIn1Cv11();
+            pnlTop.Height += 24;
+            m_rdoDirCv11In0 = new RadioButton { Text = "C/V#11 방향 부호 : 입고=0 / 출고=1", AutoSize = true,
+                BackColor = System.Drawing.Color.Lavender };
+            m_rdoDirCv11In1 = new RadioButton { Text = "입고=1 / 출고=0", AutoSize = true,
+                BackColor = System.Drawing.Color.Lavender };
+            var pnlDirCv11 = new Panel { Location = new System.Drawing.Point(rdoRHex.Left, rdoRHex.Top + 72),
+                Size = new System.Drawing.Size(560, 20), BackColor = System.Drawing.Color.Transparent };
+            m_rdoDirCv11In0.Location = new System.Drawing.Point(0, 0);
+            m_rdoDirCv11In1.Location = new System.Drawing.Point(270, 0);
+            pnlDirCv11.Controls.Add(m_rdoDirCv11In0); pnlDirCv11.Controls.Add(m_rdoDirCv11In1);
+            rdoRHex.Parent.Controls.Add(pnlDirCv11); pnlDirCv11.BringToFront();
+            m_bDirLoading = true;
+            m_rdoDirCv11In0.Checked = !cDefApp.GM_DIR_IN1_CV11;
+            m_rdoDirCv11In1.Checked = cDefApp.GM_DIR_IN1_CV11;
+            m_bDirLoading = false;
+            m_rdoDirCv11In0.CheckedChanged += rdoDirCodeCv11_CheckedChanged;
+            m_rdoDirCv11In1.CheckedChanged += rdoDirCodeCv11_CheckedChanged;
+
+            // [LGLS 2026-09-02] 환경 INI(WCS_DB.INI) 바로 열기 - [정리] 버튼 왼쪽 빈 자리(둘째 줄, 겹침 없음)
+            var btnIni = new Button { Text = "INI 열기", Size = new System.Drawing.Size(72, 23),
+                Location = new System.Drawing.Point(808, 28),
+                Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.LightCyan };
+            btnIni.Click += delegate
+            {
+                string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WCS_DB.INI");
+                if (!System.IO.File.Exists(strIni)) { MessageBox.Show("INI 파일이 없습니다 : " + strIni); return; }
+                // [LGLS 2026-09-03] 32비트 프로세스가 "notepad.exe" 를 부르면 WOW64 리다이렉션으로
+                //   SysWOW64 의 32비트 메모장이 뜨는데, Win11 새 메모장은 64비트 전용이라
+                //   Microsoft.UI.Windowing.Core.dll 오류가 난다. 실제 64비트 메모장을 직접 지정한다.
+                //   (Sysnative 는 32비트 프로세스에서만 유효한 리다이렉션 우회 경로)
+                try
+                {
+                    string strNotepad = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                        (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess) ? "Sysnative" : "System32",
+                        "notepad.exe");
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strNotepad, "\"" + strIni + "\"") { UseShellExecute = false });
+                }
+                catch
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strIni) { UseShellExecute = true });
+                }
+            };
+            this.pnlTop.Controls.Add(btnIni);
+            btnIni.BringToFront();
+            // [LGLS 2026-09-03 재배치] [로그 필터] - 메인 로그(lsvCOMM1)를 그대로 참조하는 헤더/텍스트/주소 필터 창.
+            //   종전 (1088,28) 은 실제 창 폭(1110)을 넘어 잘려 보이지 않았다(캡처 확인).
+            //   2행(y=28)은 Clear Log/메모리맵/INI/정리/시나리오가 x=1085 까지 꽉 차 있으므로
+            //   1행(y=4) 오른쪽 끝 - D 라디오 패널(~x=1038) 뒤 빈 자리에 두고 Anchor 로 오른쪽에 붙인다.
+            //   표시 여부는 INI [VIEW] LOG_FILTER_BTN (Y=표시 기본 / N=숨김) 로 제어한다.
+            if (cDefApi.GsReadInitProfileLogFilterBtn())
+            {
+            int nFltW = 60, nFltH = 21;
+            var btnLogFilter = new Button { Text = "필터", Size = new System.Drawing.Size(nFltW, nFltH),
+                Location = new System.Drawing.Point(Math.Max(1042, this.pnlTop.ClientSize.Width - nFltW - 26), 3),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.Honeydew };
+            new System.Windows.Forms.ToolTip().SetToolTip(btnLogFilter, "로그 필터 (헤더/텍스트/주소값)");
+            btnLogFilter.Click += delegate
+            {
+                try
+                {
+                    if (m_frmLogFilter == null || m_frmLogFilter.IsDisposed)
+                        m_frmLogFilter = new FRM_LOG_FILTER(this);
+                    m_frmLogFilter.Show();
+                    m_frmLogFilter.BringToFront();
+                }
+                catch (Exception ex) { MessageBox.Show("로그 필터 열기 실패: " + ex.Message); }
+            };
+            this.pnlTop.Controls.Add(btnLogFilter);
+            btnLogFilter.BringToFront();
+            // 창 폭이 확정된 뒤(Shown) / 크기 변경 시마다 패널 오른쪽 끝에 다시 붙인다.
+            //   생성 시점의 pnlTop 폭은 디자이너 값(1214)이라 실제 창(1110)에서는 잘려 보였다.
+            EventHandler dlgFltPos = delegate
+            {
+                try { btnLogFilter.Left = Math.Max(8, this.pnlTop.ClientSize.Width - btnLogFilter.Width - 8); }
+                catch { }
+            };
+            this.pnlTop.Resize += dlgFltPos;
+            this.Shown += dlgFltPos;
+            }
+            // [LGLS 2026-11-10] [중요 로그만] - 화면 로그에 일반(MSG_NOR, 흰 줄)을 올리지 않는다(사용자 지시 : 쓸데없는 로그가 너무 많다).
+            //   파일/DB 로그(cTaskLog · WCS_LOG_PGR)는 그대로 남는다. 기억은 WCS_DB.INI [CNF] UI_LOG_IMP_ONLY (기본 1 = 중요만).
+            //   통신 스레드가 읽으므로 컨트롤 대신 bool 필드로 둔다.
+            m_bImpOnly = (cDefApi.GsCnfInt("UI_LOG_IMP_ONLY", 1) != 0);
+            chkImpOnly.Checked = m_bImpOnly;
+            new System.Windows.Forms.ToolTip().SetToolTip(chkImpOnly, "켜면 파랑(중요)·빨강(에러) 줄만 화면에 올린다. 흰 줄(일반)은 파일/DB 에만. WCS_DB.INI [CNF] UI_LOG_IMP_ONLY");
+            chkImpOnly.CheckedChanged += delegate
+            {
+                m_bImpOnly = chkImpOnly.Checked;
+                try { cDefApi.WritePrivateProfileString("CNF", "UI_LOG_IMP_ONLY", m_bImpOnly ? "1" : "0", cDefApp.GM_ENV_INI); } catch { }
+            };
+            // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
+            WcsCommon.cLogCols.Attach(lsvCOMM1);
+
+            m_bRAddrLoading = true;
+            rdoRHex.Checked = cDefApp.GM_R_ADDR_HEX;
+            rdoRDec.Checked = !cDefApp.GM_R_ADDR_HEX;
+            m_bRAddrLoading = false;
+            // XGT 전용 설정 - Melsec 은 R 트래킹 규약이 다르므로 숨김
+            rdoRHex.Visible = (m_nPlcMaker == 1);
+            rdoRDec.Visible = (m_nPlcMaker == 1);
+            rdoRHex.BackColor = System.Drawing.Color.LightYellow;
+            rdoRDec.BackColor = System.Drawing.Color.LightYellow;
+            string strTip = "R(트래킹) 영역 주소 해석 방식\r\n"
+                          + " · 16진(구ECS) : 문서표기를 16진 파싱  (C/V#11 R0100 → 워드 256 / %RB512)\r\n"
+                          + " · 10진(현행)  : 문서표기를 그대로 사용 (C/V#11 R0100 → 워드 100 / %RB200)\r\n"
+                          + "통신(CvThread/VehThread)·메모리맵 직접 읽기/쓰기·시나리오 테스트에 모두 적용됩니다.";
+            try
+            {
+                System.Windows.Forms.ToolTip tt = new System.Windows.Forms.ToolTip();
+                tt.SetToolTip(rdoRHex, strTip);
+                tt.SetToolTip(rdoRDec, strTip);
+            }
+            catch { }
+
+#if ORACLE
+            cDefApi.GsGetInitPorFileDB_1(ref cDefApp.GM_DB1_PROVIDER, ref cDefApp.GM_DB1_ALIAS, ref cDefApp.GM_DB1_USERID, ref cDefApp.GM_DB1_PASSWORD, ref m_strRtnMsg);
+            m_strConnectString = "Provider=" + cDefApp.GM_DB1_PROVIDER + "; Data Source=" + cDefApp.GM_DB1_ALIAS + "; User ID=" + cDefApp.GM_DB1_USERID + "; Password =" + cDefApp.GM_DB1_PASSWORD;
+            this.Text = this.Text + " [DB:" + cDefApp.GM_DB1_ALIAS + "]";   // 접속 DB명 타이틀 표시
+#endif
+#if POSTGRESQL
+            cDefApi.GsGetInitPorFileDB_2(ref cDefApp.GM_DB2_IP, ref cDefApp.GM_DB2_DATABASE, ref cDefApp.GM_DB2_PORT, ref cDefApp.GM_DB2_USER, ref cDefApp.GM_DB2_USER_PW, ref m_strRtnMsg);
+            m_strConnectString = "host=" + cDefApp.GM_DB2_IP + ";username=" + cDefApp.GM_DB2_USER + ";password=" + cDefApp.GM_DB2_USER_PW + ";database=" + cDefApp.GM_DB2_DATABASE + ";MAXPOOLSIZE=50;";
+            this.Text = this.Text + " [DB:" + cDefApp.GM_DB2_DATABASE + "@" + cDefApp.GM_DB2_IP + "]"; // 접속 DB명 타이틀 표시
+#endif
+#if SQL
+            // [LGLS] MS SQL Server 접속문자열 구성 (INI [DB_2] 재사용)
+            cDefApi.GsGetInitPorFileDB_2(ref cDefApp.GM_DB2_IP, ref cDefApp.GM_DB2_DATABASE, ref cDefApp.GM_DB2_PORT, ref cDefApp.GM_DB2_USER, ref cDefApp.GM_DB2_USER_PW, ref m_strRtnMsg);
+            m_strConnectString = "Server=" + cDefApp.GM_DB2_IP + ";Database=" + cDefApp.GM_DB2_DATABASE + ";User ID=" + cDefApp.GM_DB2_USER + ";Password=" + cDefApp.GM_DB2_USER_PW + ";";
+            this.Text = this.Text + " [DB:" + cDefApp.GM_DB2_DATABASE + "@" + cDefApp.GM_DB2_IP + "]"; // 접속 DB명 타이틀 표시
+#endif
+
+            cDefApi.GsGetInitPorFileCNF(ref cDefApp.GM_WH_TYP, ref cDefApp.GM_USERID, ref m_strRtnMsg);
+            cDefApi.GsReadInitProfileProcessCnt("PROCESS", ref m_nProcessCnt, ref m_strRtnMsg);
+
+            //@@.CV #1 접속정보ini 읽어오기
+            for (int ii = 0; ii < m_nProcessCnt; ii++)
+            {
+                string Name=null;
+
+                Name =  "COMM" + ii.ToString();
+                //@@.CV #1 접속정보ini 읽어오기
+                cDefApi.GsReadInitProfileCom(Name,
+                                             ref m_strPLC_NO[ii],
+                                             ref m_strCOMM_IP[ii],
+                                             ref m_nCOMM_CUR_PORT[ii],
+                                             ref m_nCOMM_FROM_PORT[ii],
+                                             ref m_nCOMM_TO_PORT[ii],
+                                             ref m_nCOMM_PORT_CNT[ii],
+                                             ref m_nCOMM_CNT[ii],
+                                             ref ii,
+                                             ref m_nFrTrackNo[ii],
+                                             ref m_nToTrackNo[ii],
+                                             ref m_strLogPath[ii],
+                                             ref m_strLogFileNm[ii],
+                                             ref m_strEQMT_TYP[ii],
+                                             ref m_strRtnMsg);
+
+                if (m_strPLC_NO[ii] == "")
+                {
+                    m_strPLC_NO[ii] = null;
+                    break;
+                }
+
+                SetVisable(pnlTop, ii, "picCvDbCn" + ii.ToString(), "DB  Status #" + ii.ToString("00"));
+                SetVisable(pnlTop, ii, "picCvSkt" + ii.ToString(), "Socket  Status #" + ii.ToString("00"));
+
+                SetDisplay(pnlTop, ii, "picCvDbCn" + ii.ToString(), "D");
+                SetDisplay(pnlTop, ii, "picCvSkt" + ii.ToString(), "D", "E");
+
+            }
+
+            // [LGLS 2026-08-22] PLC 소켓 접속정보를 타이틀에 표시 (COMM0 = 마스터 PLC 1소켓)
+            try
+            {
+                if (!string.IsNullOrEmpty(m_strCOMM_IP[0]))
+                    this.Text = this.Text + " [PLC:" + m_strCOMM_IP[0].Trim() + ":" + m_nCOMM_CUR_PORT[0] + "]";
+            }
+            catch { }
+
+            // @@.통신 딜레이 타임읽어오기
+            cDefApi.GsReadInitProfileDelay("SND", ref cDefApp.GM_COMM_SND_TIME_OUT, ref m_strRtnMsg); // @.전송
+            cDefApi.GsReadInitProfileDelay("RCV", ref cDefApp.GM_COMM_RCV_TIME_OUT, ref m_strRtnMsg); // @.수신
+
+            // Initialize log queues to avoid NullReference when threads enqueue log messages
+            int logInitCount = Math.Min(m_nProcessCnt, cDefApp.m_LogQ.Length);
+            for (int ii = 0; ii < logInitCount; ii++)
+            {
+                if (cDefApp.m_LogQ[ii] == null)
+                    cDefApp.m_LogQ[ii] = new Queue<LogParam>();
+            }
+
+            // @@.여기서 부터 쓰레드 시작
+            cDefApp.GM_STAT_MAIN  = true; // @.메인 시스템 동작상태
+            WrkThStart();   // @.쓰레드 시작
+
+            // [LGLS 2026-07-21] 물리 이관: SC/RTV 통신 스레드 기동 (마스터 PLC = COMM0 IP:2004)
+            try
+            {
+                // [LGLS 2026-08-30] 설비 에러이력 EQP_TYP 적재 ([CNF] SC_ERR_TYP / RTV_ERR_TYP)
+                string strScErrTyp = "", strRtvErrTyp = "";
+                cDefApi.GsReadInitProfileErrCodeTyp(ref strScErrTyp, ref strRtvErrTyp);
+                VehThread.SetErrCodeTypes(strScErrTyp, strRtvErrTyp);
+
+                string vehIp = string.IsNullOrEmpty(m_strCOMM_IP[0]) ? "127.0.0.1" : m_strCOMM_IP[0];
+                m_thVehSc  = new VehThread("SC",  m_strConnectString, cDefApp.GM_WH_TYP, vehIp, 2004);
+                m_thVehRtv = new VehThread("RTV", m_strConnectString, cDefApp.GM_WH_TYP, vehIp, 2004);
+                m_thVehSc.Start();
+                m_thVehRtv.Start();
+            }
+            catch (Exception exVeh)
+            {
+                MessageBox.Show("SC/RTV 통신 스레드 기동 실패: " + exVeh.Message);
+            }
+        }
+        #endregion
+
+        /*
+         * 화면 통신 표시 제어
+         */
+        #region
+        private void SetVisable(Panel obj, int ii, string ctrName, string tipname)
+        {
+            Control ctrl;
+            PictureBox FindPictureBox = null;
+
+
+
+            string msg = null;
+            ctrl = m_mfgClass.PfCtlFind(ref obj, ctrName, ref msg);
+            if (ctrl == null)
+            {
+                return;
+            }
+
+            FindPictureBox = ctrl as PictureBox;
+            this.ToolTip.SetToolTip(FindPictureBox, tipname);
+            FindPictureBox.Visible = true;
+        }
+        private void SetDisplay(Panel obj, int ii, string ctrName, params string[] opt)
+        {
+            Control ctrl;
+            PictureBox FindPictureBox = null;
+
+            string msg = null;
+            ctrl = m_mfgClass.PfCtlFind(ref obj, ctrName, ref msg);
+            if (ctrl == null)
+            {
+                return;
+            }
+
+            FindPictureBox = ctrl as PictureBox;
+
+            if (opt.Length == 1)
+                PfSetStatImgView(FindPictureBox, opt[0]);
+            else
+                PfSetStatImgView(FindPictureBox, opt[0], opt[1]);
+        }
+        private void SetDisplay(Panel obj, int ii, string ctrName, string opt)
+        {
+            Control ctrl;
+            PictureBox FindPictureBox = null;
+
+
+
+            string msg = null;
+            ctrl = m_mfgClass.PfCtlFind(ref obj, ctrName, ref msg);
+            if (ctrl == null)
+            {
+                return;
+            }
+
+            FindPictureBox = ctrl as PictureBox;
+
+            PfSetStatImgView(FindPictureBox, opt);
+        }
+        #endregion
+
+        /*
+         * @@@.스레드 실행
+         */
+        #region
+        private void WrkThStart()
+        {
+            CheckForIllegalCrossThreadCalls = false;
+            Thread_Timer.Enabled = true;
+
+            // [LGLS 2026-07-27] 마스터 PLC 1소켓 통합: CvThread 를 1개만 생성(COMM0 소켓)하고,
+            //   나머지 COMM(설비)들은 AddEquip 으로 같은 스레드의 처리 슬롯에 등록한다.
+            //   (기존: COMM 개수만큼 스레드/소켓 15개 → 실제 마스터 PLC 1대이므로 1소켓으로 통합)
+            if (m_nProcessCnt <= 0) return;
+
+            m_thCvThread[0] = new CvThread(0,
+                                            cDefApp.GM_WH_TYP,
+                                            m_strEQMT_TYP[0],
+                                            m_strPLC_NO[0],
+                                            m_strCOMM_IP[0],
+                                            Convert.ToInt16("0" + m_nCOMM_CUR_PORT[0]),
+                                            Convert.ToInt16("0" + m_nCOMM_FROM_PORT[0]),
+                                            Convert.ToInt16("0" + m_nCOMM_TO_PORT[0]),
+                                            m_nCOMM_PORT_CNT[0],
+                                            m_nCOMM_CNT[0],
+                                            m_nFrTrackNo[0],
+                                            m_nToTrackNo[0],
+                                            m_strConnectString,
+                                            m_strLogFileNm[0]);
+
+            for (int ii = 1; ii < m_nProcessCnt; ii++)
+            {
+                m_thCvThread[0].AddEquip(m_strPLC_NO[ii],
+                                         m_strEQMT_TYP[ii],
+                                         m_nFrTrackNo[ii],
+                                         m_nToTrackNo[ii],
+                                         m_nCOMM_CNT[ii]);
+            }
+
+            // [LGLS 2026-07-30] 화물 소실 수정: [PROCESS] CNT=1([COMM0]=PLC11만) 운용에서는 라인(PLC01~10)·
+            //   나머지 스테이션(PLC12~15) 트랙이 슬롯에 등록되지 않아 CV_DATA 의 SENSOR0/LUGG_NO 가 영영
+            //   갱신되지 않는다 → IO_TASK DriveSC 가 SC 하역트랙(예: 904→115/116)을 빈 트랙으로 판정해
+            //   입고 SC 배정을 무기한 보류(작업 20 정체, 화물은 EQP_SIM 에만 존재).
+            //   소켓은 위에서 이미 1개(COMM0)로 통합돼 있고 CNT 는 처리 슬롯 수일 뿐이므로,
+            //   INI 에 없는 설비 그룹을 고정 레이아웃(CV_DATA PLC_NO/MC_NO 와 동일)으로 자동 등록한다.
+            {
+                string[] plcs = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15" };
+                int[]    frs  = { 101,  103,  105,  107,  109,  111,  113,  115,  117,  119,  121,  123,  125,  127,  130 };
+                int[]    tos  = { 102,  104,  106,  108,  110,  112,  114,  116,  118,  120,  122,  124,  126,  129,  132 };
+                for (int gi = 0; gi < plcs.Length; gi++)
+                {
+                    bool bHave = false;
+                    for (int ii = 0; ii < m_nProcessCnt; ii++)
+                    {
+                        int a, b;
+                        if (m_strPLC_NO[ii] != null &&
+                            int.TryParse(m_strPLC_NO[ii], out a) && int.TryParse(plcs[gi], out b) && a == b)
+                        { bHave = true; break; }
+                    }
+                    if (!bHave)
+                        m_thCvThread[0].AddEquip(plcs[gi], m_strEQMT_TYP[0], frs[gi], tos[gi], 1);
+                }
+            }
+        }
+
+        private void Thread_Tick(object sender, EventArgs e)
+        {
+			try
+			{
+				Thread_Timer.Enabled = false;
+
+                // [LGLS 2026-07-27] 마스터 PLC 1소켓 통합: CvThread 1개(index 0)만 시작/모니터.
+                for (int ii = 0; ii < 1; ii++)
+                {
+                    if (m_thCvThread[ii].m_thThread == null)
+                    {
+                        SetDisplay(pnlTop, ii, "picCvSkt" + ii.ToString(), "T");
+                        SetDisplay(pnlTop, ii, "picCvDbCn" + ii.ToString(), "T");
+
+                        m_thCvThread[ii].m_thThread = new Thread(m_thCvThread[ii].Thread_Doing);
+                        m_thCvThread[ii].m_thThread.IsBackground = true;
+                        m_thCvThread[ii].m_frmMain = this;
+                        m_thCvThread[ii].m_thThread.Start(ii);
+
+                        Thread.Sleep(100);
+                    }
+                    else
+                    {
+                        if (m_thCvThread[ii].IsOpen)
+                        {
+                            SetDisplay(pnlTop, ii, "picCvSkt" + ii.ToString(), "C");
+                            SetDisplay(pnlTop, ii, "picCvDbCn" + ii.ToString(), "C");
+                        }
+                    }
+
+                }
+
+				Thread_Timer.Enabled = true;
+
+			}
+			catch (Exception ex)
+			{
+				Thread_Timer.Enabled = true;
+			}
+
+        }
+        #endregion
+
+
+        #region[Motod] @@@.쓰레드 상태를 화면에 표시
+        private bool PfSetStatImgView(PictureBox  pPic, 
+                                          string  pStatSkt, 
+                                          string pStatOp) {
+            // @.Stat Connection : C:연결, T:시도, D:비연결
+            // @.Stat Operation : N:정상, W:대기, E:에러
+            try {
+                switch (pStatSkt + pStatOp)
+                {
+                    case "CN":if (pPic.Tag.ToString() != "0") pPic.Image = this.imgLstStat.Images[0]; pPic.Tag = "0"; break;
+                    case "CW":if (pPic.Tag.ToString() != "1") pPic.Image = this.imgLstStat.Images[1]; pPic.Tag = "1"; break;
+                    case "CE":if (pPic.Tag.ToString() != "2") pPic.Image = this.imgLstStat.Images[2]; pPic.Tag = "2"; break;
+                    case "TN":if (pPic.Tag.ToString() != "3") pPic.Image = this.imgLstStat.Images[3]; pPic.Tag = "3"; break;
+                    case "TW":if (pPic.Tag.ToString() != "4") pPic.Image = this.imgLstStat.Images[4]; pPic.Tag = "4"; break;
+                    case "TE":if (pPic.Tag.ToString() != "5") pPic.Image = this.imgLstStat.Images[5]; pPic.Tag = "5"; break;
+                    case "DN":if (pPic.Tag.ToString() != "6") pPic.Image = this.imgLstStat.Images[6]; pPic.Tag = "6"; break;
+                    case "DW":if (pPic.Tag.ToString() != "7") pPic.Image = this.imgLstStat.Images[7]; pPic.Tag = "7"; break;
+                    case "DE":if (pPic.Tag.ToString() != "8") pPic.Image = this.imgLstStat.Images[8]; pPic.Tag = "8"; break;
+                    default: break;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.Message;
+                //MsgBox(ex.Message & pPic.Name)
+            }
+            return false;
+        }
+        #endregion
+
+        #region[Motod] @@@.DB연결 상태를 화면에 표시
+        private bool PfSetStatImgView(PictureBox pPic,
+                                      string pStatDbCn)
+        {
+            // @.Stat Connection : C:연결, T:시도, D:비연결
+
+            try 
+            {
+                switch(pStatDbCn)
+                {
+                    case "C": if (pPic.Tag.ToString() != "0") pPic.Image = this.ImgLstBkgStat.Images[0]; pPic.Tag = "0"; break;
+                    case "T": if (pPic.Tag.ToString() != "1") pPic.Image = this.ImgLstBkgStat.Images[1]; pPic.Tag = "1"; break;
+                    case "D": if (pPic.Tag.ToString() != "2") pPic.Image = this.ImgLstBkgStat.Images[2]; pPic.Tag = "2"; break;
+                    default: break;
+                }
+
+                return true;
+            }   
+            catch (Exception ex) 
+            {
+                string msg = ex.Message;
+                //MsgBox(ex.Message & pPic.Name)
+            }
+            return false;
+        }
+        #endregion
+
+        #region@@@.ListView에 로깅[PsMsgView();]
+        // @@@.대리자 선언
+		delegate void DelegateListViewItem(ListViewItem item, cDefApp.eLogWriteGbn eThGbn);
+
+        // @@@.Client 메세지 Listview Invoke 선언
+		private int m_nPendUiLog = 0;   // [LGLS 2026-09-17] 화면 로그 비동기 대기 건수
+		private volatile bool m_bImpOnly = true;   // [LGLS 2026-11-10] [중요 로그만] 체크 상태(통신 스레드가 읽음)
+		private void PsSetMsgUi(ListViewItem item, cDefApp.eLogWriteGbn eThGbn)
+		{
+			System.Threading.Interlocked.Decrement(ref m_nPendUiLog);
+			PsSetMsg(item, eThGbn);
+		}
+		private void PsSetMsg(ListViewItem item, cDefApp.eLogWriteGbn eThGbn)
+		{
+			try
+			{
+				string strCtrlName = "";
+				if (eThGbn == cDefApp.eLogWriteGbn.COMM1)
+					strCtrlName = "lsvCOMM1";
+				else if (eThGbn == cDefApp.eLogWriteGbn.COMM2)
+					strCtrlName = "lsvCOMM2";
+                else if (eThGbn == cDefApp.eLogWriteGbn.COMM3)
+                    strCtrlName = "lsvCOMM3";
+                else if (eThGbn == cDefApp.eLogWriteGbn.COMM4)
+                    strCtrlName = "lsvCOMM4";
+                else if (eThGbn == cDefApp.eLogWriteGbn.COMM5)
+                    strCtrlName = "lsvCOMM5";
+                else if (eThGbn == cDefApp.eLogWriteGbn.COMM6)
+                    strCtrlName = "lsvCOMM6";
+                else if (eThGbn == cDefApp.eLogWriteGbn.COMM7)
+                    strCtrlName = "lsvCOMM7";
+                else if (eThGbn == cDefApp.eLogWriteGbn.COMM8)
+                    strCtrlName = "lsvCOMM8";
+                else if (eThGbn == cDefApp.eLogWriteGbn.COMM9)
+                    strCtrlName = "lsvCOMM9";
+				else
+					strCtrlName = "";
+
+				Control Ctrl = PfCtlFind1(splBodySkt.Panel1, strCtrlName);
+
+				if (Ctrl == null) return;
+
+				ListView lstView = (ListView)Ctrl;
+
+				if (lstView.InvokeRequired == true && cDefApi.GsCnfInt("UI_LOG_ASYNC", 1) == 0)
+				{
+					this.Invoke(new DelegateListViewItem(this.PsSetMsg), item, eThGbn);   // 종전 동기 방식
+				}
+				else if (lstView.InvokeRequired == true)
+				{
+					// [CNF] UI_LOG_ASYNC  [LGLS 2026-09-17] Invoke(동기) → BeginInvoke(비동기).
+					//   통신 스레드가 로그 한 줄마다 화면 스레드를 기다려 한 바퀴가 길어졌다(화면 속도 저하).
+					//   순서는 BeginInvoke 큐가 지킨다. 화면이 밀리면 쌓이지 않도록 대기 건수 상한을 둔다.
+					if (System.Threading.Interlocked.Increment(ref m_nPendUiLog) > 2000)
+					{
+						System.Threading.Interlocked.Decrement(ref m_nPendUiLog);
+						return;
+					}
+					DelegateListViewItem d = new DelegateListViewItem(this.PsSetMsgUi);
+					this.BeginInvoke(d, item, eThGbn);
+				}
+				else
+				{
+					lstView.Items.Add(item);
+					if (lstView.Items.Count > 500)
+					{
+						lstView.Items.RemoveAt(0);
+					}
+
+					if (this.chkShow.Checked == true)
+					{
+						lstView.EnsureVisible(lstView.Items.Count - 1);
+					}
+				}
+				return;
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message);
+			}
+		}
+
+        //@@@.PsMsgView[화면에 로깅...]
+		public void PsMsgView(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, "", pFile, pFunc);
+        }
+		public void PsMsgView_Error(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, "", pFile, pFunc);
+        }
+		public void PsMsgView_IMP(string pMsg, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, "", "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, "", pFile, pFunc);
+        }
+		public void PsMsgView(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, "", pFile, pFunc);
+        }
+		public void PsMsgView_Error(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, "", pFile, pFunc);
+        }
+		public void PsMsgView_IMP(string pMsg, string pObjID, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, "", "", cDefApp.eLogMsgType.MSG_IMP, nThGbn, "", pFile, pFunc);
+        }
+        public void PsMsgView(string pMsg, string pObjID, string pCommTyp, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_NOR, nThGbn, "", pFile, pFunc);
+        }
+        public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, int nThGbn, [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, pCommTyp, "", cDefApp.eLogMsgType.MSG_ERR, nThGbn, "", pFile, pFunc);
+        }
+		public void PsMsgView(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_NOR, nThGbn, pAddr, pFile, pFunc);
+        }
+		public void PsMsgView_Error(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_ERR, nThGbn, pAddr, pFile, pFunc);
+        }
+		public void PsMsgView_IMP(string pMsg, string pObjID, string pCommTyp, string pTgm, int nThGbn, string pAddr = "", [CallerFilePath] string pFile = "", [CallerMemberName] string pFunc = "")
+        {
+			PsMsgView(pMsg, pObjID, pCommTyp, pTgm, cDefApp.eLogMsgType.MSG_IMP, nThGbn, pAddr, pFile, pFunc);
+        }
+        private void PsMsgView(string pMsg, 
+                               string pObjID, 
+                               string pCommTyp, 
+                               string pTgm, 
+                  cDefApp.eLogMsgType pMsgTyp,
+							   int nThGbn,
+                               string pAddr = "",     // [LGLS 2026-09-02] PLC 주소값 (없으면 빈칸)
+                               string pFile = "",
+                               string pFunc = "")
+        {
+            try
+            {
+                // [LGLS 2026-09-09] ALL_TASK 공용 로그 싱크 : 스레드별 파일(날짜별/1년) + DB.
+                //   화면 로그를 꺼도(chkStopLog) 파일/DB 에는 남겨야 하므로 그보다 앞에 둔다.
+                try { WcsCommon.cTaskLog.Write("EQP", "EQP_CV", pMsgTyp.ToString(),
+                        "[" + pObjID + "] " + WcsCommon.cLogCols.ShortFile(pFile) + "::" + pFunc + " " + pMsg
+                        + (string.IsNullOrEmpty(pAddr) ? "" : (" (" + pAddr + ")"))); } catch { }
+
+                if (chkStopLog.Checked) return;
+
+                if (m_bImpOnly && pMsgTyp == cDefApp.eLogMsgType.MSG_NOR) return;   // [LGLS 2026-11-10] [중요 로그만]
+                // [LGLS 2026-09-04] 주소 열 : 호출부가 주소를 안 넘겼으면 메시지 본문의 PLC 주소(%MX1377, %DW100 등)를 뽑아 채운다.
+                if (string.IsNullOrEmpty(pAddr) && !string.IsNullOrEmpty(pMsg))
+                {
+                    Match mAddr = Regex.Match(pMsg, @"%[A-Z]{1,2}\d+(?:\.[0-9A-F]+)?");
+                    if (mAddr.Success) pAddr = mAddr.Value;
+                }
+
+                cDefApp.stutLogMsgInfo LogMsg ;
+                LogMsg.Time = DateTime.Now.ToString( "yyyy/MM/dd HH:mm:ss:ffffff");
+                LogMsg.MsgTyp =  pMsgTyp.ToString(); 
+                LogMsg.ID = pObjID;
+                LogMsg.Com = pCommTyp;
+                LogMsg.Msg = pMsg;
+                LogMsg.Tgm = pTgm;
+                if( chkStopLog.Checked) return;
+                ListViewItem vItem = new ListViewItem(LogMsg.Time, 0);
+                vItem.SubItems.Add(LogMsg.ID);
+                vItem.SubItems.Add(LogMsg.Com);
+                vItem.SubItems.Add(pAddr ?? "");   // [LGLS 2026-09-02] 주소 열
+                // [LGLS 2026-08-21] 호출 위치 (Message 앞 2열 - 헤더 우클릭으로 표시/숨김)
+                vItem.SubItems.Add(WcsCommon.cLogCols.ShortFile(pFile));
+                vItem.SubItems.Add(pFunc ?? "");
+                vItem.SubItems.Add(LogMsg.Msg);
+                vItem.SubItems.Add(LogMsg.Tgm);
+                switch (pMsgTyp)
+                {
+                    case cDefApp.eLogMsgType.MSG_IMP : vItem.BackColor = Color.Blue; vItem.ForeColor = Color.White; break; 
+                    case cDefApp.eLogMsgType.MSG_ERR: vItem.BackColor = Color.Red; vItem.ForeColor = Color.White; break; 
+                    default:  vItem.BackColor = Color.White; vItem.ForeColor = Color.Black; break; 
+
+                }
+				this.PsSetMsg(vItem, (cDefApp.eLogWriteGbn)nThGbn);
+                return;
+             }
+            catch (Exception ex) 
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        #endregion
+
+        #region[Event]btnMemMap_Click
+        private void btnMemMap_Click(object sender, EventArgs e)
+        {
+            FRM_PLC_MEMMAP frm = new FRM_PLC_MEMMAP();
+            frm.Show();
+        }
+        #endregion
+
+        #region[Event]btnXmlSync_Click
+        private void btnXmlSync_Click(object sender, EventArgs e)
+        {
+            FRM_XML_FIELD_SYNC frm = new FRM_XML_FIELD_SYNC(m_strConnectString);
+            frm.Show();
+        }
+        #endregion
+
+        #region[Event]btnDelLog_Click
+        private void btnDelLog_Click(object sender, EventArgs e)
+        {
+            this.lsvCOMM1.Items.Clear();
+            this.txtMsg.Text = "";
+            this.txtTgm.Text = "";
+        }
+        #endregion
+
+        #region[Event]btnDelLog_Click
+        private void lsvMsg_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                 // [LGLS 2026-09-02] 주소 열 삽입으로 Msg=6, Tgm=7 (열 순서: 시각/스레드/Cmd/주소/파일/함수/Msg/Tgm)
+                 this.txtMsg.Text = this.lsvCOMM1.SelectedItems[0].SubItems[6].Text;
+                 this.txtTgm.Text = this.lsvCOMM1.SelectedItems[0].SubItems[7].Text;
+            }
+            catch(Exception ex)
+            {
+                string msg = ex.Message;
+            }
+        }
+        #endregion
+
+        #region 종료
+        private void tsbEnd_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-09-09] ALL_TASK 에서 [EQP] 태스크를 끌 때 부른다.
+        //   통신 스레드를 세우고 소켓/DB 를 반납한다. 다시 켤 때는 ALL_TASK 가
+        //   이 폼을 새로 만들어 Load 를 처음부터 태운다.
+        // ─────────────────────────────────────────────────────────────────
+        public void TaskStop()
+        {
+            try { Thread_Timer.Enabled = false; } catch { }
+
+            cDefApp.GM_STAT_MAIN = false;
+
+            // SC / RTV 관측 스레드
+            try { if (m_thVehSc  != null) m_thVehSc.Stop();  } catch { }
+            try { if (m_thVehRtv != null) m_thVehRtv.Stop(); } catch { }
+
+            // 마스터 PLC 통신 스레드 (소켓/DB 반납은 Thread_Doing 의 EXIT_LBL 이 한다)
+            try
+            {
+                if (m_thCvThread[0] != null)
+                {
+                    m_thCvThread[0].RequestStop();
+                    System.Threading.Thread th = m_thCvThread[0].m_thThread;
+
+                    // 한 사이클(설비 15대 순회)이 10초를 넘기도 하므로 넉넉히 기다린다.
+                    if (th != null && th.IsAlive && !th.Join(20000))
+                    {
+                        // 끝내 안 끝나면 소켓을 끊어 대기를 깨우고 한 번 더 기다린다.
+                        m_thCvThread[0].ForceClose();
+                        th.Join(5000);
+                    }
+                    m_thCvThread[0].m_thThread = null;
+                    m_thCvThread[0] = null;
+                }
+            }
+            catch { }
+
+            m_thVehSc = null;
+            m_thVehRtv = null;
+        }
+
+        /// <summary>ALL_TASK 상태표시용 : 살아 있는 워커 스레드 목록</summary>
+        public string[] GetThreadStates()
+        {
+            System.Collections.Generic.List<string> lst = new System.Collections.Generic.List<string>();
+            try
+            {
+                bool bCv = (m_thCvThread[0] != null && m_thCvThread[0].m_thThread != null
+                            && m_thCvThread[0].m_thThread.IsAlive);
+                lst.Add("EQP_CV|" + (bCv ? "RUN" : "STOP"));
+                lst.Add("EQP_VEH_SC|"  + ((m_thVehSc  != null && m_thVehSc.IsAlive)  ? "RUN" : "STOP"));
+                lst.Add("EQP_VEH_RTV|" + ((m_thVehRtv != null && m_thVehRtv.IsAlive) ? "RUN" : "STOP"));
+            }
+            catch { }
+            return lst.ToArray();
+        }
+
+        private void SYS_MAIN_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (cDefApp.GM_RE_START == false)
+            {
+                if (cDefApp.GM_STAT_MAIN == true)
+                {
+                    if (MessageBox.Show(this, "종료하시겠습니까?", "질문", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        LogManager.Shutdown();
+                        cDefApp.GM_STAT_MAIN = false;
+                        return;
+                    }
+                }
+                e.Cancel = true;
+            }
+            else
+            {
+                MessageBox.Show(this, "프로그램 : WCS_TASK_CV \n프로그램이 이미 실행 중 입니다.", "WCS_TASK_CV");
+                LogManager.Shutdown();
+                cDefApp.GM_STAT_MAIN = false;
+                return;
+            }
+        }
+        #endregion
+
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            IsHex = checkBox2.Checked;
+        }
+
+        // [LGLS 2026-08-19] R(트래킹) 주소 해석 모드 전환
+        //   HEX = 구 ECS 호환 : 문서 표기를 16진 파싱 (C/V#11 R0100 → 워드 256)
+        //   DEC = 현행       : 문서 표기를 10진 워드주소로 (C/V#11 R0100 → 워드 100)
+        //   ※ 통신 중 전환하면 다음 사이클부터 새 주소로 읽고 쓴다.
+        private bool m_bRAddrLoading = false;
+        private RadioButton m_rdoDDoc, m_rdoDLegacy;   // [LGLS 2026-09-01] D 해석 모드 라디오(런타임 생성)
+        private RadioButton m_rdoDirIn0, m_rdoDirIn1;
+        private RadioButton m_rdoDirCv11In0, m_rdoDirCv11In1;   // [LGLS 2026-09-23] C/V#11 전용 방향 부호 라디오  // [LGLS 2026-09-15] C/V 방향 부호 라디오(런타임 생성)
+        private bool m_bDirLoading;
+        private bool m_bDAddrLoading;
+
+        // [LGLS 2026-09-01] D 블록 해석 모드 전환 (R 과 대칭). XML(dAddrMode) 단일 기준.
+        //   D 는 CvThread(방향)·VehThread(상태/지시) 모두가 쓰므로 관측표 재구성을 요청하고,
+        //   완전 반영은 재기동 권장 메시지를 남긴다.
+        private void rdoDAddr_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bDAddrLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+
+            cDefApp.GM_D_ADDR_DOC = m_rdoDDoc.Checked;
+            cDefApi.GsWriteInitProfileDAddrDoc(cDefApp.GM_D_ADDR_DOC);
+            cPlcAddrMap.WriteDAddrMode(cDefApp.GM_D_ADDR_DOC);
+            try
+            {
+                if (m_thVehSc  != null) m_thVehSc.RequestReloadObservables();
+                if (m_thVehRtv != null) m_thVehRtv.RequestReloadObservables();
+            }
+            catch { }
+            string strMsg = "[D주소모드] " + cDefApp.GsDAddrModeText()
+                          + "  (예: S/C#1 상태 = D" + cPlcAddrMap.BlockBase("SC", 1, "Status").ToString("0000")
+                          + ") - 완전 반영은 재기동 권장";
+            try { PsMsgView_IMP(strMsg, 0); } catch { }
+        }
+
+        // [LGLS 2026-09-15] C/V 방향 워드 부호 전환. 쓰기(CvChg_CMD_RQ_YN)와 판독(STOCK_MODE) 양쪽에 즉시 적용된다.
+        private void rdoDirCode_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bDirLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+            cDefApp.GM_DIR_IN1 = m_rdoDirIn1.Checked;
+            cDefApi.GsWriteInitProfileDirIn1(cDefApp.GM_DIR_IN1);
+            string strMsg = "[방향부호] C/V#11 제외 : " + cDefApp.GsDirModeText() + " - 다음 방향지시·판독부터 적용 (WCS_DB.INI [PLC] DIR_CODE)";
+            try { PsMsgView_IMP(strMsg, 0); } catch { }
+        }
+
+        // [LGLS 2026-09-23] C/V#11 전용 방향 부호 전환 (사용자 지시)
+        private void rdoDirCodeCv11_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bDirLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+            cDefApp.GM_DIR_IN1_CV11 = m_rdoDirCv11In1.Checked;
+            cDefApi.GsWriteInitProfileDirIn1Cv11(cDefApp.GM_DIR_IN1_CV11);
+            string strMsg = "[방향부호] C/V#11 : " + cDefApp.GsDirModeText(cDefApp.GM_DIR_IN1_CV11)
+                          + " - 다음 방향지시·판독부터 적용 (WCS_DB.INI [PLC] DIR_CODE_CV11)";
+            try { PsMsgView_IMP(strMsg, 0); } catch { }
+        }
+
+        private void rdoRAddr_CheckedChanged(object sender, EventArgs e)
+        {
+            if (m_bRAddrLoading) return;
+            RadioButton rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+
+            cDefApp.GM_R_ADDR_HEX = rdoRHex.Checked;
+            cDefApi.GsWriteInitProfileRAddrHex(cDefApp.GM_R_ADDR_HEX);
+            // [LGLS 2026-08-21] XML(rAddrMode)이 단일 기준 - 라디오 전환을 XML 에도 기록해
+            //   EQP_SIM 등 다른 프로그램이 같은 해석을 따라오게 한다
+            cPlcAddrMap.WriteRAddrMode(cDefApp.GM_R_ADDR_HEX);
+            // S/C·RGV 통신(VehThread)은 주소표를 생성 시 1회 만들므로 재구성을 요청한다
+            try
+            {
+                if (m_thVehSc  != null) m_thVehSc.RequestReloadObservables();
+                if (m_thVehRtv != null) m_thVehRtv.RequestReloadObservables();
+            }
+            catch { }
+
+            string strMsg = "[R주소모드] " + cDefApp.GsRAddrModeText()
+                          + "  (예: C/V#11 R0100 → 워드 " + cDefApp.GsRTrackWord(100).ToString()
+                          + " / %RB" + (cDefApp.GsRTrackWord(100) * 2).ToString() + ")";
+            try { PsMsgView_IMP(strMsg, 0); }
+            catch { }
+
+            // [LGLS 2026-08-19] 이미 열려 있는 PLC 메모리 맵 창을 즉시 갱신한다
+            //   (창 활성화 이벤트에만 기대면 포그라운드 전환이 막힐 때 옛 주소가 그대로 남는다)
+            try
+            {
+                foreach (Form f in Application.OpenForms)
+                {
+                    FRM_PLC_MEMMAP frm = f as FRM_PLC_MEMMAP;
+                    if (frm != null) frm.RefreshRMode();
+                }
+            }
+            catch { }
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            IsAscii = checkBox1.Checked;
+        }
+
+		#region 컨트롤 찾기.
+		public Control PfCtlFind(ref Panel pPnl, string pCtlNm)
+		{
+			Control[] ctl;
+			try
+			{
+				ctl = pPnl.Controls.Find(pCtlNm, true);
+
+				if (ctl.Length == 0)
+				{
+					return null;
+				}
+				else
+				{
+					return ctl[0];
+				}
+			}
+			catch (Exception ex)
+			{
+			}
+			return null;
+		}
+
+		public Control PfCtlFind1(SplitterPanel pPnl, string pCtlNm)
+		{
+			Control[] ctl;
+			try
+			{
+				ctl = pPnl.Controls.Find(pCtlNm, true);
+
+				if (ctl.Length == 0)
+				{
+					return null;
+				}
+				else
+				{
+					return ctl[0];
+				}
+			}
+			catch (Exception ex)
+			{
+			}
+			return null;
+		}
+		#endregion
+
+
+
+    }
+}

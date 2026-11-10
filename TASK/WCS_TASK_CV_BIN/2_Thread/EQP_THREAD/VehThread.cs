@@ -1211,6 +1211,22 @@ namespace WCS_TASK_CV
             {
                 WcsCommon.cHmiDeleteMap.Area a = WcsCommon.cHmiDeleteMap.Get(o.Area);
                 if (a == null || !a.Used) continue;
+                // [LGLS 2026-11-10] 끄기 전에 읽어서 이미 0 이면(PLC 가 먼저 껐음) 쓰지 않는다 (사용자 지시).
+                //   읽기에 실패하면 종전대로 0 을 쓴다(안 끄고 남기는 쪽이 더 위험).
+                {
+                    byte[] rd = new byte[8];
+                    bool bRead = (a.Device == "M") ? PlcReadWords('M', a.Addr / 16, 1, rd) : PlcReadWords(a.Device[0], a.Addr, 1, rd);
+                    if (bRead)
+                    {
+                        int word = rd[0] | (rd[1] << 8);
+                        bool bOn = (a.Device == "M") ? ((word & (1 << (a.Addr % 16))) != 0) : (word != 0);
+                        if (!bOn)
+                        {
+                            LogDb("[VEH_" + m_strKind + "] 데이터 삭제 " + o.Area + " " + a.Xgt + " 이미 0 (PLC 가 껐음) - ECS 는 쓰지 않음");
+                            continue;
+                        }
+                    }
+                }
                 bool bOk;
                 if (a.Device == "M")
                     bOk = m_msQPlc.WRITE_BIT((byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, a.Addr, false);

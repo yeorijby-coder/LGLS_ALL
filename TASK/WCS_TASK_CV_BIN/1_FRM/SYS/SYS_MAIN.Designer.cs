@@ -79,6 +79,7 @@
             this.btnMemMap = new System.Windows.Forms.Button();
             this.btnXmlSync = new System.Windows.Forms.Button();
             this.chkStopLog = new System.Windows.Forms.CheckBox();
+            this.chkImpOnly = new System.Windows.Forms.CheckBox();   // [LGLS 2026-11-10]
             this.chkShow = new System.Windows.Forms.CheckBox();
             this.splBottom = new System.Windows.Forms.SplitContainer();
             this.ToolTip = new System.Windows.Forms.ToolTip(this.components);
@@ -277,6 +278,7 @@
             this.pnlTop.Controls.Add(this.btnDelLog);
             this.pnlTop.Controls.Add(this.btnMemMap);
             this.pnlTop.Controls.Add(this.btnXmlSync);
+            this.pnlTop.Controls.Add(this.chkImpOnly);
             this.pnlTop.Controls.Add(this.chkStopLog);
             this.pnlTop.Controls.Add(this.chkShow);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
@@ -700,6 +702,16 @@
             // chkShow
             // 
             this.chkShow.AutoSize = true;
+            // [LGLS 2026-11-10] chkImpOnly : 중요(파랑)·에러(빨강) 로그만 화면에 - 일반(흰) 로그 숨김
+            this.chkImpOnly.AutoSize = true;
+            this.chkImpOnly.Checked = true;
+            this.chkImpOnly.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkImpOnly.Location = new System.Drawing.Point(60, 6);
+            this.chkImpOnly.Name = "chkImpOnly";
+            this.chkImpOnly.Size = new System.Drawing.Size(96, 16);
+            this.chkImpOnly.TabIndex = 795;
+            this.chkImpOnly.Text = "중요 로그만";
+            this.chkImpOnly.UseVisualStyleBackColor = true;
             this.chkShow.Checked = true;
             this.chkShow.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkShow.Location = new System.Drawing.Point(288, 6);
@@ -837,6 +849,7 @@
         internal System.Windows.Forms.Button btnMemMap;
         internal System.Windows.Forms.Button btnXmlSync;
         internal System.Windows.Forms.CheckBox chkStopLog;
+        internal System.Windows.Forms.CheckBox chkImpOnly;   // [LGLS 2026-11-10]
         internal System.Windows.Forms.CheckBox chkShow;
         internal System.Windows.Forms.PictureBox picCvSkt3;
         internal System.Windows.Forms.PictureBox picCvDbCn3;

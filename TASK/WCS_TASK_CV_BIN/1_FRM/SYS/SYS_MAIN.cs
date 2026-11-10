@@ -328,6 +328,17 @@ namespace WCS_TASK_CV
             this.pnlTop.Resize += dlgFltPos;
             this.Shown += dlgFltPos;
             }
+            // [LGLS 2026-11-10] [중요 로그만] - 화면 로그에 일반(MSG_NOR, 흰 줄)을 올리지 않는다(사용자 지시 : 쓸데없는 로그가 너무 많다).
+            //   파일/DB 로그(cTaskLog · WCS_LOG_PGR)는 그대로 남는다. 기억은 WCS_DB.INI [CNF] UI_LOG_IMP_ONLY (기본 1 = 중요만).
+            //   통신 스레드가 읽으므로 컨트롤 대신 bool 필드로 둔다.
+            m_bImpOnly = (cDefApi.GsCnfInt("UI_LOG_IMP_ONLY", 1) != 0);
+            chkImpOnly.Checked = m_bImpOnly;
+            new System.Windows.Forms.ToolTip().SetToolTip(chkImpOnly, "켜면 파랑(중요)·빨강(에러) 줄만 화면에 올린다. 흰 줄(일반)은 파일/DB 에만. WCS_DB.INI [CNF] UI_LOG_IMP_ONLY");
+            chkImpOnly.CheckedChanged += delegate
+            {
+                m_bImpOnly = chkImpOnly.Checked;
+                try { cDefApi.WritePrivateProfileString("CNF", "UI_LOG_IMP_ONLY", m_bImpOnly ? "1" : "0", cDefApp.GM_ENV_INI); } catch { }
+            };
             // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
             WcsCommon.cLogCols.Attach(lsvCOMM1);
 
@@ -687,6 +698,7 @@ namespace WCS_TASK_CV
 
         // @@@.Client 메세지 Listview Invoke 선언
 		private int m_nPendUiLog = 0;   // [LGLS 2026-09-17] 화면 로그 비동기 대기 건수
+		private volatile bool m_bImpOnly = true;   // [LGLS 2026-11-10] [중요 로그만] 체크 상태(통신 스레드가 읽음)
 		private void PsSetMsgUi(ListViewItem item, cDefApp.eLogWriteGbn eThGbn)
 		{
 			System.Threading.Interlocked.Decrement(ref m_nPendUiLog);
@@ -827,6 +839,7 @@ namespace WCS_TASK_CV
 
                 if (chkStopLog.Checked) return;
 
+                if (m_bImpOnly && pMsgTyp == cDefApp.eLogMsgType.MSG_NOR) return;   // [LGLS 2026-11-10] [중요 로그만]
                 // [LGLS 2026-09-04] 주소 열 : 호출부가 주소를 안 넘겼으면 메시지 본문의 PLC 주소(%MX1377, %DW100 등)를 뽑아 채운다.
                 if (string.IsNullOrEmpty(pAddr) && !string.IsNullOrEmpty(pMsg))
                 {

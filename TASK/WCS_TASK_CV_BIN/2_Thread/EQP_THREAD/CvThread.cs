@@ -3179,6 +3179,25 @@ namespace WCS_TASK_CV
             {
                 WcsCommon.cHmiDeleteMap.Area a = WcsCommon.cHmiDeleteMap.Get("CV");
                 if (a == null || !a.Used) return;
+                // [LGLS 2026-11-10] 끄기 전에 읽어서 이미 0 이면(PLC 가 먼저 껐음) 쓰지 않는다 (사용자 지시). 읽기 실패면 종전대로 0 을 쓴다.
+                {
+                    byte[] rd = new byte[8];
+                    byte devRd = (byte)(a.Device == "M" ? MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M
+                               : a.Device == "D" ? MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D : MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R);
+                    int nWordRd = (a.Device == "M") ? a.Addr / 16 : a.Addr;
+                    if (m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, devRd, nWordRd, 1, ref rd))
+                    {
+                        int word = rd[0] | (rd[1] << 8);
+                        bool bOn = (a.Device == "M") ? ((word & (1 << (a.Addr % 16))) != 0) : (word != 0);
+                        if (!bOn)
+                        {
+                            string msgSkip = "CV 지우기 " + a.Xgt + " 이미 0 (PLC 가 껐음) - ECS 는 쓰지 않음";
+                            MakeMsg_Imp(msgSkip, m_nthNo);
+                            InsertWcsLogPgr(m_strCvClrOffTrack, msgSkip);
+                            return;
+                        }
+                    }
+                }
                 bool bOk;
                 if (a.Device == "M")
                     bOk = WriteMBit(a.Addr, false);
@@ -4460,7 +4479,10 @@ namespace WCS_TASK_CV
                     m_msQPlc._pBdb.Commit();
 
                     // 캐시 갱신 및 주요 변화 로그
-                    if ((cv.SENSOR0_DATA_RD ?? "") != SENSOR0)
+                    // [LGLS 2026-11-10] 캐시가 비어 있던 자리(기동 직후 · 설비당 주기적 재동기화로 CvDic.Remove 된 직후)의 첫 관측은 변화가 아니다.
+                    //   종전에는 재동기화마다 15설비의 PalletExist / Op Mode 가 파란 중요 로그로 쏟아졌다(사용자 지시 : 쓸데없는 로그).
+                    //   실제로 값이 바뀐 때만 남긴다. DB 값 반영(strSet)은 그대로 한다.
+                    if (!string.IsNullOrEmpty(cv.SENSOR0_DATA_RD) && cv.SENSOR0_DATA_RD != SENSOR0)
                     {
                         MakeMsg_Imp(strTitle + " MC_NO[" + nCvNo + "] PalletExist " + (SENSOR0 == "1" ? "ON" : "OFF")
                                     + " (%MX" + (mBase + palletOfs + s) + ")", m_nthNo);
@@ -4487,7 +4509,7 @@ namespace WCS_TASK_CV
                                                 ? (cv.V11_JOBNO ?? "") : strJobNo;
                             InsertWcsLogPgr(nCvNo.ToString("000"), strTitle + " 트랙 " + nCvNo + " R트래킹 JOB NO 변경 [" + (cv.V11_JOBNO ?? "") + "] -> [" + strJobNo + "]", strLogLugg);
                         }
-                    if ((cv.AUTO_MODE_RD ?? "") != AUTO_MODE)
+                    if (!string.IsNullOrEmpty(cv.AUTO_MODE_RD) && cv.AUTO_MODE_RD != AUTO_MODE)   // [LGLS 2026-11-10] 캐시 빈 첫 관측은 제외
                         MakeMsg_Imp(strTitle + " MC_NO[" + nCvNo + "] Op Mode = " + AUTO_MODE + " (%MX" + (mBase + 8) + ")", m_nthNo);   // [2026-09-04] 주소열용
 
                     cv.AUTO_MODE_RD = AUTO_MODE;
