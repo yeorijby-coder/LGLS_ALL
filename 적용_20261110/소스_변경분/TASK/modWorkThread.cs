@@ -79,6 +79,46 @@ namespace TSK_HostCom
 			return null;
 		}
 
+		// [LGLS 2026-11-10] ★ini [Network] RemoteIP 가 아닌 IP 에서 온 접속은 거절★ (기본 1, [Host] SRV_ALLOW_ONLY_REMOTEIP).
+		//   RemoteIP 는 상위(WMS) 주소다 - 그 외 곳에서 붙는 것을 막는다. 같은 PC 시험(루프백)은 RemoteIP 가 이 PC 의 주소일 때만 통과.
+		//   RemoteIP 를 해석할 수 없으면(호스트명 등) 거르지 않는다. 0 이면 거르지 않는다.
+		private static bool SrvAllowOnlyRemoteIp
+		{
+			get
+			{
+				try
+				{
+					string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+					return modDefAPI.GetPrivateProfileInt("Host", "SRV_ALLOW_ONLY_REMOTEIP", 1, strIni) != 0;
+				}
+				catch { return true; }
+			}
+		}
+
+		private static bool IsAllowedPeer(Socket pSock, out string pAllowIp)
+		{
+			pAllowIp = modDefApp.g_strRemoteIP;
+			if (!SrvAllowOnlyRemoteIp) return true;
+			System.Net.IPAddress allow;
+			if (!System.Net.IPAddress.TryParse((pAllowIp ?? "").Trim(), out allow)) return true;
+			System.Net.IPEndPoint ep = pSock.RemoteEndPoint as System.Net.IPEndPoint;
+			if (ep == null) return true;
+			System.Net.IPAddress peer = ep.Address;
+			if (peer.Equals(allow)) return true;
+			// 이 PC 안에서 붙은 접속(루프백)은 허용 IP 가 이 PC 자신의 주소(127.x 포함)일 때만
+			if (System.Net.IPAddress.IsLoopback(peer))
+			{
+				if (System.Net.IPAddress.IsLoopback(allow)) return true;
+				try
+				{
+					foreach (System.Net.IPAddress my in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
+						if (my.Equals(allow)) return true;
+				}
+				catch { }
+			}
+			return false;
+		}
+
 		// [LGLS 2026-11-10] 상대(Accept 한 쪽) 표기. 같은 PC 에서 127.0.0.1 로 붙은 접속은 이 PC 의 실제 IP 를 함께 적는다
 		//   (루프백 주소는 "내 PC" 라는 뜻일 뿐이라 어느 PC 인지 알 수 없다 - 예 192.168.0.10(127.0.0.1):57412).
 		private static string PeerText(Socket pSock)
@@ -244,6 +284,14 @@ namespace TSK_HostCom
 
 					string strPeer = "";
 					try { strPeer = PeerText(w.m_sktSock); } catch { }
+					// [LGLS 2026-11-10] RemoteIP 가 아닌 IP 에서 온 접속은 받자마자 닫고 로그만 남긴다
+					string strAllowIp;
+					if (!IsAllowedPeer(w.m_sktSock, out strAllowIp))
+					{
+						modCmWork.ShowMsgServer("접속이 거부되었습니다. 허용되지 않은 IP 에서 접속을 요청한 상대 [" + strPeer + "] (허용 IP = ini RemoteIP " + strAllowIp + ")", modDefApp.MSG_ERR);
+						try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
+						continue;
+					}
 					// [LGLS 2026-11-10] 이미 한 접속이 살아 있으면 다른 접속은 받지 않는다 - 받자마자 닫고 로그만 남긴다.
 					if (bSingle)
 					{
