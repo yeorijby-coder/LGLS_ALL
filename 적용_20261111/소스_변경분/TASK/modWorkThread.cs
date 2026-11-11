@@ -330,21 +330,10 @@ namespace TSK_HostCom
 						{
 							string strHave = "";
 							try { strHave = PeerText(wAlive.m_sktSock); } catch { }
-							// [LGLS 2026-11-11] 이미 붙은 접속이 오래 조용하면(기본 120초, [Host] SRV_STALE_SEC, 0 이면 교체 안 함) 상대가 버린 접속으로 보고
-							//   닫고 새 접속을 받는다. 그렇지 않으면 반쯤 끊긴 접속 하나가 새 접속을 영영 막는다.
-							int nStale = HostIniInt("SRV_STALE_SEC", 120);
-							double dSilent = (DateTime.Now - wAlive.m_dtLastRx).TotalSeconds;
-							if (nStale > 0 && dSilent > nStale)
-							{
-								modCmWork.ShowMsgServer("이미 접속 중이던 상대 [" + strHave + "] 가 " + (int)dSilent + "초 동안 전문이 없어 닫고, 새로 접속을 요청한 상대 [" + strPeer + "] 를 받습니다.", modDefApp.MSG_IMP);
-								try { wAlive.m_blSockConnected = false; modCmWork.CloseSocket(ref wAlive.m_sktSock); } catch { }
-							}
-							else
-							{
-								modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
-								try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
-								continue;
-							}
+							// [LGLS 2026-11-11] 조용한 옛 접속 교체(SRV_STALE_SEC)는 사용자 지시로 삭제했다 - 이미 접속이 있으면 항상 거부한다.
+							modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
+							try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
+							continue;
 						}
 					}
 					int nConn;

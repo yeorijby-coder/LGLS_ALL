@@ -58,6 +58,25 @@ namespace TSK_HostCom
             };
             this.pnlMsg2.Controls.Add(btnIni);   // [LGLS 2026-09-03] 닫기 버튼과 같은 패널
             btnIni.BringToFront();
+
+            // [LGLS 2026-11-11] [죽기 시험] - 눌러서(확인 뒤) 프로그램을 일부러 죽여 CrashReport\ 의 보고서/덤프가 남는지 확인한다(사용자 지시).
+            //   ini [Crash] TEST_BUTTON=0 이면 숨긴다.
+            if (CrashReporter.TestButtonVisible())
+            {
+                var btnCrash = new System.Windows.Forms.Button { Text = "죽기 시험",
+                    Size = new System.Drawing.Size(72, 22),
+                    Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right,
+                    BackColor = System.Drawing.Color.MistyRose,
+                    Location = new System.Drawing.Point(btnIni.Left - 80, btnIni.Top) };
+                btnCrash.Click += delegate
+                {
+                    if (System.Windows.Forms.MessageBox.Show("HOST_TASK 를 일부러 죽입니다(예외 보고서/덤프 기록 확인용).\n통신이 끊기고 프로그램이 종료됩니다. 계속할까요?", "죽기 시험",
+                            System.Windows.Forms.MessageBoxButtons.YesNo, System.Windows.Forms.MessageBoxIcon.Warning, System.Windows.Forms.MessageBoxDefaultButton.Button2) == System.Windows.Forms.DialogResult.Yes)
+                        CrashReporter.CrashNow();
+                };
+                this.pnlMsg2.Controls.Add(btnCrash);
+                btnCrash.BringToFront();
+            }
         }
 
         Color color1 = Color.FromArgb(129, 156, 203);

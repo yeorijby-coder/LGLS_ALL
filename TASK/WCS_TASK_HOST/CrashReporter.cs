@@ -32,6 +32,7 @@ namespace TSK_HostCom
 	//     DUMP_FULL=0 1 이면 전체 메모리 덤프(시험에서 약 210MB - 힙까지 모두 필요할 때만) / 0 이면 호출 경로가 보이는 작은 덤프(기본)
 	//     KEEP=5      덤프 보관 개수 (보고서는 100개)
 	//     HEALTH_SEC=60  자원 기록 간격(초), 0 이면 기록 안 함
+//     TEST_BUTTON=1  화면의 [죽기 시험] 단추 표시(1=보임 기본 / 0=숨김). 누르면 확인 뒤 일부러 죽어 보고서/덤프를 남긴다
 	//
 	//   ※ 이 기능은 통신 규약과 무관하다. 실패해도(디스크 가득 등) 조용히 넘기고 통신을 방해하지 않는다.
 	//   ※ Windows 오류 보고(LocalDumps) 설정 파일(WER_LocalDumps_HOST_TASK.reg)을 함께 두었다 - 스택 오버플로 같은
@@ -113,6 +114,29 @@ namespace TSK_HostCom
 				}
 			}
 			catch { }
+		}
+
+		/// <summary>[죽기 시험] 단추 - 일부러 작업 스레드에서 처리되지 않은 예외를 낸다. 보고서/덤프가 남는지 확인하는 용도.</summary>
+		public static void CrashNow()
+		{
+			Thread t = new Thread(delegate()
+			{
+				Thread.Sleep(300);   // 단추 처리가 끝나고 화면이 그려진 뒤
+				throw new InvalidOperationException("[시험] 사용자가 [죽기 시험] 단추를 눌렀습니다 - 보고서/덤프 확인용으로 일부러 낸 치명 예외입니다");
+			});
+			t.Name = "CrashButton";
+			t.Start();
+		}
+
+		/// <summary>[죽기 시험] 단추를 보일지 (ini [Crash] TEST_BUTTON, 기본 1)</summary>
+		public static bool TestButtonVisible()
+		{
+			try
+			{
+				string ini = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+				return modDefAPI.GetPrivateProfileInt("Crash", "TEST_BUTTON", 1, ini) != 0;
+			}
+			catch { return true; }
 		}
 
 		// ───────── 감시 시작 (PrevInstance 확인을 통과한 뒤) ─────────
