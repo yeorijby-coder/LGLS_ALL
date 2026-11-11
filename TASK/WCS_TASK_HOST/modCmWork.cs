@@ -10,6 +10,29 @@ namespace TSK_HostCom
 {
 	static class modCmWork
 	{
+		// [LGLS 2026-11-11] 작업 스레드 → 화면 스레드 비동기 전달. 화면이 밀려 대기가 2000건을 넘으면 화면 줄만 버린다(통신·파일 로그는 영향 없음).
+		private static int s_nPendUi = 0;
+		private static void UiPost(MethodInvoker pAct)
+		{
+			Form f = modDefApp.g_frmForm;
+			if (f == null || f.IsDisposed || !f.IsHandleCreated) return;
+			if (!f.InvokeRequired) { pAct(); return; }
+			if (System.Threading.Interlocked.Increment(ref s_nPendUi) > 2000)
+			{
+				System.Threading.Interlocked.Decrement(ref s_nPendUi);
+				return;
+			}
+			try
+			{
+				f.BeginInvoke(new MethodInvoker(delegate()
+				{
+					System.Threading.Interlocked.Decrement(ref s_nPendUi);
+					try { if (!f.IsDisposed) pAct(); } catch { }
+				}));
+			}
+			catch { System.Threading.Interlocked.Decrement(ref s_nPendUi); }
+		}
+
 		//*** 메세지 표시 ***
 		public static void ShowMsgClient(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true, [CallerFilePath] string p_strFile = "", [CallerMemberName] string p_strFunc = "")
 		{
@@ -36,6 +59,7 @@ namespace TSK_HostCom
                 LogMsg.g_strTime = string.Format(@"{0:HH:mm:ss}", DateTime.Now) + ":" + string.Format(@"{0:000}", DateTime.Now.Millisecond);
                 LogMsg.g_strType = p_strMsgKind;
                 LogMsg.g_strMsg = p_strMsg;
+                CrashReporter.AddLine("CLI", p_strMsg);   // [LGLS 2026-11-11] 예외 보고서에 싣는 최근 로그
                 if (p_blWriteLog)
                 {
                     modDefApp.g_arrlstLogList[0].Add(LogMsg);
@@ -89,22 +113,29 @@ namespace TSK_HostCom
                     }
                 }
 
-                modDefApp.g_frmForm.lsvMsgClient.Items.Add(lvitem);
-
-                if (modDefApp.g_frmForm.lsvMsgClient.Items.Count > 50)
+                // [LGLS 2026-11-11] ★화면 목록은 화면 스레드에서만 만진다★ (CheckForIllegalCrossThreadCalls=false 라 막히지 않았을 뿐,
+                //   여러 작업 스레드가 같은 ListView 를 동시에 Add/Clear 하면 목록이 어긋나 예외·멈춤·크래시의 원인이 된다.)
+                //   파일/DB 로그는 위에서 이미 남겼으므로, 화면이 밀리면 화면 줄만 버린다(UiPost).
+                string strKindC = p_strMsgKind;
+                UiPost(delegate()
                 {
-                    modDefApp.g_frmForm.lsvMsgClient.Items.Clear();
-                }
+                    modDefApp.g_frmForm.lsvMsgClient.Items.Add(lvitem);
 
-                if (modDefApp.g_frmForm.chkShowClient.Checked)
-                {
-                    modDefApp.g_frmForm.lsvMsgClient.EnsureVisible(modDefApp.g_frmForm.lsvMsgClient.Items.Count - 1);
-                }
+                    if (modDefApp.g_frmForm.lsvMsgClient.Items.Count > 50)
+                    {
+                        modDefApp.g_frmForm.lsvMsgClient.Items.Clear();
+                    }
 
-                if (p_strMsgKind != modDefApp.MSG_NOR)
-                {
-                    modDefApp.g_frmForm.lsvMsgClient.Refresh();
-                }
+                    if (modDefApp.g_frmForm.chkShowClient.Checked)
+                    {
+                        modDefApp.g_frmForm.lsvMsgClient.EnsureVisible(modDefApp.g_frmForm.lsvMsgClient.Items.Count - 1);
+                    }
+
+                    if (strKindC != modDefApp.MSG_NOR)
+                    {
+                        modDefApp.g_frmForm.lsvMsgClient.Refresh();
+                    }
+                });
             }
             catch(Exception Ex)
             {
@@ -139,6 +170,7 @@ namespace TSK_HostCom
                 LogMsg.g_strTime = string.Format(@"{0:HH:mm:ss}", DateTime.Now) + ":" + string.Format(@"{0:000}", DateTime.Now.Millisecond);
                 LogMsg.g_strType = p_strMsgKind;
                 LogMsg.g_strMsg = p_strMsg;
+                CrashReporter.AddLine("SRV", p_strMsg);   // [LGLS 2026-11-11] 예외 보고서에 싣는 최근 로그
                 if (p_blWriteLog)
                 {
                     modDefApp.g_arrlstLogList[1].Add(LogMsg);
@@ -167,23 +199,23 @@ namespace TSK_HostCom
                         break;
                 }
 
-                modDefApp.g_frmForm.lsvMsgServer.Items.Add(lvitem);
-
-                if (modDefApp.g_frmForm.lsvMsgServer.Items.Count > 50)
+                // [LGLS 2026-11-11] ★화면 목록은 화면 스레드에서만 만진다★ (위 ShowMsgClient 와 같은 이유)
+                UiPost(delegate()
                 {
-                    modDefApp.g_frmForm.lsvMsgServer.Items.Clear();
-                }
+                    modDefApp.g_frmForm.lsvMsgServer.Items.Add(lvitem);
 
-                if (modDefApp.g_frmForm.chkShowServer.Checked)
-                {
-                    modDefApp.g_frmForm.lsvMsgServer.EnsureVisible(modDefApp.g_frmForm.lsvMsgServer.Items.Count - 1);
-                }
-                if (p_strMsgKind != modDefApp.MSG_NOR)
-                {
-                    modDefApp.g_frmForm.lsvMsgServer.Refresh();
-                }
+                    if (modDefApp.g_frmForm.lsvMsgServer.Items.Count > 50)
+                    {
+                        modDefApp.g_frmForm.lsvMsgServer.Items.Clear();
+                    }
 
-                modDefApp.g_frmForm.lsvMsgServer.Refresh();
+                    if (modDefApp.g_frmForm.chkShowServer.Checked)
+                    {
+                        modDefApp.g_frmForm.lsvMsgServer.EnsureVisible(modDefApp.g_frmForm.lsvMsgServer.Items.Count - 1);
+                    }
+
+                    modDefApp.g_frmForm.lsvMsgServer.Refresh();   // 종전 : 종류별 Refresh 와 무조건 Refresh 가 겹쳐 두 번 그렸다
+                });
 
             }
             catch (Exception Ex)
@@ -256,13 +288,17 @@ namespace TSK_HostCom
 				if (p_picObj == null || p_picObj.IsDisposed) return;
 				if (modDefApp.g_frmForm == null || modDefApp.g_frmForm.IsDisposed) return;
 
-				ImageList iml = modDefApp.g_frmForm.imlConnect;
-				if (iml == null || iml.Images == null) return;
-
+				// [LGLS 2026-11-11] 이미지 목록 접근과 대입 모두 화면 스레드에서 (현장 크래시 자리였다 - ImageList.get_Item)
+				PictureBox pic = p_picObj;
 				int nIdx = Convert.ToInt32(p_Status);
-				if (nIdx < 0 || nIdx >= iml.Images.Count) return;
-
-				p_picObj.Image = iml.Images[nIdx];
+				UiPost(delegate()
+				{
+					if (pic == null || pic.IsDisposed) return;
+					ImageList iml = modDefApp.g_frmForm.imlConnect;
+					if (iml == null || iml.Images == null) return;
+					if (nIdx < 0 || nIdx >= iml.Images.Count) return;
+					pic.Image = iml.Images[nIdx];
+				});
 			}
 			catch { }   // 표시 실패로 통신 프로세스를 죽이지 않는다
 		}

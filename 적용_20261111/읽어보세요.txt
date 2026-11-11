@@ -1,0 +1,41 @@
+[적용_20261111]  2026-11-11 현장 적용분 - HOST_TASK 1건 (적용_20261110 의 HOST_TASK 다음 판)
+
+== 배경 ==
+2026-11-11 아침 현장 HOST_TASK 가 죽었다. 원격이 안 돼 원인을 알 수 없다. 이 판은 (1) 죽은 원인으로 의심되는 자리를 고치고
+(2) 다음에 죽으면 원인을 알 수 있게 기록을 남긴다. (소스 분석 결과는 docs 대화 기록 / 운영자 매뉴얼 4.3 참조)
+※ 적용_20261110 의 HOST_TASK(접속 하나만 허용 · 상대 IP:포트 · RemoteIP 외 거절)를 포함한다.
+
+== 무엇이 바뀌었나 ==
+[TASK\HOST_TASK]  TASK_LFC10_G1_ECSCOM.exe  빌드 2026-11-11 (빌드 시각은 보고서 [시스템] 에도 찍힌다)
+  1) 접속이 쌓이는 문제 : 수신 소켓에 연결 유지 확인(TCP keep-alive, 기본 60초)을 걸었다. 상대가 FIN 없이 사라져도 접속 스레드가 스스로 끝난다.
+     붙어 있는 접속이 120초 넘게 조용하면 새 접속이 올 때 닫고 교체한다(반쯤 끊긴 접속이 새 접속을 영영 막지 않게).
+     접속이 끝나면 그 접속의 DB 개체를 반납한다 - 시험(40접속 열고 닫기) 핸들 +209 → +4, 메모리 누적 멈춤.
+  2) 화면 갱신 : 작업 스레드가 화면 목록(ListView)·신호등 이미지를 직접 만지던 것을 화면 스레드로 넘겼다(화면이 밀리면 화면 줄만 버린다).
+     작업 스레드가 쉬면서 화면 이벤트를 처리하던 것(DoEvents)도 화면 스레드에서만 하게 했다.
+  3) 죽었을 때의 기록(msjexhnd 와 같은 쓰임) - 실행 폴더에 생긴다 :
+     CrashReport\HOST_<시각>_FATAL.txt / .dmp   처리되지 않은 예외 : 예외 종류·호출 경로·자원·접속 상태·최근 로그 300줄·모듈 + 덤프
+     CrashReport\HOST_<시각>_UI.txt             화면 스레드 예외 : 창 없이 보고서만 남기고 계속 돈다(종전엔 "처리되지 않은 예외" 창이 떴다)
+     CrashReport\HOST_<시각>_HANDLED_<이름>.txt  SafeRun 이 삼킨 스레드 예외(그 스레드만 끝난 것 - 수신 접속 스레드면 통신이 멈춘다)
+     CrashReport\HOST_<시각>_PrevAbnormalExit.txt  직전 실행이 정상 종료가 아니었을 때(스택 오버플로·강제 종료·정전 포함) 다음 기동 때 남긴다
+     ECSCOMALog\Health_yyyyMMdd.log             1분마다 스레드·핸들·메모리·접속 수/상대 (접속이 쌓이는지 추세로 본다)
+     죽으면 CrashReport 폴더와 Health 로그를 통째로 보내 달라고 하면 된다.
+  4) (선택) TASK\HOST_TASK\WER_LocalDumps_HOST_TASK.reg : 스택 오버플로 같은 .NET 이 가로채지 못하는 오류의 덤프는 Windows 가 남긴다.
+     C:\ECS_Dumps 폴더를 만들고 관리자 권한으로 한 번 더블클릭해 등록한다.
+
+== 설정 ==
+EcsComA.ini 는 건드리지 않아도 된다(전부 기본값). 바꾸려면 TASK\HOST_TASK\추가할_설정_EcsComA.ini.txt 참고. ★RemoteIP / LocalPort / RemotePort 현장값은 그대로★
+
+== 적용 순서 ==
+  1) HOST_TASK 종료
+  2) TASK\HOST_TASK\TASK_LFC10_G1_ECSCOM.exe 를 깔린 폴더에 덮어쓰기 (ini 그대로)
+  3) 기동 → 실행 폴더에 CrashReport\running.flag 가 생기고 1~2분 뒤 ECSCOMALog\Health_날짜.log 에 줄이 생기는지 확인
+  4) (선택) WER 등록
+
+== 참고 ==
+  - 이 판으로 죽는 원인이 모두 없어진다는 뜻이 아니다. 작업 스레드가 화면 목록을 만지던 구조(원인 후보 2)와 접속 누적(원인 후보 1)은 고쳤지만,
+    로그 큐(ArrayList)에 잠금이 없는 것(원인 후보 3)은 이번에 손대지 않았다.
+  - 같은 EXE 이름의 한국단자 HOST_TASK 가 이 PC 에서 같이 돌면 나중에 띄운 쪽이 "이미 실행 중" 으로 끝난다(기존 동작).
+
+== 소스 ==
+  소스_변경분\TASK\CrashReporter.cs(신규) · Program.cs · modCmWork.cs · modWorkThread.cs · modDefAPI.cs · CSrvWork.cs · frmMain.cs + 변경내용_1111_HostCrashReport.diff
+  TSK_HostCom.csproj / ALL_TASK.csproj 에 CrashReporter.cs 한 줄 추가

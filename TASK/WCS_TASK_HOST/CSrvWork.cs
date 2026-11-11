@@ -30,6 +30,8 @@ namespace TSK_HostCom
 		public System.Threading.Thread m_thrThreadObj;//쓰레드 객체	
 		
 		public bool m_blDbConnted;//DB 연결 유무
+		// [LGLS 2026-11-11] 이 접속에서 마지막으로 전문을 받은 시각 (조용한 옛 접속을 새 접속이 교체하는 판정에 쓴다)
+		public DateTime m_dtLastRx = DateTime.Now;
 		public CUserDb m_BDb = new CUserDb("Multi", false);//쓰레드별 Connection 별도
 		
 		private byte[] m_bytRxHead = new byte[modDefApp.MSG_HEAD_CNT + 1];	//Header
@@ -60,6 +62,19 @@ namespace TSK_HostCom
 		{
 			m_blSockConnected = false;
 			m_blDbConnted = false;
+		}
+
+		// [LGLS 2026-11-11] 접속이 끝나면 이 접속의 DB 개체를 반납한다. 종전에는 Close 만 해서 접속이 쌓이는 만큼
+		//   Connection/Command 가 가비지 수집을 기다리며 핸들·메모리를 잡고 있었다(40접속 시험에서 핸들 +5/접속이 남음).
+		public void ReleaseDb()
+		{
+			try
+			{
+				if (m_BDb == null) return;
+				try { if (m_BDb.conMain != null) { m_BDb.conMain.Close(); m_BDb.conMain.Dispose(); } } catch { }
+				try { if (m_BDb.comMain != null) m_BDb.comMain.Dispose(); } catch { }
+			}
+			catch { }
 		}
 
 		//최초작성자	: BASE(이길문)

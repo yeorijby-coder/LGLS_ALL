@@ -94,6 +94,7 @@
     <Compile Include="CCliWork.cs" />
     <Compile Include="cDbPostUse.cs" />
     <Compile Include="CLog.cs" />
+    <Compile Include="CrashReporter.cs" />
     <Compile Include="CSrvWork.cs" />
     <Compile Include="CUserDb.cs" />
     <Compile Include="modCmLib.cs" />

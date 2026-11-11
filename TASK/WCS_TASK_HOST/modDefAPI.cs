@@ -52,7 +52,13 @@ namespace TSK_HostCom
 					System.Threading.Thread.Sleep(p_iSleepMillSec);
 					iToTalMillSec = iToTalMillSec - p_iSleepMillSec;
 				}
-				Application.DoEvents();
+				// [LGLS 2026-11-11] 작업 스레드(접속 수락 · 송신 · 수신)가 이 함수로 쉬면서 화면 이벤트를 처리하던 것을 막는다.
+				//   DoEvents 는 화면 스레드에서만 의미가 있고, 다른 스레드에서 부르면 재진입·크로스 스레드 문제의 원인이 된다.
+				{
+					System.Windows.Forms.Form f = modDefApp.g_frmForm;
+					if (f == null || !f.IsHandleCreated || !f.InvokeRequired)
+						Application.DoEvents();
+				}
 
 			}
 

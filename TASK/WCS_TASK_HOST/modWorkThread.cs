@@ -56,6 +56,33 @@ namespace TSK_HostCom
 			}
 		}
 
+		// [LGLS 2026-11-11] EcsComA.ini [Host] 정수 키 (접속 때마다 읽는다)
+		private static int HostIniInt(string pKey, int pDef)
+		{
+			try { return modDefAPI.GetPrivateProfileInt("Host", pKey, pDef, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini")); }
+			catch { return pDef; }
+		}
+
+		// [LGLS 2026-11-11] ★상대가 흔적 없이 사라진 접속(FIN/RST 없이 망이 끊김, 상대 전원 차단)을 걸러 낸다★
+		//   수신 소켓에 연결 유지 확인(TCP keep-alive)이 없어 그런 접속의 스레드가 Receive 에서 영원히 대기했다.
+		//   그 스레드가 접속 수만큼 쌓이면(32비트 프로세스, 스레드 약 1,500~1,900개) 스레드를 더 못 만들어 수신이 멈춘다.
+		//   [Host] SRV_KEEPALIVE_SEC (기본 60초, 0 이면 끔) 동안 조용하면 10초 간격으로 확인하고, 응답이 없으면 Receive 가 예외로 끝나
+		//   그 접속의 스레드가 스스로 정리된다.
+		private static void SetKeepAlive(Socket pSock)
+		{
+			try
+			{
+				int nSec = HostIniInt("SRV_KEEPALIVE_SEC", 60);
+				if (nSec <= 0) return;
+				byte[] b = new byte[12];
+				BitConverter.GetBytes((uint)1).CopyTo(b, 0);                    // on
+				BitConverter.GetBytes((uint)(nSec * 1000)).CopyTo(b, 4);        // 조용한 시간(ms)
+				BitConverter.GetBytes((uint)10000).CopyTo(b, 8);                // 확인 간격(ms)
+				pSock.IOControl(IOControlCode.KeepAliveValues, b, null);
+			}
+			catch { }
+		}
+
 		// [LGLS 2026-11-10] 목록의 접속이 정말 살아 있는지 - 스레드가 돌고 소켓이 열려 있고, 상대가 FIN/RST 를 보내지 않았을 것.
 		//   (반쯤 끊긴 접속이 새 접속을 영영 막지 않도록, 죽은 것으로 보이면 여기서 닫고 목록에서 뺀다)
 		private static CSrvWork FindAliveSrvWork()
@@ -199,6 +226,7 @@ namespace TSK_HostCom
 						"[스레드 예외] 이 스레드만 끝냅니다 - " + ex.ToString()); } catch { }
 				try { modCmWork.ShowMsgServer("[" + pName + "] 스레드 예외 : " + ex.Message,
 						modDefApp.MSG_ERR); } catch { }
+				try { CrashReporter.ReportHandled(pName, ex); } catch { }   // [LGLS 2026-11-11] 호출 경로·자원·최근 로그를 CrashReport\ 에 남긴다
 			}
 		}
 
@@ -281,6 +309,8 @@ namespace TSK_HostCom
 						modCmWork.ShowMsgServer(ex.ToString(), modDefApp.MSG_ERR);
 					}
 					if (w.m_sktSock == null) continue;
+					SetKeepAlive(w.m_sktSock);          // [LGLS 2026-11-11]
+					w.m_dtLastRx = DateTime.Now;
 
 					string strPeer = "";
 					try { strPeer = PeerText(w.m_sktSock); } catch { }
@@ -300,9 +330,21 @@ namespace TSK_HostCom
 						{
 							string strHave = "";
 							try { strHave = PeerText(wAlive.m_sktSock); } catch { }
-							modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
-							try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
-							continue;
+							// [LGLS 2026-11-11] 이미 붙은 접속이 오래 조용하면(기본 120초, [Host] SRV_STALE_SEC, 0 이면 교체 안 함) 상대가 버린 접속으로 보고
+							//   닫고 새 접속을 받는다. 그렇지 않으면 반쯤 끊긴 접속 하나가 새 접속을 영영 막는다.
+							int nStale = HostIniInt("SRV_STALE_SEC", 120);
+							double dSilent = (DateTime.Now - wAlive.m_dtLastRx).TotalSeconds;
+							if (nStale > 0 && dSilent > nStale)
+							{
+								modCmWork.ShowMsgServer("이미 접속 중이던 상대 [" + strHave + "] 가 " + (int)dSilent + "초 동안 전문이 없어 닫고, 새로 접속을 요청한 상대 [" + strPeer + "] 를 받습니다.", modDefApp.MSG_IMP);
+								try { wAlive.m_blSockConnected = false; modCmWork.CloseSocket(ref wAlive.m_sktSock); } catch { }
+							}
+							else
+							{
+								modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
+								try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
+								continue;
+							}
 						}
 					}
 					int nConn;
@@ -385,6 +427,7 @@ namespace TSK_HostCom
                     {
                         break; // TODO: might not be correct. Was : Exit While
                     }
+                    w.m_dtLastRx = DateTime.Now;   // [LGLS 2026-11-11]
 
                     w.Parsing(iBodyLen);
                     // Response
@@ -466,6 +509,7 @@ namespace TSK_HostCom
 				// DB Close
 				w.m_BDb.conMain.Close();
 			}
+			w.ReleaseDb();   // [LGLS 2026-11-11] 접속이 끝나면 이 접속의 DB 개체를 반납한다
 
 			w.m_blSockConnected = false;
 			modCmWork.CloseSocket(ref w.m_sktSock);          // ★제 소켓만★ 닫는다

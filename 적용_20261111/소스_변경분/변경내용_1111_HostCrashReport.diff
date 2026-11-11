@@ -1,0 +1,385 @@
+diff --git a/TASK/WCS_TASK_HOST/CSrvWork.cs b/TASK/WCS_TASK_HOST/CSrvWork.cs
+index 240c7cb..79e60db 100644
+--- a/TASK/WCS_TASK_HOST/CSrvWork.cs
++++ b/TASK/WCS_TASK_HOST/CSrvWork.cs
+@@ -30,6 +30,8 @@ namespace TSK_HostCom
+ 		public System.Threading.Thread m_thrThreadObj;//쓰레드 객체	
+ 		
+ 		public bool m_blDbConnted;//DB 연결 유무
++		// [LGLS 2026-11-11] 이 접속에서 마지막으로 전문을 받은 시각 (조용한 옛 접속을 새 접속이 교체하는 판정에 쓴다)
++		public DateTime m_dtLastRx = DateTime.Now;
+ 		public CUserDb m_BDb = new CUserDb("Multi", false);//쓰레드별 Connection 별도
+ 		
+ 		private byte[] m_bytRxHead = new byte[modDefApp.MSG_HEAD_CNT + 1];	//Header
+@@ -62,6 +64,19 @@ namespace TSK_HostCom
+ 			m_blDbConnted = false;
+ 		}
+ 
++		// [LGLS 2026-11-11] 접속이 끝나면 이 접속의 DB 개체를 반납한다. 종전에는 Close 만 해서 접속이 쌓이는 만큼
++		//   Connection/Command 가 가비지 수집을 기다리며 핸들·메모리를 잡고 있었다(40접속 시험에서 핸들 +5/접속이 남음).
++		public void ReleaseDb()
++		{
++			try
++			{
++				if (m_BDb == null) return;
++				try { if (m_BDb.conMain != null) { m_BDb.conMain.Close(); m_BDb.conMain.Dispose(); } } catch { }
++				try { if (m_BDb.comMain != null) m_BDb.comMain.Dispose(); } catch { }
++			}
++			catch { }
++		}
++
+ 		//최초작성자	: BASE(이길문)
+ 		//작성일		: 20160829
+ 		//설명		: ECS수신정보Read
+diff --git a/TASK/WCS_TASK_HOST/Program.cs b/TASK/WCS_TASK_HOST/Program.cs
+index 12d55ba..ebf4672 100644
+--- a/TASK/WCS_TASK_HOST/Program.cs
++++ b/TASK/WCS_TASK_HOST/Program.cs
+@@ -13,9 +13,15 @@ namespace TSK_HostCom
+ 		[STAThread]
+ 		static void Main()
+ 		{
++			// [LGLS 2026-11-11] 예외 보고서/덤프 핸들러는 폼을 만들기 전에 건다(화면 스레드 예외 모드가 그래야 적용된다)
++			CrashReporter.InstallHandlers();
+ 			Application.EnableVisualStyles();
+ 			Application.SetCompatibleTextRenderingDefault(false);
++			// [LGLS 2026-11-11] 보고서 시험용 (현장에서 쓰지 않는다) : /crashtest-thread = 8초 뒤 작업 스레드 치명 예외,
++			//   /crashtest-ui = 시작 직후 화면 스레드 예외, /crashtest-handled = SafeRun 이 삼키는 스레드 예외
++			CrashReporter.TestHook(Environment.GetCommandLineArgs());
+ 			Application.Run(new frmMain());
++			CrashReporter.MarkCleanExit();   // 정상 종료면 running.flag 를 지운다
+ 		}
+ 	}
+ }
+diff --git a/TASK/WCS_TASK_HOST/TSK_HostCom.csproj b/TASK/WCS_TASK_HOST/TSK_HostCom.csproj
+index b86f1ad..9a86132 100644
+--- a/TASK/WCS_TASK_HOST/TSK_HostCom.csproj
++++ b/TASK/WCS_TASK_HOST/TSK_HostCom.csproj
+@@ -94,6 +94,7 @@
+     <Compile Include="CCliWork.cs" />
+     <Compile Include="cDbPostUse.cs" />
+     <Compile Include="CLog.cs" />
++    <Compile Include="CrashReporter.cs" />
+     <Compile Include="CSrvWork.cs" />
+     <Compile Include="CUserDb.cs" />
+     <Compile Include="modCmLib.cs" />
+diff --git a/TASK/WCS_TASK_HOST/frmMain.cs b/TASK/WCS_TASK_HOST/frmMain.cs
+index f5f070c..26ea11b 100644
+--- a/TASK/WCS_TASK_HOST/frmMain.cs
++++ b/TASK/WCS_TASK_HOST/frmMain.cs
+@@ -122,6 +122,10 @@ int i;
+ 				return;
+ 			}
+ 
++			// [LGLS 2026-11-11] 예외 보고서/1분 자원 기록 시작 (두 번째 인스턴스로 종료되는 경로를 지난 뒤에만)
++			CrashReporter.StateProvider = BuildStateText;
++			CrashReporter.StartMonitoring();
++
+             // [LGLS 2026-08-21] 접속 DB 정보를 타이틀에 표시 (CV TASK 와 동일 형식)
+             try
+             {
+@@ -235,6 +239,34 @@ int i;
+ 			}
+ 		}
+ 
++		// [LGLS 2026-11-11] 예외 보고서·1분 자원 기록에 싣는 앱 상태 (접속 수 · 상대 · 스레드)
++		private static string BuildStateText()
++		{
++			StringBuilder sb = new StringBuilder();
++			try
++			{
++				CSrvWork[] arr;
++				lock (modDefApp.g_lstSrvWork) { arr = modDefApp.g_lstSrvWork.ToArray(); }
++				sb.Append("srv=" + arr.Length);
++				foreach (CSrvWork x in arr)
++				{
++					string peer = "?";
++					try { peer = x.m_sktSock.RemoteEndPoint.ToString(); } catch { }
++					bool alive = false;
++					try { alive = x.m_thrThreadObj != null && x.m_thrThreadObj.IsAlive; } catch { }
++					sb.Append(" [" + peer + (alive ? " 스레드RUN" : " 스레드종료") + " 무전문 " + (int)(DateTime.Now - x.m_dtLastRx).TotalSeconds + "s]");
++				}
++				bool cli = (modDefApp.g_CliWork != null) && modDefApp.g_CliWork.m_blSockConnected;
++				sb.Append(" cli=" + (cli ? "Y" : "N"));
++				sb.Append(" lsn=" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrListenThreadObj != null && modDefApp.g_frmForm.g_thrListenThreadObj.IsAlive) ? "RUN" : "STOP"));
++				sb.Append(" logq=" + (modDefApp.g_arrlstLogList[0] != null ? modDefApp.g_arrlstLogList[0].Count : -1) + "/" + (modDefApp.g_arrlstLogList[1] != null ? modDefApp.g_arrlstLogList[1].Count : -1));
++				sb.Append(" logthr=" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrLogThreadObj[0] != null && modDefApp.g_frmForm.g_thrLogThreadObj[0].IsAlive) ? "RUN" : "STOP")
++						+ "/" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrLogThreadObj[1] != null && modDefApp.g_frmForm.g_thrLogThreadObj[1].IsAlive) ? "RUN" : "STOP"));
++			}
++			catch (Exception ex) { sb.Append(" (상태 조회 실패 " + ex.Message + ")"); }
++			return sb.ToString();
++		}
++
+ 		// [LGLS 2026-11-10] 제목줄 끝에 수신 접속 상대(Accept 한 쪽 IP:포트)를 붙인다. null/빈 값이면 "접속 없음".
+ 		private string m_strTitleBase = null;
+ 		public void SetPeerTitle(string pPeer)
+diff --git a/TASK/WCS_TASK_HOST/modCmWork.cs b/TASK/WCS_TASK_HOST/modCmWork.cs
+index 711adf9..1fa8250 100644
+--- a/TASK/WCS_TASK_HOST/modCmWork.cs
++++ b/TASK/WCS_TASK_HOST/modCmWork.cs
+@@ -10,6 +10,29 @@ namespace TSK_HostCom
+ {
+ 	static class modCmWork
+ 	{
++		// [LGLS 2026-11-11] 작업 스레드 → 화면 스레드 비동기 전달. 화면이 밀려 대기가 2000건을 넘으면 화면 줄만 버린다(통신·파일 로그는 영향 없음).
++		private static int s_nPendUi = 0;
++		private static void UiPost(MethodInvoker pAct)
++		{
++			Form f = modDefApp.g_frmForm;
++			if (f == null || f.IsDisposed || !f.IsHandleCreated) return;
++			if (!f.InvokeRequired) { pAct(); return; }
++			if (System.Threading.Interlocked.Increment(ref s_nPendUi) > 2000)
++			{
++				System.Threading.Interlocked.Decrement(ref s_nPendUi);
++				return;
++			}
++			try
++			{
++				f.BeginInvoke(new MethodInvoker(delegate()
++				{
++					System.Threading.Interlocked.Decrement(ref s_nPendUi);
++					try { if (!f.IsDisposed) pAct(); } catch { }
++				}));
++			}
++			catch { System.Threading.Interlocked.Decrement(ref s_nPendUi); }
++		}
++
+ 		//*** 메세지 표시 ***
+ 		public static void ShowMsgClient(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true, [CallerFilePath] string p_strFile = "", [CallerMemberName] string p_strFunc = "")
+ 		{
+@@ -36,6 +59,7 @@ namespace TSK_HostCom
+                 LogMsg.g_strTime = string.Format(@"{0:HH:mm:ss}", DateTime.Now) + ":" + string.Format(@"{0:000}", DateTime.Now.Millisecond);
+                 LogMsg.g_strType = p_strMsgKind;
+                 LogMsg.g_strMsg = p_strMsg;
++                CrashReporter.AddLine("CLI", p_strMsg);   // [LGLS 2026-11-11] 예외 보고서에 싣는 최근 로그
+                 if (p_blWriteLog)
+                 {
+                     modDefApp.g_arrlstLogList[0].Add(LogMsg);
+@@ -89,22 +113,29 @@ namespace TSK_HostCom
+                     }
+                 }
+ 
+-                modDefApp.g_frmForm.lsvMsgClient.Items.Add(lvitem);
+-
+-                if (modDefApp.g_frmForm.lsvMsgClient.Items.Count > 50)
++                // [LGLS 2026-11-11] ★화면 목록은 화면 스레드에서만 만진다★ (CheckForIllegalCrossThreadCalls=false 라 막히지 않았을 뿐,
++                //   여러 작업 스레드가 같은 ListView 를 동시에 Add/Clear 하면 목록이 어긋나 예외·멈춤·크래시의 원인이 된다.)
++                //   파일/DB 로그는 위에서 이미 남겼으므로, 화면이 밀리면 화면 줄만 버린다(UiPost).
++                string strKindC = p_strMsgKind;
++                UiPost(delegate()
+                 {
+-                    modDefApp.g_frmForm.lsvMsgClient.Items.Clear();
+-                }
++                    modDefApp.g_frmForm.lsvMsgClient.Items.Add(lvitem);
+ 
+-                if (modDefApp.g_frmForm.chkShowClient.Checked)
+-                {
+-                    modDefApp.g_frmForm.lsvMsgClient.EnsureVisible(modDefApp.g_frmForm.lsvMsgClient.Items.Count - 1);
+-                }
++                    if (modDefApp.g_frmForm.lsvMsgClient.Items.Count > 50)
++                    {
++                        modDefApp.g_frmForm.lsvMsgClient.Items.Clear();
++                    }
+ 
+-                if (p_strMsgKind != modDefApp.MSG_NOR)
+-                {
+-                    modDefApp.g_frmForm.lsvMsgClient.Refresh();
+-                }
++                    if (modDefApp.g_frmForm.chkShowClient.Checked)
++                    {
++                        modDefApp.g_frmForm.lsvMsgClient.EnsureVisible(modDefApp.g_frmForm.lsvMsgClient.Items.Count - 1);
++                    }
++
++                    if (strKindC != modDefApp.MSG_NOR)
++                    {
++                        modDefApp.g_frmForm.lsvMsgClient.Refresh();
++                    }
++                });
+             }
+             catch(Exception Ex)
+             {
+@@ -139,6 +170,7 @@ namespace TSK_HostCom
+                 LogMsg.g_strTime = string.Format(@"{0:HH:mm:ss}", DateTime.Now) + ":" + string.Format(@"{0:000}", DateTime.Now.Millisecond);
+                 LogMsg.g_strType = p_strMsgKind;
+                 LogMsg.g_strMsg = p_strMsg;
++                CrashReporter.AddLine("SRV", p_strMsg);   // [LGLS 2026-11-11] 예외 보고서에 싣는 최근 로그
+                 if (p_blWriteLog)
+                 {
+                     modDefApp.g_arrlstLogList[1].Add(LogMsg);
+@@ -167,23 +199,23 @@ namespace TSK_HostCom
+                         break;
+                 }
+ 
+-                modDefApp.g_frmForm.lsvMsgServer.Items.Add(lvitem);
+-
+-                if (modDefApp.g_frmForm.lsvMsgServer.Items.Count > 50)
++                // [LGLS 2026-11-11] ★화면 목록은 화면 스레드에서만 만진다★ (위 ShowMsgClient 와 같은 이유)
++                UiPost(delegate()
+                 {
+-                    modDefApp.g_frmForm.lsvMsgServer.Items.Clear();
+-                }
++                    modDefApp.g_frmForm.lsvMsgServer.Items.Add(lvitem);
+ 
+-                if (modDefApp.g_frmForm.chkShowServer.Checked)
+-                {
+-                    modDefApp.g_frmForm.lsvMsgServer.EnsureVisible(modDefApp.g_frmForm.lsvMsgServer.Items.Count - 1);
+-                }
+-                if (p_strMsgKind != modDefApp.MSG_NOR)
+-                {
+-                    modDefApp.g_frmForm.lsvMsgServer.Refresh();
+-                }
++                    if (modDefApp.g_frmForm.lsvMsgServer.Items.Count > 50)
++                    {
++                        modDefApp.g_frmForm.lsvMsgServer.Items.Clear();
++                    }
+ 
+-                modDefApp.g_frmForm.lsvMsgServer.Refresh();
++                    if (modDefApp.g_frmForm.chkShowServer.Checked)
++                    {
++                        modDefApp.g_frmForm.lsvMsgServer.EnsureVisible(modDefApp.g_frmForm.lsvMsgServer.Items.Count - 1);
++                    }
++
++                    modDefApp.g_frmForm.lsvMsgServer.Refresh();   // 종전 : 종류별 Refresh 와 무조건 Refresh 가 겹쳐 두 번 그렸다
++                });
+ 
+             }
+             catch (Exception Ex)
+@@ -256,13 +288,17 @@ namespace TSK_HostCom
+ 				if (p_picObj == null || p_picObj.IsDisposed) return;
+ 				if (modDefApp.g_frmForm == null || modDefApp.g_frmForm.IsDisposed) return;
+ 
+-				ImageList iml = modDefApp.g_frmForm.imlConnect;
+-				if (iml == null || iml.Images == null) return;
+-
++				// [LGLS 2026-11-11] 이미지 목록 접근과 대입 모두 화면 스레드에서 (현장 크래시 자리였다 - ImageList.get_Item)
++				PictureBox pic = p_picObj;
+ 				int nIdx = Convert.ToInt32(p_Status);
+-				if (nIdx < 0 || nIdx >= iml.Images.Count) return;
+-
+-				p_picObj.Image = iml.Images[nIdx];
++				UiPost(delegate()
++				{
++					if (pic == null || pic.IsDisposed) return;
++					ImageList iml = modDefApp.g_frmForm.imlConnect;
++					if (iml == null || iml.Images == null) return;
++					if (nIdx < 0 || nIdx >= iml.Images.Count) return;
++					pic.Image = iml.Images[nIdx];
++				});
+ 			}
+ 			catch { }   // 표시 실패로 통신 프로세스를 죽이지 않는다
+ 		}
+diff --git a/TASK/WCS_TASK_HOST/modDefAPI.cs b/TASK/WCS_TASK_HOST/modDefAPI.cs
+index ac480dd..d4bf81f 100644
+--- a/TASK/WCS_TASK_HOST/modDefAPI.cs
++++ b/TASK/WCS_TASK_HOST/modDefAPI.cs
+@@ -52,7 +52,13 @@ namespace TSK_HostCom
+ 					System.Threading.Thread.Sleep(p_iSleepMillSec);
+ 					iToTalMillSec = iToTalMillSec - p_iSleepMillSec;
+ 				}
+-				Application.DoEvents();
++				// [LGLS 2026-11-11] 작업 스레드(접속 수락 · 송신 · 수신)가 이 함수로 쉬면서 화면 이벤트를 처리하던 것을 막는다.
++				//   DoEvents 는 화면 스레드에서만 의미가 있고, 다른 스레드에서 부르면 재진입·크로스 스레드 문제의 원인이 된다.
++				{
++					System.Windows.Forms.Form f = modDefApp.g_frmForm;
++					if (f == null || !f.IsHandleCreated || !f.InvokeRequired)
++						Application.DoEvents();
++				}
+ 
+ 			}
+ 
+diff --git a/TASK/WCS_TASK_HOST/modWorkThread.cs b/TASK/WCS_TASK_HOST/modWorkThread.cs
+index 9cb88c3..c2660cb 100644
+--- a/TASK/WCS_TASK_HOST/modWorkThread.cs
++++ b/TASK/WCS_TASK_HOST/modWorkThread.cs
+@@ -56,6 +56,33 @@ namespace TSK_HostCom
+ 			}
+ 		}
+ 
++		// [LGLS 2026-11-11] EcsComA.ini [Host] 정수 키 (접속 때마다 읽는다)
++		private static int HostIniInt(string pKey, int pDef)
++		{
++			try { return modDefAPI.GetPrivateProfileInt("Host", pKey, pDef, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini")); }
++			catch { return pDef; }
++		}
++
++		// [LGLS 2026-11-11] ★상대가 흔적 없이 사라진 접속(FIN/RST 없이 망이 끊김, 상대 전원 차단)을 걸러 낸다★
++		//   수신 소켓에 연결 유지 확인(TCP keep-alive)이 없어 그런 접속의 스레드가 Receive 에서 영원히 대기했다.
++		//   그 스레드가 접속 수만큼 쌓이면(32비트 프로세스, 스레드 약 1,500~1,900개) 스레드를 더 못 만들어 수신이 멈춘다.
++		//   [Host] SRV_KEEPALIVE_SEC (기본 60초, 0 이면 끔) 동안 조용하면 10초 간격으로 확인하고, 응답이 없으면 Receive 가 예외로 끝나
++		//   그 접속의 스레드가 스스로 정리된다.
++		private static void SetKeepAlive(Socket pSock)
++		{
++			try
++			{
++				int nSec = HostIniInt("SRV_KEEPALIVE_SEC", 60);
++				if (nSec <= 0) return;
++				byte[] b = new byte[12];
++				BitConverter.GetBytes((uint)1).CopyTo(b, 0);                    // on
++				BitConverter.GetBytes((uint)(nSec * 1000)).CopyTo(b, 4);        // 조용한 시간(ms)
++				BitConverter.GetBytes((uint)10000).CopyTo(b, 8);                // 확인 간격(ms)
++				pSock.IOControl(IOControlCode.KeepAliveValues, b, null);
++			}
++			catch { }
++		}
++
+ 		// [LGLS 2026-11-10] 목록의 접속이 정말 살아 있는지 - 스레드가 돌고 소켓이 열려 있고, 상대가 FIN/RST 를 보내지 않았을 것.
+ 		//   (반쯤 끊긴 접속이 새 접속을 영영 막지 않도록, 죽은 것으로 보이면 여기서 닫고 목록에서 뺀다)
+ 		private static CSrvWork FindAliveSrvWork()
+@@ -199,6 +226,7 @@ namespace TSK_HostCom
+ 						"[스레드 예외] 이 스레드만 끝냅니다 - " + ex.ToString()); } catch { }
+ 				try { modCmWork.ShowMsgServer("[" + pName + "] 스레드 예외 : " + ex.Message,
+ 						modDefApp.MSG_ERR); } catch { }
++				try { CrashReporter.ReportHandled(pName, ex); } catch { }   // [LGLS 2026-11-11] 호출 경로·자원·최근 로그를 CrashReport\ 에 남긴다
+ 			}
+ 		}
+ 
+@@ -281,6 +309,8 @@ namespace TSK_HostCom
+ 						modCmWork.ShowMsgServer(ex.ToString(), modDefApp.MSG_ERR);
+ 					}
+ 					if (w.m_sktSock == null) continue;
++					SetKeepAlive(w.m_sktSock);          // [LGLS 2026-11-11]
++					w.m_dtLastRx = DateTime.Now;
+ 
+ 					string strPeer = "";
+ 					try { strPeer = PeerText(w.m_sktSock); } catch { }
+@@ -300,9 +330,21 @@ namespace TSK_HostCom
+ 						{
+ 							string strHave = "";
+ 							try { strHave = PeerText(wAlive.m_sktSock); } catch { }
+-							modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
+-							try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
+-							continue;
++							// [LGLS 2026-11-11] 이미 붙은 접속이 오래 조용하면(기본 120초, [Host] SRV_STALE_SEC, 0 이면 교체 안 함) 상대가 버린 접속으로 보고
++							//   닫고 새 접속을 받는다. 그렇지 않으면 반쯤 끊긴 접속 하나가 새 접속을 영영 막는다.
++							int nStale = HostIniInt("SRV_STALE_SEC", 120);
++							double dSilent = (DateTime.Now - wAlive.m_dtLastRx).TotalSeconds;
++							if (nStale > 0 && dSilent > nStale)
++							{
++								modCmWork.ShowMsgServer("이미 접속 중이던 상대 [" + strHave + "] 가 " + (int)dSilent + "초 동안 전문이 없어 닫고, 새로 접속을 요청한 상대 [" + strPeer + "] 를 받습니다.", modDefApp.MSG_IMP);
++								try { wAlive.m_blSockConnected = false; modCmWork.CloseSocket(ref wAlive.m_sktSock); } catch { }
++							}
++							else
++							{
++								modCmWork.ShowMsgServer("접속이 거부되었습니다. 접속을 요청한 상대 [" + strPeer + "] (이미 접속 중인 상대 [" + strHave + "] 가 있음)", modDefApp.MSG_ERR);
++								try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
++								continue;
++							}
+ 						}
+ 					}
+ 					int nConn;
+@@ -385,6 +427,7 @@ namespace TSK_HostCom
+                     {
+                         break; // TODO: might not be correct. Was : Exit While
+                     }
++                    w.m_dtLastRx = DateTime.Now;   // [LGLS 2026-11-11]
+ 
+                     w.Parsing(iBodyLen);
+                     // Response
+@@ -466,6 +509,7 @@ namespace TSK_HostCom
+ 				// DB Close
+ 				w.m_BDb.conMain.Close();
+ 			}
++			w.ReleaseDb();   // [LGLS 2026-11-11] 접속이 끝나면 이 접속의 DB 개체를 반납한다
+ 
+ 			w.m_blSockConnected = false;
+ 			modCmWork.CloseSocket(ref w.m_sktSock);          // ★제 소켓만★ 닫는다

@@ -122,6 +122,10 @@ int i;
 				return;
 			}
 
+			// [LGLS 2026-11-11] 예외 보고서/1분 자원 기록 시작 (두 번째 인스턴스로 종료되는 경로를 지난 뒤에만)
+			CrashReporter.StateProvider = BuildStateText;
+			CrashReporter.StartMonitoring();
+
             // [LGLS 2026-08-21] 접속 DB 정보를 타이틀에 표시 (CV TASK 와 동일 형식)
             try
             {
@@ -233,6 +237,34 @@ int i;
 				}
 				catch { return true; }
 			}
+		}
+
+		// [LGLS 2026-11-11] 예외 보고서·1분 자원 기록에 싣는 앱 상태 (접속 수 · 상대 · 스레드)
+		private static string BuildStateText()
+		{
+			StringBuilder sb = new StringBuilder();
+			try
+			{
+				CSrvWork[] arr;
+				lock (modDefApp.g_lstSrvWork) { arr = modDefApp.g_lstSrvWork.ToArray(); }
+				sb.Append("srv=" + arr.Length);
+				foreach (CSrvWork x in arr)
+				{
+					string peer = "?";
+					try { peer = x.m_sktSock.RemoteEndPoint.ToString(); } catch { }
+					bool alive = false;
+					try { alive = x.m_thrThreadObj != null && x.m_thrThreadObj.IsAlive; } catch { }
+					sb.Append(" [" + peer + (alive ? " 스레드RUN" : " 스레드종료") + " 무전문 " + (int)(DateTime.Now - x.m_dtLastRx).TotalSeconds + "s]");
+				}
+				bool cli = (modDefApp.g_CliWork != null) && modDefApp.g_CliWork.m_blSockConnected;
+				sb.Append(" cli=" + (cli ? "Y" : "N"));
+				sb.Append(" lsn=" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrListenThreadObj != null && modDefApp.g_frmForm.g_thrListenThreadObj.IsAlive) ? "RUN" : "STOP"));
+				sb.Append(" logq=" + (modDefApp.g_arrlstLogList[0] != null ? modDefApp.g_arrlstLogList[0].Count : -1) + "/" + (modDefApp.g_arrlstLogList[1] != null ? modDefApp.g_arrlstLogList[1].Count : -1));
+				sb.Append(" logthr=" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrLogThreadObj[0] != null && modDefApp.g_frmForm.g_thrLogThreadObj[0].IsAlive) ? "RUN" : "STOP")
+						+ "/" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrLogThreadObj[1] != null && modDefApp.g_frmForm.g_thrLogThreadObj[1].IsAlive) ? "RUN" : "STOP"));
+			}
+			catch (Exception ex) { sb.Append(" (상태 조회 실패 " + ex.Message + ")"); }
+			return sb.ToString();
 		}
 
 		// [LGLS 2026-11-10] 제목줄 끝에 수신 접속 상대(Accept 한 쪽 IP:포트)를 붙인다. null/빈 값이면 "접속 없음".

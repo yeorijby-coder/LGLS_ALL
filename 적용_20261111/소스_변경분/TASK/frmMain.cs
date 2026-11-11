@@ -1,0 +1,1089 @@
+﻿//최초작성자	: BASE(이길문)
+//작성일		: 20160829
+//화면개요   : ECS송수신 MAIN폼
+//수정이력   : 01. 20161228 이길문 창고정보Get추가
+//             02. 20170918 권혁찬 VB -> C# 변환작업. 
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+using System.Threading;
+using System.Net;
+using System.Collections;
+using Microsoft.VisualBasic;
+using System.Drawing.Drawing2D;
+
+namespace TSK_HostCom
+{
+	public partial class frmMain : Form
+	{
+		public frmMain()
+		{
+			InitializeComponent();
+
+            this.pnlMsg.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlMsg_Gradient);
+            this.pnlMsg2.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlMsg2_Gradient);
+
+            // [LGLS 2026-09-02] 환경 INI(EcsComA.ini) 바로 열기 - 우상단 빈 자리
+            var btnIni = new System.Windows.Forms.Button { Text = "INI 열기",
+                Size = new System.Drawing.Size(72, 22),
+                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right,
+                // [LGLS 2026-09-03] 우측 패널의 [닫기](btnExit) 왼쪽에 나란히 - 겹침 해소
+                Location = new System.Drawing.Point(this.btnExit.Left - 80, this.btnExit.Top + 11) };
+            btnIni.Click += delegate
+            {
+                string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+                if (!System.IO.File.Exists(strIni)) { System.Windows.Forms.MessageBox.Show("INI 파일이 없습니다 : " + strIni); return; }
+                // [LGLS 2026-09-03] 32비트 프로세스가 "notepad.exe" 를 부르면 WOW64 리다이렉션으로
+                //   SysWOW64 의 32비트 메모장이 뜨는데, Win11 새 메모장은 64비트 전용이라
+                //   Microsoft.UI.Windowing.Core.dll 오류가 난다. 실제 64비트 메모장을 직접 지정한다.
+                //   (Sysnative 는 32비트 프로세스에서만 유효한 리다이렉션 우회 경로)
+                try
+                {
+                    string strNotepad = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                        (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess) ? "Sysnative" : "System32",
+                        "notepad.exe");
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strNotepad, "\"" + strIni + "\"") { UseShellExecute = false });
+                }
+                catch
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strIni) { UseShellExecute = true });
+                }
+            };
+            this.pnlMsg2.Controls.Add(btnIni);   // [LGLS 2026-09-03] 닫기 버튼과 같은 패널
+            btnIni.BringToFront();
+        }
+
+        Color color1 = Color.FromArgb(129, 156, 203);
+        Color color2 = Color.FromArgb(204, 218, 243);
+
+        private void pnlMsg_Gradient(object sender, PaintEventArgs e)
+        {
+            LinearGradientBrush br = new LinearGradientBrush(this.ClientRectangle,
+                                                             color1,
+                                                             color2,
+                                                             0,
+                                                             false);
+            //br.RotateTransform(90);
+            e.Graphics.FillRectangle(br, this.ClientRectangle);
+        }
+
+        private void pnlMsg2_Gradient(object sender, PaintEventArgs e)
+        {
+            LinearGradientBrush br = new LinearGradientBrush(this.ClientRectangle,
+                                                             color2,
+                                                             color1,
+                                                             0,
+                                                             false);
+            //br.RotateTransform(90);
+            e.Graphics.FillRectangle(br, this.ClientRectangle);
+        }
+        //---------------------------------------------
+		// 선언부
+		//---------------------------------------------
+		public Thread g_thrListenThreadObj;    // 리슨쓰레드 객체
+		public Thread[] g_thrLogThreadObj = new Thread[2];   // WriteLog 쓰레드 객체
+
+		//---------------------------------------------
+		// 메인화면 로딩 및 초기화
+		//---------------------------------------------
+		private void frmMain_Load(object sender, EventArgs e)
+		{
+			
+            // [LGLS 2026-08-21] 로그 헤더 우클릭 → 열 표시/숨김 메뉴
+            WcsCommon.cLogCols.Attach(lsvMsgClient);
+            WcsCommon.cLogCols.Attach(lsvMsgServer);
+int i;
+			StatusBar1.Panels[0].Text = modUpdate.__UPDATE_DATE__;
+			modDefApp.g_blIsAppExit = false;
+			modDefApp.g_strPcNm = SystemInformation.ComputerName;
+
+			if (modCmLib.PrevInstance())
+			{
+				MessageBox.Show("이미 프로그램이 실행 중입니다.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+				System.Environment.Exit(0);
+				return;
+			}
+
+			modDefApp.g_frmForm = this;
+
+			modDefApp.g_strUserID = "TSK_HostCom";
+			modDefApp.g_strUserName = "Host통신[G-자동창고]";
+
+			if (Pgm_Start() == false)
+			{
+				System.Environment.Exit(0);
+				return;
+			}
+
+			// [LGLS 2026-11-11] 예외 보고서/1분 자원 기록 시작 (두 번째 인스턴스로 종료되는 경로를 지난 뒤에만)
+			CrashReporter.StateProvider = BuildStateText;
+			CrashReporter.StartMonitoring();
+
+            // [LGLS 2026-08-21] 접속 DB 정보를 타이틀에 표시 (CV TASK 와 동일 형식)
+            try
+            {
+                // SQL 빌드는 접속에 g_strDbAlias(=[DB] ALIAS 또는 IP)를 쓴다 — 실제 접속 대상과 같은 값을 표시
+                string strSrv = modDefApp.g_User.g_strDbAlias;
+                if (string.IsNullOrEmpty(strSrv)) strSrv = modDefApp.g_User.g_strDbIP;
+                this.Text = this.Text + " [DB:" + modDefApp.g_User.g_strDatabase + "@" + strSrv + "]";
+                // [LGLS 2026-08-22] WMS 소켓 접속정보 표시 — 쌍방향(수신 리슨 / 송신 원격)
+                this.Text = this.Text + " [WMS:수신 " + modDefApp.g_iListenPort
+                                      + " / 송신 " + modDefApp.g_strRemoteIP + ":" + modDefApp.g_iRemotePort + "]";
+            }
+            catch { }
+
+			//---------------------------------------------------------------------------------
+			// 컨트롤의 System.Windows.Forms.Control.Handle 속성에 액세스하는 잘못된 스레드에 대한 
+			// 호출을 catch하는지 여부를 나타내는 값을 가져오거나 설정
+			//---------------------------------------------------------------------------------
+			CheckForIllegalCrossThreadCalls = false;
+
+			// [LGLS 2026-09-09] ALL_TASK 에서 껐다 켜면 이 값이 true 로 남아 화면 로그가 죽는다.
+			modDefApp.g_blIsAppExit = false;
+
+            // Log 쓰레드 시작
+            // Server WMS, Client ECS 두개의 Log 쓰레드 생성
+            for (i = 0; i <= 1; i++)
+			{
+				modDefApp.g_arrlstLogList[i] = new ArrayList();
+
+				modDefApp.g_areLogExitEvent[i] = new AutoResetEvent(false);
+				// [LGLS 2026-09-29] 스레드 예외로 프로세스가 통째로 죽지 않게 감싼다 (사용자 지시)
+				g_thrLogThreadObj[i] = new Thread(delegate() { modWorkThread.SafeRun("HOST_LOG", modWorkThread.LogThread); });
+				g_thrLogThreadObj[i].Name = i.ToString().PadRight(3) + "Log Thread";
+				g_thrLogThreadObj[i].Start();
+			}
+
+			// [LGLS] 적용 중인 IMS 스테이션 코드 해석 기준을 기동 시 1회 로그에 남긴다.
+
+            //        (INI [Host]StationMapMode = ECS | WMS, 상세는 modStationMap.cs 참조)
+
+            modStationMap.LoadFromIni();
+
+            modCmWork.ShowMsgServer(modStationMap.DumpMap(), modDefApp.MSG_NOR);
+
+
+
+			modDefApp.g_blListenThread = true;
+			modDefApp.g_blSrvThread = false;
+
+			tmrMain.Enabled = true;
+
+
+            #region 공파레트 출고 작업인지에 대한 체크 변수 초기화 
+            for (i = 0; i < 10000; i++)
+            {
+                modDefApp.g_bEmtpyPltJob[i] = false;
+            }
+            #endregion
+        }
+
+
+		private void tmrMain_Tick(System.Object sender, System.EventArgs e)
+		{
+
+            this.Cursor = Cursors.WaitCursor;
+			tmrMain.Enabled = false;
+
+            // 리슨 쓰레드 시작
+            // Server 시작 
+            // [LGLS 2026-09-29] 스레드 예외로 프로세스가 통째로 죽지 않게 감싼다 (사용자 지시)
+            g_thrListenThreadObj = new Thread(delegate() { modWorkThread.SafeRun("HOST_LSN", modWorkThread.ListenThread); });
+            g_thrListenThreadObj.Name = "Socket Listen";
+            g_thrListenThreadObj.Start();
+
+            Thread.Sleep(5000);
+            // Client 쓰레드 시작
+            // [LGLS 2026-09-29] 스레드 예외로 프로세스가 통째로 죽지 않게 감싼다 (사용자 지시)
+            modDefApp.g_CliWork.m_thrThreadObj = new Thread(delegate() { modWorkThread.SafeRun("HOST_CLI", modWorkThread.CliWorkThread); });
+			modDefApp.g_CliWork.m_thrThreadObj.Name = "Client Thread";
+			modDefApp.g_CliWork.m_thrThreadObj.Start();
+
+			this.Cursor = Cursors.Default;
+
+			modDefApp.g_blSTOP_REQ = false;
+
+			tmrSTOP_REQ.Enabled = true;
+
+		}
+
+		// [LGLS 2026-09-23] ★통신 상태를 EQP_MST 에 주기로 남긴다★ (사용자 지적).
+		//   종전에는 전문을 주고받을 때만 CONNECTED_YN='Y' 를 적고, 끊길 때는 아무도 적지 않았다.
+		//   그래서 HOST_SIM 을 내려도 운전 화면의 [통신] 신호등이 한참 정상으로 보였다
+		//   (UPD_DT 가 낡기를 기다릴 수밖에 없었다).
+		//   1초 타이머에 얹어 5초마다 지금 상태를 그대로 적는다 - 표시용이라 통신 규약과 무관하다.
+		//     HOST  = 수신(서버) 소켓 - 상위가 우리에게 붙어 있는가
+		//     HOST2 = 송신(클라이언트) 소켓 - 우리가 상위에 붙어 있는가
+		// [LGLS 2026-09-29] EQP_MST 에 내 행이 없으면 스스로 만들지 (사용자 지시).
+		//   현장에서 EQP_MST 를 접속 단위 4행으로 줄이는 작업을 한다. 줄인 뒤에도, 줄이지 않은 채로도
+		//   HOST_TASK 가 똑같이 돌아야 한다. UPDATE 만 하면 행이 없을 때 통신 상태가 남지 않아
+		//   운전 화면 신호등이 영영 미접속으로 보인다 - 그래서 없으면 INSERT 한다.
+		//   EcsComA.ini [Host] EQP_MST_AUTO_ROW : 1(기본) 없으면 만든다 / 0 UPDATE 만 한다.
+		private static bool EqpMstAutoRow
+		{
+			get
+			{
+				try
+				{
+					string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+					return modDefAPI.GetPrivateProfileInt("Host", "EQP_MST_AUTO_ROW", 1, strIni) != 0;
+				}
+				catch { return true; }
+			}
+		}
+
+		// [LGLS 2026-11-11] 예외 보고서·1분 자원 기록에 싣는 앱 상태 (접속 수 · 상대 · 스레드)
+		private static string BuildStateText()
+		{
+			StringBuilder sb = new StringBuilder();
+			try
+			{
+				CSrvWork[] arr;
+				lock (modDefApp.g_lstSrvWork) { arr = modDefApp.g_lstSrvWork.ToArray(); }
+				sb.Append("srv=" + arr.Length);
+				foreach (CSrvWork x in arr)
+				{
+					string peer = "?";
+					try { peer = x.m_sktSock.RemoteEndPoint.ToString(); } catch { }
+					bool alive = false;
+					try { alive = x.m_thrThreadObj != null && x.m_thrThreadObj.IsAlive; } catch { }
+					sb.Append(" [" + peer + (alive ? " 스레드RUN" : " 스레드종료") + " 무전문 " + (int)(DateTime.Now - x.m_dtLastRx).TotalSeconds + "s]");
+				}
+				bool cli = (modDefApp.g_CliWork != null) && modDefApp.g_CliWork.m_blSockConnected;
+				sb.Append(" cli=" + (cli ? "Y" : "N"));
+				sb.Append(" lsn=" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrListenThreadObj != null && modDefApp.g_frmForm.g_thrListenThreadObj.IsAlive) ? "RUN" : "STOP"));
+				sb.Append(" logq=" + (modDefApp.g_arrlstLogList[0] != null ? modDefApp.g_arrlstLogList[0].Count : -1) + "/" + (modDefApp.g_arrlstLogList[1] != null ? modDefApp.g_arrlstLogList[1].Count : -1));
+				sb.Append(" logthr=" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrLogThreadObj[0] != null && modDefApp.g_frmForm.g_thrLogThreadObj[0].IsAlive) ? "RUN" : "STOP")
+						+ "/" + ((modDefApp.g_frmForm != null && modDefApp.g_frmForm.g_thrLogThreadObj[1] != null && modDefApp.g_frmForm.g_thrLogThreadObj[1].IsAlive) ? "RUN" : "STOP"));
+			}
+			catch (Exception ex) { sb.Append(" (상태 조회 실패 " + ex.Message + ")"); }
+			return sb.ToString();
+		}
+
+		// [LGLS 2026-11-10] 제목줄 끝에 수신 접속 상대(Accept 한 쪽 IP:포트)를 붙인다. null/빈 값이면 "접속 없음".
+		private string m_strTitleBase = null;
+		public void SetPeerTitle(string pPeer)
+		{
+			if (m_strTitleBase == null)
+			{
+				// 이전에 붙인 꼬리표가 있으면 떼어 기본 제목을 얻는다
+				int p = this.Text.IndexOf(" [수신 상대:");
+				m_strTitleBase = (p >= 0) ? this.Text.Substring(0, p) : this.Text;
+			}
+			this.Text = m_strTitleBase + " [수신 상대:" + (string.IsNullOrEmpty(pPeer) ? "접속 없음" : pPeer) + "]";
+		}
+
+		// [LGLS 2026-09-30] 살아 있는 수신 접속을 전부 닫고 스레드를 기다린다 (pJoinMs < 0 이면 끝까지)
+		private static void CloseAllSrvWork(int pJoinMs)
+		{
+			CSrvWork[] arr;
+			lock (modDefApp.g_lstSrvWork) { arr = modDefApp.g_lstSrvWork.ToArray(); }
+			if (arr.Length == 0 && modDefApp.g_SrvWork != null) arr = new CSrvWork[] { modDefApp.g_SrvWork };
+			foreach (CSrvWork w in arr)
+			{
+				try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
+			}
+			foreach (CSrvWork w in arr)
+			{
+				try
+				{
+					if (w.m_thrThreadObj != null && w.m_thrThreadObj.IsAlive)
+					{
+						if (pJoinMs < 0) w.m_thrThreadObj.Join(); else w.m_thrThreadObj.Join(pJoinMs);
+					}
+				}
+				catch { }
+			}
+		}
+
+		private CUserDb m_DbCommHb    = new CUserDb("Multi", false);
+		private int     m_nCommHbTick = 0;
+
+		private void WriteCommHeartbeat()
+		{
+			try
+			{
+				string strErr = "";
+				if (m_DbCommHb.conMain == null || m_DbCommHb.conMain.State != ConnectionState.Open)
+				{
+					// DBLogIn 은 Connection 개체를 ★새로 만들어 대입★ 하고 접속 문자열만 채운다.
+					//   그래서 Init() 으로 Command 에 다시 물리고, 직접 열어야 한다.
+					if (!modCmLib.DBLogIn(ref m_DbCommHb.conMain, ref strErr)) return;
+					m_DbCommHb.Init();
+					m_DbCommHb.conMain.Open();
+				}
+
+				bool blCli = (modDefApp.g_CliWork != null) && modDefApp.g_CliWork.m_blSockConnected;
+				// [LGLS 2026-09-30] 수신 접속이 하나라도 붙어 있으면 Y
+				bool blSrv = false;
+				lock (modDefApp.g_lstSrvWork)
+				{
+					foreach (CSrvWork x in modDefApp.g_lstSrvWork)
+						if (x.m_sktSock != null && x.m_sktSock.Connected) { blSrv = true; break; }
+				}
+
+				for (int i = 0; i < 2; i++)
+				{
+					string strTyp = (i == 0) ? "HOST" : "HOST2";
+					bool   blOk   = (i == 0) ? blSrv : blCli;
+
+					m_DbCommHb.ParamsClear();
+					string strSql = "";
+					strSql += modDefApp.CRLF + " UPDATE EQP_MST                                        ";
+					strSql += modDefApp.CRLF + "    SET CONNECTED_YN = " + m_DbCommHb.ParamsAdd("CONN", blOk ? "Y" : "N");
+					strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
+					strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_DbCommHb.ParamsAdd("WHTY", modDefApp.WH_TYP);
+					strSql += modDefApp.CRLF + "    AND EQP_TYP      = " + m_DbCommHb.ParamsAdd("EQTY", strTyp);
+					int nUpd = m_DbCommHb.ExcuteNonQry_Par(ref strSql, false);
+
+					// [LGLS 2026-09-29] 고친 행이 없다 = EQP_MST 에 내 행이 없다. 만들어 둔다 (사용자 지시).
+					if (nUpd == 0 && EqpMstAutoRow)
+					{
+						m_DbCommHb.ParamsClear();
+						string strIns = "";
+						strIns += modDefApp.CRLF + " INSERT INTO EQP_MST (WH_TYP, EQP_TYP, PLC_NO, CONNECTED_YN, UPD_DT, USE_YN, REMARKS) ";
+						strIns += modDefApp.CRLF + " SELECT " + m_DbCommHb.ParamsAdd("WHTY", modDefApp.WH_TYP);
+						strIns += modDefApp.CRLF + "      , " + m_DbCommHb.ParamsAdd("EQTY", strTyp);
+						strIns += modDefApp.CRLF + "      , '01'                                      ";
+						strIns += modDefApp.CRLF + "      , " + m_DbCommHb.ParamsAdd("CONN", blOk ? "Y" : "N");
+						strIns += modDefApp.CRLF + "      , " + modDateTime.SYSDATE + ", 'Y'           ";
+						strIns += modDefApp.CRLF + "      , " + m_DbCommHb.ParamsAdd("RMK", (i == 0) ? "상위 통신 1 (수신)" : "상위 통신 2 (송신)");
+						strIns += modDefApp.CRLF + "  WHERE NOT EXISTS (SELECT 1 FROM EQP_MST                ";
+						strIns += modDefApp.CRLF + "                     WHERE WH_TYP  = " + m_DbCommHb.ParamsAdd("WHT2", modDefApp.WH_TYP);
+						strIns += modDefApp.CRLF + "                       AND EQP_TYP = " + m_DbCommHb.ParamsAdd("EQT2", strTyp) + ") ";
+						m_DbCommHb.ExcuteNonQry_Par(ref strIns, false);
+					}
+				}
+			}
+			catch { }   // 표시용 기록이다 - 실패해도 통신을 방해하지 않는다
+		}
+
+		private void tmrSTOP_REQ_Tick(System.Object sender, System.EventArgs e)
+		{
+			tmrSTOP_REQ.Enabled = false;
+
+			// [LGLS 2026-09-23] 5초마다 통신 상태를 EQP_MST 에 남긴다 (사용자 지적)
+			if (++m_nCommHbTick >= 5) { m_nCommHbTick = 0; WriteCommHeartbeat(); }
+
+			//### Client Work
+			// DB LOG IN
+			if (modDefApp.g_blSTOP_REQ)
+			{
+				modCmWork.ShowMsgClient("종료 요구가 설정 되었습니다. ", modDefApp.MSG_IMP);
+				this.Close();
+			}
+			else
+			{
+				tmrSTOP_REQ.Enabled = true;
+			}
+		}
+		//---------------------------------------------
+		// 컨트롤 이벤트
+		//---------------------------------------------
+		// ─────────────────────────────────────────────────────────────────
+		// [LGLS 2026-09-09] ALL_TASK 에서 [HOST] 태스크를 끌 때 부른다.
+		//   frmMain_FormClosing 의 종료 절차와 같되 확인 대화상자만 뺐다.
+		// ─────────────────────────────────────────────────────────────────
+		public void TaskStop()
+		{
+			try { tmrMain.Enabled = false; tmrSTOP_REQ.Enabled = false; } catch { }
+
+			modDefApp.g_blIsAppExit = true;
+
+			try
+			{
+				if (modDefApp.g_blSrvThread == false)
+				{
+					modDefApp.g_blListenThread = false;		// ListenThread 가 리스너를 닫고 끝난다
+				}
+				else
+				{
+					modDefApp.g_blSrvThread = false;
+					// [LGLS 2026-09-30] 수신 접속이 여러 개일 수 있다 - 전부 닫는다
+					CloseAllSrvWork(5000);
+					modDefApp.g_blListenThread = false;
+				}
+			}
+			catch { }
+
+			// 클라이언트(상위 접속) 쓰레드
+			try
+			{
+				if (modDefApp.g_CliWork != null && modDefApp.g_CliWork.m_thrThreadObj != null)
+				{
+					modDefApp.g_CliWork.m_areCliExitEvent.Set();
+					modDefApp.g_CliWork.m_thrThreadObj.Join(5000);
+					modDefApp.g_CliWork.m_thrThreadObj = null;
+				}
+			}
+			catch { }
+
+			// 리슨 스레드가 끝나며 LogThreadEnd 를 부르지만, 리슨이 아직이면 여기서 직접 끝낸다.
+			try
+			{
+				if (g_thrListenThreadObj != null) g_thrListenThreadObj.Join(3000);
+				LogThreadEnd();
+				for (int i = 0; i <= 1; i++)
+					if (g_thrLogThreadObj[i] != null) g_thrLogThreadObj[i].Join(3000);
+			}
+			catch { }
+
+			// DB 반납
+			try
+			{
+				if (modDefApp.g_CliWork != null && modDefApp.g_CliWork.m_BDb != null
+					&& modDefApp.g_CliWork.m_BDb.conMain != null)
+					modDefApp.g_CliWork.m_BDb.conMain.Close();
+			}
+			catch { }
+		}
+
+		/// <summary>ALL_TASK 상태표시용 : 살아 있는 워커 스레드 목록</summary>
+		public string[] GetThreadStates()
+		{
+			bool bLsn = (g_thrListenThreadObj != null && g_thrListenThreadObj.IsAlive);
+			bool bSrv = (modDefApp.g_SrvWork != null && modDefApp.g_SrvWork.m_thrThreadObj != null
+						 && modDefApp.g_SrvWork.m_thrThreadObj.IsAlive);
+			bool bCli = (modDefApp.g_CliWork != null && modDefApp.g_CliWork.m_thrThreadObj != null
+						 && modDefApp.g_CliWork.m_thrThreadObj.IsAlive);
+			bool bLog = (g_thrLogThreadObj[0] != null && g_thrLogThreadObj[0].IsAlive);
+			return new string[] { "HOST_LSN|" + (bLsn ? "RUN" : "STOP"),
+								  "HOST_SRV|" + (bSrv ? "RUN" : "STOP"),
+								  "HOST_CLI|" + (bCli ? "RUN" : "STOP"),
+								  "HOST_LOG|" + (bLog ? "RUN" : "STOP") };
+		}
+
+		private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+		{
+			if (modDefApp.g_blSTOP_REQ == false)
+			{
+				if (MessageBox.Show("종료 하시겠습니까? ", this.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Cancel)
+				{
+					e.Cancel = true;
+					return;
+				}
+			}
+
+			this.Cursor = Cursors.WaitCursor;
+
+			modCmWork.ShowMsgClient("종료 중... 잠시 기다리세요.", modDefApp.MSG_IMP);
+			this.Text = "종료 중... 잠시 기다리세요.";
+			modDefApp.g_blIsAppExit = true;
+
+			if (modDefApp.g_blSrvThread == false)
+			{
+				modDefApp.g_blListenThread = false;
+			}
+			else
+			{
+				modDefApp.g_blSrvThread = false;
+
+				//서버 쓰레드 종료
+				// [LGLS 2026-09-30] 수신 접속이 여러 개일 수 있다 - 전부 닫는다
+				CloseAllSrvWork(-1);
+			}
+
+			//클라이언트 쓰레드 종료
+			if ((modDefApp.g_CliWork.m_thrThreadObj != null))
+			{
+				modDefApp.g_CliWork.m_areCliExitEvent.Set();
+				modDefApp.g_CliWork.m_thrThreadObj.Join();
+			}
+
+			if ((modDefApp.g_CliWork.m_BDb.conMain != null))
+			{
+				modDefApp.g_CliWork.m_BDb.conMain.Close();
+			}
+
+			this.Cursor = Cursors.Default;
+
+		}
+
+		private void btnExit_Click(object sender, EventArgs e)
+		{
+			this.Close();
+		}
+
+		private void btnDelLogClient_Click(object sender, EventArgs e)
+		{
+			lsvMsgClient.Items.Clear();
+		}
+
+		private void btnDelLogServer_Click(object sender, EventArgs e)
+		{
+			lsvMsgServer.Items.Clear();
+		}
+
+		private void lsvMsgClient_Click(object sender, EventArgs e)
+		{
+
+			try
+			{
+				if (lsvMsgClient.SelectedItems.Count > 0)
+				{
+					txtDetail.Text = lsvMsgClient.SelectedItems[0].SubItems[3].Text;   // [LGLS 2026-08-21] 파일/함수 2열 삽입
+				}
+			}
+			catch (Exception ex)
+			{
+			}
+
+		}
+
+		private void lsvMsgServer_Click(object sender, EventArgs e)
+		{
+
+			try
+			{
+				if (lsvMsgServer.SelectedItems.Count > 0)
+				{
+					txtDetail2.Text = lsvMsgServer.SelectedItems[0].SubItems[3].Text;  // [LGLS 2026-08-21] 파일/함수 2열 삽입
+				}
+			}
+			catch (Exception ex)
+			{
+			}
+
+		}
+
+		//---------------------------------------------
+		// 함수
+		//---------------------------------------------
+		public void LogThreadEnd()
+		{
+			int i = 0;
+
+			for (i = 0; i <= 1; i++)
+			{
+				modDefApp.g_areLogExitEvent[i].Set();
+				g_thrLogThreadObj[i].Join();
+			}
+		}
+        //---------------------------------------------
+        // 함수
+        //---------------------------------------------
+        // 작업생성         - 트랜젝션 없음
+        public bool InsertJobMst(CUserDb bDb 
+                                , string strLuggNo
+                                , string strStartPos
+                                , string strStartLoc
+                                , string strDestPos
+                                , string strDestLoc
+                                , string strJob_Define
+                                , string strLotNo = ""
+                                , string strPriority = "000"
+                                , string strSize = "0"
+                                  , bool bServerSocket = false
+                                , string strProductId = "")   // [LGLS 2026-08-01] O 전문 Product ID → JOB_MST.PRODUCT_ID (Client 작업정보 '제품정보' 컬럼)
+        {
+            string strTitle = "[InsertJobMst] .. ";
+            string strSql = "";
+            string strLog = "";
+            #region 작업 생성
+            //bDb.BeginTrans();
+
+            //bDb.ParamsClear();
+
+            strSql = "INSERT INTO JOB_MST                       ";
+            strSql += modDefApp.CRLF + "(  WH_TYP			    ";
+            strSql += modDefApp.CRLF + " , LUGG_NO			    ";
+            strSql += modDefApp.CRLF + " , START_POS			";
+            strSql += modDefApp.CRLF + " , START_LOCATION    	";
+            strSql += modDefApp.CRLF + " , DEST_POS          	";
+            strSql += modDefApp.CRLF + " , DEST_LOCATION     	";
+            strSql += modDefApp.CRLF + " , JOB_TYP		        ";
+            strSql += modDefApp.CRLF + " , JOB_STATUS        	";
+            strSql += modDefApp.CRLF + " , LOT_NO		    	";
+            strSql += modDefApp.CRLF + " , JOB_PRIORITY     	";
+            strSql += modDefApp.CRLF + " , PRODUCT_SIZE     	";
+            strSql += modDefApp.CRLF + " , PRODUCT_ID       	";
+            strSql += modDefApp.CRLF + " , INS_DT		    	";
+            strSql += modDefApp.CRLF + " , INS_USER_ID       	";
+            strSql += modDefApp.CRLF + " , REMARKS          	";
+            strSql += modDefApp.CRLF + " , WC_STEP )         	";
+            strSql += modDefApp.CRLF + "VALUES ('" + modDefApp.WH_TYP + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strLuggNo + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strStartPos + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strStartLoc + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strDestPos + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strDestLoc + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strJob_Define + "'";
+            strSql += modDefApp.CRLF + "     ,  '99'";
+            strSql += modDefApp.CRLF + "     ,  '" + strLotNo + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strPriority + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strSize + "'";
+            strSql += modDefApp.CRLF + "     ,  '" + strProductId.Replace("'", "''") + "'";
+            strSql += modDefApp.CRLF + "     ,   " + modDateTime.SYSDATE;
+            strSql += modDefApp.CRLF + "     ,  'HOST_TASK'";
+            strSql += modDefApp.CRLF + "     ,  ''";
+            strSql += modDefApp.CRLF + "     ,  '0');";
+
+            int iSelCnt = bDb.ExcuteNonQry_Par(ref strSql);
+
+            if (iSelCnt <= 0)
+            {
+                strLog = string.Format("작업 생성에 실패하였습니다. [작업번호:{0}][출발지:{1}][출발LOC:{2}][도착지:{3}][도착LOC:{4}][LOT_NO:{5}][SIZE:{6}][DB Err:{7}]",
+                    strLuggNo, strStartPos, strStartLoc, strDestPos, strDestLoc, strLotNo, strSize, bDb.strErrMsg);
+                if (bServerSocket == true)
+                {
+                    modCmWork.ShowMsgServer(strTitle + strLog, modDefApp.MSG_ERR);
+                }
+                else
+                {
+                    modCmWork.ShowMsgClient(strTitle + strLog, modDefApp.MSG_ERR);
+                }
+                return false;
+            }
+            #endregion
+            return true;
+        }
+        //---------------------------------------------
+        // 함수
+        //---------------------------------------------
+        // 인터페이스 기록 입력 
+        public bool InsertHostIfLog(CUserDb bDb, string strMsg, string strHostCmd, string strDirection, bool bServerSocket = false)
+        {
+            string strTitle = "[InsertHostIfLog] .. ";
+            #region HOST_IF_LOG에 기록하기
+            //if (strHostCmd != "S")
+            //{
+                bDb.BeginTrans();
+
+                bDb.ParamsClear();
+            //}
+            string strSql = "";
+            string strLog = "";
+            //string strMsg = System.Text.Encoding.Default.GetString(m_bytTxBuff);
+
+            strSql = "INSERT INTO HOST_IF_LOG       ";
+            strSql += modDefApp.CRLF + "(  WH_TYP	";
+            strSql += modDefApp.CRLF + " , LOG_DATE	";
+            strSql += modDefApp.CRLF + " , LOG_TIME	";
+            strSql += modDefApp.CRLF + " , HOST_CMD ";
+            strSql += modDefApp.CRLF + " , DIRECTION";
+            strSql += modDefApp.CRLF + " , MESSAGE  ";
+            strSql += modDefApp.CRLF + " , LUGG_NO	";
+            strSql += modDefApp.CRLF + " , BCR_BOTTOM";
+            strSql += modDefApp.CRLF + " , BCR_TOP	";
+            strSql += modDefApp.CRLF + " , INS_DT   ";
+            strSql += modDefApp.CRLF + " , INS_USER_ID)";
+            strSql += modDefApp.CRLF + "VALUES (";
+            strSql += modDefApp.CRLF + "  '" + modDefApp.WH_TYP + "'";
+            strSql += modDefApp.CRLF + ",  " + modDateTime.SYSDATE_TO_CDT;
+            strSql += modDefApp.CRLF + ",  " + modDateTime.SYSDATE_TO_CTM;
+            strSql += modDefApp.CRLF + ", '" + strHostCmd + "'";
+            strSql += modDefApp.CRLF + ", '" + strDirection + "'"; //strSql1 = strSql;
+            strSql += modDefApp.CRLF + ", '" + strMsg + "'";     
+            strSql += modDefApp.CRLF + ", ''";               // 작업번호 사용안함!
+            strSql += modDefApp.CRLF + ", ''";               // 바코드 하단 사용안함
+            strSql += modDefApp.CRLF + ", ''";               // 바코드 상단 사용안함
+            strSql += modDefApp.CRLF + ", " + modDateTime.SYSDATE;
+            strSql += modDefApp.CRLF + ", 'HOST_TASK')";
+
+            //strSql = strSql1 + strSql2;
+            int iSelCnt = bDb.ExcuteNonQry_Par(ref strSql);
+
+            if (iSelCnt <= 0)
+            {
+                string strTemp = "";
+                if (iSelCnt < 0)
+                {
+                    strTemp = string.Format("[DB Error : {0}", bDb.ErrMsg);
+                }
+                else //if (iSelCnt == 0)
+                {
+                    strTemp = string.Format("[HOST_CMD:{0}][MSG:{1}]", strHostCmd, strMsg);
+                }
+
+                strLog = string.Format("HOST 인터페이스 정보 입력에 실패하였습니다. {0}", strTemp);
+                if (bServerSocket == true)
+                {
+                    modCmWork.ShowMsgServer(strTitle + strLog, modDefApp.MSG_ERR);
+                }
+                else
+                {
+                    modCmWork.ShowMsgClient(strTitle + strLog, modDefApp.MSG_ERR);
+                }
+
+                bDb.RollbackTrans();
+                return false;
+            }
+
+            bDb.CommitTrans();
+            return true;
+
+            #endregion
+        }
+        #region 공파레트 입출고 관련 작업정보 UPDATE 하는 함수
+        #endregion        // 작업삭제 
+        public bool DeleteJobMst(CUserDb bDb, bool bTrans, string strLuggNo, bool bJobComplete = false, bool bServerSocket = false)
+        {
+            string strTitle = "[DeleteJobMst] .. ";
+            string strSql;
+
+            try
+            {
+                bDb.ParamsClear();
+
+                strSql = "";
+                strSql += modDefApp.CRLF + " SELECT *               ";
+                strSql += modDefApp.CRLF + "   FROM JOB_MST         ";
+                strSql += modDefApp.CRLF + "  WHERE WH_TYP        = " + bDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                strSql += modDefApp.CRLF + "    AND LUGG_NO       = " + bDb.ParamsAdd("LUGG_NO", strLuggNo);
+
+                if (bJobComplete == true)
+                {
+                    strSql += modDefApp.CRLF + "    AND JOB_STATUS    IN ('19', '29')";
+                }
+                int nRtn = bDb.ExcuteQry_Par(ref strSql);
+
+                // [LGLS 2026-08-31] ★0 은 실패가 아니다★
+                //   ExcuteQry_Par 는 조회 성공이면 행 수(0 포함), 실패면 음수(DB_ERR)를 준다.
+                //   종전에는 nRtn <= 0 을 통째로 "DATABASE 에러" 라고 찍었다. 그래서 지울 작업이
+                //   이미 없을 뿐인데도 에러로 올라왔고, ErrMsg 가 비어 있어(MESSAGE []) 원인을
+                //   짚을 수 없었다. ErrMsg 가 비었다는 것이 곧 "DB 예외가 없었다" 는 증거다.
+                //   실측 : 반자동 루프(9001)가 완료→삭제→즉시 재생성을 반복하는 동안,
+                //          완료보고가 잡은 작업을 TEST 창이 먼저 지워 0건이 된 경합.
+                if (nRtn < 0)
+                {
+                    modDefApp.GM_RTN_MSG = strTitle + "JOB_MST SELECT 중 DB 오류. MESSAGE [" + bDb.ErrMsg + "]";
+                    if (bServerSocket == true) modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    else                       modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    return false;
+                }
+
+                if (nRtn == 0)
+                {
+                    if (bJobComplete == true)
+                    {
+                        // 완료(19/29) 조건까지 걸고 찾았다 - 작업은 있는데 상태가 아직 아닐 수 있다.
+                        //   지우면 안 되므로 실패로 둔다. 다만 DB 오류라고 부르지는 않는다.
+                        modDefApp.GM_RTN_MSG = strTitle + "삭제 대상 없음(완료 상태 19/29 아님). [작업번호:" + strLuggNo + "]";
+                        if (bServerSocket == true) modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                        else                       modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                        return false;
+                    }
+
+                    // 이미 지워진 작업 - 삭제의 목적은 달성됐다(멱등). 성공으로 본다.
+                    modDefApp.GM_RTN_MSG = strTitle + "이미 삭제된 작업입니다. [작업번호:" + strLuggNo + "]";
+                    if (bServerSocket == true) modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_NOR);
+                    else                       modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_NOR);
+                    return true;
+                }
+
+
+                if (bTrans == true)
+                    bDb.BeginTrans();
+                bDb.ParamsClear();
+
+                // 삭제 전 작업정보이력생성.
+                strSql = "";
+                strSql += modDefApp.CRLF + " INSERT INTO JOB_MST_HIS                                                           ";
+                strSql += modDefApp.CRLF + "           ( INS_DATE                                                              ";
+                strSql += modDefApp.CRLF + "           , INS_TIME                                                              ";
+                strSql += modDefApp.CRLF + "           , WH_TYP                                                                ";
+                strSql += modDefApp.CRLF + "           , LUGG_NO                                                               ";
+                strSql += modDefApp.CRLF + "           , START_POS                                                             ";
+                strSql += modDefApp.CRLF + "           , START_LOCATION                                                        ";
+                strSql += modDefApp.CRLF + "           , DEST_POS                                                              ";
+                strSql += modDefApp.CRLF + "           , DEST_LOCATION                                                         ";
+                strSql += modDefApp.CRLF + "           , TURN                                                                  ";
+                strSql += modDefApp.CRLF + "           , PRODUCT_ID                                                            ";
+                strSql += modDefApp.CRLF + "           , PRODUCT_SIZE                                                          ";
+                strSql += modDefApp.CRLF + "           , JOB_TYP                                                               ";
+                strSql += modDefApp.CRLF + "           , BCR_TOP                                                               ";
+                strSql += modDefApp.CRLF + "           , BCR_BOTTOM                                                            ";
+                strSql += modDefApp.CRLF + "           , CMD_STA                                                               ";
+                strSql += modDefApp.CRLF + "           , JOB_KIND                                                              ";
+                strSql += modDefApp.CRLF + "           , JOB_STATUS                                                            ";
+                strSql += modDefApp.CRLF + "           , JOB_PRIORITY                                                          ";
+                strSql += modDefApp.CRLF + "           , OD_LAST_PAGE                                                          ";
+                strSql += modDefApp.CRLF + "           , OD_LAST_USER                                                          ";
+                strSql += modDefApp.CRLF + "           , JOB_START_DT                                                          ";
+                strSql += modDefApp.CRLF + "           , INS_DT                                                                ";
+                strSql += modDefApp.CRLF + "           , INS_USER_ID                                                           ";
+                strSql += modDefApp.CRLF + "           , REMARKS                                                               ";
+                strSql += modDefApp.CRLF + "           , TRAY_TYP                                                              ";
+                strSql += modDefApp.CRLF + "           , TRAY_LEV                                                              ";
+                strSql += modDefApp.CRLF + "           , HS_TRACK_NO                                                           ";
+                strSql += modDefApp.CRLF + "           , SC_NO                                                                 ";
+                strSql += modDefApp.CRLF + "           , DURATION_TIME                                                         ";
+                strSql += modDefApp.CRLF + "           , FK_NO                                                                 ";
+                strSql += modDefApp.CRLF + "           , AGING_TIME                                                            ";
+                strSql += modDefApp.CRLF + "           , PAIR_LUGG_NO                                                          ";
+                strSql += modDefApp.CRLF + "           , LOT_NO )                                                              ";
+                strSql += modDefApp.CRLF + " SELECT " + modDateTime.SYSDATE_TO_CDT + " AS INS_DATE                             ";
+                strSql += modDefApp.CRLF + "      , " + modDateTime.SYSDATE_TO_CTM + " AS INS_TIME, WH_TYP, LUGG_NO, START_POS ";
+                strSql += modDefApp.CRLF + "      , START_LOCATION, DEST_POS, DEST_LOCATION, TURN, PRODUCT_ID, PRODUCT_SIZE    ";
+                strSql += modDefApp.CRLF + "      , JOB_TYP, BCR_TOP, BCR_BOTTOM, CMD_STA, JOB_KIND, JOB_STATUS  ";
+                strSql += modDefApp.CRLF + "      , JOB_PRIORITY, OD_LAST_PAGE, OD_LAST_USER , JOB_START_DT      ";
+                strSql += modDefApp.CRLF + "      , " + modDateTime.SYSDATE + " AS INS_DT, 'HOST_TASK', REMARKS, TRAY_TYP      ";
+                strSql += modDefApp.CRLF + "      , TRAY_LEV, HS_TRACK_NO, SC_NO, DURATION_TIME   ";
+                strSql += modDefApp.CRLF + "      , FK_NO, AGING_TIME, PAIR_LUGG_NO, LOT_NO              ";
+                strSql += modDefApp.CRLF + "   FROM JOB_MST                                                                    ";
+                strSql += modDefApp.CRLF + "  WHERE WH_TYP        = " + bDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                strSql += modDefApp.CRLF + "    AND LUGG_NO       = " + bDb.ParamsAdd("LUGG_NO", strLuggNo);
+
+                nRtn = bDb.ExcuteNonQry_Par(ref strSql);
+                if (nRtn < 0)
+                {
+                    modDefApp.GM_RTN_MSG = strTitle + "JOB_MST_HIS INSERT중 DATABASE 에러., MESSAGE [" + bDb.ErrMsg + "]";
+                    if (bServerSocket == true)
+                    {
+                        modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+                    else
+                    {
+                        modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+
+                    if (bTrans == true)
+                        bDb.RollbackTrans();
+
+                    return false;
+                }
+
+                if (nRtn == 0)
+                {
+                    modDefApp.GM_RTN_MSG = strTitle + "JOB_MST_HIS INSERT중 DATA가 없습니다.," +
+                                "WH_TYP=[" + modDefApp.WH_TYP.ToString() + "]" +
+                                "LUGG_NO=[" + strLuggNo + "]";
+                    if (bServerSocket == true)
+                    {
+                        modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+                    else
+                    {
+                        modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+
+                    if (bTrans == true)
+                        bDb.RollbackTrans();
+
+                    return false;
+                }
+
+                bDb.ParamsClear();
+                strSql = "";
+                strSql += modDefApp.CRLF + " DELETE                                           ";
+                strSql += modDefApp.CRLF + "   FROM JOB_MST                                   ";
+                strSql += modDefApp.CRLF + "  WHERE WH_TYP        = " + bDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                strSql += modDefApp.CRLF + "    AND LUGG_NO       = " + bDb.ParamsAdd("LUGG_NO", strLuggNo);
+                if (bJobComplete == true)
+                {
+                    strSql += modDefApp.CRLF + "    AND JOB_STATUS    IN ('19', '29')";
+                }
+                nRtn = bDb.ExcuteNonQry_Par(ref strSql);
+                if (nRtn < 0)
+                {
+                    modDefApp.GM_RTN_MSG = strTitle + "JOB_MST DELETE중 DATABASE 에러., MESSAGE [" + bDb.ErrMsg + "]";
+                    if (bServerSocket == true)
+                    {
+                        modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+                    else
+                    {
+                        modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+
+                    if (bTrans == true)
+                        bDb.RollbackTrans();
+
+                    return false;
+                }
+
+                if (nRtn == 0)
+                {
+                    modDefApp.GM_RTN_MSG = strTitle + "JOB_MST DELETE중 DATA가 없습니다.," +
+                                "WH_TYP=[" + modDefApp.WH_TYP.ToString() + "]" +
+                                "LUGG_NO=[" + strLuggNo + "]";
+                    if (bServerSocket == true)
+                    {
+                        modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+                    else
+                    {
+                        modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                    }
+
+                    if (bTrans == true)
+                        bDb.RollbackTrans();
+
+                    return false;
+                }
+
+                modDefApp.GM_RTN_MSG = strTitle + "정상 처리되었습니다. 작업번호[" + strLuggNo + "]";
+                if (bServerSocket == true)
+                {
+                    modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_NOR);
+                }
+                else
+                {
+                    modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_NOR);
+                }
+
+                if (bTrans == true)
+                    bDb.CommitTrans();
+
+            }
+            catch (Exception ex)
+            {
+                if (bTrans == true)
+                    bDb.RollbackTrans();
+
+                modDefApp.GM_RTN_MSG = strTitle + "작업중 예외 발생 " + ex.ToString();
+                if (bServerSocket == true)
+                {
+                    modCmWork.ShowMsgServer(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                }
+                else
+                {
+                    modCmWork.ShowMsgClient(modDefApp.GM_RTN_MSG, modDefApp.MSG_ERR);
+                }
+                return false;
+            }
+            return true;
+        }
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 프로그램시작(서버프로그램등록여부 및 실행여부 체크, 서버프로그램정보UPDATE)
+		private bool Pgm_Start()
+		{
+			if (!modCmLib.DBLogIn(ref modDefApp.g_CliWork.m_BDb.conMain))
+			{
+				return false;
+			}
+
+            return true;
+		}
+
+        #region 랙에 대한 체크 하는 함수(랙 위치) 
+        public bool IsValidLocation(CUserDb bDb, string strScNo, string strLocation, ref string strCELL_USE_YN, ref string strSC_PLT_JOB_TYP)
+        {
+            bDb.ParamsClear();
+            string strSql = "SELECT * FROM CELL_MST";
+            strSql += modDefApp.CRLF + "WHERE SC_NO = " + bDb.ParamsAdd("SC_NO", strScNo);
+            strSql += modDefApp.CRLF + "  AND BANK = " + bDb.ParamsAdd("BANK", strLocation.Substring(0, 2));
+            strSql += modDefApp.CRLF + "  AND BAY = " + bDb.ParamsAdd("BAY", strLocation.Substring(3, 3));
+            strSql += modDefApp.CRLF + "  AND LEV = " + bDb.ParamsAdd("LEV", strLocation.Substring(7, 2));
+            strSql += modDefApp.CRLF + "  AND WH_TYP = " + bDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+
+            int iSelCnt = bDb.ExcuteQry_Par(ref strSql);
+
+            if (iSelCnt <= 0)
+            {
+                return false;
+            }
+
+            if (iSelCnt > 0)
+            {
+                strCELL_USE_YN = "" + bDb.dtMain.Rows[0]["CELL_USE_YN"].ToString();
+                strSC_PLT_JOB_TYP = "" + bDb.dtMain.Rows[0]["SC_PLT_JOB_TYP"].ToString();
+            }
+            return true;
+        }
+        #endregion       
+        private void chkSimMode_CheckedChanged(object sender, EventArgs e)
+        {
+            string strLog = "";
+            string strSql = "";
+            modDefApp.g_CliWork.m_BDb.BeginTrans();
+            modDefApp.g_CliWork.m_BDb.ParamsClear();
+            if (this.chkSimMode.Checked == true)
+            {
+                //int nSIM_JOB_CNT = 2;       // 입출고대의 갯수만큼 !!
+                string strLocation;// = new string[] {"01-001-01", "05-001-01"};
+                string strSScNum;// = new string[] {"901", "903"};
+                int nJobType = 1;
+                string strLuggNum;// = new string[] {"9991", "9993"};
+                string[] strDPosition = new string[] {"101", "107"};
+
+                for (int i = 0; i < strDPosition.Length; i++)       // 입출고대의 갯수만큼 !!       
+                {
+                    strLocation = string.Format("{0:00}-001-01",(i * 4) + 1 );
+                    strSScNum = string.Format("9{0:00}", (i * 2) + 1);
+                    strLuggNum = string.Format("999{0:0}", (i * 2) + 1);
+
+                    #region 작업이 존재하는지 Check
+                    strSql = modDefApp.CRLF + "   SELECT  * ";
+                    strSql += modDefApp.CRLF + "    FROM  JOB_MST";
+                    strSql += modDefApp.CRLF + "   WHERE  WH_TYP = '" + modDefApp.WH_TYP + "'";
+                    strSql += modDefApp.CRLF + "     AND  LUGG_NO = '" + strLuggNum + "'";
+
+                    int iCnt = modDefApp.g_CliWork.m_BDb.ExcuteQry_Par(ref strSql);
+
+                    if (iCnt < 0)
+                    {
+                        strLog = modDefApp.g_CliWork.m_BDb.ErrMsg + strSql;
+                        modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
+                        return;
+                    }
+
+                    if (iCnt > 0)
+                    {
+                        //strLog = "시뮬레이션 모드 정보 업데이트에 실패 했습니다.";
+                        //modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
+                        continue;
+                    }
+                    #endregion
+
+                    #region 입고 작업 생성
+                    modDefApp.g_CliWork.m_BDb.ParamsClear();
+                    if (this.InsertJobMst(modDefApp.g_CliWork.m_BDb, strLuggNum, strDPosition[i], "00-000-00", strSScNum, strLocation, nJobType.ToString()) == false)
+                    {
+                        modDefApp.g_CliWork.m_BDb.RollbackTrans();
+                        return;
+                    }
+
+                    #endregion
+
+                }
+            }
+
+            modDefApp.g_CliWork.m_BDb.ParamsClear();
+
+            bool bSimMode = this.chkSimMode.Checked;
+            int nSimMode = Convert.ToInt32(bSimMode);
+
+            strSql = modDefApp.CRLF + "   UPDATE  HOST_IF_LOG";
+            strSql += modDefApp.CRLF + "     SET  SIM_MODE = '" + nSimMode.ToString() + "'";
+            strSql += modDefApp.CRLF + "   WHERE  WH_TYP = '" + modDefApp.WH_TYP + "'";
+            strSql += modDefApp.CRLF + "     AND  INS_DT = (SELECT MAX(INS_DT) FROM HOST_IF_LOG)"; // [LGLS] LIMIT → MAX (MS-SQL/PG 공용)
+
+            int iiCnt = modDefApp.g_CliWork.m_BDb.ExcuteNonQry_Par(ref strSql);
+
+            if (iiCnt < 0)
+            {
+                strLog = modDefApp.g_CliWork.m_BDb.ErrMsg + strSql;
+                modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
+                //MessageBox.Show(strLog);
+                //this.chkSimMode.Checked = !this.chkSimMode.Checked;
+                modDefApp.g_CliWork.m_BDb.RollbackTrans();
+                return;
+            }
+
+            if (iiCnt != 1)
+            {
+                strLog = "시뮬레이션 모드 정보 업데이트에 실패 했습니다.";
+                modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
+                //MessageBox.Show(strLog);
+                //this.chkSimMode.Checked = !this.chkSimMode.Checked;
+                modDefApp.g_CliWork.m_BDb.RollbackTrans();
+                return;
+            }
+            string strTemp = bSimMode ? "시작 했습니다." : "종료 했습니다.";
+            strLog = "시뮬레이션 모드 " + strTemp;
+            MessageBox.Show(strLog);
+            modDefApp.g_CliWork.m_BDb.CommitTrans();
+
+        }
+	}
+}

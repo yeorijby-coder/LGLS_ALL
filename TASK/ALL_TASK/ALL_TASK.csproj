@@ -295,6 +295,9 @@
     <Compile Include="..\WCS_TASK_HOST\CLog.cs">
       <Link>WCS_TASK_HOST\CLog.cs</Link>
     </Compile>
+    <Compile Include="..\WCS_TASK_HOST\CrashReporter.cs">
+      <Link>WCS_TASK_HOST\CrashReporter.cs</Link>
+    </Compile>
     <Compile Include="..\WCS_TASK_HOST\CSrvWork.cs">
       <Link>WCS_TASK_HOST\CSrvWork.cs</Link>
     </Compile>
