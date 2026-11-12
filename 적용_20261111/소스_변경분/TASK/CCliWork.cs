@@ -1105,7 +1105,12 @@ namespace TSK_HostCom
                 string strErrCd = "" + m_BDb.dtMain.Rows[iii]["ERROR_CODE"].ToString();
                 string strStock = "" + m_BDb.dtMain.Rows[iii]["STOCK_MODE"].ToString();
                 string strSensor = "" + m_BDb.dtMain.Rows[iii]["SENSOR0_DATA_RD"].ToString();
-                bool bAutoOk = (strAuto == "1" && (strErrCd == "" || strErrCd == "0" || strErrCd == "0000"));
+                // [LGLS 2026-11-12] 구 ECS 기준 : 컨베이어는 자동운전 여부만 본다(ECSDispatcher 'Conveyor 상태 Check' - 에러코드는 안 봄). 사용자 지시.
+                //   EcsComA.ini [Host] CV_AVAIL_ERR=1 이면 종전처럼 에러코드가 있을 때도 불가로 보낸다(기본 0 = 자동운전만).
+                bool bCvErrRule = false;
+                try { bCvErrRule = modDefAPI.GetPrivateProfileInt("Host", "CV_AVAIL_ERR", 0, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini")) != 0; } catch { }
+                bool bCvNoErr = (strErrCd == "" || strErrCd == "0" || strErrCd == "0000");
+                bool bAutoOk = (strAuto == "1" && (!bCvErrRule || bCvNoErr));
                 string strAvail = bAutoOk ? "0" : "1";
 
                 // [LGLS 2026-08-21] 구 ECS 기준(ECSDispatcher.cs 'Conveyor 상태 Check') :
