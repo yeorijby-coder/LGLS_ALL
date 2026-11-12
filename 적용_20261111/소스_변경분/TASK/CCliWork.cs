@@ -1074,7 +1074,7 @@ namespace TSK_HostCom
             //   하나라도 불가면 불가. 모드 0=입고/1=출고 (CV_DATA.STOCK_MODE — WCS_TASK_CV 가 방향워드 미러).
             string strMC_NO = "";
             string strMC_NO_LIST = "'0'";
-            string st122 = "0", st129 = "0", st130 = "0", st124 = "0";
+            string st122 = "0", st129 = "0", st130 = "0", st124 = "0", st126 = "0";
             string mode101 = "0", mode110 = "0";
 
             for (int iii = 0; iii < iCnt; iii++)
@@ -1109,13 +1109,20 @@ namespace TSK_HostCom
                     //   구 ECS ECSDispatcher.cs 'Conveyor 상태 Check' : CONVEYOR:12(제품 입고대) 도 PALLET_EXIST_FLAG_02 가 있을 때만 0(가능), 없으면 1.
                     //   8/21 에 11·15 만 옮기고 12 를 빠뜨렸던 것을 바로잡는다.
                     case "124": st124 = strAvailPallet; break;
+                    // [LGLS 2026-11-12] 104 원부자재 불출대(C/V#13) 상태 - 구 ECS 는 CONVEYOR:13(AUTO 만 판정)을 103 쪽 상태에 합산했다(추정: SIM 시드 기준).
+                    case "126": st126 = strAvail; break;
                     case "103": mode110 = (strStock == "1") ? "1" : "0"; break;
                 }
             }
 
             sbStatus.Append(st122);                                        // 101 외부 입고 전용 입출고대 상태
-            sbStatus.Append(st130);                                        // 102 Picking 작업대 상태 (구 ECS: CONVEYOR:15 = 트랙130)
-            sbStatus.Append(st124);                                        // 103 제품 입고대 상태 (C/V#12 TR#24)
+            // [LGLS 2026-11-12] 102 = C/V#14(129) 와 C/V#15(130) 중 하나라도 불가면 불가 (구 ECS : CONV:14 AUTO + CONV:15 센서 합산, 코드 주석과도 일치).
+            //   종전에는 130 만 써서 129 가 수동/에러여도 가능으로 나갔다.
+            string st102 = (st129 == "1" || st130 == "1") ? "1" : "0";
+            // 103 = C/V#12(124, 화물 센서 반영) 와 C/V#13(126, 원부자재 불출대) 중 하나라도 불가면 불가.
+            string st103 = (st124 == "1" || st126 == "1") ? "1" : "0";
+            sbStatus.Append(st102);                                        // 102 Picking 작업대 상태 (C/V#14 + C/V#15)
+            sbStatus.Append(st103);                                        // 103 제품 입고대 상태 (C/V#12 TR#24 + C/V#13 TR#26)
             sbStatus.Append(mode101);                                      // 101 PLC Mode (0=입고, 1=출고)
             sbStatus.Append(mode110);                                      // 110 실온 S/C 1호기 C/V PLC Mode
             #endregion
