@@ -1,0 +1,2238 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Net.Sockets;
+using Microsoft.VisualBasic;
+using System.Data;
+
+namespace TSK_HostCom
+{
+	class CCliWork
+	{
+		public Socket m_sktSock; //소켓
+		public bool m_blSockConnected;//소켓접속여부
+		public System.Threading.Thread m_thrThreadObj;//쓰레드 객체    
+		public System.Threading.AutoResetEvent m_areCliExitEvent = new System.Threading.AutoResetEvent(false);//종료 이벤트
+
+
+		public bool m_blDbConnted;//DB 연결 유무
+		public CUserDb m_BDb = new CUserDb("Multi", false);//쓰레드별 Connection 별도.
+
+		//Header
+		private byte[] m_bytRxHead = new byte[modDefApp.MSG_HEAD_CNT];
+		//프로젝트 별로 최대 허용되는 m_bytRxBuff 설정
+		private byte[] m_bytRxBuff = new byte[1025];
+		//클라이언트로 보낼 메세지
+		private byte[] m_bytTxBuff;
+
+		//로그
+		private string m_strLog = "";
+		//SQL 문장
+		private string m_strSql;
+		//Return record cnt
+		private int m_iSelCnt;
+        //Command
+        private string m_strHostCmd;
+        // [LGLS 2026-09-16] 완료(09) 잔류 작업 60초 주기 재보고용 마지막 실행 시각
+        private DateTime m_dtLast09Report = DateTime.MinValue;
+        // [LGLS 2026-09-16 23:42] 09 작업별 마지막 F 보고 시각. 없으면 ★즉시★ 보고, 있으면 60초 뒤 재보고(응답 없을 때만 남는다).
+        //   실측 : 입고는 25→09 로 바로 가서 GetJobCompleteReport(19/29)에 걸리지 않아 60초 주기에만 보고됐다(6972 = 58초 지연).
+        private readonly System.Collections.Generic.Dictionary<string, DateTime> m_dic09ReportAt = new System.Collections.Generic.Dictionary<string, DateTime>();
+        // [LGLS 2026-09-17] 재보고 간격을 EcsComA.ini [Host] RE_REPORT_09_SEC 로 뺐다(기본 60, 5~3600초).
+        //   폴링마다 읽되 파일은 5초에 한 번만 다시 읽는다 - 저장하면 재기동 없이 반영된다.
+        private int m_nReReport09Sec = 60;
+        private DateTime m_dtReReport09Read = DateTime.MinValue;
+        private int RE_REPORT_09_SEC
+        {
+            get
+            {
+                if ((DateTime.Now - m_dtReReport09Read).TotalSeconds >= 5)
+                {
+                    m_dtReReport09Read = DateTime.Now;
+                    try
+                    {
+                        string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
+                        int v = modDefAPI.GetPrivateProfileInt("Host", "RE_REPORT_09_SEC", 60, strIni);
+                        if (v < 5) v = 5;
+                        if (v > 3600) v = 3600;
+                        if (v != m_nReReport09Sec)
+                            modCmWork.ShowMsgClient(string.Format("[완료(09) 재보고] 간격 {0}초 → {1}초 (EcsComA.ini [Host] RE_REPORT_09_SEC)", m_nReReport09Sec, v), modDefApp.MSG_IMP);
+                        m_nReReport09Sec = v;
+                    }
+                    catch { }
+                }
+                return m_nReReport09Sec;
+            }
+        }
+        //Direction
+        private string m_strDirection = "E2W";  // 해당 클래스에서는 이방향으로 보냄!
+
+        //최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 클라이언트클래스 생성시 초기값 할당
+		public CCliWork()
+		{
+			m_blSockConnected = false;
+			m_blDbConnted = false;
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: ECS와 Socket 연결
+		public bool ConnectSock()
+		{
+			try
+			{
+				System.Net.IPEndPoint ipep = default(System.Net.IPEndPoint);
+				System.Net.IPAddress ipaddr = default(System.Net.IPAddress);
+
+				ipaddr = System.Net.IPAddress.Parse(modDefApp.g_strRemoteIP);
+				ipep = new System.Net.IPEndPoint(ipaddr, Convert.ToInt32(modDefApp.g_iRemotePort));
+				m_sktSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+				m_sktSock.Connect(ipep);
+
+				if (m_sktSock.Connected)
+				{
+					modDefApp.g_CliWork.m_blSockConnected = true;
+					modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComNor);
+					m_strLog = "통신이 연결되었습니다.";
+					modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_IMP);
+
+					return true;
+				}
+
+				m_strLog = "리모트 시스템과 연결 실패 !";
+
+			}
+			catch (SocketException se)
+			{
+				//m_strLog = se.Message & "(" & se.ErrorCode.ToString & ")"
+				m_strLog = "리모트 시스템과 연결 실패 !" + "(" + se.ErrorCode.ToString() + ")";
+			}
+			catch (Exception ex)
+			{
+				m_strLog = ex.ToString();
+			}
+
+			m_sktSock.Close();
+			m_sktSock = null;
+			modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_IMP);
+
+			return false;
+		}
+
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 해더메세지 길이체크
+		private bool CheckHeader(int p_iRxCnt, ref int p_iBodyLen)
+		{
+			string strTemp = null;
+
+			try
+			{
+				if (p_iRxCnt != modDefApp.MSG_HEAD_CNT)
+				{
+					ClearSock();
+
+					m_strLog = string.Format("정해진 헤더의 길이가 아닙니다.[Leng={0}]", p_iRxCnt);
+					modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+					return false;
+				}
+
+				strTemp = System.Text.Encoding.UTF8.GetString(m_bytRxHead, 10, 4);
+
+				p_iBodyLen = Convert.ToInt32(strTemp);
+				if (p_iBodyLen < 3)
+				{
+					ClearSock();
+
+					m_strLog = string.Format("Body의 길이가 '3' 이하 입니다.[Leng={0}]", p_iBodyLen);
+					modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+					return false;
+				}
+			}
+			catch (Exception ex)
+			{
+				ClearSock();
+
+				m_strLog = "헤더의 정보가 틀립니다.";
+				modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+				return false;
+			}
+
+			ClearBuff(ref m_bytRxBuff);
+			m_bytRxHead.CopyTo(m_bytRxBuff, 0);
+
+			return true;
+
+		}
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 소켓 클리어
+		private void ClearSock()
+		{
+			byte[] bytTempByte = null;
+			int i = 0;
+
+			try
+			{
+				// data가 있으면 클리어
+				System.Threading.Thread.Sleep(1000);
+				i = m_sktSock.Available;
+				if (i > 0)
+				{
+					bytTempByte = new byte[i + 1];
+					m_sktSock.Receive(bytTempByte, i, SocketFlags.None);
+				}
+			}
+			catch (Exception ex)
+			{
+				m_strLog = "소켓 클리어 실패.";
+				modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+				throw ex;
+			}
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 소켓 클리어
+		private void ClearSock(ref System.Net.Sockets.NetworkStream p_ntstrm)
+		{
+			byte[] bytTempByte = new byte[2];
+
+			while (true)
+			{
+				if (p_ntstrm.DataAvailable)
+				{
+					p_ntstrm.Read(bytTempByte, 0, 1);
+				}
+				else
+				{
+					return;
+				}
+			}
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 메세지 Body체크
+		private bool CheckBody(int p_iBodyLen, int p_iRxCnt)
+		{
+			// 3회 반복
+			int i = 0;
+			int iRemain = 0;
+
+			iRemain = p_iBodyLen - p_iRxCnt;
+			for (i = 0; i <= 1; i++)
+			{
+				if (iRemain == 0)
+				{
+					break; 
+				}
+				//Debug
+				//Console.WriteLine("Read fail. 회수[{0}]:ReadCnt[{1}]", i, nRxCnt)
+				System.Threading.Thread.Sleep(500);
+				m_sktSock.ReceiveTimeout = 3000; 
+				p_iRxCnt = m_sktSock.Receive(m_bytRxBuff, modDefApp.MSG_HEAD_CNT + p_iBodyLen - iRemain, iRemain, SocketFlags.None);
+				iRemain -= p_iRxCnt;
+			}
+
+			if (iRemain != 0)
+			{
+				ClearSock();
+
+				m_strLog = string.Format("정해진 메세지 길이만큼 읽지 못했습니다..[Leng={0}]", p_iBodyLen - iRemain);
+				modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+				return false;
+			}
+
+			if (m_bytRxBuff[modDefApp.MSG_HEAD_CNT] != modDefApp.STX)
+			{
+				ClearSock();
+
+				m_strLog = "메세지의 시작이 'STX'가 아닙니다.";
+				modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+				return false;
+			}
+
+			if (m_bytRxBuff[modDefApp.MSG_HEAD_CNT + p_iBodyLen - 1] != modDefApp.ETX)
+			{
+				ClearSock();
+
+				m_strLog = "메세지의 끝이 ETX가 아닙니다.";
+				modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+				return false;
+			}
+
+			return true;
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 소켓전송
+		public void SendSock()
+		{
+			m_sktSock.Send(m_bytTxBuff, SocketFlags.None);
+			m_strLog = System.Text.Encoding.UTF8.GetString(m_bytTxBuff);
+
+			modCmWork.ShowMsgClient(m_strLog);
+
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 응답 Header만들기
+		//           # Body의 요소가 1개 이상일 경우(한글 처리 때문에), m_bytTxBuff를 밖에서 설정한다. 
+		//           # 주로 Data가 있는 경우이고 반드시 ACK이다
+		private void MakeHeader(int p_iBodyCnt)
+		{
+			string strTemp = null;
+			byte[] bytTempByte = null;
+
+			//### Header ###
+			strTemp = string.Format("{0,-10}{1:0000} ", modDefApp.MSG_MAILBOX_SEND, p_iBodyCnt + 2);
+			bytTempByte = System.Text.Encoding.UTF8.GetBytes(strTemp);
+			Array.Copy(bytTempByte, 0, m_bytTxBuff, 0, modDefApp.MSG_HEAD_CNT);
+
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: Buff Clear
+		private void ClearBuff(ref byte[] p_bytBuff)
+		{
+			Array.Clear(p_bytBuff, 0, p_bytBuff.Length);
+		}
+
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200519
+        //설명		    : 도착보고 및 완료 보고를 위한 작업정보 존재여부 체크 
+        // 12 : 입고 H/S 도착보고  
+        // 22 : 출고 H/S 도착보고  
+        // 19 : 출고작업 완료 보고(CV 완료)
+        // 29 : 입고작업 완료 보고(SC 완료)
+        public int IsJobExist(int nJobStatus
+                        , ref int nJobType
+                        , ref string strUserID
+                        , ref string strSScNum
+                        , ref string strDScNum
+                        , ref string strSPosition
+                        , ref string strDPosition
+                        , ref string strLuggNum)
+        {
+            string strTitle = "[IsJobExist]";
+            string strTemp;
+
+            try
+            {
+                m_BDb.ParamsClear();
+
+                m_strSql = "";
+
+                m_strSql = modDefApp.CRLF + " SELECT * FROM JOB_MST                   ";
+                m_strSql += modDefApp.CRLF + "  WHERE JOB_STATUS = " + m_BDb.ParamsAdd("JOB_STATUS", nJobStatus.ToString());
+                m_strSql += modDefApp.CRLF + "    AND WH_TYP     = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                // [LGLS 2026-09-23] ★반자동(10~15)은 상위 보고 대상이 아니다★ (절대 원칙, 사용자 확인)
+                //   종전에는 여기서 걸러지지 않아 반자동 입고가 29 → 보고 → 09 가 됐고,
+                //   09 를 치우는 루프는 반자동을 제외하므로 그대로 남았다(출고는 19 에 남았다).
+                //   제외하면 19·09 로 올라가는 일 자체가 없어지고, IO_TASK 가 제 경로로 지운다.
+                m_strSql += modDefApp.CRLF + "    AND JOB_TYP NOT IN ('10','11','12','13','14','15') ";
+                // [LGLS 2026-09-23] 작업번호 9000대(수동지시 채번 9001~9900)도 반자동으로 본다 (사용자 지시)
+                m_strSql += modDefApp.CRLF + "    AND NOT (LEN(LTRIM(RTRIM(LUGG_NO))) = 4 AND LTRIM(RTRIM(LUGG_NO)) LIKE '9[0-9][0-9][0-9]') ";
+                // [LGLS 2026-08-31] 19 는 출고 계열 전용이다. 입고는 19 를 지나지 않는다.
+                //   29 는 좁히지 않는다 - ★출고의 29 도 보고 대상★ 이기 때문이다(아래 1차/2차 참조).
+                if (nJobStatus == 19)
+                    m_strSql += modDefApp.CRLF + "    AND JOB_TYP IN ('2','12','3','5','6') ";
+                // [LGLS 2026-08-31] 29(크레인 완료)는 1차 보고를 아직 안 낸 것만.
+                //   출고는 29 에 머무는 동안 매 주기 재보고될 수 있어 WC_STEP 으로 한 번만 나가게 막는다.
+                else if (nJobStatus == 29)
+                    m_strSql += modDefApp.CRLF + "    AND ISNULL(WC_STEP,'0') = '0' ";
+                int nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+                if (nSelCnt < 0) 
+                { 
+                    return 0; 
+                }
+                if (nSelCnt == 0)
+                {
+                    return -2;       // 완료보고할 작업이 없는 상황도 정상이긴함!
+                }
+                nJobType = Convert.ToInt32(m_BDb.dtMain.Rows[0]["JOB_TYP"].ToString());
+
+                switch (nJobType)
+                {
+                    // 입고
+                    case 1:
+                        strSPosition = m_BDb.dtMain.Rows[0]["START_POS"].ToString();
+                        strDPosition = m_BDb.dtMain.Rows[0]["DEST_LOCATION"].ToString();
+                        //strDPosition = strTemp.Substring(0, 2) + strTemp.Substring(4, 2) + strTemp.Substring(7, 2);
+                        if (nJobStatus == 12)
+                        {
+                            strSPosition = m_BDb.dtMain.Rows[0]["HS_TRACK_NO"].ToString();
+                        }
+                        strDScNum = m_BDb.dtMain.Rows[0]["DEST_POS"].ToString();
+                        break;
+
+                    // 출고
+                    case 2:
+                        strSPosition = m_BDb.dtMain.Rows[0]["START_LOCATION"].ToString();
+                        //strSPosition = strTemp.Substring(0, 2) + strTemp.Substring(4, 2) + strTemp.Substring(7, 2);
+                        strDPosition = m_BDb.dtMain.Rows[0]["DEST_POS"].ToString();
+                        if (nJobStatus == 22)
+                        {
+                            strDPosition = m_BDb.dtMain.Rows[0]["HS_TRACK_NO"].ToString();
+                        }
+                        strSScNum = m_BDb.dtMain.Rows[0]["START_POS"].ToString();
+                        break;
+
+                    // RACK TO RACK (호기내)
+                    case 4:
+                        strSPosition = m_BDb.dtMain.Rows[0]["START_LOCATION"].ToString();
+                        //strSPosition = strTemp.Substring(0, 2) + strTemp.Substring(4, 2) + strTemp.Substring(7, 2);
+                        strDPosition = m_BDb.dtMain.Rows[0]["DEST_LOCATION"].ToString();
+                        //strDPosition = strTemp.Substring(0, 2) + strTemp.Substring(4, 2) + strTemp.Substring(7, 2);
+                        strSScNum = strDScNum = m_BDb.dtMain.Rows[0]["START_POS"].ToString();
+                        break;
+
+                    // RACK TO RACK (호기간 출고)
+                    case 5:
+                        strSPosition = m_BDb.dtMain.Rows[0]["START_LOCATION"].ToString();
+                        //strSPosition = strTemp.Substring(0, 2) + strTemp.Substring(4, 2) + strTemp.Substring(7, 2);
+                        strDPosition = m_BDb.dtMain.Rows[0]["DEST_LOCATION"].ToString();
+                        //strDPosition = strTemp.Substring(0, 2) + strTemp.Substring(4, 2) + strTemp.Substring(7, 2);
+                        strSScNum = m_BDb.dtMain.Rows[0]["START_POS"].ToString();
+                        strDScNum = m_BDb.dtMain.Rows[0]["DEST_POS"].ToString();
+                        if (nJobStatus == 12)
+                        {
+                            strDPosition = m_BDb.dtMain.Rows[0]["HS_TRACK_NO"].ToString();
+                        }
+                        if (nJobStatus == 22)
+                        {
+                            strSPosition = m_BDb.dtMain.Rows[0]["HS_TRACK_NO"].ToString();
+                        }
+                        break;
+                    case 6:
+                        strSPosition = m_BDb.dtMain.Rows[0]["START_POS"].ToString();
+                        strDPosition = m_BDb.dtMain.Rows[0]["DEST_POS"].ToString();
+                        break;
+                }
+                strUserID = m_BDb.dtMain.Rows[0]["UPD_USER_ID"].ToString();
+                strLuggNum = m_BDb.dtMain.Rows[0]["LUGG_NO"].ToString();
+
+            }
+            catch (Exception ex)
+            {
+                m_strLog = strTitle + "실행중 예외 발생!" + m_BDb.ErrMsg + m_strSql;
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return 0;
+            }
+
+            return Convert.ToInt32(strLuggNum);
+        }
+
+        // 설비에러상태변경정보 송신 전 Data 존재여부 Check.
+        // 설비 내 Alarm 발생/해제시 Host로 Message 전송.
+        /// <summary>
+        /// [LGLS 2026-08-30] 랙 위치(Bank/Bay/Level)로 쓸 수 있는 값인지 — 공백/NULL/전부 0 은 위치 아님.
+        /// </summary>
+        /// <summary>[LGLS 2026-09-05] 화물번호가 비었는가(빈 문자열 / 0 / 0000).</summary>
+        private bool IsEmptyLugg(string v)
+        {
+        	v = (v ?? "").Trim();
+        	return (v.Length == 0 || v == "0" || v == "0000");
+        }
+
+        private static bool IsRackPos(string strBank, string strBay, string strLevel)
+        {
+            if (strBank == null || strBay == null || strLevel == null) return false;
+            strBank = strBank.Trim(); strBay = strBay.Trim(); strLevel = strLevel.Trim();
+            if (strBank.Length == 0 || strBay.Length == 0 || strLevel.Length == 0) return false;
+            int nBank, nBay, nLevel;
+            if (!int.TryParse(strBank, out nBank)) return false;
+            if (!int.TryParse(strBay, out nBay)) return false;
+            if (!int.TryParse(strLevel, out nLevel)) return false;
+            return (nBank != 0 && nBay != 0 && nLevel != 0);
+        }
+
+        /// <summary>
+        /// [LGLS 2026-08-30] 전문 구성용 안전 변환 — 공백/NULL/비숫자는 0. Convert.ToInt32 예외로
+        /// 보고가 통째로 유실되는 것을 막는다.
+        /// </summary>
+        private static int ToInt(string strVal)
+        {
+            int nVal;
+            if (strVal == null) return 0;
+            return int.TryParse(strVal.Trim(), out nVal) ? nVal : 0;
+        }
+
+        public int IsEquip_ERROR_Modified(string strEQP_TYP
+                                    , ref string strDeviceNo
+                                    , ref string strDeviceClass
+                                    , ref string strErrorCode
+                                    , ref string strErrorKind
+                                    , ref string strLuggNo
+                                    , ref string strBank
+                                    , ref string strBay
+                                    , ref string strLevel)
+        {
+            string strTitle = "[IsEquip_ERROR_Modified]";
+            int nSelCnt = 0;
+
+            try
+            {
+                if (strEQP_TYP == "SC")
+                {
+                    m_BDb.ParamsClear();
+
+                    // 1.ERROR CODE에 대해 존재여부확인.
+                    // [LGLS 2026-08-30] 에러코드 해석 = 구 ECS/ECP 규약(MakeErrorString + TB_CODEMASTER '025')과 동일하게
+                    //   "설비 원본 코드를 그대로 상위에 올리고, 마스터는 표시문구/종류 해석에만 쓴다".
+                    //   ① 크레인 코드표 — [Host]ScErrCodeType (09-17 부터 기본 SC_LGLS = PLC 알람 리스트).
+                    //      종전 'SC'(무라타 기계코드표)에는 0058(공출고)이 없어 조인이 비고, 아래 NVL 이
+                    //      이를 '0000'(정상)으로 바꿔버려 공출고 보고가 통째로 사라졌다.
+                    //   ② 마스터에 없는 코드라도 A.ERR_CODE_RD 원본을 그대로 보고한다(코드 유실 금지).
+                    m_strSql = "";
+                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, A.ERR_CODE_RD) AS MC_ERR_CD  ";
+                    m_strSql += modDefApp.CRLF + "      , A.*                                                       ";
+                    m_strSql += modDefApp.CRLF + "   FROM SC_DATA_LGLS A                                                 ";
+                    m_strSql += modDefApp.CRLF + "   LEFT OUTER JOIN EQP_ECD_MST B                                  ";
+                    m_strSql += modDefApp.CRLF + "     ON A.ERR_CODE_RD         = B.EQP_ERR_CD                      ";
+                    m_strSql += modDefApp.CRLF + "    AND B.EQP_TYP             = " + m_BDb.ParamsAdd("EQP_TYP", modDefApp.g_strScErrCodeTyp);
+                    m_strSql += modDefApp.CRLF + "  WHERE A.WH_TYP              = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND A.HOST_ERR_SEND_YN     = 'N'           ";
+                    nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+                    if (nSelCnt < 0) 
+                    { 
+                        return -2; 
+                    }
+                    if (nSelCnt == 0) 
+                    { 
+                        return -1; 
+                    }
+
+                    strDeviceNo = "" + m_BDb.dtMain.Rows[0]["MC_NO"].ToString();
+                    strLuggNo = "" + m_BDb.dtMain.Rows[0]["LUGG_NO_FK1_RD"].ToString();
+                    strErrorCode = "" + m_BDb.dtMain.Rows[0]["MC_ERR_CD"].ToString();
+
+
+                    string strSBank = "" + m_BDb.dtMain.Rows[0]["START_BANK_FK1_RD"].ToString();
+                    string strSBay = "" + m_BDb.dtMain.Rows[0]["START_BAY_FK1_RD"].ToString();
+                    string strSLevel = "" + m_BDb.dtMain.Rows[0]["START_LEVEL_FK1_RD"].ToString();
+                    string strDBank = "" + m_BDb.dtMain.Rows[0]["DEST_BANK_FK1_RD"].ToString();
+                    string strDBay = "" + m_BDb.dtMain.Rows[0]["DEST_BAY_FK1_RD"].ToString();
+                    string strDLevel = "" + m_BDb.dtMain.Rows[0]["DEST_LEVEL_FK1_RD"].ToString();
+
+                    strBank = "00";
+                    strBay = "000";
+                    strLevel = "00";
+
+                    // [LGLS 2026-08-30] 종전에는 값이 NULL(→ "")이어도 위 세 조건을 모두 통과해
+                    //   strBank/Bay/Level 이 빈 문자열로 덮여 아래 Convert.ToInt32("") 에서 예외가 났다.
+                    //   그 시점엔 HOST_ERR_SEND_YN 이 이미 'Y' 로 커밋된 뒤라 에러보고(E)가 영구 유실됐다.
+                    //   → 실제 값이 들어있을 때만 덮어쓴다.
+                    if (IsRackPos(strSBank, strSBay, strSLevel))
+                    {
+                        strBank = strSBank;
+                        strBay = strSBay;
+                        strLevel = strSLevel;
+                    }
+                    if (IsRackPos(strDBank, strDBay, strDLevel))
+                    {
+                        strBank = strDBank;
+                        strBay = strDBay;
+                        strLevel = strDLevel;
+                    }
+
+                    // [LGLS 2026-08-30] 실경로(VehThread)는 크레인 관측을 LOCATION_01~03_RD /
+                    //   PALLET_ON_VEHICLE_RD 에 기록하고 구 경로의 *_FK1_RD 는 채우지 않는다.
+                    //   FK1 이 비어 있으면 관측 컬럼으로 대체해야 상위가 이중입고/공출고 발생 셀을 안다.
+                    if (strBank == "00" && strBay == "000" && strLevel == "00")
+                    {
+                        string strL1 = "" + m_BDb.dtMain.Rows[0]["LOCATION_01_RD"].ToString();
+                        string strL2 = "" + m_BDb.dtMain.Rows[0]["LOCATION_02_RD"].ToString();
+                        string strL3 = "" + m_BDb.dtMain.Rows[0]["LOCATION_03_RD"].ToString();
+                        if (IsRackPos(strL1, strL2, strL3))
+                        {
+                            strBank = strL1;
+                            strBay = strL2;
+                            strLevel = strL3;
+                        }
+                    }
+                    if (strLuggNo.Trim().Length == 0 || strLuggNo.Trim() == "0" || strLuggNo.Trim() == "0000")
+                    {
+                        string strPov = "" + m_BDb.dtMain.Rows[0]["PALLET_ON_VEHICLE_RD"].ToString();
+                        if (strPov.Trim().Length > 0) strLuggNo = strPov;
+                    }
+
+                    // ─────────────────────────────────────────────────────────────
+                    // [LGLS 2026-09-05] ★에러보고의 작업번호·셀을 실제 작업 기준으로 바로잡는다★
+                    //   종전 : 작업번호 = LUGG_NO_FK1_RD, 셀 = 크레인 관측 위치.
+                    //   그런데 실경로(VehThread)는 *_FK1_RD 를 채우지 않아 낡은 값이 그대로 올라갔고
+                    //   (실측 : 실제 작업 4800 인데 0220 을 보고), 상위가 그 번호로 재지정을 내리면
+                    //   WCS 가 "그런 작업 없음"으로 NAK 했다. 또 셀이 크레인 현재 위치라 목적 셀과 달라
+                    //   "동일 호기가 아님" 으로도 반려됐다.
+                    //   → 실린 화물번호로 작업을 찾아, 이중입고는 도착 셀 / 공출고는 출발 셀을 보고한다.
+                    {
+                        string strLuggFix = "" + m_BDb.dtMain.Rows[0]["PALLET_ON_VEHICLE_RD"].ToString();
+                        if (IsEmptyLugg(strLuggFix)) strLuggFix = "" + m_BDb.dtMain.Rows[0]["ITN_LUGG_FK1"].ToString();
+                        if (IsEmptyLugg(strLuggFix)) strLuggFix = "" + m_BDb.dtMain.Rows[0]["LUGG_NO_FK1_OD"].ToString();
+                        if (IsEmptyLugg(strLuggFix)) strLuggFix = strLuggNo;
+                        strLuggFix = strLuggFix.Trim();
+                        if (!IsEmptyLugg(strLuggFix))
+                        {
+                            strLuggNo = strLuggFix;
+                            bool bDual = modDefApp.IsCodeIn(modDefApp.g_strScDualCodes, strErrorCode);   // [LGLS 2026-09-17] [Host] ScDualCodes
+                            m_BDb.ParamsClear();
+                            string strQ = "";
+                            strQ += modDefApp.CRLF + " SELECT START_LOCATION, DEST_LOCATION FROM JOB_MST ";
+                            strQ += modDefApp.CRLF + "  WHERE WH_TYP  = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                            strQ += modDefApp.CRLF + "    AND LUGG_NO = " + m_BDb.ParamsAdd("LUGG_NO", strLuggFix);
+                            if (m_BDb.ExcuteQry_Par(ref strQ) > 0)
+                            {
+                                string strLoc = "" + m_BDb.dtMain.Rows[0][bDual ? "DEST_LOCATION" : "START_LOCATION"].ToString();
+                                string[] arrLoc = strLoc.Split('-');
+                                if (arrLoc.Length == 3 && IsRackPos(arrLoc[0], arrLoc[1], arrLoc[2]))
+                                {
+                                    strBank = arrLoc[0]; strBay = arrLoc[1]; strLevel = arrLoc[2];
+                                }
+                            }
+                        }
+                    }
+                    // ─────────────────────────────────────────────────────────────
+                    strErrorKind = "0";         // 기계적 에러 
+                    strDeviceClass = "1";       // SC
+
+                    // [LGLS 2026-09-17] 종류 판정 코드를 INI 로 뺐다 (알람 리스트 기준 73·74 이중입고 / 75 공출고)
+                    if      (modDefApp.IsCodeIn(modDefApp.g_strScDualCodes,    strErrorCode)) strErrorKind = "1";   // 이중입고
+                    else if (modDefApp.IsCodeIn(modDefApp.g_strScInFailCodes,  strErrorCode)) strErrorKind = "2";   // 입고장애
+                    else if (modDefApp.IsCodeIn(modDefApp.g_strScOutFailCodes, strErrorCode)) strErrorKind = "4";   // 출고장애
+                    else if (modDefApp.IsCodeIn(modDefApp.g_strScEmptyCodes,   strErrorCode)) strErrorKind = "3";   // 공출고
+
+                    // 2.MES SEND STATUS ('N' -> 'Y') UPDATE
+                    m_BDb.BeginTrans();
+                    m_BDb.ParamsClear();
+
+                    m_strSql = "";
+                    m_strSql += modDefApp.CRLF + " UPDATE SC_DATA_LGLS                       ";
+                    m_strSql += modDefApp.CRLF + "    SET HOST_ERR_SEND_YN = 'Y'         ";
+                    m_strSql += modDefApp.CRLF + "  WHERE WH_TYP          = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND MC_NO           = " + m_BDb.ParamsAdd("MC_NO", strDeviceNo);
+                    m_strSql += modDefApp.CRLF + "    AND HOST_ERR_SEND_YN = 'N'         ";
+                    int nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                    if (nRtn < 0) 
+                    {
+                        m_BDb.RollbackTrans(); 
+                        return -2; 
+                    }
+                    if (nRtn == 0) 
+                    {
+                        m_BDb.RollbackTrans(); 
+                        return -1; 
+                    }
+
+                    m_BDb.CommitTrans();
+                    return 1;
+                }
+                else if (strEQP_TYP == "CV")
+                {
+                    // 1.ERROR CODE에 대해 존재여부확인.
+                    m_strSql = "";
+                    // [LGLS 2026-08-30] SC 와 동일 — 마스터에 없는 코드도 설비 원본값을 그대로 보고한다(코드 유실 금지).
+                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, A.ERROR_CODE) AS MC_ERR_CD ";
+                    m_strSql += modDefApp.CRLF + "      , A.*           ";
+                    m_strSql += modDefApp.CRLF + "   FROM CV_DATA A     ";
+                    m_strSql += modDefApp.CRLF + "   LEFT OUTER JOIN EQP_ECD_MST B ";
+                    m_strSql += modDefApp.CRLF + "     ON A.ERROR_CODE           = B.EQP_ERR_CD   ";
+                    m_strSql += modDefApp.CRLF + "    AND B.EQP_TYP              = " + m_BDb.ParamsAdd("EQP_TYP", strEQP_TYP);
+                    m_strSql += modDefApp.CRLF + "  WHERE A.WH_TYP               = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND A.HOST_ERR_SEND_YN     = 'N'           ";
+
+                    nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+                    if (nSelCnt < 0) 
+                    { 
+                        return -2; 
+                    }
+                    if (nSelCnt == 0) 
+                    { 
+                        return -1; 
+                    }
+
+                    strDeviceNo = "" + m_BDb.dtMain.Rows[0]["MC_NO"].ToString();
+                    strLuggNo = "" + m_BDb.dtMain.Rows[0]["LUGG_NO_RD"].ToString();
+                    strErrorCode = "" + m_BDb.dtMain.Rows[0]["MC_ERR_CD"].ToString();
+                    strErrorKind = "0";         // 기계적 에러 
+                    strDeviceClass = "2";       // CV
+                    strBank = "00";
+                    strBay = "000";
+                    strLevel = "00";
+
+
+                    // 2.MES SEND STATUS ('N' -> 'Y') UPDATE
+                    m_BDb.BeginTrans();
+                    m_BDb.ParamsClear();
+
+                    m_strSql = "";
+                    m_strSql += modDefApp.CRLF + " UPDATE CV_DATA                       ";
+                    m_strSql += modDefApp.CRLF + "    SET HOST_ERR_SEND_YN = 'Y'         ";
+                    m_strSql += modDefApp.CRLF + "  WHERE WH_TYP           = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND MC_NO            = " + m_BDb.ParamsAdd("MC_NO", strDeviceNo);
+                    m_strSql += modDefApp.CRLF + "    AND HOST_ERR_SEND_YN = 'N'         ";
+                    int nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                    if (nRtn < 0) 
+                    {
+                        m_BDb.RollbackTrans(); 
+                        return -2; 
+                    }
+                    if (nRtn == 0) 
+                    {
+                        m_BDb.RollbackTrans();
+                        return -1; 
+                    }
+
+                    m_BDb.CommitTrans();
+                    return 1;
+                }
+                else if (strEQP_TYP == "RTV")
+                {
+                    // [LGLS 2026-09-01] RTV 에러도 E 보고 대상.
+                    //   RTV 는 별도 ERR_CODE_RD 워드가 없어 알람 발생 보고 코드(D0211)를
+                    //   CV_TASK VehThread 가 RTV_DATA_LGLS.ERR_CODE_RD + HOST_ERR_SEND_YN='N' 으로 기록한다.
+                    //   DeviceClass=3 은 2010 명세에 없는 확장(명세는 1=S/C, 2=작업대) — WMS 협의 필요.
+                    m_BDb.ParamsClear();
+
+                    m_strSql = "";
+                    m_strSql += modDefApp.CRLF + " SELECT " + modDefApp.NVL + "(B.EQP_ERR_CD, A.ERR_CODE_RD) AS MC_ERR_CD  ";
+                    m_strSql += modDefApp.CRLF + "      , A.*                                                       ";
+                    m_strSql += modDefApp.CRLF + "   FROM RTV_DATA_LGLS A                                           ";
+                    m_strSql += modDefApp.CRLF + "   LEFT OUTER JOIN EQP_ECD_MST B                                  ";
+                    m_strSql += modDefApp.CRLF + "     ON A.ERR_CODE_RD         = B.EQP_ERR_CD                      ";
+                    m_strSql += modDefApp.CRLF + "    AND B.EQP_TYP             = " + m_BDb.ParamsAdd("EQP_TYP", strEQP_TYP);
+                    m_strSql += modDefApp.CRLF + "  WHERE A.WH_TYP              = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND A.HOST_ERR_SEND_YN     = 'N'           ";
+                    nSelCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+                    if (nSelCnt < 0)
+                    {
+                        return -2;
+                    }
+                    if (nSelCnt == 0)
+                    {
+                        return -1;
+                    }
+
+                    strDeviceNo = "" + m_BDb.dtMain.Rows[0]["RTV_NO"].ToString();
+                    strErrorCode = "" + m_BDb.dtMain.Rows[0]["MC_ERR_CD"].ToString();
+                    strLuggNo = "" + m_BDb.dtMain.Rows[0]["PALLET_ON_VEHICLE_RD"].ToString();
+                    if (strLuggNo.Trim().Length == 0 || strLuggNo.Trim() == "0")
+                        strLuggNo = "" + m_BDb.dtMain.Rows[0]["PALLET_ID_OD"].ToString();
+                    strErrorKind = "0";         // 기계적 에러
+                    strDeviceClass = "3";       // RTV
+                    strBank = "00";
+                    strBay = "000";
+                    strLevel = "00";
+
+                    // 2.MES SEND STATUS ('N' -> 'Y') UPDATE
+                    m_BDb.BeginTrans();
+                    m_BDb.ParamsClear();
+
+                    m_strSql = "";
+                    m_strSql += modDefApp.CRLF + " UPDATE RTV_DATA_LGLS                 ";
+                    m_strSql += modDefApp.CRLF + "    SET HOST_ERR_SEND_YN = 'Y'         ";
+                    m_strSql += modDefApp.CRLF + "  WHERE WH_TYP           = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                    m_strSql += modDefApp.CRLF + "    AND RTV_NO           = " + m_BDb.ParamsAdd("RTV_NO", strDeviceNo);
+                    m_strSql += modDefApp.CRLF + "    AND HOST_ERR_SEND_YN = 'N'         ";
+                    int nRtnR = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                    if (nRtnR < 0)
+                    {
+                        m_BDb.RollbackTrans();
+                        return -2;
+                    }
+                    if (nRtnR == 0)
+                    {
+                        m_BDb.RollbackTrans();
+                        return -1;
+                    }
+
+                    m_BDb.CommitTrans();
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                //cDefApp.g_SecsThread.MakeMsg_Error(strTitle + "실행중 예외 발생! " + ex.ToString());
+                m_strLog = strTitle + "실행중 예외 발생!" + m_BDb.ErrMsg + m_strSql;
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return 0;
+            }
+            return 1;
+        }
+
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: ECS송신정보 구하기
+		public bool GetSendData()
+		{
+            DataTable_Dispose();
+
+            if (modDefApp.g_frmForm.chkSimMode.Checked == false)
+            {
+                GetStatusReport();      // Interface목록서 : 상태변경시 + 30초 1회 상태보고
+                GetErrorReport();
+                // [LGLS] 본 대체 시스템은 재고(무게/빈파렛트)를 관리하지 않음 — 발신 제거
+            }
+            GetJobCompleteReport();
+            ReReportComplete09();   // [LGLS 2026-09-16] 09 잔류 작업 60초 주기 완료 재보고
+            GetLoadArrivalReport();
+
+			return true;
+		}
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200519
+        //설명		    : 상태 보고  
+        private void GetStatusReport()
+        {
+            string strTitle = "[GetStatusReport] .. ";
+            #region HOST로 최종 인터페이스한 시간을 가져온다
+            m_BDb.ParamsClear();
+
+            m_strSql = modDefApp.CRLF + "   SELECT  *                                                                               ";
+            m_strSql += modDefApp.CRLF + "    FROM  EQP_MST                                                                         ";
+            m_strSql += modDefApp.CRLF + "   WHERE  WH_TYP    = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+#if SQL
+            // [LGLS] MS-SQL 방언 (:: 캐스트/TO_CHAR 미지원)
+            m_strSql += modDefApp.CRLF + "     AND  DATEDIFF(SECOND, UPD_DT, GETDATE()) < 30 ";       // 30초
+#else
+            m_strSql += modDefApp.CRLF + "     AND  TO_CHAR(" + modDateTime.SYSDATE + " - UPD_DT, 'YYYYMMDDHH24MISS')::INTEGER < 30 ";       // 30초
+#endif
+            m_strSql += modDefApp.CRLF + "     AND  EQP_TYP   = 'HOST2'                                                             ";
+            m_strSql += modDefApp.CRLF + "ORDER BY  UPD_DT DESC                                                                     ";
+
+            int iCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+
+            if (iCnt < 0)
+            {
+                m_strLog = m_BDb.ErrMsg + m_strSql;
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return;
+            }
+
+            #endregion
+            #region 30초가 지났는지에 따라 보내는 파라미터가 달라진다.
+
+            if (iCnt == 0)
+            {
+                // 30초가 지났다.
+                GetStatusReport(true);
+            }
+            else 
+            {
+                // 30초가 안지났다.
+                GetStatusReport(false);
+            }
+            #endregion
+        }
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200519
+        //설명		    : 완료 보고 
+        /// <summary>[LGLS 2026-08-21] 직전에 송신한 상태보고 전문(변경 감지용)</summary>
+        private string m_strLastStatusFrame = "";
+
+        private bool GetStatusReport(bool bTimeReport = false)
+        {
+            string strTitle = "[GetStatusReport] .. ";
+            m_strHostCmd = "S";
+
+            if (!m_blSockConnected)
+            {
+                return false;
+            }
+
+
+            #region SC 상태값을 가져온다
+            m_BDb.ParamsClear();
+
+            m_strSql = modDefApp.CRLF + "   SELECT  *                 ";
+            m_strSql += modDefApp.CRLF + "    FROM  SC_DATA_LGLS WITH (NOLOCK)  ";   // [LGLS 2026-09-17] 상태보고 읽기 - 교착(1205) 피해자 방지
+            m_strSql += modDefApp.CRLF + "   WHERE  WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+            //m_strSql += modDefApp.CRLF + "     AND  HOST_SEND_YN = 'N'";          // 모든 크레인의 정보를 가져와야함!
+            m_strSql += modDefApp.CRLF + "ORDER BY  SC_NO             ";
+
+            int iCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+
+            if (iCnt < 0)
+            {
+                m_strLog = m_BDb.ErrMsg + m_strSql;
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return false;
+            }
+
+            // SC 가 1대도 설정되어있지 않을경우  
+            if (iCnt == 0)
+            {
+                //m_strLog = "이미 요청 중인 작업이 있으므로 요청하지 않음![요청시간 : " + m_BDb.dtMain.Rows[0]["UDT_DT"] + "]";
+                m_strLog = "SC_DATA_LGLS를 가져오지 못했습니다.";
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return false;
+            }
+
+            #endregion
+            #region SC 상태값으로 인한 상위에 보낼 메세지 부분 구성
+
+            bool bScTemp = false;
+            string strSC_HOST_SEND_YN = "";
+            for (int i = 0; i < iCnt; i++)
+            {
+                strSC_HOST_SEND_YN = "" + m_BDb.dtMain.Rows[i]["HOST_SEND_YN"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[i]["HOST_SEND_YN"].ToString();
+
+                if (strSC_HOST_SEND_YN == "N")
+                {
+                    bScTemp = true;
+                    break;
+                }
+            }
+
+            // [LGLS 2026-07-30] 인터페이스명세서(20100311) 상태보고 : 집계 단일 전문 BODY 43바이트
+            //   STX 'S' + [SC호기(2)+상태(1)+LuggNo(4)]×5 + 101상태(1) + 102상태(1) + 103상태(1)
+            //   + 101 PLC모드(1) + 110(SC1라인 C/V) PLC모드(1) + ETX   (상태: 0=가능, 1=불가)
+            //   (구 설비별 개별 15바이트 전문은 명세/원본 ECP(43B, WMSCommand.cs S_BODY_SIZE)와 불일치라 폐기)
+            System.Text.StringBuilder sbStatus = new System.Text.StringBuilder(41);
+            sbStatus.Append('S');
+
+            #region ECS 작업 존재 여부(미지시 작업, JOB_STATUS='99')
+            string strJobExist = "0";
+            m_BDb.ParamsClear();
+
+            m_strSql = modDefApp.CRLF + "   SELECT  *                 ";
+            m_strSql += modDefApp.CRLF + "    FROM  JOB_MST           ";
+            m_strSql += modDefApp.CRLF + "   WHERE  WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+            m_strSql += modDefApp.CRLF + "     AND  JOB_STATUS = '99' ";
+
+            int iJobCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+            if (iJobCnt > 0)
+            {
+                strJobExist = "1";
+            }
+
+            #region SC 상태값을 다시 가져온다 (JOB_MST 조회로 dtMain이 변경되었으므로)
+            m_BDb.ParamsClear();
+
+            m_strSql = modDefApp.CRLF + "   SELECT  *                 ";
+            m_strSql += modDefApp.CRLF + "    FROM  SC_DATA_LGLS WITH (NOLOCK)  ";   // [LGLS 2026-09-17] 상태보고 읽기 - 교착(1205) 피해자 방지
+            m_strSql += modDefApp.CRLF + "   WHERE  WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+            m_strSql += modDefApp.CRLF + "ORDER BY  SC_NO             ";
+
+            iCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+
+            if (iCnt <= 0)
+            {
+                m_strLog = "SC_DATA_LGLS를 가져오지 못했습니다.";
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return false;
+            }
+            #endregion
+            #endregion
+
+            int nScStatus = modDefApp.SC_STATUS_NORMAL_WAIT;
+
+            string strONLINE_MODE_RD = "";
+            string strAUTO_MODE_RD = "";
+            string strACTIVE_MODE_RD = "";
+            string strSUSPEND = "";
+            string strUCSTATUS_RD = "";
+            string strITN_LUGG_FK1 = "";
+            string strITN_LUGG_FK2 = "";
+            string strJOB_TYP_RD = "";
+            string strPLC_NO = "";
+
+            int nScCnt = iCnt;
+            for (int ii = 0; ii < iCnt; ii++)
+            {
+                nScStatus = modDefApp.SC_STATUS_NORMAL_WAIT;
+
+                strONLINE_MODE_RD = "" + m_BDb.dtMain.Rows[ii]["ONLINE_MODE_RD"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[ii]["ONLINE_MODE_RD"].ToString();
+                strAUTO_MODE_RD = "" + m_BDb.dtMain.Rows[ii]["AUTO_MODE_RD"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[ii]["AUTO_MODE_RD"].ToString();
+                strACTIVE_MODE_RD = "" + m_BDb.dtMain.Rows[ii]["ACTIVE_MODE_RD"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[ii]["ACTIVE_MODE_RD"].ToString();
+                strSUSPEND = "" + m_BDb.dtMain.Rows[ii]["SUSPEND"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[ii]["SUSPEND"].ToString();
+                strUCSTATUS_RD = "" + m_BDb.dtMain.Rows[ii]["UCSTATUS_RD"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[ii]["UCSTATUS_RD"].ToString();
+                strITN_LUGG_FK1 = "" + m_BDb.dtMain.Rows[ii]["ITN_LUGG_FK1"].ToString() == "" ? "0000" : m_BDb.dtMain.Rows[ii]["ITN_LUGG_FK1"].ToString();
+                strITN_LUGG_FK2 = "" + m_BDb.dtMain.Rows[ii]["ITN_LUGG_FK2"].ToString() == "" ? "0000" : m_BDb.dtMain.Rows[ii]["ITN_LUGG_FK2"].ToString();       //
+                strJOB_TYP_RD = "" + m_BDb.dtMain.Rows[ii]["JOB_TYP_RD"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[ii]["JOB_TYP_RD"].ToString();
+                strPLC_NO = "" + m_BDb.dtMain.Rows[ii]["PLC_NO"].ToString() == "" ? "00" : m_BDb.dtMain.Rows[ii]["PLC_NO"].ToString();
+                
+
+                if (strITN_LUGG_FK1 != "0")
+                {
+                    switch (strJOB_TYP_RD)
+                    {
+                        case "1": nScStatus = modDefApp.SC_STATUS_STORING; break;
+                        case "2": nScStatus = modDefApp.SC_STATUS_RETRIEVING; break;
+                        //case "3": nScStatus = modDefApp.SC_STATUS_STORING; break;
+                        case "4": //nScStatus = modDefApp.SC_STATUS_STORING; break;
+                        case "5": nScStatus = modDefApp.SC_STATUS_RACK_TO_RACK; break;
+                    }
+                }
+
+
+                if (strONLINE_MODE_RD != "1" ||
+                    strAUTO_MODE_RD != "1" ||
+                    strACTIVE_MODE_RD != "1")
+                {
+                    nScStatus = modDefApp.SC_STATUS_NO_ONLINE;
+                }
+                switch (strSUSPEND)
+                {
+                case "1": nScStatus = modDefApp.SC_STATUS_SUSPEND_STO; break;
+                case "2": nScStatus = modDefApp.SC_STATUS_SUSPEND_RET; break;
+                case "3": nScStatus = modDefApp.SC_STATUS_SUSPEND_ALL; break;
+                }
+                if (strUCSTATUS_RD == "4")
+                {
+                    nScStatus = modDefApp.SC_STATUS_ERROR;
+                }
+
+                string strSC_NO = "" + m_BDb.dtMain.Rows[ii]["SC_NO"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[ii]["SC_NO"].ToString();
+
+                // [LGLS 2026-07-30] 명세 SC 블록: 호기(2, 901~905→01~05) + 상태(1, 0:가능/1:불가) + LuggNo(4)
+                //   불가 판정 = 오프라인/수동/비활성(NO_ONLINE) · 에러(UC=4) · 입고정지(1)/전체정지(3) suspend
+                //   (출고정지(2)는 입고 배정에 영향 없어 가능(0) — 구 개별전문 상태코드 4/5/6/8=불가 게이트와 동일 의미)
+                int nScNum = Convert.ToInt32(strSC_NO); if (nScNum > 900) nScNum -= 900;
+                string strScAvail = "0";
+                // [LGLS 2026-11-12] 크레인 불가 판정을 구 ECS 기준으로 (사용자 지시).
+                //   구 ECS ECSDispatcher.CheckEquipmentStatus : 크레인 SUBSYSTEM = 알람코드!=0 이면 5, DOWN 이면 4, 그 외 0~3(대기/작업 중).
+                //   STKSEM 합계가 4 이상일 때만 불가(1) → ★DOWN 또는 알람일 때만 불가★. 수동(운전모드)은 보지 않았다.
+                //   신규 대응 : DOWN = UCSTATUS 4 (설비 통신이 ONLINE/ACTIVE 도 함께 0 으로 내림), 알람 = ERR_CODE_RD != 0.
+                //   종전 신규는 AUTO_MODE_RD(수동)도 불가로 보고 알람은 보지 않았다. EcsComA.ini [Host] SC_AVAIL_OLD=0 이면 그 종전 판정.
+                //   SUSPEND(Client 사용정지 1=입고/3=전체)는 신규 기능이라 두 방식 모두 불가로 둔다.
+                bool bScOldRule = true;
+                try { bScOldRule = modDefAPI.GetPrivateProfileInt("Host", "SC_AVAIL_OLD", 1, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini")) != 0; } catch { }
+                if (bScOldRule)
+                {
+                    string strScErr = ("" + m_BDb.dtMain.Rows[ii]["ERR_CODE_RD"]).Trim();
+                    int nScErr = 0;
+                    bool bScAlarm = (strScErr.Length > 0) && (!int.TryParse(strScErr, out nScErr) || nScErr != 0);
+                    if (strONLINE_MODE_RD != "1" || strACTIVE_MODE_RD != "1" || strUCSTATUS_RD == "4") strScAvail = "1";   // DOWN
+                    if (bScAlarm) strScAvail = "1";                                                                          // 알람
+                }
+                else
+                {
+                    if (strONLINE_MODE_RD != "1" || strAUTO_MODE_RD != "1" || strACTIVE_MODE_RD != "1") strScAvail = "1";
+                    if (strUCSTATUS_RD == "4") strScAvail = "1";
+                }
+                if (strSUSPEND == "1" || strSUSPEND == "3") strScAvail = "1";
+                sbStatus.AppendFormat("{0:00}{1}{2:0000}", nScNum, strScAvail, Convert.ToInt32(strITN_LUGG_FK1));
+            }
+            // SC 5대 미만 구성이면 잔여 블록은 "000000" + 불가(1) 로 채우지 않고 호기번호 순서대로 0패딩
+            for (int ii = iCnt; ii < 5; ii++)
+                sbStatus.AppendFormat("{0:00}1{1:0000}", ii + 1, 0);
+            #endregion
+
+            #region CV 상태값을 가져온다
+            m_BDb.ParamsClear();
+
+            // [LGLS 2026-07-30] 명세 43B 집계 전문 구성에 필요한 트랙만 조회:
+            //   122=101(외부 입출고 겸용대), 129/130=102(피킹존 출고/입고), 126=103(제품 입고대), 124=104(원부자재 불출대),
+            //   103=110(SC1 라인 C/V#2 — PLC 모드 필드용)
+            // [LGLS 2026-09-17 06:36] 상태보고용 읽기는 잠금을 잡지 않는다(WITH (NOLOCK)) - 실측 : 설비 통신/스케줄러의 CV_DATA 갱신과
+            //   맞물려 SQL Server 교착(1205)의 피해자로 끊겼다("트랜잭션(프로세스 ID 56)이 ... 교착 상태"). 표시용 스냅샷이라 더티 리드 무해.
+            m_strSql = modDefApp.CRLF + "     SELECT  CD.*                          ";
+            m_strSql += modDefApp.CRLF + "      FROM  CV_DATA CD WITH (NOLOCK)      ";
+            m_strSql += modDefApp.CRLF + "     WHERE  CD.WH_TYP       =  " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+            m_strSql += modDefApp.CRLF + "       AND  CD.MC_NO IN ('103','122','124','126','129','130') ";
+            m_strSql += modDefApp.CRLF + "  ORDER BY  CD.PLC_NO,     CD.MC_NO       ";
+
+            iCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+
+            if (iCnt < 0)
+            {
+                m_strLog = m_BDb.ErrMsg + m_strSql;
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return false;
+            }
+
+            // CV 가 1대도 설정되어있지 않을경우  
+            if (iCnt == 0)
+            {
+                //m_strLog = "이미 요청 중인 작업이 있으므로 요청하지 않음![요청시간 : " + m_BDb.dtMain.Rows[0]["UDT_DT"] + "]";
+                m_strLog = "CV_DATA를 가져오지 못했습니다.";
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return false;
+            }
+
+            #endregion
+            #region CV 상태값으로 인한 상위에 보낼 메세지 부분 구성
+
+            bool bCvTemp = false;
+            string strCV_HOST_SEND_YN = "";
+            for (int i = 0; i < iCnt; i++)
+            {
+                strCV_HOST_SEND_YN = "" + m_BDb.dtMain.Rows[i]["HOST_SEND_YN"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[i]["HOST_SEND_YN"].ToString();
+
+                if (strCV_HOST_SEND_YN == "N")      // CV TASK에서 수정했음!
+                {
+                    bCvTemp = true;
+                    break;
+                }
+            }
+
+            // 설비의 변경이 일어나지 않았을 경우 보고하지 않음 - 30초 마다 보고하는 부분을 제외하고...
+            // [LGLS 2026-08-21] 명세(20100311) 4.상태 보고 :
+            //   "상태가 변경되면 즉시 송신하며 또한 정기적으로 30초에 1회씩 송신"
+            //   종전에는 HOST_SEND_YN='N' 플래그만 보고 조기 return 했는데,
+            //   크레인 사용정지(SC_DATA_LGLS.SUSPEND)처럼 Client 가 직접 바꾸는 항목은
+            //   그 플래그가 내려가지 않아 최대 30초 늦게 보고됐다.
+            //   → 여기서 끊지 않고 전문을 끝까지 구성한 뒤, 직전 송신본과 내용이 다르면
+            //     즉시 송신한다(어떤 컬럼이든·누가 바꾸든 반영된다).
+            //   bScTemp/bCvTemp 는 참고용으로만 남긴다.
+
+            // [LGLS 2026-07-30] 명세 43B 후반부: 작업대 상태 3개(101/102/103) + PLC 모드 2개(101/110)
+            //   상태 0=가능/1=불가 (AUTO 아님·에러코드 존재 시 불가). 102(피킹존)는 C/V#14(129)·#15(130) 중
+            //   하나라도 불가면 불가. 모드 0=입고/1=출고 (CV_DATA.STOCK_MODE — WCS_TASK_CV 가 방향워드 미러).
+            string strMC_NO = "";
+            string strMC_NO_LIST = "'0'";
+            string st122 = "0", st129 = "0", st130 = "0", st124 = "0", st126 = "0";
+            string mode101 = "0", mode110 = "0";
+
+            for (int iii = 0; iii < iCnt; iii++)
+            {
+                strMC_NO = "" + m_BDb.dtMain.Rows[iii]["MC_NO"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[iii]["MC_NO"].ToString();
+                strMC_NO_LIST += ",'" + strMC_NO + "'";
+
+                string strAuto = "" + m_BDb.dtMain.Rows[iii]["AUTO_MODE_RD"].ToString();
+                string strErrCd = "" + m_BDb.dtMain.Rows[iii]["ERROR_CODE"].ToString();
+                string strStock = "" + m_BDb.dtMain.Rows[iii]["STOCK_MODE"].ToString();
+                string strSensor = "" + m_BDb.dtMain.Rows[iii]["SENSOR0_DATA_RD"].ToString();
+                // [LGLS 2026-11-12] 구 ECS 기준 : 컨베이어는 자동운전 여부만 본다(ECSDispatcher 'Conveyor 상태 Check' - 에러코드는 안 봄). 사용자 지시.
+                //   EcsComA.ini [Host] CV_AVAIL_ERR=1 이면 종전처럼 에러코드가 있을 때도 불가로 보낸다(기본 0 = 자동운전만).
+                bool bCvErrRule = false;
+                try { bCvErrRule = modDefAPI.GetPrivateProfileInt("Host", "CV_AVAIL_ERR", 0, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini")) != 0; } catch { }
+                bool bCvNoErr = (strErrCd == "" || strErrCd == "0" || strErrCd == "0000");
+                bool bAutoOk = (strAuto == "1" && (!bCvErrRule || bCvNoErr));
+                string strAvail = bAutoOk ? "0" : "1";
+
+                // [LGLS 2026-08-21] 구 ECS 기준(ECSDispatcher.cs 'Conveyor 상태 Check') :
+                //   자동운전이 아니면 무조건 불가(1). 자동운전이면 입고대류는
+                //   "Pallet 이 있을 경우만 반송 가능(0)" — 화물이 없으면 불가(1) 로 보고한다.
+                //     CONVEYOR:11 PALLET_EXIST_FLAG_02 = slot1 = 트랙 122 → 명세 101
+                //     CONVEYOR:15 PALLET_EXIST_FLAG_03 = slot2 = 트랙 130 → 명세 102(피킹)
+                //   종전에는 AUTO/ERROR 만 보고 화물 유무를 반영하지 않아, 입출고대에 화물이
+                //   들고 나도 상위 상태가 바뀌지 않았다(=실시간 보고가 되지 않음).
+                string strAvailPallet = bAutoOk ? ((strSensor == "1") ? "0" : "1") : "1";
+
+                switch (strMC_NO)
+                {
+                    case "122": st122 = strAvailPallet; mode101 = (strStock == "1") ? "1" : "0"; break;
+                    case "129": st129 = strAvail; break;
+                    case "130": st130 = strAvailPallet; break;
+                    // [LGLS 2026-08-24 현장기준] 103 = 제품 입고대 = C/V#12(TR#24) = 내부 124.
+                    //   (종전에는 126 을 읽었으나 126 은 C/V#13 출고대다)
+                    // [LGLS 2026-11-12] 103 도 구 ECS 처럼 화물 센서를 반영한다 (사용자 지시, 현장 WMS "미출발 작업번호" 메시지 대응).
+                    //   구 ECS ECSDispatcher.cs 'Conveyor 상태 Check' : CONVEYOR:12(제품 입고대) 도 PALLET_EXIST_FLAG_02 가 있을 때만 0(가능), 없으면 1.
+                    //   8/21 에 11·15 만 옮기고 12 를 빠뜨렸던 것을 바로잡는다.
+                    case "124": st124 = strAvailPallet; break;
+                    // [LGLS 2026-11-12] C/V#13(원부자재 불출대) - 구 ECS DB(TB_SUBSYSTEM.OWNERID) : CNVSEM:2 = CONVEYOR:12 + CONVEYOR:13,
+                    //   CNVSEM:3 = CONVEYOR:14 + CONVEYOR:15. 설비(EQUIPMENT) 상태 = 소속 SUBSYSTEM 합계가 0 이 아니면 불가(ECSDispatcher 장비 상태 변경).
+                    case "126": st126 = strAvail; break;
+                    case "103": mode110 = (strStock == "1") ? "1" : "0"; break;
+                }
+            }
+
+            sbStatus.Append(st122);                                        // 101 외부 입고 전용 입출고대 상태
+            // [LGLS 2026-11-12] 102 = C/V#14(129) 와 C/V#15(130) 중 하나라도 불가면 불가 (구 ECS : CONV:14 AUTO + CONV:15 센서 합산, 코드 주석과도 일치).
+            //   종전에는 130 만 써서 129 가 수동/에러여도 가능으로 나갔다.
+            string st102 = (st129 == "1" || st130 == "1") ? "1" : "0";
+            // 103 = C/V#12(124, 화물 센서 반영) 와 C/V#13(126, 원부자재 불출대) 중 하나라도 불가면 불가.
+            string st103 = (st124 == "1" || st126 == "1") ? "1" : "0";
+            sbStatus.Append(st102);                                        // 102 Picking 작업대 상태 (C/V#14 + C/V#15)
+            sbStatus.Append(st103);                                        // 103 제품 입고대 상태 (C/V#12 TR#24 + C/V#13 TR#26)
+            sbStatus.Append(mode101);                                      // 101 PLC Mode (0=입고, 1=출고)
+            sbStatus.Append(mode110);                                      // 110 실온 S/C 1호기 C/V PLC Mode
+            #endregion
+
+            #region 상위에 보낼 메세지 구성 및 보내기 (명세 43B 집계 단일 전문)
+            //MAKE FRAME
+            string strTemp = sbStatus.ToString();      // 'S' + SC블록(7×5) + 상태3 + 모드2 = 41자
+            byte[] bytTempByte = null;
+
+            // [LGLS 2026-08-21] 변경 감지 : 30초 주기가 아니면 직전 송신본과 다를 때만 보낸다
+            if (bTimeReport == false && strTemp == m_strLastStatusFrame)
+            {
+                return false;
+            }
+            m_strLastStatusFrame = strTemp;
+
+            {
+                int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
+
+                m_bytTxBuff = new byte[iTxCnt];
+
+                //### Header ###
+                MakeHeader(strTemp.Length);
+
+                //### Body ###
+                m_bytTxBuff[modDefApp.MSG_HEAD_CNT] = modDefApp.STX;
+
+                bytTempByte = System.Text.Encoding.Default.GetBytes(strTemp);
+                Array.Copy(bytTempByte, 0, m_bytTxBuff, modDefApp.MSG_HEAD_CNT + 1, strTemp.Length);
+
+                m_bytTxBuff[iTxCnt - 1] = modDefApp.ETX;
+
+                // [LGLS 2026-07-30] 명세: 상태 보고(S)는 응답 없음 — 송신만
+                if (!RequestSrv(iTxCnt.ToString(), modDefApp.TIME_OUT, false))
+                {
+                    return false;
+                }
+            }
+            #endregion
+
+            #region 송신 후 SC_DATA_LGLS와 CV_DATA의 HOST_SEND_YN을 Y로 변경
+            #region SC_DATA_LGLS의 HOST_SEND_YN을 Y로 변경
+            // 2.MES SEND STATUS ('N' -> 'Y') UPDATE
+            m_BDb.BeginTrans();
+            m_BDb.ParamsClear();
+
+            m_strSql = "";
+            m_strSql += modDefApp.CRLF + " UPDATE SC_DATA_LGLS                    ";
+            m_strSql += modDefApp.CRLF + "    SET HOST_SEND_YN = 'Y'         ";
+            m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+            //m_strSql += modDefApp.CRLF + "    AND PLC_NO       = " + m_BDb.ParamsAdd("PLC_NO", strPLC_NO);
+            m_strSql += modDefApp.CRLF + "    AND HOST_SEND_YN = 'N'         ";
+            int nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+            if (nRtn < 0)
+            {
+                m_BDb.RollbackTrans();
+                return false;
+            }
+            //if (nRtn == 0)
+            //{
+            //    m_BDb.RollbackTrans();
+            //    return false;
+            //}
+
+            #endregion
+            #region CV_DATA의 HOST_SEND_YN을 Y로 변경
+            m_BDb.ParamsClear();
+
+            m_strSql = "";
+            m_strSql += modDefApp.CRLF + " UPDATE CV_DATA                    ";
+            m_strSql += modDefApp.CRLF + "    SET HOST_SEND_YN = 'Y'         ";
+            m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+            m_strSql += modDefApp.CRLF + "    AND MC_NO        IN (" + strMC_NO_LIST + ") ";
+            m_strSql += modDefApp.CRLF + "    AND HOST_SEND_YN = 'N'         ";
+            nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+            if (nRtn < 0)
+            {
+                m_BDb.RollbackTrans();
+                return false;
+            }
+            //if (nRtn == 0)
+            //{
+            //    m_BDb.RollbackTrans();
+            //    return false;
+            //}
+
+
+            #endregion
+            #region EQP_MST의 HOST_SEND_YN을 Y로 변경
+            m_BDb.ParamsClear();
+
+            m_strSql = "";
+            m_strSql += modDefApp.CRLF + " UPDATE EQP_MST                                                       ";
+            m_strSql += modDefApp.CRLF + "    SET UPD_DT       = " + modDateTime.SYSDATE;
+            // [LGLS 2026-09-08] 운전 화면의 설비 접속정보에 상위 통신 주소가 비어 있었다. (사용자 지적)
+            //   HOST/HOST2 행은 아무도 IP/PORT 를 적지 않아 화면이 빈칸이었다.
+            //   실제로 쓰는 값(EcsComA.ini [Network])을 그대로 적어 둔다. 통신 규약은 손대지 않는다.
+            //   HOST2 = ★송신(클라이언트) 소켓★ - 우리가 상위로 접속해 보고를 보낸다.
+            m_strSql += modDefApp.CRLF + "      , CONNECTED_YN = 'Y'                                            ";
+            m_strSql += modDefApp.CRLF + "      , PLC_IP       = " + m_BDb.ParamsAdd("PLC_IP", modDefApp.g_strRemoteIP);
+            m_strSql += modDefApp.CRLF + "      , PLC_PORT     = " + m_BDb.ParamsAdd("PLC_PORT", modDefApp.g_iRemotePort.ToString());
+            m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+            m_strSql += modDefApp.CRLF + "    AND EQP_TYP      = 'HOST2'                                        ";
+            nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+
+            //   HOST = ★수신(서버) 소켓★ - 우리가 포트를 열어 두고 상위의 접속을 받는다.
+            //   특정 상대 주소가 없으므로 IP 는 0.0.0.0(모든 주소에서 받음)으로 적는다. (사용자 요청)
+            m_BDb.ParamsClear();
+            m_strSql = "";
+            m_strSql += modDefApp.CRLF + " UPDATE EQP_MST                                                       ";
+            m_strSql += modDefApp.CRLF + "    SET UPD_DT       = " + modDateTime.SYSDATE;
+            m_strSql += modDefApp.CRLF + "      , CONNECTED_YN = 'Y'                                            ";
+            m_strSql += modDefApp.CRLF + "      , PLC_IP       = '0.0.0.0'                                      ";
+            m_strSql += modDefApp.CRLF + "      , PLC_PORT     = " + m_BDb.ParamsAdd("PLC_PORT2", modDefApp.g_iListenPort.ToString());
+            m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP2", modDefApp.WH_TYP);
+            m_strSql += modDefApp.CRLF + "    AND EQP_TYP      = 'HOST'                                         ";
+            nRtn = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+            if (nRtn < 0)
+            {
+                m_BDb.RollbackTrans();
+                return false;
+            }
+            //if (nRtn == 0)
+            //{
+            //    m_BDb.RollbackTrans();
+            //    return false;
+            //}
+            #endregion
+            m_BDb.CommitTrans();
+
+            #endregion
+
+            return true;
+        }
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200727
+        //설명		    : 무게 보고 
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200519
+        //설명		    : 에러 보고  
+        private void GetErrorReport()
+        {
+            string[] strMC_TYP = new string[] { "CV", "SC", "RTV" };   // [LGLS 2026-09-01] RTV 에러도 E 보고
+
+            int nCount = strMC_TYP.Length;
+            for (int i = 0; i < nCount; i++)
+            {
+                GetErrorReport(strMC_TYP[i]);
+            }
+        }
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200519
+        //설명		    : 에러 보고 
+        private bool GetErrorReport(string strEQP_TYP)
+        {
+            m_strHostCmd = "E";
+
+            if (!m_blSockConnected)
+            {
+                return false;
+            }
+
+
+            #region 에러 보고해야할 작업이 있는지?
+
+            string strDeviceNo = "";
+            string strDeviceClass = "";
+            string strErrorCode = "";
+            string strErrorKind = "";
+            string strLuggNo = "";
+            string strBank = "";
+            string strBay = "";
+            string strLevel = "";
+
+            int nResult = IsEquip_ERROR_Modified(strEQP_TYP, ref strDeviceNo, ref strDeviceClass, ref strErrorCode, ref strErrorKind, ref strLuggNo, ref strBank, ref strBay, ref strLevel);
+            if (nResult == 0)
+            {
+                // 이미 함수내에서 리스트 박스에 디스플레이함!    - 작업해야 할 부분 
+                return false;
+            }
+            if (nResult < 0)
+            {
+                return true;
+            }
+            #endregion
+
+            #region 상위에 보낼 메세지 구성
+            //MAKE FRAME
+            string strTemp = null;
+            byte[] bytTempByte = null;
+
+            // [LGLS 2026-07-30] 인터페이스명세서(20100311) 에러보고 BODY 23:
+            //   E + DeviceClass(1) + DeviceNo(3) + ErrorKind(1) + ErrorCode(4) + LuggNo(4) + Bank(2) + Bay(3) + Level(2)
+            //   (구 24바이트 WhDefine 포함 규격은 명세/원본 ECP(E_BODY_SIZE=23)와 불일치라 폐기)
+            //   DeviceNo 는 명세 체계로 변환: S/C 901~905 → 001~005, 스테이션 C/V → 101~104(McNoToWmsStation)
+            // [LGLS 2026-08-30] 전 항목 안전 변환 — 한 항목이 비어도 보고 자체가 사라지지 않게 한다.
+            int nDevNo = ToInt(strDeviceNo);
+            if (strDeviceClass == "1" && nDevNo > 900) nDevNo -= 900;                       // S/C 호기번호
+            else if (strDeviceClass == "2") nDevNo = ToInt(CSrvWork.McNoToWmsStation(strDeviceNo));  // 작업대 코드(미대응 트랙은 원값)
+            else if (strDeviceClass == "3" && nDevNo > 800) nDevNo -= 800;                  // [LGLS 2026-09-01] RTV 801 → 001
+            strTemp = string.Format("E{0:0}{1:000}{2:0}{3:0000}{4:0000}{5:00}{6:000}{7:00}",
+                ToInt(strDeviceClass), nDevNo, ToInt(strErrorKind),
+                ToInt(strErrorCode), ToInt(strLuggNo),
+                ToInt(strBank), ToInt(strBay), ToInt(strLevel));
+
+            int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
+            //MSG_ORDER_CNT
+
+            m_bytTxBuff = new byte[iTxCnt];
+
+            //### Header ###
+            MakeHeader(strTemp.Length);
+            //MSG_ORDER_CNT
+
+
+            //### Body ###
+            m_bytTxBuff[modDefApp.MSG_HEAD_CNT] = modDefApp.STX;
+
+
+            bytTempByte = System.Text.Encoding.Default.GetBytes(strTemp);
+            Array.Copy(bytTempByte, 0, m_bytTxBuff, modDefApp.MSG_HEAD_CNT + 1, strTemp.Length);
+
+            m_bytTxBuff[iTxCnt - 1] = modDefApp.ETX;
+
+            #endregion
+
+            #region 메세지 보내기
+            // [LGLS 2026-07-30] 명세: 에러 보고(E)는 응답 없음 — 송신만
+            if (!RequestSrv(iTxCnt.ToString(), modDefApp.TIME_OUT, false))
+            {
+                return false;
+            }
+            #endregion
+
+            #region 응답 받고 특별히 하는 작업 없음!
+            //nResult = modDefApp.g_frmForm.DeleteJobMst();     // 함수안에서 Transaction 처리함!
+            //if (nResult != 1)
+            //{
+            //    m_strLog = string.Format("작업 삭제 실패하였습니다. [작업번호:{0}][실패구분:{1}][실패내용:{2}]", strLuggNo, nResult, modDefApp.GM_RTN_MSG);
+            //    modCmWork.ShowMsgServer(strTitle + m_strLog, modDefApp.MSG_ERR);
+
+            //    return false;
+            //}
+
+            //m_strLog = string.Format("작업 삭제 성공하였습니다. [작업번호:{0}]", strLuggNo);
+            //modCmWork.ShowMsgServer(strTitle + m_strLog, modDefApp.MSG_IMP);
+            #endregion
+
+            return true;
+        }
+
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200519
+        //설명		    : 완료 보고  
+        /// <summary>[LGLS 2026-08-30] 완료 상태 코드. common_code JOB_STATUS '09' = 완료.</summary>
+        private const string JOB_ST_DONE = "09";
+
+        /// <summary>[LGLS 2026-08-30] 작업 상태만 바꾼다(완료 표시 / 실패 시 롤백용).</summary>
+        private bool UpdateJobStatusTo(string strLuggNum, string strStatus)
+        {
+            try
+            {
+                m_BDb.BeginTrans();
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + "  UPDATE JOB_MST ";
+                m_strSql += modDefApp.CRLF + "    SET JOB_STATUS   = " + m_BDb.ParamsAdd("JOB_STATUS", strStatus);
+                m_strSql += modDefApp.CRLF + "      , UPD_USER_ID  = 'HOST_TASK'";
+                m_strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
+                m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "    AND LUGG_NO      = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
+                int n = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                if (n != 1) { m_BDb.RollbackTrans(); return false; }
+                m_BDb.CommitTrans();
+                return true;
+            }
+            catch { try { m_BDb.RollbackTrans(); } catch { } return false; }
+        }
+
+        private void GetJobCompleteReport()
+        {
+            int[] nStation = new int[] { 19, 29 };
+
+            int nCount = nStation.Length;
+            for (int i = 0; i < nCount; i++)
+            {
+                GetJobCompleteReport(nStation[i]);
+            }
+        }
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200519
+        //설명		    : 완료 보고 
+        private bool GetJobCompleteReport(int nJobStatus)
+        {
+            string strTitle = "[GetJobCompleteReport] .. ";
+            m_strHostCmd = "F";
+
+            int nJobType = 0;
+            string strUserID = "";
+            string strSScNum = "";
+            string strDScNum = "";
+            string strSPosition = "";
+            string strDPosition = "";
+            string strLuggNum = "";
+
+            #region 완료 보고해야할 작업이 있는지?
+
+            int nResult = IsJobExist(nJobStatus, ref nJobType, ref strUserID, ref strSScNum, ref strDScNum, ref strSPosition, ref strDPosition, ref strLuggNum);
+            if (nResult == 0)
+            {
+                // 이미 함수내에서 리스트 박스에 디스플레이함!
+                return false;
+            }
+            if (nResult < 0)
+            {
+                return true;
+            }
+            #endregion
+
+            #region 상위에 보낼 메세지 구성
+            //MAKE FRAME
+            string strTemp = null;
+            byte[] bytTempByte = null;
+            int nClass = 0;
+            int nStation = 0;
+
+            int nLuggNum = Convert.ToInt32(strLuggNum);
+            bool bResult = false;
+            // [LGLS 2026-08-13] 반자동 원칙: 반자동/수동 작업(LUGG 9000번대, JOB_TYP 10~15)은
+            //   SIM 모드 여부와 무관하게 HOST 로 완료 보고하지 않는다. 삭제만 한다.
+            //   (기존에는 chkSimMode 가 켜져 있으면 반자동도 F 보고를 보냈음)
+            if (nLuggNum >= 9000 || nJobType >= 10)
+            {
+                // [LGLS 2026-08-31] ★반자동/수동은 여기서 아무것도 하지 않는다★ (사용자 지시)
+                //   보고하지 않는 것은 종전과 같고, ★삭제도 IO_TASK 가 한다★
+                //   (cThread_SCH.DeleteSemiFinished - 19/29 에서 바로 삭제).
+                //   종전에는 HOST_TASK 가 지웠다. 그러면 반자동 시험을 하려고 상위 통신을
+                //   내렸을 때 작업이 지워지지 않고 쌓인다 - 반자동은 상위와 무관해야 한다.
+                return true;
+            }
+            //string strLuggNum = "" + m_BDb.dtMain.Rows[0]["LUGG_NO"];
+            switch (nJobType)
+            {
+                case 1: nStation = Convert.ToInt16(strSPosition); nClass = 1;  break;
+                case 2: nStation = Convert.ToInt16(strDPosition); nClass = 2;  break;
+                //case 3: nStation = Convert.ToInt16(strDPosition); break;
+                case 4: nStation = 0;                             nClass = 3; break; //랙투랙 부분 조한성 수정 0608
+                case 5: nStation = 0;                             nClass = 3; break; 
+                case 6: nStation = Convert.ToInt32(strDPosition); nClass = 3; break;
+                default:
+                    m_strLog = "작업정보는 존재하지만 잘못된 작업 정보입니다.[작업 타입:" + nJobType.ToString() + "]";
+                    modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                    return false;
+            }
+
+
+
+
+            // [LGLS] ECS 원본(WMSCommand F, BODY 10) 규격:
+            //   F + JobDefine(1) + LuggNo(4) + CompleteClass(1) + StepCount(1)
+            //   [LGLS 2026-08-31] ★1차 / 2차 완료보고★ (사용자 확정)
+            //     29 = 크레인이 완료했다는 뜻이다.
+            //          출고에서는 이 시점에 랙이 비므로, 상위가 그 셀에 입고 예약을 더 빨리 걸 수 있다.
+            //          → 1차 완료보고(StepCount='1'). ★작업은 지우지 않고 15 로 계속 간다.★
+            //     19 = 출고대 도착 = 작업이 끝났다는 뜻 → 2차 완료보고(StepCount='2') → 09 → 응답 → 삭제
+            //     입고는 크레인 완료(29)가 곧 작업 완료다 → StepCount='1' 로 한 번만 보고하고 09 → 삭제
+            string strStep = (nJobStatus == 19) ? "2" : "1";
+            strTemp = string.Format("F{0:0}{1:0000}{2:0}{3}", nJobType, nLuggNum, nClass, strStep);
+
+            int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
+            //MSG_ORDER_CNT
+
+            m_bytTxBuff = new byte[iTxCnt];
+
+            //### Header ###
+            MakeHeader(strTemp.Length);
+            //MSG_ORDER_CNT
+
+
+            //### Body ###
+            m_bytTxBuff[modDefApp.MSG_HEAD_CNT] = modDefApp.STX;
+
+
+            bytTempByte = System.Text.Encoding.Default.GetBytes(strTemp);
+            Array.Copy(bytTempByte, 0, m_bytTxBuff, modDefApp.MSG_HEAD_CNT + 1, strTemp.Length);
+
+            m_bytTxBuff[iTxCnt - 1] = modDefApp.ETX;
+
+            #endregion
+
+            #region 시뮬레이터 모드일때는 상위로 메세지를 보내지 않고, 새로운 작업을 생성한다.
+            if (modDefApp.g_frmForm.chkSimMode.Checked == true)
+            {
+                m_BDb.BeginTrans();
+
+                int nNewJobType = 0;
+                switch (nJobType)
+                {
+                    case 1:                        
+                        #region 기존 작업 삭제
+                        if (modDefApp.g_frmForm.DeleteJobMst(m_BDb, false, strLuggNum) == false)
+                        {
+                            m_strLog = string.Format("SIM MODE 작업 (완료)삭제 실패하였습니다. [작업번호:{0}][실패내용:{1}]", strLuggNum, modDefApp.GM_RTN_MSG);
+                            modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+
+                            m_BDb.RollbackTrans();
+                            return false;
+                        }
+
+                        m_strLog = string.Format("SIM MODE 작업 (완료)삭제 성공하였습니다. [작업번호:{0}]", strLuggNum);
+                        modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_NOR);
+                        #endregion
+                        #region 출고 작업 생성
+                        nNewJobType = 2;
+                        //m_BDb.BeginTrans();
+
+                        m_BDb.ParamsClear();
+                        if (modDefApp.g_frmForm.InsertJobMst(m_BDb, strLuggNum, strDScNum, strDPosition, strSPosition, "00-000-00", nNewJobType.ToString()) == false)
+                        {
+                            // 함수안에서 실패시 화면에 메세지 출력함!
+                            //MakeResponse(m_strMsgType, strLuggNum, modDefApp.MSG_ECS_BUFFER_FULL);
+                            m_BDb.RollbackTrans();
+                            break;
+                        }
+                        m_BDb.CommitTrans();
+
+                        modCmWork.ShowMsgServer(strTitle + "SIM MODE 작업 추가 되었습니다.[작업번호:" + strLuggNum + "]", modDefApp.MSG_NOR);
+
+                        #endregion
+                        break;
+                    case 2:      
+                        #region 입고 작업 생성
+                        nNewJobType = 1;
+                        
+                        #region CELL MST에서 BANK와 BAY와 LEVEL의 최대값을 가져온다.
+                        m_BDb.ParamsClear();
+
+                        m_strSql = modDefApp.CRLF + "   SELECT  MAX(BANK) AS MAX_BANK";
+                        m_strSql += modDefApp.CRLF + "       ,  MIN(BANK) AS MIN_BANK";
+                        m_strSql += modDefApp.CRLF + "       ,  MAX(BAY) AS MAX_BAY";
+                        m_strSql += modDefApp.CRLF + "       ,  MAX(LEV) AS MAX_LEVEL";
+                        m_strSql += modDefApp.CRLF + "    FROM  CELL_MST          ";
+                        m_strSql += modDefApp.CRLF + "   WHERE  WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                        m_strSql += modDefApp.CRLF + "     AND  CELL_SC_NO = '" + strSScNum + "'"; 
+                        m_strSql += modDefApp.CRLF + "GROUP BY  SC_NO             ";
+                        m_strSql += modDefApp.CRLF + "ORDER BY  SC_NO             ";
+
+                        int iCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+
+                        if (iCnt < 0)
+                        {
+                            m_strLog = m_BDb.ErrMsg + m_strSql;
+                            modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                            return false;
+                        }
+
+                        // CELL_MST에서 각 조건에 맞는 최대값을 가져오지 못할수는 없을것이다.   
+                        if (iCnt != 1)
+                        {
+                            m_strLog = "LOCATION 정보를 바르게 가져오지 못했습니다.";
+                            modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                            return false;
+                        }
+
+                        string strMIN_BANK = "" + m_BDb.dtMain.Rows[0]["MIN_BANK"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[0]["MIN_BANK"].ToString();
+                        string strMAX_BANK = "" + m_BDb.dtMain.Rows[0]["MAX_BANK"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[0]["MAX_BANK"].ToString();
+                        string strMAX_BAY = "" + m_BDb.dtMain.Rows[0]["MAX_BAY"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[0]["MAX_BAY"].ToString();
+                        string strMAX_LEVEL = "" + m_BDb.dtMain.Rows[0]["MAX_LEVEL"].ToString() == "" ? "0" : m_BDb.dtMain.Rows[0]["MAX_LEVEL"].ToString();
+
+                        int nMinBank = Convert.ToInt32(strMIN_BANK);
+                        int nMaxBank = Convert.ToInt32(strMAX_BANK);
+                        int nMaxBay = Convert.ToInt32(strMAX_BAY);
+                        int nMaxLevel = Convert.ToInt32(strMAX_LEVEL);
+
+                        #endregion
+                        #region 현재 로케이션의 BANK, BAY, LEVEL을 추출한다. 
+                        string strCurBank = strSPosition.Substring(0, 2);
+                        string strCurBay = strSPosition.Substring(3, 3);
+                        string strCurLevel = strSPosition.Substring(7, 2);
+
+                        int nCurBank = Convert.ToInt32(strCurBank);
+                        int nCurBay = Convert.ToInt32(strCurBay);
+                        int nCurLevel = Convert.ToInt32(strCurLevel);
+                        #endregion
+                        #region BAY -> LEVEL -> BANK 순으로 증가한다.
+
+
+                        if (++nCurBay > nMaxBay)
+                        {
+                            nCurBay = 1;
+                            ++nCurLevel;
+                        }
+                        
+                        if (nCurLevel > nMaxLevel)
+                        {
+                            nCurLevel = 1;
+                            ++nCurBank;
+                        }
+
+                        if (nCurBank > nMaxBank)
+                        {
+                            nCurBank = nMinBank;
+                        }
+
+                        #endregion
+
+                        // 증가된 값을 가져온다
+                        string strLocation = "";
+                        strLocation = string.Format("{0:00}-{1:000}-{2:00}", nCurBank, nCurBay, nCurLevel);
+
+                        
+                        // 생성된 Location이  올바른지 체크!
+                        string strCELL_USE_YN = "";
+                        string strSC_PLT_JOB_TYP = "";
+                        if (modDefApp.g_frmForm.IsValidLocation(m_BDb, strSScNum, strLocation, ref strCELL_USE_YN, ref strSC_PLT_JOB_TYP) == false)
+                        {
+                            m_strLog = string.Format("Sim Test를 위해 생성된 Location이 올바르지 않습니다.[작업번호:{0}][도착지:{1}][도착LOC:{2}]", nLuggNum, strSScNum, strLocation);
+                            modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                            //MakeResponse(m_strMsgType, strLuggNo, modDefApp.MSG_INVALID_LOC);
+                            m_BDb.RollbackTrans();
+                            break;
+                        }
+
+                        if (strCELL_USE_YN != "Y")
+                        {
+                            m_strLog = string.Format("도착 Location이 금지랙 입니다. 다음 로케이션을 검색하도록 준비합니다.[작업번호:{0}][도착지:{1}][다음도착LOC:{2}]", nLuggNum, strSScNum, strLocation);
+                            modCmWork.ShowMsgServer(strTitle + m_strLog, modDefApp.MSG_ERR);
+
+                            m_BDb.ParamsClear();
+
+                            m_strSql = modDefApp.CRLF + "  UPDATE JOB_MST ";
+                            m_strSql += modDefApp.CRLF + "    SET START_LOCATION= " + m_BDb.ParamsAdd("START_LOCATION", strLocation);     
+                            m_strSql += modDefApp.CRLF + "      , UPD_USER_ID  = 'HOST_TASK'";
+                            m_strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
+                            m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                            m_strSql += modDefApp.CRLF + "    AND LUGG_NO      = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
+
+                            iCnt = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+
+                            if (iCnt < 0)
+                            {
+                                m_strLog = m_BDb.ErrMsg + m_strSql;
+                                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                                m_BDb.RollbackTrans();
+                                return false;
+                            }
+
+                            // CELL_MST에서 각 조건에 맞는 최대값을 가져오지 못할수는 없을것이다.   
+                            if (iCnt != 1)
+                            {
+                                m_strLog = "작업 정보를 바르게 가져오지 못했습니다.[작업번호:" + strLuggNum + "]";
+                                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                                m_BDb.RollbackTrans();
+                                return false;
+                            }
+                            m_strLog = "금지랙이라서 로케이션을 수정합니다.[작업번호:" + strLuggNum + "][현재LOC:" + strSPosition + "][신규LOC:" + strLocation + "]";
+                            modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_IMP);
+                                
+                            m_BDb.CommitTrans();
+                            return false;
+                        }
+
+                        #region 기존 작업 삭제
+                        if (modDefApp.g_frmForm.DeleteJobMst(m_BDb, false, strLuggNum) == false)
+                        {
+                            m_strLog = string.Format("SIM MODE 작업 (완료)삭제 실패하였습니다. [작업번호:{0}][실패내용:{1}]", strLuggNum, modDefApp.GM_RTN_MSG);
+                            modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+
+                            m_BDb.RollbackTrans();
+                            return false;
+                        }
+
+                        m_strLog = string.Format("SIM MODE 작업 (완료)삭제 성공하였습니다. [작업번호:{0}]", strLuggNum);
+                        modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_NOR);
+                        #endregion          
+              
+                        m_BDb.ParamsClear();
+                        if (modDefApp.g_frmForm.InsertJobMst(m_BDb, strLuggNum, strDPosition, "00-000-00", strSScNum, strLocation, nNewJobType.ToString()) == false)
+                        {
+                            // 함수안에서 실패시 화면에 메세지 출력함!
+                            //MakeResponse(m_strMsgType, strLuggNum, modDefApp.MSG_ECS_BUFFER_FULL);
+                            m_BDb.RollbackTrans();
+                            break;
+                        }
+                        m_BDb.CommitTrans();
+
+                        modCmWork.ShowMsgClient(strTitle + "SIM MODE 작업 추가 되었습니다.[작업번호:" + strLuggNum + "]", modDefApp.MSG_NOR);
+                        #endregion
+                        break;
+                }
+                return true;
+            }
+            #endregion
+
+            if (!m_blSockConnected)
+            {
+                return false;
+            }
+
+            // [LGLS 2026-08-30] 완료 상태 '09' 신설 (사용자 요구)
+            //   입고 완료(29) / 출고 완료(19)  →  9(완료)  →  상위 응답 수신  →  삭제
+            //   완료 보고를 내보내는 시점에 '완료'로 표시해 두고, 응답을 받으면 지운다.
+            //   상위가 없으면 9(완료) 로 남아 "일은 끝났는데 상위 응답 대기 중"임이 화면에 드러난다.
+            //   ※송신에 실패하면 원래 상태(19/29)로 되돌려 다음 주기에 다시 보고한다 —
+            //     되돌리지 않으면 IsJobExist(19/29) 가 못 찾아 작업이 9 에 갇힌다(도착보고에서 겪은 함정).
+            // [LGLS 2026-08-31] ★출고의 29 는 1차 완료보고다★ (사용자 확정)
+            //   크레인이 랙에서 화물을 꺼냈다는 뜻이고, 그 셀이 비었으니 상위가 입고 예약을 앞당길 수 있다.
+            //   작업은 아직 끝나지 않았다 - 15 → 35 → 39 → 15 → 19(출고대 도착) 로 계속 간다.
+            //   그러므로 여기서는 ★보고만 하고 상태를 09 로 올리지도, 작업을 지우지도 않는다.★
+            //   재보고 방지는 WC_STEP='1' 로 한다(위 조회가 WC_STEP='0' 만 고른다).
+            bool bFirstOfRetrieval = (nJobStatus == 29) && (nJobType == 2 || nJobType == 12);
+            if (bFirstOfRetrieval)
+            {
+                if (!RequestSrv(iTxCnt.ToString()))
+                    return false;                                  // 실패 시 WC_STEP 유지 → 다음 주기 재시도
+
+                m_BDb.BeginTrans();
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + "  UPDATE JOB_MST ";
+                m_strSql += modDefApp.CRLF + "     SET WC_STEP     = '1' ";
+                m_strSql += modDefApp.CRLF + "       , UPD_USER_ID = 'HOST_TASK' ";
+                m_strSql += modDefApp.CRLF + "       , UPD_DT      = " + modDateTime.SYSDATE;
+                m_strSql += modDefApp.CRLF + "   WHERE WH_TYP      = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "     AND LUGG_NO     = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
+                if (m_BDb.ExcuteNonQry_Par(ref m_strSql) != 1)
+                {
+                    m_BDb.RollbackTrans();
+                    modCmWork.ShowMsgClient(strTitle + "1차 완료보고 표시 실패 [작업번호:" + strLuggNum + "]", modDefApp.MSG_ERR);
+                    return false;
+                }
+                m_BDb.CommitTrans();
+                modCmWork.ShowMsgClient(strTitle + string.Format("출고 1차 완료보고(크레인 완료) 완료 - 랙 셀 해제. [작업번호:{0}]", strLuggNum), modDefApp.MSG_IMP);
+                return true;
+            }
+
+            if (!UpdateJobStatusTo(strLuggNum, JOB_ST_DONE))
+                return false;
+
+            #region 메세지 보내기
+            if (!RequestSrv(iTxCnt.ToString()))
+            {
+                UpdateJobStatusTo(strLuggNum, nJobStatus.ToString());   // 롤백 - 다음 주기 재보고
+                return false;
+            }
+            #endregion
+
+            #region 응답 받고 작업 삭제
+            //modDefApp.g_frmForm.DeleteJobMst(false);
+
+            bResult = modDefApp.g_frmForm.DeleteJobMst(m_BDb, true, strLuggNum);     // 함수안에서 Transaction 처리함!
+            if (bResult == false)
+            {
+                m_strLog = string.Format("작업 삭제 실패하였습니다. [작업번호:{0}][실패내용:{1}]", strLuggNum, modDefApp.GM_RTN_MSG);
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+
+                return false;
+            }
+
+            m_strLog = string.Format("작업 삭제 성공하였습니다. [작업번호:{0}]", strLuggNum);
+            modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_NOR);
+            #endregion
+
+            #region 공파레트 출고 작업이었을 경우 요청상태를 변경한다.
+            // [LGLS] 본 대체 시스템은 재고(공파레트)를 관리하지 않음 — 공파레트 완료처리 제거
+            //if (modDefApp.g_bEmtpyPltJob[nLuggNum] == true)
+            //{
+            //}
+            #endregion
+            return true;
+        }
+
+        // [LGLS 2026-09-16] 완료(09)로 남아있는 자동 작업을 60초마다 상위로 재보고한다(사용자 지시).
+        //   정상 경로는 09 설정 → F 전송 → 즉시 삭제라 09 는 순간 상태지만, 삭제 실패/상위 미응답으로
+        //   09 에 머무는 작업이 생길 수 있다. 그런 작업을 1분 주기로 F(완료) 재전송해 유실을 막는다.
+        //   반자동/수동(LUGG 9000번대·JOB_TYP 10~15)은 상위와 무관하므로 제외한다.
+        private void ReReportComplete09()
+        {
+            string strTitle = "[ReReportComplete09] .. ";
+            try
+            {
+                if (!m_blSockConnected) return;
+                if (modDefApp.g_frmForm.chkSimMode.Checked == true) return;   // 시뮬 모드는 상위 미연결
+                // [LGLS 2026-09-16 23:42] 주기 게이트를 없앤다 - 매 폴링 09 작업을 보고, 작업별로 즉시/60초 재보고를 가른다(사용자 지시 "09 되는 시점에 먼저 F").
+                m_dtLast09Report = DateTime.Now;
+
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + " SELECT LUGG_NO, JOB_TYP FROM JOB_MST ";
+                m_strSql += modDefApp.CRLF + "  WHERE WH_TYP = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "    AND JOB_STATUS = '09' ";
+                m_strSql += modDefApp.CRLF + "    AND (LEN(LUGG_NO) <> 4 OR LUGG_NO < '9000') ";
+                m_strSql += modDefApp.CRLF + "    AND JOB_TYP NOT IN ('10','11','12','13','14','15') ";
+                int nCnt = m_BDb.ExcuteQry_Par(ref m_strSql);
+                if (nCnt <= 0) return;
+
+                System.Data.DataTable dt = m_BDb.dtMain.Copy();
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    int nJobType = Convert.ToInt32(dt.Rows[i]["JOB_TYP"].ToString());
+                    int nLuggNum = Convert.ToInt32(dt.Rows[i]["LUGG_NO"].ToString());
+                    // [LGLS 2026-09-16 23:42] 처음 보는 09 는 즉시, 이미 보고한 것은 RE_REPORT_09_SEC 지나야 다시 보낸다.
+                    string strKey09 = dt.Rows[i]["LUGG_NO"].ToString().Trim();
+                    DateTime dtPrev09;
+                    bool bFirst09 = !m_dic09ReportAt.TryGetValue(strKey09, out dtPrev09);
+                    if (!bFirst09 && (DateTime.Now - dtPrev09).TotalSeconds < RE_REPORT_09_SEC) continue;
+                    m_dic09ReportAt[strKey09] = DateTime.Now;
+                    int nClass;
+                    switch (nJobType)
+                    {
+                        case 1:  nClass = 1; break;   // 입고
+                        case 2:  nClass = 2; break;   // 출고
+                        default: nClass = 3; break;   // 그 외
+                    }
+                    string strStep = (nJobType == 2) ? "2" : "1";
+                    m_strHostCmd = "F";
+                    string strTemp = string.Format("F{0:0}{1:0000}{2:0}{3}", nJobType, nLuggNum, nClass, strStep);
+                    int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
+                    m_bytTxBuff = new byte[iTxCnt];
+                    MakeHeader(strTemp.Length);
+                    m_bytTxBuff[modDefApp.MSG_HEAD_CNT] = modDefApp.STX;
+                    byte[] bytTempByte = System.Text.Encoding.Default.GetBytes(strTemp);
+                    Array.Copy(bytTempByte, 0, m_bytTxBuff, modDefApp.MSG_HEAD_CNT + 1, strTemp.Length);
+                    m_bytTxBuff[iTxCnt - 1] = modDefApp.ETX;
+
+                    // [LGLS 2026-09-16] 응답을 받으면 완료 확정 → 작업 삭제. 못 받으면 남겨서 다음 주기에 다시 보고(사용자 지시).
+                    string strLugg = dt.Rows[i]["LUGG_NO"].ToString().Trim();
+                    if (RequestSrv(iTxCnt.ToString()))
+                    {
+                        modDefApp.g_frmForm.DeleteJobMst(m_BDb, true, strLugg);   // 함수안에서 Transaction 처리
+                        m_dic09ReportAt.Remove(strKey09);
+                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) {1} → 응답 수신 → 작업 {0} 삭제", strLugg, bFirst09 ? "즉시 보고" : "재보고"), modDefApp.MSG_NOR);
+                    }
+                    else
+                    {
+                        modCmWork.ShowMsgClient(strTitle + string.Format("완료(09) {1}(응답 없음 → 유지) - 작업 {0} ({2}초 뒤 재보고)", strLugg, bFirst09 ? "즉시 보고" : "재보고", RE_REPORT_09_SEC), modDefApp.MSG_IMP);
+                    }
+                }
+            }
+            catch (Exception ex) { modCmWork.ShowMsgClient(strTitle + "오류: " + ex.Message, modDefApp.MSG_ERR); }
+        }
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200518
+        //설명		    : 공파레트 입출고 요청
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200515
+        //설명		    : 공파레트 입출고 요청 
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200518
+        //설명		    : 도착 보고  
+        private void GetLoadArrivalReport()
+        {
+            // [LGLS 2026-08-30] ★22(출고대 도착) 폐기★ - 코드표에 없는 상태였다(사용자 지시).
+            //   출고대 도착은 이제 IO_TASK 가 19(CV 구동완료)로 올리고,
+            //   GetJobCompleteReport 가 F(완료) 보고 → 09(완료) → 응답 → 삭제로 처리한다.
+            //   여기 남는 것은 12(입고 H/S 도착) 하나다.
+            int[] nStation = new int[] { 12 };
+
+            int nCount = nStation.Length;
+            for (int i = 0; i < nCount; i++)
+            {
+                GetLoadArrivalReport(nStation[i]);
+            }
+        }
+
+        //최초작성자	: BASE(정복열)
+        //작성일		: 20200515
+        //설명		    : 도착보고 
+        private bool GetLoadArrivalReport(int nJobStatus)
+        {
+            string strTitle = "[GetLoadArrivalReport] .. ";
+            m_strHostCmd = "F";     // Interface목록서에 'A' 전문 없음. 도착보고는 F + StepCount=1(1차완료)로 보고
+
+            int nJobType = 0;
+            string strUserID = "";
+            string strSScNum = "";
+            string strDScNum = "";
+            string strSPosition = "";
+            string strDPosition = "";
+            string strLuggNum = "";
+
+            #region 도착 보고해야할 작업이 있는지?
+
+            int nResult = IsJobExist(nJobStatus, ref nJobType, ref strUserID, ref strSScNum, ref strDScNum, ref strSPosition, ref strDPosition, ref strLuggNum);
+            if (nResult == 0)
+            {
+                return false;
+            }
+            if (nResult < 0)
+            {
+                return true;
+            }
+            #endregion
+
+            // [LGLS 2026-08-30] ★순서 정정 : 송신 성공 후에 상태를 바꾼다★
+            //   종전에는 "보고를 못했어도 그냥 지나감 - 다시 보고 안 하려고 먼저 업데이트" 구조라,
+            //   상태(22→28)를 먼저 커밋하고 나서 송신했다. 그 사이 소켓이 끊겨 있으면 보고는 못 나가는데
+            //   상태는 이미 28 이라 IsJobExist(22) 가 다시 찾지 못해 **작업이 28 에 영구히 갇힌다**.
+            //   (실측: HOST_TASK 재기동 직후 ConnectSock 전에 도착보고가 걸려 작업 0134 가 28 에서 정지)
+            //   도착보고 응답으로 작업을 삭제하는 현행 규약에서는 이 유실이 곧 작업 미종결이다.
+            //   → 소켓부터 확인하고, 상태 변경/삭제는 응답을 받은 뒤에 한다.
+            if (!m_blSockConnected)
+            {
+                return false;
+            }
+
+            #region 상위에 보낼 메세지 구성
+            //MAKE FRAME
+            string strTemp = null;
+            byte[] bytTempByte = null;
+            int nKind = 0;
+            int nStation = 0;
+
+            int nLuggNum = Convert.ToInt32(strLuggNum);
+
+            // [LGLS 2026-08-13] 반자동 원칙: 반자동/수동 작업은 SIM 모드와 무관하게 도착 보고도 하지 않는다.
+            if (nLuggNum >= 9000 || nJobType >= 10)
+            {
+                m_strLog = "작업정보는 존재하지만 온라인 작업이 아닙니다. [작업 번호:" + strLuggNum + "]";
+                modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                return false;
+            }
+            //string strLuggNum = "" + m_BDb.dtMain.Rows[0]["LUGG_NO"];
+            // [LGLS 2026-08-30] 안전 변환. nStation 은 아래 프레임(F+JobDefine+LuggNo+CompleteClass+StepCount)에
+            //   실제로 쓰이지 않는데, 값이 비면 Convert.ToInt16("") 예외로 **보고가 통째로 사라졌다**.
+            //   그 시점엔 JOB_STATUS 가 이미 22→28 로 커밋된 뒤라 작업이 28 에 영구히 갇힌다
+            //   (실측: 작업 0134 가 28 에서 정지, F 전문 미발신). E 전문에서 겪은 것과 같은 패턴이다.
+            switch (nJobType)
+            {
+                case 1: nStation = ToInt(strSPosition); nKind = 1; break;
+                case 2: nStation = ToInt(strDPosition); nKind = 2; break;
+                //case 3: nStation = Convert.ToInt16(strDPosition); break;
+                //case 4: nStation = Convert.ToInt16(strDPosition); break;
+                //case 5: nStation = Convert.ToInt16(strDPosition); break;
+                //case 6: nStation = Convert.ToInt16(strDPosition); break;
+                default: nKind = 3; break;
+            }
+
+            // [LGLS] ECS 원본(WMSCommand F, BODY 10) 규격 — 1차(도착) 보고는 StepCount='1'
+            //   F + JobDefine(1) + LuggNo(4) + CompleteClass(1) + StepCount(1)
+            strTemp = string.Format("F{0:0}{1:0000}{2:0}1", nJobType, Convert.ToInt32(strLuggNum), nKind);
+
+            int iTxCnt = modDefApp.MSG_HEAD_CNT + strTemp.Length + 2;
+            //MSG_ORDER_CNT
+
+            m_bytTxBuff = new byte[iTxCnt];
+
+            //### Header ###
+            MakeHeader(strTemp.Length);
+            //MSG_ORDER_CNT
+
+
+            //### Body ###
+            m_bytTxBuff[modDefApp.MSG_HEAD_CNT] = modDefApp.STX;
+
+
+            bytTempByte = System.Text.Encoding.Default.GetBytes(strTemp);
+            Array.Copy(bytTempByte, 0, m_bytTxBuff, modDefApp.MSG_HEAD_CNT + 1, strTemp.Length);
+
+            m_bytTxBuff[iTxCnt - 1] = modDefApp.ETX;
+
+            #endregion
+
+            #region 시뮬레이터 모드일때는 상위로 메세지를 보내지 않고, 작업상태를 변경한다. 
+            
+            //if (modDefApp.g_frmForm.chkSimMode.Checked == true)
+            //{
+            //    return true;
+            //    //*/
+            //}
+            #endregion
+
+
+            #region 메세지 보내기
+            if (!RequestSrv(iTxCnt.ToString()))
+            { 
+                return false;
+            }
+            #endregion
+
+            #region 응답 받고 상태 전이
+            // [LGLS 2026-08-30] 22(출고대 도착) 경로는 폐기됐다 - 여기 오는 것은 12(입고 H/S 도착)뿐이다.
+            //   응답을 받은 뒤에 '도착보고완료'(18)로 올린다. 재보고 방지.
+            //   ※입고는 여기서 지우면 안 된다 - 입고 흐름의 시작점이라 중간에 작업이 사라진다.
+            //     입고 삭제는 완료보고(29 → 09) 응답에서 한다.
+            {
+                m_BDb.BeginTrans();
+                m_BDb.ParamsClear();
+                m_strSql  = modDefApp.CRLF + "  UPDATE JOB_MST ";
+                m_strSql += modDefApp.CRLF + "    SET JOB_STATUS   = " + m_BDb.ParamsAdd("JOB_STATUS", nJobStatus + 6);
+                m_strSql += modDefApp.CRLF + "      , UPD_USER_ID  = 'HOST_TASK'";
+                m_strSql += modDefApp.CRLF + "      , UPD_DT       = " + modDateTime.SYSDATE;
+                m_strSql += modDefApp.CRLF + "  WHERE WH_TYP       = " + m_BDb.ParamsAdd("WH_TYP", modDefApp.WH_TYP);
+                m_strSql += modDefApp.CRLF + "    AND LUGG_NO      = " + m_BDb.ParamsAdd("LUGG_NO", strLuggNum);
+                m_iSelCnt = m_BDb.ExcuteNonQry_Par(ref m_strSql);
+                if (m_iSelCnt != 1)
+                {
+                    m_strLog = "도착보고 상태 변경 실패,[작업번호 : " + strLuggNum + "]";
+                    modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+                    m_BDb.RollbackTrans();
+                    return false;
+                }
+                m_BDb.CommitTrans();
+            }
+            #endregion
+
+            return true;
+        }
+
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 데이타테이블 초기화
+		private void DataTable_Dispose()
+		{
+			m_BDb.dtMain.Dispose();
+			m_BDb.dtMain.Reset();
+		}
+
+        //최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 요청전송
+		public bool RequestSrv(string p_strWriteCnt, int p_iTimeOut = modDefApp.TIME_OUT, bool p_bWaitRsps = true)
+		{
+            string strTitle = "[RequestSrv] ... ";
+
+			//2회 반복은 무의미, 실제 1회 전송 후 대기시간을 길게 하는게 효과적
+			ClearBuff(ref m_bytRxBuff);
+			try
+			{
+				SendSock(int.Parse(p_strWriteCnt));
+				// [LGLS 2026-07-30] 인터페이스명세서(20100311): "상태 보고, 에러 보고는 응답 메시지를 송신하지 않는다."
+				//   → S/E 는 송신만 하고 응답을 기다리지 않는다 (F/기타는 종전대로 응답 대기)
+				if (!p_bWaitRsps) return true;
+				if (!CheckRecvSock(p_iTimeOut))
+				{
+					//time out
+					m_strLog = m_strHostCmd + " 메세지의 응답이 없습니다.";
+                    modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
+
+					m_blSockConnected = false;
+					modCmWork.CloseSocket(ref m_sktSock);
+					modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
+					return false;
+				}
+
+				if (!ReadSock())
+				{
+                    m_strLog = m_strHostCmd + " 메세지로 인해서 리모트 시스템과 연결을 종료합니다.";
+                    modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_IMP);
+
+					m_blSockConnected = false;
+					modCmWork.CloseSocket(ref m_sktSock);
+					modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
+					return false;
+				}
+                
+                // 로그 입력하기... 
+                string strMsg = "";
+                strMsg = System.Text.Encoding.Default.GetString(m_bytRxBuff);
+                int nLength = strMsg.Length;
+                strMsg.Trim();
+                nLength = strMsg.Length;
+                strMsg.TrimEnd();
+                nLength = strMsg.Length;
+
+
+                int IndexValue = strMsg.IndexOf(Convert.ToChar(0x03));
+
+                string strTemp = strMsg.Substring(0, IndexValue + 1);
+
+
+                modCmWork.ShowMsgClient(strTemp, modDefApp.MSG_NOR);
+                bool bResult = modDefApp.g_frmForm.InsertHostIfLog(m_BDb, strTemp, m_strHostCmd, "W2E");     // 함수안에서 Transaction 처리함!
+
+			}
+			catch (SocketException se)
+			{
+				//m_strLog = se.Message & "(" & se.ErrorCode.ToString & ")"
+				m_strLog = "리모트 시스템과 연결을 종료합니다." + "(" + se.ErrorCode.ToString() + ")";
+				modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
+
+				modDefApp.g_CliWork.m_blSockConnected = false;
+				modCmWork.CloseSocket(ref m_sktSock);
+				modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
+
+				return false;
+			}
+			catch (Exception ex)
+			{
+				modCmWork.ShowMsgClient(ex.ToString(), modDefApp.MSG_ERR);
+
+				m_blSockConnected = false;
+				modCmWork.CloseSocket(ref m_sktSock);
+				modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
+
+				return false;
+			}
+			return true;
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 소켓전송(사이즈 파라미터)
+		public void SendSock(int p_iWriteCnt)
+		{
+			//Close시 Send에서 Exception발생 (처음에는 발생 안할 수 있음)
+			m_sktSock.Send(m_bytTxBuff, p_iWriteCnt, SocketFlags.None);
+
+			//m_strLog = System.Text.Encoding.UTF8.GetString(m_bytTxBuff)
+			m_strLog = System.Text.Encoding.Default.GetString(m_bytTxBuff);
+
+			modCmWork.ShowMsgClient(m_strLog);
+
+            bool bResult = modDefApp.g_frmForm.InsertHostIfLog(m_BDb, m_strLog, m_strHostCmd, m_strDirection);     // 함수안에서 Transaction 처리함!
+        }
+
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 수신소켓체크
+		public bool CheckRecvSock(int p_iTimeOut = modDefApp.TIME_OUT)
+		{
+			// 로그인 시는 DB연결 등 시간이 지연, time out을 달리 가져간다.
+			System.DateTime tmRecvTime = default(System.DateTime);
+
+			// Socket 에러이든 프레임 에러이든 통신장애로 보고 Close
+			// 응답이 없을 경우만 2회 반복
+			tmRecvTime = DateTime.Now.AddSeconds(p_iTimeOut);
+			// db 리턴 고려.. 
+			// close되도 0 이지만 time_out을 주기위해서 사용, time_out되면 close 처리
+			while (m_sktSock.Available <= 0)
+			{
+				if (tmRecvTime <= DateTime.Now)
+				{
+					// 시간초과
+					return false;
+				}
+				System.Threading.Thread.Sleep(10);
+			}
+
+			return true;
+		}
+
+		//최초작성자	: BASE(이길문)
+		//작성일		: 20160829
+		//설명		: 수신소켓읽기
+		public bool ReadSock()
+		{
+			int iBodyLen = 0;
+
+			string strLog = null;
+			int iRxCnt = 1;
+			//return false:Close socket, true:Continue
+
+			ClearBuff(ref m_bytRxHead);
+            // Close시 Return 0 or Exception 발생, Receive전 Close되었느냐 Receive대기상태일 때 Close되었는냐 등에 따라 다름
+
+            iRxCnt = m_sktSock.Receive(m_bytRxHead, modDefApp.MSG_HEAD_CNT, SocketFlags.None);
+			if (iRxCnt <= 0)
+				return false;
+
+			// Header 체크
+			if (!CheckHeader(iRxCnt, ref iBodyLen))
+			{
+				// 잘못된 헤더 로그
+				strLog = System.Text.Encoding.UTF8.GetString(m_bytRxHead);
+				modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
+				return false;
+			}
+
+			// Body 체크
+			iRxCnt = m_sktSock.Receive(m_bytRxBuff, modDefApp.MSG_HEAD_CNT, iBodyLen, SocketFlags.None);
+			if (!CheckBody(iBodyLen, iRxCnt))
+			{
+				// 잘못된 바디 로그
+				strLog = System.Text.Encoding.UTF8.GetString(m_bytRxBuff, 0, modDefApp.MSG_HEAD_CNT + iBodyLen);
+				modCmWork.ShowMsgClient(strLog, modDefApp.MSG_ERR);
+				return false;
+			}
+
+			return true;
+		}
+
+	}
+}

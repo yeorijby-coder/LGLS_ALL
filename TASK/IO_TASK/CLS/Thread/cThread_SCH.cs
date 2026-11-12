@@ -5089,6 +5089,35 @@ namespace TSK_COMM_IOSCH
         {
             try
             {
+                // [LGLS 2026-11-12] 삭제 전에 JOB_MST_HIS 에 마지막 이력을 남긴다 (사용자 지시).
+                //   종전에는 반자동 작업을 지울 때 이력을 쓰지 않아 "삭제됐다"는 사실이 남지 않았다(HOST_TASK 삭제는 이력을 쓴다).
+                //   DEL_YN='Y', INS_USER_ID='IO_TASK' 로 구분한다. 이력 쓰기에 실패해도 삭제는 그대로 한다(작업 흐름 보호).
+                try
+                {
+                    string strHis = "";
+                    strHis += CRLF + " INSERT INTO JOB_MST_HIS ";
+                    strHis += CRLF + "      ( INS_DATE, INS_TIME, WH_TYP, LUGG_NO, START_POS, START_LOCATION, DEST_POS, DEST_LOCATION ";
+                    strHis += CRLF + "      , TURN, PRODUCT_ID, PRODUCT_SIZE, JOB_TYP, BCR_TOP, BCR_BOTTOM, CMD_STA ";
+                    strHis += CRLF + "      , JOB_KIND, JOB_STATUS, JOB_PRIORITY, OD_LAST_PAGE, OD_LAST_USER, JOB_START_DT ";
+                    strHis += CRLF + "      , UPD_DT, UPD_USER_ID, INS_DT, INS_USER_ID, REMARKS, TRAY_TYP, TRAY_LEV, HS_TRACK_NO, SC_NO ";
+                    strHis += CRLF + "      , DURATION_TIME, DEL_YN, FK_NO, AGING_TIME, PAIR_LUGG_NO, LOT_NO, CMP_STEP ) ";
+                    strHis += CRLF + " SELECT CONVERT(varchar(8), GETDATE(), 112), REPLACE(CONVERT(varchar(8), GETDATE(), 108), CHAR(58), '') ";
+                    strHis += CRLF + "      , WH_TYP, LUGG_NO, START_POS, START_LOCATION, DEST_POS, DEST_LOCATION ";
+                    strHis += CRLF + "      , TURN, PRODUCT_ID, PRODUCT_SIZE, JOB_TYP, BCR_TOP, BCR_BOTTOM, CMD_STA ";
+                    strHis += CRLF + "      , JOB_KIND, JOB_STATUS, JOB_PRIORITY, OD_LAST_PAGE, OD_LAST_USER, JOB_START_DT ";
+                    strHis += CRLF + "      , GETDATE(), 'IO_TASK', GETDATE(), 'IO_TASK', REMARKS, TRAY_TYP, TRAY_LEV, HS_TRACK_NO, SC_NO ";
+                    strHis += CRLF + "      , DURATION_TIME, 'Y', FK_NO, AGING_TIME, PAIR_LUGG_NO, LOT_NO, CMP_STEP ";
+                    strHis += CRLF + "   FROM JOB_MST ";
+                    strHis += CRLF + "  WHERE WH_TYP  = :WH_TYP ";
+                    strHis += CRLF + "    AND LUGG_NO = :LUGG_NO ";
+                    _pBdb.mComMain.CommandType = CommandType.Text;
+                    _pBdb.mComMain.Parameters.Clear();
+                    _pBdb.mComMain.Parameters.Add("WH_TYP",  DbLang.VARCHAR).Value = SCH_WH_TYP;
+                    _pBdb.mComMain.Parameters.Add("LUGG_NO", DbLang.VARCHAR).Value = strLuggNo;
+                    DbNonQry(strHis);
+                }
+                catch { }
+
                 string strSql = "";
                 strSql += CRLF + " DELETE FROM JOB_MST                   ";
                 strSql += CRLF + "  WHERE WH_TYP  = :WH_TYP              ";

@@ -2222,20 +2222,27 @@ void CScSkinDlg::OnBnClickedScvResend()
 	// [LGLS 2026-08-13] 구 ECS(StackerForm buttonRetry)와 동일: 진행 중 지시(ITN_LUGG_FK1)가
 	//   없으면(IDLE) 재전송할 명령이 없으므로 안내만 하고 중단한다.
 	{
-		CString strChk = _T("SELECT ISNULL(ITN_LUGG_FK1,'') AS ITN FROM SC_DATA_LGLS WHERE WH_TYP = ")
+		CString strChk = _T("SELECT ISNULL(ITN_LUGG_FK1,'') AS ITN, ISNULL(SUBSYSTEM_STATUS_RD,'') AS SST FROM SC_DATA_LGLS WHERE WH_TYP = ")
 		               + CLib::Quot(m_pDoc->m_WH_TYP)
 		               + _T(" AND PLC_NO = ") + CLib::Quot(m_pSC_DATA->K_PLC_NO)
 		               + _T(" AND MC_NO = ") + CLib::Quot(m_pSC_DATA->K_SC_NO);
 		int nCnt = 0; CString strMsg;
 		_RecordsetPtr pRsptr = m_pDoc->GetSelectQryRecordsetPtr_DLG(strChk, nCnt, strMsg);
 		CRecordSetWrap* pRsw = new CRecordSetWrap(pRsptr);
-		CString strItn;
-		if (nCnt > 0) { pRsw->MoveFirst(); strItn = pRsw->GetItem(_T("ITN")); }
+		CString strItn, strSst;
+		if (nCnt > 0) { pRsw->MoveFirst(); strItn = pRsw->GetItem(_T("ITN")); strSst = pRsw->GetItem(_T("SST")); }
 		delete pRsw;
 		strItn.Trim();
 		if (strItn.IsEmpty() || strItn == _T("0") || strItn == _T("0000"))
 		{
 			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("재전송 가능한 명령이 없습니다")));
+			return;
+		}
+		// [LGLS 2026-11-12] 구 ECS(buttonRetry)와 동일 : 설비가 DOWN(SUBSYSTEM_STATUS=0)이면 재전송하지 않는다 (사용자 지시).
+		strSst.Trim();
+		if (strSst == _T("0"))
+		{
+			AfxMessageBox(m_pDoc->GetMsgLangDef(_T("설비가 DOWN 상태입니다. [온라인]으로 전환하십시오")));
 			return;
 		}
 	}

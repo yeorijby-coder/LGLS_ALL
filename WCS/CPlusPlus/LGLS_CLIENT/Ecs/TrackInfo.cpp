@@ -302,8 +302,11 @@ COLORREF CTrackInfo::GetCvColor()
 			return pConfig->m_clrUSER_COLOR_TRACKING;
 	}
 
+	// [LGLS 2026-11-12] 컨베이어가 자동운전이 아니면(AUTO_MODE_RD=0) 빈 트랙도 진한 회색으로 칠한다 (사용자 지시).
+	//   종전에는 빈 트랙이 여기서 연회색으로 끝나, 수동 전환이 메인 화면에서 보이지 않았다(구 ECS 는 설비 표지가 빨강).
+	//   작업색·에러색·작업번호 잔재 색은 위에서 먼저 정해지므로 그대로다.
 	if (m_pCV_DATA->V_SENSOR0_DATA_RD != _T("1"))
-		return LIGHT_GRAY;
+		return (m_pCV_DATA->V_AUTO_MODE_RD == _T("0")) ? DARK_GRAY : LIGHT_GRAY;
 
 	int nJobTypTmp = CConvert::ToInt(m_pCV_DATA->V_JOB_TYP_RD);
 	{
