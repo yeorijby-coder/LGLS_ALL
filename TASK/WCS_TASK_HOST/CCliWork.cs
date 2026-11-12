@@ -1105,7 +1105,10 @@ namespace TSK_HostCom
                     case "130": st130 = strAvailPallet; break;
                     // [LGLS 2026-08-24 현장기준] 103 = 제품 입고대 = C/V#12(TR#24) = 내부 124.
                     //   (종전에는 126 을 읽었으나 126 은 C/V#13 출고대다)
-                    case "124": st124 = strAvail; break;
+                    // [LGLS 2026-11-12] 103 도 구 ECS 처럼 화물 센서를 반영한다 (사용자 지시, 현장 WMS "미출발 작업번호" 메시지 대응).
+                    //   구 ECS ECSDispatcher.cs 'Conveyor 상태 Check' : CONVEYOR:12(제품 입고대) 도 PALLET_EXIST_FLAG_02 가 있을 때만 0(가능), 없으면 1.
+                    //   8/21 에 11·15 만 옮기고 12 를 빠뜨렸던 것을 바로잡는다.
+                    case "124": st124 = strAvailPallet; break;
                     case "103": mode110 = (strStock == "1") ? "1" : "0"; break;
                 }
             }

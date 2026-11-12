@@ -40,3 +40,6 @@ EcsComA.ini 는 건드리지 않아도 된다(전부 기본값). 바꾸려면 TASK\HOST_TASK\추가할
 == 소스 ==
   소스_변경분\TASK\CrashReporter.cs(신규) · Program.cs · modCmWork.cs · modWorkThread.cs · modDefAPI.cs · CSrvWork.cs · frmMain.cs + 변경내용_1111_HostCrashReport.diff
   TSK_HostCom.csproj / ALL_TASK.csproj 에 CrashReporter.cs 한 줄 추가
+
+[11/12 추가] 103(제품 입고대) 상태보고에 화물 센서 반영 - 구 ECS(CONVEYOR:12)와 동일하게 자동운전이면서 화물이 있을 때만 0(가능), 화물이 없으면 1.
+  HOST_TASK exe 만 교체하면 됩니다(설정 변경 없음).
