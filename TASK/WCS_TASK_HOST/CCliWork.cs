@@ -1001,8 +1001,27 @@ namespace TSK_HostCom
                 //   (출고정지(2)는 입고 배정에 영향 없어 가능(0) — 구 개별전문 상태코드 4/5/6/8=불가 게이트와 동일 의미)
                 int nScNum = Convert.ToInt32(strSC_NO); if (nScNum > 900) nScNum -= 900;
                 string strScAvail = "0";
-                if (strONLINE_MODE_RD != "1" || strAUTO_MODE_RD != "1" || strACTIVE_MODE_RD != "1") strScAvail = "1";
-                if (strUCSTATUS_RD == "4") strScAvail = "1";
+                // [LGLS 2026-11-12] 크레인 불가 판정을 구 ECS 기준으로 (사용자 지시).
+                //   구 ECS ECSDispatcher.CheckEquipmentStatus : 크레인 SUBSYSTEM = 알람코드!=0 이면 5, DOWN 이면 4, 그 외 0~3(대기/작업 중).
+                //   STKSEM 합계가 4 이상일 때만 불가(1) → ★DOWN 또는 알람일 때만 불가★. 수동(운전모드)은 보지 않았다.
+                //   신규 대응 : DOWN = UCSTATUS 4 (설비 통신이 ONLINE/ACTIVE 도 함께 0 으로 내림), 알람 = ERR_CODE_RD != 0.
+                //   종전 신규는 AUTO_MODE_RD(수동)도 불가로 보고 알람은 보지 않았다. EcsComA.ini [Host] SC_AVAIL_OLD=0 이면 그 종전 판정.
+                //   SUSPEND(Client 사용정지 1=입고/3=전체)는 신규 기능이라 두 방식 모두 불가로 둔다.
+                bool bScOldRule = true;
+                try { bScOldRule = modDefAPI.GetPrivateProfileInt("Host", "SC_AVAIL_OLD", 1, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini")) != 0; } catch { }
+                if (bScOldRule)
+                {
+                    string strScErr = ("" + m_BDb.dtMain.Rows[ii]["ERR_CODE_RD"]).Trim();
+                    int nScErr = 0;
+                    bool bScAlarm = (strScErr.Length > 0) && (!int.TryParse(strScErr, out nScErr) || nScErr != 0);
+                    if (strONLINE_MODE_RD != "1" || strACTIVE_MODE_RD != "1" || strUCSTATUS_RD == "4") strScAvail = "1";   // DOWN
+                    if (bScAlarm) strScAvail = "1";                                                                          // 알람
+                }
+                else
+                {
+                    if (strONLINE_MODE_RD != "1" || strAUTO_MODE_RD != "1" || strACTIVE_MODE_RD != "1") strScAvail = "1";
+                    if (strUCSTATUS_RD == "4") strScAvail = "1";
+                }
                 if (strSUSPEND == "1" || strSUSPEND == "3") strScAvail = "1";
                 sbStatus.AppendFormat("{0:00}{1}{2:0000}", nScNum, strScAvail, Convert.ToInt32(strITN_LUGG_FK1));
             }
@@ -1109,7 +1128,8 @@ namespace TSK_HostCom
                     //   구 ECS ECSDispatcher.cs 'Conveyor 상태 Check' : CONVEYOR:12(제품 입고대) 도 PALLET_EXIST_FLAG_02 가 있을 때만 0(가능), 없으면 1.
                     //   8/21 에 11·15 만 옮기고 12 를 빠뜨렸던 것을 바로잡는다.
                     case "124": st124 = strAvailPallet; break;
-                    // [LGLS 2026-11-12] 104 원부자재 불출대(C/V#13) 상태 - 구 ECS 는 CONVEYOR:13(AUTO 만 판정)을 103 쪽 상태에 합산했다(추정: SIM 시드 기준).
+                    // [LGLS 2026-11-12] C/V#13(원부자재 불출대) - 구 ECS DB(TB_SUBSYSTEM.OWNERID) : CNVSEM:2 = CONVEYOR:12 + CONVEYOR:13,
+                    //   CNVSEM:3 = CONVEYOR:14 + CONVEYOR:15. 설비(EQUIPMENT) 상태 = 소속 SUBSYSTEM 합계가 0 이 아니면 불가(ECSDispatcher 장비 상태 변경).
                     case "126": st126 = strAvail; break;
                     case "103": mode110 = (strStock == "1") ? "1" : "0"; break;
                 }
