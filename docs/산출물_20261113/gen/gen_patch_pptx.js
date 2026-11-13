@@ -46,7 +46,7 @@ const BL = (t) => ({ text: t, options: { bullet: true } });
 {
   const s = base('한눈에 보기', '접수가 3시간 33분 멈췄고, 작업 유실은 없었습니다. 원인은 세 가지가 겹친 것입니다.');
   const w = 3.85, y = 1.7, h = 3.5;
-  card(s, 0.6, y, w, h, REDBG, '① 종료가 늦다', RED, [B('끄는 순간에도 상위(WMS) 접속을 시도하고 있음'), B('접속에 시간 제한이 없고, 종료가 그것을 무제한 기다림'), BL('창만 닫히고 프로세스가 남음')], 14);
+  card(s, 0.6, y, w, h, REDBG, '① 종료가 늦다', RED, [B('종료 절차가 각 스레드를 제한 없이 기다림'), B('한 곳이라도 걸리면 창만 닫히고 프로세스가 남을 수 있음'), BL('정확한 원인은 로그로 확정 못 함')], 14);
   card(s, 0.6 + w + 0.28, y, w, h, AMBBG, '② 끈 뒤에도 포트가 막힌다', AMBER, [B('이전 프로세스의 연결이 남아 9911 포트를 열 수 없음'), B('WMS 는 끊긴 줄 몰라 재접속하지 않음'), BL('서버 환경 영향이 의심됨(미확정)')], 14);
   card(s, 0.6 + (w + 0.28) * 2, y, w, h, 'E8EEF8', '③ 설정이 현장과 안 맞았다', BLUE, [B('신판의 IP 제한이 현장 구성과 맞지 않음'), B('랜카드 2개, WMS 는 두 주소에서 접속, 이중화 가능성'), BL('제한을 제거한 판으로 이미 복구')], 14);
   s.addShape(pres.ShapeType.rect, { x: 0.6, y: 5.5, w: 12.1, h: 1.15, fill: { color: LIGHT }, line: { color: LIGHT, width: 0 } });
@@ -65,7 +65,7 @@ const BL = (t) => ({ text: t, options: { bullet: true } });
   s.addShape(pres.ShapeType.rect, { x: X(15, 51), y: yBar, w: x1 - X(15, 51), h: hBar, fill: { color: GREEN }, line: { color: GREEN, width: 0 } });
   s.addText('접수 중단  3시간 33분', { x: X(12, 18), y: yBar, w: X(15, 51) - X(12, 18), h: hBar, fontFace: FONT, fontSize: 16, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', margin: 0, isTextBox: true });
   const ev = [
-    [12, 18, '12:18', '프로그램 종료\n(상위 접속 시도 중 10004)', 'up', RED],
+    [12, 18, '12:18', '프로그램 종료\n(수신 연결 2개 종료)', 'up', RED],
     [13, 58, '13:58', 'IP 제한으로\nWMS 접속 거절 18회', 'down', AMBER],
     [14, 10, '14:10', '포트 열기 실패\n(10048) 96회', 'up', AMBER],
     [14, 37, '14:37', '제한 없는 판 교체\n(103 연속 작업)', 'down', BLUE],
@@ -84,11 +84,11 @@ const BL = (t) => ({ text: t, options: { bullet: true } });
 
 // ── 4 종료 지연
 {
-  const s = base('원인 ① 프로그램이 빨리 꺼지지 않는다', '로그: 종료할 때마다 "리모트 시스템과 연결 실패 !(10004)" 가 기록됨');
+  const s = base('원인 ① 프로그램이 빨리 꺼지지 않는다', '구조상의 위험입니다. 이번 현장 지연의 원인이라는 증거는 아직 없습니다');
   const steps = [
     ['종료 요청', '[종료] 버튼', LIGHT, NAVY],
-    ['접속 시도 중', '상위(WMS) 접속을 기다림\n시간 제한 없음, 닿지 않으면 약 21초', REDBG, RED],
-    ['무제한 대기', '종료 절차가 그 작업이\n끝나기를 끝까지 기다림', REDBG, RED],
+    ['스레드 정리', '수신 · 상위 접속 · 로그 스레드\n상위 접속은 시간 제한 없음(최대 약 21초)', REDBG, RED],
+    ['무제한 대기', '하나라도 안 끝나면\n끝날 때까지 기다림', REDBG, RED],
     ['프로세스 잔존', '화면은 사라졌지만\n프로세스와 포트가 남음', AMBBG, AMBER],
   ];
   const w = 2.75, g = 0.37, y = 1.85, h = 2.1;
