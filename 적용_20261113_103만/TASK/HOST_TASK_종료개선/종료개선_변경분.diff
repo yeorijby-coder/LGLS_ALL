@@ -83,3 +83,55 @@
  			if ((modDefApp.g_CliWork.m_BDb.conMain != null))
  			{
  				modDefApp.g_CliWork.m_BDb.conMain.Close();
+--- bk_peer/CSrvWork.cs	2026-11-13 23:44:42.910588700 +0900
++++ hostbuild2/TASK/WCS_TASK_HOST/CSrvWork.cs	2026-11-13 23:44:43.806578600 +0900
+@@ -26,6 +26,8 @@
+ 		//             11. 20170105 이길문 바코드보고수신 응답메세지 바코드추가(strReadingData)
+ 
+ 		public Socket m_sktSock;//소켓
++		// [LGLS 2026-11-13] 이 접속의 상대 주소(IP:포트). 수신 스레드의 모든 로그 줄 앞에 붙인다(접속이 여럿일 때 구분용).
++		public string m_strPeer = "";
+ 		public bool m_blSockConnected;//소켓접속여부
+ 		public System.Threading.Thread m_thrThreadObj;//쓰레드 객체	
+ 		
+--- bk_peer/modWorkThread.cs	2026-11-13 23:44:42.976630600 +0900
++++ hostbuild2/TASK/WCS_TASK_HOST/modWorkThread.cs	2026-11-13 23:44:43.807575100 +0900
+@@ -152,6 +152,7 @@
+ 
+ 					string strPeer = "";
+ 					try { strPeer = w.m_sktSock.RemoteEndPoint.ToString(); } catch { }
++					w.m_strPeer = strPeer;
+ 					int nConn;
+ 					lock (modDefApp.g_lstSrvWork)
+ 					{
+@@ -192,6 +193,8 @@
+ 			int iBodyLen = 0;
+ 			string strErrMsg = null;
+ 
++			// [LGLS 2026-11-13] 이 스레드가 남기는 서버 로그 줄 앞에 상대 주소를 붙인다
++			modCmWork.t_strPeer = w.m_strPeer;
+ 			modDefApp.g_blSrvThread = true;
+ 			// 설비상태가 연속으로 많은량 수신 될 떄 SKIP을 위한 처리
+ 			w.m_tmSCMD_RecvTime = DateTime.Now.AddSeconds(-10);
+--- bk_peer/modCmWork.cs	2026-11-13 23:44:43.036510300 +0900
++++ hostbuild2/TASK/WCS_TASK_HOST/modCmWork.cs	2026-11-13 23:45:16.727751000 +0900
+@@ -114,6 +114,9 @@
+ 		}
+ 
+ 
++		// [LGLS 2026-11-13] 수신 스레드(접속별)가 자기 상대 주소를 담는다. 다른 스레드는 비어 있어 접두가 붙지 않는다.
++		[ThreadStatic] public static string t_strPeer;
++
+ 		public static void ShowMsgServer(string p_strMsg, string p_strMsgKind = modDefApp.MSG_NOR, bool p_blWriteLog = true, [CallerFilePath] string p_strFile = "", [CallerMemberName] string p_strFunc = "")
+ 		{
+ 			// [LGLS 2026-09-09] ALL_TASK 공용 로그 싱크(스레드별 파일 + DB)
+@@ -138,7 +141,8 @@
+ 
+                 LogMsg.g_strTime = string.Format(@"{0:HH:mm:ss}", DateTime.Now) + ":" + string.Format(@"{0:000}", DateTime.Now.Millisecond);
+                 LogMsg.g_strType = p_strMsgKind;
+-                LogMsg.g_strMsg = p_strMsg;
++                // [LGLS 2026-11-13] 파일 로그에는 상대 주소를 앞에 붙인다: "<192.100.1.148:56239> WMS_MBX ..."
++                LogMsg.g_strMsg = string.IsNullOrEmpty(t_strPeer) ? p_strMsg : "<" + t_strPeer + "> " + p_strMsg;
+                 if (p_blWriteLog)
+                 {
+                     modDefApp.g_arrlstLogList[1].Add(LogMsg);
