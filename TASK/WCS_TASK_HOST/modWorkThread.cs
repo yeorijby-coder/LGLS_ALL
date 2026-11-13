@@ -128,18 +128,41 @@ namespace TSK_HostCom
 			if (!SrvAllowOnlyRemoteIp) return true;
 			System.Net.IPAddress allow;
 			if (!System.Net.IPAddress.TryParse((pAllowIp ?? "").Trim(), out allow)) return true;
+			// [LGLS 2026-11-13] ★상위 IP 가 두 개인 현장★ (사용자 지시) - ini [Network] RemoteIP2 에 적은 IP 도 받는다.
+			//   쉼표로 여러 개를 적을 수 있다. 접속을 받을 때마다 읽으므로 저장만 하면 된다(재기동 불필요).
+			//   보내는 쪽(상태·완료 보고)은 종전대로 RemoteIP 한 곳이다. 비어 있으면 종전과 같다.
+			List<System.Net.IPAddress> lstAllow = new List<System.Net.IPAddress>();
+			lstAllow.Add(allow);
+			try
+			{
+				System.Text.StringBuilder sb = new System.Text.StringBuilder(256);
+				modDefAPI.GetPrivateProfileString("Network", "RemoteIP2", "", sb, sb.Capacity, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini"));
+				foreach (string s in sb.ToString().Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+				{
+					System.Net.IPAddress a;
+					if (System.Net.IPAddress.TryParse(s.Trim(), out a))
+					{
+						lstAllow.Add(a);
+						pAllowIp += ", " + a.ToString();
+					}
+				}
+			}
+			catch { }
 			System.Net.IPEndPoint ep = pSock.RemoteEndPoint as System.Net.IPEndPoint;
 			if (ep == null) return true;
 			System.Net.IPAddress peer = ep.Address;
-			if (peer.Equals(allow)) return true;
+			foreach (System.Net.IPAddress a in lstAllow)
+				if (peer.Equals(a)) return true;
 			// 이 PC 안에서 붙은 접속(루프백)은 허용 IP 가 이 PC 자신의 주소(127.x 포함)일 때만
 			if (System.Net.IPAddress.IsLoopback(peer))
 			{
-				if (System.Net.IPAddress.IsLoopback(allow)) return true;
+				foreach (System.Net.IPAddress a in lstAllow)
+					if (System.Net.IPAddress.IsLoopback(a)) return true;
 				try
 				{
 					foreach (System.Net.IPAddress my in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
-						if (my.Equals(allow)) return true;
+						foreach (System.Net.IPAddress a in lstAllow)
+							if (my.Equals(a)) return true;
 				}
 				catch { }
 			}
@@ -318,7 +341,7 @@ namespace TSK_HostCom
 					string strAllowIp;
 					if (!IsAllowedPeer(w.m_sktSock, out strAllowIp))
 					{
-						modCmWork.ShowMsgServer("접속이 거부되었습니다. 허용되지 않은 IP 에서 접속을 요청한 상대 [" + strPeer + "] (허용 IP = ini RemoteIP " + strAllowIp + ")", modDefApp.MSG_ERR);
+						modCmWork.ShowMsgServer("접속이 거부되었습니다. 허용되지 않은 IP 에서 접속을 요청한 상대 [" + strPeer + "] (허용 IP = ini RemoteIP/RemoteIP2 " + strAllowIp + ")", modDefApp.MSG_ERR);
 						try { modCmWork.CloseSocket(ref w.m_sktSock); } catch { }
 						continue;
 					}
