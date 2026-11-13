@@ -1,0 +1,85 @@
+--- bk_1113/CCliWork.cs	2026-11-13 22:25:24.323318300 +0900
++++ hostbuild2/TASK/WCS_TASK_HOST/CCliWork.cs	2026-11-13 22:25:24.711919700 +0900
+@@ -80,6 +80,9 @@
+ 		//최초작성자	: BASE(이길문)
+ 		//작성일		: 20160829
+ 		//설명		: ECS와 Socket 연결
++		// [LGLS 2026-11-13] 상위 접속 시도 한도(ms)
++		private const int CONNECT_TIMEOUT_MS = 3000;
++
+ 		public bool ConnectSock()
+ 		{
+ 			try
+@@ -91,7 +94,28 @@
+ 				ipep = new System.Net.IPEndPoint(ipaddr, Convert.ToInt32(modDefApp.g_iRemotePort));
+ 				m_sktSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+ 
+-				m_sktSock.Connect(ipep);
++				// [LGLS 2026-11-13] 구 ECP(TcpClient.BeginConnect, 비동기)와 같이 종료를 막지 않게 한다.
++				//   종전: 시간 제한 없는 동기 Connect → 닿지 않는 RemoteIP 면 윈도우 기본 ~21초 동안 이 스레드가
++				//         붙잡혀 있고, 종료 절차가 이 스레드를 Join() 으로 끝까지 기다려 프로세스가 오래 남았다
++				//         (현장 로그 : 종료 때마다 "리모트 시스템과 연결 실패 !(10004)").
++				//   지금: 100ms 단위로 기다리며 ① 종료 요청이면 즉시 중단 ② CONNECT_TIMEOUT_MS 넘으면 포기(다음 주기에 재시도).
++				IAsyncResult arCon = m_sktSock.BeginConnect(ipep, null, null);
++				int iWaitMs = 0;
++				while (!arCon.AsyncWaitHandle.WaitOne(100, false))
++				{
++					iWaitMs += 100;
++					if (modDefApp.g_blIsAppExit || iWaitMs >= CONNECT_TIMEOUT_MS)
++					{
++						bool blExit = modDefApp.g_blIsAppExit;
++						try { m_sktSock.Close(); } catch { }
++						m_sktSock = null;
++						m_strLog = blExit ? "종료 요청으로 상위 접속 시도를 중단합니다."
++						                  : "리모트 시스템과 연결 실패 !(시간 초과 " + CONNECT_TIMEOUT_MS + "ms)";
++						modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_IMP);
++						return false;
++					}
++				}
++				m_sktSock.EndConnect(arCon);
+ 
+ 				if (m_sktSock.Connected)
+ 				{
+--- bk_1113/frmMain.cs	2026-11-13 22:25:24.361407200 +0900
++++ hostbuild2/TASK/WCS_TASK_HOST/frmMain.cs	2026-11-13 22:25:24.712996800 +0900
+@@ -251,7 +251,12 @@
+ 				{
+ 					if (w.m_thrThreadObj != null && w.m_thrThreadObj.IsAlive)
+ 					{
+-						if (pJoinMs < 0) w.m_thrThreadObj.Join(); else w.m_thrThreadObj.Join(pJoinMs);
++						if (pJoinMs < 0) w.m_thrThreadObj.Join();
++						else if (!w.m_thrThreadObj.Join(pJoinMs))
++						{
++							// [LGLS 2026-11-13] 한도 안에 안 끝나면 프로세스를 붙잡지 않게 백그라운드로 돌린다
++							try { w.m_thrThreadObj.IsBackground = true; } catch { }
++						}
+ 					}
+ 				}
+ 				catch { }
+@@ -442,16 +447,24 @@
+ 
+ 				//서버 쓰레드 종료
+ 				// [LGLS 2026-09-30] 수신 접속이 여러 개일 수 있다 - 전부 닫는다
+-				CloseAllSrvWork(-1);
++				CloseAllSrvWork(10000);   // [LGLS 2026-11-13] 무제한 → 10초 한도
+ 			}
+ 
+ 			//클라이언트 쓰레드 종료
+ 			if ((modDefApp.g_CliWork.m_thrThreadObj != null))
+ 			{
+ 				modDefApp.g_CliWork.m_areCliExitEvent.Set();
+-				modDefApp.g_CliWork.m_thrThreadObj.Join();
++				// [LGLS 2026-11-13] 무제한 Join → 10초 한도. 넘기면 백그라운드로 돌려 프로세스가 끝나게 한다.
++				//   (접속 시도는 종료 요청을 보고 곧 중단하므로 보통 1초 안에 끝난다)
++				if (!modDefApp.g_CliWork.m_thrThreadObj.Join(10000))
++				{
++					try { modDefApp.g_CliWork.m_thrThreadObj.IsBackground = true; } catch { }
++				}
+ 			}
+ 
++			// [LGLS 2026-11-13] 상위로 나가는 접속도 정상적으로 닫는다(상대가 끊김을 바로 알도록 FIN 전달)
++			try { modCmWork.CloseSocket(ref modDefApp.g_CliWork.m_sktSock); } catch { }
++
+ 			if ((modDefApp.g_CliWork.m_BDb.conMain != null))
+ 			{
+ 				modDefApp.g_CliWork.m_BDb.conMain.Close();
