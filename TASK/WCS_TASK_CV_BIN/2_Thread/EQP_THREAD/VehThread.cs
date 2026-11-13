@@ -240,15 +240,132 @@ namespace WCS_TASK_CV
                      : device == 'D' ? (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D
                                      : (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R;
             Array.Clear(buf, 0, buf.Length);
+            // [LGLS 2026-11-13] 관측 스냅샷이 켜져 있고 이 구간이 그 안에 들어 있으면 거기서 잘라 쓴다(PLC 왕복 없음)
+            if (m_bSnapOn)
+            {
+                foreach (Tuple<char, int, int, byte[]> c in m_lstSnap)
+                {
+                    if (c.Item1 != device || wordAddr < c.Item2 || (wordAddr + nWords) > (c.Item2 + c.Item3)) continue;
+                    if (nWords * 2 > buf.Length) break;
+                    Array.Copy(c.Item4, (wordAddr - c.Item2) * 2, buf, 0, nWords * 2);
+                    return true;
+                }
+            }
+            m_nStatTrip++;
             return m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, dev, wordAddr, nWords, ref buf);
         }
 
         private bool PlcWriteWords(char device, int wordAddr, int nWords, byte[] buf)
         {
+            m_bSnapOn = false;   // [LGLS 2026-11-13] 쓰기가 끼면 그 뒤 읽기는 PLC 에서 새로 읽는다
             byte dev = device == 'M' ? (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M
                      : device == 'D' ? (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D
                                      : (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R;
             return m_msQPlc.WRITE((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, dev, wordAddr, nWords, buf);
+        }
+
+        // ---------- [LGLS 2026-11-13] 관측 스냅샷 (사용자 지시 : 읽기 속도 개선) ----------
+        //   종전 PollObservations 는 차량 한 대의 관측값을 태그마다 따로 읽었다(상태·위치 3·화물·완료위치 3·비트 4·Ack 워드·알람 …
+        //   = 한 대에 15~18 왕복, 크레인 5대면 한 바퀴 80여 왕복). 구 ECS 는 영역을 통째로 읽어 메모리에서 꺼내 썼다.
+        //   여기서는 관측을 시작하기 전에 그 차량의 관측 주소들을 디바이스별로 묶어 몇 번에 읽어 두고(스냅샷),
+        //   PlcReadWords 가 그 안에 든 구간은 스냅샷에서 잘라 준다. 태그별 해석·Ack·DB 반영 코드는 한 줄도 바뀌지 않는다.
+        //   · 스냅샷은 PollObservations 동안만 쓴다. 지시 소비(ConsumeCommands) 등 그 밖의 읽기는 종전대로 PLC 에서 읽는다.
+        //   · 관측 도중 PLC 에 쓰기가 끼면(Ack 등) 그 뒤 읽기는 PLC 에서 새로 읽는다.
+        //   · 묶음 읽기에 실패하면 스냅샷 없이 종전 개별 읽기로 돌고, 60초 뒤 다시 시도한다.
+        //   · WCS_DB.INI [CNF] VEH_BULK=0 이면 쓰지 않는다(종전 동작).
+        private bool m_bSnapOn = false;
+        private readonly List<Tuple<char, int, int, byte[]>> m_lstSnap = new List<Tuple<char, int, int, byte[]>>();   // (디바이스, 시작워드, 워드수, 값)
+        private readonly Dictionary<string, List<int[]>> m_dicSnapPlan = new Dictionary<string, List<int[]>>();        // 차량별 읽을 구간 (디바이스 문자, 시작워드, 워드수)
+        private DateTime m_dtSnapRetry = DateTime.MinValue;
+        private bool m_bSnapLogged = false;
+        private const int SNAP_GAP_W = 8;      // 이 워드 수 이하로 떨어진 주소는 한 구간으로 묶는다
+        private const int SNAP_MAX_W = 100;    // 한 구간 최대 워드 수
+
+        private List<int[]> SnapPlan(VehDef v)
+        {
+            List<int[]> plan;
+            if (m_dicSnapPlan.TryGetValue(v.OwnerId, out plan)) return plan;
+            plan = new List<int[]>();
+            foreach (char dev in new char[] { 'M', 'D', 'R' })
+            {
+                var lst = new List<int[]>();   // [시작, 끝)
+                foreach (ObsDef d in v.Obs.Values)
+                {
+                    if (d == null || d.Device != dev || d.Address < 0) continue;
+                    int a = (dev == 'M') ? d.Address / 16 : d.Address;
+                    int n = (dev == 'M') ? 1 : Math.Max(1, d.Length);
+                    lst.Add(new int[] { a, a + n });
+                }
+                lst.Sort((x, y) => x[0].CompareTo(y[0]));
+                int[] cur = null;
+                foreach (int[] s in lst)
+                {
+                    if (cur != null && s[0] - cur[1] <= SNAP_GAP_W && Math.Max(cur[1], s[1]) - cur[0] <= SNAP_MAX_W)
+                    { if (s[1] > cur[1]) cur[1] = s[1]; continue; }
+                    if (cur != null) plan.Add(new int[] { dev, cur[0], cur[1] - cur[0] });
+                    cur = new int[] { s[0], s[1] };
+                }
+                if (cur != null) plan.Add(new int[] { dev, cur[0], cur[1] - cur[0] });
+            }
+            m_dicSnapPlan[v.OwnerId] = plan;
+            return plan;
+        }
+
+        private void SnapBegin(VehDef v)
+        {
+            m_bSnapOn = false;
+            m_lstSnap.Clear();
+            if (cDefApi.GsCnfInt("VEH_BULK", 1) != 1 || DateTime.Now < m_dtSnapRetry) return;
+            List<int[]> plan = SnapPlan(v);
+            if (plan.Count == 0) return;
+            foreach (int[] p in plan)
+            {
+                char cDev = (char)p[0];
+                byte dev = cDev == 'M' ? (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M
+                         : cDev == 'D' ? (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D
+                                       : (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_R;
+                byte[] b = new byte[p[2] * 2 + 16];
+                m_nStatTrip++;
+                if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT, dev, p[1], p[2], ref b))
+                {
+                    m_lstSnap.Clear();
+                    m_dtSnapRetry = DateTime.Now.AddSeconds(60);
+                    LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 묶음 읽기 실패 (" + cDev + p[1] + " +" + p[2] + "워드) - 개별 읽기로 계속, 60초 뒤 다시 시도");
+                    return;
+                }
+                m_lstSnap.Add(Tuple.Create(cDev, p[1], p[2], b));
+            }
+            m_bSnapOn = true;
+            if (!m_bSnapLogged)
+            {
+                m_bSnapLogged = true;
+                var sb = new StringBuilder();
+                foreach (int[] p in plan) sb.Append(sb.Length > 0 ? ", " : "").Append((char)p[0]).Append(p[1]).Append("+").Append(p[2]);
+                LogDb("[VEH_" + m_strKind + "] 묶음 읽기 사용 - " + v.OwnerId + " 관측 " + v.Obs.Count + "개를 " + plan.Count + "번에 읽음 (" + sb + ")");
+            }
+        }
+
+        private void SnapEnd()
+        {
+            m_bSnapOn = false;
+            m_lstSnap.Clear();
+        }
+
+        // ---------- [LGLS 2026-11-13] 한 바퀴 소요 통계 ----------
+        //   WCS_DB.INI [CNF] VEH_CYCLE_LOG_SEC 초마다 한 줄(기본 600, 0 이면 남기지 않는다).
+        private long m_nStatTrip = 0;      // PLC 읽기 왕복 수
+        private long m_nStatCycle = 0, m_nStatMsSum = 0, m_nStatMsMax = 0;
+        private DateTime m_dtStatFrom = DateTime.Now;
+        private void CycleStat(long ms)
+        {
+            m_nStatCycle++; m_nStatMsSum += ms; if (ms > m_nStatMsMax) m_nStatMsMax = ms;
+            int nSec = cDefApi.GsCnfInt("VEH_CYCLE_LOG_SEC", 600);
+            if (nSec <= 0) { m_nStatCycle = 0; m_nStatMsSum = 0; m_nStatMsMax = 0; m_nStatTrip = 0; m_dtStatFrom = DateTime.Now; return; }
+            if ((DateTime.Now - m_dtStatFrom).TotalSeconds < nSec) return;
+            LogDb(string.Format("[CYCLE] VEH_{0} 차량 {1}대 한 바퀴 평균 {2}ms / 최대 {3}ms ({4}바퀴, PLC 읽기 왕복 바퀴당 {5}회, 묶음 읽기 {6}, 쉬는 시간 300ms 별도)",
+                m_strKind, m_lstVeh.Count, m_nStatMsSum / Math.Max(1, m_nStatCycle), m_nStatMsMax, m_nStatCycle,
+                m_nStatTrip / Math.Max(1, m_nStatCycle), cDefApi.GsCnfInt("VEH_BULK", 1) == 1 ? "사용" : "안 함"));
+            m_nStatCycle = 0; m_nStatMsSum = 0; m_nStatMsMax = 0; m_nStatTrip = 0; m_dtStatFrom = DateTime.Now;
         }
 
         private bool ReadBit(ObsDef d, ref bool value)
@@ -265,6 +382,7 @@ namespace WCS_TASK_CV
             // [LGLS 2026-09-14] M 비트는 단일 비트 쓰기(%MX) - 구 ECS mdDevSet/mdDevRst 와 같다.
             //   종전 워드 read-modify-write 는 CV 스레드 등 다른 소켓이 같은 워드를 쓰는 사이에
             //   낡은 워드로 이송지시/완료 Ack 비트를 지울 수 있었다. (BIT_WRITE=0 이면 종전 방식)
+            m_bSnapOn = false;   // [LGLS 2026-11-13] 쓰기가 끼면 그 뒤 읽기(아래 read-modify-write 포함)는 PLC 에서 새로 읽는다
             if (d.Device == 'M')
                 return m_msQPlc.WRITE_BIT((byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, d.Address, value);
 
@@ -427,6 +545,7 @@ namespace WCS_TASK_CV
                     {
                         m_bReloadReq = false;
                         LoadObservables();
+                        m_dicSnapPlan.Clear(); m_bSnapLogged = false;   // [LGLS 2026-11-13] 주소가 바뀌었으니 묶음 읽기 구간도 다시 짠다
                         LogDb("[VEH_" + m_strKind + "] 주소표 재구성 (R 주소모드 전환, 차량 " + m_lstVeh.Count + "대)");
                     }
                     // [LGLS 2026-08-22] 종전에는 두 플래그가 **모두** 내려갔을 때만 재접속했다.
@@ -445,6 +564,7 @@ namespace WCS_TASK_CV
                         }
                         m_nComFailCycle = 0;
                         m_dtLastPollOk  = DateTime.Now;
+                        m_dtSnapRetry   = DateTime.MinValue;   // [LGLS 2026-11-13] 다시 붙었으면 묶음 읽기도 바로 다시 시도
                         // [LGLS 2026-09-11] (재)접속했으면 Ack 캐시를 버린다.
                         //   끊겨 있는 동안 PLC 쪽 Ack 비트가 어떻게 됐는지 알 수 없으므로
                         //   다음 주기에 AckFollow 가 다시 맞추게 한다.
@@ -461,16 +581,20 @@ namespace WCS_TASK_CV
                     //   (종전에는 PollObservations 의 예외가 바깥 catch 까지 올라가 나머지 차량의
                     //    지시 소비(ConsumeCommands)까지 통째로 건너뛰었다)
                     bool bAnyOk = false;
+                    System.Diagnostics.Stopwatch swCyc = System.Diagnostics.Stopwatch.StartNew();   // [LGLS 2026-11-13] 한 바퀴 소요 통계
                     foreach (VehDef v in m_lstVeh)
                     {
-                        try { PollObservations(v); bAnyOk = true; }
+                        // [LGLS 2026-11-13] 관측 동안만 스냅샷(묶음 읽기)을 쓴다 - 끝나면 반드시 끈다
+                        try { SnapBegin(v); PollObservations(v); bAnyOk = true; }
                         catch (Exception exv) { LogDb("[VEH_" + m_strKind + "] 관측 실패: " + exv.Message); }
+                        finally { SnapEnd(); }
                         try { ConsumeOperatorCommands(v); } catch (Exception exCmd) { LogDb("[VEH_" + m_strKind + "] " + v.OwnerId + " 운전 명령 처리 실패: " + exCmd.Message); }
                         try { ConsumeCommands(v); }
                         catch (Exception exc) { LogDb("[VEH_" + m_strKind + "] 지시 소비 실패: " + exc.Message + " @ " + (exc.StackTrace ?? "").Replace("\r\n", " | ")); }
                     }
                     // [LGLS 2026-11-10] [데이터 삭제] 비트를 ECS 가 끄는 설정이면(ini OFF_BY_ECS=1) 시간이 된 것을 0 으로 쓴다
                     try { ProcessHmiDeleteOff(); } catch (Exception exOff) { LogDb("[VEH_" + m_strKind + "] 데이터 삭제 끄기 실패: " + exOff.Message); }
+                    try { CycleStat(swCyc.ElapsedMilliseconds); } catch { }
 
                     // [LGLS 2026-08-22] 통신 연속 실패 감시 (CvThread 와 같은 규칙).
                     //   세션이 죽어도 소켓 플래그가 살아 있는 경우가 있어, 실패 횟수로 판단해 강제 재접속한다.

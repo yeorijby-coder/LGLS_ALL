@@ -324,6 +324,8 @@ namespace WCS_TASK_CV
         private readonly System.Collections.Generic.HashSet<string> m_setPendTrk = new System.Collections.Generic.HashSet<string>();
         private bool m_bPendScanOk = false;   // 스캔 실패 시 false → 전 설비 종전대로 처리(안전측)
         private int  m_nCvGlobalAlarm = -1;    // [LGLS 2026-09-11] -1 미판독 / 0 건너뜀(기본) / 1 종전대로 CvAlarmCheck 수행
+        private long m_nStatCycle = 0, m_nStatMsSum = 0, m_nStatMsMax = 0;   // [LGLS 2026-11-13] 한 바퀴 소요 통계
+        private DateTime m_dtStatFrom = DateTime.Now;
         private const int CYCLE_WARN_MS = 1000;               // [2026-09-17 3000→1000] 미러 한 바퀴 경고 임계(초과 시 단계별 소요 로깅)
         private DateTime m_dtLastCycleLog = DateTime.MinValue;
         // [LGLS 2026-08-01] 통신 실패가 연속된 사이클 수. 임계 도달 시 소켓을 닫고 스레드를 종료해 재접속시킨다.
@@ -703,6 +705,24 @@ namespace WCS_TASK_CV
                         // [LGLS 2026-07-31] 미러 주기 감시: 한 바퀴가 길어지면 그만큼 CV_DATA(→Client) 반영이 늦어져
                         //   설비 동작 순서가 뒤바뀐 것처럼 보인다. 느릴 때만(임계 초과) 30초에 1번 단계별 소요를 남긴다.
                         swCycle.Stop();
+                        // [LGLS 2026-11-13] 한 바퀴 소요 통계 - [CNF] VEH_CYCLE_LOG_SEC 초마다 한 줄(기본 600, 0 이면 남기지 않는다)
+                        {
+                            long msC = swCycle.ElapsedMilliseconds;
+                            m_nStatCycle++; m_nStatMsSum += msC; if (msC > m_nStatMsMax) m_nStatMsMax = msC;
+                            int nStatSec = cDefApi.GsCnfInt("VEH_CYCLE_LOG_SEC", 600);
+                            if (nStatSec <= 0 || (DateTime.Now - m_dtStatFrom).TotalSeconds >= nStatSec)
+                            {
+                                if (nStatSec > 0)
+                                {
+                                    string strStat = string.Format("[CYCLE] C/V 슬롯 {0}개 한 바퀴 평균 {1}ms / 최대 {2}ms ({3}바퀴, 일괄 읽기 {4}, 쉬는 시간 {5}ms 별도)",
+                                        m_slots.Count, m_nStatMsSum / Math.Max(1, m_nStatCycle), m_nStatMsMax, m_nStatCycle,
+                                        m_bBulkOk ? "사용" : "안 함", Math.Max(0, Math.Min(2000, cDefApi.GsCnfInt("CV_CYCLE_SLEEP_MS", 200))));
+                                    MakeMsg_Imp(strStat, m_nthNo);
+                                    InsertWcsLogPgr("", strStat);
+                                }
+                                m_nStatCycle = 0; m_nStatMsSum = 0; m_nStatMsMax = 0; m_dtStatFrom = DateTime.Now;
+                            }
+                        }
                         if (swCycle.ElapsedMilliseconds > cDefApi.GsCnfInt("CV_CYCLE_LOG_MS", CYCLE_WARN_MS) &&   // [CNF] CV_CYCLE_LOG_MS
                             (DateTime.Now - m_dtLastCycleLog).TotalSeconds >= 30)
                         {
@@ -3241,6 +3261,7 @@ namespace WCS_TASK_CV
         private bool   m_bBulkOk   = false;
         private bool   m_bBulkGiveUp = false;   // 한 번 실패하면 다시 시도하지 않는다(실패 READ 타임아웃 누적 방지)
         private bool   m_bBulkLogged = false;
+        private DateTime m_dtBulkRetry = DateTime.MinValue;   // [LGLS 2026-11-13] 읽기 실패로 꺼졌을 때 다시 시도할 시각
         private byte[] m_bufBulkM  = null;   private int m_nBulkMWord = 0;   private int m_nBulkMCnt = 0;
         private byte[] m_bufBulkD  = null;   private int m_nBulkDWord = 0;   private int m_nBulkDCnt = 0;
         // [LGLS 2026-09-17] R 은 전 구간(146워드)이 한 번 상한(128)을 넘어 설비별 개별 READ(15회)로 돌았다.
@@ -3501,7 +3522,14 @@ namespace WCS_TASK_CV
         private void PreloadStatusBlocks()
         {
             m_bBulkOk = false;
-            if (m_bBulkGiveUp) return;                  // 이전에 실패 - 종전 개별 READ 로 계속 간다
+            // [LGLS 2026-11-13] 읽기 실패로 꺼진 경우는 60초 뒤 다시 시도한다 (사용자 지시 : 읽기 속도 개선).
+            //   종전에는 한 번이라도 실패하면(순간 통신 지연 포함) 프로그램을 다시 띄울 때까지 설비별 개별 READ(한 바퀴 45 왕복)로 돌았다.
+            //   구간이 상한을 넘는 등 구조적인 포기(m_dtBulkRetry 가 비어 있음)는 종전대로 다시 시도하지 않는다.
+            if (m_bBulkGiveUp)
+            {
+                if (m_dtBulkRetry == DateTime.MinValue || DateTime.Now < m_dtBulkRetry) return;   // 종전 개별 READ 로 계속 간다
+                m_bBulkGiveUp = false; m_dtBulkRetry = DateTime.MinValue; m_bBulkLogged = false;
+            }
             if (cDefApp.GM_ADDR_V09) return;            // V0.9 매핑은 종전 경로 유지
             if (m_slots == null || m_slots.Count == 0) return;
 
@@ -3573,10 +3601,10 @@ namespace WCS_TASK_CV
 
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_M, mLo, mCnt, ref bm))
-                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] M 실패 - 종전 개별 READ 로 전환", m_nthNo, m_msQPlc.LastAddrText); return; }
+                { m_bBulkGiveUp = true; m_dtBulkRetry = DateTime.Now.AddSeconds(60); MakeMsg_Error("[일괄READ] M 실패 - 종전 개별 READ 로 전환 (60초 뒤 다시 시도)", m_nthNo, m_msQPlc.LastAddrText); return; }
                 if (!m_msQPlc.READ((byte)MelsecQ3E_UnitType.MELSECQ_CMD_WORD_UNIT,
                                    (byte)MelsecQ3E_UnitType_DEVICE.MELSECQ_DEVICE_CODE_D, dLo, dCnt, ref bd))
-                { m_bBulkGiveUp = true; MakeMsg_Error("[일괄READ] D 실패 - 종전 개별 READ 로 전환", m_nthNo, m_msQPlc.LastAddrText); return; }
+                { m_bBulkGiveUp = true; m_dtBulkRetry = DateTime.Now.AddSeconds(60); MakeMsg_Error("[일괄READ] D 실패 - 종전 개별 READ 로 전환 (60초 뒤 다시 시도)", m_nthNo, m_msQPlc.LastAddrText); return; }
                 if (bDoR)
                 {
                     foreach (int[] ch in lstRChunk)

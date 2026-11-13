@@ -289,7 +289,19 @@ namespace WCS_TASK_CV
                         return false;
                     }
 
-                    Thread.Sleep(30);
+                    // [LGLS 2026-11-13] 응답 대기 방식 (사용자 지시 : 읽기 속도 개선).
+                    //   종전에는 보내자마자 수신 버퍼를 보고, 비어 있으면 무조건 30ms 를 잤다. 응답이 1~2ms 만에 와도
+                    //   왕복 한 번이 최소 30ms(Windows 타이머 단위 때문에 실제 31~46ms)였다. 크레인 5대는 한 바퀴에
+                    //   80여 번을 읽으므로 이 대기만으로 한 바퀴가 3초쯤 걸렸다.
+                    //   이제는 "데이터가 올 때까지 최대 30ms" 를 기다린다(오면 즉시 깬다). 시간초과 판정·수신 길이·프레임은 그대로다.
+                    //   WCS_DB.INI [CNF] RECV_FAST=0 이면 종전대로 30ms 를 잔다.
+                    //   상대가 접속을 닫으면 Poll 이 곧바로 true 를 주는데 Available 은 0 이다 - 그때는 종전처럼 30ms 를 잔다(헛바퀴 방지).
+                    if (cDefApi.GsCnfInt("RECV_FAST", 1) == 1)
+                    {
+                        if (_Socket.Poll(30000, SelectMode.SelectRead) && _Socket.Available == 0) Thread.Sleep(30);
+                    }
+                    else
+                        Thread.Sleep(30);
                 }
                 return true;
 
