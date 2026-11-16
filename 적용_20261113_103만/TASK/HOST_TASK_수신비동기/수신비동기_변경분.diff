@@ -601,7 +601,7 @@
 +}
 --- a/PortCleaner.cs
 +++ b/PortCleaner.cs
-@@ -0,0 +1,386 @@
+@@ -0,0 +1,506 @@
 +﻿using System;
 +using System.Collections.Generic;
 +using System.Diagnostics;
@@ -906,6 +906,89 @@
 +			}
 +		}
 +
++		// TASKKILL 대상에서 제외하는 프로세스 이름(시스템 보호)
++		private static readonly string[] s_arrProtected = new string[] {
++			"system", "idle", "svchost", "lsass", "services", "wininit", "winlogon", "csrss", "smss", "explorer", "dwm", "sqlservr" };
++
++		private class KillItem
++		{
++			public int Pid;
++			public string Name;
++			public int NListen, NCloseWait, NOther;
++			public override string ToString()
++			{
++				StringBuilder sb = new StringBuilder();
++				if (NListen > 0) sb.Append("LISTENING " + NListen + "건 ");
++				if (NCloseWait > 0) sb.Append("CLOSE_WAIT " + NCloseWait + "건 ");
++				if (NOther > 0) sb.Append("그 밖 " + NOther + "건");
++				return "PID " + Pid + "  " + Name + "  (" + sb.ToString().Trim() + ")";
++			}
++		}
++
++		// TASKKILL 후보 : 이 포트가 로컬인 접속을 쥔 ★살아 있는★ 프로세스. 이 프로그램 자신·시스템 보호 프로세스는 뺀다.
++		private static List<KillItem> KillCandidates(List<Row> pRows, int pPort, out string pSkipNote)
++		{
++			List<KillItem> lst = new List<KillItem>();
++			StringBuilder skip = new StringBuilder();
++			int myPid = Process.GetCurrentProcess().Id;
++			List<int> seenSkip = new List<int>();
++			foreach (Row r in pRows)
++			{
++				if (r.LocalPort != pPort) continue;
++				if (!r.ProcAlive || r.Pid <= 4) continue;				// 소유 프로세스가 없으면 죽일 대상도 없다
++				bool blSkip = false; string why = "";
++				if (r.Pid == myPid) { blSkip = true; why = "이 프로그램(HOST_TASK) 자신"; }
++				else
++				{
++					foreach (string nm in s_arrProtected)
++						if (string.Equals(r.ProcName, nm, StringComparison.OrdinalIgnoreCase)) { blSkip = true; why = "시스템 보호 프로세스"; break; }
++				}
++				if (blSkip)
++				{
++					if (!seenSkip.Contains(r.Pid)) { seenSkip.Add(r.Pid); skip.AppendLine("  PID " + r.Pid + " " + r.ProcName + " - " + why + "라 제외"); }
++					continue;
++				}
++				KillItem it = null;
++				foreach (KillItem x in lst) if (x.Pid == r.Pid) { it = x; break; }
++				if (it == null) { it = new KillItem(); it.Pid = r.Pid; it.Name = r.ProcName; lst.Add(it); }
++				if (r.State == STATE_LISTEN) it.NListen++;
++				else if (r.State == STATE_CLOSE_WAIT) it.NCloseWait++;
++				else it.NOther++;
++			}
++			pSkipNote = skip.ToString();
++			return lst;
++		}
++
++		// taskkill.exe /F /PID n 를 실행한다. 0 이면 성공.
++		private static int RunTaskkill(int pPid, out string pOut)
++		{
++			pOut = "";
++			try
++			{
++				ProcessStartInfo psi = new ProcessStartInfo(System.IO.Path.Combine(Environment.SystemDirectory, "taskkill.exe"), "/F /PID " + pPid);
++				psi.UseShellExecute = false;
++				psi.CreateNoWindow = true;
++				psi.RedirectStandardOutput = true;
++				psi.RedirectStandardError = true;
++				Encoding enc = Encoding.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
++				psi.StandardOutputEncoding = enc;
++				psi.StandardErrorEncoding = enc;
++				using (Process p = Process.Start(psi))
++				{
++					string o = p.StandardOutput.ReadToEnd();
++					string e = p.StandardError.ReadToEnd();
++					p.WaitForExit(10000);
++					pOut = (o + " " + e).Trim();
++					return p.ExitCode;
++				}
++			}
++			catch (Exception ex)
++			{
++				pOut = ex.Message;
++				return -1;
++			}
++		}
++
 +		public static void RunUi(IWin32Window pOwner, int pPort)
 +		{
 +			string strTitle = "포트 정리";
@@ -918,27 +1001,64 @@
 +				f.Show(pOwner);
 +				f.Refresh();
 +
-+				// 2) 끊을 수 있는 대상(CLOSE_WAIT, 소유 프로세스가 없는 접속)을 센다
 +				List<Row> rows = List(pPort);
-+				List<Row> targets = new List<Row>();
-+				int nLocal = 0, nStuckListen = 0;
-+				foreach (Row r in rows)
-+				{
-+					if (r.LocalPort != pPort) continue;
-+					nLocal++;
-+					if (IsTarget(r, pPort)) targets.Add(r);
-+					if (IsStuckListen(r, pPort)) nStuckListen++;
-+				}
-+
++				int nLocal = 0;
++				foreach (Row r in rows) if (r.LocalPort == pPort) nLocal++;
 +				if (nLocal == 0)
 +				{
 +					MessageBox.Show(f, "수신 포트 " + pPort + " 에 남은 접속이 없습니다.", strTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
 +					return;
 +				}
 +
++				// 2) netstat 에 나온 PID 를 TASKKILL 할지 묻는다 : 예 = 강제 종료, 아니요 = 다음 단계
++				string strSkip;
++				List<KillItem> kills = KillCandidates(rows, pPort, out strSkip);
++				if (kills.Count > 0)
++				{
++					StringBuilder sbK = new StringBuilder();
++					foreach (KillItem k in kills) sbK.AppendLine("  " + k.ToString());
++					string strAsk = "netstat 결과의 아래 PID 를 TASKKILL 하겠습니까?\r\n\r\n" + sbK.ToString();
++					if (strSkip.Length > 0) strAsk += "\r\n(제외)\r\n" + strSkip;
++					strAsk += "\r\n예 : 위 프로세스를 강제 종료합니다 (taskkill /F /PID).\r\n아니요 : 종료하지 않고 다음 단계로 갑니다.";
++					DialogResult drK = MessageBox.Show(f, strAsk, strTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
++					if (drK == DialogResult.Yes)
++					{
++						int nOkK = 0, nFailK = 0;
++						StringBuilder sbRK = new StringBuilder();
++						foreach (KillItem k in kills)
++						{
++							string strOut;
++							int rc = RunTaskkill(k.Pid, out strOut);
++							string strRes = (rc == 0) ? "종료함" : "실패(코드 " + rc + ") " + strOut;
++							if (rc == 0) nOkK++; else nFailK++;
++							sbRK.AppendLine("  PID " + k.Pid + " " + k.Name + " : " + strRes);
++							modCmWork.ShowMsgServer("[포트 정리] TASKKILL PID " + k.Pid + " " + k.Name + " : " + strRes, rc == 0 ? modDefApp.MSG_IMP : modDefApp.MSG_ERR);
++						}
++						System.Threading.Thread.Sleep(800);
++						f.RefreshText();
++						MessageBox.Show(f, "종료 " + nOkK + "건, 실패 " + nFailK + "건\r\n\r\n" + sbRK.ToString()
++							+ "\r\n정리한 뒤의 netstat 를 창에 다시 표시했습니다.", strTitle,
++							MessageBoxButtons.OK, nFailK == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
++						return;
++					}
++				}
++
++				// 3) 아니요(또는 종료할 프로세스가 없음) : CLOSE_WAIT 등 남은 접속을 정리할지
++				List<Row> targets = new List<Row>();
++				int nStuckListen = 0;
++				foreach (Row r in rows)
++				{
++					if (r.LocalPort != pPort) continue;
++					if (IsTarget(r, pPort)) targets.Add(r);
++					if (IsStuckListen(r, pPort)) nStuckListen++;
++				}
++
++				string strNote = (kills.Count == 0)
++					? "TASKKILL 할 수 있는 프로세스가 없습니다(소유 프로세스가 없거나, 이 프로그램 자신/시스템 프로세스).\r\n\r\n" : "";
++
 +				if (targets.Count == 0)
 +				{
-+					string strNo = "끊을 수 있는 접속(CLOSE_WAIT, 또는 소유 프로세스가 없는 접속)이 없습니다.";
++					string strNo = strNote + "끊을 수 있는 접속(CLOSE_WAIT, 또는 소유 프로세스가 없는 접속)이 없습니다.";
 +					if (nStuckListen > 0)
 +						strNo += "\r\n\r\n소유 프로세스가 없는 LISTENING 이 있습니다. 이 소켓은 끊을 수 없습니다.\r\n"
 +							+ "그 소켓을 물려받아 쥔 프로세스(메모장 등 HOST_TASK 에서 띄운 프로그램)를 찾아 닫아야 합니다.";
@@ -948,22 +1068,22 @@
 +
 +				if (!IsAdmin())
 +				{
-+					MessageBox.Show(f, "끊을 수 있는 접속이 " + targets.Count + "건 있지만 관리자 권한이 아니라 끊을 수 없습니다.\r\n"
++					MessageBox.Show(f, strNote + "끊을 수 있는 접속이 " + targets.Count + "건 있지만 관리자 권한이 아니라 끊을 수 없습니다.\r\n"
 +						+ "HOST_TASK 를 [관리자 권한으로 실행] 한 뒤 다시 눌러 주세요.",
 +						strTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 +					return;
 +				}
 +
-+				// 3) 확인 : 예 를 눌러야만 정리한다
++				// 4) 확인 : 예 를 눌러야만 정리한다
 +				StringBuilder sbT = new StringBuilder();
 +				foreach (Row t in targets) sbT.AppendLine("  " + t.ToString());
 +				DialogResult dr = MessageBox.Show(f,
-+					"정리할 접속 " + targets.Count + "건 :\r\n" + sbT.ToString()
++					strNote + "정리할 접속 " + targets.Count + "건 :\r\n" + sbT.ToString()
 +					+ "\r\nLISTENING은 끊을 수 없습니다. 계속 진행하겠습니까?",
 +					strTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
 +				if (dr != DialogResult.Yes) return;
 +
-+				// 4) 정리
++				// 5) 정리
 +				int nOk = 0, nFail = 0;
 +				StringBuilder sbR = new StringBuilder();
 +				foreach (Row t in targets)
