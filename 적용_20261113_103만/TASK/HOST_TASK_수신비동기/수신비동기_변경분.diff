@@ -325,11 +325,27 @@
  		{
  			get
  			{
-@@ -74,6 +74,109 @@
+@@ -74,6 +74,125 @@
  			}
  		}
  
 +		// [LGLS 2026-11-15] 수신을 비동기로 받을지 (기본 1). 0 이면 종전(접속마다 스레드 + 1초 폴링)으로 돈다.
++		// [LGLS 2026-11-16] 수신 포트 ReuseAddress 적용 여부 (기본 0 = 적용 안 함). EcsComA.ini [Host] LISTEN_REUSE_ADDR=1 이면 켠다.
++		//   켜면 이전 접속 잔재가 같은 포트에 있어도 열리지만, 죽은 프로세스의 리스너가 남아 있을 때 새 리스너가 같이 열려
++		//   WMS 접속이 죽은 쪽으로 갈 수 있다. 기동 때 한 번 읽는다.
++		private static bool ListenReuseAddr
++		{
++			get
++			{
++				try
++				{
++					string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
++					return modDefAPI.GetPrivateProfileInt("Host", "LISTEN_REUSE_ADDR", 0, strIni) != 0;
++				}
++				catch { return false; }
++			}
++		}
++
 +		private static bool SrvAsync
 +		{
 +			get
@@ -435,15 +451,22 @@
  		public static void ListenThread()
  		{
  			string strLog = null;
-@@ -93,6 +196,7 @@
+@@ -91,8 +210,13 @@
+ 				{
+ 					modDefApp.g_tcplsn = new TcpListener(System.Net.IPAddress.Any, modDefApp.g_iListenPort);
  					// [LGLS 2026-11-13] 이전 접속(ESTABLISHED/CLOSE_WAIT)이 같은 포트에 남아 있어도 열리게 한다 (사용자 지시 - 현장 "수신 포트를 열 수 없다").
- 					try { modDefApp.g_tcplsn.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
+-					try { modDefApp.g_tcplsn.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
++					// [LGLS 2026-11-16] 기본은 적용하지 않는다. ini [Host] LISTEN_REUSE_ADDR=1 일 때만 켠다(아래 SrvAsync 옆 주석 참조).
++					if (ListenReuseAddr)
++					{
++						try { modDefApp.g_tcplsn.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
++					}
  					modDefApp.g_tcplsn.Start();
 +						modCmWork.NoInherit(modDefApp.g_tcplsn.Server);	// [LGLS 2026-11-16] 자식 프로세스가 물려받지 않게
  					break;				// 열렸다
  				}
  				catch (SocketException se)
-@@ -107,6 +211,15 @@
+@@ -107,6 +231,15 @@
  			}
  			if (!modDefApp.g_blListenThread) return;
  
@@ -459,7 +482,7 @@
  			while (modDefApp.g_blListenThread)
  			{
  				modDefAPI.SleepA(1000);
-@@ -138,6 +251,7 @@
+@@ -138,6 +271,7 @@
  					try
  					{
  						w.m_sktSock = modDefApp.g_tcplsn.AcceptSocket();
