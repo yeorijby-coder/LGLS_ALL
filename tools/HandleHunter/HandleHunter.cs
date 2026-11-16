@@ -93,17 +93,88 @@ static class HandleHunter
 		r.Match = true;
 	}
 
+	// ---- TCP 접속 정리 모드 (bat 에서 쓴다) : --tcp-targets (대상만 보여 줌, 종료 코드 = 대상 수) / --tcp-delete (지움) ----
+	[StructLayout(LayoutKind.Sequential)]
+	struct MIB_TCPROW_OWNER_PID { public uint dwState, dwLocalAddr, dwLocalPort, dwRemoteAddr, dwRemotePort, dwOwningPid; }
+	[StructLayout(LayoutKind.Sequential)]
+	struct MIB_TCPROW { public uint dwState, dwLocalAddr, dwLocalPort, dwRemoteAddr, dwRemotePort; }
+	[DllImport("iphlpapi.dll", SetLastError = true)] static extern uint GetExtendedTcpTable(IntPtr pTcpTable, ref int pdwSize, bool bOrder, int ulAf, int tableClass, uint reserved);
+	[DllImport("iphlpapi.dll")] static extern int SetTcpEntry(ref MIB_TCPROW pTcpRow);
+
+	static string TcpStateName(uint s)
+	{
+		switch (s)
+		{
+			case 1: return "CLOSED"; case 2: return "LISTENING"; case 3: return "SYN_SENT"; case 4: return "SYN_RECEIVED";
+			case 5: return "ESTABLISHED"; case 6: return "FIN_WAIT_1"; case 7: return "FIN_WAIT_2"; case 8: return "CLOSE_WAIT";
+			case 9: return "CLOSING"; case 10: return "LAST_ACK"; case 11: return "TIME_WAIT"; case 12: return "DELETE_TCB";
+			default: return "STATE_" + s;
+		}
+	}
+
+	static int TcpPortOf(uint raw) { return (int)(((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF)); }
+
+	// 끊을 대상 : 이 포트가 로컬이고, CLOSE_WAIT 이거나 소유 프로세스가 없는(LISTENING·TIME_WAIT 제외) 접속
+	static int TcpMode(int port, bool doDelete)
+	{
+		int size = 0;
+		GetExtendedTcpTable(IntPtr.Zero, ref size, true, 2, 5, 0);
+		IntPtr tab = Marshal.AllocHGlobal(size + 4096);
+		int targets = 0, deleted = 0, failed = 0;
+		try
+		{
+			int size2 = size + 4096;
+			uint rc = GetExtendedTcpTable(tab, ref size2, true, 2, 5, 0);
+			if (rc != 0) { Console.WriteLine("GetExtendedTcpTable 실패(코드 " + rc + ")"); return 255; }
+			int n = Marshal.ReadInt32(tab);
+			IntPtr pRow = new IntPtr(tab.ToInt64() + 4);
+			int rowSize = Marshal.SizeOf(typeof(MIB_TCPROW_OWNER_PID));
+			for (int i = 0; i < n; i++)
+			{
+				MIB_TCPROW_OWNER_PID r = (MIB_TCPROW_OWNER_PID)Marshal.PtrToStructure(pRow, typeof(MIB_TCPROW_OWNER_PID));
+				pRow = new IntPtr(pRow.ToInt64() + rowSize);
+				if (TcpPortOf(r.dwLocalPort) != port) continue;
+				if (r.dwState == 2 || r.dwState == 11 || r.dwState == 12) continue;
+
+				int pid = (int)r.dwOwningPid;
+				bool alive = false; string pname = "";
+				if (pid > 0) { try { Process p = Process.GetProcessById(pid); pname = p.ProcessName; alive = true; } catch { } }
+				if (!(r.dwState == 8 || !alive)) continue;
+
+				targets++;
+				string desc = new IPAddress(r.dwLocalAddr).ToString() + ":" + port + " <- " + new IPAddress(r.dwRemoteAddr).ToString() + ":" + TcpPortOf(r.dwRemotePort)
+					+ " [" + TcpStateName(r.dwState) + "] PID " + pid + " " + (alive ? "(" + pname + ")" : "(없는 프로세스)");
+				if (!doDelete) { Console.WriteLine("  대상 " + desc); continue; }
+
+				MIB_TCPROW m = new MIB_TCPROW();
+				m.dwState = 12; m.dwLocalAddr = r.dwLocalAddr; m.dwLocalPort = r.dwLocalPort; m.dwRemoteAddr = r.dwRemoteAddr; m.dwRemotePort = r.dwRemotePort;
+				int e = SetTcpEntry(ref m);
+				if (e == 0) { deleted++; Console.WriteLine("  끊음 " + desc); }
+				else { failed++; Console.WriteLine("  실패(코드 " + e + (e == 5 || e == 317 ? " - 관리자 권한이 필요하거나 이미 없는 접속" : "") + ") " + desc); }
+			}
+		}
+		finally { Marshal.FreeHGlobal(tab); }
+
+		if (!doDelete) { Console.WriteLine("끊을 수 있는 접속 " + targets + "건"); return targets; }
+		Console.WriteLine("끊음 " + deleted + "건, 실패 " + failed + "건");
+		return failed == 0 ? 0 : 1;
+	}
+
 	static int Main(string[] a)
 	{
-		if (a.Length < 1) { Console.WriteLine("사용: HandleHunter.exe <포트> [--owner <죽은PID>] [--close]"); return 2; }
+		if (a.Length < 1) { Console.WriteLine("사용: HandleHunter.exe <포트> [--owner <죽은PID>] [--close]  |  HandleHunter.exe <포트> --tcp-targets | --tcp-delete"); return 2; }
 		int port = int.Parse(a[0]);
 		bool doClose = false;
+		bool tcpTargets = false, tcpDelete = false;
 		int ownerPid = 0;
 		for (int ai = 1; ai < a.Length; ai++)
 		{
-			if (a[ai] == "--close") doClose = true;
+			if (a[ai] == "--tcp-targets") tcpTargets = true;
+			else if (a[ai] == "--tcp-delete") tcpDelete = true;
+			else if (a[ai] == "--close") doClose = true;
 			else if (a[ai] == "--owner" && ai + 1 < a.Length) ownerPid = int.Parse(a[++ai]);
 		}
+		if (tcpTargets || tcpDelete) return TcpMode(port, tcpDelete);		// 접속 정리 모드(핸들 탐색은 하지 않는다)
 		HashSet<int> only = null;
 		if (ownerPid > 0)
 		{

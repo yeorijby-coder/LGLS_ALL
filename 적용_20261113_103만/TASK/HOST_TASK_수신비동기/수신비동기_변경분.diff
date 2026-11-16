@@ -1442,7 +1442,29 @@
  					{
 --- a/frmMain.cs
 +++ b/frmMain.cs
-@@ -49,7 +49,9 @@
+@@ -22,6 +22,21 @@
+ {
+ 	public partial class frmMain : Form
+ 	{
++		// [LGLS 2026-11-17] [포트 정리] 버튼 표시 여부 - ini [Host] PORT_CLEAN_BTN (기본 0 = 숨김). 1초 타이머가 다시 읽어 재기동 없이 바로 반영한다.
++		private System.Windows.Forms.Button m_btnPort;
++
++		private void ApplyPortCleanBtn()
++		{
++			try
++			{
++				if (m_btnPort == null) return;
++				string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
++				bool blShow = modDefAPI.GetPrivateProfileInt("Host", "PORT_CLEAN_BTN", 0, strIni) != 0;
++				if (m_btnPort.Visible != blShow) m_btnPort.Visible = blShow;
++			}
++			catch { }
++		}
++
+ 		public frmMain()
+ 		{
+ 			InitializeComponent();
+@@ -49,7 +64,9 @@
                          Environment.GetFolderPath(Environment.SpecialFolder.Windows),
                          (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess) ? "Sysnative" : "System32",
                          "notepad.exe");
@@ -1453,14 +1475,14 @@
                  }
                  catch
                  {
-@@ -58,6 +60,20 @@
+@@ -58,6 +75,21 @@
              };
              this.pnlMsg2.Controls.Add(btnIni);   // [LGLS 2026-09-03] 닫기 버튼과 같은 패널
              btnIni.BringToFront();
 +
 +            // [LGLS 2026-11-16] [포트 정리] : 현재 netstat 를 창으로 보여 주고, LISTENING 은 끊을 수 없음을 확인받은 뒤
 +            //   CLOSE_WAIT 등 남은 접속을 정리한다(PortCleaner.cs, 관리자 권한 필요).
-+            var btnPort = new System.Windows.Forms.Button { Text = "포트 정리",
++            var btnPort = m_btnPort = new System.Windows.Forms.Button { Text = "포트 정리",
 +                Size = new System.Drawing.Size(72, 22),
 +                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right,
 +                Location = new System.Drawing.Point(btnIni.Left - 80, btnIni.Top) };
@@ -1471,10 +1493,11 @@
 +            };
 +            this.pnlMsg2.Controls.Add(btnPort);
 +            btnPort.BringToFront();
++            ApplyPortCleanBtn();	// ini [Host] PORT_CLEAN_BTN : 기본 0(숨김), 1 이면 표시
          }
  
          Color color1 = Color.FromArgb(129, 156, 203);
-@@ -249,7 +265,10 @@
+@@ -249,7 +281,10 @@
  			{
  				try
  				{
@@ -1486,7 +1509,16 @@
  					{
  						if (pJoinMs < 0) w.m_thrThreadObj.Join();
  						else if (!w.m_thrThreadObj.Join(pJoinMs))
-@@ -409,8 +428,8 @@
+@@ -329,6 +364,8 @@
+ 		{
+ 			tmrSTOP_REQ.Enabled = false;
+ 
++			ApplyPortCleanBtn();	// [LGLS 2026-11-17] ini 의 PORT_CLEAN_BTN 을 1초마다 반영
++
+ 			// [LGLS 2026-09-23] 5초마다 통신 상태를 EQP_MST 에 남긴다 (사용자 지적)
+ 			if (++m_nCommHbTick >= 5) { m_nCommHbTick = 0; WriteCommHeartbeat(); }
+ 
+@@ -409,8 +446,8 @@
  		public string[] GetThreadStates()
  		{
  			bool bLsn = (g_thrListenThreadObj != null && g_thrListenThreadObj.IsAlive);
