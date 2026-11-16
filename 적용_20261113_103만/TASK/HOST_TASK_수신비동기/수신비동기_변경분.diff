@@ -314,6 +314,291 @@
 +		}
 +	}
 +}
+--- a/CCliAsync.cs
++++ b/CCliAsync.cs
+@@ -0,0 +1,282 @@
++﻿using System;
++using System.Net.Sockets;
++using System.Threading;
++
++namespace TSK_HostCom
++{
++	// [LGLS 2026-11-16] ★송신(상위로 나가는 접속) 비동기 전환★ (사용자 지시 - 구 ECP 의 tcpClient 와 같은 방식).
++	//   종전: Send 가 블로킹이고, 응답은 Available 을 10ms 마다 들여다보다(CheckRecvSock) 블로킹 Receive 로 읽었다.
++	//         접속이 유휴인 동안은 아무도 소켓을 읽지 않아, 상대(WMS)가 끊어도 다음에 보낼 때까지 모르고
++	//         우리 쪽 소켓이 CLOSE_WAIT 로 남았다.
++	//   지금: ① 접속하면 BeginReceive 를 항상 걸어 둔다(수신 펌프). 상대가 끊으면 바로 알아채 소켓을 닫고
++	//           다음 주기(3초)에 다시 접속한다. ② 송신은 BeginSend + 시간 제한(5초)이고 종료 요청이면 즉시 중단한다.
++	//         ③ 응답은 펌프가 모은 바이트에서 전문 하나가 완성될 때까지 기다린다(쪼개져 와도 된다).
++	//   ini [Host] CLI_ASYNC=0 이면 종전 경로(RequestSrv 의 동기 방식)로 돈다. 기본 1.
++	//   전문 조립(GetStatusReport 등)과 응답 처리 문구는 그대로다.
++	partial class CCliWork
++	{
++		private const int SEND_TIMEOUT_MS = 5000;
++
++		internal static bool CliAsync
++		{
++			get
++			{
++				try
++				{
++					string strIni = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EcsComA.ini");
++					return modDefAPI.GetPrivateProfileInt("Host", "CLI_ASYNC", 1, strIni) != 0;
++				}
++				catch { return true; }
++			}
++		}
++
++		private bool m_blPump;										// 이 접속은 수신 펌프가 돈다
++		private readonly object m_rxLock = new object();
++		private byte[] m_rxQ = new byte[8192];						// 펌프가 모은 수신 바이트
++		private int m_rxLen;
++
++		private class CliRxState
++		{
++			public Socket S;
++			public byte[] B;
++		}
++
++		private enum RxResult { Ok, Timeout, Closed, Invalid }
++
++		// 접속 직후 : 수신 펌프를 시작한다
++		private void StartRxPump()
++		{
++			m_blPump = CliAsync;
++			if (!m_blPump) return;
++			lock (m_rxLock) { m_rxLen = 0; }
++			ArmRx(m_sktSock);
++		}
++
++		private void ArmRx(Socket s)
++		{
++			if (s == null) return;
++			try
++			{
++				CliRxState st = new CliRxState();
++				st.S = s;
++				st.B = new byte[2048];
++				s.BeginReceive(st.B, 0, st.B.Length, SocketFlags.None, new AsyncCallback(OnCliRx), st);
++			}
++			catch (ObjectDisposedException) { }
++			catch (SocketException se) { PumpClosed(s, "수신 대기 실패(" + se.ErrorCode + ")"); }
++			catch (Exception) { }
++		}
++
++		private void OnCliRx(IAsyncResult ar)
++		{
++			CliRxState st = (CliRxState)ar.AsyncState;
++			int n = 0;
++			try
++			{
++				n = st.S.EndReceive(ar);
++			}
++			catch (ObjectDisposedException) { return; }					// 우리가 닫았다
++			catch (SocketException se)
++			{
++				PumpClosed(st.S, "수신 오류(" + se.ErrorCode + ")");
++				return;
++			}
++			catch (Exception) { return; }
++
++			if (n <= 0)
++			{
++				PumpClosed(st.S, "상대가 연결을 끊음");
++				return;
++			}
++
++			lock (m_rxLock)
++			{
++				if (m_rxLen + n > m_rxQ.Length) m_rxLen = 0;			// 요청 없이 쌓인 데이터가 너무 많으면 버린다
++				Buffer.BlockCopy(st.B, 0, m_rxQ, m_rxLen, n);
++				m_rxLen += n;
++				Monitor.PulseAll(m_rxLock);
++			}
++
++			if (ReferenceEquals(m_sktSock, st.S)) ArmRx(st.S);
++		}
++
++		// 상대가 끊었거나 수신 오류 : 이 소켓을 닫고, 아직 현재 접속이면 끊김 상태로 돌린다(재접속은 클라이언트 스레드가 3초 주기로)
++		private void PumpClosed(Socket s, string pWhy)
++		{
++			bool blCurrent;
++			lock (modDefApp.g_objSockSync)
++			{
++				blCurrent = ReferenceEquals(m_sktSock, s);
++				if (blCurrent) m_sktSock = null;
++			}
++			try { s.Close(); } catch { }
++
++			lock (m_rxLock) { Monitor.PulseAll(m_rxLock); }				// 응답을 기다리는 쪽을 깨운다(받은 바이트는 남겨 둔다)
++			if (!blCurrent) return;
++
++			m_blSockConnected = false;
++			try { modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr); } catch { }
++			if (!modDefApp.g_blIsAppExit)
++				modCmWork.ShowMsgClient("상위 접속이 끊겼습니다 - " + pWhy + ". 다시 접속합니다.", modDefApp.MSG_IMP);
++		}
++
++		// BeginSend 로 보내고 5초 안에 못 보내면 포기한다. 종료 요청이면 즉시 중단.
++		private void SendAsync(Socket s, byte[] pBuf, int pCnt)
++		{
++			int iOff = 0;
++			while (iOff < pCnt)
++			{
++				IAsyncResult ar = s.BeginSend(pBuf, iOff, pCnt - iOff, SocketFlags.None, null, null);
++				int iWait = 0;
++				while (!ar.AsyncWaitHandle.WaitOne(100, false))
++				{
++					iWait += 100;
++					if (modDefApp.g_blIsAppExit)
++					{
++						try { s.Close(); } catch { }
++						throw new System.IO.IOException("종료 요청으로 송신을 중단합니다.");
++					}
++					if (iWait >= SEND_TIMEOUT_MS)
++					{
++						try { s.Close(); } catch { }
++						throw new System.IO.IOException("송신 시간 초과(" + SEND_TIMEOUT_MS + "ms)");
++					}
++				}
++				iOff += s.EndSend(ar);
++			}
++		}
++
++		// 펌프가 모은 바이트에서 응답 전문 하나가 완성되기를 기다린다. 완성되면 m_bytRxBuff 에 복사.
++		private RxResult WaitFrame(Socket s, int pTimeoutSec, out string pWhy)
++		{
++			pWhy = "";
++			DateTime tmEnd = DateTime.Now.AddSeconds(pTimeoutSec);
++
++			lock (m_rxLock)
++			{
++				while (true)
++				{
++					if (m_rxLen >= modDefApp.MSG_HEAD_CNT)
++					{
++						int iBody = 0;
++						try { iBody = Convert.ToInt32(System.Text.Encoding.UTF8.GetString(m_rxQ, 10, 4)); }
++						catch { pWhy = "헤더의 정보가 틀립니다."; return RxResult.Invalid; }
++
++						if (iBody < 3)
++						{
++							pWhy = string.Format("Body의 길이가 '3' 이하 입니다.[Leng={0}]", iBody);
++							return RxResult.Invalid;
++						}
++						if (modDefApp.MSG_HEAD_CNT + iBody > m_bytRxBuff.Length)
++						{
++							pWhy = string.Format("Body의 길이가 허용 범위를 넘었습니다.[Leng={0}]", iBody);
++							return RxResult.Invalid;
++						}
++
++						int iFrame = modDefApp.MSG_HEAD_CNT + iBody;
++						if (m_rxLen >= iFrame)
++						{
++							if (m_rxQ[modDefApp.MSG_HEAD_CNT] != modDefApp.STX) { pWhy = "메세지의 시작이 'STX'가 아닙니다."; return RxResult.Invalid; }
++							if (m_rxQ[iFrame - 1] != modDefApp.ETX) { pWhy = "메세지의 끝이 ETX가 아닙니다."; return RxResult.Invalid; }
++
++							Buffer.BlockCopy(m_rxQ, 0, m_bytRxBuff, 0, iFrame);
++							m_rxLen -= iFrame;
++							if (m_rxLen > 0) Buffer.BlockCopy(m_rxQ, iFrame, m_rxQ, 0, m_rxLen);
++							return RxResult.Ok;
++						}
++					}
++
++					if (!ReferenceEquals(m_sktSock, s) || !m_blSockConnected) { pWhy = "응답을 기다리는 중 상위 접속이 끊겼습니다."; return RxResult.Closed; }
++					if (modDefApp.g_blIsAppExit) { pWhy = "종료 요청으로 응답 대기를 중단합니다."; return RxResult.Closed; }
++
++					double dLeftMs = (tmEnd - DateTime.Now).TotalMilliseconds;
++					if (dLeftMs <= 0) return RxResult.Timeout;
++					Monitor.Wait(m_rxLock, (int)Math.Min(dLeftMs, 200.0));
++				}
++			}
++		}
++
++		// RequestSrv 의 비동기 판 (반환값·로그 문구는 종전과 같다)
++		private bool RequestSrvAsync(string p_strWriteCnt, int p_iTimeOut, bool p_bWaitRsps)
++		{
++			string strTitle = "[RequestSrv] ... ";
++
++			ClearBuff(ref m_bytRxBuff);
++			try
++			{
++				Socket s = m_sktSock;
++				if (s == null || !m_blSockConnected) throw new System.IO.IOException("상위 접속이 없습니다.");
++
++				lock (m_rxLock) { m_rxLen = 0; }					// 이전 요청의 늦은 응답은 버린다
++
++				SendAsync(s, m_bytTxBuff, int.Parse(p_strWriteCnt));
++
++				m_strLog = System.Text.Encoding.Default.GetString(m_bytTxBuff);
++				modCmWork.ShowMsgClient(m_strLog);
++				modDefApp.g_frmForm.InsertHostIfLog(m_BDb, m_strLog, m_strHostCmd, m_strDirection);
++
++				// S/E 는 응답을 기다리지 않는다 (인터페이스명세서)
++				if (!p_bWaitRsps) return true;
++
++				string strWhy;
++				RxResult r = WaitFrame(s, p_iTimeOut, out strWhy);
++				if (r != RxResult.Ok)
++				{
++					if (r == RxResult.Timeout)
++					{
++						m_strLog = m_strHostCmd + " 메세지의 응답이 없습니다.";
++						modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_ERR);
++					}
++					else
++					{
++						modCmWork.ShowMsgClient(strWhy, modDefApp.MSG_ERR);
++						m_strLog = m_strHostCmd + " 메세지로 인해서 리모트 시스템과 연결을 종료합니다.";
++						modCmWork.ShowMsgClient(strTitle + m_strLog, modDefApp.MSG_IMP);
++					}
++
++					m_blSockConnected = false;
++					modCmWork.CloseSocket(ref m_sktSock);
++					modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
++					return false;
++				}
++
++				// 응답 로그 (종전과 같다)
++				string strMsg = System.Text.Encoding.Default.GetString(m_bytRxBuff);
++				int IndexValue = strMsg.IndexOf(Convert.ToChar(0x03));
++				string strTemp = strMsg.Substring(0, IndexValue + 1);
++
++				modCmWork.ShowMsgClient(strTemp, modDefApp.MSG_NOR);
++				modDefApp.g_frmForm.InsertHostIfLog(m_BDb, strTemp, m_strHostCmd, "W2E");
++			}
++			catch (SocketException se)
++			{
++				m_strLog = "리모트 시스템과 연결을 종료합니다." + "(" + se.ErrorCode.ToString() + ")";
++				modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_ERR);
++
++				modDefApp.g_CliWork.m_blSockConnected = false;
++				modCmWork.CloseSocket(ref m_sktSock);
++				modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
++				return false;
++			}
++			catch (System.IO.IOException ioe)
++			{
++				modCmWork.ShowMsgClient(strTitle + ioe.Message, modDefApp.MSG_ERR);
++
++				m_blSockConnected = false;
++				modCmWork.CloseSocket(ref m_sktSock);
++				modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
++				return false;
++			}
++			catch (Exception ex)
++			{
++				modCmWork.ShowMsgClient(ex.ToString(), modDefApp.MSG_ERR);
++
++				m_blSockConnected = false;
++				modCmWork.CloseSocket(ref m_sktSock);
++				modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComErr);
++				return false;
++			}
++			return true;
++		}
++	}
++}
 --- a/modWorkThread.cs
 +++ b/modWorkThread.cs
 @@ -42,7 +42,7 @@
@@ -582,6 +867,15 @@
  			// 소켓을 ManualClose 시키면 쓰레드가 종료하면서 다시 closesocket을 호출하면서 동기화가 이루어지지 않는다.
 --- a/CCliWork.cs
 +++ b/CCliWork.cs
+@@ -8,7 +8,7 @@
+ 
+ namespace TSK_HostCom
+ {
+-	class CCliWork
++	partial class CCliWork
+ 	{
+ 		public Socket m_sktSock; //소켓
+ 		public bool m_blSockConnected;//소켓접속여부
 @@ -93,6 +93,7 @@
  				ipaddr = System.Net.IPAddress.Parse(modDefApp.g_strRemoteIP);
  				ipep = new System.Net.IPEndPoint(ipaddr, Convert.ToInt32(modDefApp.g_iRemotePort));
@@ -590,9 +884,31 @@
  
  				// [LGLS 2026-11-13] 구 ECP(TcpClient.BeginConnect, 비동기)와 같이 종료를 막지 않게 한다.
  				//   종전: 시간 제한 없는 동기 Connect → 닿지 않는 RemoteIP 면 윈도우 기본 ~21초 동안 이 스레드가
+@@ -123,6 +124,7 @@
+ 					modCmWork.SetSocketCon(ref modDefApp.g_frmForm.picCliCom, modDefApp.ComSts.ComNor);
+ 					m_strLog = "통신이 연결되었습니다.";
+ 					modCmWork.ShowMsgClient(m_strLog, modDefApp.MSG_IMP);
++					StartRxPump();	// [LGLS 2026-11-16] 수신 펌프 시작(상대가 끊으면 바로 알아챈다)
+ 
+ 					return true;
+ 				}
+@@ -2064,6 +2066,9 @@
+ 		//설명		: 요청전송
+ 		public bool RequestSrv(string p_strWriteCnt, int p_iTimeOut = modDefApp.TIME_OUT, bool p_bWaitRsps = true)
+ 		{
++            // [LGLS 2026-11-16] 비동기 송신(CCliAsync.cs). ini [Host] CLI_ASYNC=0 이면 아래 종전 경로.
++            if (m_blPump) return RequestSrvAsync(p_strWriteCnt, p_iTimeOut, p_bWaitRsps);
++
+             string strTitle = "[RequestSrv] ... ";
+ 
+ 			//2회 반복은 무의미, 실제 1회 전송 후 대기시간을 길게 하는게 효과적
 --- a/TSK_HostCom.csproj
 +++ b/TSK_HostCom.csproj
-@@ -95,6 +95,7 @@
+@@ -92,9 +92,11 @@
+       <Link>CallerInfoAttrs40.cs</Link>
+     </Compile>
+     <Compile Include="CCliWork.cs" />
++    <Compile Include="CCliAsync.cs" />
      <Compile Include="cDbPostUse.cs" />
      <Compile Include="CLog.cs" />
      <Compile Include="CSrvWork.cs" />
