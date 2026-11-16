@@ -599,6 +599,395 @@
 +		}
 +	}
 +}
+--- a/PortCleaner.cs
++++ b/PortCleaner.cs
+@@ -0,0 +1,386 @@
++﻿using System;
++using System.Collections.Generic;
++using System.Diagnostics;
++using System.Net;
++using System.Runtime.InteropServices;
++using System.Security.Principal;
++using System.Text;
++using System.Windows.Forms;
++
++namespace TSK_HostCom
++{
++	// [LGLS 2026-11-16] ★[포트 정리] 버튼의 본체★ (사용자 지시).
++	//   HOST_TASK 를 껐는데도 수신 포트(9911)에 CLOSE_WAIT 가 남고, netstat 의 PID 는 있는데 그 프로세스는 없는 경우가 있다
++	//   (자식 프로세스가 소켓을 물려받아 쥐고 있는 경우 등). 이때 남은 접속을 윈도우에서 직접 지운다.
++	//   SetTcpEntry(MIB_TCP_STATE_DELETE_TCB) = Sysinternals TCPView 의 [Close Connection] 과 같은 동작이다.
++	//   - IPv4 만, ★관리자 권한★ 이 필요하다. LISTENING 소켓은 끊을 수 없다(쥔 프로세스를 끝내야 한다).
++	//   - 상대에게 FIN/RST 를 보내지 않고 이 PC 쪽 접속 정보만 지운다.
++	//   화면(MessageBox)과 로그는 호출하는 쪽(frmMain)이 맡는다 - 이 클래스는 조회/삭제만 한다.
++	static class PortCleaner
++	{
++		public class Row
++		{
++			public uint State;
++			public uint RawLocalAddr, RawLocalPort, RawRemoteAddr, RawRemotePort;   // 표에서 읽은 값 그대로(네트워크 바이트 순서)
++			public int LocalPort, RemotePort;
++			public string LocalIp, RemoteIp;
++			public int Pid;
++			public bool ProcAlive;
++			public string ProcName;
++
++			public string StateName { get { return PortCleaner.StateName(State); } }
++
++			public override string ToString()
++			{
++				return string.Format("{0}:{1} <- {2}:{3} [{4}] PID {5} {6}",
++					LocalIp, LocalPort, RemoteIp, RemotePort, StateName, Pid,
++					ProcAlive ? "(" + ProcName + ")" : "(없는 프로세스)");
++			}
++		}
++
++		[StructLayout(LayoutKind.Sequential)]
++		private struct MIB_TCPROW_OWNER_PID
++		{
++			public uint dwState;
++			public uint dwLocalAddr;
++			public uint dwLocalPort;
++			public uint dwRemoteAddr;
++			public uint dwRemotePort;
++			public uint dwOwningPid;
++		}
++
++		[StructLayout(LayoutKind.Sequential)]
++		private struct MIB_TCPROW
++		{
++			public uint dwState;
++			public uint dwLocalAddr;
++			public uint dwLocalPort;
++			public uint dwRemoteAddr;
++			public uint dwRemotePort;
++		}
++
++		[DllImport("iphlpapi.dll", SetLastError = true)]
++		private static extern uint GetExtendedTcpTable(IntPtr pTcpTable, ref int pdwSize, bool bOrder, int ulAf, int tableClass, uint reserved);
++
++		[DllImport("iphlpapi.dll")]
++		private static extern int SetTcpEntry(ref MIB_TCPROW pTcpRow);
++
++		private const int AF_INET = 2;
++		private const int TCP_TABLE_OWNER_PID_ALL = 5;
++		private const uint STATE_LISTEN = 2, STATE_CLOSE_WAIT = 8, STATE_TIME_WAIT = 11, STATE_DELETE_TCB = 12;
++
++		public static string StateName(uint s)
++		{
++			switch (s)
++			{
++				case 1: return "CLOSED";
++				case 2: return "LISTENING";
++				case 3: return "SYN_SENT";
++				case 4: return "SYN_RECEIVED";
++				case 5: return "ESTABLISHED";
++				case 6: return "FIN_WAIT_1";
++				case 7: return "FIN_WAIT_2";
++				case 8: return "CLOSE_WAIT";
++				case 9: return "CLOSING";
++				case 10: return "LAST_ACK";
++				case 11: return "TIME_WAIT";
++				case 12: return "DELETE_TCB";
++				default: return "STATE_" + s;
++			}
++		}
++
++		private static int PortOf(uint raw)
++		{
++			// 낮은 16비트가 네트워크 바이트 순서
++			return (int)(((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF));
++		}
++
++		public static bool IsAdmin()
++		{
++#if TEST_FORCE_ADMIN
++			return true;	// 시험 하네스 전용 컴파일 심볼 - 현장 빌드에는 정의되지 않는다
++#endif
++			try
++			{
++				return new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
++			}
++			catch { return false; }
++		}
++
++		/// <summary>지정 포트가 로컬 또는 원격 포트인 IPv4 접속 전부</summary>
++		public static List<Row> List(int pPort)
++		{
++			List<Row> lst = new List<Row>();
++
++			int iSize = 0;
++			GetExtendedTcpTable(IntPtr.Zero, ref iSize, true, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
++			IntPtr pTab = Marshal.AllocHGlobal(iSize + 4096);	// 두 호출 사이에 늘 수 있어 여유를 둔다
++			try
++			{
++				int iSize2 = iSize + 4096;
++				uint rc = GetExtendedTcpTable(pTab, ref iSize2, true, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
++				if (rc != 0) throw new InvalidOperationException("GetExtendedTcpTable 실패(코드 " + rc + ")");
++
++				int n = Marshal.ReadInt32(pTab);
++				IntPtr pRow = new IntPtr(pTab.ToInt64() + 4);
++				int rowSize = Marshal.SizeOf(typeof(MIB_TCPROW_OWNER_PID));
++				for (int i = 0; i < n; i++)
++				{
++					MIB_TCPROW_OWNER_PID r = (MIB_TCPROW_OWNER_PID)Marshal.PtrToStructure(pRow, typeof(MIB_TCPROW_OWNER_PID));
++					pRow = new IntPtr(pRow.ToInt64() + rowSize);
++
++					int lp = PortOf(r.dwLocalPort);
++					int rp = PortOf(r.dwRemotePort);
++					if (lp != pPort && rp != pPort) continue;
++
++					Row x = new Row();
++					x.State = r.dwState;
++					x.RawLocalAddr = r.dwLocalAddr; x.RawLocalPort = r.dwLocalPort;
++					x.RawRemoteAddr = r.dwRemoteAddr; x.RawRemotePort = r.dwRemotePort;
++					x.LocalPort = lp; x.RemotePort = rp;
++					x.LocalIp = new IPAddress(r.dwLocalAddr).ToString();
++					x.RemoteIp = new IPAddress(r.dwRemoteAddr).ToString();
++					x.Pid = (int)r.dwOwningPid;
++					x.ProcName = "";
++					x.ProcAlive = false;
++					if (x.Pid > 0)
++					{
++						try { Process p = Process.GetProcessById(x.Pid); x.ProcName = p.ProcessName; x.ProcAlive = true; }
++						catch { }
++					}
++					lst.Add(x);
++				}
++			}
++			finally
++			{
++				Marshal.FreeHGlobal(pTab);
++			}
++			return lst;
++		}
++
++		/// <summary>끊을 대상인가 : 이 포트가 로컬이고, CLOSE_WAIT 이거나 소유 프로세스가 없는(LISTENING·TIME_WAIT 제외) 접속</summary>
++		public static bool IsTarget(Row r, int pPort)
++		{
++			if (r.LocalPort != pPort) return false;
++			if (r.State == STATE_LISTEN || r.State == STATE_TIME_WAIT || r.State == STATE_DELETE_TCB) return false;
++			if (r.State == STATE_CLOSE_WAIT) return true;
++			return !r.ProcAlive;
++		}
++
++		/// <summary>끊을 수 없는 남은 소켓인가 : 소유 프로세스가 없는 LISTENING</summary>
++		public static bool IsStuckListen(Row r, int pPort)
++		{
++			return r.LocalPort == pPort && r.State == STATE_LISTEN && !r.ProcAlive;
++		}
++
++		/// <summary>접속 하나를 지운다. 0 이면 성공, 5 = 관리자 권한 필요, 그 밖은 윈도우 오류 코드.</summary>
++		public static int Delete(Row r)
++		{
++			MIB_TCPROW m = new MIB_TCPROW();
++			m.dwState = STATE_DELETE_TCB;
++			m.dwLocalAddr = r.RawLocalAddr;
++			m.dwLocalPort = r.RawLocalPort;
++			m.dwRemoteAddr = r.RawRemoteAddr;
++			m.dwRemotePort = r.RawRemotePort;
++			return SetTcpEntry(ref m);
++		}
++
++		// ---- 화면 : [포트 정리] 버튼 ----
++
++		// netstat -ano 를 실제로 실행해 ":포트" 가 들어간 줄만 모은다 (= netstat -ano | findstr :포트)
++		private static string RunNetstat(int pPort)
++		{
++			StringBuilder sb = new StringBuilder();
++			try
++			{
++				ProcessStartInfo psi = new ProcessStartInfo(System.IO.Path.Combine(Environment.SystemDirectory, "netstat.exe"), "-ano");
++				psi.UseShellExecute = false;
++				psi.CreateNoWindow = true;
++				psi.RedirectStandardOutput = true;
++				psi.StandardOutputEncoding = Encoding.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
++				using (Process p = Process.Start(psi))
++				{
++					string strAll = p.StandardOutput.ReadToEnd();
++					p.WaitForExit(10000);
++					string strKey = ":" + pPort;
++					foreach (string line in strAll.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
++					{
++						string t = line.TrimEnd('\r');
++						if (t.IndexOf(strKey, StringComparison.Ordinal) >= 0) sb.AppendLine(t);
++					}
++				}
++			}
++			catch (Exception ex)
++			{
++				sb.AppendLine("netstat 실행 실패 : " + ex.Message);
++			}
++			return sb.ToString();
++		}
++
++		// PID 별로 프로세스가 지금 있는지 한눈에 보여 준다
++		private static string PidSummary(List<Row> pRows, int pPort)
++		{
++			StringBuilder sb = new StringBuilder();
++			List<int> seen = new List<int>();
++			foreach (Row r in pRows)
++			{
++				if (r.LocalPort != pPort && r.RemotePort != pPort) continue;
++				if (r.Pid <= 0 || seen.Contains(r.Pid)) continue;
++				seen.Add(r.Pid);
++				sb.AppendLine("  PID " + r.Pid + " : " + (r.ProcAlive ? r.ProcName + " (실행 중)" : "프로세스 없음 - 다른 프로세스가 소켓을 쥐고 있을 수 있음"));
++			}
++			return sb.ToString();
++		}
++
++		// netstat 결과 창 (모달리스, 뜬 채로 두고 정리 뒤 [새로고침] 으로 다시 볼 수 있다)
++		private class NetstatForm : Form
++		{
++			private readonly int m_iPort;
++			private TextBox m_txt;
++
++			public NetstatForm(int pPort)
++			{
++				m_iPort = pPort;
++				this.Text = "포트 정리 - netstat -ano | findstr :" + pPort;
++				this.StartPosition = FormStartPosition.CenterParent;
++				this.Size = new System.Drawing.Size(900, 480);
++				this.ShowIcon = false;
++				this.ShowInTaskbar = false;
++
++				m_txt = new TextBox();
++				m_txt.Multiline = true;
++				m_txt.ReadOnly = true;
++				m_txt.ScrollBars = ScrollBars.Both;
++				m_txt.WordWrap = false;
++				m_txt.Font = new System.Drawing.Font("Consolas", 10f);
++				m_txt.Dock = DockStyle.Fill;
++
++				Panel pnl = new Panel();
++				pnl.Dock = DockStyle.Bottom;
++				pnl.Height = 40;
++
++				Button btnRe = new Button();
++				btnRe.Text = "새로고침";
++				btnRe.Size = new System.Drawing.Size(90, 26);
++				btnRe.Location = new System.Drawing.Point(10, 7);
++				btnRe.Click += delegate { RefreshText(); };
++
++				Button btnClose = new Button();
++				btnClose.Text = "닫기";
++				btnClose.Size = new System.Drawing.Size(90, 26);
++				btnClose.Location = new System.Drawing.Point(110, 7);
++				btnClose.Click += delegate { this.Close(); };
++
++				pnl.Controls.Add(btnRe);
++				pnl.Controls.Add(btnClose);
++				this.Controls.Add(m_txt);
++				this.Controls.Add(pnl);
++			}
++
++			public void RefreshText()
++			{
++				StringBuilder sb = new StringBuilder();
++				sb.AppendLine("조회 시각 : " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
++				sb.AppendLine("> netstat -ano | findstr :" + m_iPort);
++				sb.AppendLine();
++				string strNet = RunNetstat(m_iPort);
++				sb.Append(strNet.Length == 0 ? "(해당 접속이 없습니다)\r\n" : strNet);
++				try
++				{
++					string strPid = PidSummary(List(m_iPort), m_iPort);
++					if (strPid.Length > 0)
++					{
++						sb.AppendLine();
++						sb.AppendLine("[PID 별 프로세스]");
++						sb.Append(strPid);
++					}
++				}
++				catch (Exception ex) { sb.AppendLine("PID 조회 실패 : " + ex.Message); }
++				m_txt.Text = sb.ToString().Replace("\r\n", "\n").Replace("\n", "\r\n");
++				m_txt.SelectionStart = 0;
++				m_txt.SelectionLength = 0;
++			}
++		}
++
++		public static void RunUi(IWin32Window pOwner, int pPort)
++		{
++			string strTitle = "포트 정리";
++			NetstatForm f = null;
++			try
++			{
++				// 1) 현재 netstat 를 창으로 보여 준다 (창은 뜬 채로 둔다)
++				f = new NetstatForm(pPort);
++				f.RefreshText();
++				f.Show(pOwner);
++				f.Refresh();
++
++				// 2) 끊을 수 있는 대상(CLOSE_WAIT, 소유 프로세스가 없는 접속)을 센다
++				List<Row> rows = List(pPort);
++				List<Row> targets = new List<Row>();
++				int nLocal = 0, nStuckListen = 0;
++				foreach (Row r in rows)
++				{
++					if (r.LocalPort != pPort) continue;
++					nLocal++;
++					if (IsTarget(r, pPort)) targets.Add(r);
++					if (IsStuckListen(r, pPort)) nStuckListen++;
++				}
++
++				if (nLocal == 0)
++				{
++					MessageBox.Show(f, "수신 포트 " + pPort + " 에 남은 접속이 없습니다.", strTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
++					return;
++				}
++
++				if (targets.Count == 0)
++				{
++					string strNo = "끊을 수 있는 접속(CLOSE_WAIT, 또는 소유 프로세스가 없는 접속)이 없습니다.";
++					if (nStuckListen > 0)
++						strNo += "\r\n\r\n소유 프로세스가 없는 LISTENING 이 있습니다. 이 소켓은 끊을 수 없습니다.\r\n"
++							+ "그 소켓을 물려받아 쥔 프로세스(메모장 등 HOST_TASK 에서 띄운 프로그램)를 찾아 닫아야 합니다.";
++					MessageBox.Show(f, strNo, strTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
++					return;
++				}
++
++				if (!IsAdmin())
++				{
++					MessageBox.Show(f, "끊을 수 있는 접속이 " + targets.Count + "건 있지만 관리자 권한이 아니라 끊을 수 없습니다.\r\n"
++						+ "HOST_TASK 를 [관리자 권한으로 실행] 한 뒤 다시 눌러 주세요.",
++						strTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
++					return;
++				}
++
++				// 3) 확인 : 예 를 눌러야만 정리한다
++				StringBuilder sbT = new StringBuilder();
++				foreach (Row t in targets) sbT.AppendLine("  " + t.ToString());
++				DialogResult dr = MessageBox.Show(f,
++					"정리할 접속 " + targets.Count + "건 :\r\n" + sbT.ToString()
++					+ "\r\nLISTENING은 끊을 수 없습니다. 계속 진행하겠습니까?",
++					strTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
++				if (dr != DialogResult.Yes) return;
++
++				// 4) 정리
++				int nOk = 0, nFail = 0;
++				StringBuilder sbR = new StringBuilder();
++				foreach (Row t in targets)
++				{
++					int rc = Delete(t);
++					string strRes = (rc == 0) ? "끊음" : ((rc == 5 || rc == 317) ? "실패(코드 " + rc + " - 관리자 권한이 필요하거나 이미 없는 접속)" : "실패(코드 " + rc + ")");
++					if (rc == 0) nOk++; else nFail++;
++					sbR.AppendLine("  " + t.ToString() + " : " + strRes);
++					modCmWork.ShowMsgServer("[포트 정리] " + t.ToString() + " : " + strRes, rc == 0 ? modDefApp.MSG_IMP : modDefApp.MSG_ERR);
++				}
++
++				System.Threading.Thread.Sleep(500);
++				f.RefreshText();	// 정리한 뒤의 netstat 를 다시 보여 준다
++				MessageBox.Show(f, "끊음 " + nOk + "건, 실패 " + nFail + "건\r\n\r\n" + sbR.ToString(), strTitle,
++					MessageBoxButtons.OK, nFail == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
++			}
++			catch (Exception ex)
++			{
++				modCmWork.ShowMsgServer("[포트 정리] 오류 : " + ex.Message, modDefApp.MSG_ERR);
++				MessageBox.Show("포트 정리 중 오류가 났습니다.\r\n" + ex.Message, strTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
++			}
++		}
++	}
++}
 --- a/modWorkThread.cs
 +++ b/modWorkThread.cs
 @@ -42,7 +42,7 @@
@@ -788,7 +1177,24 @@
                  }
                  catch
                  {
-@@ -249,7 +251,10 @@
+@@ -58,6 +60,16 @@
+             };
+             this.pnlMsg2.Controls.Add(btnIni);   // [LGLS 2026-09-03] 닫기 버튼과 같은 패널
+             btnIni.BringToFront();
++
++            // [LGLS 2026-11-16] [포트 정리] : 현재 netstat 를 창으로 보여 주고, LISTENING 은 끊을 수 없음을 확인받은 뒤
++            //   CLOSE_WAIT 등 남은 접속을 정리한다(PortCleaner.cs, 관리자 권한 필요).
++            var btnPort = new System.Windows.Forms.Button { Text = "포트 정리",
++                Size = new System.Drawing.Size(72, 22),
++                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right,
++                Location = new System.Drawing.Point(btnIni.Left - 80, btnIni.Top) };
++            btnPort.Click += delegate { PortCleaner.RunUi(this, modDefApp.g_iListenPort); };
++            this.pnlMsg2.Controls.Add(btnPort);
++            btnPort.BringToFront();
+         }
+ 
+         Color color1 = Color.FromArgb(129, 156, 203);
+@@ -249,7 +261,10 @@
  			{
  				try
  				{
@@ -800,7 +1206,7 @@
  					{
  						if (pJoinMs < 0) w.m_thrThreadObj.Join();
  						else if (!w.m_thrThreadObj.Join(pJoinMs))
-@@ -409,8 +414,8 @@
+@@ -409,8 +424,8 @@
  		public string[] GetThreadStates()
  		{
  			bool bLsn = (g_thrListenThreadObj != null && g_thrListenThreadObj.IsAlive);
@@ -904,11 +1310,12 @@
  			//2회 반복은 무의미, 실제 1회 전송 후 대기시간을 길게 하는게 효과적
 --- a/TSK_HostCom.csproj
 +++ b/TSK_HostCom.csproj
-@@ -92,9 +92,11 @@
+@@ -92,9 +92,12 @@
        <Link>CallerInfoAttrs40.cs</Link>
      </Compile>
      <Compile Include="CCliWork.cs" />
 +    <Compile Include="CCliAsync.cs" />
++    <Compile Include="PortCleaner.cs" />
      <Compile Include="cDbPostUse.cs" />
      <Compile Include="CLog.cs" />
      <Compile Include="CSrvWork.cs" />
