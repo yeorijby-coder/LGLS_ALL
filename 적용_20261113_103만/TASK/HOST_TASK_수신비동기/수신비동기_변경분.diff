@@ -601,7 +601,7 @@
 +}
 --- a/PortCleaner.cs
 +++ b/PortCleaner.cs
-@@ -0,0 +1,506 @@
+@@ -0,0 +1,662 @@
 +﻿using System;
 +using System.Collections.Generic;
 +using System.Diagnostics;
@@ -906,6 +906,88 @@
 +			}
 +		}
 +
++		// ---- 죽은 PID 가 쥔 소켓 핸들 닫기 (HandleHunter.exe 호출) ----
++		//   HOST_TASK 는 x86 이고 시스템 핸들 조회는 x64 가 필요해, 같은 폴더의 HandleHunter.exe(x64)를 불러 쓴다.
++
++		private static string FindHunter()
++		{
++			try
++			{
++				string p = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HandleHunter.exe");
++				return System.IO.File.Exists(p) ? p : null;
++			}
++			catch { return null; }
++		}
++
++		// HandleHunter.exe <포트> --owner <PID> [--close] 를 실행하고 출력 전체를 돌려준다
++		private static string RunHunter(string pExe, int pPort, int pOwner, bool pClose, out int pExit)
++		{
++			pExit = -1;
++			ProcessStartInfo psi = new ProcessStartInfo(pExe, pPort + " --owner " + pOwner + (pClose ? " --close" : ""));
++			psi.UseShellExecute = false;
++			psi.CreateNoWindow = true;
++			psi.RedirectStandardOutput = true;
++			psi.RedirectStandardError = true;
++			Encoding enc = Encoding.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
++			psi.StandardOutputEncoding = enc;
++			psi.StandardErrorEncoding = enc;
++			using (Process p = Process.Start(psi))
++			{
++				string o = p.StandardOutput.ReadToEnd();
++				string e = p.StandardError.ReadToEnd();
++				if (!p.WaitForExit(30000))
++				{
++					try { p.Kill(); } catch { }
++					return o + e + "\r\n(시간 초과로 중단)";
++				}
++				pExit = p.ExitCode;
++				return o + e;
++			}
++		}
++
++		// "PID 9940   cmd   핸들 0x3DC  0.0.0.0:9911  상대 -  [LISTENING]" → "PID 9940  cmd  (0.0.0.0:9911, LISTENING)" 로 줄여 보여 준다
++		private static string ShortHolder(string pLine)
++		{
++			System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(pLine,
++				@"^PID\s+(\d+)\s+(\S+)\s+핸들\s+(0x[0-9A-Fa-f]+)\s+(\S+)\s+상대\s+(\S+)\s+\[(.+?)\]");
++			if (!m.Success) return pLine;
++			return "PID " + m.Groups[1].Value + "  " + m.Groups[2].Value + "  (" + m.Groups[4].Value + ", " + m.Groups[6].Value + ")";
++		}
++
++		// "  PID 9940   cmd   핸들 0x3DC  0.0.0.0:18112  상대 -  [LISTENING]" 꼴의 줄만
++		private static List<string> HolderLines(string pOut)
++		{
++			List<string> lst = new List<string>();
++			foreach (string line in pOut.Split('\n'))
++			{
++				string t = line.TrimEnd('\r');
++				if (System.Text.RegularExpressions.Regex.IsMatch(t, @"^\s+PID\s+\d+\s")) lst.Add(t.Trim());
++			}
++			return lst;
++		}
++
++		// 이 프로그램 자신이 쥔 접속 요약 (없으면 빈 문자열)
++		private static string SelfSummary(List<Row> pRows, int pPort)
++		{
++			int myPid = Process.GetCurrentProcess().Id;
++			int nL = 0, nC = 0, nO = 0;
++			foreach (Row r in pRows)
++			{
++				if (r.LocalPort != pPort || r.Pid != myPid) continue;
++				if (r.State == STATE_LISTEN) nL++;
++				else if (r.State == STATE_CLOSE_WAIT) nC++;
++				else nO++;
++			}
++			if (nL + nC + nO == 0) return "";
++			StringBuilder sb = new StringBuilder();
++			if (nL > 0) sb.Append("LISTENING " + nL + "건 ");
++			if (nC > 0) sb.Append("CLOSE_WAIT " + nC + "건 ");
++			if (nO > 0) sb.Append("그 밖 " + nO + "건");
++			string nm = "";
++			try { nm = Process.GetCurrentProcess().ProcessName; } catch { }
++			return "PID " + myPid + "  " + nm + "  (" + sb.ToString().Trim() + ")";
++		}
++
 +		// TASKKILL 대상에서 제외하는 프로세스 이름(시스템 보호)
 +		private static readonly string[] s_arrProtected = new string[] {
 +			"system", "idle", "svchost", "lsass", "services", "wininit", "winlogon", "csrss", "smss", "explorer", "dwm", "sqlservr" };
@@ -937,12 +1019,9 @@
 +				if (r.LocalPort != pPort) continue;
 +				if (!r.ProcAlive || r.Pid <= 4) continue;				// 소유 프로세스가 없으면 죽일 대상도 없다
 +				bool blSkip = false; string why = "";
-+				if (r.Pid == myPid) { blSkip = true; why = "이 프로그램(HOST_TASK) 자신"; }
-+				else
-+				{
-+					foreach (string nm in s_arrProtected)
-+						if (string.Equals(r.ProcName, nm, StringComparison.OrdinalIgnoreCase)) { blSkip = true; why = "시스템 보호 프로세스"; break; }
-+				}
++				if (r.Pid == myPid) continue;						// 자기 자신은 목록에서 빼고, 아래 [자기 자신 종료] 확인으로 따로 묻는다
++				foreach (string nm in s_arrProtected)
++					if (string.Equals(r.ProcName, nm, StringComparison.OrdinalIgnoreCase)) { blSkip = true; why = "시스템 보호 프로세스"; break; }
 +				if (blSkip)
 +				{
 +					if (!seenSkip.Contains(r.Pid)) { seenSkip.Add(r.Pid); skip.AppendLine("  PID " + r.Pid + " " + r.ProcName + " - " + why + "라 제외"); }
@@ -989,7 +1068,19 @@
 +			}
 +		}
 +
-+		public static void RunUi(IWin32Window pOwner, int pPort)
++		// pExitApp : 이 프로그램을 종료하는 동작(호출하는 쪽이 준다). [자기 자신 종료] 에 예를 눌렀을 때만, 모든 작업을 마친 뒤 마지막에 부른다.
++		public static void RunUi(IWin32Window pOwner, int pPort, Action pExitApp)
++		{
++			bool blExitAtEnd = false;
++			RunSteps(pOwner, pPort, ref blExitAtEnd);
++			if (blExitAtEnd)
++			{
++				modCmWork.ShowMsgServer("[포트 정리] 요청에 따라 이 프로그램(HOST_TASK)을 종료합니다.", modDefApp.MSG_IMP);
++				if (pExitApp != null) pExitApp();
++			}
++		}
++
++		private static void RunSteps(IWin32Window pOwner, int pPort, ref bool pExitAtEnd)
 +		{
 +			string strTitle = "포트 정리";
 +			NetstatForm f = null;
@@ -1013,6 +1104,7 @@
 +				// 2) netstat 에 나온 PID 를 TASKKILL 할지 묻는다 : 예 = 강제 종료, 아니요 = 다음 단계
 +				string strSkip;
 +				List<KillItem> kills = KillCandidates(rows, pPort, out strSkip);
++				bool blKilledOthers = false;
 +				if (kills.Count > 0)
 +				{
 +					StringBuilder sbK = new StringBuilder();
@@ -1039,7 +1131,71 @@
 +						MessageBox.Show(f, "종료 " + nOkK + "건, 실패 " + nFailK + "건\r\n\r\n" + sbRK.ToString()
 +							+ "\r\n정리한 뒤의 netstat 를 창에 다시 표시했습니다.", strTitle,
 +							MessageBoxButtons.OK, nFailK == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
-+						return;
++						blKilledOthers = true;
++					}
++				}
++
++				// 2-1) 자기 자신(HOST_TASK) : 목록에서 뺀 대신 따로 묻는다. 예 = 다른 작업을 모두 마친 뒤 마지막에 종료한다.
++				string strSelf = SelfSummary(rows, pPort);
++				if (strSelf.Length > 0)
++				{
++					DialogResult drS = MessageBox.Show(f,
++						"현재 구동중인 프로그램 입니다.\r\n\r\n  " + strSelf
++						+ "\r\n\r\n이 프로그램을 종료하시겠습니까?\r\n\r\n예 : 다른 작업을 모두 마친 뒤 마지막에 이 프로그램을 종료합니다.\r\n아니요 : 종료하지 않습니다.",
++						strTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
++					if (drS == DialogResult.Yes) pExitAtEnd = true;
++				}
++				if (blKilledOthers) return;
++
++				// 2-2) 죽은 PID 가 남긴 소켓 : 그 프로세스의 자손이 물려받아 쥔 핸들을 찾아, 닫을지 묻는다 (HandleHunter.exe)
++				string strHuntNote = "";
++				List<int> deadPids = new List<int>();
++				foreach (Row r in rows)
++					if (r.LocalPort == pPort && !r.ProcAlive && r.Pid > 4 && !deadPids.Contains(r.Pid)) deadPids.Add(r.Pid);
++				if (deadPids.Count > 0)
++				{
++					string hunter = FindHunter();
++					if (hunter == null)
++					{
++						strHuntNote = "죽은 PID 가 쥔 소켓 핸들 닫기: HandleHunter.exe 가 HOST_TASK 와 같은 폴더에 없어 건너뜁니다.\r\n\r\n";
++					}
++					else
++					{
++						foreach (int dp in deadPids)
++						{
++							int rcF;
++							string outF = RunHunter(hunter, pPort, dp, false, out rcF);
++							List<string> hl = HolderLines(outF);
++							if (hl.Count == 0)
++							{
++								strHuntNote += "죽은 PID " + dp + " 의 자손 프로세스에서 포트 " + pPort + " 를 쥔 핸들을 찾지 못했습니다.\r\n";
++								continue;
++							}
++
++							StringBuilder sbH = new StringBuilder();
++							foreach (string l in hl) sbH.AppendLine("  " + ShortHolder(l));
++							DialogResult drH = MessageBox.Show(f,
++								"PID " + dp + " 프로세스는 이미 없지만, 그 프로세스가 띄운 프로세스가 포트 " + pPort + " 소켓의 핸들을 쥐고 있습니다.\r\n\r\n"
++								+ sbH.ToString()
++								+ "\r\n이 핸들만 닫습니다(프로세스는 종료하지 않습니다). 닫겠습니까?",
++								strTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
++							if (drH != DialogResult.Yes) continue;
++
++							int rcC;
++							string outC = RunHunter(hunter, pPort, dp, true, out rcC);
++							int nClosed = 0, pos = 0;
++							while ((pos = outC.IndexOf("닫았습니다", pos, StringComparison.Ordinal)) >= 0) { nClosed++; pos += 5; }
++							StringBuilder sbC = new StringBuilder();
++							foreach (string l in HolderLines(outC)) sbC.AppendLine("  " + ShortHolder(l));
++							modCmWork.ShowMsgServer("[포트 정리] 죽은 PID " + dp + " 의 포트 " + pPort + " 소켓 핸들 닫기 : " + nClosed + "개 닫음", nClosed > 0 ? modDefApp.MSG_IMP : modDefApp.MSG_ERR);
++							System.Threading.Thread.Sleep(500);
++							f.RefreshText();
++							MessageBox.Show(f, "닫은 핸들 " + nClosed + "개\r\n\r\n" + sbC.ToString()
++								+ "\r\n쥐고 있던 프로세스는 종료하지 않았습니다.\r\n정리한 뒤의 netstat 를 창에 다시 표시했습니다.", strTitle,
++								MessageBoxButtons.OK, nClosed > 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
++							return;
++						}
++						if (strHuntNote.Length > 0) strHuntNote += "\r\n";
 +					}
 +				}
 +
@@ -1053,8 +1209,8 @@
 +					if (IsStuckListen(r, pPort)) nStuckListen++;
 +				}
 +
-+				string strNote = (kills.Count == 0)
-+					? "TASKKILL 할 수 있는 프로세스가 없습니다(소유 프로세스가 없거나, 이 프로그램 자신/시스템 프로세스).\r\n\r\n" : "";
++				string strNote = strHuntNote + ((kills.Count == 0)
++					? "TASKKILL 할 수 있는 프로세스가 없습니다(소유 프로세스가 없거나, 이 프로그램 자신/시스템 프로세스).\r\n\r\n" : "");
 +
 +				if (targets.Count == 0)
 +				{
@@ -1297,7 +1453,7 @@
                  }
                  catch
                  {
-@@ -58,6 +60,16 @@
+@@ -58,6 +60,20 @@
              };
              this.pnlMsg2.Controls.Add(btnIni);   // [LGLS 2026-09-03] 닫기 버튼과 같은 패널
              btnIni.BringToFront();
@@ -1308,13 +1464,17 @@
 +                Size = new System.Drawing.Size(72, 22),
 +                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right,
 +                Location = new System.Drawing.Point(btnIni.Left - 80, btnIni.Top) };
-+            btnPort.Click += delegate { PortCleaner.RunUi(this, modDefApp.g_iListenPort); };
++            btnPort.Click += delegate
++            {
++                // [자기 자신 종료] 에 예를 눌렀을 때만 모든 작업이 끝난 뒤 마지막에 불린다 - 정상 종료 절차(확인창 없이 FormClosing)로 닫는다
++                PortCleaner.RunUi(this, modDefApp.g_iListenPort, delegate { modDefApp.g_blSTOP_REQ = true; this.Close(); });
++            };
 +            this.pnlMsg2.Controls.Add(btnPort);
 +            btnPort.BringToFront();
          }
  
          Color color1 = Color.FromArgb(129, 156, 203);
-@@ -249,7 +261,10 @@
+@@ -249,7 +265,10 @@
  			{
  				try
  				{
@@ -1326,7 +1486,7 @@
  					{
  						if (pJoinMs < 0) w.m_thrThreadObj.Join();
  						else if (!w.m_thrThreadObj.Join(pJoinMs))
-@@ -409,8 +424,8 @@
+@@ -409,8 +428,8 @@
  		public string[] GetThreadStates()
  		{
  			bool bLsn = (g_thrListenThreadObj != null && g_thrListenThreadObj.IsAlive);
