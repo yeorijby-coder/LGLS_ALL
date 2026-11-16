@@ -325,7 +325,7 @@
  		{
  			get
  			{
-@@ -74,6 +74,107 @@
+@@ -74,6 +74,109 @@
  			}
  		}
  
@@ -395,6 +395,8 @@
 +				return;
 +			}
 +
++			modCmWork.NoInherit(pSock);		// [LGLS 2026-11-16] 자식 프로세스가 물려받지 않게
++
 +			// 접속마다 CSrvWork 를 하나씩 만든다(구 ECP TcpServer.Clients 와 같은 꼴). 제 소켓만 닫는다.
 +			CSrvWork w = new CSrvWork();
 +			if (!SrvMultiConn)
@@ -433,7 +435,15 @@
  		public static void ListenThread()
  		{
  			string strLog = null;
-@@ -107,6 +208,15 @@
+@@ -93,6 +196,7 @@
+ 					// [LGLS 2026-11-13] 이전 접속(ESTABLISHED/CLOSE_WAIT)이 같은 포트에 남아 있어도 열리게 한다 (사용자 지시 - 현장 "수신 포트를 열 수 없다").
+ 					try { modDefApp.g_tcplsn.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
+ 					modDefApp.g_tcplsn.Start();
++						modCmWork.NoInherit(modDefApp.g_tcplsn.Server);	// [LGLS 2026-11-16] 자식 프로세스가 물려받지 않게
+ 					break;				// 열렸다
+ 				}
+ 				catch (SocketException se)
+@@ -107,6 +211,15 @@
  			}
  			if (!modDefApp.g_blListenThread) return;
  
@@ -449,9 +459,28 @@
  			while (modDefApp.g_blListenThread)
  			{
  				modDefAPI.SleepA(1000);
+@@ -138,6 +251,7 @@
+ 					try
+ 					{
+ 						w.m_sktSock = modDefApp.g_tcplsn.AcceptSocket();
++						modCmWork.NoInherit(w.m_sktSock);	// [LGLS 2026-11-16]
+ 					}
+ 					catch (SocketException se)
+ 					{
 --- a/frmMain.cs
 +++ b/frmMain.cs
-@@ -249,7 +249,10 @@
+@@ -49,7 +49,9 @@
+                         Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                         (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess) ? "Sysnative" : "System32",
+                         "notepad.exe");
+-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strNotepad, "\"" + strIni + "\"") { UseShellExecute = false });
++                    // [LGLS 2026-11-16] UseShellExecute=false 는 CreateProcess 를 핸들 상속 허용으로 불러, 메모장이 열린 소켓을 통째로 물려받았다
++                    //   (HOST_TASK 를 끈 뒤에도 메모장이 떠 있는 동안 9911 이 남음). 셸 실행은 상속하지 않는다.
++                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(strNotepad, "\"" + strIni + "\"") { UseShellExecute = true });
+                 }
+                 catch
+                 {
+@@ -249,7 +251,10 @@
  			{
  				try
  				{
@@ -463,7 +492,7 @@
  					{
  						if (pJoinMs < 0) w.m_thrThreadObj.Join();
  						else if (!w.m_thrThreadObj.Join(pJoinMs))
-@@ -409,8 +412,8 @@
+@@ -409,8 +414,8 @@
  		public string[] GetThreadStates()
  		{
  			bool bLsn = (g_thrListenThreadObj != null && g_thrListenThreadObj.IsAlive);
@@ -506,6 +535,38 @@
  			catch (Exception exIni) { p_strErrMsg = exIni.Message; return false; }
  
  			bool blDbCon = false;
+--- a/modCmWork.cs
++++ b/modCmWork.cs
+@@ -197,6 +197,19 @@
+ 			
+ 		}
+ 
++		// [LGLS 2026-11-16] ★소켓을 자식 프로세스가 물려받지 않게 한다★ (현장 "HOST_TASK 를 껐는데 9911 에 CLOSE_WAIT 가 남고
++		//   netstat 의 PID 는 있는데 프로세스는 없다" 의 원인 후보 - 개발 PC 에서 재현).
++		//   윈도우 소켓은 기본이 상속 가능이고, .NET Framework 의 Process.Start(UseShellExecute=false) 는 CreateProcess 를
++		//   상속 허용으로 부른다. [INI 열기] 로 뜬 메모장이 그때 열려 있던 리슨/접속 소켓을 통째로 복제해 가서,
++		//   HOST_TASK 가 끝나도 메모장이 열려 있는 동안 포트와 접속이 남는다(새 HOST_TASK 는 10048).
++		[System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
++		private static extern bool SetHandleInformation(IntPtr hObject, uint dwMask, uint dwFlags);
++
++		public static void NoInherit(System.Net.Sockets.Socket p_s)
++		{
++			try { if (p_s != null) SetHandleInformation(p_s.Handle, 1 /*HANDLE_FLAG_INHERIT*/, 0); } catch { }
++		}
++
+ 		public static void CloseSocket(ref System.Net.Sockets.Socket p_sktSocket)
+ 		{
+ 			// 소켓을 ManualClose 시키면 쓰레드가 종료하면서 다시 closesocket을 호출하면서 동기화가 이루어지지 않는다.
+--- a/CCliWork.cs
++++ b/CCliWork.cs
+@@ -93,6 +93,7 @@
+ 				ipaddr = System.Net.IPAddress.Parse(modDefApp.g_strRemoteIP);
+ 				ipep = new System.Net.IPEndPoint(ipaddr, Convert.ToInt32(modDefApp.g_iRemotePort));
+ 				m_sktSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
++				modCmWork.NoInherit(m_sktSock);	// [LGLS 2026-11-16] 자식 프로세스(메모장 등)가 물려받지 않게
+ 
+ 				// [LGLS 2026-11-13] 구 ECP(TcpClient.BeginConnect, 비동기)와 같이 종료를 막지 않게 한다.
+ 				//   종전: 시간 제한 없는 동기 Connect → 닿지 않는 RemoteIP 면 윈도우 기본 ~21초 동안 이 스레드가
 --- a/TSK_HostCom.csproj
 +++ b/TSK_HostCom.csproj
 @@ -95,6 +95,7 @@
