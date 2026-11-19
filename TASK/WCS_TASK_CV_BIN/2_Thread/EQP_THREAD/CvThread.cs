@@ -266,6 +266,7 @@ namespace WCS_TASK_CV
         // [LGLS 2026-09-09] ALL_TASK 태스크 정지 : true 면 다음 순회에서 EXIT_LBL 로 빠져
         //   소켓/DB 를 정상 반납하고 스레드가 끝난다. (Abort 를 쓰지 않는다)
         public volatile bool m_bStop = false;
+        private static bool s_bStartLogged = false;   // [LGLS 2026-11-19] 기동 기록 1회
 
         /// <summary>
         /// 통신 스레드에 정지를 요청한다(플래그만).
@@ -476,7 +477,8 @@ namespace WCS_TASK_CV
         public void SetErrorMsg(string strMsg)
         {
             _strErrorMsg = strMsg;
-            Log.Error(_strErrorMsg);
+            // [LGLS 2026-11-19] log4net(D:\WECS\CV\CvTask.log) 폐지 - 같은 내용을 LOG\MMdd.log 에 남긴다
+            try { WcsCommon.cTaskLog.Write("EQP", "EQP_ERR", "ERROR", _strErrorMsg); } catch { }
         }
         #endregion
         /*
@@ -556,6 +558,14 @@ namespace WCS_TASK_CV
                 {
                     IsOpen = true;
                     MakeMsg_Imp("DB login Ok! (21.07.07)", m_nthNo);
+                    // [LGLS 2026-11-19] TASK 기동 기록 (로그 테이블 + 파일). 재접속 때마다 찍히지 않게 프로세스당 1회.
+                    if (!s_bStartLogged)
+                    {
+                        s_bStartLogged = true;
+                        string strLife = "[기동] WCS_TASK_CV 시작 - " + WcsCommon.cWcsVer.Short;
+                        try { WcsCommon.cTaskLog.Write("EQP", "EQP_LIFE", "IMP", strLife); } catch { }
+                        try { InsertWcsLogPgr("", strLife); } catch { }
+                    }
 
                     while (true)
                     {
@@ -744,6 +754,13 @@ namespace WCS_TASK_CV
                 {
                     SetErrorMsg("CoMM" + m_nthNo + " DB & Socket logoff!");
                     MakeMsg_Imp("DB & Socket logoff!", m_nthNo);
+                    // [LGLS 2026-11-19] TASK 종료 기록 - 정지 요청으로 빠질 때만(통신 끊김 재접속은 종료가 아니다). DB 를 닫기 전에 남긴다.
+                    if (m_bStop && m_msQPlc.m_bDBOpen)
+                    {
+                        string strLife = "[종료] WCS_TASK_CV 종료";
+                        try { WcsCommon.cTaskLog.Write("EQP", "EQP_LIFE", "IMP", strLife); } catch { }
+                        try { InsertWcsLogPgr("", strLife); } catch { }
+                    }
                 }
 
             }
@@ -3320,17 +3337,8 @@ namespace WCS_TASK_CV
         {
             try
             {
-                string sDir  = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                string sFile = System.IO.Path.Combine(sDir, "OutLatch.log");
-                lock (m_lockLatchLog)
-                {
-                    // 2MB 를 넘으면 한 번 비운다 - 오래 켜 둬도 커지지 않게
-                    var fi = new System.IO.FileInfo(sFile);
-                    if (fi.Exists && fi.Length > 2 * 1024 * 1024) fi.Delete();
-                    System.IO.File.AppendAllText(sFile,
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + lv + " " + msg + "\r\n",
-                        System.Text.Encoding.GetEncoding(949));
-                }
+                // [LGLS 2026-11-19] 별도 파일(OutLatch.log) 폐지 - 같은 내용을 LOG\MMdd.log 에 남긴다 ("[래치]" 로 검색)
+                WcsCommon.cTaskLog.Write("EQP", "EQP_LATCH", lv, "[래치] " + msg);
             }
             catch { }
         }

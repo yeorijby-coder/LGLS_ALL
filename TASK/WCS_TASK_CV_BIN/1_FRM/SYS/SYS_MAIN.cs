@@ -129,6 +129,12 @@ namespace WCS_TASK_CV
                 cDefApp.GM_RE_START = true;
                 Application.Exit();
             }
+            else
+            {
+                // [LGLS 2026-11-19] 파일 로그 : 실행 폴더\LOG\MMdd.log (ALL_TASK 안에서 뜬 경우는 ALL_TASK 방식 유지)
+                try { WcsCommon.cTaskLog.StartStandalone(); } catch { }
+                try { WcsCommon.cTaskLog.Write("EQP", "EQP_LIFE", "IMP", "[기동] WCS_TASK_CV 프로세스 시작 - " + WcsCommon.cWcsVer.Short); } catch { }
+            }
             
             //this.Text = Process.GetCurrentProcess().ProcessName;
 
@@ -991,6 +997,21 @@ namespace WCS_TASK_CV
                 {
                     if (MessageBox.Show(this, "종료하시겠습니까?", "질문", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                     {
+                        // [LGLS 2026-11-19] 종료 기록(로그 테이블)은 통신 스레드가 DB 를 닫기 전에 남긴다 - 정지를 요청하고 잠시 기다린다
+                        try
+                        {
+                            if (m_thCvThread[0] != null)
+                            {
+                                m_thCvThread[0].RequestStop();
+                                System.Threading.Thread thCv = m_thCvThread[0].m_thThread;
+                                // UI 스레드가 Join 으로 막히면 통신 스레드의 화면 갱신(Invoke)과 맞물리므로 메시지를 돌리며 기다린다
+                                var swW = System.Diagnostics.Stopwatch.StartNew();
+                                while (thCv != null && thCv.IsAlive && swW.ElapsedMilliseconds < 4000) { Application.DoEvents(); System.Threading.Thread.Sleep(20); }
+                            }
+                        }
+                        catch { }
+                        try { WcsCommon.cTaskLog.Write("EQP", "EQP_LIFE", "IMP", "[종료] WCS_TASK_CV 프로세스 종료"); } catch { }
+                        try { WcsCommon.cTaskLog.Shutdown(); } catch { }
                         LogManager.Shutdown();
                         cDefApp.GM_STAT_MAIN = false;
                         return;

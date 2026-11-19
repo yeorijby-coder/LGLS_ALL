@@ -258,10 +258,30 @@ namespace TSK_COMM_IOSCH
             catch { return ""; }
         }
 
+        /// <summary>
+        /// [LGLS 2026-11-19] TASK 기동/종료를 로그 테이블(WCS_LOG_PGR, PGR_NM='IO_TASK')과 파일(LOG\MMdd.log)에 남긴다.
+        ///   Client [프로그램 이력]의 프로그램 = IO_TASK 로 조회된다.
+        /// </summary>
+        private void LifeLog(string msg)
+        {
+            try { WcsCommon.cTaskLog.Write("IO", "IO_LIFE", "IMP", msg); } catch { }
+            try
+            {
+                if (_pBdb == null) return;
+                _pBdb.mComMain.CommandType = CommandType.Text;
+                _pBdb.mComMain.Parameters.Clear();
+                _pBdb.ExcuteNonQry(" INSERT INTO WCS_LOG_PGR (WH_TYP, INS_DT, LOG_SEQ, LUGG_NO, PGR_NM, LOG_KOR) " +
+                                   " VALUES ('" + SCH_WH_TYP + "', GETDATE(), '0', '', 'IO_TASK', '" + (msg ?? "").Replace("'", "''") + "') ");
+            }
+            catch { }
+        }
+
         private void DbgLog(string key, string msg, string luggNo = null)
         {
             try
             {
+                // [LGLS 2026-11-19] 보류·대기 안내도 파일 로그(LOG\MMdd.log)에 남긴다
+                try { WcsCommon.cTaskLog.Write("IO", "IO_DBG", "DBG", msg); } catch { }
                 string prev; m_dicDbgLast.TryGetValue(key, out prev);
                 if (prev == msg) return;
                 m_dicDbgLast[key] = msg;
@@ -349,6 +369,7 @@ namespace TSK_COMM_IOSCH
                     if (DBOpen())
                     {
                         MakeMsg("[SCH] DB Open 완료 - LG화학 Scheduler 시작 (JOB_MST 스키마)");
+                        LifeLog("[기동] IO_TASK 시작 - " + WcsCommon.cWcsVer.Short);   // [LGLS 2026-11-19]
 
                         // [LGLS 2026-09-01] SC_AUTO_COMPLETE(자동완주) 스위치 폐기 (사용자 지시).
                         //   구 경로(FeedInGate/AutoRun*/ProcessRvSeq/StepCranes 등 물리 재현)는
@@ -380,6 +401,7 @@ namespace TSK_COMM_IOSCH
                 // [LGLS 2026-09-09] ALL_TASK 정지 요청 : DB 를 반납하고 스레드를 끝낸다.
                 if (m_bStop)
                 {
+                    LifeLog("[종료] IO_TASK 종료");   // [LGLS 2026-11-19] DB 를 닫기 전에 남긴다
                     try { DBClose(); } catch { }
                     return;
                 }

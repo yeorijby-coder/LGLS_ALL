@@ -98,6 +98,47 @@ namespace WcsCommon
             }
         }
 
+        // ─────────────────────────────────────────────────────────────────
+        // [LGLS 2026-11-19] 단독 TASK 모드 (HOST_TASK / IO_TASK / WCS_TASK_CV 가 각자 쓴다)
+        //   실행 폴더\LOG\MMdd.log 한 파일에 그날의 로그를 모두 적는다 (스레드 구분은 줄 안에 표기).
+        //   1년 단위 : 같은 MMdd 파일은 1년에 한 번 쓰이므로, 그날 첫 기록 때 지난해 내용이
+        //   남아 있으면(마지막 수정 날짜가 오늘이 아니면) 비우고 새로 쓴다.
+        //   수정 후 365일이 지난 파일은 하루 한 번 지운다. ALL_TASK 의 종전 방식(스레드 폴더·yyyyMMdd)은 그대로.
+        // ─────────────────────────────────────────────────────────────────
+        private static bool   m_bStandalone = false;
+        private static string m_strPrepDay  = "";      // 오늘 파일 정리를 이미 했는가(yyyyMMdd)
+
+        /// <summary>
+        /// 단독 TASK 용 로그를 켠다. 실행 폴더 아래 LOG 폴더에 MMdd.log 로 적는다.
+        /// 프로세스 기동 직후 1회 호출한다.
+        /// </summary>
+        public static void StartStandalone()
+        {
+            // ALL_TASK 안에서 뜬 경우(이미 ALL_TASK 방식으로 켜져 있음)에는 건드리지 않는다
+            if (!string.IsNullOrEmpty(m_strRootDir)) return;
+            m_bStandalone = true;
+            m_strPrepDay  = "";
+            Start(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LOG"), 365, "", false);
+        }
+
+        /// <summary>단독 모드: 오늘 파일 경로. 그날 첫 호출이면 지난해 잔재를 비운다.</summary>
+        private static string StandaloneFile(DateTime pDt)
+        {
+            string strFile = Path.Combine(m_strRootDir, pDt.ToString("MMdd") + ".log");
+            string strDay  = pDt.ToString("yyyyMMdd");
+            if (m_strPrepDay != strDay)
+            {
+                m_strPrepDay = strDay;
+                try
+                {
+                    if (File.Exists(strFile) && File.GetLastWriteTime(strFile).Date != pDt.Date)
+                        File.Delete(strFile);          // 지난해 같은 날짜의 파일
+                }
+                catch { }
+            }
+            return strFile;
+        }
+
         /// <summary>남은 큐를 비우고 쓰기 스레드를 멈춘다.</summary>
         public static void Shutdown()
         {
@@ -193,6 +234,8 @@ namespace WcsCommon
 
         private static void WriteFiles(List<Item> pLst)
         {
+            if (m_bStandalone) { WriteFilesStandalone(pLst); return; }
+
             // 같은 파일에 몰아 쓰도록 스레드+날짜로 묶는다
             Dictionary<string, StringBuilder> dic = new Dictionary<string, StringBuilder>();
 
@@ -237,6 +280,36 @@ namespace WcsCommon
             }
         }
 
+        // [LGLS 2026-11-19] 단독 모드 기록: LOG\MMdd.log 한 파일, 줄 = 시각 [구분] [스레드] 내용
+        private static void WriteFilesStandalone(List<Item> pLst)
+        {
+            Encoding enc;
+            try { enc = Encoding.GetEncoding(949); }
+            catch { enc = Encoding.Default; }
+
+            // 날짜(MMdd)별로 묶어 한 번에 쓴다 (자정을 넘는 묶음 대비)
+            Dictionary<string, StringBuilder> dic = new Dictionary<string, StringBuilder>();
+            Dictionary<string, DateTime>      dtm = new Dictionary<string, DateTime>();
+            foreach (Item it in pLst)
+            {
+                string strKey = it.Dt.ToString("yyyyMMdd");
+                StringBuilder sb;
+                if (!dic.TryGetValue(strKey, out sb)) { sb = new StringBuilder(); dic[strKey] = sb; dtm[strKey] = it.Dt; }
+                sb.Append(it.Dt.ToString("HH:mm:ss.fff"));
+                sb.Append(" [").Append(it.Level).Append("] [").Append(it.Thread).Append("] ");
+                sb.Append(it.Message).Append("\r\n");
+            }
+            foreach (KeyValuePair<string, StringBuilder> kv in dic)
+            {
+                try
+                {
+                    Directory.CreateDirectory(m_strRootDir);
+                    File.AppendAllText(StandaloneFile(dtm[kv.Key]), kv.Value.ToString(), enc);
+                }
+                catch { }
+            }
+        }
+
         // ─────────────────────────────────────────────────────────────────
         // 보관기간 경과 파일 삭제 (기본 365일). 하루 한 번만 돈다.
         // ─────────────────────────────────────────────────────────────────
@@ -249,6 +322,19 @@ namespace WcsCommon
             try
             {
                 if (!Directory.Exists(m_strRootDir)) return;
+
+                if (m_bStandalone)
+                {
+                    // 단독 모드: MMdd.log 중 마지막 수정이 365일보다 오래된 것
+                    DateTime dtOld = DateTime.Today.AddDays(-m_nKeepDays);
+                    foreach (string strF in Directory.GetFiles(m_strRootDir, "????.log"))
+                    {
+                        try { if (File.GetLastWriteTime(strF) < dtOld) File.Delete(strF); }
+                        catch { }
+                    }
+                    return;
+                }
+
                 DateTime dtLimit = DateTime.Today.AddDays(-m_nKeepDays);
 
                 foreach (string strDir in Directory.GetDirectories(m_strRootDir))

@@ -23,7 +23,8 @@ namespace WCS_TASK_CV
 			m_nSaveDay = nSaveDay;
 			m_strLogFile = m_strLogDir + @"\" + m_strLogName;
 
-			IsExistFolder(m_strLogDir);
+			// [LGLS 2026-11-19] 다른 위치(LOG_PATH)에 폴더를 만들거나 파일로 남기지 않는다.
+			//   로그 파일은 실행 폴더\LOG\MMdd.log 한 곳에만 남는다(WcsCommon.cTaskLog).
 
 			EnabledCrLf();
 			Enable();
@@ -77,6 +78,9 @@ namespace WCS_TASK_CV
 		public void Write(DateTime dtLog, string strContent)
 		{
 			if (!(IsLog())) return;
+
+			// [LGLS 2026-11-19] 파일 쓰기 폐지 - 같은 내용이 cTaskLog(LOG\MMdd.log)로 이미 남는다.
+			if (true) return;
 
 			//Directory에 파일이 있는지 확인.
 			IsExistFolder(m_strLogDir);
