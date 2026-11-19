@@ -227,7 +227,38 @@ namespace TSK_COMM_IOSCH
         // [LGLS 2026-07-24] 계측 로그: WCS_LOG_PGR 에 직접 남겨 sqlcmd 로 관찰(반출 교착 진단용).
         //   변경 감지 캐시로 같은 메시지 반복 폭증 방지.
         private readonly Dictionary<string, string> m_dicDbgLast = new Dictionary<string, string>();
-        private void DbgLog(string key, string msg)
+        // [LGLS 2026-11-19] Client [프로그램 이력] 의 작업 번호 칸이 늘 비어 있었다 - 여기서 LUGG_NO 를 ''로 고정해 넣었기 때문.
+        //   luggNo 를 넘기면 그 값을, 안 넘기면 메시지에서 "작업 N" / 맨 앞 "[...] N " 꼴의 번호를 뽑아 넣는다
+        //   (호출 49곳이 모두 메시지에 작업번호를 적고 있어 일일이 고치지 않아도 채워진다).
+        private static readonly System.Text.RegularExpressions.Regex s_reLuggInMsg =
+            new System.Text.RegularExpressions.Regex(@"(?:작업\s+|^\[[^\]]+\]\s+)(\d{3,9})(?!\d)");
+        private static string PickLuggNo(string luggNo, string msg)
+        {
+            string s = (luggNo ?? "").Trim();
+            if (s.Length == 0 && !string.IsNullOrEmpty(msg))
+            {
+                var m = s_reLuggInMsg.Match(msg);
+                if (m.Success) s = m.Groups[1].Value;
+            }
+            return s.Length > 20 ? s.Substring(0, 20) : s;
+        }
+
+        /// <summary>
+        /// [LGLS 2026-11-19] S/C 1호기(통로 C/V#2 겸용)의 현재 모드를 로그 꼬리표로 만든다.
+        ///   통로모드 = ini CV2_DIR_MODE (1 필요할 때 전환 / 2 지시 때만 전환), 방향 = 설비의 현재 방향(입고/출고).
+        ///   1호기가 아니면 빈 문자열.
+        /// </summary>
+        private string Sc1ModeTag(string scNo)
+        {
+            if (scNo != SC1_NO) return "";
+            try
+            {
+                return " [SC1 통로모드=" + CV2_DIR_MODE + ", C/V#2 방향=" + (GetCvStockMode(SC1_DUAL_CV) == "1" ? "출고" : "입고") + "]";
+            }
+            catch { return ""; }
+        }
+
+        private void DbgLog(string key, string msg, string luggNo = null)
         {
             try
             {
@@ -237,7 +268,7 @@ namespace TSK_COMM_IOSCH
                 _pBdb.mComMain.CommandType = CommandType.Text;
                 _pBdb.mComMain.Parameters.Clear();
                 _pBdb.ExcuteNonQry(" INSERT INTO WCS_LOG_PGR (WH_TYP, INS_DT, LOG_SEQ, LUGG_NO, PGR_NM, LOG_KOR) " +
-                                   " VALUES ('" + SCH_WH_TYP + "', GETDATE(), '0', '', 'SCH_DBG', '" + (msg ?? "").Replace("'", "''") + "') ");
+                                   " VALUES ('" + SCH_WH_TYP + "', GETDATE(), '0', '" + PickLuggNo(luggNo, msg).Replace("'", "''") + "', 'SCH_DBG', '" + (msg ?? "").Replace("'", "''") + "') ");
             }
             catch { }
         }
@@ -1146,7 +1177,7 @@ namespace TSK_COMM_IOSCH
                         if (jobTyp == "1" && (TrackLugg(_wT) ?? "").Trim() != luggNo)
                         {
                             DbgLog("SCOWN_" + scNo, string.Format("[SC] 입고 보류 - 트랙 {0} 화물({1})이 작업 {2} 의 화물이 아님",
-                                        _wT, (TrackLugg(_wT) ?? "").Trim(), luggNo));
+                                        _wT, (TrackLugg(_wT) ?? "").Trim(), luggNo) + Sc1ModeTag(scNo), luggNo);
                             continue;
                         }
 
@@ -1180,12 +1211,12 @@ namespace TSK_COMM_IOSCH
                         //   입고는 그 트랙의 입고 HS 가, 출고는 출고 HS 가 서 있어야 지시한다.
                         if (jobTyp == "1" && !IsHsOn(_wT, "STOHS_READY_RD"))
                         {
-                            DbgLog("SCHS_" + scNo, string.Format("[SC] 입고 보류 - 트랙 {0} 입고 HS 신호 없음(작업 {1})", _wT, luggNo));
+                            DbgLog("SCHS_" + scNo, string.Format("[SC] 입고 보류 - 트랙 {0} 입고 HS 신호 없음(작업 {1})", _wT, luggNo) + Sc1ModeTag(scNo), luggNo);
                             continue;
                         }
                         if (jobTyp == "2" && !IsHsOn(_wT, "RETHS_READY_RD"))
                         {
-                            DbgLog("SCHS_" + scNo, string.Format("[SC] 출고 보류 - 트랙 {0} 출고 HS 신호 없음(작업 {1})", _wT, luggNo));
+                            DbgLog("SCHS_" + scNo, string.Format("[SC] 출고 보류 - 트랙 {0} 출고 HS 신호 없음(작업 {1})", _wT, luggNo) + Sc1ModeTag(scNo), luggNo);
                             continue;
                         }
                     }
@@ -4205,7 +4236,9 @@ namespace TSK_COMM_IOSCH
                         landTrk = LandedByCargoOnly(hs, luggNo, nElapsed);
                         if (string.IsNullOrEmpty(landTrk))
                         {
-                            DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 에 아직 화물 없음");
+                            // 도착지가 통로 트랙(103/104)이면 S/C 1호기 - 현재 모드를 함께 적는다
+                            DbgLog("LANDSC_" + luggNo, "[착지대기] " + luggNo + " SC 도착지 " + hs + " 에 아직 화물 없음"
+                                   + ((hs == "103" || hs == "104") ? Sc1ModeTag(SC1_NO) : ""), luggNo);
                             continue;
                         }
                         StampHsTrackingForOut(luggNo, jobTyp, landTrk);
