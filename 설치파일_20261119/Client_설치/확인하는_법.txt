@@ -1,0 +1,104 @@
+============================================================
+ 설치가 제대로 됐는지 손으로 확인하는 법
+ 2026-11-19
+============================================================
+
+ 아래 명령을 그대로 복사해 명령 프롬프트에 붙여넣으면 됩니다.
+ 경로는 설치한 곳에 맞게 바꿔 주세요.
+
+
+------------------------------------------------------------
+ 1. DB 서버 주소를 다시 적기
+------------------------------------------------------------
+
+   설치할 때 물어본 주소를 나중에 바꾸고 싶을 때 씁니다.
+   Setup.bat 을 다시 돌려도 되고, 이 명령만 써도 됩니다.
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\LGLS\CLIENT\Set-DbServer.ps1" -InstDir "C:\LGLS\CLIENT" -Server "192.100.1.191" -Database "LGLS_MCS_IO"
+
+   이렇게 나오면 제대로 된 것입니다.
+
+        Ecs.ini  [DB_2] SERVER=192.100.1.191
+        Ecs.ini  [DB_2] DATABASE=LGLS_IO
+        WmsDown.ini  [DB Server] SERVERNAME=192.100.1.191
+        WmsDown.ini  [DB Server] DATABASE=LGLS_IO
+
+   네 줄이 다 나와야 합니다. "찾지 못했습니다" 가 나오면
+   그 파일의 섹션 이름이나 항목 이름이 다른 것이니 알려 주세요.
+
+   포트가 1433 이 아니면 주소 뒤에 쉼표로 붙입니다.
+       -Server "192.100.1.191,1435"
+   이름있는 인스턴스면 포트를 붙이지 않습니다.
+       -Server "PC이름\SQLEXPRESS"
+
+
+------------------------------------------------------------
+ 2. 지금 설정이 어떻게 되어 있는지 보기
+------------------------------------------------------------
+
+powershell -NoProfile -Command "Get-Content C:\LGLS\CLIENT\Ecs.ini -Encoding Default | Select-String '^SERVER=|^DATABASE='"
+
+powershell -NoProfile -Command "Get-Content C:\LGLS\CLIENT\WmsDown.ini -Encoding Default | Select-String '^SERVERNAME=|^DATABASE='"
+
+
+------------------------------------------------------------
+ 3. 어느 판을 받아 두었는지 보기
+------------------------------------------------------------
+
+   내려받기가 WmsDown.ini 아래쪽에 스스로 적습니다.
+
+powershell -NoProfile -Command "Get-Content C:\LGLS\CLIENT\WmsDown.ini -Encoding Default | Select-String 'COMMON->'"
+
+   예)
+        COMMON->DciLib.dll=1
+        COMMON->EcsDefine.xml=1
+        COMMON->EcsLayout1.xml=1
+        COMMON->KeyWord.xml=1
+
+   여기 적힌 판과 DB 에 올라온 판이 같으면 내려받지 않고 지나갑니다.
+   일부러 다시 받게 하려면 이 줄들을 지우고 다시 실행하면 됩니다.
+
+
+------------------------------------------------------------
+ 4. 설치된 파일이 무엇인지
+------------------------------------------------------------
+
+   Ecs.exe       사람이 누르는 것. 바뀐 파일을 받아 오고 본체를 띄웁니다.
+   EcsMain.exe   운전 화면 본체. 내려받기가 이어서 띄웁니다.
+
+   두 파일은 아이콘이 같습니다. 누르는 것은 Ecs.exe 하나뿐입니다.
+
+powershell -NoProfile -Command "Get-ChildItem C:\LGLS\CLIENT\*.exe | Select-Object Name,Length,LastWriteTime"
+
+
+------------------------------------------------------------
+ 5. ★올리면 안 되는 파일★
+------------------------------------------------------------
+
+   설정 파일은 PC 마다 다릅니다. 올려 두면 각 PC 가 그것을 받아
+   자기 설정을 잃고, DB 에 붙지 못해 화면이 뜨지 않습니다.
+
+       Ecs.ini
+       WmsDown.ini
+
+   실수로 올라오더라도 내려받기가 이 둘은 받지 않게 해 두었습니다.
+   목록을 바꾸려면 WmsDown.ini 에 이렇게 적습니다.
+
+       [APPLICATION]
+       SKIP_FILES=Ecs.ini,WmsDown.ini
+
+
+------------------------------------------------------------
+ 6. 잘 안 될 때
+------------------------------------------------------------
+
+   · "mfc140u.dll 을 찾을 수 없습니다"
+       Visual C++ 재배포 패키지가 없습니다.
+       Prerequisites\vc_redist.x86.exe 를 직접 실행해 주세요.
+
+   · 내려받기 창이 뜬 뒤 아무 일도 없다
+       DB 주소가 틀렸을 수 있습니다. 위 2번으로 확인해 주세요.
+
+   · 에러 창이 뜬다
+       창에 어디서 났는지까지 나옵니다. 그 내용을 그대로 알려 주세요.
+
