@@ -42,7 +42,6 @@ bullets(d, [
     '설치 대상은 서버(DB)와 네트워크가 연결된 PC 입니다. 서버 쪽 프로그램(HOST_TASK, IO_TASK, WCS_TASK_CV)과 DB 는 이 꾸러미로 설치하지 않습니다.',
     '설치가 끝나면 바탕화면에 [LGLS CLIENT] 가 생기고, 누르면 내려받기 프로그램(Ecs.exe)이 서버와 파일 버전을 견준 뒤 Client 본체(EcsMain.exe)를 띄웁니다.',
     '운영체제에 따로 설치할 것이 없도록 필요한 구성요소(Visual C++ 재배포 패키지, .NET Framework)는 꾸러미에 들어 있고, 없을 때만 설치합니다.',
-    '이전 꾸러미(2026-10-15)는 쓰지 마십시오. 오래된 프로그램 파일이 들어 있고, 삭제 파일(Uninstall.bat)과 서버 주소 변경 도우미(Set-DbServer.ps1)가 빠져 있었습니다. 이번에 모두 새로 만들었습니다.',
 ])
 
 # ───────────────────────── 2
@@ -192,17 +191,6 @@ bullets(d, [
     '[2/5] 의 .NET 웹 설치 파일은 인터넷이 필요합니다. 이 방법으로 설치해야 하는 PC(Windows 10 이전)는 지원 대상으로 보지 않습니다.',
     '바탕화면 바로가기는 모든 사용자 바탕화면에 만듭니다. 관리자 권한이 아닌 상태에서는 만들어지지 않습니다 (시험 PC 에서 확인).',
 ])
-
-# ───────────────────────── 9
-d.add_heading('9. 이전 꾸러미와 달라진 점', 1)
-table(d, ['항목', '이전 (2026-10-15)', '이번 (2026-11-19)'], [
-    ['Client 본체와 라이브러리', '10월 판 (EcsMain, DciLib, EcsLib, XmlLib, BuilderLib)', '11/12 빌드(Release) 기준으로 교체'],
-    ['다국어 문구(rc_resource)', '10월 판', '11/12 빌드 기준으로 교체 (cvclear.png 등 추가분 포함)'],
-    ['Ecs.ini', '10월 판 (지상반 삭제·C/V 깜빡임 등 최신 키 없음)', '최신 Release 의 Ecs.ini (HMIDEL_*, HS_BLINK 포함)'],
-    ['Uninstall.bat, Set-DbServer.ps1, 확인하는_법.txt', '만들어지지 않아 꾸러미에 없었음 (Setup.bat 이 복사하려 하는 파일)', '모두 포함'],
-    ['내려받기 라이브러리', 'Npgsql.dll, Mono.Security.dll 없음', '포함'],
-    ['안내 문구 글자', 'Set-DbServer.ps1 의 한글 안내가 깨져 보일 수 있었음', 'UTF-8 BOM 으로 저장해 정상 표시'],
-], widths=[4.2, 6.7, 6.6], font=9)
 
 out = os.path.join(BASE, '설치_매뉴얼_20261119.docx')
 try:
