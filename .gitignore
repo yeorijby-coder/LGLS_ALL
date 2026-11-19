@@ -111,3 +111,6 @@ lglsadmin1!.txt
 # [LGLS 2026-09-30] 설치 꾸러미는 다른 폴더의 파일을 모아 만든 것이라 넣지 않는다.
 #   만들려면 : python 적용_20260930/gen_client_setup.py
 적용_20260930/Client_설치/
+
+# 100MB 초과라 저장소에 올리지 않는다 - EXE/Prerequisites 에 원본이 있고 gen_client_setup_1119.py 가 꾸러미에 복사한다
+설치파일_20261119/Client_설치/Prerequisites/ndp48-x86-x64-allos-enu.exe

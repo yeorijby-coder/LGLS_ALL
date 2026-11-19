@@ -18,3 +18,8 @@
   3) 바탕화면 [LGLS CLIENT] 실행
 
   자세한 내용은 설치_매뉴얼_20261119.docx 를 보십시오.
+
+[ 참고 ]
+  Prerequisites 의 ndp48-x86-x64-allos-enu.exe(.NET 4.8 오프라인, 121MB)는 용량이 커서 저장소(git)에는
+  올리지 않았습니다. 저장소에서 받았다면 EXE\Prerequisites 의 같은 이름 파일을 Client_설치\Prerequisites 에
+  넣거나 gen\gen_client_setup_1119.py 를 다시 실행하십시오.

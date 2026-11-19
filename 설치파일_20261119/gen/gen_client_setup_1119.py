@@ -97,7 +97,7 @@ for f in os.listdir(os.path.join(ROOT, '적용_20261015', 'setup_extra')):
     shutil.copy2(os.path.join(ROOT, '적용_20261015', 'setup_extra', f), os.path.join(DST, f))
 
 # ── 먼저 깔아야 하는 것 ───────────────────────────────────────────
-for f in ('vc_redist.x86.exe', 'ndp48-web.exe'):
+for f in ('vc_redist.x86.exe', 'ndp48-x86-x64-allos-enu.exe'):   # [2026-11-19] .NET 은 오프라인 설치 파일(121MB) - 인터넷이 없는 PC 에서도 설치된다
     shutil.copy2(os.path.join(SRC_PRE, f), os.path.join(DST, 'Prerequisites', f))
 
 print('빠진 파일 :', miss if miss else '없다')
@@ -227,11 +227,23 @@ wr(os.path.join(DST, 'Setup.bat'), [
  'rem ── 2. .NET Framework 4.8 ─────────────────────────────────────',
  'rem    내려받기 프로그램(Ecs.exe)이 .NET 으로 만들어져 있다.',
  'rem    Windows 10 이상은 이미 들어 있으므로 대개 건너뛴다.',
+ 'rem    [2026-11-19] Windows 10 미만(인터넷이 없는 PC)도 설치되도록 오프라인 설치 파일을 쓴다.',
+ 'rem    (웹 설치 파일 ndp48-web.exe 는 설치 중에 인터넷에서 받아 오므로 오프라인 PC 에서는 안 된다)',
  'echo  [2/5] .NET Framework 를 확인합니다...',
  'reg query "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" /v Release >nul 2>&1',
  'if errorlevel 1 (',
- '    echo        설치합니다. 인터넷 연결이 필요합니다...',
- '    "%SRC%Prerequisites\\ndp48-web.exe" /q /norestart',
+ '    echo        설치합니다. 인터넷 없이 설치되는 파일입니다. 몇 분 걸립니다...',
+ '    if not exist "%SRC%Prerequisites\\ndp48-x86-x64-allos-enu.exe" (',
+ '        echo        [주의] 설치 파일이 없습니다 : Prerequisites\\ndp48-x86-x64-allos-enu.exe',
+ '        echo               이 파일을 Prerequisites 폴더에 넣고 다시 실행해 주세요.',
+ '    ) else (',
+ '        "%SRC%Prerequisites\\ndp48-x86-x64-allos-enu.exe" /q /norestart',
+ '        set "NETRC=!errorlevel!"',
+ '        if "!NETRC!"=="0" echo        설치했습니다.',
+ '        if "!NETRC!"=="3010" echo        설치했습니다. 설치가 끝난 뒤 PC 를 다시 시작해 주세요.',
+ '        if "!NETRC!"=="1641" echo        설치했습니다. 설치가 끝난 뒤 PC 를 다시 시작해 주세요.',
+ '        if not "!NETRC!"=="0" if not "!NETRC!"=="3010" if not "!NETRC!"=="1641" echo        [주의] 설치가 끝나지 않았습니다. 종료 코드 !NETRC! - Windows 업데이트가 진행 중이면 끝난 뒤 다시 실행해 주세요.',
+ '    )',
  ') else (',
  '    echo        이미 들어 있습니다. 건너뜁니다.',
  ')',
@@ -524,6 +536,7 @@ wr(os.path.join(DST, '읽어보세요.txt'), [
  '  2) .NET Framework 4.8',
  '       내려받기 프로그램(Ecs.exe)이 .NET 으로 되어 있습니다.',
  '       Windows 10 이상은 이미 들어 있으므로 거의 건너뜁니다.',
+ '       없을 때는 꾸러미에 들어 있는 오프라인 설치 파일로 깝니다 (인터넷이 필요 없습니다).',
  '',
  '  3) 프로그램 복사',
  '       프로그램과 함께 쓰는 파일, 화면 정의(xml), 다국어 문구(rc_resource)를',
