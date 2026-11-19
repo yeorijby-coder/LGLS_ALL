@@ -438,7 +438,7 @@ namespace WCS_TASK_CV
                 if (string.IsNullOrEmpty(pAddr)) pAddr = LglsAddrFromMsg(msg);
                 if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView_Error(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
-                cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
+                // [LGLS 2026-11-19] m_LogQ 적재 폐지 - 꺼내 쓰는 곳(cLogThread)이 이 프로그램에 없어 계속 쌓이기만 했다(메모리 누적). 로그는 cTaskLog(LOG\MMdd.log)로 간다.
                 // [LGLS 진단] 에러는 DB 로그에도 남긴다 (파일/화면 로그 확인 불가 환경 대비)
                 // [LGLS 2026-09-09] 재귀 차단 : InsertWcsLogPgr 이 실패하면 그 안에서 다시
                 //   MakeMsg_Error 를 부른다. DB 가 끊기면 무한 재귀로 스택이 터져 프로세스가
@@ -466,7 +466,7 @@ namespace WCS_TASK_CV
                 if (string.IsNullOrEmpty(pAddr)) pAddr = LglsAddrFromMsg(msg);
                 if (string.IsNullOrEmpty(pAddr) && m_msQPlc != null) pAddr = m_msQPlc.LastAddrText;
                 m_frmMain.PsMsgView_IMP(msg, m_strPlc_No.ToString(), "", "", nThGbn, pAddr, pFile, pFunc);
-                cDefApp.m_LogQ[m_nthNo].Enqueue(new LogParam(DateTime.Now, msg));
+                // [LGLS 2026-11-19] m_LogQ 적재 폐지 - 꺼내 쓰는 곳(cLogThread)이 이 프로그램에 없어 계속 쌓이기만 했다(메모리 누적). 로그는 cTaskLog(LOG\MMdd.log)로 간다.
             }
             catch (Exception ex)
             {
